@@ -566,8 +566,8 @@
         "x-enumNames": [
           "Unknown",
           "Movie",
-          "TVShow",
-          "Music"
+          "Music",
+          "Serie"
         ],
         "enum": [
           0,

@@ -1,18 +1,18 @@
-﻿using MediaServer.Domain.Entities.Files;
+﻿using MediaServer.Domain.Entities;
 
 namespace MediaServer.Application.Extensions;
 public static class MediaFileExtensions
 {
     public static
-        (IEnumerable<Domain.Entities.Files.MediaFile> AddedFiles,
-        IEnumerable<Domain.Entities.Files.MediaFile> RemovedFiles,
-        IEnumerable<Domain.Entities.Files.MediaFile> UnchangedFiles)
-        CompareTo(this IEnumerable<Domain.Entities.Files.MediaFile> oldMediaFiles, IEnumerable<Domain.Entities.Files.MediaFile> newMediaFiles)
+        (IEnumerable<IndexedFile> UnchangedFiles,
+        IEnumerable<IndexedFile> AddedFiles,
+        IEnumerable<IndexedFile> RemovedFiles)
+        CompareTo(this IEnumerable<IndexedFile> oldMediaFiles, IEnumerable<IndexedFile> newMediaFiles)
     {
+        var unchanged = oldMediaFiles.Intersect(newMediaFiles);
         var added = newMediaFiles.Except(oldMediaFiles);
         var removed = oldMediaFiles.Except(newMediaFiles);
-        var unchanged = oldMediaFiles.Intersect(newMediaFiles);
 
-        return (added, removed, unchanged);
+        return (unchanged, added, removed);
     }
 }

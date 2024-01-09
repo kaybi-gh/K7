@@ -22,7 +22,7 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Files.MediaFile", b =>
+            modelBuilder.Entity("MediaServer.Domain.Entities.IndexedFile", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -39,9 +39,22 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
+                    b.Property<string>("Extension")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Hash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsComposite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsIdentified")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSplitPart")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
@@ -49,11 +62,14 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<int?>("LibraryId")
+                    b.Property<int>("LibraryId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ParentDirectory")
                         .HasColumnType("text");
 
                     b.Property<string>("Path")
@@ -69,7 +85,7 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
                     b.HasIndex("LibraryId");
 
-                    b.ToTable("MediaFile");
+                    b.ToTable("IndexedFiles");
                 });
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Library", b =>
@@ -132,7 +148,7 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<int>("MediaLibraryId")
+                    b.Property<int>("LibraryId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Type")
@@ -140,9 +156,9 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MediaLibraryId");
+                    b.HasIndex("LibraryId");
 
-                    b.ToTable("BaseMedias");
+                    b.ToTable("Medias");
 
                     b.HasDiscriminator<int>("Type");
 
@@ -345,21 +361,12 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Episode", b =>
-                {
-                    b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
-
-                    b.Property<int?>("SeasonId")
-                        .HasColumnType("integer");
-
-                    b.HasIndex("SeasonId");
-
-                    b.HasDiscriminator().HasValue(4);
-                });
-
             modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Movie", b =>
                 {
                     b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
+
+                    b.Property<DateOnly>("ReleaseYear")
+                        .HasColumnType("date");
 
                     b.HasDiscriminator().HasValue(1);
                 });
@@ -368,38 +375,127 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                 {
                     b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
 
-                    b.HasDiscriminator().HasValue(5);
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("ArtistId");
+
+                    b.HasDiscriminator().HasValue(2);
                 });
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Season", b =>
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.MusicArtist", b =>
                 {
                     b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
 
                     b.HasDiscriminator().HasValue(3);
                 });
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Track", b =>
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.MusicTrack", b =>
                 {
                     b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
 
                     b.Property<int?>("AlbumId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("SeasonId")
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Number")
                         .HasColumnType("integer");
 
                     b.HasIndex("AlbumId");
 
-                    b.ToTable("BaseMedias", t =>
+                    b.HasIndex("ArtistId");
+
+                    b.ToTable("Medias", t =>
                         {
-                            t.Property("SeasonId")
-                                .HasColumnName("Track_SeasonId");
+                            t.Property("ArtistId")
+                                .HasColumnName("MusicTrack_ArtistId");
+                        });
+
+                    b.HasDiscriminator().HasValue(4);
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Serie", b =>
+                {
+                    b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
+
+                    b.Property<DateOnly?>("ReleaseYear")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.ToTable("Medias", t =>
+                        {
+                            t.Property("ReleaseYear")
+                                .HasColumnName("Serie_ReleaseYear");
+                        });
+
+                    b.HasDiscriminator().HasValue(5);
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.SerieEpisode", b =>
+                {
+                    b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SeasonId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SerieId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.HasIndex("SeasonId");
+
+                    b.HasIndex("SerieId");
+
+                    b.ToTable("Medias", t =>
+                        {
+                            t.Property("Number")
+                                .HasColumnName("SerieEpisode_Number");
+
+                            t.Property("Title")
+                                .HasColumnName("SerieEpisode_Title");
                         });
 
                     b.HasDiscriminator().HasValue(6);
                 });
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Files.MediaFile", b =>
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.SerieSeason", b =>
+                {
+                    b.HasBaseType("MediaServer.Domain.Entities.Medias.BaseMedia");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SerieId")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("SerieId");
+
+                    b.ToTable("Medias", t =>
+                        {
+                            t.Property("Number")
+                                .HasColumnName("SerieSeason_Number");
+
+                            t.Property("SerieId")
+                                .HasColumnName("SerieSeason_SerieId");
+                        });
+
+                    b.HasDiscriminator().HasValue(7);
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.IndexedFile", b =>
                 {
                     b.HasOne("MediaServer.Domain.Entities.Medias.BaseMedia", null)
                         .WithMany("MediaFiles")
@@ -407,14 +503,16 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
                     b.HasOne("MediaServer.Domain.Entities.Library", null)
                         .WithMany("Files")
-                        .HasForeignKey("LibraryId");
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Medias.BaseMedia", b =>
                 {
                     b.HasOne("MediaServer.Domain.Entities.Library", "MediaLibrary")
                         .WithMany("Items")
-                        .HasForeignKey("MediaLibraryId")
+                        .HasForeignKey("LibraryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -472,22 +570,54 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Episode", b =>
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.MusicAlbum", b =>
                 {
-                    b.HasOne("MediaServer.Domain.Entities.Medias.Season", "Season")
-                        .WithMany("Episodes")
-                        .HasForeignKey("SeasonId");
+                    b.HasOne("MediaServer.Domain.Entities.Medias.MusicArtist", "Artist")
+                        .WithMany("Album")
+                        .HasForeignKey("ArtistId");
 
-                    b.Navigation("Season");
+                    b.Navigation("Artist");
                 });
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Track", b =>
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.MusicTrack", b =>
                 {
                     b.HasOne("MediaServer.Domain.Entities.Medias.MusicAlbum", "Album")
                         .WithMany("Tracks")
                         .HasForeignKey("AlbumId");
 
+                    b.HasOne("MediaServer.Domain.Entities.Medias.MusicArtist", "Artist")
+                        .WithMany("Tracks")
+                        .HasForeignKey("ArtistId");
+
                     b.Navigation("Album");
+
+                    b.Navigation("Artist");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.SerieEpisode", b =>
+                {
+                    b.HasOne("MediaServer.Domain.Entities.Medias.SerieSeason", "Season")
+                        .WithMany("Episodes")
+                        .HasForeignKey("SeasonId");
+
+                    b.HasOne("MediaServer.Domain.Entities.Medias.Serie", "Serie")
+                        .WithMany("Episodes")
+                        .HasForeignKey("SerieId");
+
+                    b.Navigation("Season");
+
+                    b.Navigation("Serie");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.SerieSeason", b =>
+                {
+                    b.HasOne("MediaServer.Domain.Entities.Medias.Serie", "Serie")
+                        .WithMany("Seasons")
+                        .HasForeignKey("SerieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Serie");
                 });
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Library", b =>
@@ -507,7 +637,21 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Navigation("Tracks");
                 });
 
-            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Season", b =>
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.MusicArtist", b =>
+                {
+                    b.Navigation("Album");
+
+                    b.Navigation("Tracks");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.Serie", b =>
+                {
+                    b.Navigation("Episodes");
+
+                    b.Navigation("Seasons");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.SerieSeason", b =>
                 {
                     b.Navigation("Episodes");
                 });

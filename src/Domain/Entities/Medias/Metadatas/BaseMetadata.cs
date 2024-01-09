@@ -1,6 +1,4 @@
-﻿using MediaServer.Domain.Entities.Medias;
-
-namespace MediaServer.Domain.Entities.Medias.Metadatas;
+﻿namespace MediaServer.Domain.Entities.Medias.Metadatas;
 public abstract class BaseMetadata : BaseAuditableEntity
 {
     public int MediaItemId { get; set; }

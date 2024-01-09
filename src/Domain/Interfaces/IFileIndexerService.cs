@@ -1,5 +1,5 @@
 ﻿namespace MediaServer.Domain.Interfaces;
 public interface IFileIndexerService
 {
-    public void IndexMediaFiles(Library library);
+    public Task IndexAsync(Library library, CancellationToken cancellationToken);
 }

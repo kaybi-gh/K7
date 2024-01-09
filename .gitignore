@@ -478,3 +478,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local debug SQLite db
+MediaServer.db

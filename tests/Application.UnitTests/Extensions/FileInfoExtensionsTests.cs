@@ -2,25 +2,25 @@
 using System.Text;
 using FluentAssertions;
 using MediaServer.Application.Extensions;
-using MediaServer.Application.UnitTests.Fixtures;
-using MediaServer.Domain.Entities.Files;
+using MediaServer.Domain.Entities;
+using MediaServer.Tests.Helpers.Fixtures;
 using NUnit.Framework;
 
 namespace MediaServer.Application.UnitTests.Extensions;
 
 public class FileInfoExtensionsTests : FileFixture
 {
-    [TestCase(".weirdExtension", false)]
+    [TestCase(".unkownExtension", false)]
     [TestCase("", false)]
     [TestCase(null, false)]
     [TestCase(".mp3", true)]
-    public void IsMediaFile_shouldWork(string? extension, bool expectedResult)
+    public void IsSupportedFile_shouldWork(string? extension, bool expectedResult)
     {
         // Arrange
         var fileInfo = CreateTestFile($"file{extension}", "content");
 
         // Act
-        var isMediaFile = fileInfo.IsMediaFile();
+        var isMediaFile = fileInfo.IsSupportedFile();
 
         // Assert
         isMediaFile.Should().Be(expectedResult);
@@ -44,12 +44,12 @@ public class FileInfoExtensionsTests : FileFixture
     }
 
     [Test]
-    public void ToMediaFile_shouldWork()
+    public void ToIndexedFile_shouldWork()
     {
         // Arrange
         var libraryId = 1;
-        var fileInfo = CreateTestFile("computeFileHash.mp3", "content");
-        MediaFile expectedMediaFile = new()
+        var fileInfo = CreateTestFile("file.mkv", "content");
+        IndexedFile expectedIndexedFile = new()
         {
             LibraryId = libraryId,
             Name = fileInfo.Name,
@@ -61,29 +61,29 @@ public class FileInfoExtensionsTests : FileFixture
         };
 
         // Act
-        var mediaFile = fileInfo.ToMediaFile(libraryId);
+        var indexedFile = fileInfo.ToIndexedFile(libraryId);
 
         // Assert
-        mediaFile.Should().BeEquivalentTo(expectedMediaFile, options => options
+        indexedFile.Should().BeEquivalentTo(expectedIndexedFile);/*, options => options
             .Including(mf => mf.Name)
             .Including(mf => mf.Extension)
             .Including(mf => mf.Path)
             .Including(mf => mf.ParentDirectory)
-            .Including(mf => mf.Hash));
+            .Including(mf => mf.Hash));*/
     }
 
     [Test]
-    public void ToMediaFile_shouldReturnNullMediaFile()
+    public void ToIndexedFile_shouldReturnNull()
     {
         // Arrange
         var libraryId = 1;
-        var fileInfo = CreateTestFile("computeFileHash.unkownExtension", "content");
+        var fileInfo = CreateTestFile("file.unkownExtension", "content");
 
         // Act
-        var mediaFile = fileInfo.ToMediaFile(libraryId);
+        var indexedFile = fileInfo.ToIndexedFile(libraryId);
 
         // Assert
-        mediaFile.Should().BeNull();
-        mediaFile?.LibraryId.Should().Be(libraryId);
+        indexedFile.Should().BeNull();
+        indexedFile?.LibraryId.Should().Be(libraryId);
     }
 }

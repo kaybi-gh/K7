@@ -1,7 +1,4 @@
 ﻿using MediaServer.Domain.Constants;
-using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Enums;
 using MediaServer.Infrastructure.Context.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;

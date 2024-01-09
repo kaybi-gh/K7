@@ -5,9 +5,9 @@ namespace MediaServer.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {
+    DbSet<IndexedFile> IndexedFiles { get; }
     DbSet<Library> Libraries { get; }
-
-    DbSet<BaseMedia> BaseMedias { get; }
+    DbSet<BaseMedia> Medias { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

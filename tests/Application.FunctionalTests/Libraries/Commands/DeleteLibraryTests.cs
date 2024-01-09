@@ -1,12 +1,12 @@
-﻿using MediaServer.Application.FunctionalTests.Fixtures;
-using MediaServer.Application.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Libraries.Commands.DeleteLibrary;
+﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
+using MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
+using MediaServer.Tests.Helpers.Fixtures;
 
 namespace MediaServer.Application.FunctionalTests.Libraries.Commands;
 
-public class DeleteLibraryTests : BaseTestFixture
+public class DeleteLibraryTests : DatabaseFixture
 {
     [Test]
     public async Task ShouldRequireValidLibraryId()

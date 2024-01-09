@@ -1,44 +1,83 @@
-﻿using MediaServer.Application.Extensions;
-using MediaServer.Application.Helper;
+﻿using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Extensions;
+using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Files;
+using MediaServer.Domain.Enums;
+using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
 
 namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
 {
-    public FileIndexerService()
-    {
+    private readonly IApplicationDbContext _context;
 
+    public FileIndexerService(IApplicationDbContext context)
+    {
+        _context = context;
     }
 
-    public void IndexMediaFiles(Library library)
+    public async Task IndexAsync(Library library, CancellationToken cancellationToken)
     {
-        List<MediaFile> mediaFiles = [];
+        List<IndexedFile> indexedFiles = [];
         try
         {
-            foreach (var fileInfo in FileInfoHelper.GetAllFileInfosRecursively(library.RootPath))
+            var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
+
+            foreach (var fileInfo in fileInfos)
             {
-                var mediaFile = fileInfo.ToMediaFile(library.Id);
-                if (mediaFile != null)
+                var indexedFile = fileInfo.ToIndexedFile(library.Id);
+                if (indexedFile != null)
                 {
-                    mediaFiles.Add(mediaFile);
+                    indexedFiles.Add(indexedFile);
                 }
             }
 
-            var (addedFiles, removedFiles, unchangedFiles) = library.Files.CompareTo(mediaFiles);
+            var (unchangedFiles, addedFiles, removedFiles) = library.Files.CompareTo(indexedFiles);
 
             if (addedFiles.Any())
             {
+                if (library.MediaType == LibraryMediaType.Movie)
+                {
 
+                }
+                if (library.MediaType == LibraryMediaType.Music)
+                {
+                    var filesGroupedByParentDirectory = addedFiles.GroupBy(f => f.ParentDirectory);
+
+                    foreach (var parentDirectory in filesGroupedByParentDirectory)
+                    {
+
+                    }
+                }
+                if (library.MediaType == LibraryMediaType.Serie)
+                {
+                    var filesGroupedByParentDirectory = addedFiles.GroupBy(f => f.ParentDirectory);
+
+                    foreach (var parentDirectory in filesGroupedByParentDirectory)
+                    {
+
+                    }
+                }
+
+                await _context.IndexedFiles.AddRangeAsync(indexedFiles);
+                foreach (var file in addedFiles)
+                {
+                    file.AddDomainEvent(new IndexedFileCreatedEvent(file));
+                }
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
             if (removedFiles.Any())
             {
-
+                _context.IndexedFiles.RemoveRange(removedFiles);
+                foreach (var file in removedFiles)
+                {
+                    file.AddDomainEvent(new IndexedFileDeletedEvent(file));
+                }
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
-            library.Files = mediaFiles;
+            library.Files = indexedFiles;
         }
         catch (Exception ex)
         {

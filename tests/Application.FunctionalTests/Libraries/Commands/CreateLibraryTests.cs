@@ -1,12 +1,12 @@
 ﻿using MediaServer.Application.Common.Exceptions;
-using MediaServer.Application.FunctionalTests.Fixtures;
-using MediaServer.Application.Libraries.Commands.CreateLibrary;
+using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
+using MediaServer.Tests.Helpers.Fixtures;
 
 namespace MediaServer.Application.FunctionalTests.Libraries.Commands;
 
-public class CreateLibraryTests : BaseTestFixture
+public class CreateLibraryTests : DatabaseFixture
 {
     [Test]
     public async Task ShouldRequireMinimumFields()

@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
-using MediaServer.Application.Helper;
-using MediaServer.Application.UnitTests.Fixtures;
+using MediaServer.Application.Helpers;
+using MediaServer.Tests.Helpers.Fixtures;
 using NUnit.Framework;
 
 namespace MediaServer.Application.UnitTests.Helper;

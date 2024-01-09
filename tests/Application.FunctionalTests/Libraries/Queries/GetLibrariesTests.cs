@@ -1,11 +1,11 @@
-﻿using MediaServer.Application.FunctionalTests.Fixtures;
-using MediaServer.Application.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Libraries.Queries.GetLibraries;
+﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
+using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
 using MediaServer.Domain.Enums;
+using MediaServer.Tests.Helpers.Fixtures;
 
 namespace MediaServer.Application.FunctionalTests.Libraries.Queries;
 
-public class GetLibrariesTests : BaseTestFixture
+public class GetLibrariesTests : DatabaseFixture
 {
     [Test]
     public async Task ShouldReturnLibraries()

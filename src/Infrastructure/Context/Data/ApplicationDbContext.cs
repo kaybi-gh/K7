@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Reflection.Emit;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
@@ -15,18 +14,21 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public ApplicationDbContext() { }
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+    public DbSet<IndexedFile> IndexedFiles => Set<IndexedFile>();
     public DbSet<Library> Libraries => Set<Library>();
-    public DbSet<BaseMedia> BaseMedias => Set<BaseMedia>();
+    public DbSet<BaseMedia> Medias => Set<BaseMedia>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.Entity<BaseMedia>()
             .HasDiscriminator(x => x.Type)
             .HasValue<Movie>(MediaType.Movie)
-            .HasValue<Season>(MediaType.Season)
-            .HasValue<Episode>(MediaType.Episode)
             .HasValue<MusicAlbum>(MediaType.MusicAlbum)
-            .HasValue<Track>(MediaType.Track);
+            .HasValue<MusicArtist>(MediaType.MusicArtist)
+            .HasValue<MusicTrack>(MediaType.MusicTrack)
+            .HasValue<Serie>(MediaType.Serie)
+            .HasValue<SerieSeason>(MediaType.SerieSeason)
+            .HasValue<SerieEpisode>(MediaType.SerieEpisode);
 
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         base.OnModelCreating(builder);

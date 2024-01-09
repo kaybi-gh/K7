@@ -1,18 +1,29 @@
 ﻿using System.Security.Cryptography;
 using MediaServer.Domain.Constants;
 using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Files;
 
 namespace MediaServer.Application.Extensions;
 public static class FileInfoExtensions
 {
-    public static MediaFile? ToMediaFile(this FileInfo fileInfo, int libraryId)
+    public static bool IsSupportedFile(this FileInfo fileInfo)
+    {
+        return FileExtensions.GetAll().Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public static string ComputeFileHash(this FileInfo fileInfo)
+    {
+        using var stream = new BufferedStream(fileInfo.OpenRead(), 1200000);
+        byte[] hashBytes = SHA256.HashData(stream);
+        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+    }
+
+    public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, int libraryId)
     {
         try
         {
-            if (fileInfo.IsMediaFile())
+            if (fileInfo.IsSupportedFile())
             {
-                MediaFile mediaFile = new()
+                IndexedFile indexedFile = new()
                 {
                     LibraryId = libraryId,
                     Name = fileInfo.Name,
@@ -24,26 +35,14 @@ public static class FileInfoExtensions
                     IsIdentified = false
                 };
 
-                return mediaFile;
+                return indexedFile;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error creating MediaFile for {fileInfo.FullName}: {ex.Message}");
+            Console.WriteLine($"Error creating IndexedFile for {fileInfo.FullName}: {ex.Message}");
         }
 
         return null;
-    }
-
-    public static bool IsMediaFile(this FileInfo fileInfo)
-    {
-        return FileExtensions.GetAll().Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase);
-    }
-
-    public static string ComputeFileHash(this FileInfo fileInfo)
-    {
-        using var stream = new BufferedStream(fileInfo.OpenRead(), 1200000);
-        byte[] hashBytes = SHA256.HashData(stream);
-        return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
     }
 }

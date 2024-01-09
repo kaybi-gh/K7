@@ -1,0 +1,20 @@
+﻿using MediaServer.Domain.Events;
+using Microsoft.Extensions.Logging;
+
+namespace MediaServer.Application.Features.Libraries.EventHandlers;
+
+public class IndexedFileCreatedEventHandler : INotificationHandler<LibraryCreatedEvent>
+{
+    private readonly ILogger<IndexedFileCreatedEventHandler> _logger;
+
+    public IndexedFileCreatedEventHandler(ILogger<IndexedFileCreatedEventHandler> logger)
+    {
+        _logger = logger;
+    }
+
+    public Task Handle(LibraryCreatedEvent notification, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("MediaServer Domain Event: {DomainEvent}", notification.GetType().Name);
+        return Task.CompletedTask;
+    }
+}

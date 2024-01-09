@@ -1,6 +1,8 @@
 ﻿namespace MediaServer.Domain.Entities.Medias;
 public class Serie : BaseMedia
 {
-    public DateOnly ReleaseYear { get; set; }
-    public IEnumerable<Season> Seasons { get; set; } = [];
+    public required string Title { get; set; }
+    public DateOnly? ReleaseYear { get; set; }
+    public IEnumerable<SerieSeason> Seasons { get; set; } = [];
+    public IEnumerable<SerieEpisode> Episodes { get; set; } = [];
 }

@@ -1,8 +1,7 @@
-﻿using MediaServer.Application.Common.Models;
-using MediaServer.Application.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Libraries.Commands.DeleteLibrary;
-using MediaServer.Application.Libraries.Commands.UpdateLibrary;
-using MediaServer.Application.Libraries.Queries.GetLibraries;
+﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
+using MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
+using MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
+using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
 
 namespace MediaServer.Web.Endpoints;
 
