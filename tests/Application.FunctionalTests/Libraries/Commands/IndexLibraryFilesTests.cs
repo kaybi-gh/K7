@@ -1,12 +1,13 @@
 ﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
-using MediaServer.Domain.Entities;
+using MediaServer.Application.Features.Libraries.Queries.GetLibrariesFiles;
 using MediaServer.Domain.Enums;
 using MediaServer.Tests.Helpers.Fixtures;
+using MediaServer.Tests.Helpers.Helpers;
 
 namespace MediaServer.Application.FunctionalTests.Libraries.Commands;
 
-public class IndexLibraryFilesTests : DatabaseFixture
+public class IndexLibraryFilesTests : FileAndDatabaseFixture
 {
     [Test]
     public async Task ShouldRequireValidLibraryId()
@@ -21,21 +22,27 @@ public class IndexLibraryFilesTests : DatabaseFixture
     }
 
     [Test]
-    public async Task ShouldDeleteLibrary()
+    public async Task ShouldIndexLibraryFiles()
     {
         // Arrange
         var libraryId = await SendAsync(new CreateLibraryCommand
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
-            RootPath = "/root/path"
+            RootPath = FileHelper.TestDirectoryPath
         });
+        FileHelper.CreateTestFile("movie.mp4", "movie");
+        FileHelper.CreateTestFile("movie.mkv", "movie");
+        FileHelper.CreateTestFile("other.unkown", "other");
 
         // Act
         await SendAsync(new IndexLibraryFilesCommand(libraryId));
-        var library = await FindAsync<Library>(libraryId);
+        var libraryIndexedFiles = await SendAsync(new GetLibraryIndexedFilesWithPaginationQuery()
+        {
+            LibraryId = libraryId
+        });
 
         // Assert
-        library?.Files.Should().NotBeEmpty();
+        libraryIndexedFiles.TotalCount.Should().Be(2);
     }
 }

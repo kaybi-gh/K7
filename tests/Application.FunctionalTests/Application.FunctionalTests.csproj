@@ -6,26 +6,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <None Remove="appsettings.json" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Content Include="appsettings.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </Content>
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="MockQueryable.NSubstitute" />
-        <PackageReference Include="NSubstitute" />
-        <PackageReference Include="NSubstitute.Analyzers.CSharp">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
         <PackageReference Include="nunit" />
         <PackageReference Include="NUnit.Analyzers">
           <PrivateAssets>all</PrivateAssets>
@@ -34,14 +16,11 @@
         <PackageReference Include="NUnit3TestAdapter" />
         <PackageReference Include="coverlet.collector" />
         <PackageReference Include="FluentAssertions" />
-        <PackageReference Include="Respawn" />
-        <PackageReference Include="Testcontainers.MsSql" />
-        <PackageReference Include="Testcontainers.PostgreSql" />
     </ItemGroup>
     
     <ItemGroup>
         <ProjectReference Include="..\..\src\Web\Web.csproj" />
-        <ProjectReference Include="..\..\Test.Helpers\Tests.Helpers.csproj" />
+        <ProjectReference Include="..\Tests.Helpers\Tests.Helpers.csproj" />
     </ItemGroup>
 
 </Project>

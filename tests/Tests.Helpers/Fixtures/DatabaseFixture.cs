@@ -6,12 +6,11 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
 
 namespace MediaServer.Tests.Helpers.Fixtures;
 
-[SetUpFixture]
-public partial class DatabaseFixture
+[TestFixture]
+public class DatabaseFixture
 {
     private static ITestDatabase _database;
     private static CustomWebApplicationFactory _factory = null!;
@@ -19,16 +18,22 @@ public partial class DatabaseFixture
     private static string? _userId;
 
     [OneTimeSetUp]
-    public async Task RunBeforeAnyTests()
+    public async Task DatabaseFixture_OneTimeSetUp()
     {
         _database = await TestDatabaseFactory.CreateAsync();
         _factory = new CustomWebApplicationFactory(_database.GetConnection());
         _scopeFactory = _factory.Services.GetRequiredService<IServiceScopeFactory>();
     }
 
+    [OneTimeTearDown]
+    public async Task DatabaseFixture_OneTimeTearDown()
+    {
+        await _database.DisposeAsync();
+        await _factory.DisposeAsync();
+    }
 
     [SetUp]
-    public async Task TestSetUp()
+    public async Task DatabaseFixture_SetUp()
     {
         await ResetState();
     }
@@ -126,12 +131,5 @@ public partial class DatabaseFixture
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         return await context.Set<TEntity>().CountAsync();
-    }
-
-    [OneTimeTearDown]
-    public async Task RunAfterAnyTests()
-    {
-        await _database.DisposeAsync();
-        await _factory.DisposeAsync();
     }
 }

@@ -42,7 +42,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application.FunctionalTests
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure.IntegrationTests", "tests\Infrastructure.IntegrationTests\Infrastructure.IntegrationTests.csproj", "{01FA6786-921D-4CE8-8C50-4FDA66C9477D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.Helpers", "Test.Helpers\Tests.Helpers.csproj", "{B9334BDA-BB61-4786-B6DC-BC0C43DA012C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.Helpers", "tests\Tests.Helpers\Tests.Helpers.csproj", "{B9334BDA-BB61-4786-B6DC-BC0C43DA012C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

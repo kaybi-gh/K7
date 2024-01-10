@@ -1,10 +1,9 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using FluentAssertions;
 using MediaServer.Application.Extensions;
 using MediaServer.Domain.Entities;
 using MediaServer.Tests.Helpers.Fixtures;
-using NUnit.Framework;
+using MediaServer.Tests.Helpers.Helpers;
 
 namespace MediaServer.Application.UnitTests.Extensions;
 
@@ -17,7 +16,7 @@ public class FileInfoExtensionsTests : FileFixture
     public void IsSupportedFile_shouldWork(string? extension, bool expectedResult)
     {
         // Arrange
-        var fileInfo = CreateTestFile($"file{extension}", "content");
+        var fileInfo = FileHelper.CreateTestFile($"file{extension}", "content");
 
         // Act
         var isMediaFile = fileInfo.IsSupportedFile();
@@ -31,7 +30,7 @@ public class FileInfoExtensionsTests : FileFixture
     {
         // Arrange
         string content = "content";
-        var fileInfo = CreateTestFile("computeFileHash.txt", content);
+        var fileInfo = FileHelper.CreateTestFile("computeFileHash.txt", content);
         var contentBytes = Encoding.UTF8.GetBytes(content);
         byte[] hashBytes = SHA256.HashData(contentBytes);
         var computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
@@ -48,7 +47,7 @@ public class FileInfoExtensionsTests : FileFixture
     {
         // Arrange
         var libraryId = 1;
-        var fileInfo = CreateTestFile("file.mkv", "content");
+        var fileInfo = FileHelper.CreateTestFile("file.mkv", "content");
         IndexedFile expectedIndexedFile = new()
         {
             LibraryId = libraryId,
@@ -64,12 +63,7 @@ public class FileInfoExtensionsTests : FileFixture
         var indexedFile = fileInfo.ToIndexedFile(libraryId);
 
         // Assert
-        indexedFile.Should().BeEquivalentTo(expectedIndexedFile);/*, options => options
-            .Including(mf => mf.Name)
-            .Including(mf => mf.Extension)
-            .Including(mf => mf.Path)
-            .Including(mf => mf.ParentDirectory)
-            .Including(mf => mf.Hash));*/
+        indexedFile.Should().BeEquivalentTo(expectedIndexedFile);
     }
 
     [Test]
@@ -77,7 +71,7 @@ public class FileInfoExtensionsTests : FileFixture
     {
         // Arrange
         var libraryId = 1;
-        var fileInfo = CreateTestFile("file.unkownExtension", "content");
+        var fileInfo = FileHelper.CreateTestFile("file.unkownExtension", "content");
 
         // Act
         var indexedFile = fileInfo.ToIndexedFile(libraryId);

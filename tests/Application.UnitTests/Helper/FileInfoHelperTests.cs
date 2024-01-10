@@ -1,7 +1,6 @@
-﻿using FluentAssertions;
-using MediaServer.Application.Helpers;
+﻿using MediaServer.Application.Helpers;
 using MediaServer.Tests.Helpers.Fixtures;
-using NUnit.Framework;
+using MediaServer.Tests.Helpers.Helpers;
 
 namespace MediaServer.Application.UnitTests.Helper;
 
@@ -11,10 +10,10 @@ public class FileInfoHelperTests : FileFixture
     public void GetAllFilesRecursively_ReturnsAllFiles()
     {
         // Arrange
-        List<FileInfo> expectedFiles = CreateTestFiles();
+        List<FileInfo> expectedFiles = FileHelper.CreateTestFiles();
 
         // Act
-        List<FileInfo> actualFiles = FileInfoHelper.GetAllFileInfosRecursively(TestDirectoryPath);
+        List<FileInfo> actualFiles = FileInfoHelper.GetAllFileInfosRecursively(FileHelper.TestDirectoryPath);
 
         // Assert
         actualFiles.Should().BeEquivalentTo(expectedFiles, options => options

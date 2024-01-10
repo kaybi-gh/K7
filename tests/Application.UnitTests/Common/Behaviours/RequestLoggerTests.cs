@@ -3,8 +3,6 @@ using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 using MediaServer.Domain.Enums;
 using Microsoft.Extensions.Logging;
-using NSubstitute;
-using NUnit.Framework;
 
 namespace MediaServer.Application.UnitTests.Common.Behaviours;
 

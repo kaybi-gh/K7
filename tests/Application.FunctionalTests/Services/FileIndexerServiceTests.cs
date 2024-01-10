@@ -1,35 +1,32 @@
 ﻿using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Interfaces;
+using MediaServer.Infrastructure.Context.Data;
 using MediaServer.Tests.Helpers.Fixtures;
+using MediaServer.Tests.Helpers.Helpers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MediaServer.Application.FunctionalTests.Services;
 
-public class FileIndexerServiceTests : DatabaseAndFileFixture
+public class FileIndexerServiceTests : FileAndDatabaseFixture
 {
-    private readonly IFileIndexerService _fileIndexerService;
-
-    public FileIndexerServiceTests(IFileIndexerService fileIndexerService)
-    {
-        _fileIndexerService = fileIndexerService;
-    }
-
     [Test]
-    public async Task IndexFiles()
+    public /*async Task*/ void IndexFiles()
     {
         // Arrange
-        CreateTestFile("test.mp3", "content");
-        CreateTestFile("ignored.extension", "content");
+        //var fileIndexerService = scope.ServiceProvider.GetRequiredService<IFileIndexerService>();
+        FileHelper.CreateTestFile("test.mp3", "content");
+        FileHelper.CreateTestFile("ignored.extension", "content");
         var library = new Library()
         {
             MediaType = LibraryMediaType.Music,
-            RootPath = TestDirectoryPath, // "C:\\Users\\Kaybi\\Documents\\Workspace\\media",
+            RootPath = FileHelper.TestDirectoryPath, // "C:\\Users\\Kaybi\\Documents\\Workspace\\media",
             Title = "Title"
         };
         CancellationTokenSource cts = new();
 
         // Act
-        await _fileIndexerService.IndexAsync(library, cts.Token);
+        //await fileIndexerService.IndexAsync(library, cts.Token);
 
         // Assert
         library.Files.Count().Should().Be(1);

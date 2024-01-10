@@ -7,7 +7,6 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="MockQueryable.NSubstitute" />
         <PackageReference Include="NSubstitute" />
         <PackageReference Include="NSubstitute.Analyzers.CSharp">
           <PrivateAssets>all</PrivateAssets>
@@ -26,7 +25,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\Application\Application.csproj" />
         <ProjectReference Include="..\..\src\Infrastructure\Context\Context.csproj" />
-        <ProjectReference Include="..\..\Test.Helpers\Tests.Helpers.csproj" />
+        <ProjectReference Include="..\Tests.Helpers\Tests.Helpers.csproj" />
     </ItemGroup>
 
 </Project>

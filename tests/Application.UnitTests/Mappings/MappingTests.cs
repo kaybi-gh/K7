@@ -2,9 +2,9 @@
 using System.Runtime.CompilerServices;
 using AutoMapper;
 using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
 using MediaServer.Application.Features.Libraries.Queries.GetLibrariesFiles;
 using MediaServer.Domain.Entities;
-using NUnit.Framework;
 
 namespace MediaServer.Application.UnitTests.Mappings;
 
@@ -28,7 +28,8 @@ public class MappingTests
     }
 
     [Test]
-    [TestCase(typeof(Library), typeof(LibraryFilesDto))]
+    [TestCase(typeof(Library), typeof(LibraryDto))]
+    [TestCase(typeof(IndexedFile), typeof(IndexedFileDto))]
     public void ShouldSupportMappingFromSourceToDestination(Type source, Type destination)
     {
         var instance = GetInstanceOf(source);

@@ -1,4 +1,5 @@
 ﻿using System.Data.Common;
+using MediaServer.Application;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Infrastructure.Context.Data;
 using MediaServer.Tests.Helpers.Fixtures;
@@ -9,8 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
-using NSubstitute;
 
 namespace MediaServer.Tests.Helpers;
 
@@ -29,9 +28,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureTestServices(services =>
         {
+            //services.AddApplicationServices();
+
+            var userSubstitute = Substitute.For<IUser>();
+            userSubstitute.Id.Returns(x => GetUserId());
+
             services
                 .RemoveAll<IUser>()
-                .AddTransient(provider => Substitute.For<IUser>().Id.Returns(GetUserId()));
+                .AddTransient(provider => userSubstitute);
 
             services
                 .RemoveAll<DbContextOptions<ApplicationDbContext>>()
