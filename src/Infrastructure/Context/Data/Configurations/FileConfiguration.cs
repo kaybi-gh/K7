@@ -1,5 +1,4 @@
 ﻿using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Medias;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
