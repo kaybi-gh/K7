@@ -7,7 +7,7 @@ public static class FileInfoExtensions
 {
     public static bool IsSupportedFile(this FileInfo fileInfo)
     {
-        return FileExtensions.GetAll().Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase);
+        return FileExtensions.MediaFiles.Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase);
     }
 
     public static string ComputeFileHash(this FileInfo fileInfo)
@@ -26,7 +26,7 @@ public static class FileInfoExtensions
                 IndexedFile indexedFile = new()
                 {
                     LibraryId = libraryId,
-                    Name = fileInfo.Name,
+                    Name = Path.GetFileNameWithoutExtension(fileInfo.Name),
                     Extension = fileInfo.Extension,
                     Path = fileInfo.FullName,
                     ParentDirectory = fileInfo.Directory?.Name,

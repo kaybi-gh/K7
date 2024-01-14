@@ -7,7 +7,7 @@ namespace MediaServer.Application.UnitTests.Helper;
 public class FileInfoHelperTests : FileFixture
 {
     [Test]
-    public void GetAllFilesRecursively_ReturnsAllFiles()
+    public void GetAllFilesRecursively_ShouldReturnAllFiles()
     {
         // Arrange
         List<FileInfo> expectedFiles = FileHelper.CreateTestFiles();

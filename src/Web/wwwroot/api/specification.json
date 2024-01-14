@@ -536,20 +536,6 @@
             "format": "int32"
           },
           "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "rootPath": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "CreateLibraryCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "title": {
             "type": "string"
           },
           "mediaType": {
@@ -575,6 +561,24 @@
           2,
           3
         ]
+      },
+      "CreateLibraryCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/LibraryMediaType"
+          },
+          "rootPath": {
+            "type": "string"
+          },
+          "triggerFileIndexingOnCreation": {
+            "type": "boolean"
+          }
+        }
       },
       "UpdateLibraryCommand": {
         "type": "object",

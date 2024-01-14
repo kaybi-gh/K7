@@ -1,7 +1,7 @@
 ﻿using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
 
-namespace MediaServer.Application.Features.Libraries.Queries.GetLibraries;
+namespace MediaServer.Application.Features.Libraries.Queries.GetLibrary;
 
 public record LibraryDto
 {

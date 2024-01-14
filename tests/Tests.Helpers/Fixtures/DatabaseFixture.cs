@@ -4,6 +4,7 @@ using MediaServer.Infrastructure.Context.Identity;
 using MediaServer.Tests.Helpers.Databases;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ public class DatabaseFixture
     private static ITestDatabase _database;
     private static CustomWebApplicationFactory _factory = null!;
     private static IServiceScopeFactory _scopeFactory = null!;
+    public static IServiceScope Scope = null!;
     private static string? _userId;
 
     [OneTimeSetUp]
@@ -35,20 +37,33 @@ public class DatabaseFixture
     [SetUp]
     public async Task DatabaseFixture_SetUp()
     {
-        await ResetState();
+        Scope = _scopeFactory.CreateScope();
+        try
+        {
+            await _database.ResetAsync();
+        }
+        catch (Exception)
+        {
+        }
+
+        _userId = null;
+    }
+
+    [TearDown]
+    public void DatabaseFixture_TearDown()
+    {
+        Scope.Dispose();
     }
 
     public static async Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<ISender>();
+        var mediator = Scope.ServiceProvider.GetRequiredService<ISender>();
         return await mediator.Send(request);
     }
 
     public static async Task SendAsync(IBaseRequest request)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var mediator = scope.ServiceProvider.GetRequiredService<ISender>();
+        var mediator = Scope.ServiceProvider.GetRequiredService<ISender>();
         await mediator.Send(request);
     }
 
@@ -69,14 +84,13 @@ public class DatabaseFixture
 
     private static async Task<string> RunAsUserAsync(string userName, string password, string[] roles)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var userManager = Scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = new ApplicationUser { UserName = userName, Email = userName };
         var result = await userManager.CreateAsync(user, password);
 
         if (roles.Any())
         {
-            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var roleManager = Scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
             foreach (var role in roles)
             {
@@ -96,40 +110,24 @@ public class DatabaseFixture
         throw new Exception($"Unable to create {userName}.{Environment.NewLine}{errors}");
     }
 
-    private static async Task ResetState()
-    {
-        try
-        {
-            await _database.ResetAsync();
-        }
-        catch (Exception)
-        {
-        }
-
-        _userId = null;
-    }
-
     public static async Task<TEntity?> FindAsync<TEntity>(params object[] keyValues)
         where TEntity : class
     {
-        using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var context = Scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         return await context.FindAsync<TEntity>(keyValues);
     }
 
     public static async Task AddAsync<TEntity>(TEntity entity)
         where TEntity : class
     {
-        using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var context = Scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         context.Add(entity);
         await context.SaveChangesAsync();
     }
 
     public static async Task<int> CountAsync<TEntity>() where TEntity : class
     {
-        using var scope = _scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var context = Scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         return await context.Set<TEntity>().CountAsync();
     }
 }

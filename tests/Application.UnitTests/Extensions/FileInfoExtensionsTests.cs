@@ -13,7 +13,7 @@ public class FileInfoExtensionsTests : FileFixture
     [TestCase("", false)]
     [TestCase(null, false)]
     [TestCase(".mp3", true)]
-    public void IsSupportedFile_shouldWork(string? extension, bool expectedResult)
+    public void ShouldReturnCorrectIsSupportedFile(string? extension, bool expectedResult)
     {
         // Arrange
         var fileInfo = FileHelper.CreateTestFile($"file{extension}", "content");
@@ -26,7 +26,7 @@ public class FileInfoExtensionsTests : FileFixture
     }
 
     [Test]
-    public void ComputeFileHash_shouldWork()
+    public void ShouldComputeFileHash()
     {
         // Arrange
         string content = "content";
@@ -43,7 +43,7 @@ public class FileInfoExtensionsTests : FileFixture
     }
 
     [Test]
-    public void ToIndexedFile_shouldWork()
+    public void ShouldConvertToIndexedFile()
     {
         // Arrange
         var libraryId = 1;
@@ -51,9 +51,9 @@ public class FileInfoExtensionsTests : FileFixture
         IndexedFile expectedIndexedFile = new()
         {
             LibraryId = libraryId,
-            Name = fileInfo.Name,
-            Extension = fileInfo.Extension,
-            Path = fileInfo.FullName,
+            Name = "file",
+            Extension = ".mkv",
+            Path = Path.Combine(FileHelper.TestDirectoryPath, "file.mkv"),
             ParentDirectory = fileInfo.Directory?.Name,
             Hash = fileInfo.ComputeFileHash(),
             Size = fileInfo.Length
@@ -67,7 +67,7 @@ public class FileInfoExtensionsTests : FileFixture
     }
 
     [Test]
-    public void ToIndexedFile_shouldReturnNull()
+    public void ShouldNotConvertToIndexedFile()
     {
         // Arrange
         var libraryId = 1;

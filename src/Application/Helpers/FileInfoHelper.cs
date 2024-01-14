@@ -4,29 +4,18 @@ public static class FileInfoHelper
     public static List<FileInfo> GetAllFileInfosRecursively(string rootDirectory)
     {
         List<FileInfo> fileInfos = [];
-        Stack<string> directoriesToProcess = new();
-        directoriesToProcess.Push(rootDirectory);
 
-        while (directoriesToProcess.Count > 0)
+        try
         {
-            string currentDirectory = directoriesToProcess.Pop();
-
-            try
+            var allFiles = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
+            foreach (string filePath in allFiles)
             {
-                foreach (string filePath in Directory.GetFiles(currentDirectory))
-                {
-                    fileInfos.Add(new FileInfo(filePath));
-                }
-
-                foreach (string subDirectory in Directory.GetDirectories(currentDirectory))
-                {
-                    directoriesToProcess.Push(subDirectory);
-                }
+                fileInfos.Add(new FileInfo(filePath));
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error retrieving files in directory {currentDirectory}: {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving files in directory {rootDirectory}: {ex.Message}");
         }
 
         return fileInfos;

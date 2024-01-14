@@ -1,4 +1,6 @@
-﻿namespace MediaServer.Tests.Helpers.Helpers;
+﻿using System.IO;
+
+namespace MediaServer.Tests.Helpers.Helpers;
 
 public static class FileHelper
 {
@@ -43,6 +45,11 @@ public static class FileHelper
     public static FileInfo CreateTestFile(string relativePath, string content)
     {
         var path = Path.Combine(TestDirectoryPath, relativePath);
+        if (path.Contains("\\"))
+        {
+            var directories = path.Split("\\");
+            Directory.CreateDirectory(Path.Combine(directories.Take(directories.Count() - 1).ToArray()));
+        }
         return CreateFile(path, content);
     }
 

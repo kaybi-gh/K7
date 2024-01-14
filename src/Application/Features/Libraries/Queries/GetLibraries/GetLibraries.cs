@@ -21,7 +21,6 @@ public class GetLibrariesQueryHandler : IRequestHandler<GetLibrariesQuery, IEnum
     {
         return await _context.Libraries
             .AsNoTracking()
-            .Include(l => l.Files)
             .ProjectTo<LibraryDto>(_mapper.ConfigurationProvider)
             .OrderBy(t => t.Title)
             .ToListAsync(cancellationToken);

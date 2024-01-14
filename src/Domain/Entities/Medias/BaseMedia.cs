@@ -2,10 +2,17 @@
 
 public abstract class BaseMedia : BaseAuditableEntity
 {
+    protected BaseMedia(MediaType type)
+    {
+        Type = type;
+    }
+
+    public MediaType Type { get; protected set; }
+
     public required int LibraryId { get; set; }
-    public required MediaType Type { get; set; }
-    public required Library MediaLibrary { get; set; }
-    public virtual IEnumerable<IndexedFile> MediaFiles { get; set; } = [];
+    public virtual required Library Library { get; set; }
+    public virtual ICollection<IndexedFile> IndexedFiles { get; set; } = [];
 
     //public virtual IList<BaseMetadata> Metadatas { get; set; } = null!;
+
 }

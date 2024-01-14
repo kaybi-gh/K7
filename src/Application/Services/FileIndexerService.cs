@@ -2,6 +2,7 @@
 using MediaServer.Application.Extensions;
 using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
+using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
@@ -32,13 +33,22 @@ public class FileIndexerService : IFileIndexerService
                 }
             }
 
-            var (unchangedFiles, addedFiles, removedFiles) = library.Files.CompareTo(indexedFiles);
+            var (unchangedFiles, addedFiles, removedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
 
             if (addedFiles.Any())
             {
                 if (library.MediaType == LibraryMediaType.Movie)
                 {
-
+                    List<Movie> addedMovies = [];
+                    foreach (var addedFile in addedFiles)
+                    {
+                        if (addedFile.TryIdentifyMovie(library, out Movie? movie))
+                        {
+                            addedMovies.Add(movie);
+                            // TODO - Metadata
+                        }
+                    }
+                    _context.Medias.AddRange(addedMovies);
                 }
                 if (library.MediaType == LibraryMediaType.Music)
                 {
@@ -46,7 +56,11 @@ public class FileIndexerService : IFileIndexerService
 
                     foreach (var parentDirectory in filesGroupedByParentDirectory)
                     {
-
+                        var addedFilesInSameDirectory = parentDirectory.ToList();
+                        foreach (var addedFile in addedFilesInSameDirectory)
+                        {
+                            addedFile.TryIdentifyMusicTrack(library, addedFilesInSameDirectory);
+                        }
                     }
                 }
                 if (library.MediaType == LibraryMediaType.Serie)
@@ -55,16 +69,15 @@ public class FileIndexerService : IFileIndexerService
 
                     foreach (var parentDirectory in filesGroupedByParentDirectory)
                     {
-
+                        //addedFile.TryIdentifySerieEpisode(library);
                     }
                 }
 
-                await _context.IndexedFiles.AddRangeAsync(indexedFiles, cancellationToken);
+                await _context.IndexedFiles.AddRangeAsync(addedFiles, cancellationToken);
                 foreach (var file in addedFiles)
                 {
                     file.AddDomainEvent(new IndexedFileCreatedEvent(file));
                 }
-                await _context.SaveChangesAsync(cancellationToken);
             }
 
             if (removedFiles.Any())
@@ -74,10 +87,10 @@ public class FileIndexerService : IFileIndexerService
                 {
                     file.AddDomainEvent(new IndexedFileDeletedEvent(file));
                 }
-                await _context.SaveChangesAsync(cancellationToken);
             }
 
-            library.Files = indexedFiles;
+            library.IndexedFiles = indexedFiles;
+            await _context.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {

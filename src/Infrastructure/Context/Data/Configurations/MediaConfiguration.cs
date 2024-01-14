@@ -18,5 +18,12 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasValue<Serie>(MediaType.Serie)
             .HasValue<SerieEpisode>(MediaType.SerieEpisode)
             .HasValue<SerieSeason>(MediaType.SerieSeason);
+
+        builder.HasMany(m => m.IndexedFiles)
+               .WithMany();
+
+        builder.HasOne(m => m.Library)
+               .WithMany(l => l.Medias)
+               .HasForeignKey(m => m.LibraryId);
     }
 }

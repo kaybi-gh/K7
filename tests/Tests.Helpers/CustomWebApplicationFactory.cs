@@ -1,6 +1,7 @@
 ﻿using System.Data.Common;
-using MediaServer.Application;
 using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Services;
+using MediaServer.Domain.Interfaces;
 using MediaServer.Infrastructure.Context.Data;
 using MediaServer.Tests.Helpers.Fixtures;
 using Microsoft.AspNetCore.Hosting;
@@ -28,8 +29,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureTestServices(services =>
         {
-            //services.AddApplicationServices();
-
             var userSubstitute = Substitute.For<IUser>();
             userSubstitute.Id.Returns(x => GetUserId());
 
@@ -39,7 +38,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             services
                 .RemoveAll<DbContextOptions<ApplicationDbContext>>()
-                .AddDbContext<ApplicationDbContext>((sp, options) =>
+                .AddDbContext<IApplicationDbContext, ApplicationDbContext>((sp, options) =>
                 {
                     options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
                     options.UseNpgsql(_connection);

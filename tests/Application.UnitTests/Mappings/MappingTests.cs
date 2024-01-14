@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using AutoMapper;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
-using MediaServer.Application.Features.Libraries.Queries.GetLibrariesFiles;
+using MediaServer.Application.Features.Libraries.Queries.GetLibrariesIndexedFiles;
 using MediaServer.Domain.Entities;
 
 namespace MediaServer.Application.UnitTests.Mappings;

@@ -2,7 +2,7 @@
 using MediaServer.Application.Common.Mappings;
 using MediaServer.Application.Common.Models;
 
-namespace MediaServer.Application.Features.Libraries.Queries.GetLibrariesFiles;
+namespace MediaServer.Application.Features.Libraries.Queries.GetLibrariesIndexedFiles;
 
 public record GetLibraryIndexedFilesWithPaginationQuery : IRequest<PaginatedList<IndexedFileDto>>
 {

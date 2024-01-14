@@ -1,6 +1,6 @@
 ﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
-using MediaServer.Application.Features.Libraries.Queries.GetLibrariesFiles;
+using MediaServer.Application.Features.Libraries.Queries.GetLibrariesIndexedFiles;
 using MediaServer.Domain.Enums;
 using MediaServer.Tests.Helpers.Fixtures;
 using MediaServer.Tests.Helpers.Helpers;

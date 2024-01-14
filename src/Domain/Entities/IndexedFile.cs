@@ -1,4 +1,6 @@
-﻿namespace MediaServer.Domain.Entities;
+﻿using MediaServer.Domain.Entities.Medias;
+
+namespace MediaServer.Domain.Entities;
 public class IndexedFile : BaseAuditableEntity
 {
     public required int LibraryId { get; set; }
