@@ -1,0 +1,82 @@
+﻿@implements IDisposable
+@inject SidebarService SidebarService
+
+<MudHidden IsHiddenChanged="ToggleDrawerVariant"/>
+<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="@_variant">
+    <MudStack Class="flex-grow-1" AlignItems="AlignItems.Center">
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
+                                    Icon="@Icons.Material.Filled.Menu" Color="@Color.Inherit" Title="Off"
+                                    ToggledIcon="@Icons.Material.Filled.Close" ToggledColor="@Color.Inherit" ToggledTitle="On" />
+        </MudHidden>
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">My App</MudText>
+        </MudDrawerHeader>
+        <MudItem Style="width: 100%;" Class="px-4">
+            <MudTextField Class="sidebar-search-bar" DisableUnderLine="true" Label="Search" DebounceInterval="500" OnDebounceIntervalElapsed="HandleIntervalElapsed" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
+        </MudItem>
+        <MudNavMenu Style="width: 100%;">
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Theaters">Movies</MudNavLink>
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Tv">Series</MudNavLink>
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.MusicNote">Music</MudNavLink>
+        </MudNavMenu>
+        <MudSpacer/>
+        <MudNavMenu Style="width: 100%;">
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
+        </MudNavMenu>
+
+        <MudHidden Breakpoint="Breakpoint.SmAndUp">
+            <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="px-8 py-4 ma-4">
+                <MudAvatar Color="Color.Warning">K</MudAvatar>
+            </MudStack>
+        </MudHidden>
+
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudPaper Class="px-8 py-4 ma-4">
+                <MudStack Row="true">
+                    <MudAvatar Color="Color.Warning">K</MudAvatar>
+                    <MudStack Justify="Justify.Center" Spacing="0">
+                        <MudText Typo="Typo.body1">Kaybi</MudText>
+                        <MudText Typo="Typo.body2">kaybi@cool.fr</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudHidden>
+    </MudStack>
+</MudDrawer>
+
+@code {
+    private DrawerVariant _variant = DrawerVariant.Mini;
+    string _debouncedText = "";
+
+    protected override void OnInitialized()
+    {
+        SidebarService.IsOpenOnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        SidebarService.IsOpenOnChange -= StateHasChanged;
+    }
+
+    private void ToggleDrawerVariant(bool isBreakpointXs)
+    {
+        if (isBreakpointXs)
+        {
+            _variant = DrawerVariant.Temporary;
+            StateHasChanged();
+            SidebarService.IsOpen = false;
+        }
+        else
+        {
+            _variant = DrawerVariant.Mini;
+        }
+        StateHasChanged();
+    }
+
+    void HandleIntervalElapsed(string debouncedText)
+    {
+        // at this stage, interval has elapsed
+    }
+}

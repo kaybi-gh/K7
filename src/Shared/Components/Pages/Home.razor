@@ -1,0 +1,31 @@
+@page "/"
+@inject ThemeService ThemeService
+<PageTitle>Home</PageTitle>
+
+<MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="Dark mode" />
+<MudSelect T="ThemeWrapper" Label="Theme" @bind-Value="@ThemeService.ThemeWrapper">
+    @foreach (var themeWrapper in Themes.Collection)
+    {
+        <MudSelectItem Value="@themeWrapper">@themeWrapper?.Name</MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ThemeService.ThemeOnChange += StateHasChanged;
+        ThemeService.DarkModeEnabledOnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeService.ThemeOnChange -= StateHasChanged;
+        ThemeService.DarkModeEnabledOnChange -= StateHasChanged;
+    }
+
+    private void ToggleDrawerVariant()
+    {
+        ThemeService.ToggleDarkMode();
+        StateHasChanged();
+    }
+}

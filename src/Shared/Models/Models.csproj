@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>MediaClient.Shared.Models</RootNamespace>
+    <AssemblyName>MediaClient.Shared.Models</AssemblyName>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MudBlazor" Version="6.15.0" />
+	</ItemGroup>
+	
+</Project>

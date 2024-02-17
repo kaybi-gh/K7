@@ -1,0 +1,20 @@
+﻿@implements IDisposable
+@inject SidebarService SidebarService
+
+<MudAppBar Color="Color.Primary" Dense="true">
+    <MudIconButton Icon="@(SidebarService.IsOpen ? @Icons.Material.Filled.Close : @Icons.Material.Filled.Menu)" Color="Color.Inherit" Edge="Edge.Start" OnClick="@SidebarService.ToggleIsOpen" />
+    <MudSpacer />
+    <MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" />
+</MudAppBar>
+
+@code {
+    protected override void OnInitialized()
+    {
+        SidebarService.IsOpenOnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        SidebarService.IsOpenOnChange -= StateHasChanged;
+    }
+}

@@ -1,0 +1,30 @@
+﻿@inherits LayoutComponentBase
+@inject ThemeService ThemeService
+
+<MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled/>
+
+<MudLayout>
+    <MudHidden Breakpoint="Breakpoint.SmAndUp">
+        <Header />
+    </MudHidden>
+    <Sidebar/>
+    <MudMainContent>
+        <MudContainer>
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ThemeService.ThemeOnChange += StateHasChanged;
+        ThemeService.DarkModeEnabledOnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeService.ThemeOnChange -= StateHasChanged;
+        ThemeService.DarkModeEnabledOnChange -= StateHasChanged;
+    }
+}
