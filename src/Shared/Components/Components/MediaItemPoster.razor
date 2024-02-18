@@ -1,5 +1,43 @@
-﻿<h3>MediaItemPoster</h3>
+﻿<MudPaper Elevation="0" Class="ma-2">
+    <div class="media-item-container">
+        <MudImage Src="@Picture" Alt="Tata" Class="rounded-lg" Width="200" Fluid="true" ObjectFit="ObjectFit.Contain" />
+        @if (!ProgressBarIsHidden())
+        {
+            <div class="media-item-progress-bar">
+                <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Progress" />
+            </div>
+        }
+        @* <MudHidden Style="position:absolute; bottom:0;" IsHidden="ProgressBarIsHidden()">
+            
+        </MudHidden> *@
+
+        <div class="media-item-overlay">
+            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" />
+        </div>
+    </div>
+
+    <MudText Typo="Typo.h5">@Title</MudText>
+    <MudText Typo="Typo.body2">@AdditionalInformations</MudText>
+
+</MudPaper>
 
 @code {
+    [Parameter]
+    public string Title { get; set; } = "";
 
+    [Parameter]
+    public string Picture { get; set; } = "";
+
+    [Parameter]
+    public string AdditionalInformations { get; set; } = "";
+
+    [Parameter]
+    public double Progress { get; set; } = 0;
+
+
+    private bool ProgressBarIsHidden()
+    {
+        Console.WriteLine($"Progress {Progress}");
+        return Progress == 0;
+    }
 }
