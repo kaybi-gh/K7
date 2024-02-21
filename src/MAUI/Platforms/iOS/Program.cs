@@ -1,7 +1,6 @@
-﻿using ObjCRuntime;
-using UIKit;
+﻿using UIKit;
 
-namespace MAUI;
+namespace MediaClient.MAUI;
 
 public class Program
 {

@@ -1,0 +1,27 @@
+@page "/library/{id}"
+@inject ThemeService ThemeService
+<PageTitle>Library @Id</PageTitle>
+
+<MudGrid>
+    <MudItem>
+        <MediaItemPoster Title="Jujutsu Kaizen"
+                         Picture="https://image.tmdb.org/t/p/original/fHpKWq9ayzSk8nSwqRuaAUemRKh.jpg"
+                         AdditionalInformations="S1E1 - Ryomen Sunkuna" />
+    </MudItem>
+
+    <MudItem>
+        <MediaItemPoster Title="Jujutsu Kaizen"
+                         Picture="https://image.tmdb.org/t/p/original/fHpKWq9ayzSk8nSwqRuaAUemRKh.jpg"
+                         AdditionalInformations="S1E2 - Episode 2"
+                         Progress="87"/>
+    </MudItem>
+
+    <MudItem>
+        <MediaItemPoster Title="Code 8 Part II"
+                         Picture="https://image.tmdb.org/t/p/w600_and_h900_bestv2/hhvMTxlTZtnCOe7YFhod9uz3m37.jpg"
+                         AdditionalInformations="2024"
+                         Progress="27"/>
+    </MudItem>
+</MudGrid>
+
+

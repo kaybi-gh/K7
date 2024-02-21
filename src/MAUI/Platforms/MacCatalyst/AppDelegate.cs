@@ -1,6 +1,6 @@
 ﻿using Foundation;
 
-namespace MAUI;
+namespace MediaClient.MAUI;
 
 [Register("AppDelegate")]
 public class AppDelegate : MauiUIApplicationDelegate

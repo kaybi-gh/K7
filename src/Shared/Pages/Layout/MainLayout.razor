@@ -1,0 +1,15 @@
+﻿@inherits LayoutComponentBase
+@inject ThemeService ThemeService
+
+<MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled/>
+
+<MudLayout>
+    <MudHidden Breakpoint="Breakpoint.SmAndUp">
+        <Header />
+    </MudHidden>
+    <Sidebar/>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+

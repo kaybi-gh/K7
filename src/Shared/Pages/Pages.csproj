@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-	<RootNamespace>MediaClient.Shared.Components</RootNamespace>
-	<AssemblyName>MediaClient.Shared.Components</AssemblyName>
+    <RootNamespace>MediaClient.Shared.Pages</RootNamespace>
+    <AssemblyName>MediaClient.Shared.Pages</AssemblyName>
   </PropertyGroup>
 	
   <PropertyGroup>
@@ -10,23 +10,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-	
+
   <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.2" />
-    <PackageReference Include="MudBlazor" Version="6.15.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Components\Components.csproj" />
     <ProjectReference Include="..\Models\Models.csproj" />
     <ProjectReference Include="..\Services\Services.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

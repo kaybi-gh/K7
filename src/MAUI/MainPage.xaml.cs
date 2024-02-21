@@ -1,4 +1,4 @@
-﻿namespace MAUI;
+﻿namespace MediaClient.MAUI;
 
 public partial class MainPage : ContentPage
 {

@@ -6,17 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
 	
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
-    <link href="_content/MediaClient.Shared.Components/MediaClient.Shared.Components.bundle.scp.css" rel="stylesheet">
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-	
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="_content/MediaClient.Shared.Components/MediaClient.Shared.Components.bundle.scp.css" />
+    <link rel="stylesheet" href="_content/MediaClient.Shared.Pages/MediaClient.Shared.Pages.bundle.scp.css" />
+    <link rel="stylesheet" href="_content/MudBlazor/MudBlazor.min.css" />
     <link rel="stylesheet" href="app.css" />
+
+    <link rel="icon" type="image/png" href="_content/MediaClient.Shared.Pages/assets/favicon.png" />
     <HeadOutlet @rendermode="@InteractiveAuto" />
 </head>
 
 <body>
     <Routes @rendermode="@InteractiveAuto" />
     <script src="_framework/blazor.web.js"></script>
+    <script src="_content/MediaClient.Shared.Components/Components/MediaItemHorizontalStack.razor.js"></script>
 	<script src="_content/MudBlazor/MudBlazor.min.js"></script>
 </body>
 

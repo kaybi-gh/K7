@@ -1,0 +1,11 @@
+.container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+    .container::-webkit-scrollbar {
+        display: none;
+    }

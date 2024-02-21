@@ -1,5 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
-
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+	
+  <PropertyGroup>
+    <RootNamespace>MediaClient.Web.Client</RootNamespace>
+    <AssemblyName>MediaClient.Web.Client</AssemblyName>
+  </PropertyGroup>
+	
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Components\Components.csproj" />
     <ProjectReference Include="..\..\Shared\Models\Models.csproj" />
+    <ProjectReference Include="..\..\Shared\Pages\Pages.csproj" />
     <ProjectReference Include="..\..\Shared\Services\Services.csproj" />
   </ItemGroup>
 

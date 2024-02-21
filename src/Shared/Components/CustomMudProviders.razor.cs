@@ -1,10 +1,9 @@
-﻿@inject ISnackbar Snackbar
+using MudBlazor;
 
-<MudPopoverProvider></MudPopoverProvider>
-<MudDialogProvider />
-<MudSnackbarProvider />
+namespace MediaClient.Shared.Components;
 
-@code {
+public partial class CustomMudProviders
+{
     protected override void OnInitialized()
     {
         Snackbar.Clear();
