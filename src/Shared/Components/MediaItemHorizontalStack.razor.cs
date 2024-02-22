@@ -16,14 +16,4 @@ public partial class MediaItemHorizontalStack
 
     [Parameter]
     public int Limit { get; set; } = 10;
-
-    private async Task ScrollLeft()
-    {
-        await JSRuntime.InvokeVoidAsync("scrollHorizontal", id, -220);
-    }
-
-    private async Task ScrollRight()
-    {
-        await JSRuntime.InvokeVoidAsync("scrollHorizontal", id, 220);
-    }
 }

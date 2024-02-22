@@ -27,7 +27,7 @@
         <Nullable>enable</Nullable>
 
         <!-- Display name -->
-        <ApplicationTitle>MAUI</ApplicationTitle>
+        <ApplicationTitle>MediaClient</ApplicationTitle>
 
         <!-- App Identifier -->
         <ApplicationId>com.mediaclient.maui</ApplicationId>
@@ -69,15 +69,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="..\Shared\Components\wwwroot\assets\favicon.png" Link="wwwroot\favicon.png" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.7" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.7" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.7" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
-        <PackageReference Include="MudBlazor" Version="6.15.0" />
+        <PackageReference Include="MudBlazor" Version="6.16.0" />
     </ItemGroup>
 
     <ItemGroup>
