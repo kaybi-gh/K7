@@ -10,14 +10,14 @@ namespace MediaClient.Shared.Services
             {
                 Id = "1",
                 Title = "Jujutsu Kaizen",
-                Picture = "https://image.tmdb.org/t/p/original/fHpKWq9ayzSk8nSwqRuaAUemRKh.jpg",
+                Picture = "https://artworks.thetvdb.com/banners/series/377543/posters/5fdf40a06a554.jpg",
                 AdditionalInformations = "S1E1 - Ryomen Sunkuna"
             },
             new()
             {
                 Id = "2",
                 Title = "Jujutsu Kaizen",
-                Picture = "https://image.tmdb.org/t/p/original/fHpKWq9ayzSk8nSwqRuaAUemRKh.jpg",
+                Picture = "https://artworks.thetvdb.com/banners/series/377543/posters/5fdf40a06a554.jpgck",
                 AdditionalInformations = "S1E2 - Episode 2",
                 Progress = 87,
                 Watched = false
