@@ -1,0 +1,13 @@
+@page "/library/{id}"
+<PageTitle>Library @Id</PageTitle>
+
+<MudGrid>
+    @foreach (var item in MediaItems)
+    {
+        <MudItem>
+            <MediaItemPoster MediaItem="item" />
+        </MudItem>
+    }
+</MudGrid>
+
+

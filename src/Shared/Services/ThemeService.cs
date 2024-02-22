@@ -9,7 +9,7 @@ public class ThemeService
     private ThemeWrapper? _themeWrapper;
     public ThemeWrapper ThemeWrapper
     {
-        get => _themeWrapper ?? Themes.MyTheme;
+        get => _themeWrapper ?? Themes.Plex;
         set
         {
             _themeWrapper = value;
@@ -21,7 +21,7 @@ public class ThemeService
     private bool? _darkModeEnabled;
     public bool DarkModeEnabled
     {
-        get => _darkModeEnabled ?? false;
+        get => _darkModeEnabled ?? true;
         set
         {
             _darkModeEnabled = value;

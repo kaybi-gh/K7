@@ -2,7 +2,7 @@ using Microsoft.Maui;
 using Microsoft.Maui.Hosting;
 using System;
 
-namespace MAUI
+namespace MediaClient.MAUI
 {
     internal class Program : MauiApplication
     {

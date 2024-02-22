@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
 
-namespace MAUI;
+namespace MediaClient.MAUI;
 
 public static class MauiProgram
 {

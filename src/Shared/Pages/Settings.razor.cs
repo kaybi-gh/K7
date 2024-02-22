@@ -1,16 +1,9 @@
-@page "/"
-@inject ThemeService ThemeService
-<PageTitle>Home</PageTitle>
+using MediaClient.Shared.Services;
 
-<MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="Dark mode" />
-<MudSelect T="ThemeWrapper" Label="Theme" @bind-Value="@ThemeService.ThemeWrapper">
-    @foreach (var themeWrapper in Themes.Collection)
-    {
-        <MudSelectItem Value="@themeWrapper">@themeWrapper?.Name</MudSelectItem>
-    }
-</MudSelect>
+namespace MediaClient.Shared.Pages;
 
-@code {
+public partial class Settings
+{
     protected override void OnInitialized()
     {
         ThemeService.ThemeOnChange += StateHasChanged;

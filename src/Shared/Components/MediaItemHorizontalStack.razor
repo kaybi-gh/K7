@@ -1,0 +1,21 @@
+﻿@inject IJSRuntime JSRuntime
+
+<MudStack Class="mx-4">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h6">@Title</MudText>
+        <div>
+            <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Class="py-0 pr-3" />
+            <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Class="py-0 pl-3" />
+        </div>
+    </MudStack>
+    <div id="@id" class="container">
+        <MudStack Spacing="5" Row="true">
+            @foreach (var item in MediaItems)
+            {
+                <MediaItemPoster MediaItem="item" />
+            }
+        </MudStack>
+    </div>
+</MudStack>
+
+

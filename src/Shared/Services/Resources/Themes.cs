@@ -8,7 +8,7 @@ public static class Themes
 {
     public static readonly ThemeWrapper MudBlazorDefaultTheme = new("MudBlazor default theme", new());
 
-    public static readonly ThemeWrapper MyTheme = new("My theme", new()
+    public static readonly ThemeWrapper Plex = new("Plex", new()
     {
         Palette = new PaletteLight()
         {
@@ -20,15 +20,21 @@ public static class Themes
         },
         PaletteDark = new PaletteDark()
         {
-            Primary = "#ffffff",
+            Primary = "#e5a00d",
             Secondary = "#ffffff",
-            DarkContrastText = "#ffffff",
+            //Background = "#1d1d1d",
+            Background = "#282a2d",
+            DrawerText = "#ffffff",
+            DrawerBackground = "#0c0c0c",
+            Surface = "#282a2d",
+            Success = "#4db288",
+            //DarkContrastText = "#ffffff",
         }
     });
 
     public static readonly FrozenSet<ThemeWrapper> Collection = new List<ThemeWrapper>
     {
         MudBlazorDefaultTheme,
-        MyTheme
+        Plex
     }.ToFrozenSet();
 }

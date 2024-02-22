@@ -1,7 +1,8 @@
 using MudBlazor.Services;
-using Web.Components;
+using MediaClient.Web.Components;
 using MediaClient.Shared.Services;
-using Web.Client;
+using MediaClient.Shared.Pages.Utils;
+using MediaClient.Shared.Components.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,8 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Web.Client._Imports).Assembly)
-    .AddAdditionalAssemblies(typeof(MediaClient.Shared.Components.ISharedComponentsPointer).Assembly);
+    .AddAdditionalAssemblies(typeof(MediaClient.Web.Client._Imports).Assembly)
+    .AddAdditionalAssemblies(typeof(ISharedComponentsPointer).Assembly)
+    .AddAdditionalAssemblies(typeof(ISharedPagesPointer).Assembly);
 
 app.Run();
