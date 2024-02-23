@@ -1,4 +1,6 @@
-﻿namespace MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities.Ratings;
+
+namespace MediaServer.Domain.Entities.Medias;
 
 public abstract class BaseMedia : BaseAuditableEntity
 {
@@ -12,7 +14,5 @@ public abstract class BaseMedia : BaseAuditableEntity
     public required int LibraryId { get; set; }
     public virtual required Library Library { get; set; }
     public virtual ICollection<IndexedFile> IndexedFiles { get; set; } = [];
-
-    //public virtual IList<BaseMetadata> Metadatas { get; set; } = null!;
-
+    public virtual ICollection<BaseRating> Ratings { get; set; } = [];
 }

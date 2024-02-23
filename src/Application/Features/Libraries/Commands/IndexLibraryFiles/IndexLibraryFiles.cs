@@ -19,7 +19,7 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
     public async Task Handle(IndexLibraryFilesCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Libraries
-            .FindAsync(new object[] { request.Id }, cancellationToken);
+            .FindAsync([request.Id], cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
         await _fileIndexerService.IndexAsync(entity, cancellationToken);

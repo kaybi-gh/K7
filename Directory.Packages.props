@@ -40,6 +40,7 @@
     <PackageVersion Include="Respawn" Version="6.2.0" />
     <PackageVersion Include="Testcontainers.MsSql" Version="3.6.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="3.7.0" />
+    <PackageVersion Include="TMDbLib" Version="2.1.0" />
     <PackageVersion Include="ZymLabs.NSwag.FluentValidation.AspNetCore" Version="0.6.2" />
   </ItemGroup>
 </Project>

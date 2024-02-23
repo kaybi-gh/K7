@@ -1,4 +1,6 @@
-﻿namespace MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities.Metadatas;
+
+namespace MediaServer.Domain.Entities.Medias;
 public class SerieEpisode : BaseMedia
 {
     public SerieEpisode() : base(MediaType.Serie) { }
@@ -7,6 +9,8 @@ public class SerieEpisode : BaseMedia
     public string? Title { get; set; }
     public int? SerieId { get; set; }
     public int? SeasonId { get; set; }
-    public Serie? Serie { get; set; }
-    public SerieSeason? Season { get; set; }
+
+    public virtual Serie? Serie { get; set; }
+    public virtual SerieSeason? Season { get; set; }
+    public virtual SerieMetadata? Metadata { get; set; }
 }

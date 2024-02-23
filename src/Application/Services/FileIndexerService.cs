@@ -45,12 +45,11 @@ public class FileIndexerService : IFileIndexerService
                         if (addedFile.TryIdentifyMovie(library, out Movie? movie))
                         {
                             addedMovies.Add(movie);
-                            // TODO - Metadata
                         }
                     }
                     _context.Medias.AddRange(addedMovies);
                 }
-                if (library.MediaType == LibraryMediaType.Music)
+                else if (library.MediaType == LibraryMediaType.Music)
                 {
                     var filesGroupedByParentDirectory = addedFiles.GroupBy(f => f.ParentDirectory);
 
@@ -63,7 +62,7 @@ public class FileIndexerService : IFileIndexerService
                         }
                     }
                 }
-                if (library.MediaType == LibraryMediaType.Serie)
+                else if (library.MediaType == LibraryMediaType.Serie)
                 {
                     var filesGroupedByParentDirectory = addedFiles.GroupBy(f => f.ParentDirectory);
 
