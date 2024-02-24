@@ -1,7 +1,7 @@
 ﻿<MudPaper Elevation="0">
     @* <MudBadge Origin="Origin.TopRight" Overlap="true" Bordered="true" Color="Color.Success" Icon="@Icons.Material.Filled.Check"> *@
-        <div class="media-item-container" Href="@("/mediaItem/" + @MediaItem.Id)">
-            <MudImage Src="@MediaItem.Picture" Alt="Tata" Class="rounded-lg" Fluid="true" ObjectFit="ObjectFit.Contain" />
+        <div class="media-item-container">
+            <MudImage Src="@MediaItem.PosterPicture" Alt="Tata" Class="rounded-lg" Fluid="true" ObjectFit="ObjectFit.Contain" />
 
             @if (MediaItem.Watched)
             {
@@ -48,7 +48,7 @@
 
     <div class="media-item-text">
         <MudStack AlignItems="AlignItems.Center" Spacing="0">
-            <MudLink Style="text-overflow: ellipsis;white-space: nowrap;overflow: hidden;max-width: 200px;" Typo="Typo.body2" Href="@("/media-item/" + @MediaItem.Id)">@MediaItem.Title</MudLink>
+            <MudLink Style="text-overflow: ellipsis;white-space: nowrap;overflow: hidden;max-width: 200px;" Typo="Typo.body2" Href="@("/movies/" + @MediaItem.Id)">@MediaItem.Title</MudLink>
             <MudText Style="text-overflow: ellipsis;white-space: nowrap;overflow: hidden;max-width: 200px;" Typo="Typo.caption">@MediaItem.AdditionalInformations</MudText>
         </MudStack>
     </div>
