@@ -18,7 +18,7 @@ namespace MediaClient.Shared.Services
             {
                 Id = "2",
                 Title = "Jujutsu Kaizen",
-                PosterPicture = "https://artworks.thetvdb.com/banners/series/377543/posters/5fdf40a06a554.jpgck",
+                PosterPicture = "https://artworks.thetvdb.com/banners/series/377543/posters/5fdf40a06a554.jpg",
                 AdditionalInformations = "S1E2 - Episode 2",
                 Progress = 87,
                 Watched = false

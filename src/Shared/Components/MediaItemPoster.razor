@@ -48,8 +48,8 @@
 
     <div class="media-item-text">
         <MudStack AlignItems="AlignItems.Center" Spacing="0">
-            <MudLink Style="text-overflow: ellipsis;white-space: nowrap;overflow: hidden;max-width: 200px;" Typo="Typo.body2" Href="@("/movies/" + @MediaItem.Id)">@MediaItem.Title</MudLink>
-            <MudText Style="text-overflow: ellipsis;white-space: nowrap;overflow: hidden;max-width: 200px;" Typo="Typo.caption">@MediaItem.AdditionalInformations</MudText>
+            <MudLink Class="media-item-text" Typo="Typo.body2" Href="@("/movies/" + @MediaItem.Id)">@MediaItem.Title</MudLink>
+            <MudText Class="media-item-text" Typo="Typo.caption">@MediaItem.AdditionalInformations</MudText>
         </MudStack>
     </div>
 
