@@ -1,0 +1,13 @@
+::deep .media-poster-container,
+.media-poster-container {
+    width: 200px;
+    display: block;
+    max-width: 100%;
+}
+
+@media(max-width:600px) {
+    ::deep .media-poster-container,
+    .media-poster-container {
+        width: 150px;
+    }
+}

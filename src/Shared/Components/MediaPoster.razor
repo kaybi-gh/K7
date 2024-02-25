@@ -1,0 +1,9 @@
+﻿<MudStack class="media-poster-container">
+    <MudImage Src="@MediaItem.PosterPicture" Alt="@MediaItem.Title" Class="rounded-lg" Fluid="true" ObjectFit="ObjectFit.Contain" />
+</MudStack>
+
+
+@code {
+    [Parameter]
+    public required MediaItem MediaItem { get; set; }
+}
