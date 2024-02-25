@@ -1,4 +1,4 @@
-﻿<MudPaper Elevation="0">
+﻿<MudItem Elevation="0">
     @* <MudBadge Origin="Origin.TopRight" Overlap="true" Bordered="true" Color="Color.Success" Icon="@Icons.Material.Filled.Check"> *@
         <div class="media-item-container">
             <MudImage Src="@MediaItem.PosterPicture" Alt="Tata" Class="rounded-lg" Fluid="true" ObjectFit="ObjectFit.Contain" />
@@ -17,7 +17,7 @@
                 </div>
             }
 
-            <div class="media-item-overlay">
+            <a class="media-item-overlay" href="@("/movies/" + @MediaItem.Id)">
                 <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" />
 
                 @* <MudMenu Icon="@Icons.Material.Filled.MoreVert" PositionAtCursor="true">
@@ -41,8 +41,7 @@
                 <MudMenuItem>File(s) informations</MudMenuItem>
                 </ChildContent>
                 </MudMenu> *@
-
-            </div>
+            </a>
         </div>
     @* </MudBadge> *@
 
@@ -53,7 +52,7 @@
         </MudStack>
     </div>
 
-</MudPaper>
+</MudItem>
 
 @code {
     [Parameter]
