@@ -60,5 +60,18 @@
                 </MudStack>
             </MudStack>
         </MudItem>
+        <MudItem xs="12" sm="12" lg="12">
+            <HorizontalScrollableStack Title="Casting">
+                @for (int i = 0; i < 5; i++)
+                {
+                    <HorizontalScrollableStackItem>
+                        <MudAvatar Style="height:100px; width:100px;">
+                            <MudImage Src="https://mudblazor.com/images/mony.jpg" Alt="Mony the dog" />
+                        </MudAvatar>
+                    </HorizontalScrollableStackItem>
+                }
+            </HorizontalScrollableStack>
+        </MudItem>
     </MudGrid>
+    
 </div>
