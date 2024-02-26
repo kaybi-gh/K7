@@ -13,20 +13,15 @@
         </MudStack>        
         <div class="splide__track">
             <ul class="splide__list">
-                @foreach (var item in MediaItems)
-                {
-                    <li class="splide__slide" >
-                        <MediaItemPoster MediaItem="item" />
-                    </li>
-                }
+                @ChildContent
             </ul>
         </div>
     </div>
 </MudStack>
 
 <script>
-    var MediaItemHorizontalStack = MediaItemHorizontalStack || {};
-    MediaItemHorizontalStack.Init = function (element, perPage) {
+    var HorizontalScrollableStack = HorizontalScrollableStack || {};
+    HorizontalScrollableStack.Init = function (element, perPage) {
         var splide = new Splide(element, {
             perMove: 1,
             rewind: true,
@@ -48,13 +43,13 @@
             };
         });
 
-        splide.on('inactive', function (slide) {
-            slide.slide.querySelector('.media-item-container').classList.remove('active');
-        });
+        // splide.on('inactive', function (slide) {
+        //     slide.slide.querySelector('.media-item-container').classList.remove('active');
+        // });
 
-        splide.on('active', function (slide) {
-            slide.slide.querySelector('.media-item-container').classList.add('active');
-        });
+        // splide.on('active', function (slide) {
+        //     slide.slide.querySelector('.media-item-container').classList.add('active');
+        // });
 
         splide.mount();
     };

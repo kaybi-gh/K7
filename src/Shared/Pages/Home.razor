@@ -1,6 +1,29 @@
 @page "/"
 <PageTitle>Home</PageTitle>
 
-<MediaItemHorizontalStack Title="All" MediaItems="@MediaItemServiceMock.All" />
-<MediaItemHorizontalStack Title="James, James Bond" MediaItems="@MediaItemServiceMock.JamesBond" />
-<MediaItemHorizontalStack Title="No daddyyyyy" MediaItems="@MediaItemServiceMock.StarWars"/>
+<HorizontalScrollableStack Title="All">
+    @foreach (var item in @MediaItemServiceMock.All)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" />
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>
+
+<HorizontalScrollableStack Title="James, James Bond">
+    @foreach (var item in @MediaItemServiceMock.JamesBond)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" />
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>
+
+<HorizontalScrollableStack Title="No daddyyyyy">
+    @foreach (var item in @MediaItemServiceMock.StarWars)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" />
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>

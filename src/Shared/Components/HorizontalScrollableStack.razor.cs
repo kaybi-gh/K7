@@ -1,19 +1,17 @@
-using MediaClient.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace MediaClient.Shared.Components;
 
-public partial class MediaItemHorizontalStack
+public partial class HorizontalScrollableStack
 {
-    private Guid id = Guid.NewGuid();
     private ElementReference _splide;
 
     [Parameter]
     public string Title { get; set; } = "";
 
     [Parameter]
-    public required List<MediaItem> MediaItems { get; set; } = new();
+    public RenderFragment? ChildContent { get; set; }
 
     [Parameter]
     public int Limit { get; set; } = 5;
@@ -22,7 +20,7 @@ public partial class MediaItemHorizontalStack
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("MediaItemHorizontalStack.Init", _splide, Limit);
+            await JSRuntime.InvokeVoidAsync("HorizontalScrollableStack.Init", _splide, Limit);
         }
     }
 }
