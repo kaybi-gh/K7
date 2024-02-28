@@ -1,11 +1,11 @@
-using MediaClient.Shared.Domain.Enums;
 using MediaClient.Shared.Services;
+using MudBlazor;
 
 namespace MediaClient.Shared.Pages.Layout;
 
 public partial class MainLayout
 {
-    private DeviceType _deviceType;
+    private Breakpoint _breakpoint;
 
     protected override void OnInitialized()
     {
@@ -17,14 +17,5 @@ public partial class MainLayout
     {
         ThemeService.ThemeOnChange -= StateHasChanged;
         ThemeService.DarkModeEnabledOnChange -= StateHasChanged;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _deviceType = await CurrentDeviceService.GetDeviceTypeAsync();
-            StateHasChanged();
-        }
     }
 }

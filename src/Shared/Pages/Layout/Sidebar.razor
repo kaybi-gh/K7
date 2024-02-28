@@ -1,15 +1,12 @@
 ﻿@implements IDisposable
 @inject SidebarService SidebarService
 
-<MudHidden IsHiddenChanged="ToggleDrawerVariant" />
-<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="@_variant">
+<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini">
     <MudStack AlignItems="AlignItems.Center">
-        <MudHidden Breakpoint="Breakpoint.Xs">
-            <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
-                                 Icon="@Icons.Material.Filled.Menu" Color="@Color.Inherit" Title="Off"
-                                 ToggledIcon="@Icons.Material.Filled.Close" ToggledColor="@Color.Inherit" ToggledTitle="On" />
-        </MudHidden>
-        <MudStack Row="true" AlignItems="AlignItems.Center" Class="@(_variant != DrawerVariant.Mini ? "mt-4" : "")">
+        <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
+                                Icon="@Icons.Material.Filled.Menu" Color="@Color.Inherit" Title="Off"
+                                ToggledIcon="@Icons.Material.Filled.Close" ToggledColor="@Color.Inherit" ToggledTitle="On" />
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-4">
             <MudIcon Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.TwoTone.Cyclone" />
             @if (SidebarService.IsOpen)
             {
@@ -39,7 +36,7 @@
         <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
     </MudNavMenu>
 
-    @if (@_variant == DrawerVariant.Mini && !SidebarService.IsOpen)
+    @if (!SidebarService.IsOpen)
     {
         <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
             <MudAvatar Color="Color.Primary">K</MudAvatar>
