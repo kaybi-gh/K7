@@ -1,15 +1,30 @@
 ﻿@inherits LayoutComponentBase
+@inject ICurrentDeviceService CurrentDeviceService
 @inject ThemeService ThemeService
 
 <MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled/>
 
-<MudLayout>
-    <MudHidden Breakpoint="Breakpoint.SmAndUp">
-        <Header />
-    </MudHidden>
-    <Sidebar/>
-    <MudMainContent>
-        @Body
-    </MudMainContent>
-</MudLayout>
+@if (_deviceType == DeviceType.Mobile)
+{
+    <MudLayout>
+        <MudMainContent>
+            @Body
+        </MudMainContent>
 
+        <MobileFooter />
+    </MudLayout>
+}
+else if (_deviceType == DeviceType.Desktop || _deviceType == DeviceType.Tablet)
+{
+    <MudLayout>
+        <Sidebar />
+
+        <MudMainContent>
+            @Body
+        </MudMainContent>
+    </MudLayout>
+}
+else
+{
+    <Splash />
+}

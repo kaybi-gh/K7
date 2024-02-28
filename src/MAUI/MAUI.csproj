@@ -78,7 +78,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Shared\Components\Components.csproj" />
-      <ProjectReference Include="..\Shared\Models\Models.csproj" />
+      <ProjectReference Include="..\Shared\Models\Domain.csproj" />
       <ProjectReference Include="..\Shared\Pages\Pages.csproj" />
       <ProjectReference Include="..\Shared\Services\Services.csproj" />
     </ItemGroup>

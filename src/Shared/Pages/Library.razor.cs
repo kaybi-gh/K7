@@ -1,4 +1,4 @@
-using MediaClient.Shared.Models;
+using MediaClient.Shared.Domain.Models;
 using MediaClient.Shared.Services;
 using Microsoft.AspNetCore.Components;
 

@@ -1,4 +1,4 @@
-﻿using MediaClient.Shared.Models;
+﻿using MediaClient.Shared.Domain.Models;
 using MudBlazor;
 using System.Collections.Frozen;
 

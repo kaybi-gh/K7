@@ -22,12 +22,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Components\Components.csproj" />
-    <ProjectReference Include="..\Models\Models.csproj" />
+    <ProjectReference Include="..\Models\Domain.csproj" />
     <ProjectReference Include="..\Services\Services.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

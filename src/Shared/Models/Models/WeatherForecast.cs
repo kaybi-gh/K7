@@ -1,4 +1,4 @@
-﻿namespace MediaClient.Shared.Models;
+﻿namespace MediaClient.Shared.Domain.Models;
 
 public class WeatherForecast
 {

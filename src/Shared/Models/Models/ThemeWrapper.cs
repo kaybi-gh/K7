@@ -1,6 +1,6 @@
 ﻿using MudBlazor;
 
-namespace MediaClient.Shared.Models
+namespace MediaClient.Shared.Domain.Models
 {
     public class ThemeWrapper(string name, MudTheme theme)
     {

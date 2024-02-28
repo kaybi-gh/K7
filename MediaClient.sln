@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{D9016F
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Components", "src\Shared\Components\Components.csproj", "{5111F36C-D4FE-4B4D-BFF7-3854932CB599}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Models", "src\Shared\Models\Models.csproj", "{5CDF7FDA-E9A9-4D7B-B101-1BA2F3167388}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "src\Shared\Models\Domain.csproj", "{5CDF7FDA-E9A9-4D7B-B101-1BA2F3167388}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services", "src\Shared\Services\Services.csproj", "{000EEB0A-C601-49CC-B10F-441DF47E0C26}"
 EndProject
@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web", "src\Web\Web\Web.cspr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web.Client", "src\Web\Web.Client\Web.Client.csproj", "{6E724904-4847-463E-956A-5E87BEB5F8D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pages", "src\Shared\Pages\Pages.csproj", "{6FCB6689-B03C-4B78-9C28-A235C017213E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pages", "src\Shared\Pages\Pages.csproj", "{6FCB6689-B03C-4B78-9C28-A235C017213E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
