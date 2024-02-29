@@ -72,14 +72,14 @@
 
 @media(max-width:600px) {
     .media-item-container {
-        width: 150px;
+        width: 30vw;
     }
 
     .media-item-text {
-        max-width: 150px;
+        max-width: 30vw;
     }
 
     ::deep .media-item-text:nth-child(1) {
-        max-width: 150px;
+        max-width: 30vw;
     }
 }

@@ -1,8 +1,8 @@
 ﻿@inject IJSRuntime JSRuntime
 
-<MudStack Class="mx-4">
+<MudStack>
     <div class="splide" aria-label="Basic Structure Example" @ref=_splide>
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="ml-4">
             <MudText Typo="Typo.h6">@Title</MudText>
             <div class="splide__arrows">
                 <MudStack Row="true">
@@ -28,9 +28,11 @@
             rewindByDrag: false,
             drag: 'free',
             snap: true,
-            wheel: true,
+            wheel: false,
             autoWidth: true,
-            gap: '20px',
+            gap: '16px',
+            padding: '16px',
+            lazyLoad: 'nearby',
             paginationKeyboard: true,
             keyboard: 'focused'
         });

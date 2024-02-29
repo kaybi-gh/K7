@@ -13,7 +13,7 @@ public partial class Library
 
     protected override void OnInitialized()
     {
-        MediaItems = MediaItemServiceMock.Other;
+        MediaItems = MediaItemServiceMock.All;
         base.OnInitialized();
     }
 }

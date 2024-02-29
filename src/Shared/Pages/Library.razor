@@ -1,11 +1,11 @@
 @page "/library/{id}"
 <PageTitle>Library @Id</PageTitle>
 
-<MudGrid>
+<MudGrid Style="max-width:100%;" Spacing="0" Justify="Justify.SpaceEvenly">
     @foreach (var item in MediaItems)
     {
-        <MudItem>
-            <MediaItemPoster MediaItem="item" />
+        <MudItem Class="ma-2">
+            <MediaPoster MediaItem="item" />
         </MudItem>
     }
 </MudGrid>

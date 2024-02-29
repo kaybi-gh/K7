@@ -1,9 +1,26 @@
-﻿<MudAppBar Bottom="true" Fixed="true" Color="Color.Info" Dense="false" Elevation="1">
-    <MudStack Row="true" Style="width:100%;" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-        <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Filled.VideoLibrary" Color="Color.Inherit" />
-        <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Filled.VideoLibrary" Color="Color.Inherit" />
-        <MudIcon Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.TwoTone.Cyclone" />
-        <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" />
-        <MudAvatar Size="Size.Small" Color="Color.Primary">K</MudAvatar>
-    </MudStack>
-</MudAppBar>
+﻿<div class="mobile-footer">
+    <MudAppBar Style="z-index:10;" Bottom="true" Fixed="true" Dense="false" Elevation="1">
+        <MudStack Row="true" Style="width:100%;" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <div class="mobile-footer-button"><MudAvatar Size="Size.Small" Color="Color.Primary">K</MudAvatar></div>
+            <div class="mobile-footer-button"><MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" /></div>
+            @* <MudSpacer /> *@
+            <div class="application-logo">
+                <MudIconButton Href="/" Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.Rounded.Cyclone" />
+            </div>
+            @* <MudSpacer /> *@
+            <div class="mobile-footer-button"><MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.VideoLibrary" OnClick="ToggleMobileLibraryDrawer" Color="Color.Inherit" /></div>
+            <div class="mobile-footer-button"><MudIconButton Href="/settings" Size="Size.Medium" Icon="@Icons.Material.Outlined.Settings" Color="Color.Inherit" /></div>
+        </MudStack>
+    </MudAppBar>
+    <MudDrawer @bind-Open="_mobileLibraryDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">My libraries</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            <MudNavLink Href="/library/movies-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Theaters">Movies</MudNavLink>
+            <MudNavLink Href="/library/series-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Tv">Series</MudNavLink>
+            <MudNavLink Href="/library/music-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.MusicNote">Music</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+</div>

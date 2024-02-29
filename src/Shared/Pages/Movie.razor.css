@@ -13,12 +13,12 @@
 }
 
 .background {
-    position: fixed;
+    position: absolute;
     width: 100%;
-    height: 100%;
+    height: calc(100vh - var(--mud-appbar-height));
     background: var(--background-picture);
     z-index: -1;
-    inset: 0;
+    top: 0;
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
@@ -29,8 +29,8 @@
         /*background-image: linear-gradient(to top, var(--mud-palette-background) 0%, var(--mud-palette-background) 50%, rgba(255,255,255,0) 125%);*/
         background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--mud-palette-background) 60%, var(--mud-palette-background) 100%);
         position: absolute;
-        height: 100%;
+        height: calc(100vh - var(--mud-appbar-height));
         right: 0;
-        bottom: 0;
+        top: 0;
         left: 0;
     }

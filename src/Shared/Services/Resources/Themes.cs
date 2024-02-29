@@ -28,6 +28,7 @@ public static class Themes
             DrawerBackground = "#0c0c0c",
             Surface = "#282a2d",
             Success = "#4db288",
+            AppbarBackground = "#0c0c0c",
             //DarkContrastText = "#ffffff",
         }
     });
