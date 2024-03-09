@@ -17,7 +17,7 @@ public class DeleteLibraryCommandHandler : IRequestHandler<DeleteLibraryCommand>
     public async Task Handle(DeleteLibraryCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Libraries
-            .FindAsync(new object[] { request.Id }, cancellationToken);
+            .FindAsync([request.Id], cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
         _context.Libraries.Remove(entity);

@@ -1,5 +1,4 @@
 ﻿namespace MediaServer.Domain.Entities.Metadatas;
-public class SerieSeasonMetadata : BaseMetadata
+public class SerieSeasonMetadata() : BaseMetadata(MediaType.SerieSeason)
 {
-    public SerieSeasonMetadata() : base(MediaType.SerieSeason) { }
 }

@@ -45,7 +45,7 @@ public class FileIndexerService : IFileIndexerService
                     List<Movie> addedMovies = [];
                     foreach (var addedFile in addedFiles)
                     {
-                        if (addedFile.TryIdentifyMovie(out MovieIdentification? movieIdentification))
+                        if (addedFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
                         {
                             var movie = new Movie()
                             {

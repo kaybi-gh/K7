@@ -6,7 +6,7 @@ using MediaServer.Domain.ValueObjects;
 namespace MediaServer.Application.Extensions;
 public static class IndexedFileExtensions
 {
-    public static bool TryIdentifyMovie(this IndexedFile indexedFile, [NotNullWhen(true)] out MovieIdentification? movieIdentification)
+    public static bool TryIdentifyMovie(this IndexedFile indexedFile, [NotNullWhen(true)] out MediaIdentification? movieIdentification)
     {
         string? title = null;
         string? year = null;
@@ -38,7 +38,7 @@ public static class IndexedFileExtensions
 
         if (!string.IsNullOrEmpty(title))
         {
-            movieIdentification = new MovieIdentification(title);
+            movieIdentification = new MediaIdentification(title);
 
             if (int.TryParse(year, out int releaseYear))
             {

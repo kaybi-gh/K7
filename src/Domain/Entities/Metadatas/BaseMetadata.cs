@@ -1,14 +1,9 @@
 ﻿using MediaServer.Domain.Entities.Medias;
 
 namespace MediaServer.Domain.Entities.Metadatas;
-public abstract class BaseMetadata : BaseAuditableEntity
+public abstract class BaseMetadata(MediaType type) : BaseAuditableEntity
 {
-    protected BaseMetadata(MediaType type)
-    {
-        Type = type;
-    }
-
-    public MediaType Type { get; protected set; }
+    public MediaType Type { get; protected set; } = type;
     public required int MediaId { get; set; }
 
     public virtual required BaseMedia Media { get; set; }

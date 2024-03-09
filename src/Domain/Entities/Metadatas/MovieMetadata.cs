@@ -1,8 +1,6 @@
 ﻿namespace MediaServer.Domain.Entities.Metadatas;
-public class MovieMetadata : BaseMetadata
+public class MovieMetadata() : BaseMetadata(MediaType.Movie)
 {
-    public MovieMetadata() : base(MediaType.Movie) { }
-
     public required string Title { get; set; }
     public DateOnly? ReleaseDate { get; set; }
     public string? TagLine { get; set; }

@@ -3,7 +3,6 @@ using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Interfaces;
-using MediaServer.Domain.ValueObjects;
 using MediaServer.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 using TMDbLib.Client;
@@ -21,23 +20,23 @@ public class TMDbMetadataProvider : IMetadataProviderService
     {
         _pathsConfiguration = pathsConfiguration.Value;
         _tdmbClient = new(Token);
-        _tdmbClient.SetConfig((_tdmbClient.GetConfigAsync()).Result);
+        _tdmbClient.SetConfig(_tdmbClient.GetConfigAsync().Result);
     }
 
-    public async Task<MovieMetadata> FetchMovieMetadata(MovieIdentification movieIdentification, Domain.Entities.Medias.Movie movie, CancellationToken cancellationToken)
+    public async Task<MovieMetadata> FetchMovieMetadata(Domain.Entities.Medias.Movie movie, CancellationToken cancellationToken)
     {
         var movieMetadata = new MovieMetadata()
         {
             Media = movie,
             MediaId = movie.Id,
-            Title = movieIdentification.Title,
-            ReleaseDate = movieIdentification.ReleaseYear
+            Title = movie.Identification.Title,
+            ReleaseDate = movie.Identification.ReleaseYear
         };
 
         try
         {
-            var searchResult = await _tdmbClient.SearchMovieAsync(movieIdentification.Title,
-                year: movieIdentification.ReleaseYear.HasValue ? movieIdentification.ReleaseYear.Value.Year : 0,
+            var searchResult = await _tdmbClient.SearchMovieAsync(movie.Identification.Title,
+                year: movie.Identification.ReleaseYear.HasValue ? movie.Identification.ReleaseYear.Value.Year : 0,
                 cancellationToken: cancellationToken);
             var tmdbId = searchResult.Results.FirstOrDefault()?.Id;
 
@@ -146,11 +145,5 @@ public class TMDbMetadataProvider : IMetadataProviderService
         {
             return false;
         }
-    }
-
-    public record MovieSearch()
-    {
-        public required string Title { get; init; }
-        public DateOnly? ReleaseYear { get; init; }
     }
 }

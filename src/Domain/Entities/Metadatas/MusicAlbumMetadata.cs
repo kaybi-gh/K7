@@ -1,5 +1,5 @@
 ﻿namespace MediaServer.Domain.Entities.Metadatas;
-public class MusicAlbumMetadata : BaseMetadata
+public class MusicAlbumMetadata() : BaseMetadata(MediaType.MusicAlbum)
 {
-    public MusicAlbumMetadata() : base(MediaType.MusicAlbum) { }
+
 }

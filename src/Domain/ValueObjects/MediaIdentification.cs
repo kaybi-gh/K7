@@ -1,11 +1,11 @@
 ﻿using System;
 namespace MediaServer.Domain.ValueObjects;
-public class MovieIdentification : ValueObject
+public class MediaIdentification : ValueObject
 {
     public string Title { get; set; }
     public DateOnly? ReleaseYear { get; set; }
 
-    public MovieIdentification(string title)
+    public MediaIdentification(string title)
     {
         Title = title;
     }

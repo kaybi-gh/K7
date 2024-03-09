@@ -1,9 +1,8 @@
 ﻿using MediaServer.Domain.Entities.Metadatas;
+using MediaServer.Domain.ValueObjects;
 
 namespace MediaServer.Domain.Entities.Medias;
-public class Movie : BaseMedia
+public class Movie(MediaIdentification identification) : BaseMedia(MediaType.Movie, identification)
 {
-    public Movie() : base(MediaType.Movie) { }
-
-    public virtual MovieMetadata? Metadata { get; set; }
+    public virtual new MovieMetadata? Metadata { get; set; }
 }
