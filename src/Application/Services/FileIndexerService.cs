@@ -6,15 +6,18 @@ using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
+using MediaServer.Domain.ValueObjects;
 
 namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
 {
     private readonly IApplicationDbContext _context;
+    private readonly TMDbMetadataProvider _metadataProvider;
 
-    public FileIndexerService(IApplicationDbContext context)
+    public FileIndexerService(IApplicationDbContext context, TMDbMetadataProvider metadataProvider)
     {
         _context = context;
+        _metadataProvider = metadataProvider;
     }
 
     public async Task IndexAsync(Library library, CancellationToken cancellationToken)
@@ -42,12 +45,22 @@ public class FileIndexerService : IFileIndexerService
                     List<Movie> addedMovies = [];
                     foreach (var addedFile in addedFiles)
                     {
-                        if (addedFile.TryIdentifyMovie(library, out Movie? movie))
+                        if (addedFile.TryIdentifyMovie(out MovieIdentification? movieIdentification))
                         {
+                            var movie = new Movie()
+                            {
+                                Library = library,
+                                LibraryId = library.Id
+                            };
+                            movie.Metadata = await _metadataProvider.FetchMovieMetadata(movieIdentification, movie, cancellationToken);
                             addedMovies.Add(movie);
                         }
                     }
                     _context.Medias.AddRange(addedMovies);
+                    foreach (var movie in addedMovies)
+                    {
+                        movie.AddDomainEvent(new MovieCreatedEvent(movie));
+                    }
                 }
                 else if (library.MediaType == LibraryMediaType.Music)
                 {

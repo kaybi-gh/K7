@@ -3,7 +3,7 @@ using MediaServer.Application.Common.Security;
 
 namespace MediaServer.Application.Features.Libraries.Queries.GetLibraries;
 
-[Authorize]
+//[Authorize]
 public record GetLibrariesQuery : IRequest<IEnumerable<LibraryDto>>;
 
 public class GetLibrariesQueryHandler : IRequestHandler<GetLibrariesQuery, IEnumerable<LibraryDto>>

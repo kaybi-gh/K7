@@ -7,7 +7,14 @@ public static class FileInfoHelper
 
         try
         {
-            var allFiles = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
+            if (!Directory.Exists(rootDirectory))
+            {
+                throw new Exception();
+            }
+
+            var test = new DirectoryInfo(rootDirectory);
+
+            var allFiles = Directory.GetFiles(test.FullName, "*", SearchOption.AllDirectories);
             foreach (string filePath in allFiles)
             {
                 fileInfos.Add(new FileInfo(filePath));

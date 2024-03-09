@@ -5,7 +5,8 @@
       "commandLineArgs": "--init",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Paths__Logs": "testtttt"
       },
       "applicationUrl": "https://localhost:5001;http://localhost:5000"
     },

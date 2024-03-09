@@ -1,12 +1,12 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Medias;
+using MediaServer.Domain.ValueObjects;
 
 namespace MediaServer.Application.Extensions;
 public static class IndexedFileExtensions
 {
-    public static bool TryIdentifyMovie(this IndexedFile indexedFile, Library library, [NotNullWhen(true)] out Movie? movie)
+    public static bool TryIdentifyMovie(this IndexedFile indexedFile, [NotNullWhen(true)] out MovieIdentification? movieIdentification)
     {
         string? title = null;
         string? year = null;
@@ -38,21 +38,16 @@ public static class IndexedFileExtensions
 
         if (!string.IsNullOrEmpty(title))
         {
-            movie = new()
-            {
-                LibraryId = library.Id,
-                Library = library,
-                Title = title
-            };
+            movieIdentification = new MovieIdentification(title);
 
             if (int.TryParse(year, out int releaseYear))
             {
-                movie.ReleaseYear = new DateOnly(releaseYear, 1, 1);
+                movieIdentification.ReleaseYear = new DateOnly(releaseYear, 1, 1);
             }
+            indexedFile.IsIdentified = true;
             return true;
         }
-
-        movie = null;
+        movieIdentification = null;
         return false;
     }
 

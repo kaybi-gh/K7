@@ -24,6 +24,8 @@ public static class DependencyInjection
 
         services.AddHostedService<TaskSchedulerService>();
         services.AddScoped<IFileIndexerService, FileIndexerService>();
+        //services.AddScoped<IMetadataProviderService, TMDbMetadataProvider>();
+        services.AddScoped<TMDbMetadataProvider>();
 
         return services;
     }

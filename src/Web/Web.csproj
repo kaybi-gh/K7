@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Infrastructure\Context\Context.csproj" />
     <ProjectReference Include="..\Infrastructure\DatabaseProviders\Postgres\Postgres.csproj" />
     <ProjectReference Include="..\Infrastructure\DatabaseProviders\Sqlite\Sqlite.csproj" />
+    <ProjectReference Include="..\Infrastructure\FileSystem\FileSystem.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +30,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="FluentValidation.AspNetCore" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="ZymLabs.NSwag.FluentValidation.AspNetCore" />
   </ItemGroup>
 

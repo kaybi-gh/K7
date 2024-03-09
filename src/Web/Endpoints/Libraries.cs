@@ -10,7 +10,7 @@ public class Libraries : EndpointGroupBase
     public override void Map(WebApplication app)
     {
         app.MapGroup(this)
-            .RequireAuthorization()
+            //.RequireAuthorization()
             .MapGet(GetLibraries)
             .MapPost(CreateLibrary)
             .MapPut(UpdateLibrary, "{id}")

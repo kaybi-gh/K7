@@ -41,7 +41,7 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
         if (request.TriggerFileIndexingOnCreation)
         {
             var command = new IndexLibraryFilesCommand(entity.Id);
-            await _sender.Send(command);
+            await _sender.Send(command, cancellationToken);
         }
 
         return entity.Id;
