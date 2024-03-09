@@ -25,7 +25,7 @@ public class PostgreSqlTestDatabase : ITestDatabase
         _connectionString = connectionString;
     }
 
-    public async Task InitialiseAsync()
+    public async Task InitializeAsync()
     {
         _connection = new SqlConnection(_connectionString);
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

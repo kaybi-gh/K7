@@ -12,5 +12,5 @@ public class SerieEpisode : BaseMedia
 
     public virtual Serie? Serie { get; set; }
     public virtual SerieSeason? Season { get; set; }
-    public virtual SerieMetadata? Metadata { get; set; }
+    public virtual SerieEpisodeMetadata? Metadata { get; set; }
 }

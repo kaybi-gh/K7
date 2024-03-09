@@ -15,4 +15,5 @@ public abstract class BaseMedia : BaseAuditableEntity
     public virtual required Library Library { get; set; }
     public virtual ICollection<IndexedFile> IndexedFiles { get; set; } = [];
     public virtual ICollection<BaseRating> Ratings { get; set; } = [];
+    public virtual ICollection<ExternalId> ExternalIds { get; set; } = [];
 }

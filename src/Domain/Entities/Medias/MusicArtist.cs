@@ -5,8 +5,6 @@ public class MusicArtist : BaseMedia
 {
     public MusicArtist() : base(MediaType.MusicArtist) { }
 
-    public string? Name { get; set; }
-
     public virtual IEnumerable<MusicAlbum> Album { get; set; } = [];
     public virtual IEnumerable<MusicTrack> Tracks { get; set; } = [];
     public virtual MusicArtistMetadata? Metadata { get; set; }

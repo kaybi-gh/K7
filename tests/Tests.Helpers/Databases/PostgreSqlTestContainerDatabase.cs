@@ -22,7 +22,7 @@ public class PostgreSqlTestContainerDatabase : ITestDatabase
             .Build();
     }
 
-    public async Task InitialiseAsync()
+    public async Task InitializeAsync()
     {
         await _container.StartAsync();
         _connectionString = _container.GetConnectionString();

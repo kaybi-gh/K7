@@ -1,5 +1,5 @@
 ﻿namespace MediaServer.Domain.Interfaces;
-public interface IMetadataFetcherService
+public interface IMetadataProviderService
 {
     
 }

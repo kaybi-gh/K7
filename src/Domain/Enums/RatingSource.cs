@@ -3,6 +3,6 @@
 public enum RatingSource
 {
     Unknown = 0,
-    Local = 1,
-    MetadataProvider = 2
+    MetadataProvider = 1,
+    LocalUser = 2
 }

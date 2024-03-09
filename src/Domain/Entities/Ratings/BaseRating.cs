@@ -1,7 +1,7 @@
 ﻿using MediaServer.Domain.Entities.Medias;
 
 namespace MediaServer.Domain.Entities.Ratings;
-public abstract class BaseRating
+public abstract class BaseRating : BaseAuditableEntity
 {
     protected BaseRating(RatingSource source)
     {
@@ -9,6 +9,7 @@ public abstract class BaseRating
     }
 
     public RatingSource Source { get; protected set; }
+    public required int MediaId { get; set; }
     public double Value { get; set; }
     public double MinimumValue { get; set; }
     public double MaximumValue { get; set; }

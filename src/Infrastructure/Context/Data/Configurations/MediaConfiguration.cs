@@ -26,4 +26,46 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
                .WithMany(l => l.Medias)
                .HasForeignKey(m => m.LibraryId);
     }
+
+    public static void Configure(EntityTypeBuilder<Movie> builder)
+    {
+        builder.HasOne(m => m.Metadata)
+               .WithOne();
+    }
+
+    public static void Configure(EntityTypeBuilder<MusicAlbum> builder)
+    {
+        builder.HasOne(m => m.Metadata)
+               .WithOne();
+    }
+
+    public static void Configure(EntityTypeBuilder<MusicArtist> builder)
+    {
+        builder.HasOne(m => m.Metadata)
+               .WithOne();
+    }
+
+    public static void Configure(EntityTypeBuilder<MusicTrack> builder)
+    {
+        builder.HasOne(m => m.Metadata)
+               .WithOne();
+    }
+
+    public static void Configure(EntityTypeBuilder<Serie> builder)
+    {
+        builder.HasOne(m => m.Metadata)
+               .WithOne();
+    }
+
+    public static void Configure(EntityTypeBuilder<SerieEpisode> builder)
+    {
+        builder.HasOne(m => m.Metadata)
+               .WithOne();
+    }
+
+    public static void Configure(EntityTypeBuilder<SerieSeason> builder)
+    {
+        builder.HasOne(m => m.Metadata)
+               .WithOne();
+    }
 }

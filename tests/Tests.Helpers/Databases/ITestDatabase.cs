@@ -4,7 +4,7 @@ namespace MediaServer.Tests.Helpers.Databases;
 
 public interface ITestDatabase
 {
-    Task InitialiseAsync();
+    Task InitializeAsync();
 
     DbConnection GetConnection();
 
