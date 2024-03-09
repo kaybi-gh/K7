@@ -1,4 +1,5 @@
 ﻿using MediaServer.Domain.Entities.Medias;
+using MediaServer.Domain.Entities.Metadatas;
 
 namespace MediaServer.Domain.Entities.Ratings;
 public abstract class BaseRating : BaseAuditableEntity
@@ -9,10 +10,10 @@ public abstract class BaseRating : BaseAuditableEntity
     }
 
     public RatingSource Source { get; protected set; }
-    public required int MediaId { get; set; }
     public double Value { get; set; }
     public double MinimumValue { get; set; }
     public double MaximumValue { get; set; }
 
-    public virtual required BaseMedia Media { get; set; }
+    public required int MetadataId { get; set; }
+    public virtual BaseMetadata? Metadata { get; set; }
 }

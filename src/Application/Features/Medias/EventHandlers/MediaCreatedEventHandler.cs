@@ -1,12 +1,9 @@
-﻿using MediaServer.Application.Common.Interfaces;
-using MediaServer.Application.Services;
-using MediaServer.Domain.Events;
-using Microsoft.EntityFrameworkCore;
+﻿using MediaServer.Domain.Events;
 using Microsoft.Extensions.Logging;
 
 namespace MediaServer.Application.Features.Medias.EventHandlers;
 
-public class MediaCreatedEventHandler : INotificationHandler<MovieCreatedEvent>
+public class MediaCreatedEventHandler : INotificationHandler<MediaCreatedEvent>
 {
     private readonly ILogger<MediaCreatedEventHandler> _logger;
 
@@ -15,7 +12,7 @@ public class MediaCreatedEventHandler : INotificationHandler<MovieCreatedEvent>
         _logger = logger;
     }
 
-    public Task Handle(MovieCreatedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(MediaCreatedEvent notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("MediaServer Domain Event: {DomainEvent}", notification.GetType().Name);
         return Task.CompletedTask;

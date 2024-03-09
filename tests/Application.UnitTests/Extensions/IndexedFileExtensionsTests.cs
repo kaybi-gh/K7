@@ -4,6 +4,7 @@ using MediaServer.Application.Extensions;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
+using MediaServer.Domain.ValueObjects;
 using MediaServer.Tests.Helpers.Fixtures;
 using MediaServer.Tests.Helpers.Helpers;
 
@@ -49,11 +50,11 @@ public class IndexedFileExtensionsTests : FileFixture
         var indexedFile = fileInfo.ToIndexedFile(library.Id);
 
         // Act
-        indexedFile!.TryIdentifyMovie(library, out Movie? movie);
+        indexedFile!.TryIdentifyMovie(out MediaIdentification? identification);
 
         // Assert
         //indexedFile!.IsIdentified.Should().BeTrue();
-        movie!.Title.Should().Be(expectedMovieTitle);
-        movie!.ReleaseYear!.Value.Year.Should().Be(expectedReleaseYear);
+        identification!.Title.Should().Be(expectedMovieTitle);
+        identification!.ReleaseYear!.Value.Year.Should().Be(expectedReleaseYear);
     }
 }

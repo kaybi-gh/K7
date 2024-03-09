@@ -10,6 +10,5 @@ public class IndexedFileConfiguration : IEntityTypeConfiguration<IndexedFile>
 {
     public void Configure(EntityTypeBuilder<IndexedFile> builder)
     {
-
     }
 }

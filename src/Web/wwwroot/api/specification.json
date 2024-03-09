@@ -60,6 +60,31 @@
         }
       }
     },
+    "/api/libraries/{id}/index-files": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "IndexLibraryFiles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/libraries/{id}": {
       "put": {
         "tags": [

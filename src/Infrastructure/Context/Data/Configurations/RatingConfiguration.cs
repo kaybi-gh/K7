@@ -14,14 +14,16 @@ public class RatingConfiguration : IEntityTypeConfiguration<BaseRating>
             .HasValue<MetadataProviderRating>(RatingSource.MetadataProvider)
             .HasValue<UserRating>(RatingSource.LocalUser);
 
-        builder.HasOne(r => r.Media)
-               .WithMany(m => m.Ratings)
-               .HasForeignKey(r => r.MediaId);
+        builder
+            .HasOne(r => r.Metadata)
+            .WithMany(m => m.Ratings)
+            .HasForeignKey(r => r.MetadataId);
     }
     public void Configure(EntityTypeBuilder<UserRating> builder)
     {
-        builder.HasOne(r => r.User)
-               .WithMany(u => u.Ratings)
-               .HasForeignKey(r => r.UserId);
+        builder
+            .HasOne(r => r.User)
+            .WithMany(u => u.Ratings)
+            .HasForeignKey(r => r.UserId);
     }
 }

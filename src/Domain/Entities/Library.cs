@@ -9,6 +9,6 @@ public class Library : BaseAuditableEntity
     public required string RootPath { get; set; }
     public bool? RootPathAccessible { get; set; }
 
-    public virtual ICollection<IndexedFile> IndexedFiles { get; set; } = [];
-    public virtual ICollection<BaseMedia> Medias { get; set; } = [];
+    public virtual ICollection<IndexedFile>? IndexedFiles { get; set; }
+    public virtual ICollection<BaseMedia>? Medias { get; set; }
 }

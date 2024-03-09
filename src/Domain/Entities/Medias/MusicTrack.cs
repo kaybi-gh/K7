@@ -1,8 +1,7 @@
 ﻿using MediaServer.Domain.Entities.Metadatas;
-using MediaServer.Domain.ValueObjects;
 
 namespace MediaServer.Domain.Entities.Medias;
-public class MusicTrack(MediaIdentification identification) : BaseMedia(MediaType.MusicTrack, identification)
+public class MusicTrack() : BaseMedia(MediaType.MusicTrack)
 {
     public int Number { get; set; }
     public int? ArtistId { get; set; }

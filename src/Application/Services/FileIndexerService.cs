@@ -1,8 +1,8 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Extensions;
+using MediaServer.Application.Features.Medias.Commands.CreateMedia;
 using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
@@ -12,17 +12,18 @@ namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
 {
     private readonly IApplicationDbContext _context;
-    private readonly TMDbMetadataProvider _metadataProvider;
+    private readonly ISender _sender;
 
-    public FileIndexerService(IApplicationDbContext context, TMDbMetadataProvider metadataProvider)
+    public FileIndexerService(IApplicationDbContext context, ISender sender)
     {
         _context = context;
-        _metadataProvider = metadataProvider;
+        _sender = sender;
     }
 
     public async Task IndexAsync(Library library, CancellationToken cancellationToken)
     {
         List<IndexedFile> indexedFiles = [];
+        List<Task> mediaCreationTasks = [];
         try
         {
             var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
@@ -36,30 +37,28 @@ public class FileIndexerService : IFileIndexerService
                 }
             }
 
-            var (unchangedFiles, addedFiles, removedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
+            var (_, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
 
+            library.IndexedFiles = indexedFiles;
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // TODO - Déplacer dans une logique évenementielle
             if (addedFiles.Any())
             {
                 if (library.MediaType == LibraryMediaType.Movie)
                 {
-                    List<Movie> addedMovies = [];
                     foreach (var addedFile in addedFiles)
                     {
                         if (addedFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
                         {
-                            var movie = new Movie()
+                            mediaCreationTasks.Add(_sender.Send(new CreateMediaCommand()
                             {
-                                Library = library,
-                                LibraryId = library.Id
-                            };
-                            movie.Metadata = await _metadataProvider.FetchMovieMetadata(movieIdentification, movie, cancellationToken);
-                            addedMovies.Add(movie);
+                                IndexedFileIds = [addedFile.Id],
+                                LibraryIds = [library.Id],
+                                MediaIdentification = movieIdentification,
+                                MediaType = MediaType.Movie
+                            }, cancellationToken));
                         }
-                    }
-                    _context.Medias.AddRange(addedMovies);
-                    foreach (var movie in addedMovies)
-                    {
-                        movie.AddDomainEvent(new MovieCreatedEvent(movie));
                     }
                 }
                 else if (library.MediaType == LibraryMediaType.Music)
@@ -101,8 +100,7 @@ public class FileIndexerService : IFileIndexerService
                 }
             }
 
-            library.IndexedFiles = indexedFiles;
-            await _context.SaveChangesAsync(cancellationToken);
+            await Task.WhenAll(mediaCreationTasks);
         }
         catch (Exception ex)
         {

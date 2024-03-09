@@ -23,7 +23,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             TriggerFileIndexingOnCreation = false
         });
         var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles.Count().Should().Be(0);
+        library!.IndexedFiles!.Count().Should().Be(0);
 
         // Act
         FileHelper.CreateTestFile("test.mp3", "content");
@@ -32,7 +32,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
         await fileIndexerService.IndexAsync(library!, cts.Token);
 
         // Assert
-        library!.IndexedFiles.Count().Should().Be(1);
+        library!.IndexedFiles!.Count().Should().Be(1);
     }
 
     [Test]
@@ -50,7 +50,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             TriggerFileIndexingOnCreation = true
         });
         var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles.Count().Should().Be(2);
+        library!.IndexedFiles!.Count().Should().Be(2);
 
         // Act
         FileHelper.DeleteTestFile("test.mp3");
@@ -58,7 +58,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
         await fileIndexerService.IndexAsync(library!, cts.Token);
 
         // Assert
-        library!.IndexedFiles.Count().Should().Be(1);
+        library!.IndexedFiles!.Count().Should().Be(1);
     }
 
     [Test]
@@ -75,9 +75,9 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             TriggerFileIndexingOnCreation = true
         });
         var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles.Count().Should().Be(1);
+        library!.IndexedFiles!.Count().Should().Be(1);
         CancellationTokenSource cts = new();
-        var lastModifiedIndexedFile = library.IndexedFiles.First().LastModified;
+        var lastModifiedIndexedFile = library.IndexedFiles!.First().LastModified;
 
         // Act
         FileHelper.DeleteTestFile("test.mp3");
@@ -85,8 +85,8 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
         await fileIndexerService.IndexAsync(library!, cts.Token);
 
         // Assert
-        library!.IndexedFiles.Count().Should().Be(1);
-        lastModifiedIndexedFile.Should().BeBefore(library.IndexedFiles.First().LastModified);
+        library!.IndexedFiles!.Count().Should().Be(1);
+        lastModifiedIndexedFile.Should().BeBefore(library.IndexedFiles!.First().LastModified);
     }
 
     [Test]
@@ -103,15 +103,15 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             TriggerFileIndexingOnCreation = true
         });
         var library = await FindAsync<Library>(libraryId);
-        library!.IndexedFiles.Count().Should().Be(1);
+        library!.IndexedFiles!.Count().Should().Be(1);
         CancellationTokenSource cts = new();
-        var lastModifiedIndexedFile = library.IndexedFiles.First().LastModified;
+        var lastModifiedIndexedFile = library.IndexedFiles!.First().LastModified;
 
         // Act
         await fileIndexerService.IndexAsync(library!, cts.Token);
 
         // Assert
-        library!.IndexedFiles.Count().Should().Be(1);
-        lastModifiedIndexedFile.Should().BeBefore(library.IndexedFiles.First().LastModified);
+        library!.IndexedFiles!.Count().Should().Be(1);
+        lastModifiedIndexedFile.Should().BeBefore(library.IndexedFiles!.First().LastModified);
     }
 }

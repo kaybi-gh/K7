@@ -8,5 +8,9 @@ public class MediaPictureConfiguration : IEntityTypeConfiguration<MediaPicture>
 {
     public void Configure(EntityTypeBuilder<MediaPicture> builder)
     {
+        builder
+            .HasOne(r => r.Metadata)
+            .WithMany(m => m.Pictures)
+            .HasForeignKey(r => r.MetadataId);
     }
 }

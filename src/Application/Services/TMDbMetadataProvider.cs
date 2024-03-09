@@ -63,7 +63,7 @@ public class TMDbMetadataProvider : IMetadataProviderService
             movieMetadata.ReleaseDate = tmdbMovie.ReleaseDate.HasValue ? DateOnly.FromDateTime(tmdbMovie.ReleaseDate.Value) : movieMetadata.ReleaseDate;
             movieMetadata.TagLine = tmdbMovie.Tagline;
             movieMetadata.Title = tmdbMovie.Title;
-            movieMetadata.Pictures = await TryDownloadPictures(tmdbMovie.Images, movie);
+            movieMetadata.Pictures = await TryDownloadPictures(tmdbMovie.Images, movieMetadata); // TODO - Décorreler le téléchargement d'images car l'ID de metadata sera pas généré avant
 
             return movieMetadata;
         }
@@ -74,7 +74,7 @@ public class TMDbMetadataProvider : IMetadataProviderService
         }
     }
 
-    private async Task<IEnumerable<MediaPicture>> TryDownloadPictures(Images images, BaseMedia media)
+    private async Task<IEnumerable<MediaPicture>> TryDownloadPictures(Images images, BaseMetadata metadata)
     {
         List<MediaPicture> mediaPictures = [];
         if (images != null)
@@ -86,12 +86,12 @@ public class TMDbMetadataProvider : IMetadataProviderService
             if (bestBackdrop != null)
             {
                 var test = new FileInfo(bestBackdrop.FilePath);
-                var filePath = Path.Combine(_pathsConfiguration.Metadatas, media.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
+                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadata.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
                 if (await TryDownloadPictureAsync(bestBackdrop, filePath))
                 {
                     mediaPictures.Add(new MediaPicture()
                     {
-                        MediaId = media.Id,
+                        MetadataId = metadata.Id,
                         Path = filePath,
                         Type = MediaPictureType.Backdrop
                     });
@@ -101,12 +101,12 @@ public class TMDbMetadataProvider : IMetadataProviderService
             if (bestLogo != null)
             {
                 var test = new FileInfo(bestLogo.FilePath);
-                var filePath = Path.Combine(_pathsConfiguration.Metadatas, media.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
+                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadata.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
                 if (await TryDownloadPictureAsync(bestLogo, filePath))
                 {
                     mediaPictures.Add(new MediaPicture()
                     {
-                        MediaId = media.Id,
+                        MetadataId = metadata.Id,
                         Path = filePath,
                         Type = MediaPictureType.Backdrop
                     });
@@ -116,12 +116,12 @@ public class TMDbMetadataProvider : IMetadataProviderService
             if (bestPoster != null)
             {
                 var test = new FileInfo(bestPoster.FilePath);
-                var filePath = Path.Combine(_pathsConfiguration.Metadatas, media.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
+                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadata.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
                 if (await TryDownloadPictureAsync(bestPoster, filePath))
                 {
                     mediaPictures.Add(new MediaPicture()
                     {
-                        MediaId = media.Id,
+                        MetadataId = metadata.Id,
                         Path = filePath,
                         Type = MediaPictureType.Backdrop
                     });

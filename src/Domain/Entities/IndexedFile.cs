@@ -1,4 +1,6 @@
-﻿namespace MediaServer.Domain.Entities;
+﻿using MediaServer.Domain.Entities.Medias;
+
+namespace MediaServer.Domain.Entities;
 public class IndexedFile : BaseAuditableEntity
 {
     public required int LibraryId { get; set; }
@@ -10,7 +12,10 @@ public class IndexedFile : BaseAuditableEntity
     public required long Size { get; set; }
     public bool IsSplitPart { get; set; } = false;
     public bool IsComposite { get; set; } = false;
-    public bool IsIdentified { get; set; } = false;
+    public bool IsIdentified => MediaId.HasValue;
+
+    public int? MediaId { get; set; }
+    public virtual BaseMedia? Media { get; set; }
 }
 
 // Episode:

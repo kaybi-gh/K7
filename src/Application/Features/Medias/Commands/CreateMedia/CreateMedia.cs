@@ -1,9 +1,9 @@
 ﻿using MediaServer.Application.Common.Interfaces;
-using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
-using MediaServer.Domain.Entities;
+using MediaServer.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
+using MediaServer.Domain.ValueObjects;
 
 namespace MediaServer.Application.Features.Medias.Commands.CreateMedia;
 
@@ -12,6 +12,7 @@ public record CreateMediaCommand : IRequest<int>
     public required MediaType MediaType { get; init; }
     public required List<int> LibraryIds { get; init; }
     public required List<int> IndexedFileIds { get; init; }
+    public required MediaIdentification MediaIdentification { get; init; }
 }
 
 public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, int>
@@ -38,28 +39,32 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, int
 
         var indexedFiles = await _context.IndexedFiles
             .Where(x => request.IndexedFileIds.Contains(x.Id))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-
-        var entity = new Movie
+        BaseMedia entity = request.MediaType switch
         {
-            Library = libraries.First(),
-            LibraryId = libraries.First().Id,
-            
-            //Title = request.Title,
-            //MediaType = request.MediaType,
-            //RootPath = request.RootPath
+            MediaType.Movie => new Movie()
+            {
+                Identification = request.MediaIdentification,
+                LibraryId = libraries.First().Id
+            },
+            _ => throw new NotImplementedException()
         };
+        //entity.IndexedFiles = indexedFiles;
+        await _context.Medias.AddAsync(entity, cancellationToken);
 
+        foreach (var indexedFile in indexedFiles)
+        {
+            indexedFile.MediaId = entity.Id;
+        }
         entity.AddDomainEvent(new MediaCreatedEvent(entity));
-        await _context.Medias.AddAsync(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        /*if (request.TriggerFileIndexingOnCreation)
-        {
-            var command = new IndexLibraryFilesCommand(entity.Id);
-            await _sender.Send(command, cancellationToken);
-        }*/
+        //await _sender.Send(new RefreshMediaMetadatasCommand()
+        //{
+        //    Id = entity.Id
+        //}, cancellationToken);
 
         return entity.Id;
     }

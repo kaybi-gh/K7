@@ -31,8 +31,7 @@ public static class FileInfoExtensions
                     Path = fileInfo.FullName,
                     ParentDirectory = fileInfo.Directory?.Name,
                     Hash = fileInfo.ComputeFileHash(),
-                    Size = fileInfo.Length,
-                    IsIdentified = false
+                    Size = fileInfo.Length
                 };
 
                 return indexedFile;

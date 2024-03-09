@@ -6,6 +6,5 @@ public class MovieMetadata() : BaseMetadata(MediaType.Movie)
     public string? TagLine { get; set; }
     public string? Overview { get; set; }
     public string? OriginalLanguage { get; set; }
-    public virtual ICollection<string> Genres { get; set; } = [];
-    public virtual IEnumerable<MediaPicture> Pictures { get; set; } = [];
+    public virtual ICollection<string>? Genres { get; set; }
 }

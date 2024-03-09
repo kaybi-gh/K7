@@ -1,4 +1,6 @@
-﻿using MediaServer.Domain.Entities.Medias;
+﻿using System.Reflection.Emit;
+using MediaServer.Domain.Entities.Medias;
+using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -19,53 +21,50 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasValue<SerieEpisode>(MediaType.SerieEpisode)
             .HasValue<SerieSeason>(MediaType.SerieSeason);
 
-        builder.HasMany(m => m.IndexedFiles)
-               .WithMany();
+        builder
+            .OwnsOne(m => m.Identification);
 
-        builder.HasOne(m => m.Library)
-               .WithMany(l => l.Medias)
-               .HasForeignKey(m => m.LibraryId);
+        builder
+            .HasMany(m => m.IndexedFiles)
+            .WithOne(i => i.Media)
+            .HasForeignKey(i => i.MediaId);
+
+        builder
+            .HasOne(m => m.Library)
+            .WithMany(l => l.Medias)
+            .HasForeignKey(m => m.LibraryId);
+
+        builder
+            .HasOne(m => m.Metadata)
+            .WithOne(m => m.Media)
+            .HasForeignKey<BaseMetadata>(m => m.MediaId);
     }
 
     public static void Configure(EntityTypeBuilder<Movie> builder)
     {
-        builder.HasOne(m => m.Metadata)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<MusicAlbum> builder)
     {
-        builder.HasOne(m => m.Metadata)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<MusicArtist> builder)
     {
-        builder.HasOne(m => m.Metadata)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<MusicTrack> builder)
     {
-        builder.HasOne(m => m.Metadata)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<Serie> builder)
     {
-        builder.HasOne(m => m.Metadata)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<SerieEpisode> builder)
     {
-        builder.HasOne(m => m.Metadata)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<SerieSeason> builder)
     {
-        builder.HasOne(m => m.Metadata)
-               .WithOne();
     }
 }

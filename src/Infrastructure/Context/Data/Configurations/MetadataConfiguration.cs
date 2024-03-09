@@ -18,15 +18,10 @@ public class MetadataConfiguration : IEntityTypeConfiguration<BaseMetadata>
             .HasValue<SerieMetadata>(MediaType.Serie)
             .HasValue<SerieEpisodeMetadata>(MediaType.SerieEpisode)
             .HasValue<SerieSeasonMetadata>(MediaType.SerieSeason);
-
-        builder.HasOne(m => m.Media)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<MovieMetadata> builder)
     {
-        builder.HasMany(m => m.Pictures)
-               .WithOne();
     }
 
     public static void Configure(EntityTypeBuilder<MusicAlbumMetadata> builder)

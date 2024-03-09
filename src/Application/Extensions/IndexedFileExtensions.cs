@@ -44,7 +44,6 @@ public static class IndexedFileExtensions
             {
                 movieIdentification.ReleaseYear = new DateOnly(releaseYear, 1, 1);
             }
-            indexedFile.IsIdentified = true;
             return true;
         }
         movieIdentification = null;
@@ -53,14 +52,10 @@ public static class IndexedFileExtensions
 
     public static void TryIdentifyMusicTrack(this IndexedFile indexedFile, Library library, IEnumerable<IndexedFile> similarIndexedFiles)
     {
-
-        indexedFile.IsIdentified = true;
     }
 
     public static void TryIdentifySerieEpisode(this IndexedFile indexedFile, Library library, IEnumerable<IndexedFile> similarIndexedFiles)
     {
-
-        indexedFile.IsIdentified = true;
     }
 }
 
