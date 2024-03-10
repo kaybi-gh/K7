@@ -1,6 +1,6 @@
-﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
+﻿using MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
+using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
-using MediaServer.Application.Features.Libraries.Queries.GetLibrariesIndexedFiles;
 using MediaServer.Domain.Enums;
 using MediaServer.Tests.Helpers.Fixtures;
 using MediaServer.Tests.Helpers.Helpers;
@@ -37,7 +37,7 @@ public class IndexLibraryFilesTests : FileAndDatabaseFixture
 
         // Act
         await SendAsync(new IndexLibraryFilesCommand(libraryId));
-        var libraryIndexedFiles = await SendAsync(new GetLibraryIndexedFilesWithPaginationQuery()
+        var libraryIndexedFiles = await SendAsync(new GetIndexedFilesWithPaginationQuery()
         {
             LibraryId = libraryId
         });

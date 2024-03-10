@@ -1,6 +1,6 @@
 ﻿using MediaServer.Domain.Entities;
 
-namespace MediaServer.Application.Features.Libraries.Queries.GetLibrariesIndexedFiles;
+namespace MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
 
 public record IndexedFileDto
 {

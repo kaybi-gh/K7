@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using AutoMapper;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
-using MediaServer.Application.Features.Libraries.Queries.GetLibrariesIndexedFiles;
+using MediaServer.Application.Features.Medias.Queries.GetMedias;
 using MediaServer.Domain.Entities;
 
 namespace MediaServer.Application.UnitTests.Mappings;
@@ -29,7 +29,7 @@ public class MappingTests
 
     [Test]
     [TestCase(typeof(Library), typeof(LibraryDto))]
-    [TestCase(typeof(IndexedFile), typeof(IndexedFileDto))]
+    [TestCase(typeof(IndexedFile), typeof(MediaDto))]
     public void ShouldSupportMappingFromSourceToDestination(Type source, Type destination)
     {
         var instance = GetInstanceOf(source);
