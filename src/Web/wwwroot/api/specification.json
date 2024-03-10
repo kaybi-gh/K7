@@ -26,12 +26,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
@@ -62,12 +57,32 @@
               }
             }
           }
-        },
-        "security": [
+        }
+      }
+    },
+    "/api/libraries/{id}/index-files": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "IndexLibraryFiles",
+        "parameters": [
           {
-            "JWT": []
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
       }
     },
     "/api/libraries/{id}": {
@@ -104,12 +119,7 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       },
       "delete": {
         "tags": [
@@ -132,12 +142,7 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       }
     },
     "/api/users/register": {
@@ -536,20 +541,6 @@
             "format": "int32"
           },
           "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "rootPath": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "CreateLibraryCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "title": {
             "type": "string"
           },
           "mediaType": {
@@ -566,8 +557,8 @@
         "x-enumNames": [
           "Unknown",
           "Movie",
-          "TVShow",
-          "Music"
+          "Music",
+          "Serie"
         ],
         "enum": [
           0,
@@ -575,6 +566,24 @@
           2,
           3
         ]
+      },
+      "CreateLibraryCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/LibraryMediaType"
+          },
+          "rootPath": {
+            "type": "string"
+          },
+          "triggerFileIndexingOnCreation": {
+            "type": "boolean"
+          }
+        }
       },
       "UpdateLibraryCommand": {
         "type": "object",

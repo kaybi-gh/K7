@@ -1,0 +1,28 @@
+﻿namespace MediaServer.Application.Helpers;
+public static class FileInfoHelper
+{
+    public static List<FileInfo> GetAllFileInfosRecursively(string rootDirectory)
+    {
+        List<FileInfo> fileInfos = [];
+
+        try
+        {
+            if (!Directory.Exists(rootDirectory))
+            {
+                throw new Exception();
+            }
+
+            var allFiles = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
+            foreach (string filePath in allFiles)
+            {
+                fileInfos.Add(new FileInfo(filePath));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving files in directory {rootDirectory}: {ex.Message}");
+        }
+
+        return fileInfos;
+    }
+}

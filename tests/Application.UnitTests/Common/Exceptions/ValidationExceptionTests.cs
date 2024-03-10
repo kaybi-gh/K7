@@ -1,7 +1,5 @@
 ﻿using MediaServer.Application.Common.Exceptions;
-using FluentAssertions;
 using FluentValidation.Results;
-using NUnit.Framework;
 
 namespace MediaServer.Application.UnitTests.Common.Exceptions;
 

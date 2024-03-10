@@ -8,8 +8,14 @@ public class LibraryConfiguration : IEntityTypeConfiguration<Library>
 {
     public void Configure(EntityTypeBuilder<Library> builder)
     {
-        builder.Property(t => t.Title)
+        builder
+            .Property(t => t.Title)
             .HasMaxLength(200)
             .IsRequired();
+
+        builder
+            .HasMany(l => l.IndexedFiles)
+            .WithOne()
+            .HasForeignKey(i => i.LibraryId);
     }
 }

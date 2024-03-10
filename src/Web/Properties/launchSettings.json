@@ -1,4 +1,23 @@
-﻿{
+{
+  "profiles": {
+    "MediaServer.Web": {
+      "commandName": "Project",
+      "commandLineArgs": "--init",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:5001;http://localhost:5000"
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "commandLineArgs": "--init",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  },
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
@@ -6,22 +25,5 @@
       "applicationUrl": "http://localhost:61846",
       "sslPort": 44312
     }
-  },
-  "profiles": {
-    "MediaServer.Web": {
-      "commandName": "Project",
-      "launchBrowser": true,
-      "applicationUrl": "https://localhost:5001;http://localhost:5000",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
-      "IIS Express": {
-        "commandName": "IISExpress",
-        "launchBrowser": true,
-        "environmentVariables": {
-          "ASPNETCORE_ENVIRONMENT": "Development"
-        }
-      }
-    }
+  }
 }

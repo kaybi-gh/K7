@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-namespace MediaServer.Infrastructure.Context.Data.Configurations;
+﻿namespace MediaServer.Infrastructure.Context.Data.Configurations;
 
 /*public class IdentityUserConfiguration : IEntityTypeConfiguration<IdentityUser>
 {

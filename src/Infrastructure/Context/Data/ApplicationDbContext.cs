@@ -1,9 +1,9 @@
 ﻿using System.Reflection;
-using System.Reflection.Emit;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Enums;
+using MediaServer.Domain.Entities.Metadatas;
+using MediaServer.Domain.Entities.Ratings;
 using MediaServer.Infrastructure.Context.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -15,20 +15,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public ApplicationDbContext() { }
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+    public DbSet<IndexedFile> IndexedFiles => Set<IndexedFile>();
     public DbSet<Library> Libraries => Set<Library>();
-    public DbSet<BaseMedia> BaseMedias => Set<BaseMedia>();
+    public DbSet<BaseMedia> Medias => Set<BaseMedia>();
+    public DbSet<BaseMetadata> Metadatas => Set<BaseMetadata>();
+    public DbSet<MediaPicture> MediaPictures => Set<MediaPicture>();
+    public DbSet<BaseRating> Ratings => Set<BaseRating>();
+    public DbSet<ExternalId> ExternalIds => Set<ExternalId>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        builder.Entity<BaseMedia>()
-            .HasDiscriminator(x => x.Type)
-            .HasValue<Movie>(MediaType.Movie)
-            .HasValue<Season>(MediaType.Season)
-            .HasValue<Episode>(MediaType.Episode)
-            .HasValue<MusicAlbum>(MediaType.MusicAlbum)
-            .HasValue<Track>(MediaType.Track);
-
-        builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         base.OnModelCreating(builder);
+        builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 }

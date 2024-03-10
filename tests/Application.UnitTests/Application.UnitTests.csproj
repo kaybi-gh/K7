@@ -7,6 +7,11 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="NSubstitute" />
+        <PackageReference Include="NSubstitute.Analyzers.CSharp">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="nunit" />
         <PackageReference Include="NUnit.Analyzers">
           <PrivateAssets>all</PrivateAssets>
@@ -15,12 +20,12 @@
         <PackageReference Include="NUnit3TestAdapter" />
         <PackageReference Include="coverlet.collector" />
         <PackageReference Include="FluentAssertions" />
-        <PackageReference Include="Moq" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\Application\Application.csproj" />
         <ProjectReference Include="..\..\src\Infrastructure\Context\Context.csproj" />
+        <ProjectReference Include="..\Tests.Helpers\Tests.Helpers.csproj" />
     </ItemGroup>
 
 </Project>

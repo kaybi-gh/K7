@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>MediaServer.Infrastructure.FileSystem</RootNamespace>
+    <AssemblyName>MediaServer.Infrastructure.FileSystem</AssemblyName>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Configuration\Configuration.csproj" />
+    <ProjectReference Include="..\..\Application\Application.csproj" />
+  </ItemGroup>
+
+</Project>

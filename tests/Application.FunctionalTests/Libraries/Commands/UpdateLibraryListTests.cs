@@ -1,13 +1,13 @@
 ﻿using MediaServer.Application.Common.Exceptions;
-using MediaServer.Application.FunctionalTests.Fixtures;
-using MediaServer.Application.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Libraries.Commands.UpdateLibrary;
+using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
+using MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
+using MediaServer.Tests.Helpers.Fixtures;
 
 namespace MediaServer.Application.FunctionalTests.Libraries.Commands;
 
-public class UpdateLibraryListTests : BaseTestFixture
+public class UpdateLibraryListTests : DatabaseFixture
 {
     [Test]
     public async Task ShouldRequireValidLibraryId()

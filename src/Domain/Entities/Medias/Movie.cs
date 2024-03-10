@@ -1,5 +1,7 @@
-﻿namespace MediaServer.Domain.Entities.Medias;
-public class Movie : BaseMedia
+﻿using MediaServer.Domain.Entities.Metadatas;
+
+namespace MediaServer.Domain.Entities.Medias;
+public class Movie() : BaseMedia(MediaType.Movie)
 {
-    public DateOnly ReleaseYear { get; set; }
+    public virtual new MovieMetadata? Metadata { get; set; }
 }

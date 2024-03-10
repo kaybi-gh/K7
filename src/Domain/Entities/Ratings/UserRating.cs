@@ -3,7 +3,8 @@
 namespace MediaServer.Domain.Entities.Ratings;
 public class UserRating : BaseRating
 {
-    public required Guid UserId { get; set; }
+    public UserRating() : base(RatingSource.LocalUser) { }
 
-    public User User { get; set; } = null!;
+    public required int UserId { get; set; }
+    public virtual User User { get; set; } = null!;
 }

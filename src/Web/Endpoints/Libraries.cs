@@ -1,8 +1,8 @@
-﻿using MediaServer.Application.Common.Models;
-using MediaServer.Application.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Libraries.Commands.DeleteLibrary;
-using MediaServer.Application.Libraries.Commands.UpdateLibrary;
-using MediaServer.Application.Libraries.Queries.GetLibraries;
+﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
+using MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
+using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
+using MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
+using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
 
 namespace MediaServer.Web.Endpoints;
 
@@ -11,9 +11,10 @@ public class Libraries : EndpointGroupBase
     public override void Map(WebApplication app)
     {
         app.MapGroup(this)
-            .RequireAuthorization()
+            //.RequireAuthorization()
             .MapGet(GetLibraries)
             .MapPost(CreateLibrary)
+            .MapPost(IndexLibraryFiles, "{id}/index-files")
             .MapPut(UpdateLibrary, "{id}")
             .MapDelete(DeleteLibrary, "{id}");
     }
@@ -26,6 +27,12 @@ public class Libraries : EndpointGroupBase
     public async Task<int> CreateLibrary(ISender sender, CreateLibraryCommand command)
     {
         return await sender.Send(command);
+    }
+
+    public async Task<IResult> IndexLibraryFiles(ISender sender, int id)
+    {
+        await sender.Send(new IndexLibraryFilesCommand(id));
+        return Results.NoContent();
     }
 
     public async Task<IResult> UpdateLibrary(ISender sender, int id, UpdateLibraryCommand command)

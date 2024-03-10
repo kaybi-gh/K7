@@ -1,13 +1,11 @@
-﻿using MediaServer.Domain.Entities.Files;
+﻿using MediaServer.Domain.Entities.Metadatas;
 
 namespace MediaServer.Domain.Entities.Medias;
 
-public abstract class BaseMedia : BaseAuditableEntity
+public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
 {
-    public required int MediaLibraryId { get; set; }
-    public required MediaType Type { get; set; }
-    public required Library MediaLibrary { get; set; }
-    public virtual IList<Files.MediaFile> MediaFiles { get; set; } = new List<Files.MediaFile>();
+    public MediaType Type { get; protected set; } = type;
+    public virtual BaseMetadata? Metadata { get; set; }
 
-    //public virtual IList<BaseMetadata> Metadatas { get; set; } = null!;
+    public virtual ICollection<IndexedFile>? IndexedFiles { get; set; }
 }
