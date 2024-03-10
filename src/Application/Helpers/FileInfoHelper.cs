@@ -12,9 +12,7 @@ public static class FileInfoHelper
                 throw new Exception();
             }
 
-            var test = new DirectoryInfo(rootDirectory);
-
-            var allFiles = Directory.GetFiles(test.FullName, "*", SearchOption.AllDirectories);
+            var allFiles = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
             foreach (string filePath in allFiles)
             {
                 fileInfos.Add(new FileInfo(filePath));

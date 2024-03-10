@@ -1,6 +1,4 @@
-﻿using System.Reflection.Emit;
-using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,5 +8,7 @@ public class IndexedFileConfiguration : IEntityTypeConfiguration<IndexedFile>
 {
     public void Configure(EntityTypeBuilder<IndexedFile> builder)
     {
+        builder
+            .OwnsOne(m => m.Identification);
     }
 }

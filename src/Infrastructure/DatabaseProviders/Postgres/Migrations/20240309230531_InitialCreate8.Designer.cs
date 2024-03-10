@@ -3,6 +3,7 @@ using System;
 using MediaServer.Infrastructure.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240309230531_InitialCreate8")]
+    partial class InitialCreate8
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -225,10 +228,15 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
+                    b.Property<int>("LibraryId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LibraryId");
 
                     b.ToTable("Medias");
 
@@ -795,28 +803,6 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                         .WithMany("IndexedFiles")
                         .HasForeignKey("MediaId");
 
-                    b.OwnsOne("MediaServer.Domain.ValueObjects.MediaIdentification", "Identification", b1 =>
-                        {
-                            b1.Property<int>("IndexedFileId")
-                                .HasColumnType("integer");
-
-                            b1.Property<DateOnly?>("ReleaseYear")
-                                .HasColumnType("date");
-
-                            b1.Property<string>("Title")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.HasKey("IndexedFileId");
-
-                            b1.ToTable("IndexedFiles");
-
-                            b1.WithOwner()
-                                .HasForeignKey("IndexedFileId");
-                        });
-
-                    b.Navigation("Identification");
-
                     b.Navigation("Media");
                 });
 
@@ -829,6 +815,40 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                         .IsRequired();
 
                     b.Navigation("Metadata");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.BaseMedia", b =>
+                {
+                    b.HasOne("MediaServer.Domain.Entities.Library", "Library")
+                        .WithMany("Medias")
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("MediaServer.Domain.ValueObjects.MediaIdentification", "Identification", b1 =>
+                        {
+                            b1.Property<int>("BaseMediaId")
+                                .HasColumnType("integer");
+
+                            b1.Property<DateOnly?>("ReleaseYear")
+                                .HasColumnType("date");
+
+                            b1.Property<string>("Title")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.HasKey("BaseMediaId");
+
+                            b1.ToTable("Medias");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BaseMediaId");
+                        });
+
+                    b.Navigation("Identification")
+                        .IsRequired();
+
+                    b.Navigation("Library");
                 });
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Metadatas.BaseMetadata", b =>
@@ -968,6 +988,8 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
             modelBuilder.Entity("MediaServer.Domain.Entities.Library", b =>
                 {
                     b.Navigation("IndexedFiles");
+
+                    b.Navigation("Medias");
                 });
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Medias.BaseMedia", b =>

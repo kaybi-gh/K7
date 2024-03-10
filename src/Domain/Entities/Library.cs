@@ -1,6 +1,4 @@
-﻿using MediaServer.Domain.Entities.Medias;
-
-namespace MediaServer.Domain.Entities;
+﻿namespace MediaServer.Domain.Entities;
 
 public class Library : BaseAuditableEntity
 {
@@ -10,5 +8,4 @@ public class Library : BaseAuditableEntity
     public bool? RootPathAccessible { get; set; }
 
     public virtual ICollection<IndexedFile>? IndexedFiles { get; set; }
-    public virtual ICollection<BaseMedia>? Medias { get; set; }
 }

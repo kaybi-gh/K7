@@ -1,4 +1,5 @@
 ﻿using MediaServer.Domain.Entities.Medias;
+using MediaServer.Domain.ValueObjects;
 
 namespace MediaServer.Domain.Entities;
 public class IndexedFile : BaseAuditableEntity
@@ -12,8 +13,8 @@ public class IndexedFile : BaseAuditableEntity
     public required long Size { get; set; }
     public bool IsSplitPart { get; set; } = false;
     public bool IsComposite { get; set; } = false;
-    public bool IsIdentified => MediaId.HasValue;
 
+    public MediaIdentification? Identification { get; set; }
     public int? MediaId { get; set; }
     public virtual BaseMedia? Media { get; set; }
 }

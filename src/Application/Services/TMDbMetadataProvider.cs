@@ -1,8 +1,8 @@
 ﻿using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Interfaces;
+using MediaServer.Domain.ValueObjects;
 using MediaServer.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 using TMDbLib.Client;
@@ -10,7 +10,7 @@ using TMDbLib.Objects.General;
 using TMDbLib.Objects.Movies;
 
 namespace MediaServer.Application.Services;
-public class TMDbMetadataProvider : IMetadataProviderService
+public class TMDbMetadataProvider : IMovieMetadataProvider
 {
     private const string Token = "8e7586ad850237f5d506d8789f4c3936";
     private readonly TMDbClient _tdmbClient;
@@ -23,75 +23,92 @@ public class TMDbMetadataProvider : IMetadataProviderService
         _tdmbClient.SetConfig(_tdmbClient.GetConfigAsync().Result);
     }
 
-    public async Task<MovieMetadata> FetchMovieMetadata(Domain.Entities.Medias.Movie movie, CancellationToken cancellationToken)
+    public async Task<string?> SearchMetadataProviderExternalIdAsync(MediaIdentification movieIdentification, CancellationToken cancellationToken)
     {
-        var movieMetadata = new MovieMetadata()
-        {
-            Media = movie,
-            MediaId = movie.Id,
-            Title = movie.Identification.Title,
-            ReleaseDate = movie.Identification.ReleaseYear
-        };
-
         try
         {
-            var searchResult = await _tdmbClient.SearchMovieAsync(movie.Identification.Title,
-                year: movie.Identification.ReleaseYear.HasValue ? movie.Identification.ReleaseYear.Value.Year : 0,
+            var searchResult = await _tdmbClient.SearchMovieAsync(movieIdentification.Title,
+                year: movieIdentification.ReleaseYear.HasValue ? movieIdentification.ReleaseYear.Value.Year : 0,
                 cancellationToken: cancellationToken);
-            var tmdbId = searchResult.Results.FirstOrDefault()?.Id;
+            return searchResult.Results.FirstOrDefault()?.Id.ToString();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error while fetching TMDbId for {movieIdentification}: {ex.Message}");
+            return null;
+        }
+    }
 
-            if (tmdbId == null)
+    public async Task<MovieMetadata?> FetchMovieMetadata(int movieId, string metadataProviderExternalId, string language, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits, cancellationToken: cancellationToken);
+
+            var movieMetadata = new MovieMetadata
             {
-                return movieMetadata;
-            }
-
-            var tmdbMovie = await _tdmbClient.GetMovieAsync(tmdbId.Value, "fr", extraMethods: MovieMethods.Images | MovieMethods.ExternalIds | MovieMethods.Credits, cancellationToken: cancellationToken);
-            if (tmdbMovie.Images.Backdrops.Count == 0 || tmdbMovie.Images.Logos.Count == 0 || tmdbMovie.Images.Posters.Count == 0)
-            {
-                var fallbackLangageImages = await _tdmbClient.GetMovieImagesAsync(tmdbId.Value, "en", cancellationToken: cancellationToken);
-                if (tmdbMovie.Images.Backdrops.Count == 0)
-                    tmdbMovie.Images.Backdrops = fallbackLangageImages.Backdrops;
-                if (tmdbMovie.Images.Logos.Count == 0)
-                    tmdbMovie.Images.Logos = fallbackLangageImages.Logos;
-                if (tmdbMovie.Images.Posters.Count == 0)
-                    tmdbMovie.Images.Posters = fallbackLangageImages.Posters;
-            }
-
-            movieMetadata.Genres = tmdbMovie.Genres.Select(g => g.Name).ToList();
-            movieMetadata.OriginalLanguage = tmdbMovie.OriginalLanguage;
-            movieMetadata.Overview = tmdbMovie.Overview;
-            movieMetadata.ReleaseDate = tmdbMovie.ReleaseDate.HasValue ? DateOnly.FromDateTime(tmdbMovie.ReleaseDate.Value) : movieMetadata.ReleaseDate;
-            movieMetadata.TagLine = tmdbMovie.Tagline;
-            movieMetadata.Title = tmdbMovie.Title;
-            movieMetadata.Pictures = await TryDownloadPictures(tmdbMovie.Images, movieMetadata); // TODO - Décorreler le téléchargement d'images car l'ID de metadata sera pas généré avant
+                MediaId = movieId,
+                Title = tmdbMovie.Title,
+                ReleaseDate = tmdbMovie.ReleaseDate.HasValue ? DateOnly.FromDateTime(tmdbMovie.ReleaseDate.Value) : null,
+                Genres = tmdbMovie.Genres.Select(g => g.Name).ToList(),
+                OriginalLanguage = tmdbMovie.OriginalLanguage,
+                Overview = tmdbMovie.Overview,
+                TagLine = tmdbMovie.Tagline,
+                ExternalIds = ConvertToExternalIds(tmdbMovie.ExternalIds)
+            };
 
             return movieMetadata;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error while fetching movie metadata {movie.Id}: {ex.Message}");
-            return movieMetadata;
+            Console.WriteLine($"Error while fetching movie metadata for movieId {movieId} (TMDbId {metadataProviderExternalId}): {ex.Message}");
+            return null;
         }
     }
 
-    private async Task<IEnumerable<MediaPicture>> TryDownloadPictures(Images images, BaseMetadata metadata)
+    public async Task<IEnumerable<MediaPicture>?> FetchMediaPictures(int metadataId, string metadataProviderExternalId, string language, CancellationToken cancellationToken, string? fallbackLanguage = "en")
+    {
+        try
+        {
+            int tmdbId = int.Parse(metadataProviderExternalId);
+            var images = await _tdmbClient.GetMovieImagesAsync(tmdbId, language, cancellationToken: cancellationToken);
+            if (images.Backdrops.Count == 0 || images.Logos.Count == 0 || images.Posters.Count == 0)
+            {
+                var fallbackLangageImages = await _tdmbClient.GetMovieImagesAsync(tmdbId, fallbackLanguage, cancellationToken: cancellationToken);
+                if (images.Backdrops.Count == 0)
+                    images.Backdrops = fallbackLangageImages.Backdrops;
+                if (images.Logos.Count == 0)
+                    images.Logos = fallbackLangageImages.Logos;
+                if (images.Posters.Count == 0)
+                    images.Posters = fallbackLangageImages.Posters;
+            }
+            return await TryDownloadPictures(images, metadataId, language);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error while fetching media pictures for metadataId {metadataId} (TMDbId {metadataProviderExternalId}): {ex.Message}");
+            return null;
+        }
+    }
+
+    private async Task<IEnumerable<MediaPicture>> TryDownloadPictures(Images images, int metadataId, string preferredLanguage)
     {
         List<MediaPicture> mediaPictures = [];
         if (images != null)
         {
-            var bestBackdrop = images.Backdrops.OrderBy(b => b.Iso_639_1 == "fr").ThenByDescending(b => b.VoteAverage).FirstOrDefault();
-            var bestLogo = images.Logos.OrderBy(b => b.Iso_639_1 == "fr").ThenByDescending(b => b.VoteAverage).FirstOrDefault();
-            var bestPoster = images.Posters.OrderBy(b => b.Iso_639_1 == "fr").ThenByDescending(b => b.VoteAverage).FirstOrDefault();
+            var bestBackdrop = images.Backdrops.OrderBy(b => b.Iso_639_1 == preferredLanguage).ThenByDescending(b => b.VoteAverage).FirstOrDefault();
+            var bestLogo = images.Logos.OrderBy(b => b.Iso_639_1 == preferredLanguage).ThenByDescending(b => b.VoteAverage).FirstOrDefault();
+            var bestPoster = images.Posters.OrderBy(b => b.Iso_639_1 == preferredLanguage).ThenByDescending(b => b.VoteAverage).FirstOrDefault();
 
             if (bestBackdrop != null)
             {
-                var test = new FileInfo(bestBackdrop.FilePath);
-                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadata.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
+                var distantFilepath = new FileInfo(bestBackdrop.FilePath);
+                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
                 if (await TryDownloadPictureAsync(bestBackdrop, filePath))
                 {
                     mediaPictures.Add(new MediaPicture()
                     {
-                        MetadataId = metadata.Id,
+                        MetadataId = metadataId,
                         Path = filePath,
                         Type = MediaPictureType.Backdrop
                     });
@@ -100,30 +117,30 @@ public class TMDbMetadataProvider : IMetadataProviderService
 
             if (bestLogo != null)
             {
-                var test = new FileInfo(bestLogo.FilePath);
-                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadata.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
+                var distantFilepath = new FileInfo(bestLogo.FilePath);
+                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
                 if (await TryDownloadPictureAsync(bestLogo, filePath))
                 {
                     mediaPictures.Add(new MediaPicture()
                     {
-                        MetadataId = metadata.Id,
+                        MetadataId = metadataId,
                         Path = filePath,
-                        Type = MediaPictureType.Backdrop
+                        Type = MediaPictureType.Logo
                     });
                 }
             }
 
             if (bestPoster != null)
             {
-                var test = new FileInfo(bestPoster.FilePath);
-                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadata.Id.ToString(), $"{Guid.NewGuid()}{test.Extension}");
+                var distantFilepath = new FileInfo(bestPoster.FilePath);
+                var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
                 if (await TryDownloadPictureAsync(bestPoster, filePath))
                 {
                     mediaPictures.Add(new MediaPicture()
                     {
-                        MetadataId = metadata.Id,
+                        MetadataId = metadataId,
                         Path = filePath,
-                        Type = MediaPictureType.Backdrop
+                        Type = MediaPictureType.Poster
                     });
                 }
             }
@@ -145,5 +162,30 @@ public class TMDbMetadataProvider : IMetadataProviderService
         {
             return false;
         }
+    }
+
+    private ICollection<ExternalId> ConvertToExternalIds(ExternalIdsMovie externalIdsMovie)
+    {
+        var externalIds = new List<ExternalId>
+        {
+            new()
+            {
+                MetadataId = -1,
+                Platform = "tmdb",
+                Value = externalIdsMovie.Id.ToString()
+            }
+        };
+        
+        if (!string.IsNullOrEmpty(externalIdsMovie.ImdbId))
+        {
+            externalIds.Add(new ExternalId()
+            {
+                MetadataId = -1,
+                Platform = "imdb",
+                Value = externalIdsMovie.ImdbId
+            });
+        }
+
+        return externalIds;
     }
 }

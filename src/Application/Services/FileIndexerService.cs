@@ -7,6 +7,7 @@ using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
 using MediaServer.Domain.ValueObjects;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
@@ -23,7 +24,9 @@ public class FileIndexerService : IFileIndexerService
     public async Task IndexAsync(Library library, CancellationToken cancellationToken)
     {
         List<IndexedFile> indexedFiles = [];
-        List<Task> mediaCreationTasks = [];
+        List<Task> mediaRelatedTasks = [];
+        List<CreateMediaCommand> createMediaCommands = [];
+
         try
         {
             var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
@@ -37,27 +40,23 @@ public class FileIndexerService : IFileIndexerService
                 }
             }
 
-            var (_, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
+            var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
+            var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue));
 
-            library.IndexedFiles = indexedFiles;
-            await _context.SaveChangesAsync(cancellationToken);
-
-            // TODO - Déplacer dans une logique évenementielle
-            if (addedFiles.Any())
+            if (toBeIdentifiedFiles.Any())
             {
                 if (library.MediaType == LibraryMediaType.Movie)
                 {
-                    foreach (var addedFile in addedFiles)
+                    foreach (var toBeIdentifiedFile in toBeIdentifiedFiles)
                     {
-                        if (addedFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
+                        if (toBeIdentifiedFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
                         {
-                            mediaCreationTasks.Add(_sender.Send(new CreateMediaCommand()
+                            toBeIdentifiedFile.Identification = movieIdentification;
+                            createMediaCommands.Add(new CreateMediaCommand()
                             {
-                                IndexedFileIds = [addedFile.Id],
-                                LibraryIds = [library.Id],
-                                MediaIdentification = movieIdentification,
+                                IndexedFile = toBeIdentifiedFile,
                                 MediaType = MediaType.Movie
-                            }, cancellationToken));
+                            });
                         }
                     }
                 }
@@ -89,6 +88,7 @@ public class FileIndexerService : IFileIndexerService
                 {
                     file.AddDomainEvent(new IndexedFileCreatedEvent(file));
                 }
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
             if (removedFiles.Any())
@@ -98,9 +98,45 @@ public class FileIndexerService : IFileIndexerService
                 {
                     file.AddDomainEvent(new IndexedFileDeletedEvent(file));
                 }
+                // TODO - Clean metadas, pictures, stats if asked?
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
-            await Task.WhenAll(mediaCreationTasks);
+            if (renamedFiles.Any())
+            {
+                foreach (var (newFile, oldFile) in renamedFiles)
+                {
+                    oldFile.Extension = newFile.Extension;
+                    oldFile.Hash = newFile.Hash;
+                    oldFile.IsComposite = newFile.IsComposite;
+                    oldFile.IsSplitPart = newFile.IsSplitPart;
+                    oldFile.Name = newFile.Name;
+                    oldFile.ParentDirectory = newFile.ParentDirectory;
+                    oldFile.Path = newFile.Path;
+                    oldFile.Size = newFile.Size;
+
+                    if (newFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
+                    {
+                        if (movieIdentification != oldFile.Identification)
+                        {
+                            oldFile.Identification = movieIdentification;
+                            createMediaCommands.Add(new CreateMediaCommand()
+                            {
+                                IndexedFile = oldFile,
+                                MediaType = MediaType.Movie
+                            });
+                        }
+                    }
+
+                    _context.IndexedFiles.Update(oldFile);
+                }
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            foreach (var command in createMediaCommands)
+            {
+                await _sender.Send(command, cancellationToken);
+            }
         }
         catch (Exception ex)
         {

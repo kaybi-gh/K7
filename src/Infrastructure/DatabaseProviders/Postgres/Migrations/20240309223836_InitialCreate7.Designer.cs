@@ -3,6 +3,7 @@ using System;
 using MediaServer.Infrastructure.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240309223836_InitialCreate7")]
+    partial class InitialCreate7
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,9 +32,6 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("BaseMetadataId")
-                        .HasColumnType("integer");
 
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
@@ -57,8 +57,6 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BaseMetadataId");
 
                     b.HasIndex("MediaId");
 
@@ -88,6 +86,9 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("IsComposite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsIdentified")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsSplitPart")
@@ -188,7 +189,10 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<int>("MetadataId")
+                    b.Property<int>("MediaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MovieMetadataId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Path")
@@ -200,7 +204,7 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MetadataId");
+                    b.HasIndex("MovieMetadataId");
 
                     b.ToTable("MediaPictures");
                 });
@@ -225,10 +229,15 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
+                    b.Property<int>("LibraryId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LibraryId");
 
                     b.ToTable("Medias");
 
@@ -298,7 +307,7 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.Property<double>("MaximumValue")
                         .HasColumnType("double precision");
 
-                    b.Property<int>("MetadataId")
+                    b.Property<int>("MediaId")
                         .HasColumnType("integer");
 
                     b.Property<double>("MinimumValue")
@@ -312,7 +321,7 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MetadataId");
+                    b.HasIndex("MediaId");
 
                     b.ToTable("Ratings");
 
@@ -677,6 +686,7 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                     b.HasBaseType("MediaServer.Domain.Entities.Metadatas.BaseMetadata");
 
                     b.Property<string[]>("Genres")
+                        .IsRequired()
                         .HasColumnType("text[]");
 
                     b.Property<string>("OriginalLanguage")
@@ -770,12 +780,8 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
             modelBuilder.Entity("MediaServer.Domain.Entities.ExternalId", b =>
                 {
-                    b.HasOne("MediaServer.Domain.Entities.Metadatas.BaseMetadata", null)
-                        .WithMany("ExternalIds")
-                        .HasForeignKey("BaseMetadataId");
-
                     b.HasOne("MediaServer.Domain.Entities.Medias.BaseMedia", "Media")
-                        .WithMany()
+                        .WithMany("ExternalIds")
                         .HasForeignKey("MediaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -795,9 +801,27 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                         .WithMany("IndexedFiles")
                         .HasForeignKey("MediaId");
 
+                    b.Navigation("Media");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.MediaPicture", b =>
+                {
+                    b.HasOne("MediaServer.Domain.Entities.Metadatas.MovieMetadata", null)
+                        .WithMany("Pictures")
+                        .HasForeignKey("MovieMetadataId");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Medias.BaseMedia", b =>
+                {
+                    b.HasOne("MediaServer.Domain.Entities.Library", "Library")
+                        .WithMany("Medias")
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.OwnsOne("MediaServer.Domain.ValueObjects.MediaIdentification", "Identification", b1 =>
                         {
-                            b1.Property<int>("IndexedFileId")
+                            b1.Property<int>("BaseMediaId")
                                 .HasColumnType("integer");
 
                             b1.Property<DateOnly?>("ReleaseYear")
@@ -807,28 +831,18 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
                                 .IsRequired()
                                 .HasColumnType("text");
 
-                            b1.HasKey("IndexedFileId");
+                            b1.HasKey("BaseMediaId");
 
-                            b1.ToTable("IndexedFiles");
+                            b1.ToTable("Medias");
 
                             b1.WithOwner()
-                                .HasForeignKey("IndexedFileId");
+                                .HasForeignKey("BaseMediaId");
                         });
 
-                    b.Navigation("Identification");
-
-                    b.Navigation("Media");
-                });
-
-            modelBuilder.Entity("MediaServer.Domain.Entities.MediaPicture", b =>
-                {
-                    b.HasOne("MediaServer.Domain.Entities.Metadatas.BaseMetadata", "Metadata")
-                        .WithMany("Pictures")
-                        .HasForeignKey("MetadataId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.Navigation("Identification")
                         .IsRequired();
 
-                    b.Navigation("Metadata");
+                    b.Navigation("Library");
                 });
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Metadatas.BaseMetadata", b =>
@@ -844,13 +858,13 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Ratings.BaseRating", b =>
                 {
-                    b.HasOne("MediaServer.Domain.Entities.Metadatas.BaseMetadata", "Metadata")
+                    b.HasOne("MediaServer.Domain.Entities.Medias.BaseMedia", "Media")
                         .WithMany("Ratings")
-                        .HasForeignKey("MetadataId")
+                        .HasForeignKey("MediaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Metadata");
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -968,20 +982,17 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
             modelBuilder.Entity("MediaServer.Domain.Entities.Library", b =>
                 {
                     b.Navigation("IndexedFiles");
+
+                    b.Navigation("Medias");
                 });
 
             modelBuilder.Entity("MediaServer.Domain.Entities.Medias.BaseMedia", b =>
                 {
+                    b.Navigation("ExternalIds");
+
                     b.Navigation("IndexedFiles");
 
                     b.Navigation("Metadata");
-                });
-
-            modelBuilder.Entity("MediaServer.Domain.Entities.Metadatas.BaseMetadata", b =>
-                {
-                    b.Navigation("ExternalIds");
-
-                    b.Navigation("Pictures");
 
                     b.Navigation("Ratings");
                 });
@@ -1013,6 +1024,11 @@ namespace MediaServer.Infrastructure.DatabaseProviders.Postgres.Migrations
             modelBuilder.Entity("MediaServer.Domain.Entities.Medias.SerieSeason", b =>
                 {
                     b.Navigation("Episodes");
+                });
+
+            modelBuilder.Entity("MediaServer.Domain.Entities.Metadatas.MovieMetadata", b =>
+                {
+                    b.Navigation("Pictures");
                 });
 #pragma warning restore 612, 618
         }

@@ -22,17 +22,9 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasValue<SerieSeason>(MediaType.SerieSeason);
 
         builder
-            .OwnsOne(m => m.Identification);
-
-        builder
             .HasMany(m => m.IndexedFiles)
             .WithOne(i => i.Media)
             .HasForeignKey(i => i.MediaId);
-
-        builder
-            .HasOne(m => m.Library)
-            .WithMany(l => l.Medias)
-            .HasForeignKey(m => m.LibraryId);
 
         builder
             .HasOne(m => m.Metadata)

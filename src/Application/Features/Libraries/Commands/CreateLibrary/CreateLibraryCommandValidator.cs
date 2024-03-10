@@ -2,11 +2,11 @@
 
 namespace MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 
-public class CreateLibraryCommandValidator : AbstractValidator<CreateLibraryCommand>
+public class CreateMediaCommandValidator : AbstractValidator<CreateLibraryCommand>
 {
     private readonly IApplicationDbContext _context;
 
-    public CreateLibraryCommandValidator(IApplicationDbContext context)
+    public CreateMediaCommandValidator(IApplicationDbContext context)
     {
         _context = context;
 

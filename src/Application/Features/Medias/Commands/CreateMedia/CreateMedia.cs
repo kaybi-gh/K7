@@ -1,71 +1,80 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using MediaServer.Application.Services;
+using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
-using MediaServer.Domain.ValueObjects;
+using MediaServer.Domain.Interfaces;
 
 namespace MediaServer.Application.Features.Medias.Commands.CreateMedia;
 
 public record CreateMediaCommand : IRequest<int>
 {
     public required MediaType MediaType { get; init; }
-    public required List<int> LibraryIds { get; init; }
-    public required List<int> IndexedFileIds { get; init; }
-    public required MediaIdentification MediaIdentification { get; init; }
+    public required IndexedFile IndexedFile { get; init; }
 }
 
 public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, int>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IMovieMetadataProvider _metadataProvider;
 
-    public CreateMediaCommandHandler(IApplicationDbContext context, ISender sender)
+    public CreateMediaCommandHandler(IApplicationDbContext context, ISender sender, IMovieMetadataProvider metadataProvider)
     {
         _context = context;
         _sender = sender;
+        _metadataProvider = metadataProvider;
     }
 
     public async Task<int> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
     {
-        // Chercher l'existant (librairie, indexedFile, media)
-        // Rattacher si possible
-        // Sinon créer nouveau
-        // Déclencher évenement pour télécharger photos
+        var metadataProviderExternalId = await _metadataProvider.SearchMetadataProviderExternalIdAsync(request.IndexedFile.Identification!, cancellationToken);
 
-        var libraries = await _context.Libraries
-            .Where(x => request.LibraryIds.Contains(x.Id))
-            .ToListAsync(cancellationToken);
-
-        var indexedFiles = await _context.IndexedFiles
-            .Where(x => request.IndexedFileIds.Contains(x.Id))
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        BaseMedia entity = request.MediaType switch
+        // Try to fetch existing Media
+        if (!string.IsNullOrEmpty(metadataProviderExternalId))
         {
-            MediaType.Movie => new Movie()
+            var existingExternalId = await _context.ExternalIds
+                .Include(x => x.Metadata)
+                    .ThenInclude(x => x!.Media)
+                        .ThenInclude(x => x!.IndexedFiles)
+                .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId, cancellationToken);
+
+            if (existingExternalId != null
+                && existingExternalId.Metadata != null
+                && existingExternalId.Metadata.Media != null
+                && existingExternalId.Metadata.Media.IndexedFiles != null)
             {
-                Identification = request.MediaIdentification,
-                LibraryId = libraries.First().Id
-            },
+                existingExternalId.Metadata.Media.IndexedFiles.Add(request.IndexedFile);
+                await _context.SaveChangesAsync(cancellationToken);
+                return existingExternalId.Metadata.Media.Id;
+            }
+        }
+
+        // Create new media
+        BaseMedia media = request.MediaType switch
+        {
+            MediaType.Movie => new Movie() { IndexedFiles = [request.IndexedFile] },
             _ => throw new NotImplementedException()
         };
-        //entity.IndexedFiles = indexedFiles;
-        await _context.Medias.AddAsync(entity, cancellationToken);
 
-        foreach (var indexedFile in indexedFiles)
-        {
-            indexedFile.MediaId = entity.Id;
-        }
-        entity.AddDomainEvent(new MediaCreatedEvent(entity));
+        _context.Medias.Add(media);
         await _context.SaveChangesAsync(cancellationToken);
 
-        //await _sender.Send(new RefreshMediaMetadatasCommand()
-        //{
-        //    Id = entity.Id
-        //}, cancellationToken);
+        if (metadataProviderExternalId != null)
+        {
+            await _sender.Send(new RefreshMediaMetadatasCommand()
+            {
+                MediaId = media.Id,
+                MetadataProviderExternalId = metadataProviderExternalId,
+                Language = "fr",
+                FallbackLanguage = "en"
+            }, cancellationToken);
+        }
 
-        return entity.Id;
+        media.AddDomainEvent(new MediaCreatedEvent(media));
+        await _context.SaveChangesAsync(cancellationToken);
+        return media.Id;
     }
 }
