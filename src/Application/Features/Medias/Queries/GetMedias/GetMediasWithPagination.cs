@@ -1,14 +1,18 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Common.Mappings;
 using MediaServer.Application.Common.Models;
+using MediaServer.Domain.Enums;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
 
 public record GetMediasWithPaginationQuery : IRequest<PaginatedList<MediaDto>>
 {
     public int? LibraryId { get; init; }
-    public int PageNumber { get; init; } = 1;
-    public int PageSize { get; init; } = 10;
+    public MediaType? MediaType { get; init; }
+    // TODO - public bool? Seen { get; init; }
+    // TODO - public MediaOrder? { get; init; } (order by added date, release date, plays, etc)
+    public required int PageNumber { get; init; } = 1;
+    public required int PageSize { get; init; } = 10;
 }
 
 public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<MediaDto>>
@@ -24,7 +28,28 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
 
     public async Task<PaginatedList<MediaDto>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
     {
-        return await _context.Medias
+        var query = _context.Medias
+            .Include(x => x.Metadata)
+                .ThenInclude(x => x!.ExternalIds)
+            .Include(x => x.Metadata)
+                .ThenInclude(x => x!.Pictures)
+            .Include(x => x.Metadata)
+                .ThenInclude(x => x!.Ratings)
+            .Include(x => x.IndexedFiles)
+            .AsQueryable();
+
+        if (request.LibraryId.HasValue)
+        {
+            query = query.Where(x => x.IndexedFiles != null && x.IndexedFiles.Any(x => x.LibraryId == request.LibraryId));
+        }
+
+        if (request.MediaType != null)
+        {
+            query = query.Where(x => x.Type == request.MediaType);
+        }
+
+        return await query
+            .OrderByDescending(x => x.Created)
             .ProjectTo<MediaDto>(_mapper.ConfigurationProvider)
             .PaginatedListAsync(request.PageNumber, request.PageSize);
     }

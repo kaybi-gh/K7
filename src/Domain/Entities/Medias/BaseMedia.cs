@@ -7,5 +7,5 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public MediaType Type { get; protected set; } = type;
     public virtual BaseMetadata? Metadata { get; set; }
 
-    public virtual ICollection<IndexedFile>? IndexedFiles { get; set; }
+    public virtual IList<IndexedFile>? IndexedFiles { get; set; }
 }
