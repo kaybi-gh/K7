@@ -1,11 +1,12 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Common.Mappings;
 using MediaServer.Application.Common.Models;
+using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
 
-public record GetMediasWithPaginationQuery : IRequest<PaginatedList<MediaDto>>
+public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
 {
     public int? LibraryId { get; init; }
     public MediaType? MediaType { get; init; }
@@ -15,7 +16,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<MediaDto>>
     public required int PageSize { get; init; } = 10;
 }
 
-public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<MediaDto>>
+public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
@@ -26,7 +27,7 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
         _mapper = mapper;
     }
 
-    public async Task<PaginatedList<MediaDto>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedList<BaseMedia>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Medias
             .Include(x => x.Metadata)
@@ -48,9 +49,28 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
             query = query.Where(x => x.Type == request.MediaType);
         }
 
+        /*var test = await query
+            .OrderByDescending(x => x.Created)
+            .ToListAsync();
+        var test2 = new List<MediaDto>();
+        var mapper = new Mapper(_mapper.ConfigurationProvider);
+
+        foreach (var item in test)
+        {
+            var mapped = mapper.Map(item, item.GetType(), typeof(MediaDto));
+            test2.Add((MediaDto)mapped);
+        }
+
+        var movieDtos = test.Select(movie => _mapper.Map<MovieDto>(movie)).ToList();
+
+        var test53 = await query
+            .OrderByDescending(x => x.Created)
+            .ProjectTo<MovieDto>(_mapper.ConfigurationProvider)
+            .PaginatedListAsync(request.PageNumber, request.PageSize);*/
+
         return await query
             .OrderByDescending(x => x.Created)
-            .ProjectTo<MediaDto>(_mapper.ConfigurationProvider)
+            //.ProjectTo<MediaDto>(_mapper.ConfigurationProvider)
             .PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 }

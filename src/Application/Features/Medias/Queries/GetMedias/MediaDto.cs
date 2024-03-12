@@ -8,14 +8,25 @@ public record MediaDto
 {
     public int Id { get; init; }
     public MediaType? Type { get; init; }
-    public string? Title { get; init; }
 
     private class Mapping : Profile
     {
         public Mapping()
         {
+            CreateMap<BaseMedia, Movie>()
+                .ForMember(dst => dst.Metadata, src => src.MapFrom(x => x.Metadata));
             CreateMap<BaseMedia, MediaDto>()
-                .ForMember(dest => dest.Title, o => o.MapFrom(src => ((MovieMetadata)src.Metadata!).Title));
+                .IncludeAllDerived();
+
+            CreateMap<Movie, MovieDto>()
+                .ForMember(dst => dst.Title, src => src.MapFrom(x => x.Metadata!.Title));
         }
     }
+}
+
+public record MovieDto : MediaDto
+{
+    public string? Title { get; init; }
+
+    
 }

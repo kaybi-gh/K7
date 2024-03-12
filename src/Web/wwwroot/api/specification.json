@@ -202,7 +202,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedListOfMediaDto"
+                  "$ref": "#/components/schemas/PaginatedListOfBaseMedia"
                 }
               }
             }
@@ -664,14 +664,14 @@
           }
         }
       },
-      "PaginatedListOfMediaDto": {
+      "PaginatedListOfBaseMedia": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MediaDto"
+              "$ref": "#/components/schemas/BaseMedia"
             }
           },
           "pageNumber": {
@@ -694,23 +694,37 @@
           }
         }
       },
-      "MediaDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
+      "BaseMedia": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
           },
-          "type": {
-            "nullable": true,
-            "oneOf": [
-              {
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "type": {
                 "$ref": "#/components/schemas/MediaType"
+              },
+              "metadata": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMetadata"
+                  }
+                ]
+              },
+              "indexedFiles": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/IndexedFile"
+                }
               }
-            ]
+            }
           }
-        }
+        ]
       },
       "MediaType": {
         "type": "integer",
@@ -735,6 +749,333 @@
           6,
           7
         ]
+      },
+      "BaseMetadata": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "$ref": "#/components/schemas/MediaType"
+              },
+              "mediaId": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "media": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMedia"
+                  }
+                ]
+              },
+              "externalIds": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/ExternalId"
+                }
+              },
+              "pictures": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/MediaPicture"
+                }
+              },
+              "ratings": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/BaseRating"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ExternalId": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "platform": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "metadataId": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "metadata": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMetadata"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "BaseAuditableEntity": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "created": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdBy": {
+                "type": "string",
+                "nullable": true
+              },
+              "lastModified": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "lastModifiedBy": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "BaseEntity": {
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseEvent"
+            }
+          }
+        }
+      },
+      "BaseEvent": {
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false
+      },
+      "MediaPicture": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "$ref": "#/components/schemas/MediaPictureType"
+              },
+              "path": {
+                "type": "string"
+              },
+              "metadataId": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "metadata": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMetadata"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "MediaPictureType": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Unknown",
+          "Poster",
+          "Backdrop",
+          "Thumbnail",
+          "Logo"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "BaseRating": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "$ref": "#/components/schemas/RatingSource"
+              },
+              "value": {
+                "type": "number",
+                "format": "double"
+              },
+              "minimumValue": {
+                "type": "number",
+                "format": "double"
+              },
+              "maximumValue": {
+                "type": "number",
+                "format": "double"
+              },
+              "metadataId": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "metadata": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMetadata"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "RatingSource": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Unknown",
+          "MetadataProvider",
+          "LocalUser"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      },
+      "IndexedFile": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "libraryId": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "name": {
+                "type": "string"
+              },
+              "extension": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "parentDirectory": {
+                "type": "string",
+                "nullable": true
+              },
+              "hash": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "isSplitPart": {
+                "type": "boolean"
+              },
+              "isComposite": {
+                "type": "boolean"
+              },
+              "identification": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/MediaIdentification"
+                  }
+                ]
+              },
+              "mediaId": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true
+              },
+              "media": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMedia"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "MediaIdentification": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ValueObject"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "releaseYear": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "ValueObject": {
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false
       },
       "HttpValidationProblemDetails": {
         "allOf": [
