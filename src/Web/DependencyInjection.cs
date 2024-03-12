@@ -1,4 +1,5 @@
-﻿using MediaServer.Application.Common.Interfaces;
+﻿using System.Text.Json.Serialization;
+using MediaServer.Application.Common.Interfaces;
 using MediaServer.Infrastructure.Context.Data;
 using MediaServer.Web.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -36,6 +37,12 @@ public static class DependencyInjection
             options.SuppressModelStateInvalidFilter = true);
 
         services.AddEndpointsApiExplorer();
+
+        services.ConfigureHttpJsonOptions(x =>
+        {
+            x.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            x.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
 
         services.AddOpenApiDocument((configure, sp) =>
         {
