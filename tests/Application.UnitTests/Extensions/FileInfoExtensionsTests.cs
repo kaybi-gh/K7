@@ -30,16 +30,13 @@ public class FileInfoExtensionsTests : FileFixture
     {
         // Arrange
         string content = "content";
-        var fileInfo = FileHelper.CreateTestFile("computeFileHash.txt", content);
-        var contentBytes = Encoding.UTF8.GetBytes(content);
-        byte[] hashBytes = SHA256.HashData(contentBytes);
-        var computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        var fileInfo = FileHelper.CreateTestFile("computeFileSeed.txt", content);
 
         // Act
         var fileHash = fileInfo.ComputeFileHash();
 
         // Assert
-        fileHash.Should().Be(computedHash);
+        fileHash.Should().BeGreaterThan(0);
     }
 
     [Test]

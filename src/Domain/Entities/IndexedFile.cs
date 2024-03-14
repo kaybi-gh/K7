@@ -9,7 +9,7 @@ public class IndexedFile : BaseAuditableEntity
     public required string Extension { get; set; }
     public required string Path { get; set; }
     public string? ParentDirectory { get; set; }
-    public required string Hash { get; set; }
+    public required uint Hash { get; set; }
     public required long Size { get; set; }
     public bool IsSplitPart { get; set; } = false;
     public bool IsComposite { get; set; } = false;
