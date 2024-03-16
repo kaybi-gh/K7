@@ -1,0 +1,28 @@
+version: '3.9'
+
+x-default-restart-security: &default-restart-security
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  k7-server:
+    <<: *default-restart-security
+    container_name: k7-server
+    image: k7-server:latest
+    ports:
+      - 8080:8080/tcp
+    volumes:
+      - L:/Videos/Films:/media/movies:ro
+      - C:/k7/logs:/k7/logs:rw
+      - C:/k7/metadata:/k7/metadata:rw
+    environment:
+      Database__Provider: postgres
+      Database__UserID: postgres
+      Database__Passwodd: '7319'
+      Database__Server: host.docker.internal
+      Database__Port: 5432
+      Database__Name: MediaServer
+      Paths__Metadatas: metadatas
+      Paths__Logs: logs
+      Paths__Transcoding: transcoding
