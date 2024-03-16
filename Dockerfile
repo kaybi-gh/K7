@@ -9,9 +9,8 @@ RUN dotnet publish -c Release -o /k7
 
 
 # Build runtime image
-EXPOSE 8080/tcp
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /k7
 COPY --from=build-env /k7 .
-ENTRYPOINT ["dotnet", "MediaServer.Web.dll"]
+ENTRYPOINT ["dotnet", "MediaServer.Web.dll", "--init-db"]

@@ -2,7 +2,7 @@
   "profiles": {
     "MediaServer.Web": {
       "commandName": "Project",
-      "commandLineArgs": "--init",
+      "commandLineArgs": "--init-db",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

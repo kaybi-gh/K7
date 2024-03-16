@@ -4,7 +4,11 @@ x-default-restart-security: &default-restart-security
   restart: unless-stopped
   security_opt:
     - no-new-privileges:true
-
+    
+volumes:
+  movies:
+    external: true
+    
 services:
   k7-server:
     <<: *default-restart-security
@@ -13,9 +17,9 @@ services:
     ports:
       - 8080:8080/tcp
     volumes:
-      - L:/Videos/Films:/media/movies:ro
-      - C:/k7/logs:/k7/logs:rw
-      - C:/k7/metadata:/k7/metadata:rw
+      - movies:/k7/media/movies:ro
+      - /c/k7/logs:/k7/logs:rw
+      - /c/k7/metadatas:/k7/metadatas:rw
     environment:
       Database__Provider: postgres
       Database__UserID: postgres
