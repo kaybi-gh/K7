@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v14.0.0.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "MediaServer API",
@@ -696,7 +696,43 @@
       },
       "MediaDto": {
         "type": "object",
+        "discriminator": {
+          "propertyName": "innerType",
+          "mapping": {
+            "Movie": "#/components/schemas/MovieDto"
+          }
+        },
         "x-abstract": true,
+        "additionalProperties": false,
+        "required": [
+          "innerType"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pictures": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/PictureDto"
+            }
+          },
+          "ratings": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/RatingDto"
+            }
+          },
+          "innerType": {
+            "type": "string"
+          }
+        }
+      },
+      "PictureDto": {
+        "type": "object",
         "additionalProperties": false,
         "properties": {
           "id": {
@@ -707,11 +743,98 @@
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/MediaType"
+                "$ref": "#/components/schemas/MediaPictureType"
               }
             ]
           }
         }
+      },
+      "MediaPictureType": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Unknown",
+          "Poster",
+          "Backdrop",
+          "Thumbnail",
+          "Logo"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "RatingDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "source": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RatingSource"
+              }
+            ]
+          },
+          "value": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "minimumValue": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "maximumValue": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        }
+      },
+      "RatingSource": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Unknown",
+          "MetadataProvider",
+          "LocalUser"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      },
+      "MovieDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MediaDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "nullable": true
+              },
+              "releaseDate": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              }
+            }
+          }
+        ]
       },
       "MediaType": {
         "type": "integer",

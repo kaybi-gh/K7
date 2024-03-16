@@ -1,12 +1,7 @@
-﻿using System.Drawing;
-using System.Reflection;
-using AutoMapper;
-using MediaServer.Application.Common.Interfaces;
+﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Common.Mappings;
 using MediaServer.Application.Common.Models;
-using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
-using Microsoft.AspNetCore.Rewrite;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
 

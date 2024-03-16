@@ -49,11 +49,11 @@ public static class DependencyInjection
             configure.Title = "MediaServer API";
 
             // Add the fluent validations schema processor
-            var fluentValidationSchemaProcessor =
-                sp.CreateScope().ServiceProvider.GetRequiredService<FluentValidationSchemaProcessor>();
+            //var fluentValidationSchemaProcessor =
+            //    sp.CreateScope().ServiceProvider.GetRequiredService<FluentValidationSchemaProcessor>();
 
             // BUG: SchemaProcessors is missing in NSwag 14 (https://github.com/RicoSuter/NSwag/issues/4524#issuecomment-1811897079)
-            // configure.SchemaProcessors.Add(fluentValidationSchemaProcessor);
+            //configure.SchemaProcessors.Add(fluentValidationSchemaProcessor);
 
             // Add JWT
             configure.AddSecurity("JWT", Enumerable.Empty<string>(), new OpenApiSecurityScheme
