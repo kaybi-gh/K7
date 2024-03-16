@@ -1,7 +1,5 @@
-﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
-using MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
-using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
+﻿using MediaServer.Application.Common.Models;
+using MediaServer.Application.Features.Medias.Queries.GetMedias;
 
 namespace MediaServer.Web.Endpoints;
 
@@ -9,8 +7,13 @@ public class Medias : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
-        /*app.MapGroup(this)
+        app.MapGroup(this)
             //.RequireAuthorization()
-            .MapGet(GetMe);*/
+            .MapGet(GetMedias);
+    }
+
+    public async Task<PaginatedList<MediaDto>> GetMedias(ISender sender, [AsParameters] GetMediasWithPaginationQuery query)
+    {
+        return await sender.Send(query);
     }
 }

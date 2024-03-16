@@ -1,4 +1,5 @@
-﻿using MediaServer.Application.Common.Interfaces;
+﻿using System.Text.Json.Serialization;
+using MediaServer.Application.Common.Interfaces;
 using MediaServer.Infrastructure.Context.Data;
 using MediaServer.Web.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -37,16 +38,22 @@ public static class DependencyInjection
 
         services.AddEndpointsApiExplorer();
 
+        services.ConfigureHttpJsonOptions(x =>
+        {
+            x.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            x.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
+
         services.AddOpenApiDocument((configure, sp) =>
         {
             configure.Title = "MediaServer API";
 
             // Add the fluent validations schema processor
-            var fluentValidationSchemaProcessor =
-                sp.CreateScope().ServiceProvider.GetRequiredService<FluentValidationSchemaProcessor>();
+            //var fluentValidationSchemaProcessor =
+            //    sp.CreateScope().ServiceProvider.GetRequiredService<FluentValidationSchemaProcessor>();
 
             // BUG: SchemaProcessors is missing in NSwag 14 (https://github.com/RicoSuter/NSwag/issues/4524#issuecomment-1811897079)
-            // configure.SchemaProcessors.Add(fluentValidationSchemaProcessor);
+            //configure.SchemaProcessors.Add(fluentValidationSchemaProcessor);
 
             // Add JWT
             configure.AddSecurity("JWT", Enumerable.Empty<string>(), new OpenApiSecurityScheme

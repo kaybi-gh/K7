@@ -9,6 +9,6 @@ public abstract class BaseMetadata(MediaType type) : BaseAuditableEntity
     public required int MediaId { get; set; }
     public virtual BaseMedia? Media { get; set; }
     public virtual ICollection<ExternalId>? ExternalIds { get; set; }
-    public virtual IEnumerable<MediaPicture>? Pictures { get; set; }
+    public virtual ICollection<MediaPicture>? Pictures { get; set; }
     public virtual ICollection<BaseRating>? Ratings { get; set; }
 }

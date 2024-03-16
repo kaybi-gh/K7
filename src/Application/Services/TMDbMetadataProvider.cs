@@ -54,7 +54,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 OriginalLanguage = tmdbMovie.OriginalLanguage,
                 Overview = tmdbMovie.Overview,
                 TagLine = tmdbMovie.Tagline,
-                ExternalIds = ConvertToExternalIds(tmdbMovie.ExternalIds)
+                //ExternalIds = ConvertToExternalIds(tmdbMovie.ExternalIds)
             };
 
             return movieMetadata;
@@ -66,7 +66,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         }
     }
 
-    public async Task<IEnumerable<MediaPicture>?> FetchMediaPictures(int metadataId, string metadataProviderExternalId, string language, CancellationToken cancellationToken, string? fallbackLanguage = "en")
+    public async Task<ICollection<MediaPicture>?> FetchMediaPictures(int metadataId, string metadataProviderExternalId, string language, CancellationToken cancellationToken, string? fallbackLanguage = "en")
     {
         try
         {
@@ -91,7 +91,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         }
     }
 
-    private async Task<IEnumerable<MediaPicture>> TryDownloadPictures(Images images, int metadataId, string preferredLanguage)
+    private async Task<ICollection<MediaPicture>> TryDownloadPictures(Images images, int metadataId, string preferredLanguage)
     {
         List<MediaPicture> mediaPictures = [];
         if (images != null)

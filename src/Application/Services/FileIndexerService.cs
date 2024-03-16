@@ -7,7 +7,6 @@ using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
 using MediaServer.Domain.ValueObjects;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
@@ -24,7 +23,6 @@ public class FileIndexerService : IFileIndexerService
     public async Task IndexAsync(Library library, CancellationToken cancellationToken)
     {
         List<IndexedFile> indexedFiles = [];
-        List<Task> mediaRelatedTasks = [];
         List<CreateMediaCommand> createMediaCommands = [];
 
         try
