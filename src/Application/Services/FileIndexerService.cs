@@ -7,15 +7,18 @@ using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
 using MediaServer.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
 
 namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
 {
+    private readonly ILogger<FileIndexerService> _logger;
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
 
-    public FileIndexerService(IApplicationDbContext context, ISender sender)
+    public FileIndexerService(ILogger<FileIndexerService> logger, IApplicationDbContext context, ISender sender)
     {
+        _logger = logger;
         _context = context;
         _sender = sender;
     }
@@ -27,10 +30,12 @@ public class FileIndexerService : IFileIndexerService
 
         try
         {
+            _logger.LogInformation($"Starting indexing files of library with library id {library.Id}.");
             var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
 
             foreach (var fileInfo in fileInfos)
             {
+                _logger.LogDebug(fileInfo.FullName);
                 var indexedFile = fileInfo.ToIndexedFile(library.Id);
                 if (indexedFile != null)
                 {
@@ -40,6 +45,12 @@ public class FileIndexerService : IFileIndexerService
 
             var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
             var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue));
+
+            _logger.LogInformation($"Found {unchangedFiles.Count()} unchanged files," +
+                $"{addedFiles.Count()} added files," +
+                $"{removedFiles.Count()} removed files," +
+                $"{renamedFiles.Count()} renamed files.\n" +
+                $"This makes {toBeIdentifiedFiles.Count()} files to be identified.");
 
             if (toBeIdentifiedFiles.Any())
             {
@@ -138,7 +149,7 @@ public class FileIndexerService : IFileIndexerService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error indexing files in directory {library.RootPath}: {ex.Message}");
+            _logger.LogError($"Error indexing files in directory {library.RootPath}: {ex.Message}");
         }
     }
 }

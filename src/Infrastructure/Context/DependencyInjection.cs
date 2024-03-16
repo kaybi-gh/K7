@@ -56,13 +56,13 @@ public static class DependencyInjection
         var connectionString = databaseConfiguration.BuildConnectionString();
         Guard.Against.Null(connectionString, message: $"Database {databaseConfiguration.Provider} connection string is empty.");
 
-        switch (databaseConfiguration.Provider)
+        switch (databaseConfiguration.Provider.ToLowerInvariant())
         {
-            case nameof(DatabaseProvider.Postgres):
+            case "postgres":
                 options.UseNpgsql(connectionString!, x => x.MigrationsAssembly(DatabaseProvider.Postgres.Assembly));
                 break;
 
-            case nameof(DatabaseProvider.Sqlite):
+            case "sqlite":
                 options.UseSqlite(connectionString!, x => x.MigrationsAssembly(DatabaseProvider.Sqlite.Assembly));
                 break;
 
