@@ -77,6 +77,7 @@ public static class DependencyInjection
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
             .WriteTo.File(logFilePath, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1000000, rollingInterval: RollingInterval.Day)
+            .WriteTo.Console()
             .CreateLogger();
     }
 }

@@ -18,14 +18,15 @@ try
 
     var app = builder.Build();
     app.InitializeFileSystem();
-    app.UseSerilogRequestLogging();    
+    app.UseSerilogRequestLogging();
 
-    // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment() && args.Contains("--init"))
+    if (args.Contains("--init-db"))
     {
         await app.InitializeDatabaseAsync();
     }
-    else
+
+    // Configure the HTTP request pipeline.
+    if (!app.Environment.IsDevelopment())
     {
         // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
