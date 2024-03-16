@@ -145,6 +145,31 @@
         }
       }
     },
+    "/api/pictures/{id}": {
+      "get": {
+        "tags": [
+          "Pictures"
+        ],
+        "operationId": "GetMediaPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/medias": {
       "get": {
         "tags": [
@@ -697,7 +722,7 @@
       "MediaDto": {
         "type": "object",
         "discriminator": {
-          "propertyName": "innerType",
+          "propertyName": "type",
           "mapping": {
             "Movie": "#/components/schemas/MovieDto"
           }
@@ -705,7 +730,7 @@
         "x-abstract": true,
         "additionalProperties": false,
         "required": [
-          "innerType"
+          "type"
         ],
         "properties": {
           "id": {
@@ -726,7 +751,7 @@
               "$ref": "#/components/schemas/RatingDto"
             }
           },
-          "innerType": {
+          "type": {
             "type": "string"
           }
         }
@@ -746,6 +771,11 @@
                 "$ref": "#/components/schemas/MediaPictureType"
               }
             ]
+          },
+          "uri": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
           }
         }
       },
