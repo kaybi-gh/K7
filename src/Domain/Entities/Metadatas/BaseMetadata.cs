@@ -6,6 +6,10 @@ public abstract class BaseMetadata(MediaType type) : BaseAuditableEntity
 {
     public MediaType Type { get; protected set; } = type;
 
+    public required string Title { get; set; }
+    public required string OriginalTitle { get; set; }
+    public DateOnly? ReleaseDate { get; set; }
+
     public required int MediaId { get; set; }
     public virtual BaseMedia? Media { get; set; }
     public virtual ICollection<ExternalId>? ExternalIds { get; set; }

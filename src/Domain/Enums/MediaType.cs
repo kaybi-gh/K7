@@ -2,7 +2,6 @@
 
 public enum MediaType
 {
-    Unknown = 0,
     Movie = 1,
     MusicAlbum = 2,
     MusicArtist = 3,

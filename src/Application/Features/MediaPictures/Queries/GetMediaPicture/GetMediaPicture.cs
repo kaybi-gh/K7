@@ -1,7 +1,7 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Http;
 
-namespace MediaServer.Application.Features.Libraries.Queries.GetMediaPicture;
+namespace MediaServer.Application.Features.MediaPictures.Queries.GetMediaPicture;
 
 //[Authorize]
 public record GetMediaPictureQuery(int Id) : IRequest<IResult>;

@@ -1,5 +1,4 @@
-﻿using System.Reflection.Emit;
-using MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Enums;
 using Microsoft.EntityFrameworkCore;

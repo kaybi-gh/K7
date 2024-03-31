@@ -34,7 +34,7 @@ public class ApplicationFileSystemInitializer
         || PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Metadatas)
         || PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Transcoding);
 
-        if(!pathsAreOk)
+        if (!pathsAreOk)
         {
             _logger.LogError("An error occurred while initializing the file system.");
             throw new UnauthorizedAccessException();

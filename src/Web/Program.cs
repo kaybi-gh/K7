@@ -13,6 +13,7 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices();
     builder.Services.AddWebServices();
+    builder.Services.ConfigureCors();
     builder.Host.UseSerilog();
     builder.Configuration.ConfigureSerilog();
 

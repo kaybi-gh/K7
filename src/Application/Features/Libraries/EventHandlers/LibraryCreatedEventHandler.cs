@@ -1,5 +1,4 @@
 ﻿using MediaServer.Domain.Events;
-using MediaServer.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace MediaServer.Application.Features.Libraries.EventHandlers;

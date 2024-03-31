@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Enums;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
@@ -11,6 +10,8 @@ namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
 public abstract record MediaDto
 {
     public int Id { get; init; }
+    public string? Title { get; init; }
+    public DateOnly? ReleaseDate { get; init; }
     public IEnumerable<PictureDto>? Pictures { get; init; }
     public IEnumerable<RatingDto>? Ratings { get; init; }
 
@@ -21,11 +22,9 @@ public abstract record MediaDto
             CreateMap<BaseMedia, MediaDto>()
                 .IncludeAllDerived()
                 .ForMember(dst => dst.Pictures, x => x.MapFrom(src => src.Metadata!.Pictures))
-                .ForMember(dst => dst.Ratings, x => x.MapFrom(src => src.Metadata!.Ratings));
-
-            CreateMap<Movie, MovieDto>()
-                .ForMember(dst => dst.Title, x => x.MapFrom(src => (src.Metadata as MovieMetadata)!.Title))
-                .ForMember(dst => dst.ReleaseDate, x => x.MapFrom(src => (src.Metadata as MovieMetadata)!.ReleaseDate));
+                .ForMember(dst => dst.Ratings, x => x.MapFrom(src => src.Metadata!.Ratings))
+                .ForMember(dst => dst.Title, x => x.MapFrom(src => src.Metadata!.Title))
+                .ForMember(dst => dst.ReleaseDate, x => x.MapFrom(src => src.Metadata!.ReleaseDate));
         }
     }
 }
@@ -57,6 +56,4 @@ public record RatingDto
 
 public record MovieDto : MediaDto
 {
-    public string? Title { get; init; }
-    public DateOnly? ReleaseDate { get; init; }
 }

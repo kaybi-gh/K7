@@ -1,7 +1,5 @@
 ﻿using System.Data.Common;
 using MediaServer.Application.Common.Interfaces;
-using MediaServer.Application.Services;
-using MediaServer.Domain.Interfaces;
 using MediaServer.Infrastructure.Context.Data;
 using MediaServer.Tests.Helpers.Fixtures;
 using Microsoft.AspNetCore.Hosting;

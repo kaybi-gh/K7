@@ -26,9 +26,10 @@ public class RequestLoggerTests
         // Arrange
         _user.Id.Returns(Guid.NewGuid().ToString());
         var requestLogger = new LoggingBehaviour<CreateLibraryCommand>(_logger, _user, _identityService);
-        
+
         // Act
-        await requestLogger.Process(new CreateLibraryCommand {
+        await requestLogger.Process(new CreateLibraryCommand
+        {
             MediaType = LibraryMediaType.Music,
             Title = "title",
             RootPath = "path"
@@ -45,7 +46,8 @@ public class RequestLoggerTests
         var requestLogger = new LoggingBehaviour<CreateLibraryCommand>(_logger, _user, _identityService);
 
         // Act
-        await requestLogger.Process(new CreateLibraryCommand {
+        await requestLogger.Process(new CreateLibraryCommand
+        {
             MediaType = LibraryMediaType.Music,
             Title = "title",
             RootPath = "path"

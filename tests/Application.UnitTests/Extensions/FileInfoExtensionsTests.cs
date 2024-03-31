@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using MediaServer.Application.Extensions;
+﻿using MediaServer.Application.Extensions;
 using MediaServer.Domain.Entities;
 using MediaServer.Tests.Helpers.Fixtures;
 using MediaServer.Tests.Helpers.Helpers;

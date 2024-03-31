@@ -1,5 +1,5 @@
-﻿using MediaServer.Application.Common.Exceptions;
-using FluentValidation.Results;
+﻿using FluentValidation.Results;
+using MediaServer.Application.Common.Exceptions;
 
 namespace MediaServer.Application.UnitTests.Common.Exceptions;
 

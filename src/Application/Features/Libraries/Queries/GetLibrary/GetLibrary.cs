@@ -21,7 +21,7 @@ public class GetLibraryQueryHandler : IRequestHandler<GetLibraryQuery, LibraryDt
     {
         var entity = await _context.Libraries
             .AsNoTracking()
-            .Where(l => l.Id == request.Id)
+            .Where(x => x.Id == request.Id)
             .ProjectTo<LibraryDto>(_mapper.ConfigurationProvider)
             .SingleOrDefaultAsync(cancellationToken);
 

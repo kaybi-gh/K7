@@ -49,6 +49,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
             {
                 MediaId = movieId,
                 Title = tmdbMovie.Title,
+                OriginalTitle = tmdbMovie.OriginalTitle,
                 ReleaseDate = tmdbMovie.ReleaseDate.HasValue ? DateOnly.FromDateTime(tmdbMovie.ReleaseDate.Value) : null,
                 Genres = tmdbMovie.Genres.Select(g => g.Name).ToList(),
                 OriginalLanguage = tmdbMovie.OriginalLanguage,
@@ -175,7 +176,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 Value = externalIdsMovie.Id.ToString()
             }
         };
-        
+
         if (!string.IsNullOrEmpty(externalIdsMovie.ImdbId))
         {
             externalIds.Add(new ExternalId()
