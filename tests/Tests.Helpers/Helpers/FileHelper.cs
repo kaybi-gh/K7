@@ -1,6 +1,4 @@
-﻿using System.IO;
-
-namespace MediaServer.Tests.Helpers.Helpers;
+﻿namespace MediaServer.Tests.Helpers.Helpers;
 
 public static class FileHelper
 {

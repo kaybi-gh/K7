@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v14.0.7.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "MediaServer API",
@@ -178,27 +178,60 @@
         "operationId": "GetMedias",
         "parameters": [
           {
-            "name": "LibraryId",
+            "name": "LibraryIds",
             "in": "query",
+            "style": "form",
+            "explode": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "nullable": true
+              "type": "array",
+              "nullable": true,
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             },
             "x-position": 1
           },
           {
-            "name": "MediaType",
+            "name": "Ids",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "nullable": true,
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "x-position": 2
+          },
+          {
+            "name": "MediaTypes",
             "in": "query",
             "schema": {
               "nullable": true,
               "oneOf": [
                 {
-                  "$ref": "#/components/schemas/MediaType"
+                  "$ref": "#/components/schemas/EnumHashSetQueryParamOfMediaType"
                 }
               ]
             },
-            "x-position": 2
+            "x-position": 3
+          },
+          {
+            "name": "OrderBy",
+            "in": "query",
+            "schema": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EnumHashSetQueryParamOfMediaOrderingOption"
+                }
+              ]
+            },
+            "x-position": 4
           },
           {
             "name": "PageNumber",
@@ -208,7 +241,7 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 3
+            "x-position": 5
           },
           {
             "name": "PageSize",
@@ -218,7 +251,7 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 4
+            "x-position": 6
           }
         ],
         "responses": {
@@ -643,15 +676,13 @@
       },
       "LibraryMediaType": {
         "type": "integer",
-        "description": "",
+        "description": "1 = Movie\n2 = Music\n3 = Serie",
         "x-enumNames": [
-          "Unknown",
           "Movie",
           "Music",
           "Serie"
         ],
         "enum": [
-          0,
           1,
           2,
           3
@@ -737,6 +768,15 @@
             "type": "integer",
             "format": "int32"
           },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
           "pictures": {
             "type": "array",
             "nullable": true,
@@ -781,16 +821,14 @@
       },
       "MediaPictureType": {
         "type": "integer",
-        "description": "",
+        "description": "1 = Poster\n2 = Backdrop\n3 = Thumbnail\n4 = Logo",
         "x-enumNames": [
-          "Unknown",
           "Poster",
           "Backdrop",
           "Thumbnail",
           "Logo"
         ],
         "enum": [
-          0,
           1,
           2,
           3,
@@ -832,14 +870,12 @@
       },
       "RatingSource": {
         "type": "integer",
-        "description": "",
+        "description": "1 = MetadataProvider\n2 = LocalUser",
         "x-enumNames": [
-          "Unknown",
           "MetadataProvider",
           "LocalUser"
         ],
         "enum": [
-          0,
           1,
           2
         ]
@@ -851,26 +887,20 @@
           },
           {
             "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "title": {
-                "type": "string",
-                "nullable": true
-              },
-              "releaseDate": {
-                "type": "string",
-                "format": "date",
-                "nullable": true
-              }
-            }
+            "additionalProperties": false
           }
         ]
       },
+      "EnumHashSetQueryParamOfMediaType": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/MediaType"
+        }
+      },
       "MediaType": {
         "type": "integer",
-        "description": "",
+        "description": "1 = Movie\n2 = MusicAlbum\n3 = MusicArtist\n4 = MusicTrack\n5 = Serie\n6 = SerieEpisode\n7 = SerieSeason",
         "x-enumNames": [
-          "Unknown",
           "Movie",
           "MusicAlbum",
           "MusicArtist",
@@ -880,7 +910,6 @@
           "SerieSeason"
         ],
         "enum": [
-          0,
           1,
           2,
           3,
@@ -888,6 +917,48 @@
           5,
           6,
           7
+        ]
+      },
+      "EnumHashSetQueryParamOfMediaOrderingOption": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/MediaOrderingOption"
+        }
+      },
+      "MediaOrderingOption": {
+        "type": "integer",
+        "description": "0 = CreatedAsc\n1 = CreatedDesc\n2 = LocalRatingAsc\n3 = LocalRatingDesc\n4 = OriginalTitleAsc\n5 = OriginalTitleDesc\n6 = PlayCountAsc\n7 = PlayCountDesc\n8 = PopularityAsc\n9 = PopularityDesc\n10 = ReleaseDateAsc\n11 = ReleaseDateDesc\n12 = TitleAsc\n13 = TitleDesc",
+        "x-enumNames": [
+          "CreatedAsc",
+          "CreatedDesc",
+          "LocalRatingAsc",
+          "LocalRatingDesc",
+          "OriginalTitleAsc",
+          "OriginalTitleDesc",
+          "PlayCountAsc",
+          "PlayCountDesc",
+          "PopularityAsc",
+          "PopularityDesc",
+          "ReleaseDateAsc",
+          "ReleaseDateDesc",
+          "TitleAsc",
+          "TitleDesc"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
         ]
       },
       "HttpValidationProblemDetails": {

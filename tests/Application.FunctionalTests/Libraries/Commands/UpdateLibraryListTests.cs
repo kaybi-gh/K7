@@ -13,7 +13,8 @@ public class UpdateLibraryListTests : DatabaseFixture
     public async Task ShouldRequireValidLibraryId()
     {
         // Arrange
-        var command = new UpdateLibraryCommand {
+        var command = new UpdateLibraryCommand
+        {
             Id = 99,
             Title = "New Title"
         };

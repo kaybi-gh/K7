@@ -1,5 +1,4 @@
-﻿using System;
-namespace MediaServer.Domain.ValueObjects;
+﻿namespace MediaServer.Domain.ValueObjects;
 public class MediaIdentification : ValueObject
 {
     public string Title { get; set; }

@@ -15,7 +15,7 @@ public static class FileInfoExtensions
         // Changing count will invalidate every IndexedFile seed
         const int kiloBytesCount = 10;
         const int bufferSize = 1024;
-        
+
         byte[] buffer = new byte[bufferSize];
         int bytesRead;
 

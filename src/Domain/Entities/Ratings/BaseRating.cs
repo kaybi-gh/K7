@@ -1,5 +1,4 @@
-﻿using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Entities.Metadatas;
+﻿using MediaServer.Domain.Entities.Metadatas;
 
 namespace MediaServer.Domain.Entities.Ratings;
 public abstract class BaseRating : BaseAuditableEntity

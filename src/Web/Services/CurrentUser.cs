@@ -1,5 +1,4 @@
 ﻿using System.Security.Claims;
-
 using MediaServer.Application.Common.Interfaces;
 
 namespace MediaServer.Web.Services;

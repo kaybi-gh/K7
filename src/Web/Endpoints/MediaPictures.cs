@@ -1,4 +1,4 @@
-﻿using MediaServer.Application.Features.Libraries.Queries.GetMediaPicture;
+﻿using MediaServer.Application.Features.MediaPictures.Queries.GetMediaPicture;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MediaServer.Web.Endpoints;

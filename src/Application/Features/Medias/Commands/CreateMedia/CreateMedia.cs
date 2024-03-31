@@ -1,6 +1,5 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Features.Medias.Commands.RefreshMediaMetadatas;
-using MediaServer.Application.Services;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;

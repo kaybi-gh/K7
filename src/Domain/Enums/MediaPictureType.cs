@@ -2,7 +2,6 @@
 
 public enum MediaPictureType
 {
-    Unknown = 0,
     Poster = 1,
     Backdrop = 2,
     Thumbnail = 3,

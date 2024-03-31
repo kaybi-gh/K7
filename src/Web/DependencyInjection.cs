@@ -65,6 +65,21 @@ public static class DependencyInjection
             });
 
             configure.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
+            configure.SchemaSettings.GenerateEnumMappingDescription = true;
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection ConfigureCors(this IServiceCollection services)
+    {
+        services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                // policy.WithOrigins("http://fqdn"); // TODO
+                policy.SetIsOriginAllowed(origin => new Uri(origin).IsLoopback);
+            });
         });
 
         return services;
