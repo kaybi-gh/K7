@@ -13,7 +13,6 @@ public record IndexedFileDto
     public required long Size { get; init; }
     public bool IsSplitPart { get; init; }
     public bool IsComposite { get; init; }
-    public bool IsIdentified { get; init; }
 
     private class Mapping : Profile
     {

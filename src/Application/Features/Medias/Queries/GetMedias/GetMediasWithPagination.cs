@@ -7,7 +7,7 @@ using MediaServer.Domain.Enums;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
 
-public record GetMediasWithPaginationQuery : IRequest<PaginatedList<MediaDto>>
+public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto>>
 {
     public int[]? LibraryIds { get; init; }
     public int[]? Ids { get; init; }
@@ -18,7 +18,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<MediaDto>>
     public required int PageSize { get; init; } = 10;
 }
 
-public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<MediaDto>>
+public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<LiteMediaDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
@@ -29,7 +29,7 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
         _mapper = mapper;
     }
 
-    public async Task<PaginatedList<MediaDto>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedList<LiteMediaDto>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Medias
             .Include(x => x.Metadata)
@@ -45,11 +45,11 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
         var orderedQuery = ApplyOrdering(request.OrderBy, query);
         var medias = await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
 
-        List<MediaDto> mediaDtos = medias.Items
-            .Select(media => media.ConvertToDto(_mapper))
+        List<LiteMediaDto> mediaDtos = medias.Items
+            .Select(media => media.ConvertToLiteDto(_mapper))
             .ToList();
 
-        return new PaginatedList<MediaDto>(mediaDtos.AsReadOnly(), medias.TotalCount, request.PageNumber, request.PageSize);
+        return new PaginatedList<LiteMediaDto>(mediaDtos.AsReadOnly(), medias.TotalCount, request.PageNumber, request.PageSize);
     }
 
     private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query)

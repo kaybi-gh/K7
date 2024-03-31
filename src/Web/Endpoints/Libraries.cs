@@ -2,7 +2,9 @@
 using MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
 using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
 using MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
+using MediaServer.Application.Features.Libraries.Queries;
 using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
+using MediaServer.Application.Features.Libraries.Queries.GetLibrary;
 
 namespace MediaServer.Web.Endpoints;
 
@@ -12,11 +14,17 @@ public class Libraries : EndpointGroupBase
     {
         app.MapGroup(this)
             //.RequireAuthorization()
+            .MapGet(GetLibrary, "{id}")
             .MapGet(GetLibraries)
             .MapPost(CreateLibrary)
             .MapPost(IndexLibraryFiles, "{id}/index-files")
             .MapPut(UpdateLibrary, "{id}")
             .MapDelete(DeleteLibrary, "{id}");
+    }
+
+    public async Task<LibraryDto> GetLibrary(ISender sender, int id)
+    {
+        return await sender.Send(new GetLibraryQuery(id));
     }
 
     public async Task<IEnumerable<LibraryDto>> GetLibraries(ISender sender)
