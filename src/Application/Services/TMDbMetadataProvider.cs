@@ -1,5 +1,5 @@
 ﻿using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Metadatas;
+using MediaServer.Domain.Entities.Metadatas.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Interfaces;
 using MediaServer.Domain.ValueObjects;
@@ -55,6 +55,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 OriginalLanguage = tmdbMovie.OriginalLanguage,
                 Overview = tmdbMovie.Overview,
                 TagLine = tmdbMovie.Tagline,
+                
                 //ExternalIds = ConvertToExternalIds(tmdbMovie.ExternalIds)
             };
 
@@ -67,7 +68,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         }
     }
 
-    public async Task<ICollection<MediaPicture>?> FetchMediaPictures(int metadataId, string metadataProviderExternalId, string language, CancellationToken cancellationToken, string? fallbackLanguage = "en")
+    public async Task<ICollection<MetadataPicture>?> FetchMetadataPictures(int metadataId, string metadataProviderExternalId, string language, CancellationToken cancellationToken, string? fallbackLanguage = "en")
     {
         try
         {
@@ -92,9 +93,9 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         }
     }
 
-    private async Task<ICollection<MediaPicture>> TryDownloadPictures(Images images, int metadataId, string preferredLanguage)
+    private async Task<ICollection<MetadataPicture>> TryDownloadPictures(Images images, int metadataId, string preferredLanguage)
     {
-        List<MediaPicture> mediaPictures = [];
+        List<MetadataPicture> mediaPictures = [];
         if (images != null)
         {
             var bestBackdrop = images.Backdrops.OrderBy(b => b.Iso_639_1 == preferredLanguage).ThenByDescending(b => b.VoteAverage).FirstOrDefault();
@@ -107,11 +108,11 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
                 if (await TryDownloadPictureAsync(bestBackdrop, filePath))
                 {
-                    mediaPictures.Add(new MediaPicture()
+                    mediaPictures.Add(new MetadataPicture()
                     {
                         MetadataId = metadataId,
                         Path = filePath,
-                        Type = MediaPictureType.Backdrop
+                        Type = MetadataPictureType.Backdrop
                     });
                 }
             }
@@ -122,11 +123,11 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
                 if (await TryDownloadPictureAsync(bestLogo, filePath))
                 {
-                    mediaPictures.Add(new MediaPicture()
+                    mediaPictures.Add(new MetadataPicture()
                     {
                         MetadataId = metadataId,
                         Path = filePath,
-                        Type = MediaPictureType.Logo
+                        Type = MetadataPictureType.Logo
                     });
                 }
             }
@@ -137,11 +138,11 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
                 if (await TryDownloadPictureAsync(bestPoster, filePath))
                 {
-                    mediaPictures.Add(new MediaPicture()
+                    mediaPictures.Add(new MetadataPicture()
                     {
                         MetadataId = metadataId,
                         Path = filePath,
-                        Type = MediaPictureType.Poster
+                        Type = MetadataPictureType.Poster
                     });
                 }
             }

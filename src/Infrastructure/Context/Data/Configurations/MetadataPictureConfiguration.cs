@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MediaServer.Infrastructure.Context.Data.Configurations;
 
-public class MediaPictureConfiguration : IEntityTypeConfiguration<MediaPicture>
+public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPicture>
 {
-    public void Configure(EntityTypeBuilder<MediaPicture> builder)
+    public void Configure(EntityTypeBuilder<MetadataPicture> builder)
     {
         builder
             .HasOne(r => r.Metadata)

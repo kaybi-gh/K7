@@ -52,7 +52,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     externalId.MetadataId = media.Metadata.Id;
                 }
             }
-            var mediaPictures = await _metadataProvider.FetchMediaPictures(metadata.Id, request.MetadataProviderExternalId, "fr", cancellationToken, fallbackLanguage: "en");
+            var mediaPictures = await _metadataProvider.FetchMetadataPictures(metadata.Id, request.MetadataProviderExternalId, "fr", cancellationToken, fallbackLanguage: "en");
             media.Metadata.Pictures = mediaPictures;
             await _context.SaveChangesAsync(cancellationToken);
         }

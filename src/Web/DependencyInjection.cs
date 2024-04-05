@@ -56,7 +56,7 @@ public static class DependencyInjection
             //configure.SchemaProcessors.Add(fluentValidationSchemaProcessor);
 
             // Add JWT
-            configure.AddSecurity("JWT", Enumerable.Empty<string>(), new OpenApiSecurityScheme
+            configure.AddSecurity("JWT", [], new OpenApiSecurityScheme
             {
                 Type = OpenApiSecuritySchemeType.ApiKey,
                 Name = "Authorization",
@@ -78,7 +78,11 @@ public static class DependencyInjection
             options.AddDefaultPolicy(policy =>
             {
                 // policy.WithOrigins("http://fqdn"); // TODO
-                policy.SetIsOriginAllowed(origin => new Uri(origin).IsLoopback);
+                //policy.SetIsOriginAllowed(origin => new Uri(origin).IsLoopback);
+                policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .WithExposedHeaders("*");
             });
         });
 

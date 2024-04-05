@@ -1,4 +1,4 @@
-﻿using MediaServer.Domain.Entities.Metadatas;
+﻿using MediaServer.Domain.Entities.Metadatas.Medias;
 
 namespace MediaServer.Domain.Interfaces;
 public interface IMovieMetadataProvider : IMetadataProviderService
