@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
-using MediaServer.Application.Features.MediaPictures.Queries.GetMediaPicture;
+using MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Entities.Metadatas;
+using MediaServer.Domain.Entities.Metadatas.Medias;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedia;
 
@@ -13,7 +13,7 @@ public abstract record MediaDto
     public int Id { get; init; }
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
-    public IEnumerable<PictureDto>? Pictures { get; init; }
+    public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
     public IEnumerable<RatingDto>? Ratings { get; init; }
     public IEnumerable<IndexedFileDto>? IndexedFiles { get; init; }
 

@@ -175,31 +175,6 @@
         }
       }
     },
-    "/api/pictures/{id}": {
-      "get": {
-        "tags": [
-          "Pictures"
-        ],
-        "operationId": "GetMediaPicture",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/medias/{id}": {
       "get": {
         "tags": [
@@ -326,6 +301,31 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/metadata-pictures/{id}": {
+      "get": {
+        "tags": [
+          "MetadataPictures"
+        ],
+        "operationId": "GetMetadataPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
           }
         }
       }
@@ -813,7 +813,7 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/PictureDto"
+              "$ref": "#/components/schemas/MetadataPictureDto"
             }
           },
           "ratings": {
@@ -823,7 +823,7 @@
               "$ref": "#/components/schemas/RatingDto"
             }
           },
-          "indexedFileDtos": {
+          "indexedFiles": {
             "type": "array",
             "nullable": true,
             "items": {
@@ -835,7 +835,7 @@
           }
         }
       },
-      "PictureDto": {
+      "MetadataPictureDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -847,7 +847,7 @@
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/MediaPictureType"
+                "$ref": "#/components/schemas/MetadataPictureType"
               }
             ]
           },
@@ -858,20 +858,22 @@
           }
         }
       },
-      "MediaPictureType": {
+      "MetadataPictureType": {
         "type": "integer",
-        "description": "1 = Poster\n2 = Backdrop\n3 = Thumbnail\n4 = Logo",
+        "description": "1 = Poster\n2 = Backdrop\n3 = Thumbnail\n4 = Logo\n5 = Portrait",
         "x-enumNames": [
           "Poster",
           "Backdrop",
           "Thumbnail",
-          "Logo"
+          "Logo",
+          "Portrait"
         ],
         "enum": [
           1,
           2,
           3,
-          4
+          4,
+          5
         ]
       },
       "RatingDto": {
@@ -1041,7 +1043,7 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "$ref": "#/components/schemas/PictureDto"
+              "$ref": "#/components/schemas/MetadataPictureDto"
             }
           },
           "type": {
@@ -1068,11 +1070,10 @@
       },
       "MediaType": {
         "type": "integer",
-        "description": "1 = Movie\n2 = MusicAlbum\n3 = MusicArtist\n4 = MusicTrack\n5 = Serie\n6 = SerieEpisode\n7 = SerieSeason",
+        "description": "1 = Movie\n2 = MusicAlbum\n3 = MusicTrack\n4 = Serie\n5 = SerieEpisode\n6 = SerieSeason",
         "x-enumNames": [
           "Movie",
           "MusicAlbum",
-          "MusicArtist",
           "MusicTrack",
           "Serie",
           "SerieEpisode",
@@ -1084,8 +1085,7 @@
           3,
           4,
           5,
-          6,
-          7
+          6
         ]
       },
       "EnumHashSetQueryParamOfMediaOrderingOption": {

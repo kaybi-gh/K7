@@ -1,5 +1,5 @@
 ﻿using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Entities.Metadatas;
+using MediaServer.Domain.Entities.Metadatas.Medias;
 using MediaServer.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -14,7 +14,6 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasDiscriminator(m => m.Type)
             .HasValue<Movie>(MediaType.Movie)
             .HasValue<MusicAlbum>(MediaType.MusicAlbum)
-            .HasValue<MusicArtist>(MediaType.MusicArtist)
             .HasValue<MusicTrack>(MediaType.MusicTrack)
             .HasValue<Serie>(MediaType.Serie)
             .HasValue<SerieEpisode>(MediaType.SerieEpisode)
@@ -28,7 +27,7 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
         builder
             .HasOne(m => m.Metadata)
             .WithOne(m => m.Media)
-            .HasForeignKey<BaseMetadata>(m => m.MediaId);
+            .HasForeignKey<BaseMediaMetadata>(m => m.MediaId);
     }
 
     public static void Configure(EntityTypeBuilder<Movie> builder)
@@ -36,10 +35,6 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
     }
 
     public static void Configure(EntityTypeBuilder<MusicAlbum> builder)
-    {
-    }
-
-    public static void Configure(EntityTypeBuilder<MusicArtist> builder)
     {
     }
 

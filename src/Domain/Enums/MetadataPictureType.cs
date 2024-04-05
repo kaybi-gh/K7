@@ -1,9 +1,10 @@
 ﻿namespace MediaServer.Domain.Enums;
 
-public enum MediaPictureType
+public enum MetadataPictureType
 {
     Poster = 1,
     Backdrop = 2,
     Thumbnail = 3,
-    Logo = 4
+    Logo = 4,
+    Portrait = 5
 }

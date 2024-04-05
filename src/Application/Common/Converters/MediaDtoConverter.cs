@@ -13,7 +13,6 @@ public static class MediaDtoConverter
         {
             MediaType.Movie => mapper.Map<MovieDto>(media),
             MediaType.MusicAlbum => throw new NotImplementedException(),
-            MediaType.MusicArtist => throw new NotImplementedException(),
             MediaType.MusicTrack => throw new NotImplementedException(),
             MediaType.Serie => throw new NotImplementedException(),
             MediaType.SerieEpisode => throw new NotImplementedException(),
@@ -28,7 +27,6 @@ public static class MediaDtoConverter
         {
             MediaType.Movie => mapper.Map<LiteMovieDto>(media),
             MediaType.MusicAlbum => throw new NotImplementedException(),
-            MediaType.MusicArtist => throw new NotImplementedException(),
             MediaType.MusicTrack => throw new NotImplementedException(),
             MediaType.Serie => throw new NotImplementedException(),
             MediaType.SerieEpisode => throw new NotImplementedException(),

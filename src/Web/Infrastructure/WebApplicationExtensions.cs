@@ -1,15 +1,19 @@
 ﻿using System.Reflection;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Options;
 
 namespace MediaServer.Web.Infrastructure;
 
-public static class WebApplicationExtensions
+public static partial class WebApplicationExtensions
 {
     public static RouteGroupBuilder MapGroup(this WebApplication app, EndpointGroupBase group)
     {
         var groupName = group.GetType().Name;
 
         return app
-            .MapGroup($"/api/{groupName.ToLower()}")
+            .MapGroup($"/api/{groupName.PascalToKebabCase()}")
             .WithGroupName(groupName)
             .WithTags(groupName)
             .WithOpenApi();
@@ -34,4 +38,17 @@ public static class WebApplicationExtensions
 
         return app;
     }
+
+    private static string PascalToKebabCase(this string value)
+    {
+        return string.IsNullOrEmpty(value)
+            ? value
+            : PascalSpaces()
+                .Replace(value, "-$1")
+                .Trim()
+                .ToLower();
+    }
+
+    [GeneratedRegex("(?<!^)([A-Z][a-z]|(?<=[a-z])[A-Z0-9])", RegexOptions.Compiled)]
+    private static partial Regex PascalSpaces();
 }

@@ -1,4 +1,6 @@
-﻿namespace MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities.Metadatas.Persons;
+
+namespace MediaServer.Domain.Entities.Medias;
 public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
 {
     public int? ArtistId { get; set; }

@@ -1,5 +1,5 @@
 ﻿using System.Text.Json.Serialization;
-using MediaServer.Application.Features.MediaPictures.Queries.GetMediaPicture;
+using MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 using MediaServer.Domain.Entities.Medias;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
@@ -11,7 +11,7 @@ public abstract record LiteMediaDto
     public int Id { get; init; }
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
-    public IEnumerable<PictureDto>? Pictures { get; init; }
+    public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
 
     private class Mapping : Profile
     {
