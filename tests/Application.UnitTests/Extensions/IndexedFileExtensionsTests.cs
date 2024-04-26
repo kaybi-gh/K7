@@ -39,7 +39,7 @@ public class IndexedFileExtensionsTests : FileFixture
         var fileInfo = FileHelper.CreateTestFile(path, "content");
         var library = new Library()
         {
-            Id = 1,
+            Id = Guid.NewGuid(),
             MediaType = LibraryMediaType.Movie,
             RootPath = FileHelper.TestDirectoryPath,
             Title = "Movies"

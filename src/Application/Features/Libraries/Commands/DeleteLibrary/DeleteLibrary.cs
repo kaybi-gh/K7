@@ -3,7 +3,7 @@ using MediaServer.Domain.Events;
 
 namespace MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
 
-public record DeleteLibraryCommand(int Id) : IRequest;
+public record DeleteLibraryCommand(Guid Id) : IRequest;
 
 public class DeleteLibraryCommandHandler : IRequestHandler<DeleteLibraryCommand>
 {

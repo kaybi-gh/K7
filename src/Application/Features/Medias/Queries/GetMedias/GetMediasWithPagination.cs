@@ -9,8 +9,8 @@ namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
 
 public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto>>
 {
-    public int[]? LibraryIds { get; init; }
-    public int[]? Ids { get; init; }
+    public Guid[]? LibraryIds { get; init; }
+    public Guid[]? Ids { get; init; }
     // TODO - public bool? Seen { get; init; }
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }

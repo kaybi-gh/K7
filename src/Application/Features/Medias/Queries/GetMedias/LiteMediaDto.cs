@@ -8,7 +8,7 @@ namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
 [JsonDerivedType(typeof(LiteMovieDto), nameof(Movie))]
 public abstract record LiteMediaDto
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public IEnumerable<MetadataPictureDto>? Pictures { get; init; }

@@ -5,7 +5,7 @@ namespace MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataP
 
 public record MetadataPictureDto
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
     public MetadataPictureType? Type { get; init; }
     public Uri? Uri { get; init; }
 

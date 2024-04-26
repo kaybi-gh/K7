@@ -6,7 +6,7 @@ namespace MediaServer.Application.Features.Medias.Commands.RefreshMediaMetadatas
 
 public record RefreshMediaMetadatasCommand : IRequest
 {
-    public required int MediaId { get; init; }
+    public required Guid MediaId { get; init; }
     public required string MetadataProviderExternalId { get; init; }
     public required string Language { get; init; }
     public required string FallbackLanguage { get; init; }
@@ -42,16 +42,28 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         if (metadata != null)
         {
+            await _context.Persons.AddRangeAsync(metadata.PersonRoles.Select(x => x.Person));
+            await _context.PersonRoles.AddRangeAsync(metadata.PersonRoles);
+            await _context.Metadatas.AddAsync(metadata);
             media.Metadata = metadata;
-            await _context.SaveChangesAsync(cancellationToken);
-
-            if (media.Metadata.ExternalIds != null)
+            
+            try
             {
-                foreach (var externalId in media.Metadata.ExternalIds)
-                {
-                    externalId.MetadataId = media.Metadata.Id;
-                }
+                await _context.SaveChangesAsync(cancellationToken);
             }
+            catch (Exception ex)
+            {
+                var test = ex.Message;
+            }
+            
+
+            //if (media.Metadata.ExternalIds != null)
+            //{
+            //    foreach (var externalId in media.Metadata.ExternalIds)
+            //    {
+            //        externalId.MetadataId = media.Metadata.Id;
+            //    }
+            //}
             var mediaPictures = await _metadataProvider.FetchMetadataPictures(metadata.Id, request.MetadataProviderExternalId, "fr", cancellationToken, fallbackLanguage: "en");
             media.Metadata.Pictures = mediaPictures;
             await _context.SaveChangesAsync(cancellationToken);

@@ -8,13 +8,13 @@ using MediaServer.Domain.Interfaces;
 
 namespace MediaServer.Application.Features.Medias.Commands.CreateMedia;
 
-public record CreateMediaCommand : IRequest<int>
+public record CreateMediaCommand : IRequest<Guid>
 {
     public required MediaType MediaType { get; init; }
     public required IndexedFile IndexedFile { get; init; }
 }
 
-public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, int>
+public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -27,7 +27,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, int
         _metadataProvider = metadataProvider;
     }
 
-    public async Task<int> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
     {
         var metadataProviderExternalId = await _metadataProvider.SearchMetadataProviderExternalIdAsync(request.IndexedFile.Identification!, cancellationToken);
 
@@ -58,8 +58,16 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, int
             _ => throw new NotImplementedException()
         };
 
-        _context.Medias.Add(media);
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+
+            _context.Medias.Add(media);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch(Exception ex)
+        {
+            var test = ex.ToString();
+        }
 
         if (metadataProviderExternalId != null)
         {

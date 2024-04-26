@@ -11,10 +11,11 @@ public abstract class BaseMediaMetadata(MediaType type) : BaseAuditableEntity
     public required string OriginalTitle { get; set; }
     public DateOnly? ReleaseDate { get; set; }
 
-    public required int MediaId { get; set; }
-    public virtual BaseMedia? Media { get; set; }
-    public virtual ICollection<ExternalId>? ExternalIds { get; set; }
-    public virtual ICollection<MetadataPicture>? Pictures { get; set; }
-    public virtual ICollection<BaseRating>? Ratings { get; set; }
-    public virtual ICollection<BasePersonRole>? Credits { get; set; }
+    public Guid MediaId { get; set; }
+    public virtual BaseMedia Media { get; set; } = null!;
+    public virtual IList<ExternalId> ExternalIds { get; set; } = [];
+    public virtual IList<MetadataPicture> Pictures { get; set; } = [];
+    public virtual IList<BaseRating> Ratings { get; set; } = [];
+    public virtual IList<BasePersonRole> PersonRoles { get; set; } = [];
+    public virtual IList<string> Genres { get; set; } = [];
 }

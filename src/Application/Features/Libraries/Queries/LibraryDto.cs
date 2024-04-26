@@ -5,7 +5,7 @@ namespace MediaServer.Application.Features.Libraries.Queries;
 
 public record LibraryDto
 {
-    public required int Id { get; init; }
+    public required Guid Id { get; init; }
     public required string Title { get; set; }
     public required LibraryMediaType MediaType { get; set; }
     public required string RootPath { get; set; }

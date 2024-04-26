@@ -1,14 +1,15 @@
-﻿using MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities.Metadatas.Medias;
 
 namespace MediaServer.Domain.Entities.Metadatas.Persons;
-public class BasePersonRole : BaseAuditableEntity
+public class BasePersonRole(PersonJob job) : BaseAuditableEntity
 {
-    public required string Name { get; set; }
-    public PersonJob Job { get; set; }
+    public PersonJob Job { get; protected set; } = job;
+    public int? Order {  get; set; }
 
-    public required int PersonId { get; set; }
-    public virtual Person? Person { get; set; }
-    public required int MediaId { get; set; }
-    public virtual BaseMedia? Media { get; set; }
+    public IList<ExternalId> ExternalIds { get; set; } = [];
+    public Guid PersonId { get; set; }
+    public virtual Person Person { get; set; } = null!;
+    public Guid MetadataId { get; set; }
+    public virtual BaseMediaMetadata Metadata { get; set; } = null!;
     public virtual MetadataPicture? PortraitPicture { get; set; }
 }

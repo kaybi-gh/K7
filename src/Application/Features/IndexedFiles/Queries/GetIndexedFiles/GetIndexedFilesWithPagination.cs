@@ -6,7 +6,7 @@ namespace MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
 
 public record GetIndexedFilesWithPaginationQuery : IRequest<PaginatedList<IndexedFileDto>>
 {
-    public int? LibraryId { get; init; }
+    public Guid? LibraryId { get; init; }
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
 }

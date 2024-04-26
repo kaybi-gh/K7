@@ -3,5 +3,5 @@
 namespace MediaServer.Domain.Interfaces;
 public interface IMovieMetadataProvider : IMetadataProviderService
 {
-    Task<MovieMetadata?> FetchMovieMetadata(int movieId, string metadataProviderExternalId, string language, CancellationToken cancellationToken);
+    Task<MovieMetadata?> FetchMovieMetadata(Guid movieId, string metadataProviderExternalId, string language, CancellationToken cancellationToken);
 }

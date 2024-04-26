@@ -5,5 +5,4 @@ public enum PersonJob
     Actor,
     VoiceActor,
     MusicArtist,
-    
 }

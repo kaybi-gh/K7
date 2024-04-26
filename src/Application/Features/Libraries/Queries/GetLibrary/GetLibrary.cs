@@ -4,7 +4,7 @@ using MediaServer.Application.Common.Security;
 namespace MediaServer.Application.Features.Libraries.Queries.GetLibrary;
 
 [Authorize]
-public record GetLibraryQuery(int Id) : IRequest<LibraryDto>;
+public record GetLibraryQuery(Guid Id) : IRequest<LibraryDto>;
 
 public class GetLibraryQueryHandler : IRequestHandler<GetLibraryQuery, LibraryDto>
 {

@@ -41,7 +41,7 @@ public class FileInfoExtensionsTests : FileFixture
     public void ShouldConvertToIndexedFile()
     {
         // Arrange
-        var libraryId = 1;
+        var libraryId = Guid.NewGuid();
         var fileInfo = FileHelper.CreateTestFile("file.mkv", "content");
         IndexedFile expectedIndexedFile = new()
         {
@@ -65,7 +65,7 @@ public class FileInfoExtensionsTests : FileFixture
     public void ShouldNotConvertToIndexedFile()
     {
         // Arrange
-        var libraryId = 1;
+        var libraryId = Guid.NewGuid();
         var fileInfo = FileHelper.CreateTestFile("file.unkownExtension", "content");
 
         // Act

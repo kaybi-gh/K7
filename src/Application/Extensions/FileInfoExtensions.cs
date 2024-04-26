@@ -37,7 +37,7 @@ public static class FileInfoExtensions
         return BitConverter.ToUInt32(combinedBytes, 0);
     }
 
-    public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, int libraryId)
+    public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, Guid libraryId)
     {
         try
         {
@@ -45,6 +45,7 @@ public static class FileInfoExtensions
             {
                 IndexedFile indexedFile = new()
                 {
+                    Id = Guid.NewGuid(),
                     LibraryId = libraryId,
                     Name = Path.GetFileNameWithoutExtension(fileInfo.Name),
                     Extension = fileInfo.Extension,
