@@ -13,6 +13,6 @@ public abstract class BaseRating : BaseAuditableEntity
     public double MinimumValue { get; set; }
     public double MaximumValue { get; set; }
 
-    public required int MetadataId { get; set; }
-    public virtual BaseMediaMetadata? Metadata { get; set; }
+    public Guid MetadataId { get; set; }
+    public virtual BaseMediaMetadata Metadata { get; set; } = null!;
 }

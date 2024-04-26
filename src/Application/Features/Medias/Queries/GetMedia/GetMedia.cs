@@ -3,7 +3,7 @@ using MediaServer.Application.Common.Interfaces;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedia;
 
-public record GetMediaQuery(int Id) : IRequest<MediaDto>;
+public record GetMediaQuery(Guid Id) : IRequest<MediaDto>;
 
 public class GetMediaQueryHandler : IRequestHandler<GetMediaQuery, MediaDto>
 {

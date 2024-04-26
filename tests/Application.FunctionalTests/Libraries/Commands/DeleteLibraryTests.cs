@@ -14,7 +14,7 @@ public class DeleteLibraryTests : DatabaseFixture
         // Arrange
 
         // Act
-        var command = new DeleteLibraryCommand(99);
+        var command = new DeleteLibraryCommand(Guid.NewGuid());
 
         // Assert
         await FluentActions.Invoking(() => SendAsync(command)).Should().ThrowAsync<NotFoundException>();

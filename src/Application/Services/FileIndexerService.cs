@@ -92,7 +92,7 @@ public class FileIndexerService : IFileIndexerService
                     }
                 }
 
-                await _context.IndexedFiles.AddRangeAsync(addedFiles, cancellationToken);
+                _context.IndexedFiles.AddRange(addedFiles);
                 foreach (var file in addedFiles)
                 {
                     file.AddDomainEvent(new IndexedFileCreatedEvent(file));

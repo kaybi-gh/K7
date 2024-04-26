@@ -15,7 +15,7 @@ public class UpdateLibraryListTests : DatabaseFixture
         // Arrange
         var command = new UpdateLibraryCommand
         {
-            Id = 99,
+            Id = Guid.NewGuid(),
             Title = "New Title"
         };
 

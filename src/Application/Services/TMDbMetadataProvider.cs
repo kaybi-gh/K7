@@ -1,5 +1,7 @@
 ﻿using MediaServer.Domain.Entities;
+using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Entities.Metadatas.Medias;
+using MediaServer.Domain.Entities.Metadatas.Persons;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Interfaces;
 using MediaServer.Domain.ValueObjects;
@@ -39,14 +41,16 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         }
     }
 
-    public async Task<MovieMetadata?> FetchMovieMetadata(int movieId, string metadataProviderExternalId, string language, CancellationToken cancellationToken)
+    public async Task<MovieMetadata?> FetchMovieMetadata(Guid movieId, string metadataProviderExternalId, string language, CancellationToken cancellationToken)
     {
         try
         {
             var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits, cancellationToken: cancellationToken);
 
+            var movieMetadataId = Guid.NewGuid();
             var movieMetadata = new MovieMetadata
             {
+                Id = movieMetadataId,
                 MediaId = movieId,
                 Title = tmdbMovie.Title,
                 OriginalTitle = tmdbMovie.OriginalTitle,
@@ -55,9 +59,25 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 OriginalLanguage = tmdbMovie.OriginalLanguage,
                 Overview = tmdbMovie.Overview,
                 TagLine = tmdbMovie.Tagline,
-                
-                //ExternalIds = ConvertToExternalIds(tmdbMovie.ExternalIds)
+                PersonRoles = await ConvertToPersonRolesAsync(tmdbMovie.Credits),
+                ExternalIds =
+                [
+                    new ExternalId()
+                    {
+                        Platform = "tmdb",
+                        Value = metadataProviderExternalId
+                    }
+                ]
             };
+
+            if (!string.IsNullOrEmpty(tmdbMovie.ImdbId))
+            {
+                movieMetadata.ExternalIds.Add(new ExternalId()
+                {
+                    Platform = "imdb",
+                    Value = tmdbMovie.ImdbId
+                });
+            }
 
             return movieMetadata;
         }
@@ -68,7 +88,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         }
     }
 
-    public async Task<ICollection<MetadataPicture>?> FetchMetadataPictures(int metadataId, string metadataProviderExternalId, string language, CancellationToken cancellationToken, string? fallbackLanguage = "en")
+    public async Task<IList<MetadataPicture>> FetchMetadataPictures(Guid metadataId, string metadataProviderExternalId, string language, CancellationToken cancellationToken, string? fallbackLanguage = "en")
     {
         try
         {
@@ -84,16 +104,16 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                 if (images.Posters.Count == 0)
                     images.Posters = fallbackLangageImages.Posters;
             }
-            return await TryDownloadPictures(images, metadataId, language);
+            return await TryDownloadPicturesAsync(images, metadataId, language);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error while fetching media pictures for metadataId {metadataId} (TMDbId {metadataProviderExternalId}): {ex.Message}");
-            return null;
+            return [];
         }
     }
 
-    private async Task<ICollection<MetadataPicture>> TryDownloadPictures(Images images, int metadataId, string preferredLanguage)
+    private async Task<IList<MetadataPicture>> TryDownloadPicturesAsync(Images images, Guid metadataId, string preferredLanguage)
     {
         List<MetadataPicture> mediaPictures = [];
         if (images != null)
@@ -106,7 +126,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
             {
                 var distantFilepath = new FileInfo(bestBackdrop.FilePath);
                 var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
-                if (await TryDownloadPictureAsync(bestBackdrop, filePath))
+                if (await TryDownloadPictureAsync(bestBackdrop.FilePath, filePath))
                 {
                     mediaPictures.Add(new MetadataPicture()
                     {
@@ -121,7 +141,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
             {
                 var distantFilepath = new FileInfo(bestLogo.FilePath);
                 var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
-                if (await TryDownloadPictureAsync(bestLogo, filePath))
+                if (await TryDownloadPictureAsync(bestLogo.FilePath, filePath))
                 {
                     mediaPictures.Add(new MetadataPicture()
                     {
@@ -136,7 +156,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
             {
                 var distantFilepath = new FileInfo(bestPoster.FilePath);
                 var filePath = Path.Combine(_pathsConfiguration.Metadatas, metadataId.ToString(), $"{Guid.NewGuid()}{distantFilepath.Extension}");
-                if (await TryDownloadPictureAsync(bestPoster, filePath))
+                if (await TryDownloadPictureAsync(bestPoster.FilePath, filePath))
                 {
                     mediaPictures.Add(new MetadataPicture()
                     {
@@ -150,14 +170,14 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         return mediaPictures;
     }
 
-    private async Task<bool> TryDownloadPictureAsync(ImageData imageData, string path)
+    private async Task<bool> TryDownloadPictureAsync(string uri, string targetPath)
     {
         try
         {
-            var bytes = await _tdmbClient.GetImageBytesAsync("original", imageData.FilePath);
-            FileInfo file = new(path);
+            var bytes = await _tdmbClient.GetImageBytesAsync("original", uri);
+            FileInfo file = new(targetPath);
             file.Directory!.Create();
-            File.WriteAllBytes(path, bytes);
+            File.WriteAllBytes(targetPath, bytes);
             return true;
         }
         catch
@@ -166,28 +186,108 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
         }
     }
 
-    private ICollection<ExternalId> ConvertToExternalIds(ExternalIdsMovie externalIdsMovie)
+    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits credits)
     {
-        var externalIds = new List<ExternalId>
+        var roles = new List<BasePersonRole>();
+        foreach (var item in credits.Cast.OrderBy(x => x.Order))
         {
-            new()
+            var imdbPerson = await _tdmbClient.GetPersonAsync(item.Id);
+            var personRoleId = Guid.NewGuid();
+            var actor = new Actor()
             {
-                MetadataId = -1,
-                Platform = "tmdb",
-                Value = externalIdsMovie.Id.ToString()
+                Id = personRoleId,
+                Order = item.Order,
+                CharacterName = item.Character,
+                ExternalIds =
+                [
+                    new ExternalId()
+                    {
+                        Platform = "tmdb",
+                        Value = item.CastId.ToString()
+                    }
+                ],
+                Person = await ConvertToPerson(imdbPerson),
+                Job = PersonJob.Actor
+            };
+
+            if (!string.IsNullOrEmpty(item.ProfilePath))
+            {
+                var distantFilepath = new FileInfo(item.ProfilePath);
+                var filePath = Path.Combine(_pathsConfiguration.Metadatas, "personRole", $"{actor.Id}", $"{Guid.NewGuid()}{distantFilepath.Extension}");
+                if (await TryDownloadPictureAsync(item.ProfilePath, filePath))
+                {
+                    actor.PortraitPicture = new MetadataPicture()
+                    {
+                        PersonRoleId = actor.Id,
+                        Path = filePath,
+                        Type = MetadataPictureType.Portrait
+                    };
+                }
             }
+            roles.Add(actor);
+        }
+
+        foreach (var item in credits.Crew)
+        {
+            // TODO
+        }
+
+        return roles;
+    }
+
+    private async Task<Person> ConvertToPerson(TMDbLib.Objects.People.Person tmdbPerson)
+    {
+        var personId = Guid.NewGuid();
+        var person = new Person()
+        {
+            Id = personId,
+            Biography = tmdbPerson.Biography,
+            Birthday = tmdbPerson.Birthday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Birthday.Value) : null,
+            BirthPlace = tmdbPerson.PlaceOfBirth,
+            Gender = tmdbPerson.Gender switch
+            {
+                TMDbLib.Objects.People.PersonGender.Female => PersonGender.Female,
+                TMDbLib.Objects.People.PersonGender.Male => PersonGender.Male,
+                TMDbLib.Objects.People.PersonGender.NonBinary => PersonGender.NonBinary,
+                _ => PersonGender.NotSpecified,
+            },
+            Name = tmdbPerson.Name,
+            Deathday = tmdbPerson.Deathday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Deathday.Value) : null,
+            ExternalIds =
+            [
+                new ExternalId()
+                {
+                    Platform = "tmdb",
+                    Value = tmdbPerson.Id.ToString()
+                }
+            ]
         };
 
-        if (!string.IsNullOrEmpty(externalIdsMovie.ImdbId))
+
+        if (!string.IsNullOrEmpty(tmdbPerson.ImdbId))
         {
-            externalIds.Add(new ExternalId()
+            person.ExternalIds.Add(new ExternalId()
             {
-                MetadataId = -1,
                 Platform = "imdb",
-                Value = externalIdsMovie.ImdbId
+                Value = tmdbPerson.ImdbId
             });
         }
 
-        return externalIds;
+        if (!string.IsNullOrEmpty(tmdbPerson.ProfilePath))
+        {
+            var distantFilepath = new FileInfo(tmdbPerson.ProfilePath);
+            var filePath = Path.Combine(_pathsConfiguration.Metadatas, "person", $"{person.Id}", $"{Guid.NewGuid()}{distantFilepath.Extension}");
+            if (await TryDownloadPictureAsync(tmdbPerson.ProfilePath, filePath))
+            {
+                person.PortraitPicture = new MetadataPicture()
+                {
+                    PersonId = person.Id,
+                    Path = filePath,
+                    Type = MetadataPictureType.Portrait
+                };
+            }
+        }
+
+        return person;
     }
 }

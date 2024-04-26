@@ -4,7 +4,7 @@ using MediaServer.Domain.ValueObjects;
 namespace MediaServer.Domain.Entities;
 public class IndexedFile : BaseAuditableEntity
 {
-    public required int LibraryId { get; set; }
+    public required Guid LibraryId { get; set; }
     public required string Name { get; set; }
     public required string Extension { get; set; }
     public required string Path { get; set; }
@@ -15,7 +15,7 @@ public class IndexedFile : BaseAuditableEntity
     public bool IsComposite { get; set; } = false;
 
     public MediaIdentification? Identification { get; set; }
-    public int? MediaId { get; set; }
+    public Guid? MediaId { get; set; }
     public virtual BaseMedia? Media { get; set; }
 }
 

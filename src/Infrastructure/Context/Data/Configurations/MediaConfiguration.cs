@@ -1,6 +1,7 @@
 ﻿using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas.Medias;
 using MediaServer.Domain.Enums;
+using MediaServer.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -18,6 +19,10 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasValue<Serie>(MediaType.Serie)
             .HasValue<SerieEpisode>(MediaType.SerieEpisode)
             .HasValue<SerieSeason>(MediaType.SerieSeason);
+
+        builder
+            .HasIndex(e => e.Slug)
+            .IsUnique();
 
         builder
             .HasMany(m => m.IndexedFiles)
