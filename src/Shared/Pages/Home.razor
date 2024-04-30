@@ -1,5 +1,15 @@
 @page "/"
+@inject IMediaServerService mediaServerService
 <PageTitle>Home</PageTitle>
+
+<HorizontalScrollableStack Title="RealItems">
+    @foreach (var item in realItems)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>
 
 <HorizontalScrollableStack Title="All">
     @foreach (var item in @MediaItemServiceMock.All)
@@ -10,7 +20,7 @@
     }
 </HorizontalScrollableStack>
 
-<HorizontalScrollableStack Title="James, James Bond">
+<HorizontalScrollableStack Title="Bond, James Bond">
     @foreach (var item in @MediaItemServiceMock.JamesBond)
     {
         <HorizontalScrollableStackItem>
@@ -28,11 +38,28 @@
     }
 </HorizontalScrollableStack>
 
-<HorizontalScrollableStack Title="No daddyyyyy">
-    @foreach (var item in @MediaItemServiceMock.StarWars)
+@code {
+    List<MediaItem> realItems = [];
+    protected override async Task OnInitializedAsync()
     {
-        <HorizontalScrollableStackItem>
-            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
-        </HorizontalScrollableStackItem>
+        var test = await mediaServerService.GetMediasAsync(new GetMediasWithPaginationQuery()
+        {
+            PageNumber = 1,
+            PageSize = 50
+        });
+
+        foreach (var item in test.Items)
+        {
+            if (item is MovieDto movie)
+            {
+                realItems.Add(new MediaItem()
+                {
+                    Id = movie.Id.ToString(),
+                    Title = movie.Title,
+                    AdditionalInformations = movie.ReleaseDate.Value.Year.ToString(),
+                        PosterPicture = $"{mediaServerService.GetBaseUrl()}{movie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.Uri?.OriginalString}"
+                });
+            }
+        }
     }
-</HorizontalScrollableStack>
+}

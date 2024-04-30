@@ -13,6 +13,7 @@
 	
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
 	  <PackageReference Include="MudBlazor" Version="6.16.0" />
   </ItemGroup>
 	

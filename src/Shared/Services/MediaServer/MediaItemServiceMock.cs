@@ -1,6 +1,6 @@
 ﻿using MediaClient.Shared.Domain.Models;
 
-namespace MediaClient.Shared.Services;
+namespace MediaClient.Shared.Services.MediaServer;
 
 public static class MediaItemServiceMock
 {

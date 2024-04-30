@@ -10,7 +10,7 @@
                     <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Class="py-0 pl-3 splide__arrow splide__arrow--next" />
                 </MudStack>
             </div>
-        </MudStack>        
+        </MudStack>
         <div class="splide__track">
             <ul class="splide__list">
                 @ChildContent
@@ -24,6 +24,7 @@
     HorizontalScrollableStack.Init = function (element, perPage) {
         var splide = new Splide(element, {
             perMove: 1,
+            perPage: perPage,
             rewind: true,
             rewindByDrag: false,
             drag: 'free',

@@ -1,4 +1,5 @@
 @page "/movies/{id}"
+@inject IMediaServerService mediaServerService
 <PageTitle>@_movie?.Title</PageTitle>
     <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
     <div class="background" style="--background-picture: url(@_movie!.BackgroundPicture)" />
@@ -39,12 +40,23 @@
         </MudItem>
         <MudItem xs="12" sm="12" lg="12">
             <HorizontalScrollableStack Title="Casting">
-                @for (int i = 0; i < 10; i++)
+                <HorizontalScrollableStackItem>@* 
+                    <MudAvatar Style="height:100px; width:100px;">
+                        <MudImage Src="https://mudblazor.com/images/mony.jpg" Alt="Mony the dog" />
+                    </MudAvatar> *@
+                </HorizontalScrollableStackItem>
+                @foreach (var cast in _casting)
                 {
                     <HorizontalScrollableStackItem>
-                        <MudAvatar Style="height:100px; width:100px;">
-                            <MudImage Src="https://mudblazor.com/images/mony.jpg" Alt="Mony the dog" />
-                        </MudAvatar>
+                        <a href="@("/persons/" + @cast.PersonId)">
+                            <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
+                                <MudAvatar Style="height:150px; width:150px;">
+                                    <MudImage Src="@cast.PortraitPicture" Alt="@cast.PersonName" />
+                                </MudAvatar>
+                                <MudText Class="mt-2" Typo="Typo.caption ">@cast.PersonName</MudText>
+                                <MudText Typo="Typo.subtitle2">@cast.CharacterName</MudText>
+                            </MudStack>
+                        </a>
                     </HorizontalScrollableStackItem>
                 }
             </HorizontalScrollableStack>

@@ -1,5 +1,4 @@
 using MediaClient.Shared.Domain.Models;
-using MediaClient.Shared.Services;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -11,13 +10,36 @@ public partial class Movie
     public required string Id { get; set; }
 
     private static MediaItem? _movie;
+    private static List<PersonRole> _casting = [];
     private bool _isSmallDevice;
     private bool _overviewExpanded;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        var mediaDto = await mediaServerService.GetMediaAsync(Guid.Parse(Id));
+
+        if (mediaDto != null)
+        {
+            _movie = new MediaItem()
+            {
+                Id = mediaDto.Id.ToString(),
+                Title = mediaDto.Title,
+                Synopsis = ((MovieDto)mediaDto).Overview,
+                AdditionalInformations = mediaDto.ReleaseDate.Value.Year.ToString(),
+                PosterPicture = $"{mediaServerService.GetBaseUrl()}{mediaDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.Uri?.OriginalString}"
+            };
+
+            _casting = mediaDto.PersonRoles.Select(x => new PersonRole()
+            {
+                Id = x.Id.ToString(),
+                PersonId = x.PersonId,
+                PersonSlug = x.PersonSlug,
+                PersonName = x.PersonName,
+                CharacterName = ((ActorDto)x).CharacterName,
+                PortraitPicture = $"{mediaServerService.GetBaseUrl()}{x.PortraitPicture?.Uri?.OriginalString}"
+            }).ToList();
+        }
         base.OnInitialized();
-        _movie = MediaItemServiceMock.All.Where(m => m.Id == Id).First();
     }
 
     private void ScreenResized(Breakpoint breakpoint)

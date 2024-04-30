@@ -23,7 +23,7 @@ public static class Themes
             Primary = "#e5a00d",
             Secondary = "#ffffff",
             //Background = "#1d1d1d",
-            Background = "#282a2d",
+            Background = "#212121",
             DrawerText = "#ffffff",
             DrawerBackground = "#0c0c0c",
             Surface = "#282a2d",

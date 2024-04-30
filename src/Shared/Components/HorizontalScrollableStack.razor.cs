@@ -18,9 +18,6 @@ public partial class HorizontalScrollableStack
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("HorizontalScrollableStack.Init", _splide, Limit);
-        }
+        await JSRuntime.InvokeVoidAsync("HorizontalScrollableStack.Init", _splide, Limit);
     }
 }
