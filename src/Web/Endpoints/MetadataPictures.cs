@@ -12,7 +12,7 @@ public class MetadataPictures : EndpointGroupBase
             .MapGet(GetMetadataPicture, "{id}");
     }
 
-    public async Task<IResult> GetMetadataPicture(ISender sender, [FromRoute] int id)
+    public async Task<IResult> GetMetadataPicture(ISender sender, [FromRoute] Guid id)
     {
         return await sender.Send(new GetMetadataPictureQuery(id));
     }

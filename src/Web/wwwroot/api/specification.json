@@ -317,8 +317,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string",
+              "format": "guid"
             },
             "x-position": 1
           }
@@ -326,6 +326,38 @@
         "responses": {
           "200": {
             "description": ""
+          }
+        }
+      }
+    },
+    "/api/persons/{id}": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "GetPerson",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDto"
+                }
+              }
+            }
           }
         }
       }
@@ -800,6 +832,9 @@
             "type": "string",
             "format": "guid"
           },
+          "slug": {
+            "type": "string"
+          },
           "title": {
             "type": "string",
             "nullable": true
@@ -814,6 +849,13 @@
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "personRoles": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/PersonRoleDto"
             }
           },
           "ratings": {
@@ -874,6 +916,64 @@
           3,
           4,
           5
+        ]
+      },
+      "PersonRoleDto": {
+        "type": "object",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "Actor": "#/components/schemas/ActorDto"
+          }
+        },
+        "x-abstract": true,
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "personId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "personSlug": {
+            "type": "string"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "portraitPicture": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ActorDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PersonRoleDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "characterName": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
         ]
       },
       "RatingDto": {
@@ -1128,6 +1228,613 @@
           11,
           12,
           13
+        ]
+      },
+      "PersonDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonGender"
+              }
+            ]
+          },
+          "biography": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthday": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "deathday": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "birthPlace": {
+            "type": "string",
+            "nullable": true
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BasePersonRole"
+            }
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalId"
+            }
+          },
+          "portraitPicture": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          }
+        }
+      },
+      "PersonGender": {
+        "type": "integer",
+        "description": "0 = NotSpecified\n1 = Female\n2 = Male\n3 = NonBinary",
+        "x-enumNames": [
+          "NotSpecified",
+          "Female",
+          "Male",
+          "NonBinary"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "BasePersonRole": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "job": {
+                "$ref": "#/components/schemas/PersonJob"
+              },
+              "order": {
+                "type": "integer",
+                "format": "int32",
+                "nullable": true
+              },
+              "externalIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ExternalId"
+                }
+              },
+              "personId": {
+                "type": "string",
+                "format": "guid"
+              },
+              "person": {
+                "$ref": "#/components/schemas/Person"
+              },
+              "metadataId": {
+                "type": "string",
+                "format": "guid"
+              },
+              "metadata": {
+                "$ref": "#/components/schemas/BaseMediaMetadata"
+              },
+              "portraitPicture": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/MetadataPicture"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "PersonJob": {
+        "type": "integer",
+        "description": "0 = Actor\n1 = VoiceActor\n2 = MusicArtist",
+        "x-enumNames": [
+          "Actor",
+          "VoiceActor",
+          "MusicArtist"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      },
+      "ExternalId": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "platform": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "metadataId": {
+                "type": "string",
+                "format": "guid",
+                "nullable": true
+              },
+              "metadata": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMediaMetadata"
+                  }
+                ]
+              },
+              "personId": {
+                "type": "string",
+                "format": "guid",
+                "nullable": true
+              },
+              "person": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Person"
+                  }
+                ]
+              },
+              "personRoleId": {
+                "type": "string",
+                "format": "guid",
+                "nullable": true
+              },
+              "personRole": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BasePersonRole"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "BaseMediaMetadata": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "$ref": "#/components/schemas/MediaType"
+              },
+              "title": {
+                "type": "string"
+              },
+              "originalTitle": {
+                "type": "string"
+              },
+              "releaseDate": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "mediaId": {
+                "type": "string",
+                "format": "guid"
+              },
+              "media": {
+                "$ref": "#/components/schemas/BaseMedia"
+              },
+              "externalIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ExternalId"
+                }
+              },
+              "pictures": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MetadataPicture"
+                }
+              },
+              "ratings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BaseRating"
+                }
+              },
+              "personRoles": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BasePersonRole"
+                }
+              },
+              "genres": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BaseMedia": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseSlugEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "$ref": "#/components/schemas/MediaType"
+              },
+              "metadata": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMediaMetadata"
+                  }
+                ]
+              },
+              "indexedFiles": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IndexedFile"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "IndexedFile": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "libraryId": {
+                "type": "string",
+                "format": "guid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "extension": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "parentDirectory": {
+                "type": "string",
+                "nullable": true
+              },
+              "hash": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "isSplitPart": {
+                "type": "boolean"
+              },
+              "isComposite": {
+                "type": "boolean"
+              },
+              "identification": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/MediaIdentification"
+                  }
+                ]
+              },
+              "mediaId": {
+                "type": "string",
+                "format": "guid",
+                "nullable": true
+              },
+              "media": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMedia"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "MediaIdentification": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ValueObject"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "releaseYear": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "ValueObject": {
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false
+      },
+      "BaseAuditableEntity": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "created": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "createdBy": {
+                "type": "string",
+                "nullable": true
+              },
+              "lastModified": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "lastModifiedBy": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "BaseEntity": {
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "domainEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseEvent"
+            }
+          }
+        }
+      },
+      "BaseEvent": {
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false
+      },
+      "BaseSlugEntity": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "slug": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "MetadataPicture": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "$ref": "#/components/schemas/MetadataPictureType"
+              },
+              "path": {
+                "type": "string"
+              },
+              "metadataId": {
+                "type": "string",
+                "format": "guid",
+                "nullable": true
+              },
+              "metadata": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BaseMediaMetadata"
+                  }
+                ]
+              },
+              "personId": {
+                "type": "string",
+                "format": "guid",
+                "nullable": true
+              },
+              "person": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Person"
+                  }
+                ]
+              },
+              "personRoleId": {
+                "type": "string",
+                "format": "guid",
+                "nullable": true
+              },
+              "personRole": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BasePersonRole"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Person": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseSlugEntity"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "gender": {
+                "$ref": "#/components/schemas/PersonGender"
+              },
+              "biography": {
+                "type": "string",
+                "nullable": true
+              },
+              "birthday": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "deathday": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "birthPlace": {
+                "type": "string",
+                "nullable": true
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BasePersonRole"
+                }
+              },
+              "externalIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ExternalId"
+                }
+              },
+              "portraitPicture": {
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/MetadataPicture"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "BaseRating": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseAuditableEntity"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "$ref": "#/components/schemas/RatingSource"
+              },
+              "value": {
+                "type": "number",
+                "format": "double"
+              },
+              "minimumValue": {
+                "type": "number",
+                "format": "double"
+              },
+              "maximumValue": {
+                "type": "number",
+                "format": "double"
+              },
+              "metadataId": {
+                "type": "string",
+                "format": "guid"
+              },
+              "metadata": {
+                "$ref": "#/components/schemas/BaseMediaMetadata"
+              }
+            }
+          }
         ]
       },
       "HttpValidationProblemDetails": {

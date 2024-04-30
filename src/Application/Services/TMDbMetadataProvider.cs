@@ -206,8 +206,7 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                         Value = item.CastId.ToString()
                     }
                 ],
-                Person = await ConvertToPerson(imdbPerson),
-                Job = PersonJob.Actor
+                Person = await ConvertToPerson(imdbPerson)
             };
 
             if (!string.IsNullOrEmpty(item.ProfilePath))

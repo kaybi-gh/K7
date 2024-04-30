@@ -1,7 +1,7 @@
 ﻿using MediaServer.Domain.Entities.Metadatas.Medias;
 
 namespace MediaServer.Domain.Entities.Metadatas.Persons;
-public class BasePersonRole(PersonJob job) : BaseAuditableEntity
+public abstract class BasePersonRole(PersonJob job) : BaseAuditableEntity
 {
     public PersonJob Job { get; protected set; } = job;
     public int? Order {  get; set; }

@@ -3,6 +3,7 @@ using MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
 using MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas.Medias;
+using MediaServer.Domain.Entities.Metadatas.Persons;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedia;
 
@@ -11,9 +12,11 @@ namespace MediaServer.Application.Features.Medias.Queries.GetMedia;
 public abstract record MediaDto
 {
     public Guid Id { get; init; }
+    public string Slug { get; init; } = null!;
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
+    public IEnumerable<PersonRoleDto>? PersonRoles { get; init; }
     public IEnumerable<RatingDto>? Ratings { get; init; }
     public IEnumerable<IndexedFileDto>? IndexedFiles { get; init; }
 
@@ -26,6 +29,7 @@ public abstract record MediaDto
                 .ForMember(dst => dst.Pictures, x => x.MapFrom(src => src.Metadata!.Pictures))
                 .ForMember(dst => dst.Title, x => x.MapFrom(src => src.Metadata!.Title))
                 .ForMember(dst => dst.ReleaseDate, x => x.MapFrom(src => src.Metadata!.ReleaseDate))
+                .ForMember(dst => dst.PersonRoles, x => x.MapFrom(src => src.Metadata!.PersonRoles))
                 .ForMember(dst => dst.IndexedFiles, x => x.MapFrom(src => src.IndexedFiles));
 
             CreateMap<Movie, MovieDto>()
@@ -39,7 +43,35 @@ public abstract record MediaDto
 public record MovieDto : MediaDto
 {
     public string? TagLine { get; init; }
-    public string? Overview { get; internal set; }
-    public string? OriginalLanguage { get; internal set; }
+    public string? Overview { get; init; }
+    public string? OriginalLanguage { get; init; }
 }
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(ActorDto), nameof(Actor))]
+public abstract record PersonRoleDto
+{
+    public Guid Id { get; init; }
+    public Guid PersonId { get; init; }
+    public string PersonSlug { get; init; } = null!;
+    public string PersonName { get; init; } = null!;
+    public MetadataPictureDto? PortraitPicture { get; init; }
+
+    private class Mapping : Profile
+    {
+        public Mapping()
+        {
+            CreateMap<BasePersonRole, PersonRoleDto>()
+                .IncludeAllDerived()
+                .ForMember(dst => dst.PersonSlug, x => x.MapFrom(src => src.Person.Slug))
+                .ForMember(dst => dst.PersonName, x => x.MapFrom(src => src.Person.Name));
+
+            CreateMap<Actor, ActorDto>();
+        }
+    }
+}
+
+public record ActorDto : PersonRoleDto
+{
+    public string? CharacterName { get; init; }
+}
