@@ -1,8 +1,5 @@
 ﻿using System.Reflection;
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Options;
 
 namespace MediaServer.Web.Infrastructure;
 

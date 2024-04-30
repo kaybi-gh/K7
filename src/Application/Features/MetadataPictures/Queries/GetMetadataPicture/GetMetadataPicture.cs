@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 namespace MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 
 //[Authorize]
-public record GetMetadataPictureQuery(int Id) : IRequest<IResult>;
+public record GetMetadataPictureQuery(Guid Id) : IRequest<IResult>;
 
 public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPictureQuery, IResult>
 {

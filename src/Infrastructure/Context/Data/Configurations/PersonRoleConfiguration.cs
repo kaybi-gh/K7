@@ -23,4 +23,16 @@ public class PersonRoleConfiguration : IEntityTypeConfiguration<BasePersonRole>
             .HasOne(r => r.Metadata)
             .WithMany(m => m.PersonRoles);
     }
+
+    public static void Configure(EntityTypeBuilder<Actor> builder)
+    {
+    }
+
+    public static void Configure(EntityTypeBuilder<MusicArtist> builder)
+    {
+    }
+
+    public static void Configure(EntityTypeBuilder<VoiceActor> builder)
+    {
+    }
 }

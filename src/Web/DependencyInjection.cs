@@ -40,6 +40,7 @@ public static class DependencyInjection
 
         services.ConfigureHttpJsonOptions(x =>
         {
+            x.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             x.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             x.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });

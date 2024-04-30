@@ -1,4 +1,6 @@
-﻿using MediaServer.Application.Common.Converters;
+﻿using System.Text.Json.Serialization;
+using System.Text.Json;
+using MediaServer.Application.Common.Converters;
 using MediaServer.Application.Common.Interfaces;
 
 namespace MediaServer.Application.Features.Medias.Queries.GetMedia;
@@ -26,6 +28,12 @@ public class GetMediaQueryHandler : IRequestHandler<GetMediaQuery, MediaDto>
                 .ThenInclude(x => x!.Pictures)
             .Include(x => x.Metadata)
                 .ThenInclude(x => x!.Ratings)
+            .Include(x => x.Metadata)
+                .ThenInclude(x => x!.PersonRoles)
+                    .ThenInclude(x => x.PortraitPicture)
+            .Include(x => x.Metadata)
+                .ThenInclude(x => x!.PersonRoles)
+                    .ThenInclude(x => x.Person)
             .Include(x => x.IndexedFiles)
             .Where(x => x.Id == request.Id)
             .SingleOrDefaultAsync(cancellationToken);
