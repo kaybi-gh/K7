@@ -13,5 +13,5 @@ public static class ConfigurationBinding
 }
 public class MediaServerConfiguration
 {
-    public string BaseUrl { get; set; } = "";
+    public string BaseUrl { get; set; } = "https://localhost:5001";
 }
