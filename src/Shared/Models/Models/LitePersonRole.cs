@@ -2,7 +2,7 @@
 
 namespace MediaClient.Shared.Domain.Models;
 
-public abstract record PersonRole
+public abstract record LitePersonRole
 {
     public string Id { get; init; } = null!;
     public string MediaId { get; init; } = null!;

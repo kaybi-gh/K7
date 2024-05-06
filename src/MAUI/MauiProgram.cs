@@ -24,6 +24,7 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddMudServices();
+        builder.Services.AddConfigurations(builder.Configuration);
         builder.Services.AddClientServices();
         return builder.Build();
     }

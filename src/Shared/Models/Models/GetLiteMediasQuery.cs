@@ -1,6 +1,8 @@
-﻿namespace MediaClient.Shared.Domain.Models;
+﻿using MediaClient.Shared.Domain.Enums;
 
-public record GetMediasWithPaginationQuery
+namespace MediaClient.Shared.Domain.Models;
+
+public record GetLiteMediasQuery
 {
     public int? LibraryId { get; init; }
     public MediaType? MediaType { get; init; }

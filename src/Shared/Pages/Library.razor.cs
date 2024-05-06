@@ -8,24 +8,25 @@ public partial class Library
     [Parameter]
     public required string Id { get; set; }
 
-    private List<MediaItem> MediaItems { get; set; } = [];
+    private List<MediaPosterViewModel> MediaPosterViewModels { get; set; } = [];
 
     protected override async Task OnInitializedAsync()
     {
-        var test = await mediaServerService.GetMediasAsync(new GetMediasWithPaginationQuery()
+        var liteMediasPage = await mediaServerService.GetLiteMediasAsync(new GetLiteMediasQuery()
         {
             PageNumber = 1,
             PageSize = 1000
         });
 
-        if (test != null && test.Items.Count != 0)
+        if (liteMediasPage != null && liteMediasPage.Items.Count != 0)
         {
-            foreach (var item in test.Items)
+            foreach (var item in liteMediasPage.Items)
             {
-                MediaItems.Add(new MediaItem()
+                MediaPosterViewModels.Add(new MediaPosterViewModel()
                 {
                     Id = item.Id.ToString(),
-                    PosterPicture = $"{mediaServerService.GetBaseUrl()}{item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.Uri?.OriginalString}"
+                    Title = item.Title,
+                    PosterPictureHref = item.PosterPictureHref
                 });
             }
         }

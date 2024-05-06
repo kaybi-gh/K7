@@ -5,7 +5,7 @@
 
 <MudBreakpointProvider>
     <MudHidden Breakpoint="Breakpoint.SmAndUp">
-        <MudLayout>
+        <MudLayout Class="mobile-layout">
             <MudMainContent>
                 @Body
             </MudMainContent>
@@ -16,11 +16,8 @@
     <MudHidden Breakpoint="Breakpoint.Xs">
         <MudLayout>
             <Sidebar />
-
             <MudMainContent>
-                <MudContainer>
-                    @Body
-                </MudContainer>
+                @Body
             </MudMainContent>
         </MudLayout>
     </MudHidden>

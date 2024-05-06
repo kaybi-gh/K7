@@ -1,12 +1,12 @@
 @page "/library/{id}"
-@inject IMediaServerService mediaServerService
+@inject             Domain.Interfaces.IMediaServerService mediaServerService
 <PageTitle>Library @Id</PageTitle>
 
 <MudGrid Style="max-width:100%;" Spacing="0" Justify="Justify.SpaceEvenly">
-    @foreach (var item in MediaItems)
+    @foreach (var item in MediaPosterViewModels)
     {
         <MudItem Class="ma-2">
-            <MediaPoster MediaItem="item" />
+            <MediaPoster Model="item" />
         </MudItem>
     }
 </MudGrid>

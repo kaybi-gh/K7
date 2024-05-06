@@ -12,10 +12,10 @@
     -webkit-line-clamp: 2;
 }
 
-.background {
+.mud-drawer-close-mini-xs-left .background {
     position: absolute;
-    width: 100%;
-    height: calc(100vh - var(--mud-appbar-height));
+    width: calc(100vw - var(--mud-drawer-width-mini-left));
+    height: 100vh;
     background: var(--background-picture);
     z-index: -1;
     top: 0;
@@ -24,13 +24,59 @@
     background-repeat: no-repeat;
 }
 
-    .background:before {
-        content: '';
-        /*background-image: linear-gradient(to top, var(--mud-palette-background) 0%, var(--mud-palette-background) 50%, rgba(255,255,255,0) 125%);*/
-        background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--mud-palette-background) 60%, var(--mud-palette-background) 100%);
-        position: absolute;
-        height: calc(100vh - var(--mud-appbar-height));
-        right: 0;
-        top: 0;
-        left: 0;
-    }
+.mud-drawer-close-mini-xs-left .background:before {
+    content: '';
+    /*background-image: linear-gradient(to top, var(--mud-palette-background) 0%, var(--mud-palette-background) 50%, rgba(255,255,255,0) 125%);*/
+    background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--mud-palette-background) 60%, var(--mud-palette-background) 100%);
+    position: absolute;
+    height: 100vh;
+    right: 0;
+    top: 0;
+    left: 0;
+}
+
+.mud-drawer-open-mini-xs-left .background {
+    position: absolute;
+    width: calc(100vw - var(--mud-drawer-width-left));
+    height: 100vh;
+    background: var(--background-picture);
+    z-index: -1;
+    top: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+.mud-drawer-open-mini-xs-left .background:before {
+    content: '';
+    /*background-image: linear-gradient(to top, var(--mud-palette-background) 0%, var(--mud-palette-background) 50%, rgba(255,255,255,0) 125%);*/
+    background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--mud-palette-background) 60%, var(--mud-palette-background) 100%);
+    position: absolute;
+    height: 100vh;
+    right: 0;
+    top: 0;
+    left: 0;
+}
+
+.mobile-layout .background {
+    position: absolute;
+    width: 100vw;
+    height: 35vh;
+    margin-bottom: var(--mud-appbar-height);
+    background: var(--background-picture);
+    z-index: -1;
+    top: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+.mobile-layout .background:before {
+    content: '';
+    background-image: linear-gradient(to top, var(--mud-palette-background) 0%, rgba(255,255,255,0) 125%);
+    position: absolute;
+    height: 35vh;
+    right: 0;
+    top: 0;
+    left: 0;
+}

@@ -1,8 +1,8 @@
 ﻿<MudItem Elevation="0">
     <div class="media-item-container">
-        <MudImage Src="@MediaItem.PosterPicture" Alt="Tata" Class="rounded-lg" Fluid="true" ObjectFit="ObjectFit.Cover" />
+        <MudImage Src="@Model.PosterPictureHref" Alt="Tata" Class="rounded-lg" Style="height: 100%;" Fluid="true" ObjectFit="ObjectFit.Cover" />
 
-        @if (WatchedStatusEnabled && MediaItem.Watched)
+        @if (WatchedStatusEnabled && Model.Watched)
         {
             <div class="media-item-watched">
                 <MudIcon Size="Size.Small" class="ma-1" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" />
@@ -12,13 +12,13 @@
         @if (ProgressEnabled && !ProgressBarIsHidden())
         {
             <div class="media-item-progress-bar">
-                <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@MediaItem.Progress" />
+                <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Model.Progress" />
             </div>
         }
 
         @if (OverlayEnabled)
         {
-            <a class="media-item-overlay" href="@("/movies/" + @MediaItem.Id)">
+            <a class="media-item-overlay" href="@("/movies/" + Model.Id)">
                 <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" />
 
                 @* <MudMenu Icon="@Icons.Material.Filled.MoreVert" PositionAtCursor="true">
@@ -50,8 +50,8 @@
     {
         <div class="media-item-text">
             <MudStack AlignItems="AlignItems.Center" Spacing="0">
-                <MudLink Class="media-item-text" Typo="Typo.body2" Href="@("/movies/" + @MediaItem.Id)">@MediaItem.Title</MudLink>
-                <MudText Class="media-item-text" Typo="Typo.caption">@MediaItem.AdditionalInformations</MudText>
+                <MudLink Class="media-item-text" Typo="Typo.body2" Href="@("/movies/" + Model.Id)">@Model.Title</MudLink>
+                <MudText Class="media-item-text" Typo="Typo.caption">@Model.AdditionalInformations</MudText>
             </MudStack>
         </div>
     }
@@ -60,7 +60,7 @@
 
 @code {
     [Parameter]
-    public required MediaItem MediaItem { get; set; }
+    public required MediaPosterViewModel Model { get; set; }
 
     [Parameter]
     public bool OverlayEnabled { get; set; } = false;
@@ -74,5 +74,5 @@
     [Parameter]
     public bool FooterVisible { get; set; } = false;
 
-    private bool ProgressBarIsHidden() => MediaItem.Progress == 0 || MediaItem.Progress == 100;
+    private bool ProgressBarIsHidden() => Model.Progress == 0 || Model.Progress == 100;
 }

@@ -4,7 +4,7 @@ namespace MediaClient.Shared.Domain.Interfaces;
 
 public interface IMediaServerService
 {
-    string GetBaseUrl();
-    Task<MediaDto?> GetMediaAsync(Guid id);
-    Task<PaginatedList<MediaDto>?> GetMediasAsync(GetMediasWithPaginationQuery query);
+    Task<Movie?> GetMovieAsync(Guid id);
+    Task<PaginatedList<LiteMedia>?> GetLiteMediasAsync(GetLiteMediasQuery query);
+    Task<Person?> GetPersonAsync(Guid id);
 }

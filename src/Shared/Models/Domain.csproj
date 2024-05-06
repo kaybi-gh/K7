@@ -14,9 +14,5 @@
 	<ItemGroup>
 		<PackageReference Include="MudBlazor" Version="6.16.0" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Enums\" />
-	</ItemGroup>
 	
 </Project>

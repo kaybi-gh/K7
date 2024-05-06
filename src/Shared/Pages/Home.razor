@@ -1,65 +1,66 @@
 @page "/"
-@inject IMediaServerService mediaServerService
+@inject             Domain.Interfaces.IMediaServerService mediaServerService
 <PageTitle>Home</PageTitle>
 
 <HorizontalScrollableStack Title="RealItems">
     @foreach (var item in realItems)
     {
         <HorizontalScrollableStackItem>
-            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
         </HorizontalScrollableStackItem>
     }
 </HorizontalScrollableStack>
 
 <HorizontalScrollableStack Title="All">
-    @foreach (var item in @MediaItemServiceMock.All)
+    @foreach (var item in MockedMediaServiceService.All)
     {
         <HorizontalScrollableStackItem>
-            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
         </HorizontalScrollableStackItem>
     }
 </HorizontalScrollableStack>
 
 <HorizontalScrollableStack Title="Bond, James Bond">
-    @foreach (var item in @MediaItemServiceMock.JamesBond)
+    @foreach (var item in MockedMediaServiceService.JamesBond)
     {
         <HorizontalScrollableStackItem>
-            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
         </HorizontalScrollableStackItem>
     }
 </HorizontalScrollableStack>
 
 <HorizontalScrollableStack Title="No daddyyyyy">
-    @foreach (var item in @MediaItemServiceMock.StarWars)
+    @foreach (var item in MockedMediaServiceService.StarWars)
     {
         <HorizontalScrollableStackItem>
-            <MediaPoster MediaItem="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
         </HorizontalScrollableStackItem>
     }
 </HorizontalScrollableStack>
 
 @code {
-    List<MediaItem> realItems = [];
+    List<MediaPosterViewModel> realItems = [];
     protected override async Task OnInitializedAsync()
     {
-        var test = await mediaServerService.GetMediasAsync(new GetMediasWithPaginationQuery()
+        var test = await mediaServerService.GetLiteMediasAsync(new GetLiteMediasQuery()
         {
             PageNumber = 1,
             PageSize = 50
         });
 
-        foreach (var item in test.Items)
+        if (test != null && test.Items != null)
         {
-            if (item is MovieDto movie)
+            foreach (var item in test.Items)
             {
-                realItems.Add(new MediaItem()
+                realItems.Add(new MediaPosterViewModel()
                 {
-                    Id = movie.Id.ToString(),
-                    Title = movie.Title,
-                    AdditionalInformations = movie.ReleaseDate.Value.Year.ToString(),
-                        PosterPicture = $"{mediaServerService.GetBaseUrl()}{movie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.Uri?.OriginalString}"
+                    Id = item.Id.ToString(),
+                    Title = item.Title,
+                    AdditionalInformations = item.ReleaseDate.HasValue ? item.ReleaseDate.Value.Year.ToString() : "",
+                    PosterPictureHref = item.PosterPictureHref
                 });
             }
         }
+        
     }
 }

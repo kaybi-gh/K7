@@ -9,35 +9,22 @@ public partial class Movie
     [Parameter]
     public required string Id { get; set; }
 
-    private static MediaItem? _movie;
-    private static List<PersonRole> _casting = [];
+    private static Domain.Models.Movie? _movie;
+    private static MediaPosterViewModel? _mediaPoster;
     private bool _isSmallDevice;
     private bool _overviewExpanded;
 
     protected override async Task OnInitializedAsync()
     {
-        var mediaDto = await mediaServerService.GetMediaAsync(Guid.Parse(Id));
-
-        if (mediaDto != null)
+        _movie = await MediaServerService.GetMovieAsync(Guid.Parse(Id));
+        if (_movie != null)
         {
-            _movie = new MediaItem()
+            _mediaPoster = new MediaPosterViewModel()
             {
-                Id = mediaDto.Id.ToString(),
-                Title = mediaDto.Title,
-                Synopsis = ((MovieDto)mediaDto).Overview,
-                AdditionalInformations = mediaDto.ReleaseDate.Value.Year.ToString(),
-                PosterPicture = $"{mediaServerService.GetBaseUrl()}{mediaDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.Uri?.OriginalString}"
+                Id = _movie.Id,
+                Title = _movie.Title,
+                PosterPictureHref = _movie.PosterPictureHref
             };
-
-            _casting = mediaDto.PersonRoles.Select(x => new PersonRole()
-            {
-                Id = x.Id.ToString(),
-                PersonId = x.PersonId,
-                PersonSlug = x.PersonSlug,
-                PersonName = x.PersonName,
-                CharacterName = ((ActorDto)x).CharacterName,
-                PortraitPicture = $"{mediaServerService.GetBaseUrl()}{x.PortraitPicture?.Uri?.OriginalString}"
-            }).ToList();
         }
         base.OnInitialized();
     }

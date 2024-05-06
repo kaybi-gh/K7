@@ -1,66 +1,73 @@
 @page "/movies/{id}"
-@inject IMediaServerService mediaServerService
+@inject IMediaServerService MediaServerService
 <PageTitle>@_movie?.Title</PageTitle>
-    <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
-    <div class="background" style="--background-picture: url(@_movie!.BackgroundPicture)" />
+<MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
-<div>
-    <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
-        <MudItem xs="12" sm="4" lg="1">
-            <MudStack AlignItems="AlignItems.Center">
-                <MediaPoster MediaItem="@_movie" />
-            </MudStack>
-        </MudItem>
-        <MudItem xs="12" sm="6" lg="5">
-            <MudStack AlignItems="@(_isSmallDevice ? AlignItems.Center : AlignItems.Start)">
-                <MudText Typo="Typo.h4">@_movie!.Title</MudText>
-                <MudStack Row="true">
-                    <MudText Typo="Typo.caption">@_movie!.AdditionalInformations</MudText>
-                    <MudText Typo="Typo.caption">@_movie!.Duration</MudText>
+@if (_movie != null)
+{
+    <div class="background" style="--background-picture: url(@_movie.BackgroundPictureHref)" />
+
+    <div>
+        <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
+            <MudItem xs="12" sm="4" lg="1">
+                <MudStack AlignItems="AlignItems.Center">
+                    <MediaPoster Model="@_mediaPoster" />
                 </MudStack>
-                <MudStack Row="true">
-                    <MudRating SelectedValue="@_movie!.Rating" />
-                </MudStack>
-                <MudStack Row="true">
-                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary">Play</MudButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="edit"></MudIconButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions"></MudIconButton>
-                </MudStack>
-                <MudStack>
-                    <div class="overview-container mx-4">
-                        <MudText Class="@(_overviewExpanded ? "" : "overview-collapsed")">@_movie!.Synopsis</MudText>
-                    </div>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
-                        <MudButton Variant="Variant.Text" Size="Size.Small" EndIcon="@(_overviewExpanded ? @Icons.Material.Filled.KeyboardArrowUp : @Icons.Material.Filled.KeyboardArrowDown)" OnClick="ToggleOverview">@(_overviewExpanded ? "Less" : "More")</MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="5">
+                <MudStack AlignItems="@(_isSmallDevice ? AlignItems.Center : AlignItems.Start)">
+                    <MudText Typo="Typo.h4">@_movie.Title</MudText>
+                    <MudStack Row="true">
+                        <MudText Typo="Typo.caption">@_movie.AdditionalInformations</MudText>
+                        <MudText Typo="Typo.caption">@_movie.Duration</MudText>
+                    </MudStack>
+                    <MudStack Row="true">
+                        <MudRating SelectedValue="@_movie.Rating" />
+                    </MudStack>
+                    <MudStack Row="true">
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary">Play</MudButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="edit"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions"></MudIconButton>
+                    </MudStack>
+                    <MudStack>
+                        <div class="overview-container mx-4">
+                            <MudText Class="@(_overviewExpanded ? "" : "overview-collapsed")">@_movie.Synopsis</MudText>
+                        </div>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+                            <MudButton Variant="Variant.Text" Size="Size.Small" EndIcon="@(_overviewExpanded ? @Icons.Material.Filled.KeyboardArrowUp : @Icons.Material.Filled.KeyboardArrowDown)" OnClick="ToggleOverview">@(_overviewExpanded ? "Less" : "More")</MudButton>
+                        </MudStack>
                     </MudStack>
                 </MudStack>
-            </MudStack>
-        </MudItem>
-        <MudItem xs="12" sm="12" lg="12">
-            <HorizontalScrollableStack Title="Casting">
-                <HorizontalScrollableStackItem>@* 
-                    <MudAvatar Style="height:100px; width:100px;">
-                        <MudImage Src="https://mudblazor.com/images/mony.jpg" Alt="Mony the dog" />
-                    </MudAvatar> *@
-                </HorizontalScrollableStackItem>
-                @foreach (var cast in _casting)
-                {
+            </MudItem>
+            <MudItem xs="12" sm="12" lg="12">
+                <HorizontalScrollableStack Title="Casting">
                     <HorizontalScrollableStackItem>
-                        <a href="@("/persons/" + @cast.PersonId)">
-                            <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
-                                <MudAvatar Style="height:150px; width:150px;">
-                                    <MudImage Src="@cast.PortraitPicture" Alt="@cast.PersonName" />
-                                </MudAvatar>
-                                <MudText Class="mt-2" Typo="Typo.caption ">@cast.PersonName</MudText>
-                                <MudText Typo="Typo.subtitle2">@cast.CharacterName</MudText>
-                            </MudStack>
-                        </a>
+                        @*
+                    <MudAvatar Style="height:100px; width:100px;">
+                    <MudImage Src="https://mudblazor.com/images/mony.jpg" Alt="Mony the dog" />
+                    </MudAvatar> *@
                     </HorizontalScrollableStackItem>
-                }
-            </HorizontalScrollableStack>
-        </MudItem>
-    </MudGrid>
-    
-</div>
+                    @foreach (var cast in _movie.Casting.Where(x => x.Person != null).OrderBy(x => x.Order))
+                    {
+                        <HorizontalScrollableStackItem>
+                            <a href="@("/persons/" + @cast.Person!.Id)">
+                                <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
+                                    <MudAvatar Style="height:150px; width:150px;">
+                                        <MudImage Src="@cast.PortraitPictureHref" Alt="@cast.Person!.Name" />
+                                    </MudAvatar>
+                                    <MudText Class="mt-2" Typo="Typo.caption ">@cast.Person!.Name</MudText>
+                                    @if (cast is LiteActor actor)
+                                    {
+                                        <MudText Typo="Typo.subtitle2">@actor.CharacterName</MudText>
+                                    }
+                                </MudStack>
+                            </a>
+                        </HorizontalScrollableStackItem>
+                    }
+                </HorizontalScrollableStack>
+            </MudItem>
+        </MudGrid>
+    </div>
+}
