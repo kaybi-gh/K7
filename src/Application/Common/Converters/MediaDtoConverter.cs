@@ -1,5 +1,4 @@
-﻿using MediaServer.Application.Features.Medias.Queries.GetMedia;
-using MediaServer.Application.Features.Medias.Queries.GetMedias;
+﻿using MediaServer.Application.Common.Models.Dtos;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 

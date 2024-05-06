@@ -1,4 +1,5 @@
 ﻿using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Common.Models.Dtos;
 using MediaServer.Application.Common.Security;
 
 namespace MediaServer.Application.Features.Libraries.Queries.GetLibrary;

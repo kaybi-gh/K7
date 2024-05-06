@@ -1,4 +1,5 @@
 ﻿using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Common.Models.Dtos;
 
 namespace MediaServer.Application.Features.Persons.Queries.GetPerson;
 
@@ -18,20 +19,19 @@ public class GetPersonQueryHandler : IRequestHandler<GetPersonQuery, PersonDto>
     public async Task<PersonDto> Handle(GetPersonQuery request, CancellationToken cancellationToken)
     {
         var entity = await _context.Persons
-            .AsNoTracking()
-            .Include(x => x.ExternalIds)
-            .Include(x => x.PortraitPicture)
-            .Include(x => x.Roles)
-                .ThenInclude(x => x.Metadata)
-                    .ThenInclude(x => x.Media)
-            .Include(x => x.Roles)
-                .ThenInclude(x => x.Metadata)
-                    .ThenInclude(x => x.Pictures)
-            .Where(x => x.Id == request.Id)
-            .ProjectTo<PersonDto>(_mapper.ConfigurationProvider)
-            .SingleOrDefaultAsync(cancellationToken);
+        .AsNoTracking()
+        .Include(x => x.ExternalIds)
+        .Include(x => x.PortraitPicture)
+        .Include(x => x.Roles)
+            .ThenInclude(x => x.Metadata)
+                .ThenInclude(x => x.Media)
+        .Include(x => x.Roles)
+            .ThenInclude(x => x.Metadata)
+                .ThenInclude(x => x.Pictures)
+        .Where(x => x.Id == request.Id)
+        .SingleOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
-        return entity;
+        return _mapper.Map<PersonDto>(entity);
     }
 }

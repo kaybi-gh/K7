@@ -1,11 +1,9 @@
 ﻿using System.Text.Json.Serialization;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
-using MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas.Medias;
-using MediaServer.Domain.Entities.Metadatas.Persons;
 
-namespace MediaServer.Application.Features.Medias.Queries.GetMedia;
+namespace MediaServer.Application.Common.Models.Dtos;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(MovieDto), nameof(Movie))]
@@ -16,7 +14,7 @@ public abstract record MediaDto
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
-    public IEnumerable<PersonRoleDto>? PersonRoles { get; init; }
+    public IEnumerable<LitePersonRoleDto>? PersonRoles { get; init; }
     public IEnumerable<RatingDto>? Ratings { get; init; }
     public IEnumerable<IndexedFileDto>? IndexedFiles { get; init; }
 
@@ -38,40 +36,4 @@ public abstract record MediaDto
                 .ForMember(dst => dst.OriginalLanguage, x => x.MapFrom(src => (src.Metadata as MovieMetadata)!.OriginalLanguage));
         }
     }
-}
-
-public record MovieDto : MediaDto
-{
-    public string? TagLine { get; init; }
-    public string? Overview { get; init; }
-    public string? OriginalLanguage { get; init; }
-}
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(ActorDto), nameof(Actor))]
-public abstract record PersonRoleDto
-{
-    public Guid Id { get; init; }
-    public Guid PersonId { get; init; }
-    public string PersonSlug { get; init; } = null!;
-    public string PersonName { get; init; } = null!;
-    public MetadataPictureDto? PortraitPicture { get; init; }
-
-    private class Mapping : Profile
-    {
-        public Mapping()
-        {
-            CreateMap<BasePersonRole, PersonRoleDto>()
-                .IncludeAllDerived()
-                .ForMember(dst => dst.PersonSlug, x => x.MapFrom(src => src.Person.Slug))
-                .ForMember(dst => dst.PersonName, x => x.MapFrom(src => src.Person.Name));
-
-            CreateMap<Actor, ActorDto>();
-        }
-    }
-}
-
-public record ActorDto : PersonRoleDto
-{
-    public string? CharacterName { get; init; }
 }

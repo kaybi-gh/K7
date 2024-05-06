@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
-using MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 using MediaServer.Domain.Entities.Medias;
+using MediaServer.Domain.Enums;
 
-namespace MediaServer.Application.Features.Medias.Queries.GetMedias;
+namespace MediaServer.Application.Common.Models.Dtos;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(LiteMovieDto), nameof(Movie))]
@@ -26,8 +26,4 @@ public abstract record LiteMediaDto
             CreateMap<Movie, LiteMovieDto>();
         }
     }
-}
-
-public record LiteMovieDto : LiteMediaDto
-{
 }

@@ -1,4 +1,5 @@
 ﻿using MediaServer.Application.Common.Models;
+using MediaServer.Application.Common.Models.Dtos;
 using MediaServer.Application.Features.Medias.Queries.GetMedia;
 using MediaServer.Application.Features.Medias.Queries.GetMedias;
 

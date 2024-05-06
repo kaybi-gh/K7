@@ -1,14 +1,14 @@
 ﻿using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
 
-namespace MediaServer.Application.Features.Libraries.Queries;
+namespace MediaServer.Application.Common.Models.Dtos;
 
 public record LibraryDto
 {
     public required Guid Id { get; init; }
-    public required string Title { get; set; }
-    public required LibraryMediaType MediaType { get; set; }
-    public required string RootPath { get; set; }
+    public required string Title { get; init; }
+    public required LibraryMediaType MediaType { get; init; }
+    public required string RootPath { get; init; }
 
     private class Mapping : Profile
     {
