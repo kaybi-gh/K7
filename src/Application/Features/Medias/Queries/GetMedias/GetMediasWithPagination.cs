@@ -2,6 +2,7 @@
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Common.Mappings;
 using MediaServer.Application.Common.Models;
+using MediaServer.Application.Common.Models.Dtos;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 

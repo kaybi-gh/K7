@@ -1,8 +1,8 @@
-﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
+﻿using MediaServer.Application.Common.Models.Dtos;
+using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 using MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
 using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
 using MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
-using MediaServer.Application.Features.Libraries.Queries;
 using MediaServer.Application.Features.Libraries.Queries.GetLibraries;
 using MediaServer.Application.Features.Libraries.Queries.GetLibrary;
 

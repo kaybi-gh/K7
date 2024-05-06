@@ -1,6 +1,6 @@
 ﻿using MediaServer.Domain.Enums;
 
-namespace MediaServer.Application.Features.Medias.Queries.GetMedia;
+namespace MediaServer.Application.Common.Models.Dtos;
 
 public record RatingDto
 {

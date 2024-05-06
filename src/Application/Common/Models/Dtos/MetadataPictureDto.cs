@@ -1,7 +1,7 @@
 ﻿using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
 
-namespace MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
+namespace MediaServer.Application.Common.Models.Dtos;
 
 public record MetadataPictureDto
 {

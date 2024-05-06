@@ -1,4 +1,7 @@
-﻿using MediaServer.Application.Features.Persons.Queries.GetPerson;
+﻿using MediaServer.Application.Common.Models;
+using MediaServer.Application.Common.Models.Dtos;
+using MediaServer.Application.Features.Medias.Queries.GetPersons;
+using MediaServer.Application.Features.Persons.Queries.GetPerson;
 
 namespace MediaServer.Web.Endpoints;
 
@@ -9,7 +12,7 @@ public class Persons : EndpointGroupBase
         app.MapGroup(this)
             //.RequireAuthorization()
             .MapGet(GetPerson, "{id}")
-            /*.MapGet(GetPersons)*/;
+            .MapGet(GetPersons);
     }
 
     public async Task<PersonDto> GetPerson(ISender sender, Guid id)
@@ -17,8 +20,8 @@ public class Persons : EndpointGroupBase
         return await sender.Send(new GetPersonQuery(id));
     }
 
-    //public async Task<PaginatedList<LitePersonDto>> GetPersons(ISender sender, [AsParameters] GetPersonsWithPaginationQuery query)
-    //{
-    //    return await sender.Send(query);
-    //}
+    public async Task<PaginatedList<LitePersonDto>> GetPersons(ISender sender, [AsParameters] GetPersonsWithPaginationQuery query)
+    {
+        return await sender.Send(query);
+    }
 }

@@ -1,25 +1,23 @@
-﻿using MediaServer.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
-using MediaServer.Domain.Entities;
+﻿using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Metadatas;
-using MediaServer.Domain.Entities.Metadatas.Persons;
 using MediaServer.Domain.Enums;
 
-namespace MediaServer.Application.Features.Persons.Queries.GetPerson;
+namespace MediaServer.Application.Common.Models.Dtos;
 
 public record PersonDto
 {
     public Guid Id { get; init; }
     public string Slug { get; init; } = null!;
-    public string? Name { get; set; }
-    public PersonGender? Gender { get; set; } = PersonGender.NotSpecified;
-    public string? Biography { get; set; }
-    public DateOnly? Birthday { get; set; }
-    public DateOnly? Deathday { get; set; }
-    public string? BirthPlace { get; set; }
+    public string? Name { get; init; }
+    public PersonGender Gender { get; init; } = PersonGender.NotSpecified;
+    public string? Biography { get; init; }
+    public DateOnly? Birthday { get; init; }
+    public DateOnly? Deathday { get; init; }
+    public string? BirthPlace { get; init; }
 
-    public virtual IList<BasePersonRole> Roles { get; set; } = [];
-    public virtual IList<ExternalId> ExternalIds { get; set; } = [];
-    public virtual MetadataPictureDto? PortraitPicture { get; set; }
+    public virtual IList<PersonRoleDto> Roles { get; init; } = [];
+    public virtual IList<ExternalIdDto> ExternalIds { get; init; } = [];
+    public virtual MetadataPictureDto? PortraitPicture { get; init; }
 
     private class Mapping : Profile
     {
