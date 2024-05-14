@@ -8,8 +8,8 @@ public static class IndexedFilesSamples
     public static readonly List<IndexedFile> MusicFiles = [
         new IndexedFile()
         {
-            Id = 1,
-            LibraryId = 1,
+            Id = Guid.NewGuid(),
+            LibraryId = Guid.NewGuid(),
             Extension = ".mp3",
             Hash =  BitConverter.ToUInt32(SHA256.HashData(Guid.NewGuid().ToByteArray()), 0)!,
             Name = "name1",

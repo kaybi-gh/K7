@@ -15,7 +15,7 @@ public class IndexLibraryFilesTests : FileAndDatabaseFixture
         // Arrange
 
         // Act
-        var command = new IndexLibraryFilesCommand(99);
+        var command = new IndexLibraryFilesCommand(Guid.NewGuid());
 
         // Assert
         await FluentActions.Invoking(() => SendAsync(command)).Should().ThrowAsync<NotFoundException>();

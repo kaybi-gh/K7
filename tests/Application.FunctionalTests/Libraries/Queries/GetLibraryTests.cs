@@ -14,7 +14,7 @@ public class GetLibraryTests : DatabaseFixture
         await RunAsDefaultUserAsync();
 
         // Act
-        var query = new GetLibraryQuery(99);
+        var query = new GetLibraryQuery(Guid.NewGuid());
 
         // Assert
         await FluentActions.Invoking(() => SendAsync(query)).Should().ThrowAsync<NotFoundException>();

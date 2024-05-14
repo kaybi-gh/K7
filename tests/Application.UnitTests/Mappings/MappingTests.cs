@@ -2,8 +2,7 @@
 using System.Runtime.CompilerServices;
 using AutoMapper;
 using MediaServer.Application.Common.Interfaces;
-using MediaServer.Application.Features.Libraries.Queries;
-using MediaServer.Application.Features.Medias.Queries.GetMedias;
+using MediaServer.Application.Common.Models.Dtos;
 using MediaServer.Domain.Entities;
 
 namespace MediaServer.Application.UnitTests.Mappings;

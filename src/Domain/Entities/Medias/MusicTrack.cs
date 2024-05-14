@@ -1,8 +1,10 @@
-﻿namespace MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities.Metadatas.Medias;
+
+namespace MediaServer.Domain.Entities.Medias;
 public class MusicTrack() : BaseMedia(MediaType.MusicTrack)
 {
-    public int? ArtistId { get; set; }
-    public virtual MusicArtist? Artist { get; set; }
-    public int? AlbumId { get; set; }
-    public virtual MusicAlbum? Album { get; set; }
+    public Guid AlbumId { get; set; }
+    public virtual MusicAlbum Album { get; set; } = null!;
+
+    public override string GetSlugSource() => $"{Album.Slug}-{((MusicTrackMetadata?)Metadata)?.Title}";
 }

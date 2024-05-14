@@ -1,4 +1,5 @@
 ﻿using MediaServer.Application.Common.Models;
+using MediaServer.Application.Common.Models.Dtos;
 using MediaServer.Application.Features.Medias.Queries.GetMedia;
 using MediaServer.Application.Features.Medias.Queries.GetMedias;
 
@@ -14,7 +15,7 @@ public class Medias : EndpointGroupBase
             .MapGet(GetMedias);
     }
 
-    public async Task<MediaDto> GetMedia(ISender sender, int id)
+    public async Task<MediaDto> GetMedia(ISender sender, Guid id)
     {
         return await sender.Send(new GetMediaQuery(id));
     }
