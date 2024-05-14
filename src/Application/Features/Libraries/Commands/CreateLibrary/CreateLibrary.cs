@@ -6,7 +6,7 @@ using MediaServer.Domain.Events;
 
 namespace MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
 
-public record CreateLibraryCommand : IRequest<int>
+public record CreateLibraryCommand : IRequest<Guid>
 {
     public required string Title { get; init; }
     public required LibraryMediaType MediaType { get; init; }
@@ -14,7 +14,7 @@ public record CreateLibraryCommand : IRequest<int>
     public bool TriggerFileIndexingOnCreation { get; init; } = true;
 }
 
-public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand, int>
+public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -25,17 +25,18 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
         _sender = sender;
     }
 
-    public async Task<int> Handle(CreateLibraryCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CreateLibraryCommand request, CancellationToken cancellationToken)
     {
         var entity = new Library
         {
+            Id = Guid.NewGuid(),
             Title = request.Title,
             MediaType = request.MediaType,
             RootPath = request.RootPath
         };
 
         entity.AddDomainEvent(new LibraryCreatedEvent(entity));
-        await _context.Libraries.AddAsync(entity);
+        _context.Libraries.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
         if (request.TriggerFileIndexingOnCreation)

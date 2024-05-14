@@ -46,6 +46,7 @@ try
         name: "default",
         pattern: "{controller}/{action=Index}/{id?}");
 
+    app.UseCors();
     app.MapRazorPages();
     app.MapFallbackToFile("index.html");
     app.UseExceptionHandler(options => { });

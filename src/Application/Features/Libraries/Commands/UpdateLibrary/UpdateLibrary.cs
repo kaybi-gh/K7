@@ -4,7 +4,7 @@ namespace MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
 
 public record UpdateLibraryCommand : IRequest
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
 
     public string? Title { get; init; }
 }
@@ -21,7 +21,7 @@ public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
     public async Task Handle(UpdateLibraryCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Libraries
-            .FindAsync(new object[] { request.Id }, cancellationToken);
+            .FindAsync([request.Id], cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
         entity.Title = request.Title ?? entity.Title;

@@ -4,9 +4,8 @@ public enum MediaType
 {
     Movie = 1,
     MusicAlbum = 2,
-    MusicArtist = 3,
-    MusicTrack = 4,
-    Serie = 5,
-    SerieEpisode = 6,
-    SerieSeason = 7
+    MusicTrack = 3,
+    Serie = 4,
+    SerieEpisode = 5,
+    SerieSeason = 6
 }

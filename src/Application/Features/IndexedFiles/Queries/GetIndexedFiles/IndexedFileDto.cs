@@ -4,7 +4,7 @@ namespace MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
 
 public record IndexedFileDto
 {
-    public required int LibraryId { get; init; }
+    public required Guid LibraryId { get; init; }
     public required string Name { get; init; }
     public required string Extension { get; init; }
     public required string Path { get; init; }

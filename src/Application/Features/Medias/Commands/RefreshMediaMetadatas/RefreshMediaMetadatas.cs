@@ -6,7 +6,7 @@ namespace MediaServer.Application.Features.Medias.Commands.RefreshMediaMetadatas
 
 public record RefreshMediaMetadatasCommand : IRequest
 {
-    public required int MediaId { get; init; }
+    public required Guid MediaId { get; init; }
     public required string MetadataProviderExternalId { get; init; }
     public required string Language { get; init; }
     public required string FallbackLanguage { get; init; }
@@ -39,20 +39,44 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 cancellationToken),
             _ => throw new NotImplementedException()
         };
-
+        
         if (metadata != null)
         {
+            foreach (var personRole in metadata.PersonRoles)
+            {
+                var existingPerson = await _context.Persons
+                    .Include(p => p.Roles)
+                    .FirstOrDefaultAsync(p => p.Name == personRole.Person.Name
+                        && p.Birthday == personRole.Person.Birthday, cancellationToken);
+
+                if (existingPerson == null)
+                {
+                    foreach (var externalId in personRole.Person.ExternalIds)
+                    {
+                        existingPerson = await _context.Persons
+                            .Include(p => p.Roles)
+                            .FirstOrDefaultAsync(p => p.ExternalIds.Any(x => x.Platform == externalId.Platform
+                                && x.Value == externalId.Value), cancellationToken);
+
+                        if (existingPerson != null)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (existingPerson != null)
+                {
+                    personRole.Person = existingPerson;
+                }
+            }
+
+            await _context.Metadatas.AddAsync(metadata, cancellationToken);
             media.Metadata = metadata;
             await _context.SaveChangesAsync(cancellationToken);
 
-            if (media.Metadata.ExternalIds != null)
-            {
-                foreach (var externalId in media.Metadata.ExternalIds)
-                {
-                    externalId.MetadataId = media.Metadata.Id;
-                }
-            }
-            var mediaPictures = await _metadataProvider.FetchMediaPictures(metadata.Id, request.MetadataProviderExternalId, "fr", cancellationToken, fallbackLanguage: "en");
+            // TODO - Remove the extra method FetchMetadataPictures
+            var mediaPictures = await _metadataProvider.FetchMetadataPictures(metadata.Id, request.MetadataProviderExternalId, "fr", cancellationToken, fallbackLanguage: "en");
             media.Metadata.Pictures = mediaPictures;
             await _context.SaveChangesAsync(cancellationToken);
         }

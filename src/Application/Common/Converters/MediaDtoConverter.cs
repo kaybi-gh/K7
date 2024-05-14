@@ -1,5 +1,4 @@
-﻿using MediaServer.Application.Features.Medias.Queries.GetMedia;
-using MediaServer.Application.Features.Medias.Queries.GetMedias;
+﻿using MediaServer.Application.Common.Models.Dtos;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 
@@ -13,7 +12,6 @@ public static class MediaDtoConverter
         {
             MediaType.Movie => mapper.Map<MovieDto>(media),
             MediaType.MusicAlbum => throw new NotImplementedException(),
-            MediaType.MusicArtist => throw new NotImplementedException(),
             MediaType.MusicTrack => throw new NotImplementedException(),
             MediaType.Serie => throw new NotImplementedException(),
             MediaType.SerieEpisode => throw new NotImplementedException(),
@@ -28,7 +26,6 @@ public static class MediaDtoConverter
         {
             MediaType.Movie => mapper.Map<LiteMovieDto>(media),
             MediaType.MusicAlbum => throw new NotImplementedException(),
-            MediaType.MusicArtist => throw new NotImplementedException(),
             MediaType.MusicTrack => throw new NotImplementedException(),
             MediaType.Serie => throw new NotImplementedException(),
             MediaType.SerieEpisode => throw new NotImplementedException(),

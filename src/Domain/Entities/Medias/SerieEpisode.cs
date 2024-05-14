@@ -1,8 +1,12 @@
-﻿namespace MediaServer.Domain.Entities.Medias;
+﻿using MediaServer.Domain.Entities.Metadatas.Medias;
+
+namespace MediaServer.Domain.Entities.Medias;
 public class SerieEpisode() : BaseMedia(MediaType.Serie)
 {
-    public int? SerieId { get; set; }
-    public virtual Serie? Serie { get; set; }
-    public int? SeasonId { get; set; }
-    public virtual SerieSeason? Season { get; set; }
+    public Guid SerieId { get; set; }
+    public virtual Serie Serie { get; set; } = null!;
+    public Guid SeasonId { get; set; }
+    public virtual SerieSeason Season { get; set; } = null!;
+    
+    public override string GetSlugSource() => $"{Season.Slug}-{((SerieEpisodeMetadata?)Metadata)?.Title}";
 }

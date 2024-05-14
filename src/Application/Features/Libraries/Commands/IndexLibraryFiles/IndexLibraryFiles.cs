@@ -3,7 +3,7 @@ using MediaServer.Domain.Interfaces;
 
 namespace MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
 
-public record IndexLibraryFilesCommand(int Id) : IRequest;
+public record IndexLibraryFilesCommand(Guid Id) : IRequest;
 
 public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFilesCommand>
 {
