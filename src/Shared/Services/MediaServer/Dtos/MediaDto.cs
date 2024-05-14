@@ -14,4 +14,5 @@ public abstract record MediaDto
     public IEnumerable<LitePersonRoleDto>? PersonRoles { get; init; }
     public IEnumerable<RatingDto>? Ratings { get; init; }
     public IEnumerable<IndexedFileDto>? IndexedFiles { get; init; }
+    public IEnumerable<string>? Genres { get; init; }
 }

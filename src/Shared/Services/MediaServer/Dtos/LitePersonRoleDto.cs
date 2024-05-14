@@ -6,7 +6,8 @@ using System.Text.Json.Serialization;
 namespace MediaClient.Shared.Services.MediaServer.Dtos;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(LiteActorDto), nameof(Actor))]
+[JsonDerivedType(typeof(LiteActorDto), "Actor")]
+[JsonDerivedType(typeof(LiteCrewMemberDto), "CrewMember")]
 public abstract record LitePersonRoleDto
 {
     public Guid Id { get; init; }
@@ -30,6 +31,7 @@ public abstract record LitePersonRoleDto
                 });
 
             CreateMap<LiteActorDto, LiteActor>();
+            CreateMap<LiteCrewMemberDto, LiteCrewMember>();
         }
     }
 }

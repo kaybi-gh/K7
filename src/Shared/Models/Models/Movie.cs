@@ -13,4 +13,5 @@ public record Movie
     public int Rating { get; init; } = 0;
     public string Synopsis { get; init; } = "";
     public List<LitePersonRole> Casting { get; init; } = [];
+    public List<string> Genres { get; init; } = [];
 }

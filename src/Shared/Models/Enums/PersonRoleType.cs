@@ -1,8 +1,9 @@
 ﻿namespace MediaClient.Shared.Domain.Enums;
 
-public enum PersonJob
+public enum PersonRoleType
 {
     Actor,
     VoiceActor,
     MusicArtist,
+    CrewMember,
 }

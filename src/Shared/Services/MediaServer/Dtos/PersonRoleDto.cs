@@ -7,6 +7,7 @@ namespace MediaClient.Shared.Services.MediaServer.Dtos;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(ActorDto), "Actor")]
+[JsonDerivedType(typeof(CrewMemberDto), "CrewMember")]
 public abstract record PersonRoleDto
 {
     public Guid Id { get; init; }
@@ -33,6 +34,7 @@ public abstract record PersonRoleDto
                 });
 
             CreateMap<ActorDto, Actor>();
+            CreateMap<CrewMemberDto, CrewMember>();
         }
     }
 }

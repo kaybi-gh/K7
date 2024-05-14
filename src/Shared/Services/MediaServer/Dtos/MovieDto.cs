@@ -28,6 +28,7 @@ public record MovieDto : MediaDto
                 })
                 .ForMember(dst => dst.Synopsis, x => x.MapFrom(src => src.Overview))
                 .ForMember(dst => dst.Casting, x => x.MapFrom(src => src.PersonRoles))
+                .ForMember(dst => dst.Genres, x => x.MapFrom(src => src.Genres))
                 .ForMember(dst => dst.Watched, x => x.Ignore())
                 .ForMember(dst => dst.Progress, x => x.Ignore())
                 .ForMember(dst => dst.Rating, x => x.Ignore())
