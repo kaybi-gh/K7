@@ -39,31 +39,43 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 cancellationToken),
             _ => throw new NotImplementedException()
         };
-
+        
         if (metadata != null)
         {
-            await _context.Persons.AddRangeAsync(metadata.PersonRoles.Select(x => x.Person));
-            await _context.PersonRoles.AddRangeAsync(metadata.PersonRoles);
-            await _context.Metadatas.AddAsync(metadata);
-            media.Metadata = metadata;
-            
-            try
+            foreach (var personRole in metadata.PersonRoles)
             {
-                await _context.SaveChangesAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                var test = ex.Message;
-            }
-            
+                var existingPerson = await _context.Persons
+                    .Include(p => p.Roles)
+                    .FirstOrDefaultAsync(p => p.Name == personRole.Person.Name
+                        && p.Birthday == personRole.Person.Birthday, cancellationToken);
 
-            //if (media.Metadata.ExternalIds != null)
-            //{
-            //    foreach (var externalId in media.Metadata.ExternalIds)
-            //    {
-            //        externalId.MetadataId = media.Metadata.Id;
-            //    }
-            //}
+                if (existingPerson == null)
+                {
+                    foreach (var externalId in personRole.Person.ExternalIds)
+                    {
+                        existingPerson = await _context.Persons
+                            .Include(p => p.Roles)
+                            .FirstOrDefaultAsync(p => p.ExternalIds.Any(x => x.Platform == externalId.Platform
+                                && x.Value == externalId.Value), cancellationToken);
+
+                        if (existingPerson != null)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (existingPerson != null)
+                {
+                    personRole.Person = existingPerson;
+                }
+            }
+
+            await _context.Metadatas.AddAsync(metadata, cancellationToken);
+            media.Metadata = metadata;
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // TODO - Remove the extra method FetchMetadataPictures
             var mediaPictures = await _metadataProvider.FetchMetadataPictures(metadata.Id, request.MetadataProviderExternalId, "fr", cancellationToken, fallbackLanguage: "en");
             media.Metadata.Pictures = mediaPictures;
             await _context.SaveChangesAsync(cancellationToken);

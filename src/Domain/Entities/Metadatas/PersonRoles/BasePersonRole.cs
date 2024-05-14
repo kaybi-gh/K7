@@ -1,9 +1,9 @@
 ﻿using MediaServer.Domain.Entities.Metadatas.Medias;
 
 namespace MediaServer.Domain.Entities.Metadatas.Persons;
-public abstract class BasePersonRole(PersonJob job) : BaseAuditableEntity
+public abstract class BasePersonRole(PersonRoleType type) : BaseAuditableEntity
 {
-    public PersonJob Job { get; protected set; } = job;
+    public PersonRoleType Type { get; protected set; } = type;
     public int? Order {  get; set; }
 
     public IList<ExternalId> ExternalIds { get; set; } = [];

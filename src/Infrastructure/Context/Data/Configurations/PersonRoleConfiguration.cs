@@ -1,4 +1,5 @@
-﻿using MediaServer.Domain.Entities.Metadatas.Persons;
+﻿using MediaServer.Domain.Entities;
+using MediaServer.Domain.Entities.Metadatas.Persons;
 using MediaServer.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,18 +11,11 @@ public class PersonRoleConfiguration : IEntityTypeConfiguration<BasePersonRole>
     public void Configure(EntityTypeBuilder<BasePersonRole> builder)
     {
         builder
-            .HasDiscriminator(m => m.Job)
-            .HasValue<Actor>(PersonJob.Actor)
-            .HasValue<MusicArtist>(PersonJob.MusicArtist)
-            .HasValue<VoiceActor>(PersonJob.VoiceActor);
-
-        builder
-            .HasOne(r => r.Person)
-            .WithMany(p => p.Roles);
-
-        builder
-            .HasOne(r => r.Metadata)
-            .WithMany(m => m.PersonRoles);
+            .HasDiscriminator(m => m.Type)
+            .HasValue<Actor>(PersonRoleType.Actor)
+            .HasValue<MusicArtist>(PersonRoleType.MusicArtist)
+            .HasValue<VoiceActor>(PersonRoleType.VoiceActor)
+            .HasValue<CrewMember>(PersonRoleType.CrewMember);
     }
 
     public static void Configure(EntityTypeBuilder<Actor> builder)
@@ -33,6 +27,10 @@ public class PersonRoleConfiguration : IEntityTypeConfiguration<BasePersonRole>
     }
 
     public static void Configure(EntityTypeBuilder<VoiceActor> builder)
+    {
+    }
+
+    public static void Configure(EntityTypeBuilder<CrewMember> builder)
     {
     }
 }

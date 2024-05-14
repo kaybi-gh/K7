@@ -17,10 +17,5 @@ public class PersonConfiguration : IEntityTypeConfiguration<Person>
             .HasMany(p => p.Roles)
             .WithOne(r => r.Person)
             .HasForeignKey(r => r.PersonId);
-
-        builder
-            .HasOne(p => p.PortraitPicture)
-            .WithOne(m => m.Person)
-            .HasForeignKey<MetadataPicture>(m => m.PersonId);
     }
 }

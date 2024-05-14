@@ -944,6 +944,13 @@
               "$ref": "#/components/schemas/IndexedFileDto"
             }
           },
+          "genres": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
           "type": {
             "type": "string"
           }
@@ -995,7 +1002,8 @@
         "discriminator": {
           "propertyName": "type",
           "mapping": {
-            "Actor": "#/components/schemas/LiteActorDto"
+            "Actor": "#/components/schemas/LiteActorDto",
+            "CrewMember": "#/components/schemas/LiteCrewMemberDto"
           }
         },
         "x-abstract": true,
@@ -1011,9 +1019,6 @@
           "mediaId": {
             "type": "string",
             "format": "guid"
-          },
-          "job": {
-            "$ref": "#/components/schemas/PersonJob"
           },
           "order": {
             "type": "integer",
@@ -1046,20 +1051,6 @@
             "type": "string"
           }
         }
-      },
-      "PersonJob": {
-        "type": "integer",
-        "description": "0 = Actor\n1 = VoiceActor\n2 = MusicArtist",
-        "x-enumNames": [
-          "Actor",
-          "VoiceActor",
-          "MusicArtist"
-        ],
-        "enum": [
-          0,
-          1,
-          2
-        ]
       },
       "LitePersonDto": {
         "type": "object",
@@ -1141,6 +1132,27 @@
             "additionalProperties": false,
             "properties": {
               "characterName": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "LiteCrewMemberDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/LitePersonRoleDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "department": {
+                "type": "string",
+                "nullable": true
+              },
+              "job": {
                 "type": "string",
                 "nullable": true
               }
@@ -1465,7 +1477,8 @@
         "discriminator": {
           "propertyName": "type",
           "mapping": {
-            "Actor": "#/components/schemas/ActorDto"
+            "Actor": "#/components/schemas/ActorDto",
+            "CrewMember": "#/components/schemas/CrewMemberDto"
           }
         },
         "x-abstract": true,
@@ -1481,9 +1494,6 @@
           "mediaId": {
             "type": "string",
             "format": "guid"
-          },
-          "job": {
-            "$ref": "#/components/schemas/PersonJob"
           },
           "order": {
             "type": "integer",
@@ -1535,6 +1545,27 @@
             "additionalProperties": false,
             "properties": {
               "characterName": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "CrewMemberDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PersonRoleDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "department": {
+                "type": "string",
+                "nullable": true
+              },
+              "job": {
                 "type": "string",
                 "nullable": true
               }

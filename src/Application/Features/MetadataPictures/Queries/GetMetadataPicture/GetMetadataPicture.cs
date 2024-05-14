@@ -21,9 +21,16 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
             .FindAsync([query.Id], cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
+        Guard.Against.NullOrEmpty(entity.Path);
 
+        var file = new FileInfo(entity.Path);
         var bytes = File.ReadAllBytes(entity.Path);
-        return Results.File(bytes, contentType: "image/jpeg");
-        // TODO - Return real content type
+        return Results.File(bytes, contentType: file.Extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            _ => "application/octet-stream"
+        });
+        // TODO - Manage mime-type in database or with a better class
     }
 }
