@@ -1,18 +1,16 @@
 ﻿using System.Text.Json.Serialization;
 using MediaServer.Application.Features.Persons.Queries.GetPerson;
-using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Metadatas.Persons;
-using MediaServer.Domain.Enums;
 
 namespace MediaServer.Application.Common.Models.Dtos;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(ActorDto), nameof(Actor))]
+[JsonDerivedType(typeof(CrewMemberDto), nameof(CrewMember))]
 public abstract record PersonRoleDto
 {
     public Guid Id { get; init; }
     public Guid MediaId { get; init; }
-    public PersonJob Job { get; init; }
     public int? Order { get; init; }
     public MetadataPictureDto? PortraitPicture { get; init; }
     public LiteMediaDto? Media { get; init; }
@@ -29,6 +27,7 @@ public abstract record PersonRoleDto
                 .ForMember(dst => dst.Person, x => x.MapFrom(src => src.Person));
 
             CreateMap<Actor, ActorDto>();
+            CreateMap<CrewMember, CrewMemberDto>();
         }
     }
 }

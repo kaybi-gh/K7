@@ -6,7 +6,8 @@ namespace MediaServer.Domain.Entities;
 public class MetadataPicture : BaseAuditableEntity
 {
     public required MetadataPictureType Type { get; set; }
-    public required string Path { get; set; }
+    public required Uri OriginalRemoteUri { get; set; }
+    public string? Path { get; set; }
 
     public Guid? MetadataId { get; set; }
     public virtual BaseMediaMetadata? Metadata { get; set; }

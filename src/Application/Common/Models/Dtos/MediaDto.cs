@@ -17,6 +17,7 @@ public abstract record MediaDto
     public IEnumerable<LitePersonRoleDto>? PersonRoles { get; init; }
     public IEnumerable<RatingDto>? Ratings { get; init; }
     public IEnumerable<IndexedFileDto>? IndexedFiles { get; init; }
+    public IEnumerable<string>? Genres { get; init; }
 
     private class Mapping : Profile
     {
@@ -28,7 +29,8 @@ public abstract record MediaDto
                 .ForMember(dst => dst.Title, x => x.MapFrom(src => src.Metadata!.Title))
                 .ForMember(dst => dst.ReleaseDate, x => x.MapFrom(src => src.Metadata!.ReleaseDate))
                 .ForMember(dst => dst.PersonRoles, x => x.MapFrom(src => src.Metadata!.PersonRoles))
-                .ForMember(dst => dst.IndexedFiles, x => x.MapFrom(src => src.IndexedFiles));
+                .ForMember(dst => dst.IndexedFiles, x => x.MapFrom(src => src.IndexedFiles))
+                .ForMember(dst => dst.Genres, x => x.MapFrom(src => src.Metadata!.Genres));
 
             CreateMap<Movie, MovieDto>()
                 .ForMember(dst => dst.TagLine, x => x.MapFrom(src => (src.Metadata as MovieMetadata)!.TagLine))
