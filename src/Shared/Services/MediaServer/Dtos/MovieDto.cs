@@ -1,0 +1,38 @@
+﻿using AutoMapper;
+using MediaClient.Shared.Domain.Models;
+using MediaClient.Shared.Services.MediaServer.Mappings;
+
+namespace MediaClient.Shared.Services.MediaServer.Dtos;
+
+public record MovieDto : MediaDto
+{
+    public string? TagLine { get; init; }
+    public string? Overview { get; init; }
+    public string? OriginalLanguage { get; init; }
+
+    private class Mapping : Profile
+    {
+        public Mapping()
+        {
+            CreateMap<MovieDto, Movie>()
+                .ForMember(dst => dst.Id, x => x.MapFrom(src => src.Id))
+                .ForMember(dst => dst.PosterPictureHref, x =>
+                {
+                    x.PreCondition(src => src.Pictures != null && src.Pictures.Any(x => x.Type == MetadataPictureType.Poster));
+                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Poster));
+                })
+                .ForMember(dst => dst.BackgroundPictureHref, x =>
+                {
+                    x.PreCondition(src => src.Pictures != null && src.Pictures.Any(x => x.Type == MetadataPictureType.Backdrop));
+                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Backdrop));
+                })
+                .ForMember(dst => dst.Synopsis, x => x.MapFrom(src => src.Overview))
+                .ForMember(dst => dst.Casting, x => x.MapFrom(src => src.PersonRoles))
+                .ForMember(dst => dst.Genres, x => x.MapFrom(src => src.Genres))
+                .ForMember(dst => dst.Watched, x => x.Ignore())
+                .ForMember(dst => dst.Progress, x => x.Ignore())
+                .ForMember(dst => dst.Rating, x => x.Ignore())
+                .ForMember(dst => dst.AdditionalInformations, x => x.Ignore());
+        }
+    }
+}

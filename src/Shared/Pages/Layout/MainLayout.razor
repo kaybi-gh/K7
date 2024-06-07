@@ -3,13 +3,22 @@
 
 <MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled/>
 
-<MudLayout>
+<MudBreakpointProvider>
     <MudHidden Breakpoint="Breakpoint.SmAndUp">
-        <Header />
+        <MudLayout Class="mobile-layout">
+            <MudMainContent>
+                @Body
+            </MudMainContent>
+            <MobileFooter />
+        </MudLayout>
     </MudHidden>
-    <Sidebar/>
-    <MudMainContent>
-        @Body
-    </MudMainContent>
-</MudLayout>
 
+    <MudHidden Breakpoint="Breakpoint.Xs">
+        <MudLayout>
+            <Sidebar />
+            <MudMainContent>
+                @Body
+            </MudMainContent>
+        </MudLayout>
+    </MudHidden>
+</MudBreakpointProvider>

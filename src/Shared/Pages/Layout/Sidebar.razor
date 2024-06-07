@@ -1,49 +1,57 @@
 ﻿@implements IDisposable
 @inject SidebarService SidebarService
 
-<MudHidden IsHiddenChanged="ToggleDrawerVariant"/>
-<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="@_variant">
-    <MudStack Class="flex-grow-1" AlignItems="AlignItems.Center">
-        <MudHidden Breakpoint="Breakpoint.Xs">
-            <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
-                                    Icon="@Icons.Material.Filled.Menu" Color="@Color.Inherit" Title="Off"
-                                    ToggledIcon="@Icons.Material.Filled.Close" ToggledColor="@Color.Inherit" ToggledTitle="On" />
-        </MudHidden>
-        <MudDrawerHeader>
-            <MudText Color="Color.Primary" Typo="Typo.h6">My App</MudText>
-        </MudDrawerHeader>
-        <MudItem Style="width: 100%;" Class="px-4">
-            <MudTextField Class="sidebar-search-bar" DisableUnderLine="true" Label="Search" DebounceInterval="500" OnDebounceIntervalElapsed="Search" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
-        </MudItem>
-        <MudNavMenu Bordered="true" Style="width: 100%;">
-            @* TODO - Dynamic nav tree *@
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-            <MudNavLink Href="/library/movies-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Theaters">Movies</MudNavLink>
-            <MudNavLink Href="/library/series-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Tv">Series</MudNavLink>
-            <MudNavLink Href="/library/music-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.MusicNote">Music</MudNavLink>
-        </MudNavMenu>
-        <MudSpacer/>
-        <MudNavMenu Bordered="true" Style="width: 100%;">
-            <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
-        </MudNavMenu>
-
-        <MudHidden Breakpoint="Breakpoint.SmAndUp">
-            <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="px-8 py-4 ma-4">
-                <MudAvatar Color="Color.Primary">K</MudAvatar>
-            </MudStack>
-        </MudHidden>
-
-        <MudHidden Breakpoint="Breakpoint.Xs">
-            <MudPaper Class="px-8 py-4 ma-4">
-                <MudStack Row="true">
-                    <MudAvatar Color="Color.Primary">K</MudAvatar>
-                    <MudStack Justify="Justify.Center" Spacing="0">
-                        <MudText Typo="Typo.body1">Kaybi</MudText>
-                        <MudText Typo="Typo.body2">kaybi@cool.fr</MudText>
-                    </MudStack>
-                </MudStack>
-            </MudPaper>
-        </MudHidden>
+<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini">
+    <MudStack AlignItems="AlignItems.Center">
+        <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
+                                Icon="@Icons.Material.Filled.Menu" Color="@Color.Inherit" Title="Off"
+                                ToggledIcon="@Icons.Material.Filled.Close" ToggledColor="@Color.Inherit" ToggledTitle="On" />
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-4">
+            <MudIcon Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.TwoTone.Cyclone" />
+            @if (SidebarService.IsOpen)
+            {
+                <MudText Color="Color.Primary" Typo="Typo.h6">MediaServer</MudText>
+            }
+        </MudStack>
+        <MudStack Row="true" AlignItems="AlignItems.Center">
+            @if (SidebarService.IsOpen)
+            {
+                <MudTextField Class="sidebar-search-bar mx-4" DisableUnderLine="true" Label="Search" DebounceInterval="500" OnDebounceIntervalElapsed="Search" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
+            }
+            else
+            {
+                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Search" />
+            }
+        </MudStack>
     </MudStack>
-</MudDrawer>
+    <MudNavMenu Bordered="true" Style="width: 100%;">
+        @* TODO - Dynamic nav tree *@
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+        <MudNavLink Href="/library/movies-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Theaters">Movies</MudNavLink>
+        <MudNavLink Href="/library/series-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Tv">Series</MudNavLink>
+        <MudNavLink Href="/library/music-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.MusicNote">Music</MudNavLink>
+    </MudNavMenu>
+    <MudSpacer />
+    <MudNavMenu Bordered="true" Style="width: 100%;">
+        <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
+    </MudNavMenu>
 
+    @if (!SidebarService.IsOpen)
+    {
+        <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
+            <MudAvatar Color="Color.Primary">K</MudAvatar>
+        </MudStack>
+    }
+    else
+    {
+        <MudPaper Class="px-8 py-4 ma-4">
+            <MudStack Row="true">
+                <MudAvatar Color="Color.Primary">K</MudAvatar>
+                <MudStack Justify="Justify.Center" Spacing="0">
+                    <MudText Typo="Typo.body1">Kaybi</MudText>
+                    <MudText Typo="Typo.body2">kaybi@cool.fr</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    }
+</MudDrawer>

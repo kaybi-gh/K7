@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>MediaClient.Shared.Models</RootNamespace>
-    <AssemblyName>MediaClient.Shared.Models</AssemblyName>
+    <RootNamespace>MediaClient.Shared.Domain</RootNamespace>
+    <AssemblyName>MediaClient.Shared.Domain</AssemblyName>
   </PropertyGroup>
 	
   <PropertyGroup>

@@ -12,6 +12,14 @@
   </PropertyGroup>
 	
   <ItemGroup>
+    <None Remove="Splash.razor.css" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <Content Include="Splash.razor.css" />
+  </ItemGroup>
+		
+  <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
 
@@ -21,12 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Models\Models.csproj" />
+    <ProjectReference Include="..\Models\Domain.csproj" />
     <ProjectReference Include="..\Services\Services.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

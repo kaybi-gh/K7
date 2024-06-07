@@ -14,15 +14,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.4" />
 	<PackageReference Include="MudBlazor" Version="6.*" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Components\Components.csproj" />
-    <ProjectReference Include="..\..\Shared\Models\Models.csproj" />
+    <ProjectReference Include="..\..\Shared\Models\Domain.csproj" />
     <ProjectReference Include="..\..\Shared\Pages\Pages.csproj" />
     <ProjectReference Include="..\..\Shared\Services\Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
