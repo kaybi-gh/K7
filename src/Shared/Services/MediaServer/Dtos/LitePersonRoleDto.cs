@@ -27,7 +27,7 @@ public abstract record LitePersonRoleDto
                 .ForMember(dst => dst.PortraitPictureHref, x =>
                 {
                     x.PreCondition(src => src.PortraitPicture != null);
-                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.PortraitPicture!);
+                    x.MapFrom<MediaServerAbsoluteUriResolver, Uri?>(src => src.PortraitPicture!.Uri);
                 });
 
             CreateMap<LiteActorDto, LiteActor>();

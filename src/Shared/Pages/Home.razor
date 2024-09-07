@@ -1,5 +1,5 @@
 @page "/"
-@inject             Domain.Interfaces.IMediaServerService mediaServerService
+@inject Domain.Interfaces.IMediaServerService mediaServerService
 <PageTitle>Home</PageTitle>
 
 <HorizontalScrollableStack Title="RealItems">
@@ -42,25 +42,28 @@
     List<MediaPosterViewModel> realItems = [];
     protected override async Task OnInitializedAsync()
     {
-        var test = await mediaServerService.GetLiteMediasAsync(new GetLiteMediasQuery()
+        try
         {
-            PageNumber = 1,
-            PageSize = 50
-        });
-
-        if (test != null && test.Items != null)
-        {
-            foreach (var item in test.Items)
-            {
-                realItems.Add(new MediaPosterViewModel()
+            var test = await mediaServerService.GetLiteMediasAsync(new GetLiteMediasQuery()
                 {
-                    Id = item.Id.ToString(),
-                    Title = item.Title,
-                    AdditionalInformations = item.ReleaseDate.HasValue ? item.ReleaseDate.Value.Year.ToString() : "",
-                    PosterPictureHref = item.PosterPictureHref
+                    PageNumber = 1,
+                    PageSize = 50
                 });
+
+            if (test != null && test.Items != null)
+            {
+                foreach (var item in test.Items)
+                {
+                    realItems.Add(new MediaPosterViewModel()
+                        {
+                            Id = item.Id.ToString(),
+                            Title = item.Title,
+                            AdditionalInformations = item.ReleaseDate.HasValue ? item.ReleaseDate.Value.Year.ToString() : "",
+                            PosterPictureHref = item.PosterPictureHref
+                        });
+                }
             }
         }
-        
+        catch {}
     }
 }

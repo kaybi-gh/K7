@@ -19,16 +19,17 @@ public record MovieDto : MediaDto
                 .ForMember(dst => dst.PosterPictureHref, x =>
                 {
                     x.PreCondition(src => src.Pictures != null && src.Pictures.Any(x => x.Type == MetadataPictureType.Poster));
-                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Poster));
+                    x.MapFrom<MediaServerAbsoluteUriResolver, Uri?>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Poster).Uri);
                 })
                 .ForMember(dst => dst.BackgroundPictureHref, x =>
                 {
                     x.PreCondition(src => src.Pictures != null && src.Pictures.Any(x => x.Type == MetadataPictureType.Backdrop));
-                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Backdrop));
+                    x.MapFrom<MediaServerAbsoluteUriResolver, Uri?>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Backdrop).Uri);
                 })
                 .ForMember(dst => dst.Synopsis, x => x.MapFrom(src => src.Overview))
                 .ForMember(dst => dst.Casting, x => x.MapFrom(src => src.PersonRoles))
                 .ForMember(dst => dst.Genres, x => x.MapFrom(src => src.Genres))
+                .ForMember(dst => dst.Sources, x => x.MapFrom<MediaServerAbsoluteUriListResolver, IEnumerable<Uri?>?>(src => src.IndexedFiles!.Select(x => x.HlsStreamUri)))
                 .ForMember(dst => dst.Watched, x => x.Ignore())
                 .ForMember(dst => dst.Progress, x => x.Ignore())
                 .ForMember(dst => dst.Rating, x => x.Ignore())

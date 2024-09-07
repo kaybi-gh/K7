@@ -12,8 +12,11 @@ public class ThemeService
         get => _themeWrapper ?? Themes.Plex;
         set
         {
-            _themeWrapper = value;
-            ThemeOnChange?.Invoke();
+            if (_themeWrapper != value)
+            {
+                _themeWrapper = value;
+                ThemeOnChange?.Invoke();
+            }
         }
     }
 
@@ -24,8 +27,11 @@ public class ThemeService
         get => _darkModeEnabled ?? true;
         set
         {
-            _darkModeEnabled = value;
-            DarkModeEnabledOnChange?.Invoke();
+            if (_darkModeEnabled != value)
+            {
+                _darkModeEnabled = value;
+                DarkModeEnabledOnChange?.Invoke();
+            }
         }
     }
 

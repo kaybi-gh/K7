@@ -1,14 +1,10 @@
-﻿using System.Text.Json.Serialization;
-using MediaClient.Shared.Domain.Interfaces;
+﻿using MediaClient.Shared.Domain.Interfaces;
 using MediaClient.Shared.Services.MediaServer;
 using MediaClient.Shared.Services.MediaServer.Mappings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Reflection;
-using System.Text.Json;
 using AutoMapper;
-using MediaClient.Shared.Services.MediaServer.Dtos;
-using Microsoft.Extensions.Configuration;
 
 namespace MediaClient.Shared.Services;
 
@@ -24,7 +20,8 @@ public static class ServicesCollectionExtensions
         });
         services.AddScoped<SidebarService>();
         services.AddScoped<ThemeService>();
-        services.AddScoped<IMemberValueResolver<object, object, MetadataPictureDto, string?>, MediaServerBaseUrlPathResolver>();
+        services.AddScoped<PlayerService>();
+        services.AddScoped<IMemberValueResolver<object, object, Uri?, string?>, MediaServerAbsoluteUriResolver>();
     }
 
     public static void AddClientServices(this IServiceCollection services)
@@ -37,6 +34,7 @@ public static class ServicesCollectionExtensions
         });
         services.AddSingleton<SidebarService>();
         services.AddSingleton<ThemeService>();
-        services.AddScoped<IMemberValueResolver<object, object, MetadataPictureDto, string?>, MediaServerBaseUrlPathResolver>();
+        services.AddSingleton<PlayerService>();
+        services.AddScoped<IMemberValueResolver<object, object, Uri?, string?>, MediaServerAbsoluteUriResolver>();
     }
 }

@@ -38,4 +38,11 @@ public partial class Movie
     {
         _overviewExpanded = !_overviewExpanded;
     }
+
+    private void Play()
+    {
+        PlayerService.Sources = _movie!.Sources.ToList();
+        PlayerService.Poster = _movie.PosterPictureHref;
+        PlayerService.Show();
+    }
 }

@@ -10,8 +10,11 @@ public class SidebarService
         get => _isOpen ?? false;
         set
         {
-            _isOpen = value;
-            IsOpenOnChange?.Invoke();
+            if (_isOpen != value)
+            {
+                _isOpen = value;
+                IsOpenOnChange?.Invoke();
+            }
         }
     }
     
