@@ -1,7 +1,5 @@
 ﻿using MediaServer.Application.Common.Models.Dtos;
-using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Metadatas;
-using MediaServer.Domain.Entities.Metadatas.Persons;
 using MediaServer.Domain.Enums;
 
 namespace MediaServer.Application.Features.Persons.Queries.GetPerson;

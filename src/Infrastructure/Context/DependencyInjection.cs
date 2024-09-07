@@ -76,7 +76,7 @@ public static class DependencyInjection
     {
         return databaseConfiguration.Provider.ToLowerInvariant() switch
         {
-            "postgres" => $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};",
+            "postgres" => $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};Include Error Detail=true;",
             "sqlite" => $"Data Source={databaseConfiguration.Name}.db",
             _ => throw new Exception($"Unsupported database provider: {databaseConfiguration.Provider}")
         };

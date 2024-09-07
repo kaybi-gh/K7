@@ -1,4 +1,4 @@
-﻿using MediaServer.Domain.Entities.Metadatas.Persons;
+﻿using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 
 namespace MediaServer.Domain.Entities.Metadatas;
 public class Person : BaseSlugEntity

@@ -1,4 +1,5 @@
 ﻿using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Enums;
@@ -41,8 +42,13 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
 
         if (request.TriggerFileIndexingOnCreation)
         {
-            var command = new IndexLibraryFilesCommand(entity.Id);
-            await _sender.Send(command, cancellationToken);
+            await _sender.Send(new CreateBackgroundTaskCommand()
+            {
+                Request = new IndexLibraryFilesCommand(entity.Id),
+                Priority = BackgroundTaskPriority.Normal,
+                TargetEntityId = entity.Id,
+                TargetEntityTypeName = nameof(Library)
+            }, cancellationToken);
         }
 
         return entity.Id;

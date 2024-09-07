@@ -1,50 +1,41 @@
-﻿using System;
-using System.IO;
-using System.Reflection.Metadata;
-using MediaServer.Application.Common.Interfaces;
-using MediaServer.Application.Services;
+﻿using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using MediaServer.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
+using MediaServer.Domain.Entities;
+using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
-using MediaServer.Domain.Interfaces;
-using MediaServer.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
-namespace MediaServer.Application.Features.Libraries.EventHandlers;
+namespace MediaServer.Application.Features.MetadataPictures.EventHandlers;
 
 public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataPictureCreatedEvent>
 {
     private readonly ILogger<MetadataPictureCreatedEventHandler> _logger;
-    private readonly PathsConfiguration _pathsConfiguration;
+    private readonly ISender _sender;
 
-    public MetadataPictureCreatedEventHandler(ILogger<MetadataPictureCreatedEventHandler> logger, IOptions<PathsConfiguration> pathsConfiguration)
+    public MetadataPictureCreatedEventHandler(ILogger<MetadataPictureCreatedEventHandler> logger, ISender sender)
     {
         _logger = logger;
-        _pathsConfiguration = pathsConfiguration.Value;
+        _sender = sender;
     }
 
     public async Task Handle(MetadataPictureCreatedEvent notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("MediaServer Domain Event: {DomainEvent}", notification.GetType().Name);
 
-        var destinationFilePath = _pathsConfiguration.Metadatas;
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(notification.MetadataPicture.OriginalRemoteUri.LocalPath)}";
+        var priority = notification.MetadataPicture.Type switch
+        {
+            MetadataPictureType.Backdrop => BackgroundTaskPriority.VeryLow,
+            MetadataPictureType.Logo => BackgroundTaskPriority.VeryLow,
+            MetadataPictureType.Poster => BackgroundTaskPriority.Low,
+            _ => BackgroundTaskPriority.Lowest
+        };
 
-        if (notification.MetadataPicture.PersonId != null)
+        await _sender.Send(new CreateBackgroundTaskCommand()
         {
-            destinationFilePath = Path.Combine(destinationFilePath, "persons", $"{notification.MetadataPicture.PersonId}", fileName);
-        }
-        else if (notification.MetadataPicture.PersonRoleId != null)
-        {
-            destinationFilePath = Path.Combine(destinationFilePath, "person-roles", $"{notification.MetadataPicture.PersonRoleId}", fileName);
-        }
-        else if (notification.MetadataPicture.MetadataId != null)
-        {
-            destinationFilePath = Path.Combine(destinationFilePath, "medias", $"{notification.MetadataPicture.MetadataId}", fileName);
-        }
-
-        if (await PictureDownloaderService.TryDownloadPictureAsync(notification.MetadataPicture.OriginalRemoteUri.OriginalString, destinationFilePath))
-        {
-            notification.MetadataPicture.Path = destinationFilePath;
-        }
+            Request = new DownloadMetadataPictureFromProviderCommand() { MetadataPicture = notification.MetadataPicture },
+            Priority = priority,
+            TargetEntityTypeName = nameof(MetadataPicture),
+            MaxRetryCount = 5
+        }, cancellationToken);
     }
 }

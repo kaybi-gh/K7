@@ -4,7 +4,7 @@ using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Entities.Metadatas.Medias;
-using MediaServer.Domain.Entities.Metadatas.Persons;
+using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 using MediaServer.Domain.Entities.Ratings;
 using MediaServer.Infrastructure.Context.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -26,6 +26,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<BasePersonRole> PersonRoles => Set<BasePersonRole>();
     public DbSet<BaseRating> Ratings => Set<BaseRating>();
     public DbSet<ExternalId> ExternalIds => Set<ExternalId>();
+    public DbSet<HlsSegment> HlsSegments => Set<HlsSegment>();
+    public DbSet<BackgroundTask> BackgroundTasks => Set<BackgroundTask>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

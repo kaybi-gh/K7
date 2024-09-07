@@ -1,5 +1,5 @@
 ﻿using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Entities.Metadatas.Persons;
+using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 using MediaServer.Domain.Entities.Ratings;
 
 namespace MediaServer.Domain.Entities.Metadatas.Medias;

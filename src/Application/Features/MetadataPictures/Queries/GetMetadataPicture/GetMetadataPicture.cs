@@ -24,8 +24,12 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         Guard.Against.NullOrEmpty(entity.Path);
 
         var file = new FileInfo(entity.Path);
-        var bytes = File.ReadAllBytes(entity.Path);
-        return Results.File(bytes, contentType: file.Extension switch
+        if (!file.Exists)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.File(file.OpenRead(), contentType: file.Extension switch
         {
             ".jpg" or ".jpeg" => "image/jpeg",
             ".png" => "image/png",

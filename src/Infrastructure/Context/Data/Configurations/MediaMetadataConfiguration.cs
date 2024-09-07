@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MediaServer.Infrastructure.Context.Data.Configurations;
 
-public class MetadataConfiguration : IEntityTypeConfiguration<BaseMediaMetadata>
+public class MediaMetadataConfiguration : IEntityTypeConfiguration<BaseMediaMetadata>
 {
     public void Configure(EntityTypeBuilder<BaseMediaMetadata> builder)
     {

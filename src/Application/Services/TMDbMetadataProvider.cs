@@ -2,7 +2,7 @@
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Entities.Metadatas.Medias;
-using MediaServer.Domain.Entities.Metadatas.Persons;
+using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;

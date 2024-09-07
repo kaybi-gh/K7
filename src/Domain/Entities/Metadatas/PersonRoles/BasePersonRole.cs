@@ -1,10 +1,10 @@
 ﻿using MediaServer.Domain.Entities.Metadatas.Medias;
 
-namespace MediaServer.Domain.Entities.Metadatas.Persons;
+namespace MediaServer.Domain.Entities.Metadatas.PersonRoles;
 public abstract class BasePersonRole(PersonRoleType type) : BaseAuditableEntity
 {
     public PersonRoleType Type { get; protected set; } = type;
-    public int? Order {  get; set; }
+    public int? Order { get; set; }
 
     public IList<ExternalId> ExternalIds { get; set; } = [];
     public Guid PersonId { get; set; }
