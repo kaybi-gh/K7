@@ -6,6 +6,144 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/background-tasks/{id}": {
+      "get": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "GetBackgroundTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "DeleteBackgroundTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/background-tasks": {
+      "get": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "GetBackgroundTasks",
+        "parameters": [
+          {
+            "name": "Ids",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "nullable": true,
+              "items": {
+                "type": "string",
+                "format": "guid"
+              }
+            },
+            "x-position": 1
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EnumHashSetQueryParamOfBackgroundTaskStatus"
+                }
+              ]
+            },
+            "x-position": 2
+          },
+          {
+            "name": "Priority",
+            "in": "query",
+            "schema": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EnumHashSetQueryParamOfBackgroundTaskPriority"
+                }
+              ]
+            },
+            "x-position": 3
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 4
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListOfBackgroundTaskDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/indexed-files/{id}/direct-stream": {
       "get": {
         "tags": [
@@ -905,6 +1043,123 @@
   },
   "components": {
     "schemas": {
+      "BackgroundTaskDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "targetEntityTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetEntityId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/BackgroundTaskStatus"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retryCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxRetryCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BackgroundTaskStatus": {
+        "type": "integer",
+        "description": "0 = Pending\n1 = InProgress\n2 = Completed\n3 = Failed",
+        "x-enumNames": [
+          "Pending",
+          "InProgress",
+          "Completed",
+          "Failed"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "PaginatedListOfBackgroundTaskDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackgroundTaskDto"
+            }
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EnumHashSetQueryParamOfBackgroundTaskStatus": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/BackgroundTaskStatus"
+        }
+      },
+      "EnumHashSetQueryParamOfBackgroundTaskPriority": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/BackgroundTaskPriority"
+        }
+      },
+      "BackgroundTaskPriority": {
+        "type": "integer",
+        "description": "0 = Lowest\n1 = VeryLow\n2 = Low\n3 = Normal\n4 = High\n5 = VeryHigh\n6 = Highest",
+        "x-enumNames": [
+          "Lowest",
+          "VeryLow",
+          "Low",
+          "Normal",
+          "High",
+          "VeryHigh",
+          "Highest"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
       "LibraryDto": {
         "type": "object",
         "additionalProperties": false,

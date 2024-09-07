@@ -44,13 +44,13 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
 
         query = ApplyFilters(request, query);
         var orderedQuery = ApplyOrdering(request.OrderBy, query);
-        var medias = await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
+        var page = await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
 
-        List<LiteMediaDto> mediaDtos = medias.Items
-            .Select(media => media.ConvertToLiteDto(_mapper))
+        List<LiteMediaDto> dtos = page.Items
+            .Select(x => x.ConvertToLiteDto(_mapper))
             .ToList();
 
-        return new PaginatedList<LiteMediaDto>(mediaDtos.AsReadOnly(), medias.TotalCount, request.PageNumber, request.PageSize);
+        return new PaginatedList<LiteMediaDto>(dtos.AsReadOnly(), page.TotalCount, request.PageNumber, request.PageSize);
     }
 
     private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query)
