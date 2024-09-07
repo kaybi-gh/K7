@@ -30,9 +30,20 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             _ => BackgroundTaskPriority.Lowest
         };
 
+        var metadataPictureWithoutRelations = new MetadataPicture()
+        {
+            OriginalRemoteUri = notification.MetadataPicture.OriginalRemoteUri,
+            MetadataId = notification.MetadataPicture.Id,
+            PersonId = notification.MetadataPicture.PersonId,
+            Id = notification.MetadataPicture.Id,
+            PersonRoleId = notification.MetadataPicture.PersonRoleId,
+            Type = notification.MetadataPicture.Type,
+            Path = notification.MetadataPicture.Path
+        };
+
         await _sender.Send(new CreateBackgroundTaskCommand()
         {
-            Request = new DownloadMetadataPictureFromProviderCommand() { MetadataPicture = notification.MetadataPicture },
+            Request = new DownloadMetadataPictureFromProviderCommand() { MetadataPicture = metadataPictureWithoutRelations },
             Priority = priority,
             TargetEntityTypeName = nameof(MetadataPicture),
             MaxRetryCount = 5

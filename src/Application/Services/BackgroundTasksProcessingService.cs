@@ -38,7 +38,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             
             if (task != null)
             {
-                await ExecuteBackgroundTaskAsync(task, cancellationToken);
+                await ExecuteBackgroundTaskAsync(task, context, cancellationToken);
             }
             else
             {
@@ -51,11 +51,11 @@ public class BackgroundTasksProcessingService : BackgroundService
 
     private async Task ExecuteBackgroundTaskAsync(
         BackgroundTask task,
+        IApplicationDbContext context,
         CancellationToken cancellationToken
     )
     {
         using var taskScope = _serviceProvider.CreateScope();
-        var context = taskScope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var sender = taskScope.ServiceProvider.GetRequiredService<ISender>();
 
         try
