@@ -481,3 +481,4 @@ $RECYCLE.BIN/
 
 # SQLite db
 *.db
+/src/Web/metadatas

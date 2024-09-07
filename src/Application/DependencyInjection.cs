@@ -22,7 +22,7 @@ public static class DependencyInjection
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
         });
 
-        services.AddHostedService<TaskSchedulerService>();
+        services.AddHostedService<BackgroundTasksProcessingService>();
         services.AddScoped<IFileIndexerService, FileIndexerService>();
         services.AddScoped<IMovieMetadataProvider, TMDbMetadataProvider>(); // TODO - Make it customizable
         services.AddScoped<TMDbMetadataProvider>(); // TODO - Make it customizable

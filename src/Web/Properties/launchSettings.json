@@ -3,7 +3,6 @@
     "MediaServer.Web": {
       "commandName": "Project",
       "commandLineArgs": "--init-db",
-      "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

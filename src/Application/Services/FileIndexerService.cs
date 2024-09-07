@@ -1,8 +1,10 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Extensions;
+using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using MediaServer.Application.Features.Medias.Commands.CreateMedia;
 using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
+using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
@@ -144,7 +146,13 @@ public class FileIndexerService : IFileIndexerService
 
             foreach (var command in createMediaCommands)
             {
-                await _sender.Send(command, cancellationToken);
+                await _sender.Send(new CreateBackgroundTaskCommand()
+                {
+                    Request = command,
+                    Priority = BackgroundTaskPriority.Normal,
+                    TargetEntityTypeName = nameof(BaseMedia),
+                    MaxRetryCount = 5
+                }, cancellationToken);
             }
         }
         catch (Exception ex)

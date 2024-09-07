@@ -1,0 +1,24 @@
+﻿using MediaServer.Domain.Entities;
+using MediaServer.Domain.Enums;
+
+namespace MediaServer.Application.Common.Models.Dtos;
+
+public record BackgroundTaskDto
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+    public string? TargetEntityTypeName { get; init; }
+    public Guid? TargetEntityId { get; init; }
+    public BackgroundTaskStatus Status { get; init; }
+    public int Priority { get; init; }
+    public int RetryCount { get; init; }
+    public int MaxRetryCount { get; init; }
+
+    private class Mapping : Profile
+    {
+        public Mapping()
+        {
+            CreateMap<BackgroundTask, BackgroundTaskDto>();
+        }
+    }
+}

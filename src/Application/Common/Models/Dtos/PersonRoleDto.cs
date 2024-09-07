@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using MediaServer.Application.Features.Persons.Queries.GetPerson;
-using MediaServer.Domain.Entities.Metadatas.Persons;
+using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 
 namespace MediaServer.Application.Common.Models.Dtos;
 

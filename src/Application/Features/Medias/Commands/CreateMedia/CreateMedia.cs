@@ -1,4 +1,5 @@
 ﻿using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using MediaServer.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
@@ -51,6 +52,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             }
         }
 
+        if (_context.Entry(request.IndexedFile).State == EntityState.Detached)
+        {
+            _context.IndexedFiles.Attach(request.IndexedFile);
+        }
+
         // Create new media
         BaseMedia media = request.MediaType switch
         {
@@ -71,12 +77,19 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         if (metadataProviderExternalId != null)
         {
-            await _sender.Send(new RefreshMediaMetadatasCommand()
+            await _sender.Send(new CreateBackgroundTaskCommand()
             {
-                MediaId = media.Id,
-                MetadataProviderExternalId = metadataProviderExternalId,
-                Language = "fr",
-                FallbackLanguage = "en"
+                Request = new RefreshMediaMetadatasCommand()
+                {
+                    MediaId = media.Id,
+                    MetadataProviderExternalId = metadataProviderExternalId,
+                    Language = "fr",
+                    FallbackLanguage = "en"
+                },
+                Priority = BackgroundTaskPriority.Low,
+                TargetEntityId = media.Id,
+                TargetEntityTypeName = nameof(BaseMedia),
+                MaxRetryCount = 1
             }, cancellationToken);
         }
 

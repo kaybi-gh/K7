@@ -13,12 +13,16 @@ public record IndexedFileDto
     public required long Size { get; init; }
     public bool IsSplitPart { get; init; }
     public bool IsComposite { get; init; }
+    public Uri? DirectStreamUri { get; init; }
+    public Uri? HlsStreamUri { get; init; }
 
     private class Mapping : Profile
     {
         public Mapping()
         {
-            CreateMap<IndexedFile, IndexedFileDto>();
+            CreateMap<IndexedFile, IndexedFileDto>()
+                .ForMember(dest => dest.DirectStreamUri, x => x.MapFrom(src => new Uri($"/api/indexed-files/{src.Id}/direct-stream", UriKind.Relative)))
+                .ForMember(dest => dest.HlsStreamUri, x => x.MapFrom(src => new Uri($"/api/indexed-files/{src.Id}/hls-stream", UriKind.Relative)));
         }
     }
 }

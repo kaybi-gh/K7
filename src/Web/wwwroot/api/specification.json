@@ -6,6 +6,90 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/indexed-files/{id}/direct-stream": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetDirectStream",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/manifest.m3u8": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsStreamManifest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/{quality}/index.m3u8": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsStreamQualityIndex",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/libraries/{id}": {
       "get": {
         "tags": [
@@ -1238,6 +1322,16 @@
           },
           "isComposite": {
             "type": "boolean"
+          },
+          "directStreamUri": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "hlsStreamUri": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
           }
         }
       },

@@ -1,6 +1,6 @@
 ﻿using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Entities.Metadatas.Medias;
-using MediaServer.Domain.Entities.Metadatas.Persons;
+using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 
 namespace MediaServer.Domain.Entities;
 public class MetadataPicture : BaseAuditableEntity

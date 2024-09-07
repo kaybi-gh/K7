@@ -2,7 +2,7 @@
 
 namespace MediaServer.Application.Common.Interfaces;
 
-public interface IIdentityService
+public interface IIdentityService // How to put this into domain?
 {
     Task<string?> GetUserNameAsync(string userId);
 

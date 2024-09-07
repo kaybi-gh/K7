@@ -2,12 +2,13 @@
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Entities.Metadatas.Medias;
-using MediaServer.Domain.Entities.Metadatas.Persons;
+using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 using MediaServer.Domain.Entities.Ratings;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace MediaServer.Application.Common.Interfaces;
 
-public interface IApplicationDbContext
+public interface IApplicationDbContext // How to put this into domain?
 {
     DbSet<IndexedFile> IndexedFiles { get; }
     DbSet<Library> Libraries { get; }
@@ -18,7 +19,10 @@ public interface IApplicationDbContext
     DbSet<BasePersonRole> PersonRoles { get; }
     DbSet<BaseRating> Ratings { get; }
     DbSet<ExternalId> ExternalIds { get; }
+    DbSet<HlsSegment> HlsSegments { get; }
+    DbSet<BackgroundTask> BackgroundTasks { get; }
 
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+    EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;
 }

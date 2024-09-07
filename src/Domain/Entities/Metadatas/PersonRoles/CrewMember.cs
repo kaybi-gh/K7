@@ -1,4 +1,4 @@
-﻿namespace MediaServer.Domain.Entities.Metadatas.Persons;
+﻿namespace MediaServer.Domain.Entities.Metadatas.PersonRoles;
 public class CrewMember() : BasePersonRole(PersonRoleType.CrewMember)
 {
     public string? Department { get; set; }

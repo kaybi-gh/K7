@@ -1,4 +1,5 @@
 ﻿using MediaServer.Domain.Entities.Medias;
+using MediaServer.Domain.Entities.Metadatas.Files;
 using MediaServer.Domain.ValueObjects;
 
 namespace MediaServer.Domain.Entities;
@@ -15,6 +16,7 @@ public class IndexedFile : BaseAuditableEntity
     public bool IsComposite { get; set; } = false;
 
     public MediaIdentification? Identification { get; set; }
+    public BaseFileMetadata? FileMetadata { get; set; }
     public Guid? MediaId { get; set; }
     public virtual BaseMedia? Media { get; set; }
 }
