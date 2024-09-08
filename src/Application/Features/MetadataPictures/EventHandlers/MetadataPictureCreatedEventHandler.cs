@@ -30,22 +30,23 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             _ => BackgroundTaskPriority.Lowest
         };
 
-        var metadataPictureWithoutRelations = new MetadataPicture()
-        {
-            OriginalRemoteUri = notification.MetadataPicture.OriginalRemoteUri,
-            MetadataId = notification.MetadataPicture.MetadataId,
-            PersonId = notification.MetadataPicture.PersonId,
-            Id = notification.MetadataPicture.Id,
-            PersonRoleId = notification.MetadataPicture.PersonRoleId,
-            Type = notification.MetadataPicture.Type,
-            Path = notification.MetadataPicture.Path
-        };
-
         await _sender.Send(new CreateBackgroundTaskCommand()
         {
-            Request = new DownloadMetadataPictureFromProviderCommand() { MetadataPicture = metadataPictureWithoutRelations },
+            Request = new DownloadMetadataPictureFromProviderCommand()
+            {
+                MetadataPicture = new MetadataPicture()
+                {
+                    OriginalRemoteUri = notification.MetadataPicture.OriginalRemoteUri,
+                    MetadataId = notification.MetadataPicture.MetadataId,
+                    PersonId = notification.MetadataPicture.PersonId,
+                    Id = notification.MetadataPicture.Id,
+                    PersonRoleId = notification.MetadataPicture.PersonRoleId,
+                    Type = notification.MetadataPicture.Type,
+                    Path = notification.MetadataPicture.Path
+                }
+            },
             Priority = priority,
-            TargetEntityId = metadataPictureWithoutRelations.Id,
+            TargetEntityId = notification.MetadataPicture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
             MaxRetryCount = 5
         }, cancellationToken);
