@@ -22,6 +22,12 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
     {
         _logger.LogInformation("MediaServer Domain Event: {DomainEvent}", notification.GetType().Name);
 
+        if (notification.MetadataPicture.Type == MetadataPictureType.Thumbnail)
+        {
+            // Thumbnails are generated and not downloaded
+            return;
+        }
+
         var priority = notification.MetadataPicture.Type switch
         {
             MetadataPictureType.Backdrop => BackgroundTaskPriority.VeryLow,
@@ -42,7 +48,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
                     Id = notification.MetadataPicture.Id,
                     PersonRoleId = notification.MetadataPicture.PersonRoleId,
                     Type = notification.MetadataPicture.Type,
-                    Path = notification.MetadataPicture.Path
+                    LocalPath = notification.MetadataPicture.LocalPath
                 }
             },
             Priority = priority,

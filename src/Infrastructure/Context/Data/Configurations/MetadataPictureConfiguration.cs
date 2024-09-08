@@ -9,6 +9,18 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
     public void Configure(EntityTypeBuilder<MetadataPicture> builder)
     {
         builder
+            .HasOne(mp => mp.Metadata)
+            .WithMany(m => m.Pictures)
+            .HasForeignKey(mp => mp.MetadataId)
+            .IsRequired(false);
+
+        builder
+            .HasOne(mp => mp.VideoFileMetadata)
+            .WithMany(m => m.Thumbnails)
+            .HasForeignKey(mp => mp.VideoFileMetadataId)
+            .IsRequired(false);
+
+        builder
             .HasOne(mp => mp.Person)
             .WithOne(p => p.PortraitPicture)
             .HasForeignKey<MetadataPicture>(mp => mp.PersonId)
@@ -20,13 +32,10 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .HasForeignKey<MetadataPicture>(mp => mp.PersonRoleId)
             .IsRequired(false);
 
-        builder
-            .HasOne(mp => mp.Metadata)
-            .WithMany(m => m.Pictures)
-            .HasForeignKey(mp => mp.MetadataId)
-            .IsRequired(false);
-
         builder.Property(m => m.OriginalRemoteUri)
-            .HasConversion(v => v.ToString(), v => new Uri(v));
+            .HasConversion(
+                v => v != null ? v.ToString() : null,
+                v => v != null ? new Uri(v) : null
+            );
     }
 }

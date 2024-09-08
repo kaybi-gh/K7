@@ -21,9 +21,9 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
             .FindAsync([query.Id], cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
-        Guard.Against.NullOrEmpty(entity.Path);
+        Guard.Against.NullOrEmpty(entity.LocalPath);
 
-        var file = new FileInfo(entity.Path);
+        var file = new FileInfo(entity.LocalPath);
         if (!file.Exists)
         {
             return Results.NotFound();

@@ -144,6 +144,31 @@
         }
       }
     },
+    "/api/indexed-files/{id}/generate-thumbnails": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GenerateThumbnails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/indexed-files/{id}/direct-stream": {
       "get": {
         "tags": [

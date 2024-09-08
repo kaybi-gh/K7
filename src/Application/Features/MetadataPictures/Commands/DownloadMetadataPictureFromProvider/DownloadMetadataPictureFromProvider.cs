@@ -25,6 +25,8 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 
     public async Task Handle(DownloadMetadataPictureFromProviderCommand request, CancellationToken cancellationToken)
     {
+        Guard.Against.Null(request.MetadataPicture.OriginalRemoteUri);
+
         try
         {
             var basePath = _pathsConfiguration.Metadatas;

@@ -1,6 +1,7 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Extensions;
 using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using MediaServer.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using MediaServer.Application.Features.Medias.Commands.CreateMedia;
 using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
@@ -10,6 +11,7 @@ using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
 using MediaServer.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
@@ -28,7 +30,7 @@ public class FileIndexerService : IFileIndexerService
     public async Task IndexAsync(Library library, CancellationToken cancellationToken)
     {
         List<IndexedFile> indexedFiles = [];
-        List<CreateMediaCommand> createMediaCommands = [];
+        List<IBaseRequest> backgroundTasks = [];
 
         try
         {
@@ -63,10 +65,16 @@ public class FileIndexerService : IFileIndexerService
                         if (toBeIdentifiedFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
                         {
                             toBeIdentifiedFile.Identification = movieIdentification;
-                            createMediaCommands.Add(new CreateMediaCommand()
+                            backgroundTasks.Add(new CreateBackgroundTaskCommand()
                             {
-                                IndexedFile = toBeIdentifiedFile,
-                                MediaType = MediaType.Movie
+                                Request = new CreateMediaCommand()
+                                {
+                                    IndexedFile = toBeIdentifiedFile,
+                                    MediaType = MediaType.Movie
+                                },
+                                Priority = BackgroundTaskPriority.Normal,
+                                TargetEntityTypeName = nameof(BaseMedia),
+                                MaxRetryCount = 5
                             });
                         }
                     }
@@ -104,13 +112,13 @@ public class FileIndexerService : IFileIndexerService
 
             if (removedFiles.Any())
             {
-                _context.IndexedFiles.RemoveRange(removedFiles);
-                foreach (var file in removedFiles)
+                backgroundTasks.AddRange(removedFiles.Select(x => new CreateBackgroundTaskCommand()
                 {
-                    file.AddDomainEvent(new IndexedFileDeletedEvent(file));
-                }
-                // TODO - Clean metadas, pictures, stats if asked?
-                await _context.SaveChangesAsync(cancellationToken);
+                    Request = new DeleteIndexedFileCommand(x.Id),
+                    Priority = BackgroundTaskPriority.Normal,
+                    TargetEntityTypeName = nameof(BaseMedia),
+                    MaxRetryCount = 5
+                }));
             }
 
             if (renamedFiles.Any())
@@ -131,7 +139,7 @@ public class FileIndexerService : IFileIndexerService
                         if (movieIdentification != oldFile.Identification)
                         {
                             oldFile.Identification = movieIdentification;
-                            createMediaCommands.Add(new CreateMediaCommand()
+                            backgroundTasks.Add(new CreateMediaCommand()
                             {
                                 IndexedFile = oldFile,
                                 MediaType = MediaType.Movie
@@ -144,15 +152,9 @@ public class FileIndexerService : IFileIndexerService
                 await _context.SaveChangesAsync(cancellationToken);
             }
 
-            foreach (var command in createMediaCommands)
+            foreach (var request in backgroundTasks)
             {
-                await _sender.Send(new CreateBackgroundTaskCommand()
-                {
-                    Request = command,
-                    Priority = BackgroundTaskPriority.Normal,
-                    TargetEntityTypeName = nameof(BaseMedia),
-                    MaxRetryCount = 5
-                }, cancellationToken);
+                await _sender.Send(request, cancellationToken);
             }
         }
         catch (Exception ex)
