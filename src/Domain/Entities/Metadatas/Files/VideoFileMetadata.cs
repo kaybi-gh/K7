@@ -2,6 +2,7 @@
 public class VideoFileMetadata() : BaseFileMetadata(FileType.Video)
 {
     public IEnumerable<HlsSegment> HlsSegments { get; set; } = [];
+    public IEnumerable<MetadataPicture> Thumbnails { get; set; } = [];
     /*public VideoInfo VideoInfo { get; set; } = null!;
     public List<AudioTrack> AudioTracks { get; set; } = null!;
 

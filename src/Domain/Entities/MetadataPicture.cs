@@ -1,4 +1,5 @@
 ﻿using MediaServer.Domain.Entities.Metadatas;
+using MediaServer.Domain.Entities.Metadatas.Files;
 using MediaServer.Domain.Entities.Metadatas.Medias;
 using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 
@@ -6,11 +7,13 @@ namespace MediaServer.Domain.Entities;
 public class MetadataPicture : BaseAuditableEntity
 {
     public required MetadataPictureType Type { get; set; }
-    public required Uri OriginalRemoteUri { get; set; }
-    public string? Path { get; set; }
+    public Uri? OriginalRemoteUri { get; set; }
+    public string? LocalPath { get; set; }
 
     public Guid? MetadataId { get; set; }
     public virtual BaseMediaMetadata? Metadata { get; set; }
+    public Guid? VideoFileMetadataId { get; set; }
+    public virtual VideoFileMetadata? VideoFileMetadata { get; set; }
     public Guid? PersonId { get; set; }
     public virtual Person? Person { get; set; }
     public Guid? PersonRoleId { get; set; }
