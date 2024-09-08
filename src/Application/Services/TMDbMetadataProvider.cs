@@ -132,7 +132,6 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                             Type = MetadataPictureType.Backdrop
                         };
                         metadataPictures.Add(metadataPicture);
-                        metadataPicture.AddDomainEvent(new MetadataPictureCreatedEvent(metadataPicture));
                     }
                 }
 
@@ -148,7 +147,6 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                             Type = MetadataPictureType.Logo
                         };
                         metadataPictures.Add(metadataPicture);
-                        metadataPicture.AddDomainEvent(new MetadataPictureCreatedEvent(metadataPicture));
                     }
                 }
 
@@ -164,7 +162,6 @@ public class TMDbMetadataProvider : IMovieMetadataProvider
                             Type = MetadataPictureType.Poster
                         };
                         metadataPictures.Add(metadataPicture);
-                        metadataPicture.AddDomainEvent(new MetadataPictureCreatedEvent(metadataPicture));
                     }
                 }
             }

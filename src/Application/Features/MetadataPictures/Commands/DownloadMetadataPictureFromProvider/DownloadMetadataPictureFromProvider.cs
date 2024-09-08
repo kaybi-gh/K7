@@ -24,7 +24,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
     public async Task Handle(DownloadMetadataPictureFromProviderCommand request, CancellationToken cancellationToken)
     {
         var destinationFilePath = _pathsConfiguration.Metadatas;
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.MetadataPicture.OriginalRemoteUri.LocalPath)}";
+        var fileName = $"{request.MetadataPicture.Id}{Path.GetExtension(request.MetadataPicture.OriginalRemoteUri.LocalPath)}";
 
         if (request.MetadataPicture.PersonId != null)
         {

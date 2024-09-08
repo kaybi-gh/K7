@@ -33,7 +33,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
         var metadataPictureWithoutRelations = new MetadataPicture()
         {
             OriginalRemoteUri = notification.MetadataPicture.OriginalRemoteUri,
-            MetadataId = notification.MetadataPicture.Id,
+            MetadataId = notification.MetadataPicture.MetadataId,
             PersonId = notification.MetadataPicture.PersonId,
             Id = notification.MetadataPicture.Id,
             PersonRoleId = notification.MetadataPicture.PersonRoleId,
@@ -45,6 +45,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
         {
             Request = new DownloadMetadataPictureFromProviderCommand() { MetadataPicture = metadataPictureWithoutRelations },
             Priority = priority,
+            TargetEntityId = metadataPictureWithoutRelations.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
             MaxRetryCount = 5
         }, cancellationToken);
