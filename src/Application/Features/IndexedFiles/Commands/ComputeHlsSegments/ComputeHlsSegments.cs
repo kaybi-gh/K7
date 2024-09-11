@@ -1,6 +1,7 @@
 ﻿using FFMpegCore;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Domain.Entities;
+using MediaServer.Domain.Entities.Metadatas.Files;
 
 namespace MediaServer.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 public record ComputeHlsSegmentsCommand : IRequest
@@ -12,65 +13,118 @@ public record ComputeHlsSegmentsCommand : IRequest
 public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmentsCommand>
 {
     private readonly IApplicationDbContext _context;
-    private readonly ISender _sender;
 
-    public ComputeHlsSegmentsCommandHandler(IApplicationDbContext context, ISender sender)
+    public ComputeHlsSegmentsCommandHandler(IApplicationDbContext context)
     {
         _context = context;
-        _sender = sender;
     }
 
     public async Task Handle(ComputeHlsSegmentsCommand request, CancellationToken cancellationToken)
-    {
+    {        
         var entity = await _context.IndexedFiles
-            .FindAsync([request.Id], cancellationToken);
+            .Include(x => x.FileMetadata)
+                .ThenInclude(x => (x as VideoFileMetadata)!.HlsSegments)
+            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
 
+        if (entity.FileMetadata is not VideoFileMetadata videoFileMetadata)
+        {
+            throw new InvalidOperationException("Can't compute hls segments on non-video files.");
+        }
+
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            //return Results.NotFound();
+            throw new FileNotFoundException("File not found.", entity.Path);
         }
 
-        var ffprobeResult = FFProbe.GetPackets(entity.Path);
-        var keyframes = ffprobeResult.Packets
-            .Where(x => x.StreamIndex == 0)
-            .Where(x => x.CodecType == "video")
-            .Where(x => x.Flags.Contains("K"))
+        var mediaAnalysis = await FFProbe.AnalyseAsync(entity.Path, cancellationToken: cancellationToken);
+        var keyframeTimestamps = await ExtractKeyframeTimestampsAsync(entity.Path, cancellationToken);
+        var segments = ComputeHlsSegments(request, keyframeTimestamps, (long)mediaAnalysis.Duration.TotalMilliseconds);
+
+        // TODO - Does it clear current segments?
+
+        videoFileMetadata.HlsSegments = segments;
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+
+    private async static Task<List<long>> ExtractKeyframeTimestampsAsync(string path, CancellationToken cancellationToken = default)
+    {
+        var packetsAnalysisResult = await FFProbe.GetPacketsAsync(path, cancellationToken: cancellationToken);
+        return packetsAnalysisResult.Packets
+            .Where(x => x.StreamIndex == 0
+                && x.CodecType == "video"
+                && x.Flags.Contains('K')) // 'K' for keyframe
+            .Select(x => x.Pts) // Extract the presentation timestamp in milliseconds
             .ToList();
+    }
+
+    private static List<HlsSegment> ComputeHlsSegments(
+        ComputeHlsSegmentsCommand request,
+        List<long> keyframeTimestamps,
+        long totalVideoDuration
+    )
+    {
+        if (keyframeTimestamps == null || keyframeTimestamps.Count == 0)
+            return [];
 
         var segments = new List<HlsSegment>();
-        var currentSegment = new List<long>();
-        var segmentId = 0;
+        var segmentStart = keyframeTimestamps[0];
+        var nextSegmentBoundary = segmentStart + (long)request.SegmentsDuration.TotalMilliseconds;
 
-        for (int i = 1; i < keyframes.Count; i++)
+        for (int i = 1; i < keyframeTimestamps.Count; i++)
         {
-            double currentDuration = 0.0;
-            currentDuration += keyframes[i].Pts - keyframes[i - 1].Pts;
-            currentSegment.Add(keyframes[i - 1].Pts);
-
-            if (currentDuration >= request.SegmentsDuration.TotalMilliseconds)
+            if (keyframeTimestamps[i] >= nextSegmentBoundary)
             {
-                foreach(var keyframe in currentSegment)
+                // Compare the keyframe timestamps to find the closest one to the boundary
+                var segmentEnd = GetClosestTimestamp(keyframeTimestamps[i - 1], keyframeTimestamps[i], nextSegmentBoundary);
+
+                segments.Add(new HlsSegment
                 {
-                    var duration = TimeSpan.FromMilliseconds(currentDuration);
-                    segments.Add(new HlsSegment()
-                    {
-                        VideoFileMetadataId = request.Id,
-                        SegmentId = segmentId,
-                        Duration = duration,
-                        Keyframe = new TimeOnly(keyframe)
-                    });
-                }
-                segmentId++;
-                currentSegment.Clear();
-                currentDuration = 0.0;
+                    VideoFileMetadataId = request.Id,
+                    Number = segments.Count,
+                    StartTimestamp = segmentStart,
+                    Duration = segmentEnd - segmentStart
+                });
+
+                segmentStart = segmentEnd;
+                nextSegmentBoundary = segmentStart + (long)request.SegmentsDuration.TotalMilliseconds;
             }
         }
 
-        _context.HlsSegments.AddRange(segments);
-        await _context.SaveChangesAsync(cancellationToken);
+        // Handle the last segment and extend it to the totalVideoDuration
+        long lastSegmentDuration = totalVideoDuration - segmentStart;
+
+        if (lastSegmentDuration < request.SegmentsDuration.TotalMilliseconds / 2 && segments.Count > 0)
+        {
+            // Merge the last short segment with the previous one
+            var previousSegment = segments[^1];
+            previousSegment.Duration = totalVideoDuration - previousSegment.StartTimestamp;
+        }
+        else
+        {
+            // Add the last segment
+            segments.Add(new HlsSegment
+            {
+                VideoFileMetadataId = request.Id,
+                Number = segments.Count,
+                StartTimestamp = segmentStart,
+                Duration = lastSegmentDuration
+            });
+        }
+
+        return segments;
+    }
+
+    private static long GetClosestTimestamp(long previousTimestamp, long nextTimestamp, long targetTimestamp)
+    {
+        long distanceToPreviousTimestamp = Math.Abs(previousTimestamp - targetTimestamp);
+        long distanceToNextTimestamp = Math.Abs(nextTimestamp - targetTimestamp);
+        return distanceToPreviousTimestamp <= distanceToNextTimestamp
+            ? previousTimestamp
+            : nextTimestamp;
     }
 }

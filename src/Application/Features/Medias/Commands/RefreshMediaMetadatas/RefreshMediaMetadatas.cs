@@ -71,7 +71,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 }
             }
 
-            await _context.Metadatas.AddAsync(metadata, cancellationToken);
+            await _context.MediaMetadatas.AddAsync(metadata, cancellationToken);
             media.Metadata = metadata;
             await _context.SaveChangesAsync(cancellationToken);
 

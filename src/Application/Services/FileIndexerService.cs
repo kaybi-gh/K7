@@ -11,7 +11,6 @@ using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
 using MediaServer.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace MediaServer.Application.Services;
 public class FileIndexerService : IFileIndexerService
