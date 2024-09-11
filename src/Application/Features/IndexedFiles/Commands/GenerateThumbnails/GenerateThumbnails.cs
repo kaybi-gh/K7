@@ -2,6 +2,7 @@
 using FFMpegCore;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Domain.Entities;
+using MediaServer.Domain.Entities.Metadatas.Files;
 using MediaServer.Domain.Enums;
 using MediaServer.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
@@ -27,20 +28,21 @@ public class GenerateThumbnailsCommandHandler : IRequestHandler<GenerateThumbnai
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
+                .ThenInclude(x => (x as VideoFileMetadata)!.Thumbnails)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
 
-        if (entity.FileMetadata == null || entity.FileMetadata.Type == FileType.Video)
+        if (entity.FileMetadata is not VideoFileMetadata videoFileMetadata)
         {
-            throw new InvalidOperationException("Can't generate thumbnails on anything else than video files.");
+            throw new InvalidOperationException("Can't generate thumbnails on non-video files.");
         }
 
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
         {
-            //return Results.NotFound();
+            throw new FileNotFoundException("File not found.", entity.Path);
         }
 
         var mediaInfo = await FFProbe.AnalyseAsync(entity.Path, cancellationToken: cancellationToken);
@@ -63,7 +65,9 @@ public class GenerateThumbnailsCommandHandler : IRequestHandler<GenerateThumbnai
             }
         }
 
-        _context.MetadataPictures.AddRange(thumbnails);
+        // TODO - Does it clear pictures?
+
+        videoFileMetadata.Thumbnails = thumbnails;
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

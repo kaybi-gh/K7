@@ -2,9 +2,8 @@
 
 public class HlsSegment
 {
-    public int Id {  get; set; }
     public Guid VideoFileMetadataId { get; set; }
-    public int SegmentId { get; set; }
-    public TimeSpan Duration { get; set; }
-    public TimeOnly Keyframe {  get; set; }
+    public int Number {  get; set; }
+    public long StartTimestamp { get; set; }
+    public long Duration { get; set; }
 }

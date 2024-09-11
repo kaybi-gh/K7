@@ -3,6 +3,7 @@ using MediaServer.Application.Common.Interfaces;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas;
+using MediaServer.Domain.Entities.Metadatas.Files;
 using MediaServer.Domain.Entities.Metadatas.Medias;
 using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 using MediaServer.Domain.Entities.Ratings;
@@ -20,7 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<IndexedFile> IndexedFiles => Set<IndexedFile>();
     public DbSet<Library> Libraries => Set<Library>();
     public DbSet<BaseMedia> Medias => Set<BaseMedia>();
-    public DbSet<BaseMediaMetadata> Metadatas => Set<BaseMediaMetadata>();
+    public DbSet<BaseMediaMetadata> MediaMetadatas => Set<BaseMediaMetadata>();
+    public DbSet<BaseFileMetadata> FileMetadatas => Set<BaseFileMetadata>();
     public DbSet<MetadataPicture> MetadataPictures => Set<MetadataPicture>();
     public DbSet<Person> Persons => Set<Person>();
     public DbSet<BasePersonRole> PersonRoles => Set<BasePersonRole>();
