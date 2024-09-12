@@ -7,7 +7,7 @@ namespace MediaServer.Application.Features.IndexedFiles.Commands.ComputeHlsSegme
 public record ComputeHlsSegmentsCommand : IRequest
 {
     public required Guid Id { get; set; }
-    public required TimeSpan SegmentsDuration { get; init; }
+    public required TimeSpan SegmentsDuration { get; init; } = TimeSpan.FromSeconds(2);
 }
 
 public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmentsCommand>
@@ -82,16 +82,20 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
                 // Compare the keyframe timestamps to find the closest one to the boundary
                 var segmentEnd = GetClosestTimestamp(keyframeTimestamps[i - 1], keyframeTimestamps[i], nextSegmentBoundary);
 
-                segments.Add(new HlsSegment
+                // Ensure that the segment has a non-zero duration
+                if (segmentEnd > segmentStart)
                 {
-                    VideoFileMetadataId = request.Id,
-                    Number = segments.Count,
-                    StartTimestamp = segmentStart,
-                    Duration = segmentEnd - segmentStart
-                });
+                    segments.Add(new HlsSegment
+                    {
+                        VideoFileMetadataId = request.Id,
+                        Number = segments.Count,
+                        StartTimestamp = segmentStart,
+                        Duration = segmentEnd - segmentStart
+                    });
 
-                segmentStart = segmentEnd;
-                nextSegmentBoundary = segmentStart + (long)request.SegmentsDuration.TotalMilliseconds;
+                    segmentStart = segmentEnd;
+                    nextSegmentBoundary = segmentStart + (long)request.SegmentsDuration.TotalMilliseconds;
+                }
             }
         }
 
