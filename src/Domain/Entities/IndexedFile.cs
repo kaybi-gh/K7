@@ -18,7 +18,7 @@ public class IndexedFile : BaseAuditableEntity
     public MediaIdentification? Identification { get; set; }
     public BaseFileMetadata? FileMetadata { get; set; }
     public Guid? MediaId { get; set; }
-    public virtual BaseMedia? Media { get; set; }
+    public BaseMedia? Media { get; set; }
 }
 
 // Episode:

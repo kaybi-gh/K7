@@ -1,5 +1,8 @@
 ﻿using System.Text;
 using MediaServer.Application.Common.Interfaces;
+using MediaServer.Domain.Constants;
+using MediaServer.Domain.Entities;
+using MediaServer.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
 
 namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
@@ -17,44 +20,47 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
     public async Task<IResult> Handle(GetHlsStreamManifestQuery query, CancellationToken cancellationToken)
     {
-        var entity = await _context.IndexedFiles
-            .FindAsync([query.Id], cancellationToken);
+        var indexedFile = await _context.IndexedFiles
+            .Include(x => x.FileMetadata)
+            .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
 
-        Guard.Against.NotFound(query.Id, entity);
-        Guard.Against.NullOrEmpty(entity.Path);
+        Guard.Against.NotFound(query.Id, indexedFile);
+        Guard.Against.NullOrEmpty(indexedFile.Path);
 
-        var file = new FileInfo(entity.Path);
+        var file = new FileInfo(indexedFile.Path);
         if (!file.Exists)
         {
             return Results.NotFound();
         }
 
-        var masterPlaylist = GenerateMasterPlaylist(query.Id);
+        var masterPlaylist = indexedFile.FileMetadata switch
+        {
+            AudioFileMetadata x => throw new NotImplementedException(),
+            VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x),
+            _ => throw new InvalidOperationException()
+        };
         return Results.Content(masterPlaylist, "application/vnd.apple.mpegurl");
     }
 
-    private string GenerateMasterPlaylist(Guid id)
+    private string GenerateVideoFileMasterPlaylist(VideoFileMetadata videoFileMetadata)
     {
         var playlist = new StringBuilder();
         playlist.AppendLine("#EXTM3U");
 
+        var fileResolution = videoFileMetadata.VideoResolution;
+
         // TODO - Create playlist depending on file original quality
         // TODO - Use quality dictionary
 
-        // Transcoded qualities
-        //var qualities = new List<string>() { "720p", "1080p" };
+        //var availableTranscodingResolutions = VideoResolutions.Video.TakeWhile(x => x.Key == fileResolution);
+        var availableTranscodingResolutions = Qualities.Video
+            .Where((x, y) => y <= Qualities.Video.Keys.IndexOf(fileResolution))
+            .Select(x => x.Value);
 
-        var renditions = new List<(string Quality, int Bandwidth, string Resolution)>
+        foreach (var resolution in availableTranscodingResolutions)
         {
-            ("720p", 3000000, "1280x720"),
-            ("480p", 1500000, "854x480"),
-            ("360p", 800000, "640x360")
-        };
-
-        foreach (var rendition in renditions)
-        {
-            playlist.AppendLine($"#EXT-X-STREAM-INF:BANDWIDTH={rendition.Bandwidth},RESOLUTION={rendition.Resolution}");
-            playlist.AppendLine($"/api/indexed-files/{id}/hls-stream/{rendition.Quality}/index.m3u8");
+            playlist.AppendLine($"#EXT-X-STREAM-INF:BANDWIDTH={resolution.AverageBitrate},RESOLUTION={resolution.Width}x{resolution.Height}");
+            playlist.AppendLine($"/api/indexed-files/{videoFileMetadata.IndexedFileId}/hls-stream/{resolution.Name}/index.m3u8");
         }
 
         return playlist.ToString();

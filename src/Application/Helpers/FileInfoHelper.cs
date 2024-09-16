@@ -12,7 +12,8 @@ public static class FileInfoHelper
                 throw new Exception();
             }
 
-            var allFiles = Directory.GetFiles(rootDirectory, "*", SearchOption.AllDirectories);
+            var allFiles = Directory.EnumerateFiles(rootDirectory, "*", SearchOption.AllDirectories);
+                //.Where(f => f.LastWriteTime >= since || f.CreationTime >= since); // TODO - Only get latest?
             foreach (string filePath in allFiles)
             {
                 fileInfos.Add(new FileInfo(filePath));

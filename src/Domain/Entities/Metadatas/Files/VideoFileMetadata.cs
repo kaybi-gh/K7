@@ -1,10 +1,15 @@
 ﻿namespace MediaServer.Domain.Entities.Metadatas.Files;
 public class VideoFileMetadata() : BaseFileMetadata(FileType.Video)
 {
+    public TimeSpan Duration { get; set; }
+    public required long VideoBitrate { get; set; }
+    public required VideoResolutionIdentifier VideoResolution { get; set; }
+    public required double VideoFramerate { get; set; }
+
+    
     public IEnumerable<HlsSegment> HlsSegments { get; set; } = [];
     public IEnumerable<MetadataPicture> Thumbnails { get; set; } = [];
-    /*public VideoInfo VideoInfo { get; set; } = null!;
-    public List<AudioTrack> AudioTracks { get; set; } = null!;
+    /*public List<AudioTrack> AudioTracks { get; set; } = null!;
 
     public class AudioTrack
     {
