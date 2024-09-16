@@ -9,17 +9,17 @@ public static class MediaFileExtensions
         IEnumerable<IndexedFile> AddedFiles,
         IEnumerable<IndexedFile> RemovedFiles,
         IEnumerable<(IndexedFile OldFile, IndexedFile NewFile)> RenamedFiles)
-        CompareTo(this IEnumerable<IndexedFile>? oldMediaFiles, IEnumerable<IndexedFile> newMediaFiles)
+        CompareTo(this IEnumerable<IndexedFile>? oldIndexedFiles, IEnumerable<IndexedFile> newIndexedFiles)
     {
-        if (oldMediaFiles == null)
+        if (oldIndexedFiles == null)
         {
-            return ([], newMediaFiles, [], []);
+            return ([], newIndexedFiles, [], []);
         }
 
         var comparer = new IndexedFileComparer();
-        var unchanged = oldMediaFiles.Intersect(newMediaFiles, comparer);
-        var added = newMediaFiles.Except(oldMediaFiles, comparer).ToList();
-        var removed = oldMediaFiles.Except(newMediaFiles, comparer).ToList();
+        var unchanged = oldIndexedFiles.Intersect(newIndexedFiles, comparer);
+        var added = newIndexedFiles.Except(oldIndexedFiles, comparer).ToList();
+        var removed = oldIndexedFiles.Except(newIndexedFiles, comparer).ToList();
         var renamed = added
             .Join(removed,
                 addedFile => new { addedFile.Hash, addedFile.Size },

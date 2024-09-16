@@ -1,6 +1,6 @@
 ﻿namespace MediaServer.Domain.Enums;
 
-public enum VideoQualityIdentifier
+public enum VideoResolutionIdentifier
 {
     _144p,
     _240p,

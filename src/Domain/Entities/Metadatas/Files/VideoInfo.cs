@@ -2,7 +2,7 @@
 
 public class VideoInfo
 {
-    public VideoQualityIdentifier Quality { get; set; }
+    public VideoResolutionIdentifier Quality { get; set; }
     public int ResolutionWidth { get; set; }
     public int ResolutionHeight { get; set; }
     public long Bitrate { get; set; }

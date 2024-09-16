@@ -1,7 +1,6 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using MediaServer.Application.Features.Medias.Commands.RefreshMediaMetadatas;
-using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
@@ -12,7 +11,7 @@ namespace MediaServer.Application.Features.Medias.Commands.CreateMedia;
 public record CreateMediaCommand : IRequest<Guid>
 {
     public required MediaType MediaType { get; init; }
-    public required IndexedFile IndexedFile { get; init; }
+    public required Guid IndexedFileId { get; init; }
 }
 
 public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Guid>
@@ -30,7 +29,13 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
     public async Task<Guid> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
     {
-        var metadataProviderExternalId = await _metadataProvider.SearchMetadataProviderExternalIdAsync(request.IndexedFile.Identification!, cancellationToken);
+        var indexedFile = await _context.IndexedFiles
+            .FindAsync([request.IndexedFileId], cancellationToken);
+
+        Guard.Against.NotFound(request.IndexedFileId, indexedFile);
+        Guard.Against.NullOrEmpty(indexedFile.Path);
+
+        var metadataProviderExternalId = await _metadataProvider.SearchMetadataProviderExternalIdAsync(indexedFile.Identification!, cancellationToken);
 
         // Try to fetch existing Media
         if (!string.IsNullOrEmpty(metadataProviderExternalId))
@@ -46,27 +51,26 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 && existingExternalId.Metadata.Media != null
                 && existingExternalId.Metadata.Media.IndexedFiles != null)
             {
-                existingExternalId.Metadata.Media.IndexedFiles.Add(request.IndexedFile);
+                existingExternalId.Metadata.Media.IndexedFiles.Add(indexedFile);
                 await _context.SaveChangesAsync(cancellationToken);
                 return existingExternalId.Metadata.Media.Id;
             }
         }
 
-        if (_context.Entry(request.IndexedFile).State == EntityState.Detached)
+        if (_context.Entry(indexedFile).State == EntityState.Detached)
         {
-            _context.IndexedFiles.Attach(request.IndexedFile);
+            _context.IndexedFiles.Attach(indexedFile);
         }
 
         // Create new media
         BaseMedia media = request.MediaType switch
         {
-            MediaType.Movie => new Movie() { IndexedFiles = [request.IndexedFile] },
+            MediaType.Movie => new Movie() { IndexedFiles = [indexedFile] },
             _ => throw new NotImplementedException()
         };
 
         try
         {
-
             _context.Medias.Add(media);
             await _context.SaveChangesAsync(cancellationToken);
         }

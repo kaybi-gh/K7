@@ -1,11 +1,13 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Extensions;
 using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using MediaServer.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using MediaServer.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using MediaServer.Application.Features.Medias.Commands.CreateMedia;
 using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
+using MediaServer.Domain.Entities.Metadatas.Files;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;
@@ -66,9 +68,9 @@ public class FileIndexerService : IFileIndexerService
                             toBeIdentifiedFile.Identification = movieIdentification;
                             backgroundTasks.Add(new CreateBackgroundTaskCommand()
                             {
-                                Request = new CreateMediaCommand()
+                                Request = new CreateMediaCommand() // TODO - Move to IndexedFileCreatedEventHandler
                                 {
-                                    IndexedFile = toBeIdentifiedFile,
+                                    IndexedFileId = toBeIdentifiedFile.Id,
                                     MediaType = MediaType.Movie
                                 },
                                 Priority = BackgroundTaskPriority.Normal,
@@ -80,7 +82,7 @@ public class FileIndexerService : IFileIndexerService
                 }
                 else if (library.MediaType == LibraryMediaType.Music)
                 {
-                    var filesGroupedByParentDirectory = addedFiles.GroupBy(f => f.ParentDirectory);
+                    var filesGroupedByParentDirectory = toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory);
 
                     foreach (var parentDirectory in filesGroupedByParentDirectory)
                     {
@@ -93,7 +95,7 @@ public class FileIndexerService : IFileIndexerService
                 }
                 else if (library.MediaType == LibraryMediaType.Serie)
                 {
-                    var filesGroupedByParentDirectory = addedFiles.GroupBy(f => f.ParentDirectory);
+                    var filesGroupedByParentDirectory = toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory);
 
                     foreach (var parentDirectory in filesGroupedByParentDirectory)
                     {
@@ -104,7 +106,13 @@ public class FileIndexerService : IFileIndexerService
                 _context.IndexedFiles.AddRange(addedFiles);
                 foreach (var file in addedFiles)
                 {
-                    file.AddDomainEvent(new IndexedFileCreatedEvent(file));
+                    file.AddDomainEvent(new IndexedFileCreatedEvent(file, library.MediaType switch
+                    {
+                        LibraryMediaType.Movie => FileType.Video,
+                        LibraryMediaType.Music => FileType.Audio,
+                        LibraryMediaType.Serie => FileType.Video,
+                        _ => throw new InvalidOperationException(),
+                    }));
                 }
                 await _context.SaveChangesAsync(cancellationToken);
             }
@@ -140,7 +148,7 @@ public class FileIndexerService : IFileIndexerService
                             oldFile.Identification = movieIdentification;
                             backgroundTasks.Add(new CreateMediaCommand()
                             {
-                                IndexedFile = oldFile,
+                                IndexedFileId = oldFile.Id,
                                 MediaType = MediaType.Movie
                             });
                         }
