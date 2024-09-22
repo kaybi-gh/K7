@@ -1,11 +1,12 @@
 ﻿using System.Text;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Domain.Constants;
+using MediaServer.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 
 namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStream;
 
-public record GetHlsStreamIndexQuery(Guid Id, string VideoQuality) : IRequest<IResult>;
+public record GetHlsStreamIndexQuery(Guid Id, string VideoResolutionIdentifier) : IRequest<IResult>;
 
 public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQuery, IResult>
 {
@@ -18,14 +19,15 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
 
     public async Task<IResult> Handle(GetHlsStreamIndexQuery query, CancellationToken cancellationToken)
     {
-        var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoQuality).FirstOrDefault();
-        Guard.Against.Null(quality, nameof(quality), $"Provided quality '{query.VideoQuality}' is not valid.");
+        var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
+        Guard.Against.Null(quality, nameof(quality), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
 
         var entity = await _context.IndexedFiles
             .FindAsync([query.Id], cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
+        Guard.Against.Null(entity.FileMetadata);
 
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
@@ -33,23 +35,28 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
             return Results.NotFound();
         }
 
-        // TODO - Get file qualities
-        var qualities = new List<string>() { "720p", "1080p" }.ToArray();
-        var masterPlaylist = GenerateHlsIndexContent($"{query.Id}", qualities);
-
-        return Results.Content(masterPlaylist, "application/vnd.apple.mpegurl");
+        var indexPlaylist = GenerateHlsIndexContent(entity.Id, query.VideoResolutionIdentifier, entity.FileMetadata.HlsSegments);
+        return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
-    private static string GenerateHlsIndexContent(string indexedFileId, string[] qualities)
+    private static string GenerateHlsIndexContent(Guid indexedFileId, string resolutionIdentifier, IEnumerable<HlsSegment> hlsSegments)
     {
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
+        content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
+        content.AppendLine($"#EXT-X-TARGETDURATION:{hlsSegments.Max(x => x.Duration / 1000)}");
+        content.AppendLine("#EXT-X-VERSION:4"); // TODO - Use the right version
+        content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
 
-        foreach (var resolution in qualities)
+        foreach (var segment in hlsSegments)
         {
-            //content.AppendLine($"#EXT-X-STREAM-INF:BANDWIDTH={GetBitrateForResolution(resolution)},RESOLUTION={resolution}");
-            content.AppendLine($"/api/files/{indexedFileId}/hls-stream/{resolution}");
+            content.AppendLine($"#EXTINF:{segment.Duration / 1000},");
+            content.AppendLine($"/api/files/{indexedFileId}/hls-stream/{resolutionIdentifier}/{segment.Number}");
+            // TODO - Use good url
+            // TODO - Create something to centralize URIs creation
         }
+
+        content.AppendLine("#EXT-X-ENDLIST");
 
         return content.ToString();
     }

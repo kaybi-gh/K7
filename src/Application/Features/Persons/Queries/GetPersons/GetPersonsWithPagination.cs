@@ -10,7 +10,6 @@ public record GetPersonsWithPaginationQuery : IRequest<PaginatedList<LitePersonD
 {
     public Guid[]? Ids { get; init; }
     public Guid[]? MediaIds { get; init; }
-    // TODO - public bool? Seen { get; init; }
     //public EnumHashSetQueryParam<PersonJob>? JobTypes { get; init; }
     //public EnumHashSetQueryParam<PersonOrderingOption>? OrderBy { get; init; }
     public required int PageNumber { get; init; } = 1;
