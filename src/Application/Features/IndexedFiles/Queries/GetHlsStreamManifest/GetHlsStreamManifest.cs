@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using MediaServer.Domain.Constants;
-using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
 
@@ -47,20 +47,48 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var playlist = new StringBuilder();
         playlist.AppendLine("#EXTM3U");
 
-        var fileResolution = videoFileMetadata.VideoResolution;
-
-        // TODO - Create playlist depending on file original quality
-        // TODO - Use quality dictionary
+        var fileResolutionIdentifier = videoFileMetadata.VideoResolution;
+        var fileResolution = Qualities.Video.Single(x => x.Key == fileResolutionIdentifier).Value;
 
         //var availableTranscodingResolutions = VideoResolutions.Video.TakeWhile(x => x.Key == fileResolution);
         var availableTranscodingResolutions = Qualities.Video
-            .Where((x, y) => y <= Qualities.Video.Keys.IndexOf(fileResolution))
+            .Where((x, y) => y <= Qualities.Video.Keys.IndexOf(fileResolutionIdentifier))
             .Select(x => x.Value);
 
+        // Add original stream
+        playlist.AppendLine($"#EXT-X-STREAM-INF:" +
+            $"BANDWIDTH={fileResolution.MaxBitrate}," +
+            $"AVERAGE-BANDWIDTH={fileResolution.AverageBitrate}," +
+            $"RESOLUTION={fileResolution.Width}x{fileResolution.Height}," +
+            $"CODECS=\"{HlsCodecStringHelpers.GetHlsCodecs(videoFileMetadata)}\"," +
+            $"AUDIO=\"audio\"");
+        playlist.AppendLine($"/api/indexed-files/{videoFileMetadata.IndexedFileId}/hls-stream/original/index.m3u8");
+
+        // Add transcoded streams
         foreach (var resolution in availableTranscodingResolutions)
         {
-            playlist.AppendLine($"#EXT-X-STREAM-INF:BANDWIDTH={resolution.AverageBitrate},RESOLUTION={resolution.Width}x{resolution.Height}");
+            playlist.AppendLine($"#EXT-X-STREAM-INF:" +
+                $"BANDWIDTH={resolution.MaxBitrate}," +
+                $"AVERAGE-BANDWIDTH={resolution.AverageBitrate}," +
+                $"RESOLUTION={resolution.Width}x{resolution.Height}," +
+                $"CODECS=\"avc1.640028\"," +
+                $"AUDIO=\"audio\"");
             playlist.AppendLine($"/api/indexed-files/{videoFileMetadata.IndexedFileId}/hls-stream/{resolution.Name}/index.m3u8");
+        }
+
+        // Add audio streams
+        foreach (var audioStream in videoFileMetadata.AudioTracks)
+        {
+            playlist.AppendLine(
+                $"#EXT-X-MEDIA:" +
+                $"TYPE=AUDIO," +
+                $"GROUP-ID=\"audio\"," +
+                $"NAME=\"{audioStream.Name}\"," +
+                $"DEFAULT={(audioStream.IsDefault ? "YES" : "NO")}," +
+                $"AUTOSELECT=YES," +
+                $"LANGUAGE=\"{audioStream.Language}\"," +
+                $"URI=\"https://example.com/audio_en_aac.m3u8\"" // TODO - Add real url once implemented
+            );
         }
 
         return playlist.ToString();

@@ -60,7 +60,7 @@ public static class DependencyInjection
         switch (databaseConfiguration.Provider.ToLowerInvariant())
         {
             case "postgres":
-                options.UseNpgsql(connectionString!, x => x.MigrationsAssembly(DatabaseProvider.Postgres.Assembly));
+                options.UseNpgsql(connectionString!, x => x.MigrationsAssembly(DatabaseProvider.Postgres.Assembly)).EnableSensitiveDataLogging();
                 break;
 
             case "sqlite":

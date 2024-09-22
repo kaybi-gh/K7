@@ -1,6 +1,8 @@
-﻿using MediaServer.Application.Features.IndexedFiles.Queries.GetDirectStream;
+﻿using MediaServer.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetDirectStream;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegment;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MediaServer.Web.Endpoints;
@@ -13,8 +15,8 @@ public class IndexedFiles : EndpointGroupBase
             //.RequireAuthorization()
             .MapGet(GetDirectStream, "{id}/direct-stream")
             .MapGet(GetHlsStreamManifest, "{id}/hls-stream/manifest.m3u8")
-            .MapGet(GetHlsStreamQualityIndex, "{id}/hls-stream/{quality}/index.m3u8");
-            //.MapGet(GetHlsStreamQualityIndexSegment, "{id}/hls-stream/{quality}/segments/{segmentId}.ts")
+            .MapGet(GetHlsStreamQualityIndex, "{id}/hls-stream/{quality}/index.m3u8")
+            .MapGet(GetHlsStreamSegment, "{id}/hls-stream/{quality}/segments/{segmentId}.ts");
     }
 
     public async Task<IResult> GetDirectStream(ISender sender, [FromRoute] Guid id)
@@ -30,5 +32,10 @@ public class IndexedFiles : EndpointGroupBase
     public async Task<IResult> GetHlsStreamQualityIndex(ISender sender, [FromRoute] Guid id, [FromRoute] string quality)
     {
         return await sender.Send(new GetHlsStreamIndexQuery(id, quality));
+    }
+
+    public async Task<IResult> GetHlsStreamSegment(ISender sender, [FromRoute] Guid id, [FromRoute] string quality, [FromRoute] int segmentId)
+    {
+        return await sender.Send(new GetHlsStreamSegmentQuery(id, quality, segmentId));
     }
 }

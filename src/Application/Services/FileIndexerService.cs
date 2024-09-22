@@ -1,13 +1,11 @@
 ﻿using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Extensions;
 using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
-using MediaServer.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using MediaServer.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using MediaServer.Application.Features.Medias.Commands.CreateMedia;
 using MediaServer.Application.Helpers;
 using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Entities.Metadatas.Files;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using MediaServer.Domain.Interfaces;

@@ -1,10 +1,8 @@
 ﻿using MediaServer.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using MediaServer.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using MediaServer.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
-using MediaServer.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
+using MediaServer.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
 using MediaServer.Domain.Entities;
-using MediaServer.Domain.Entities.Medias;
-using MediaServer.Domain.Entities.Metadatas.Files;
 using MediaServer.Domain.Enums;
 using MediaServer.Domain.Events;
 using Microsoft.Extensions.Logging;
@@ -39,19 +37,31 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
             MaxRetryCount = 5
         }, cancellationToken);
 
+        await _sender.Send(new CreateBackgroundTaskCommand()
+        {
+            Request = new ComputeHlsSegmentsCommand()
+            {
+                Id = notification.IndexedFile.Id,
+                SegmentsDuration = TimeSpan.FromSeconds(2)
+            },
+            Priority = BackgroundTaskPriority.High,
+            TargetEntityId = notification.IndexedFile.Id,
+            TargetEntityTypeName = nameof(IndexedFile),
+            MaxRetryCount = 5
+        }, cancellationToken);
+
         if (notification.FileType == FileType.Video)
         {
             await _sender.Send(new CreateBackgroundTaskCommand()
             {
-                Request = new ComputeHlsSegmentsCommand()
+                Request = new GenerateThumbnailsCommand()
                 {
-                    Id = notification.IndexedFile.Id,
-                    SegmentsDuration = TimeSpan.FromSeconds(2)
+                    Id = notification.IndexedFile.Id
                 },
-                Priority = BackgroundTaskPriority.High,
+                Priority = BackgroundTaskPriority.Lowest,
                 TargetEntityId = notification.IndexedFile.Id,
                 TargetEntityTypeName = nameof(IndexedFile),
-                MaxRetryCount = 5
+                MaxRetryCount = 1
             }, cancellationToken);
         }
     }

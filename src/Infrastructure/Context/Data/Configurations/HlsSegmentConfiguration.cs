@@ -8,6 +8,7 @@ public class HlsSegmentConfiguration : IEntityTypeConfiguration<HlsSegment>
 {
     public void Configure(EntityTypeBuilder<HlsSegment> builder)
     {
-        builder.HasKey(x => new { x.VideoFileMetadataId, x.Number });
+        builder.HasKey(x => new { x.FileMetadataId, x.Number });
+        builder.HasIndex(x => new { x.IndexedFileId, x.Number });
     }
 }

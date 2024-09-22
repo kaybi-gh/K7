@@ -13,11 +13,8 @@ public static class FileInfoHelper
             }
 
             var allFiles = Directory.EnumerateFiles(rootDirectory, "*", SearchOption.AllDirectories);
-                //.Where(f => f.LastWriteTime >= since || f.CreationTime >= since); // TODO - Only get latest?
-            foreach (string filePath in allFiles)
-            {
-                fileInfos.Add(new FileInfo(filePath));
-            }
+            //.Where(f => f.LastWriteTime >= since || f.CreationTime >= since); // TODO - Only get latest?
+            Parallel.ForEach(allFiles, filePath => fileInfos.Add(new FileInfo(filePath)));
         }
         catch (Exception ex)
         {

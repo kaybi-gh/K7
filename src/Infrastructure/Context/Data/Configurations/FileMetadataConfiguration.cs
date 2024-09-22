@@ -1,4 +1,5 @@
 ﻿using MediaServer.Domain.Entities.Metadatas.Files;
+using MediaServer.Domain.Entities.Metadatas.Files.Tracks;
 using MediaServer.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -13,17 +14,35 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .HasDiscriminator(m => m.Type)
             .HasValue<AudioFileMetadata>(FileType.Audio)
             .HasValue<VideoFileMetadata>(FileType.Video);
+
+        builder
+            .HasMany(x => x.HlsSegments)
+            .WithOne()
+            .HasForeignKey(x => x.FileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public static void Configure(EntityTypeBuilder<AudioFileMetadata> builder)
     {
+        builder
+            .HasOne(x => x.AudioTrack)
+            .WithOne()
+            .HasForeignKey<AudioFileTrack>(x => x.AudioFileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public static void Configure(EntityTypeBuilder<VideoFileMetadata> builder)
     {
         builder
-            .HasMany(x => x.HlsSegments)
+            .HasMany(x => x.AudioTracks)
             .WithOne()
-            .HasForeignKey(x => x.VideoFileMetadataId);
+            .HasForeignKey(x => x.VideoFileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(x => x.VideoTracks)
+            .WithOne()
+            .HasForeignKey(x => x.VideoFileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
