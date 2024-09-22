@@ -12,7 +12,7 @@ public class FileTrackConfiguration : IEntityTypeConfiguration<BaseFileTrack>
     public void Configure(EntityTypeBuilder<BaseFileTrack> builder)
     {
         //builder.HasKey(x => new { x.FileMetadataId, x.Type, x.Index });
-
+        // TODO - Add constraints per types and associated BaseFileMetadataIds
         builder
             .HasDiscriminator(m => m.Type)
             .HasValue<AudioFileTrack>(FileTrackType.Audio)
