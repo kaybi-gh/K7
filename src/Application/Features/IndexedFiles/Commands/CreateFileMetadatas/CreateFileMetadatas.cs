@@ -61,6 +61,7 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
             _ => throw new NotImplementedException(),
         };
 
+        await _context.FileMetadatas.AddAsync(fileMetadata, cancellationToken);
         indexedFile.FileMetadata = fileMetadata;
 
         try
