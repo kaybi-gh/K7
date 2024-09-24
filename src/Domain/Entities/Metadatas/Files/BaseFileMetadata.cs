@@ -8,5 +8,5 @@ public abstract class BaseFileMetadata(FileType type) : BaseAuditableEntity
 
     public Guid IndexedFileId { get; set; }
     public virtual IndexedFile IndexedFile { get; set; } = null!;
-    public IEnumerable<HlsSegment> HlsSegments { get; set; } = [];
+    public ICollection<HlsSegment> HlsSegments { get; set; } = [];
 }

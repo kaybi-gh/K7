@@ -23,7 +23,9 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
         Guard.Against.Null(quality, nameof(quality), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
 
         var entity = await _context.IndexedFiles
-            .FindAsync([query.Id], cancellationToken);
+            .Include(x => x.FileMetadata)
+                .ThenInclude(x => x!.HlsSegments)
+            .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
@@ -51,7 +53,7 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
         foreach (var segment in hlsSegments)
         {
             content.AppendLine($"#EXTINF:{segment.Duration / 1000},");
-            content.AppendLine($"/api/files/{indexedFileId}/hls-stream/{resolutionIdentifier}/{segment.Number}");
+            content.AppendLine($"/api/index-files/{indexedFileId}/hls-stream/{resolutionIdentifier}/{segment.Number}.ts");
             // TODO - Use good url
             // TODO - Create something to centralize URIs creation
         }
