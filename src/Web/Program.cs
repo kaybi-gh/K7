@@ -19,6 +19,7 @@ try
 
     var app = builder.Build();
     app.InitializeFileSystem();
+    app.InitializeFFMpeg();
     app.UseSerilogRequestLogging();
 
     if (args.Contains("--init-db"))
