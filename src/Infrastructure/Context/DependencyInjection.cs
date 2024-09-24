@@ -31,6 +31,7 @@ public static class DependencyInjection
 
         services.AddScoped<ApplicationDbContextInitializer>();
         services.AddScoped<ApplicationFileSystemInitializer>();
+        services.AddScoped<FFMpegInitializer>();
 
         services.AddAuthentication()
             .AddBearerToken(IdentityConstants.BearerScheme);

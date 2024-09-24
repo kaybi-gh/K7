@@ -481,4 +481,9 @@ $RECYCLE.BIN/
 
 # SQLite db
 *.db
+
+# Default metadatas folder
 /src/Web/metadatas
+
+# Development appsettings
+/src/Web/appsettings.Development.json
