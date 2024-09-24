@@ -7,7 +7,7 @@ namespace MediaServer.Application.Features.MetadataPictures.Commands.DownloadMet
 
 public record DownloadMetadataPictureFromProviderCommand : IRequest
 {
-    public required MetadataPicture MetadataPicture { get; set; }
+    public required Guid Id { get; set; }
 }
 
 public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler<DownloadMetadataPictureFromProviderCommand>
@@ -25,27 +25,32 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 
     public async Task Handle(DownloadMetadataPictureFromProviderCommand request, CancellationToken cancellationToken)
     {
-        Guard.Against.Null(request.MetadataPicture.OriginalRemoteUri);
+        var entity = await _context.MetadataPictures
+            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+        Guard.Against.NotFound(request.Id, entity);
 
         try
         {
             var basePath = _pathsConfiguration.Metadatas;
-            var fileName = $"{request.MetadataPicture.Id}{Path.GetExtension(request.MetadataPicture.OriginalRemoteUri.LocalPath)}";
+            var fileName = $"{entity.Id}{Path.GetExtension(entity.OriginalRemoteUri!.LocalPath)}";
 
-            var subDirectory = request.MetadataPicture switch
+            var subDirectory = entity switch
             {
-                { PersonId: not null } => Path.Combine("persons", $"{request.MetadataPicture.PersonId}"),
-                { PersonRoleId: not null } => Path.Combine("person-roles", $"{request.MetadataPicture.PersonRoleId}"),
-                { MetadataId: not null } => Path.Combine("medias", $"{request.MetadataPicture.MetadataId}"),
+                { PersonId: not null } => Path.Combine("persons", $"{entity.PersonId}"),
+                { PersonRoleId: not null } => Path.Combine("person-roles", $"{entity.PersonRoleId}"),
+                { MetadataId: not null } => Path.Combine("medias", $"{entity.MetadataId}"),
                 _ => throw new InvalidOperationException("No valid metadata id found.")
             };
 
             var filePath = Path.Combine(basePath, subDirectory, fileName);
         
-            var imageData = await _httpClient.GetByteArrayAsync(request.MetadataPicture.OriginalRemoteUri.OriginalString, cancellationToken);
+            var imageData = await _httpClient.GetByteArrayAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
             var file = new FileInfo(filePath);
             file.Directory?.Create();
             await File.WriteAllBytesAsync(filePath, imageData, cancellationToken);
+
+            entity.LocalPath = filePath;
+            await _context.SaveChangesAsync(cancellationToken);
         }
         catch (HttpRequestException ex)
         {

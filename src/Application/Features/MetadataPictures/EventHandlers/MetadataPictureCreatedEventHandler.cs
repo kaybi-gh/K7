@@ -40,16 +40,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
         {
             Request = new DownloadMetadataPictureFromProviderCommand()
             {
-                MetadataPicture = new MetadataPicture()
-                {
-                    OriginalRemoteUri = notification.MetadataPicture.OriginalRemoteUri,
-                    MetadataId = notification.MetadataPicture.MetadataId,
-                    PersonId = notification.MetadataPicture.PersonId,
-                    Id = notification.MetadataPicture.Id,
-                    PersonRoleId = notification.MetadataPicture.PersonRoleId,
-                    Type = notification.MetadataPicture.Type,
-                    LocalPath = notification.MetadataPicture.LocalPath
-                }
+                Id = notification.MetadataPicture.Id
             },
             Priority = priority,
             TargetEntityId = notification.MetadataPicture.Id,
