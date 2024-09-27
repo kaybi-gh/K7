@@ -53,6 +53,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         //var availableTranscodingResolutions = VideoResolutions.Video.TakeWhile(x => x.Key == fileResolution);
         var availableTranscodingResolutions = Qualities.Video
             .Where((x, y) => y <= Qualities.Video.Keys.IndexOf(fileResolutionIdentifier))
+            .Reverse()
             .Select(x => x.Value);
 
         // Add original stream

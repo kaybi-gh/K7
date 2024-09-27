@@ -1,5 +1,7 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using MediaServer.Application.Common.Interfaces;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegment;
 using MediaServer.Domain.Constants;
 using MediaServer.Domain.Entities;
 using Microsoft.AspNetCore.Http;
@@ -19,8 +21,11 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
 
     public async Task<IResult> Handle(GetHlsStreamIndexQuery query, CancellationToken cancellationToken)
     {
-        var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
-        Guard.Against.Null(quality, nameof(quality), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
+        if (query.VideoResolutionIdentifier != "original")
+        {
+            var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
+            Guard.Against.Null(quality, nameof(query.VideoResolutionIdentifier), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
+        }        
 
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
@@ -30,6 +35,7 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
         Guard.Against.Null(entity.FileMetadata);
+        Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
 
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
@@ -46,16 +52,15 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
         content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
-        content.AppendLine($"#EXT-X-TARGETDURATION:{hlsSegments.Max(x => x.Duration / 1000)}");
+        content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(hlsSegments.Max(x => Math.Truncate(x.Duration / 10.0)) / 100.0)}");
         content.AppendLine("#EXT-X-VERSION:4"); // TODO - Use the right version
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
+        content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
 
         foreach (var segment in hlsSegments)
         {
-            content.AppendLine($"#EXTINF:{segment.Duration / 1000},");
-            content.AppendLine($"/api/index-files/{indexedFileId}/hls-stream/{resolutionIdentifier}/{segment.Number}.ts");
-            // TODO - Use good url
-            // TODO - Create something to centralize URIs creation
+            content.AppendLine($"#EXTINF:{(Math.Truncate(segment.Duration / 10.0) / 100).ToString("F2", CultureInfo.InvariantCulture)},");
+            content.AppendLine(GetHlsStreamSegmentQueryUriBuilder.Build(indexedFileId, resolutionIdentifier, segment.Number));
         }
 
         content.AppendLine("#EXT-X-ENDLIST");
