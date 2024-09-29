@@ -22,7 +22,7 @@ public record IndexedFileDto
         {
             CreateMap<IndexedFile, IndexedFileDto>()
                 .ForMember(dest => dest.DirectStreamUri, x => x.MapFrom(src => new Uri($"/api/indexed-files/{src.Id}/direct-stream", UriKind.Relative)))
-                .ForMember(dest => dest.HlsStreamUri, x => x.MapFrom(src => new Uri($"/api/indexed-files/{src.Id}/hls-stream", UriKind.Relative)));
+                .ForMember(dest => dest.HlsStreamUri, x => x.MapFrom(src => new Uri($"/api/indexed-files/{src.Id}/hls-stream/manifest.m3u8", UriKind.Relative)));
         }
     }
 }
