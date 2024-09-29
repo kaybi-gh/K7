@@ -43,24 +43,24 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
             return Results.NotFound();
         }
 
-        var indexPlaylist = GenerateHlsIndexContent(entity.Id, query.VideoResolutionIdentifier, entity.FileMetadata.HlsSegments);
+        var indexPlaylist = GenerateHlsIndexContent(entity.FileMetadata.HlsSegments);
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
-    private static string GenerateHlsIndexContent(Guid indexedFileId, string resolutionIdentifier, IEnumerable<HlsSegment> hlsSegments)
+    private static string GenerateHlsIndexContent(IEnumerable<HlsSegment> hlsSegments)
     {
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
         content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
-        content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(hlsSegments.Max(x => Math.Truncate(x.Duration / 10.0)) / 100.0)}");
+        content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(hlsSegments.Max(x => x.Duration) / 1000.0)}");
         content.AppendLine("#EXT-X-VERSION:4"); // TODO - Use the right version
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
         content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
 
         foreach (var segment in hlsSegments)
         {
-            content.AppendLine($"#EXTINF:{(Math.Truncate(segment.Duration / 10.0) / 100).ToString("F2", CultureInfo.InvariantCulture)},");
-            content.AppendLine(GetHlsStreamSegmentQueryUriBuilder.Build(indexedFileId, resolutionIdentifier, segment.Number));
+            content.AppendLine($"#EXTINF:{(segment.Duration / 1000.0).ToString("F6", CultureInfo.InvariantCulture)},");
+            content.AppendLine(GetHlsStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(segment.Number));
         }
 
         content.AppendLine("#EXT-X-ENDLIST");
