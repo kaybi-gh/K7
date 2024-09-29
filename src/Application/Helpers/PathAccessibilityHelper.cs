@@ -26,12 +26,7 @@ public static class PathAccessibilityHelper
                 }
             }
 
-            if (!directoryInfo.IsWritable())
-            {
-                return false;
-            }
-
-            return true;
+            return directoryInfo.IsWritable();
         }
         catch
         {
