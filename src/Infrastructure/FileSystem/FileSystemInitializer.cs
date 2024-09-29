@@ -30,11 +30,11 @@ public class ApplicationFileSystemInitializer
 
     public void Initialize()
     {
-        var pathsAreOk = PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Logs)
-        || PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Metadatas)
-        || PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Transcoding);
+        var pathsAreAccessible = PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Logs)
+        && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Metadatas)
+        && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Transcoding);
 
-        if (!pathsAreOk)
+        if (!pathsAreAccessible)
         {
             _logger.LogError("An error occurred while initializing the file system.");
             throw new UnauthorizedAccessException();
