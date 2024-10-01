@@ -62,7 +62,7 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
             .Where(x => x.StreamIndex == 0
                 && x.CodecType == "video"
                 && x.Flags.Contains('K')) // 'K' for keyframe
-            .Select(x => x.Pts) // Extract the presentation timestamp in milliseconds
+            .Select(x => (long)TimeSpan.Parse(x.PtsTime).TotalMilliseconds) // Extract the presentation timestamp in milliseconds
             .ToList();
     }
 

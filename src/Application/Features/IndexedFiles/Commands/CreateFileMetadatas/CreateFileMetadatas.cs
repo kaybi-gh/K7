@@ -50,6 +50,7 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
             FileType.Video => new VideoFileMetadata()
             {
                 Id = Guid.NewGuid(),
+                Duration = mediaAnalysis.Duration,
                 VideoBitrate = mediaAnalysis.PrimaryVideoStream.BitRate,
                 VideoResolution = Qualities.Video
                     .Any(x => x.Value.Height == mediaAnalysis.PrimaryVideoStream.Height) ?
@@ -63,16 +64,7 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
 
         await _context.FileMetadatas.AddAsync(fileMetadata, cancellationToken);
         indexedFile.FileMetadata = fileMetadata;
-
-        try
-        {
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            throw;
-        }
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     private ICollection<AudioFileTrack> ExtractAudioTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
