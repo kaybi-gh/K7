@@ -60,7 +60,7 @@ public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQu
         foreach (var segment in hlsSegments)
         {
             content.AppendLine($"#EXTINF:{(segment.Duration / 1000.0).ToString("F6", CultureInfo.InvariantCulture)},");
-            content.AppendLine(GetHlsStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(segment.Number));
+            content.AppendLine(GetHlsVideoStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(segment.Number));
         }
 
         content.AppendLine("#EXT-X-ENDLIST");
