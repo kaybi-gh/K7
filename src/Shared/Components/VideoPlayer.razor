@@ -8,7 +8,7 @@
             <media-provider>
                 @foreach (var source in PlayerService.Sources)
                 {
-                    <source src="source" type="application/x-mpegurl" />
+                    <source src="@source" type="application/x-mpegurl" />
                 }
                 <media-poster class="vds-poster"
                               src="@PlayerService.Poster"
