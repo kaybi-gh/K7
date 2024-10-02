@@ -1,4 +1,5 @@
-﻿using MediaServer.Application.Features.IndexedFiles.Queries.GetDirectStream;
+﻿using System.Threading;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetDirectStream;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegment;
@@ -15,7 +16,7 @@ public class IndexedFiles : EndpointGroupBase
             .MapGet(GetDirectStream, "{id}/direct-stream")
             .MapGet(GetHlsStreamManifest, "{id}/hls-stream/manifest.m3u8") // TODO - Use URI builders
             .MapGet(GetHlsStreamQualityIndex, "{id}/hls-stream/{quality}/index.m3u8")
-            .MapGet(GetHlsStreamSegment, GetHlsStreamSegmentQueryUriBuilder.Route);
+            .MapGet(GetHlsStreamSegment, GetHlsVideoStreamSegmentQueryUriBuilder.Route);
     }
 
     public async Task<IResult> GetDirectStream(ISender sender, [FromRoute] Guid id)
@@ -33,8 +34,8 @@ public class IndexedFiles : EndpointGroupBase
         return await sender.Send(new GetHlsStreamIndexQuery(id, quality));
     }
 
-    public async Task<IResult> GetHlsStreamSegment(ISender sender, [FromRoute] Guid id, [FromRoute] string quality, [FromRoute] int segmentId)
+    public async Task<IResult> GetHlsStreamSegment(ISender sender, [FromRoute] Guid id, [FromRoute] string quality, [FromRoute] int segmentId, CancellationToken cancellationToken)
     {
-        return await sender.Send(new GetHlsStreamSegmentQuery(id, quality, segmentId));
+        return await sender.Send(new GetHlsVideoStreamSegmentQuery(id, quality, segmentId), cancellationToken: cancellationToken);
     }
 }

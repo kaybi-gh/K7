@@ -10,11 +10,12 @@ using Microsoft.Extensions.Options;
 
 namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegment;
 
-public static class GetHlsStreamSegmentQueryUriBuilder
+public static class GetHlsVideoStreamSegmentQueryUriBuilder
 {
+    // TODO - Differ from audio
     public const string Route = "{id}/hls-stream/{quality}/segments/{segmentId}.ts";
 
-    public static string Build(GetHlsStreamSegmentQuery query) => Route
+    public static string Build(GetHlsVideoStreamSegmentQuery query) => Route
         .Replace("{id}", $"{query.Id}")
         .Replace("{quality}", query.VideoResolutionIdentifier)
         .Replace("{segmentId}", $"{query.SegmentId}");
@@ -29,21 +30,22 @@ public static class GetHlsStreamSegmentQueryUriBuilder
         .Replace("{segmentId}", $"{segmentId}");
 }
 
-public record GetHlsStreamSegmentQuery(Guid Id, string VideoResolutionIdentifier, int SegmentId) : IRequest<IResult>;
+public record GetHlsVideoStreamSegmentQuery(Guid Id, string VideoResolutionIdentifier, int SegmentId) : IRequest<IResult>;
 
-public class GetHlsStreamSegmentQueryHandler : IRequestHandler<GetHlsStreamSegmentQuery, IResult>
+public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoStreamSegmentQuery, IResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly PathsConfiguration _pathsConfiguration;
 
-    public GetHlsStreamSegmentQueryHandler(IApplicationDbContext context, IOptions<PathsConfiguration> pathsConfiguration)
+    public GetHlsVideoStreamSegmentQueryHandler(IApplicationDbContext context, IOptions<PathsConfiguration> pathsConfiguration)
     {
         _context = context;
         _pathsConfiguration = pathsConfiguration.Value;
     }
 
-    public async Task<IResult> Handle(GetHlsStreamSegmentQuery query, CancellationToken cancellationToken)
+    public async Task<IResult> Handle(GetHlsVideoStreamSegmentQuery query, CancellationToken cancellationToken)
     {
+        // TODO - Create specific enum
         if (query.VideoResolutionIdentifier != "original")
         {
             var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
@@ -68,6 +70,7 @@ public class GetHlsStreamSegmentQueryHandler : IRequestHandler<GetHlsStreamSegme
             .Where(x => x.Id == segments.First().IndexedFileId)
             .SingleOrDefaultAsync(cancellationToken: cancellationToken);
 
+        // Check if file is video?
         Guard.Against.Null(indexedFile);
 
         var tempDirectory = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", query.VideoResolutionIdentifier, $"{query.SegmentId}");
@@ -96,7 +99,8 @@ public class GetHlsStreamSegmentQueryHandler : IRequestHandler<GetHlsStreamSegme
                 .ConfigureSeekOptions(firstSegment, lastSegment))
             .OutputToFile(Path.Combine(tempDirectory, "output.m3u8"), overwrite: false, options => options
                 .ConfigureGenericHlsOptions(tempDirectory, firstSegment)
-                .CopyChannel(Channel.Both))
+                .SelectStream(0, channel: Channel.Video)
+                .CopyChannel(Channel.Video))
             .ProcessAsynchronously(throwOnError: true);
 
         var segmentFile = new FileInfo(Path.Combine(tempDirectory, $"{firstSegment.Number}.ts"));
@@ -111,7 +115,7 @@ public class GetHlsStreamSegmentQueryHandler : IRequestHandler<GetHlsStreamSegme
     {
         Directory.CreateDirectory(tempDirectory);
 
-        var quality = Qualities.Video.Where(kvp => kvp.Value.Name == videoResolutionIdentifier).First().Value;
+        var quality = Qualities.Video.Where(kvp => kvp.Value.Name == videoResolutionIdentifier).FirstOrDefault().Value;
         var firstSegment = segments.First();
         var lastSegment = segments.Last();
 
@@ -120,9 +124,9 @@ public class GetHlsStreamSegmentQueryHandler : IRequestHandler<GetHlsStreamSegme
                .ConfigureSeekOptions(firstSegment, lastSegment))
             .OutputToFile(Path.Combine(tempDirectory, "output.m3u8"), overwrite: false, options => options
                 .ConfigureGenericHlsOptions(tempDirectory, firstSegment)
-                .WithAudioCodec(AudioCodec.Ac3) // TODO - Chose wisely audio codec
+                .SelectStream(0, channel: Channel.Video)
                 .WithVideoCodec(VideoCodec.LibX264)
-                .ConfigureVideoScalingHlsOptions(new Size(quality.Width, quality.Height))) // TODO - Recalculate with ratio
+                .ConfigureVideoScalingHlsOptions(quality?.Height))
             .ProcessAsynchronously(throwOnError: true);
 
         var segmentFile = new FileInfo(Path.Combine(tempDirectory, $"{firstSegment.Number}.ts"));
@@ -159,11 +163,11 @@ internal static class FFMpegArgumentsExtensions
             .WithCustomArgument($"-hls_segment_filename {Path.Combine(tempDirectory, "%01d.ts")}");
     }
 
-    public static FFMpegArgumentOptions ConfigureVideoScalingHlsOptions(this FFMpegArgumentOptions options, Size? size)
+    public static FFMpegArgumentOptions ConfigureVideoScalingHlsOptions(this FFMpegArgumentOptions options, int? height)
     {
         // TODO - Do we keep this method or not?
-        return size is Size targetSize ?
-            options.WithVideoFilters(filterOptions => filterOptions.Scale(targetSize))
+        return height is int targetHeight ?
+            options.WithVideoFilters(filterOptions => filterOptions.Scale(-1, targetHeight))
             : options;
     }
 }
