@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using MediaServer.Domain.Constants;
 using MediaServer.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
@@ -63,7 +64,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             $"RESOLUTION={fileResolution.Width}x{fileResolution.Height}," +
             $"CODECS=\"{HlsCodecStringHelpers.GetHlsCodecs(videoFileMetadata)}\"," +
             $"AUDIO=\"audio\"");
-        playlist.AppendLine($"/api/indexed-files/{videoFileMetadata.IndexedFileId}/hls-stream/original/index.m3u8");
+        playlist.AppendLine(GetHlsStreamIndexQueryUriBuilder.BuildManifestRelativePath("original"));
 
         // Add transcoded streams
         foreach (var resolution in availableTranscodingResolutions)
@@ -74,7 +75,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 $"RESOLUTION={resolution.Width}x{resolution.Height}," +
                 $"CODECS=\"avc1.640028\"," +
                 $"AUDIO=\"audio\"");
-            playlist.AppendLine($"/api/indexed-files/{videoFileMetadata.IndexedFileId}/hls-stream/{resolution.Name}/index.m3u8");
+            playlist.AppendLine(GetHlsStreamIndexQueryUriBuilder.BuildManifestRelativePath(resolution.Name));
         }
 
         // Add audio streams

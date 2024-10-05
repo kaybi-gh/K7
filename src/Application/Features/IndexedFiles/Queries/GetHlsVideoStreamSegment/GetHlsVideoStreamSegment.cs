@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Drawing;
 using FFMpegCore;
 using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
@@ -15,7 +14,7 @@ namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegm
 public static class GetHlsVideoStreamSegmentQueryUriBuilder
 {
     // TODO - Differ from audio
-    public const string Route = "{id}/hls-stream/{quality}/segments/{segmentId}.ts";
+    public const string Route = "{id}/hls-stream/video/{quality}/segments/{segmentId}.ts";
 
     public static string Build(GetHlsVideoStreamSegmentQuery query) => Route
         .Replace("{id}", $"{query.Id}")
@@ -28,7 +27,7 @@ public static class GetHlsVideoStreamSegmentQueryUriBuilder
         .Replace("{segmentId}", $"{segmentId}");
 
     public static string BuildPlaylistRelativePath(int segmentId) => Route
-        .Replace("{id}/hls-stream/{quality}/", "")
+        .Replace("{id}/hls-stream/video/{quality}/", "")
         .Replace("{segmentId}", $"{segmentId}");
 }
 
