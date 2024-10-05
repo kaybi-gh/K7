@@ -1,5 +1,7 @@
-﻿using System.Drawing;
+﻿using System.Collections.Concurrent;
+using System.Drawing;
 using FFMpegCore;
+using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
 using MediaServer.Application.Common.Interfaces;
 using MediaServer.Domain.Constants;
@@ -34,6 +36,7 @@ public record GetHlsVideoStreamSegmentQuery(Guid Id, string VideoResolutionIdent
 
 public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoStreamSegmentQuery, IResult>
 {
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _segmentLocks = new ConcurrentDictionary<string, SemaphoreSlim>();
     private readonly IApplicationDbContext _context;
     private readonly PathsConfiguration _pathsConfiguration;
 
@@ -53,35 +56,51 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         }
 
         var segmentPath = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", query.VideoResolutionIdentifier, $"{query.SegmentId}.ts");
-        var file = new FileInfo(segmentPath);
 
+        var file = new FileInfo(segmentPath);
         if (file.Exists)
         {
             return Results.File(file.OpenRead(), contentType: "video/mp2t");
         }
 
-        var segments = await _context.HlsSegments
-            .Where(x => x.IndexedFileId == query.Id)
-            .Where(x => x.Number >= query.SegmentId)
-            .Take(2)
-            .ToListAsync(cancellationToken: cancellationToken);
-
-        var indexedFile = await _context.IndexedFiles
-            .Where(x => x.Id == segments.First().IndexedFileId)
-            .SingleOrDefaultAsync(cancellationToken: cancellationToken);
-
-        // Check if file is video?
-        Guard.Against.Null(indexedFile);
-
-        var tempDirectory = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", query.VideoResolutionIdentifier, $"{query.SegmentId}");
-        if (query.VideoResolutionIdentifier == "original") {
-            
-            await GenerateRemuxedHlsSegmentAsync(indexedFile.Path, tempDirectory, segmentPath, segments);
-        }
-        else
+        var semaphore = _segmentLocks.GetOrAdd(segmentPath, new SemaphoreSlim(1, 1));
+        if (!await semaphore.WaitAsync(0, cancellationToken))
         {
-            var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
-            await GenerateTranscodedHlsSegmentAsync(indexedFile.Path, tempDirectory, segmentPath, segments, query.VideoResolutionIdentifier);
+            return Results.Conflict("Segment generation already in progress.");
+        }
+
+        try
+        {
+            var segments = await _context.HlsSegments
+                .Where(x => x.IndexedFileId == query.Id)
+                .Where(x => x.Number >= query.SegmentId)
+                .Take(2)
+                .ToListAsync(cancellationToken: cancellationToken);
+
+            var indexedFile = await _context.IndexedFiles
+                .Where(x => x.Id == segments.First().IndexedFileId)
+                .SingleOrDefaultAsync(cancellationToken: cancellationToken);
+
+            // Check if file is video?
+            Guard.Against.Null(indexedFile);
+
+            var tempDirectory = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", query.VideoResolutionIdentifier, $"{query.SegmentId}");
+            Directory.CreateDirectory(tempDirectory);
+
+            if (query.VideoResolutionIdentifier == "original")
+            {
+                await GenerateRemuxedHlsSegmentAsync(indexedFile.Path, tempDirectory, segmentPath, segments);
+            }
+            else
+            {
+                var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
+                await GenerateTranscodedHlsSegmentAsync(indexedFile.Path, tempDirectory, segmentPath, segments, query.VideoResolutionIdentifier);
+            }
+        }
+        finally
+        {
+            semaphore.Release();
+            _segmentLocks.TryRemove(segmentPath, out _);
         }
 
         return Results.File(file.OpenRead(), contentType: "video/mp2t");
@@ -89,8 +108,6 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
 
     private static async Task GenerateRemuxedHlsSegmentAsync(string inputFilePath, string tempDirectory, string outputFilePath, List<HlsSegment> segments)
     {
-        Directory.CreateDirectory(tempDirectory);
-
         var firstSegment = segments.First();
         var lastSegment = segments.Last();
 
@@ -113,8 +130,6 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
 
     private static async Task GenerateTranscodedHlsSegmentAsync(string inputFilePath, string tempDirectory, string outputFilePath, List<HlsSegment> segments, string videoResolutionIdentifier)
     {
-        Directory.CreateDirectory(tempDirectory);
-
         var quality = Qualities.Video.Where(kvp => kvp.Value.Name == videoResolutionIdentifier).FirstOrDefault().Value;
         var firstSegment = segments.First();
         var lastSegment = segments.Last();
@@ -167,7 +182,24 @@ internal static class FFMpegArgumentsExtensions
     {
         // TODO - Do we keep this method or not?
         return height is int targetHeight ?
-            options.WithVideoFilters(filterOptions => filterOptions.Scale(-1, targetHeight))
+            options.WithVideoFilters(filterOptions => filterOptions.Arguments.Add(new AutoScaleArgument(targetHeight)))
             : options;
+    }
+}
+
+public class AutoScaleArgument : IVideoFilterArgument
+{
+    public readonly int Height;
+
+    public string Key { get; } = "scale";
+
+    public string Value
+    {
+        get => $"trunc(oh*a/2)*2:{Height}";
+    }
+
+    public AutoScaleArgument(int height)
+    {
+        Height = height;
     }
 }
