@@ -8,6 +8,24 @@ using Microsoft.AspNetCore.Http;
 
 namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStream;
 
+
+public static class GetHlsStreamIndexQueryUriBuilder
+{
+    // TODO - Differ from audio
+    public const string Route = "{id}/hls-stream/video/{quality}/index.m3u8";
+
+    public static string Build(GetHlsStreamIndexQuery query) => Route
+        .Replace("{id}", $"{query.Id}")
+        .Replace("{quality}", query.VideoResolutionIdentifier);
+
+    public static string Build(Guid id, string videoResolutionIdentifier, int segmentId) => Route
+        .Replace("{id}", $"{id}")
+        .Replace("{quality}", videoResolutionIdentifier);
+
+    public static string BuildManifestRelativePath(string videoResolutionIdentifier) => Route
+        .Replace("{id}/hls-stream/", "")
+        .Replace("{quality}", $"{videoResolutionIdentifier}");
+}
 public record GetHlsStreamIndexQuery(Guid Id, string VideoResolutionIdentifier) : IRequest<IResult>;
 
 public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQuery, IResult>
