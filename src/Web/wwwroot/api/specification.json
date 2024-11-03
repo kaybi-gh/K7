@@ -144,31 +144,6 @@
         }
       }
     },
-    "/api/indexed-files/{id}/generate-thumbnails": {
-      "get": {
-        "tags": [
-          "IndexedFiles"
-        ],
-        "operationId": "GenerateThumbnails",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/indexed-files/{id}/direct-stream": {
       "get": {
         "tags": [
@@ -219,12 +194,110 @@
         }
       }
     },
-    "/api/indexed-files/{id}/hls-stream/{quality}/index.m3u8": {
+    "/api/indexed-files/{id}/hls-stream/audios/{index}/{quality}/index.m3u8": {
       "get": {
         "tags": [
           "IndexedFiles"
         ],
-        "operationId": "GetHlsStreamQualityIndex",
+        "operationId": "GetHlsAudioStreamIndex",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/audios/{index}/{quality}/segments/{segmentId}.ts": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsAudioStreamSegment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 3
+          },
+          {
+            "name": "segmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/video/{quality}/index.m3u8": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsVideoStreamIndex",
         "parameters": [
           {
             "name": "id",
@@ -244,6 +317,50 @@
               "type": "string"
             },
             "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/video/{quality}/segments/{segmentId}.ts": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsVideoStreamSegment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "segmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
           }
         ],
         "responses": {
@@ -1079,7 +1196,7 @@
           "name": {
             "type": "string"
           },
-          "targetEntityTypeName": {
+          "targetEntityType": {
             "type": "string",
             "nullable": true
           },

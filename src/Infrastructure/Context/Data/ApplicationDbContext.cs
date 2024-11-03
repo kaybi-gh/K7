@@ -4,6 +4,7 @@ using MediaServer.Domain.Entities;
 using MediaServer.Domain.Entities.Medias;
 using MediaServer.Domain.Entities.Metadatas;
 using MediaServer.Domain.Entities.Metadatas.Files;
+using MediaServer.Domain.Entities.Metadatas.Files.Tracks;
 using MediaServer.Domain.Entities.Metadatas.Medias;
 using MediaServer.Domain.Entities.Metadatas.PersonRoles;
 using MediaServer.Domain.Entities.Ratings;
@@ -29,6 +30,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<BaseRating> Ratings => Set<BaseRating>();
     public DbSet<ExternalId> ExternalIds => Set<ExternalId>();
     public DbSet<HlsSegment> HlsSegments => Set<HlsSegment>();
+    public DbSet<BaseFileTrack> FileTracks => Set<BaseFileTrack>();
     public DbSet<BackgroundTask> BackgroundTasks => Set<BackgroundTask>();
 
     protected override void OnModelCreating(ModelBuilder builder)
