@@ -1,8 +1,8 @@
-﻿using System.Threading;
-using MediaServer.Application.Features.IndexedFiles.Queries.GetDirectStream;
+﻿using MediaServer.Application.Features.IndexedFiles.Queries.GetDirectStream;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
-using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegment;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MediaServer.Web.Endpoints;
@@ -15,7 +15,9 @@ public class IndexedFiles : EndpointGroupBase
             //.RequireAuthorization()
             .MapGet(GetDirectStream, "{id}/direct-stream")
             .MapGet(GetHlsStreamManifest, "{id}/hls-stream/manifest.m3u8") // TODO - Use URI builders
-            .MapGet(GetHlsStreamQualityIndex, GetHlsStreamIndexQueryUriBuilder.Route)
+            .MapGet(GetHlsAudioStreamIndex, GetHlsAudioStreamIndexQueryUriBuilder.Route)
+            .MapGet(GetHlsAudioStreamSegment, GetHlsAudioStreamSegmentQueryUriBuilder.Route)
+            .MapGet(GetHlsVideoStreamIndex, GetHlsVideoStreamIndexQueryUriBuilder.Route)
             .MapGet(GetHlsVideoStreamSegment, GetHlsVideoStreamSegmentQueryUriBuilder.Route);
     }
 
@@ -29,9 +31,19 @@ public class IndexedFiles : EndpointGroupBase
         return await sender.Send(new GetHlsStreamManifestQuery(id));
     }
 
-    public async Task<IResult> GetHlsStreamQualityIndex(ISender sender, [FromRoute] Guid id, [FromRoute] string quality)
+    public async Task<IResult> GetHlsAudioStreamIndex(ISender sender, [FromRoute] Guid id, [FromRoute] int index, [FromRoute] string quality)
     {
-        return await sender.Send(new GetHlsStreamIndexQuery(id, quality));
+        return await sender.Send(new GetHlsAudioStreamIndexQuery(id, index, quality));
+    }
+
+    public async Task<IResult> GetHlsAudioStreamSegment(ISender sender, [FromRoute] Guid id, [FromRoute] int index, [FromRoute] string quality, [FromRoute] int segmentId, CancellationToken cancellationToken)
+    {
+        return await sender.Send(new GetHlsAudioStreamSegmentQuery(id, index, quality, segmentId), cancellationToken: cancellationToken);
+    }
+
+    public async Task<IResult> GetHlsVideoStreamIndex(ISender sender, [FromRoute] Guid id, [FromRoute] string quality)
+    {
+        return await sender.Send(new GetHlsVideoStreamIndexQuery(id, quality));
     }
 
     public async Task<IResult> GetHlsVideoStreamSegment(ISender sender, [FromRoute] Guid id, [FromRoute] string quality, [FromRoute] int segmentId, CancellationToken cancellationToken)

@@ -9,11 +9,10 @@ using MediaServer.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegment;
+namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 
 public static class GetHlsVideoStreamSegmentQueryUriBuilder
 {
-    // TODO - Differ from audio
     public const string Route = "{id}/hls-stream/video/{quality}/segments/{segmentId}.ts";
 
     public static string Build(GetHlsVideoStreamSegmentQuery query) => Route
@@ -54,7 +53,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             Guard.Against.Null(quality, nameof(query.VideoResolutionIdentifier), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
         }
 
-        var segmentPath = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", query.VideoResolutionIdentifier, $"{query.SegmentId}.ts");
+        var segmentPath = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", "video", query.VideoResolutionIdentifier, $"{query.SegmentId}.ts");
 
         var file = new FileInfo(segmentPath);
         if (file.Exists)
@@ -83,7 +82,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             // Check if file is video?
             Guard.Against.Null(indexedFile);
 
-            var tempDirectory = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", query.VideoResolutionIdentifier, $"{query.SegmentId}");
+            var tempDirectory = Path.Combine(_pathsConfiguration.Transcoding, $"{query.Id}", "video", query.VideoResolutionIdentifier, $"{query.SegmentId}");
             Directory.CreateDirectory(tempDirectory);
 
             if (query.VideoResolutionIdentifier == "original")

@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 using MediaServer.Application.Common.Interfaces;
-using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStreamSegment;
+using MediaServer.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using MediaServer.Domain.Constants;
 using MediaServer.Domain.Entities;
 using Microsoft.AspNetCore.Http;
@@ -9,16 +9,15 @@ using Microsoft.AspNetCore.Http;
 namespace MediaServer.Application.Features.IndexedFiles.Queries.GetHlsStream;
 
 
-public static class GetHlsStreamIndexQueryUriBuilder
+public static class GetHlsVideoStreamIndexQueryUriBuilder
 {
-    // TODO - Differ from audio
     public const string Route = "{id}/hls-stream/video/{quality}/index.m3u8";
 
-    public static string Build(GetHlsStreamIndexQuery query) => Route
+    public static string Build(GetHlsVideoStreamIndexQuery query) => Route
         .Replace("{id}", $"{query.Id}")
         .Replace("{quality}", query.VideoResolutionIdentifier);
 
-    public static string Build(Guid id, string videoResolutionIdentifier, int segmentId) => Route
+    public static string Build(Guid id, string videoResolutionIdentifier) => Route
         .Replace("{id}", $"{id}")
         .Replace("{quality}", videoResolutionIdentifier);
 
@@ -26,18 +25,18 @@ public static class GetHlsStreamIndexQueryUriBuilder
         .Replace("{id}/hls-stream/", "")
         .Replace("{quality}", $"{videoResolutionIdentifier}");
 }
-public record GetHlsStreamIndexQuery(Guid Id, string VideoResolutionIdentifier) : IRequest<IResult>;
+public record GetHlsVideoStreamIndexQuery(Guid Id, string VideoResolutionIdentifier) : IRequest<IResult>;
 
-public class GetHlsStreamIndexQueryHandler : IRequestHandler<GetHlsStreamIndexQuery, IResult>
+public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, IResult>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetHlsStreamIndexQueryHandler(IApplicationDbContext context)
+    public GetHlsVideoStreamIndexQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<IResult> Handle(GetHlsStreamIndexQuery query, CancellationToken cancellationToken)
+    public async Task<IResult> Handle(GetHlsVideoStreamIndexQuery query, CancellationToken cancellationToken)
     {
         if (query.VideoResolutionIdentifier != "original")
         {

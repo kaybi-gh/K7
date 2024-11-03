@@ -44,7 +44,7 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
             throw new InvalidOperationException();
         }
 
-        BaseFileMetadata fileMetadata = request.FileType switch
+        var fileMetadata = request.FileType switch
         {
             FileType.Audio => throw new NotImplementedException(),
             FileType.Video => new VideoFileMetadata()
@@ -53,8 +53,11 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
                 Duration = mediaAnalysis.Duration,
                 VideoBitrate = mediaAnalysis.PrimaryVideoStream.BitRate,
                 VideoResolution = Qualities.Video
-                    .Any(x => x.Value.Height == mediaAnalysis.PrimaryVideoStream.Height) ?
-                    Qualities.Video.First(x => x.Value.Height == mediaAnalysis.PrimaryVideoStream.Height).Key
+                    .Any(x => x.Value.Height == mediaAnalysis.PrimaryVideoStream.Height ||
+                        x.Value.Width == mediaAnalysis.PrimaryVideoStream.Width) ?
+                    Qualities.Video.First(x => 
+                        x.Value.Height == mediaAnalysis.PrimaryVideoStream.Height ||
+                        x.Value.Width == mediaAnalysis.PrimaryVideoStream.Width).Key
                     : throw new InvalidOperationException(),
                 AudioTracks = ExtractAudioTracksFromMediaAnalysis(mediaAnalysis),
                 VideoTracks = ExtractVideoTracksFromMediaAnalysis(mediaAnalysis)
@@ -67,7 +70,7 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    private ICollection<AudioFileTrack> ExtractAudioTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
+    private static List<AudioFileTrack> ExtractAudioTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
     {
         bool hasDefaultAudio = mediaAnalysis.AudioStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
         return mediaAnalysis.AudioStreams.Select(x => new AudioFileTrack()
@@ -75,11 +78,16 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
             Index = x.Index,
             IsDefault = IsDefaultTrack(hasDefaultAudio, x.Disposition, x.Index),
             Language = x.Language,
-            Name = x.Tags?.FirstOrDefault(x => x.Key == "title").Value ?? x.Language
+            Name = x.Tags?.FirstOrDefault(x => x.Key == "title").Value ?? x.Language,
+            CodecName = x.CodecName,
+            Channels = x.Channels,
+            ChannelLayout = x.ChannelLayout,
+            Profile = x.Profile,
+            SampleRateHz = x.SampleRateHz
         }).ToList();
     }
 
-    private ICollection<VideoFileTrack> ExtractVideoTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
+    private static List<VideoFileTrack> ExtractVideoTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
     {
         bool hasDefaultVideo = mediaAnalysis.VideoStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
         return mediaAnalysis.VideoStreams.Select(x => new VideoFileTrack
@@ -103,8 +111,6 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
             : index == 0;
     }
 }
-
-
 
 /// <summary>
 /// Helpers to generate HLS codec strings according to

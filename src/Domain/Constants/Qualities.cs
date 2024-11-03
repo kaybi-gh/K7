@@ -2,10 +2,18 @@
 
 namespace MediaServer.Domain.Constants;
 
+public sealed record AudioQuality(string Name, int AverageBitrate, int MaxBitrate);
 public sealed record VideoResolution(string Name, int Width, int Height, int AverageBitrate, int MaxBitrate);
 
 public static class Qualities
 {
+    public static readonly FrozenDictionary<AudioQualityIdentifier, AudioQuality> Audio = new Dictionary<AudioQualityIdentifier, AudioQuality>
+    {
+        { AudioQualityIdentifier.LowAac, new("LowAac",  128000, 128000 ) },
+        { AudioQualityIdentifier.MediumAac, new("MediumAac",  256000, 256000 ) },
+        { AudioQualityIdentifier.HighAac, new("HighAac",  360000, 360000 ) },
+    }.ToFrozenDictionary();
+
     public static readonly FrozenDictionary<VideoResolutionIdentifier, VideoResolution> Video = new Dictionary<VideoResolutionIdentifier, VideoResolution>
     {
         { VideoResolutionIdentifier._144p, new("144p", 256, 144, 150000, 200000) },
