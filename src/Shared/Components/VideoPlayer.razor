@@ -4,11 +4,11 @@
 @if (PlayerService.IsVisible)
 {
     <div class="video-container">
-        <media-player title="Sprite Fight" crossorigin playsinline @ref="_player">
+        <media-player title="Sprite Fight" crossorigin playsinline autoplay @ref="_player">
             <media-provider>
                 @foreach (var source in PlayerService.Sources)
                 {
-                    <source src="source" type="application/x-mpegurl" />
+                    <source src="@source" type="application/x-mpegurl" />
                 }
                 <media-poster class="vds-poster"
                               src="@PlayerService.Poster"

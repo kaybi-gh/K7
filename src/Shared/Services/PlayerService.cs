@@ -20,8 +20,8 @@ public class PlayerService
 
     public event Action? SourcesOnChange;
 
-    private Dictionary<string, string>? _sources;
-    public Dictionary<string, string> Sources
+    private List<string>? _sources;
+    public List<string> Sources
     {
         get => _sources ?? new();
         set
