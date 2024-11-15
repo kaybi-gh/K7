@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "WebUI",
+    "Projects": [
+      {
+        "Name": "src\\Web\\Web\\Web.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      }
+    ]
+  }
+]

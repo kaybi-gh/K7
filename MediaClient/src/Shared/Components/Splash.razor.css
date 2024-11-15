@@ -1,0 +1,15 @@
+.splash {
+    background-color: var(--mud-palette-overlay-dark);
+    position: fixed;
+    cursor: wait;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(-50%,-50%);
+    transition: all ease-in-out 600ms;
+    z-index: 99;
+}

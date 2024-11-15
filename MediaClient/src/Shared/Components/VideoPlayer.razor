@@ -1,0 +1,43 @@
+@inject IJSRuntime JSRuntime
+@inject PlayerService PlayerService
+
+@if (PlayerService.IsVisible)
+{
+    <div class="video-container">
+        <media-player title="Sprite Fight" crossorigin playsinline autoplay @ref="_player">
+            <media-provider>
+                @foreach (var source in PlayerService.Sources)
+                {
+                    <source src="@source" type="application/x-mpegurl" />
+                }
+                <media-poster class="vds-poster"
+                              src="@PlayerService.Poster"
+                              alt="Alt"></media-poster>
+            </media-provider>
+            <!-- Layouts -->
+            <media-video-layout thumbnails="https://files.vidstack.io/sprite-fight/thumbnails.vtt"></media-video-layout>
+        </media-player>
+
+        <MudIconButton Icon="Icons.Material.Filled.Close" Size="Size.Medium" Color="Color.Primary" OnClick="PlayerService.Hide" Style="position: absolute; top: 10px; right: 10px;"></MudIconButton>
+    </div>
+}
+@* 
+Sources
+- url
+- type
+
+Poster
+Title
+Thumbnails VTT
+
+Tracks? *@
+
+<script>
+    window.playerInterop = {
+        logAudioTracksLength: function (player) {
+            console.log("coucou2");
+            console.log(player.audioTracks);
+            console.log(player.audioTracks.length);
+        }
+    };
+</script>
