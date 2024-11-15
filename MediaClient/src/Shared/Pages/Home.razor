@@ -1,0 +1,69 @@
+@page "/"
+@inject Domain.Interfaces.IMediaServerService mediaServerService
+<PageTitle>Home</PageTitle>
+
+<HorizontalScrollableStack Title="RealItems">
+    @foreach (var item in realItems)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>
+
+<HorizontalScrollableStack Title="All">
+    @foreach (var item in MockedMediaServiceService.All)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>
+
+<HorizontalScrollableStack Title="Bond, James Bond">
+    @foreach (var item in MockedMediaServiceService.JamesBond)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>
+
+<HorizontalScrollableStack Title="No daddyyyyy">
+    @foreach (var item in MockedMediaServiceService.StarWars)
+    {
+        <HorizontalScrollableStackItem>
+            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+        </HorizontalScrollableStackItem>
+    }
+</HorizontalScrollableStack>
+
+@code {
+    List<MediaPosterViewModel> realItems = [];
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var test = await mediaServerService.GetLiteMediasAsync(new GetLiteMediasQuery()
+                {
+                    PageNumber = 1,
+                    PageSize = 50
+                });
+
+            if (test != null && test.Items != null)
+            {
+                foreach (var item in test.Items)
+                {
+                    realItems.Add(new MediaPosterViewModel()
+                        {
+                            Id = item.Id.ToString(),
+                            Title = item.Title,
+                            AdditionalInformations = item.ReleaseDate.HasValue ? item.ReleaseDate.Value.Year.ToString() : "",
+                            PosterPictureHref = item.PosterPictureHref
+                        });
+                }
+            }
+        }
+        catch {}
+    }
+}

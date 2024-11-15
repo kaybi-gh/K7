@@ -1,0 +1,30 @@
+/*::deep .mobile-footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+}*/
+
+.mobile-footer .application-logo {
+    /*border: 2px solid orange;
+    background-color: gray;
+    border-radius: 60px;*/
+    width: var(--mud-appbar-height);
+    height: var(--mud-appbar-height);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/*    .application-logo .mud-icon {
+        font-size: 7rem;
+    }*/
+
+.mobile-footer .mobile-footer-button {
+    width: var(--mud-appbar-height);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: var(--mud-appbar-height);
+}

@@ -1,0 +1,6 @@
+﻿<Router AppAssembly="@typeof(MediaClient.Web.Client._Imports).Assembly" AdditionalAssemblies="new [] { typeof(ISharedPagesPointer).Assembly, typeof(ISharedComponentsPointer).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+</Router>

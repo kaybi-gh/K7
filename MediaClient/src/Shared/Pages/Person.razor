@@ -1,0 +1,44 @@
+@page "/persons/{id}"
+@inject IMediaServerService mediaServerService
+<PageTitle>@_person?.Name</PageTitle>
+<MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
+
+@if (_person != null)
+{
+    <div class="background" style="--background-picture: url(@_person.PortraitPictureHref)" />
+    <div>
+        <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
+            <MudItem xs="12" sm="4" lg="1">
+                <MudStack AlignItems="AlignItems.Center">
+                    <MudImage Src="@_person.PortraitPictureHref" Alt="Tata" Class="rounded-lg" Style="max-width: 220px;" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                </MudStack>
+            </MudItem>
+            <MudItem xs="12" sm="6" lg="5">
+                <MudStack AlignItems="@(_isSmallDevice ? AlignItems.Center : AlignItems.Start)">
+                    <MudText Typo="Typo.h4">@_person.Name</MudText>
+                    <MudStack>
+                        <div class="overview-container mx-4">
+                            <MudText Class="@(_overviewExpanded ? "" : "overview-collapsed")">@_person.Biography</MudText>
+                        </div>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+                            <MudButton Variant="Variant.Text" Size="Size.Small" EndIcon="@(_overviewExpanded ? @Icons.Material.Filled.KeyboardArrowUp : @Icons.Material.Filled.KeyboardArrowDown)" OnClick="ToggleOverview">@(_overviewExpanded ? "Less" : "More")</MudButton>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
+            </MudItem>
+            <MudItem xs="12" sm="12" lg="12">
+                @if (_movies != null)
+                {
+                    <HorizontalScrollableStack Title="Movies">
+                        @foreach (var movie in _movies)
+                        {
+                            <HorizontalScrollableStackItem>
+                                <MediaPoster Model="movie" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+                            </HorizontalScrollableStackItem>
+                        }
+                    </HorizontalScrollableStack>
+                }
+            </MudItem>
+        </MudGrid>
+    </div>
+}

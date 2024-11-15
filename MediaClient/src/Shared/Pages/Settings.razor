@@ -1,0 +1,12 @@
+@page "/settings"
+@inject ThemeService ThemeService
+<PageTitle>Settings</PageTitle>
+
+<MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="Dark mode" />
+<MudSelect T="ThemeWrapper" Label="Theme" @bind-Value="@ThemeService.ThemeWrapper">
+    @foreach (var themeWrapper in Themes.Collection)
+    {
+        <MudSelectItem Value="@themeWrapper">@themeWrapper?.Name</MudSelectItem>
+    }
+</MudSelect>
+
