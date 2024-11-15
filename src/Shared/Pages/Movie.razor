@@ -1,5 +1,6 @@
 @page "/movies/{id}"
 @inject IMediaServerService MediaServerService
+@inject PlayerService PlayerService
 <PageTitle>@_movie?.Title</PageTitle>
 <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
@@ -31,7 +32,7 @@
                         }
                     </MudStack>
                     <MudStack Row="true">
-                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary">Play</MudButton>
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="Play">Play</MudButton>
                         <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
                         <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="edit"></MudIconButton>

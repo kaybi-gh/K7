@@ -23,12 +23,12 @@ public abstract record LiteMediaDto
                 .ForMember(dst => dst.PosterPictureHref, x =>
                 {
                     x.PreCondition(src => src.Pictures != null && src.Pictures.Any(x => x.Type == MetadataPictureType.Poster));
-                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Poster));
+                    x.MapFrom<MediaServerAbsoluteUriResolver, Uri?>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Poster).Uri);
                 })
                 .ForMember(dst => dst.BackgroundPictureHref, x =>
                 {
                     x.PreCondition(src => src.Pictures != null && src.Pictures.Any(x => x.Type == MetadataPictureType.Backdrop));
-                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Backdrop));
+                    x.MapFrom<MediaServerAbsoluteUriResolver, Uri?>(src => src.Pictures!.First(p => p.Type == MetadataPictureType.Backdrop).Uri);
                 });
 
             CreateMap<LiteMovieDto, LiteMovie>();

@@ -38,7 +38,7 @@ public record PersonDto
                 .ForMember(dst => dst.PortraitPictureHref, x =>
                 {
                     x.PreCondition(src => src.PortraitPicture != null);
-                    x.MapFrom<MediaServerBaseUrlPathResolver, MetadataPictureDto>(src => src.PortraitPicture!);
+                    x.MapFrom<MediaServerAbsoluteUriResolver, Uri?>(src => src.PortraitPicture!.Uri);
                 })
                 .ForMember(dst => dst.Medias, x => x.MapFrom(src => src.Roles.Select(x => x.Media)));
         }

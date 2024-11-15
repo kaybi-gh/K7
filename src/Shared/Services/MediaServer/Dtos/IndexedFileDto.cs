@@ -11,4 +11,6 @@ public record IndexedFileDto
     public required long Size { get; init; }
     public bool IsSplitPart { get; init; }
     public bool IsComposite { get; init; }
+    public Uri? DirectStreamUri { get; init; }
+    public Uri? HlsStreamUri { get; init; }
 }

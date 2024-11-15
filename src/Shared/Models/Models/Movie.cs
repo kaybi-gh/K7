@@ -14,4 +14,5 @@ public record Movie
     public string Synopsis { get; init; } = "";
     public List<LitePersonRole> Casting { get; init; } = [];
     public List<string> Genres { get; init; } = [];
+    public IEnumerable<string> Sources { get; init; } = [];
 }
