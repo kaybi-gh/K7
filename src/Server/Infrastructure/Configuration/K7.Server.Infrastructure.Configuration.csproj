@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Server.Infrastructure.Configuration</RootNamespace>
+    <AssemblyName>K7.Server.Infrastructure.Configuration</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Clients.Shared.Services</RootNamespace>
+    <AssemblyName>K7.Clients.Shared.Services</AssemblyName>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+	  <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\Models\K7.Clients.Shared.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

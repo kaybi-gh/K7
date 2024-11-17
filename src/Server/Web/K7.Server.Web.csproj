@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Server.Web</RootNamespace>
+    <AssemblyName>K7.Server.Web</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Aspire\ServiceDefaults\K7.Shared.Aspire.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Application\K7.Server.Application.csproj" />
+    <ProjectReference Include="..\Infrastructure\Context\K7.Server.Infrastructure.Context.csproj" />
+    <ProjectReference Include="..\Infrastructure\DatabaseProviders\Postgres\K7.Server.Infrastructure.DatabaseProviders.Postgres.csproj" />
+    <ProjectReference Include="..\Infrastructure\DatabaseProviders\Sqlite\K7.Server.Infrastructure.DatabaseProviders.Sqlite.csproj" />
+    <ProjectReference Include="..\Infrastructure\FileSystem\K7.Server.Infrastructure.FileSystem.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="NSwag.AspNetCore" />
+    <PackageReference Include="NSwag.MSBuild">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="FluentValidation.AspNetCore" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="ZymLabs.NSwag.FluentValidation.AspNetCore" />
+  </ItemGroup>
+
+</Project>

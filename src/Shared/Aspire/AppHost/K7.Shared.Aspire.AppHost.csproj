@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAspireHost>true</IsAspireHost>
+    <UserSecretsId>ac6df243-f047-4de9-a7c9-883287bbf4dd</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Clients\Web\Web\K7.Clients.Web.csproj" />
+    <ProjectReference Include="..\..\..\Server\Web\K7.Server.Web.csproj" />
+  </ItemGroup>
+
+</Project>

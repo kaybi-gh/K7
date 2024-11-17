@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Server.Domain</RootNamespace>
+    <AssemblyName>K7.Server.Domain</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
+  </ItemGroup>
+
+</Project>

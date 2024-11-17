@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Clients.Shared.Domain</RootNamespace>
+    <AssemblyName>K7.Clients.Shared.Domain</AssemblyName>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MudBlazor" />
+	</ItemGroup>
+	
+</Project>

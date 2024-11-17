@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Clients.Shared.Pages</RootNamespace>
+    <AssemblyName>K7.Clients.Shared.Pages</AssemblyName>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+	  <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Components\K7.Clients.Shared.Components.csproj" />
+    <ProjectReference Include="..\Models\K7.Clients.Shared.Domain.csproj" />
+    <ProjectReference Include="..\Services\K7.Clients.Shared.Services.csproj" />
+  </ItemGroup>
+
+</Project>
