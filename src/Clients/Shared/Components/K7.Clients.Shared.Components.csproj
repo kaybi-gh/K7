@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+	<RootNamespace>K7.Clients.Shared.Components</RootNamespace>
+	<AssemblyName>K7.Clients.Shared.Components</AssemblyName>
+  </PropertyGroup>
+	
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <None Remove="Splash.razor.css" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <Content Include="Splash.razor.css" />
+  </ItemGroup>
+		
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Models\K7.Clients.Shared.Domain.csproj" />
+    <ProjectReference Include="..\Services\K7.Clients.Shared.Services.csproj" />
+  </ItemGroup>
+
+</Project>

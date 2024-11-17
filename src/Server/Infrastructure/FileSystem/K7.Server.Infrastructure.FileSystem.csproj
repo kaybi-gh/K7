@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Server.Infrastructure.FileSystem</RootNamespace>
+    <AssemblyName>K7.Server.Infrastructure.FileSystem</AssemblyName>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Configuration\K7.Server.Infrastructure.Configuration.csproj" />
+    <ProjectReference Include="..\..\Application\K7.Server.Application.csproj" />
+  </ItemGroup>
+
+</Project>

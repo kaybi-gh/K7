@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Server.Application</RootNamespace>
+    <AssemblyName>K7.Server.Application</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ardalis.GuardClauses" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" />
+    <PackageReference Include="FFMpegCore" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="TMDbLib" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\K7.Server.Domain.csproj" />
+    <ProjectReference Include="..\Infrastructure\Configuration\K7.Server.Infrastructure.Configuration.csproj" />
+  </ItemGroup>
+
+</Project>

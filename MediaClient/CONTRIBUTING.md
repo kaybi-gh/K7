@@ -1,2 +1,0 @@
-﻿# MediaClient Contribruting guide
-
