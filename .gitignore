@@ -483,10 +483,8 @@ $RECYCLE.BIN/
 *.db
 
 # Default application directories
-/src/Web/metadatas
-/src/Web/transcoding
+/src/Server/Web/metadatas
+/src/Server/Web/transcoding
 
 # Development appsettings
-/src/Web/appsettings.Development.json
-/src/Server/Web/metadatas
 /src/Server/Web/appsettings.Development.json
