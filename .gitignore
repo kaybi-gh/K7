@@ -489,3 +489,4 @@ $RECYCLE.BIN/
 # Development appsettings
 /src/Web/appsettings.Development.json
 /src/Server/Web/metadatas
+/src/Server/Web/appsettings.Development.json
