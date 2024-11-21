@@ -1,0 +1,6 @@
+﻿<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly" AdditionalAssemblies="new [] { typeof(ISharedComponentsPointer).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+</Router>

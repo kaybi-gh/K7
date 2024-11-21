@@ -2,16 +2,15 @@ using Microsoft.Maui;
 using Microsoft.Maui.Hosting;
 using System;
 
-namespace K7.Clients.MAUI
-{
-    internal class Program : MauiApplication
-    {
-        protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+namespace K7.Clients.MAUI;
 
-        static void Main(string[] args)
-        {
-            var app = new Program();
-            app.Run(args);
-        }
+internal class Program : MauiApplication
+{
+    protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+
+    static void Main(string[] args)
+    {
+        var app = new Program();
+        app.Run(args);
     }
 }
