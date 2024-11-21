@@ -6,7 +6,6 @@ namespace K7.Server.Application.Common.Behaviours;
 
 public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
-    private readonly Stopwatch _timer;
     private readonly ILogger<TRequest> _logger;
     private readonly IUser _user;
     private readonly IIdentityService _identityService;
@@ -16,8 +15,6 @@ public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequ
         IUser user,
         IIdentityService identityService)
     {
-        _timer = new Stopwatch();
-
         _logger = logger;
         _user = user;
         _identityService = identityService;
@@ -25,13 +22,9 @@ public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequ
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        _timer.Start();
-
+        var startTime = Stopwatch.GetTimestamp();
         var response = await next();
-
-        _timer.Stop();
-
-        var elapsedMilliseconds = _timer.ElapsedMilliseconds;
+        var elapsedMilliseconds = Stopwatch.GetElapsedTime(startTime).TotalMilliseconds;
 
         if (elapsedMilliseconds > 500)
         {
