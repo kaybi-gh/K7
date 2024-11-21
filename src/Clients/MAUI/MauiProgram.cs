@@ -1,4 +1,6 @@
-﻿using K7.Clients.Shared.Services;
+﻿using K7.Clients.MAUI.Services;
+using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Services;
 using Microsoft.Extensions.Logging;
 using MudBlazor.Services;
 
@@ -26,6 +28,7 @@ public static class MauiProgram
         builder.Services.AddMudServices();
         builder.Services.AddConfigurations(builder.Configuration);
         builder.Services.AddClientServices();
+        builder.Services.AddSingleton<IFormFactorService, FormFactorService>();
         return builder.Build();
     }
 }

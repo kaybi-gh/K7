@@ -37,7 +37,7 @@ try
     }
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
-    app.UseStaticFiles();
+    app.MapStaticAssets();
 
     app.UseSwaggerUi(settings =>
     {
@@ -47,10 +47,12 @@ try
 
     app.MapControllerRoute(
         name: "default",
-        pattern: "{controller}/{action=Index}/{id?}");
+        pattern: "{controller}/{action=Index}/{id?}")
+        .WithStaticAssets();
 
     app.UseCors();
-    app.MapRazorPages();
+    app.MapRazorPages()
+        .WithStaticAssets();
     app.MapFallbackToFile("index.html");
     app.UseExceptionHandler(options => { });
     app.Map("/", () => Results.Redirect("/api"));
