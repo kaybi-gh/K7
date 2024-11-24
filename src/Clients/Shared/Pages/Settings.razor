@@ -1,5 +1,6 @@
 @page "/settings"
 @inject ThemeService ThemeService
+@inject IDeviceService DeviceService
 <PageTitle>Settings</PageTitle>
 
 <MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="Dark mode" />
@@ -10,3 +11,20 @@
     }
 </MudSelect>
 
+<MudText>Platform: @DeviceService.GetPlatform()</MudText>
+<MudText>FormFactor: @DeviceService.GetFormFactor()</MudText>
+
+<h3>Supported Codecs</h3>
+<ul>
+    @if (_supportedCodecs != null)
+    {
+        foreach (var codec in _supportedCodecs)
+        {
+            <li>@codec</li>
+        }
+    }
+    else
+    {
+        <p>Loading...</p>
+    }
+</ul>

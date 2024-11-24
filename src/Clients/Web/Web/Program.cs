@@ -17,7 +17,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddConfigurations(builder.Configuration);
 builder.Services.AddMudServices();
 builder.Services.AddServerServices();
-builder.Services.AddSingleton<IFormFactorService, FormFactorService>();
+builder.Services.AddScoped<IDeviceService, DeviceService>();
 
 var app = builder.Build();
 
