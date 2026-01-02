@@ -23,7 +23,7 @@
             <MudStaticTextField Value="@username" Label="Username" Disabled="true" Placeholder="Please choose your username." />
         </MudItem>
         <MudItem md="12">
-            <MudStaticTextField For="@(() => Input.PhoneNumber)" @bind-Value="Input.PhoneNumber"
+            <MudStaticTextField For="@(() => Input!.PhoneNumber)" @bind-Value="Input!.PhoneNumber"
                                 Label="Phone Number" HelperText="Please enter your phone number."
                                 UserAttributes="@(new() { { "autocomplete", "tel-national" } } )" />
         </MudItem>
@@ -42,7 +42,7 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = null!;
+    private InputModel? Input { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,12 +50,13 @@
         username = await UserManager.GetUserNameAsync(user);
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
+        Input ??= new();
         Input.PhoneNumber ??= phoneNumber;
     }
 
     private async Task OnValidSubmitAsync()
     {
-        if (Input.PhoneNumber != phoneNumber)
+        if (Input!.PhoneNumber != phoneNumber)
         {
             var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             if (!setPhoneResult.Succeeded)

@@ -27,7 +27,7 @@
         @if (requirePassword)
         {
             <MudItem md="12">
-                <MudStaticTextField For="@(() => Input.Password)" @bind-Value="Input.Password" InputType="InputType.Password"
+                <MudStaticTextField For="@(() => Input!.Password)" @bind-Value="Input!.Password" InputType="InputType.Password"
                                     Label="Password" Placeholder="password" HelperText="Please enter your new password."
                                     UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } } )" />
             </MudItem>
@@ -47,7 +47,7 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = null!;
+    private InputModel? Input { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,7 +58,7 @@
 
     private async Task OnValidSubmitAsync()
     {
-        if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input.Password))
+        if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input!.Password))
         {
             message = "Error: Incorrect password.";
             return;
