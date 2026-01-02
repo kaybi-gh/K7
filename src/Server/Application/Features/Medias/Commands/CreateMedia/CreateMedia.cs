@@ -2,6 +2,7 @@
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
@@ -18,9 +19,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
-    private readonly IMovieMetadataProvider _metadataProvider;
+    private readonly IMetadataProvider<ExternalMovieMetadata> _metadataProvider;
 
-    public CreateMediaCommandHandler(IApplicationDbContext context, ISender sender, IMovieMetadataProvider metadataProvider)
+    public CreateMediaCommandHandler(IApplicationDbContext context, ISender sender, IMetadataProvider<ExternalMovieMetadata> metadataProvider)
     {
         _context = context;
         _sender = sender;
@@ -35,26 +36,26 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         Guard.Against.NotFound(request.IndexedFileId, indexedFile);
         Guard.Against.NullOrEmpty(indexedFile.Path);
 
-        var metadataProviderExternalId = await _metadataProvider.SearchMetadataProviderExternalIdAsync(indexedFile.Identification!, cancellationToken);
+        var metadataProviderExternalId = await _metadataProvider.SearchAsync(indexedFile.Identification!, cancellationToken);
+
+        if (string.IsNullOrEmpty(metadataProviderExternalId))
+        {
+            throw new NullReferenceException($"No result returned by metadataprovider for {indexedFile.Identification?.Title} - {indexedFile.Identification?.ReleaseYear}");
+        }
 
         // Try to fetch existing Media
-        if (!string.IsNullOrEmpty(metadataProviderExternalId))
-        {
-            var existingExternalId = await _context.ExternalIds
-                .Include(x => x.Metadata)
-                    .ThenInclude(x => x!.Media)
-                        .ThenInclude(x => x!.IndexedFiles)
-                .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId, cancellationToken);
+        var existingExternalId = await _context.ExternalIds
+            .Include(x => x!.Media)
+                .ThenInclude(x => x!.IndexedFiles)
+            .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId, cancellationToken);
 
-            if (existingExternalId != null
-                && existingExternalId.Metadata != null
-                && existingExternalId.Metadata.Media != null
-                && existingExternalId.Metadata.Media.IndexedFiles != null)
-            {
-                existingExternalId.Metadata.Media.IndexedFiles.Add(indexedFile);
-                await _context.SaveChangesAsync(cancellationToken);
-                return existingExternalId.Metadata.Media.Id;
-            }
+        if (existingExternalId != null
+            && existingExternalId.Media != null
+            && existingExternalId.Media.IndexedFiles != null)
+        {
+            existingExternalId.Media.IndexedFiles.Add(indexedFile);
+            await _context.SaveChangesAsync(cancellationToken);
+            return existingExternalId.Media.Id;
         }
 
         if (_context.Entry(indexedFile).State == EntityState.Detached)
@@ -69,15 +70,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             _ => throw new NotImplementedException()
         };
 
-        try
-        {
-            _context.Medias.Add(media);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-        catch(Exception ex)
-        {
-            var test = ex.ToString();
-        }
+        _context.Medias.Add(media);
+        media.AddDomainEvent(new MediaCreatedEvent(media));
+        await _context.SaveChangesAsync(cancellationToken);
 
         if (metadataProviderExternalId != null)
         {
@@ -96,9 +91,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 MaxRetryCount = 1
             }, cancellationToken);
         }
-
-        media.AddDomainEvent(new MediaCreatedEvent(media));
-        await _context.SaveChangesAsync(cancellationToken);
+        
         return media.Id;
     }
 }

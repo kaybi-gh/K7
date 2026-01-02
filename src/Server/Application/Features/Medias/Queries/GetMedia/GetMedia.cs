@@ -1,46 +1,48 @@
-﻿using System.Text.Json.Serialization;
-using System.Text.Json;
-using K7.Server.Application.Common.Converters;
-using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Models.Dtos;
+﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedia;
 
-public record GetMediaQuery(Guid Id) : IRequest<MediaDto>;
+public record GetMediaQuery(Guid Id) : IRequest<BaseMedia>;
 
-public class GetMediaQueryHandler : IRequestHandler<GetMediaQuery, MediaDto>
+public class GetMediaQueryHandler : IRequestHandler<GetMediaQuery, BaseMedia>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMapper _mapper;
 
-    public GetMediaQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetMediaQueryHandler(IApplicationDbContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<MediaDto> Handle(GetMediaQuery request, CancellationToken cancellationToken)
+    public async Task<BaseMedia> Handle(GetMediaQuery request, CancellationToken cancellationToken)
     {
         var entity = await _context.Medias
             .AsNoTracking()
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.ExternalIds)
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.Pictures)
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.Ratings)
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.PersonRoles)
+            .Include(x => x.ExternalIds)
+            .Include(x => x.Pictures)
+            .Include(x => x.Ratings)
+            .Include(x => x.PersonRoles)
+                .ThenInclude(x => x.PortraitPicture)
+            .Include(x => x.PersonRoles)
+                .ThenInclude(x => x.Person)
                     .ThenInclude(x => x.PortraitPicture)
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.PersonRoles)
-                    .ThenInclude(x => x.Person)
-                        .ThenInclude(x => x.PortraitPicture)
             .Include(x => x.IndexedFiles)
+                .ThenInclude(x => x.FileMetadata)
+                    .ThenInclude(x => (x as AudioFileMetadata)!.AudioTrack)
+            .Include(x => x.IndexedFiles)
+                .ThenInclude(x => x.FileMetadata)
+                    .ThenInclude(x => (x as VideoFileMetadata)!.AudioTracks)
+            .Include(x => x.IndexedFiles)
+                .ThenInclude(x => x.FileMetadata)
+                    .ThenInclude(x => (x as VideoFileMetadata)!.VideoTracks)
+            .Include(x => x.IndexedFiles)
+                .ThenInclude(x => x.FileMetadata)
+                    .ThenInclude(x => (x as VideoFileMetadata)!.Thumbnails)
             .Where(x => x.Id == request.Id)
             .SingleOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
-        return entity.ConvertToDto(_mapper);
+        return entity;
     }
 }

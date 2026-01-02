@@ -1,28 +1,27 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Domain.Entities;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
 
-public record GetIndexedFilesWithPaginationQuery : IRequest<PaginatedList<IndexedFileDto>>
+public record GetIndexedFilesWithPaginationQuery : IRequest<PaginatedList<IndexedFile>>
 {
     public Guid? LibraryId { get; init; }
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
 }
 
-public class GetIndexedFilesQueryHandler : IRequestHandler<GetIndexedFilesWithPaginationQuery, PaginatedList<IndexedFileDto>>
+public class GetIndexedFilesQueryHandler : IRequestHandler<GetIndexedFilesWithPaginationQuery, PaginatedList<IndexedFile>>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMapper _mapper;
 
-    public GetIndexedFilesQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetIndexedFilesQueryHandler(IApplicationDbContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<PaginatedList<IndexedFileDto>> Handle(GetIndexedFilesWithPaginationQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedList<IndexedFile>> Handle(GetIndexedFilesWithPaginationQuery request, CancellationToken cancellationToken)
     {
         var query = _context.IndexedFiles;
 
@@ -32,7 +31,6 @@ public class GetIndexedFilesQueryHandler : IRequestHandler<GetIndexedFilesWithPa
         }
 
         return await query.OrderBy(x => x.Path)
-            .ProjectTo<IndexedFileDto>(_mapper.ConfigurationProvider)
             .PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 }

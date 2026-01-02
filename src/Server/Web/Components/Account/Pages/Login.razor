@@ -1,0 +1,198 @@
+﻿@page "/Account/Login"
+
+@using System.ComponentModel.DataAnnotations
+@using K7.Server.Infrastructure.Database.Context.Identity
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Log in</PageTitle>
+
+<StatusMessage Message="@errorMessage" />
+
+<MudStack Style="width: 100vw; height: 100vh;" AlignItems="AlignItems.Center" Justify="Justify.Center">
+    <MudCard Style="width:420px" Outlined="true">
+        <MudCardHeader>
+            <MudStack AlignItems="AlignItems.Center" Style="width: 100%;" Spacing="0">
+                <MudText Typo="Typo.h6" Class="mt-5">Welcome back</MudText>
+                <MudText Typo="Typo.caption">Sign in to your account to continue</MudText>
+            </MudStack>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudStack>
+                <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                    <DataAnnotationsValidator />
+                    <MudStack>
+                        <MudStaticTextField InputType="InputType.Email"
+                                            For="@(() => Input!.Email)"
+                                            @bind-Value="Input!.Email"
+                                            Label="Email"
+                                            Placeholder="name@example.com"
+                                            UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } })" />
+
+                        <MudStaticTextField InputType="InputType.Password"
+                                            For="@(() => Input.Password)"
+                                            @bind-Value="Input.Password"
+                                            Label="Password"
+                                            Placeholder="password"
+                                            UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } })"
+                                            Adornment="Adornment.End"
+                                            AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
+                                            AdornmentClickFunction="togglePasswordVisibility"
+                                            AdornmentAriaLabel="Show Password" />
+
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStaticSwitch For="@(() => Input.RememberMe)"
+                                             @bind-Value="Input.RememberMe"
+                                             Size="Size.Small"
+                                             Color="Color.Primary"
+                                             Typo="Typo.caption"
+                                             Label="Remember me"/>
+
+                            <MudLink Href="Account/ForgotPassword"
+                                     Typo="Typo.caption">
+                                Forgot your password?
+                            </MudLink>
+                        </MudStack>
+
+                        <MudStaticButton Variant="Variant.Filled"
+                                         Color="Color.Primary"
+                                         Size="Size.Small"
+                                         FullWidth="true"
+                                         FormAction="FormAction.Submit">
+                            Sign in
+                        </MudStaticButton>
+                    </MudStack>
+                </EditForm>
+                <MudStack AlignItems="AlignItems.Center">
+                    <MudText Class="continue-with" Typo="Typo.caption">OR CONTINUE WITH</MudText>
+                    <ExternalLoginPicker />
+                </MudStack>
+                <MudDivider Class="mt-3" />
+            </MudStack>
+        </MudCardContent>
+        <MudCardActions>
+            <MudStack Spacing="2" Style="width: 100%" AlignItems="AlignItems.Center">
+                <MudStack Row="true" Spacing="1">
+                    <MudText Typo="Typo.caption">Don't have an account?</MudText>
+                    <MudLink Href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"
+                             Typo="Typo.caption">
+                        Sign up
+                    </MudLink>
+                </MudStack>
+                <MudLink Href="Account/ResendEmailConfirmation"
+                         Typo="Typo.caption">
+                    Resend email confirmation
+                </MudLink>
+            </MudStack>
+        </MudCardActions>
+    </MudCard>
+</MudStack>
+
+<style>
+    .continue-with {
+        width: 100%;
+        text-align: center;
+        position: relative;
+    }
+
+        .continue-with::before,
+        .continue-with::after {
+            position: absolute;
+            content: "";
+            left: 0;
+            width: 32%;
+            border-top: 1px solid var(--mud-palette-divider);
+            top: 50%;
+        }
+
+        .continue-with::after {
+            left: unset;
+            right: 0;
+        }
+</style>
+
+<script>
+    let timeoutId;
+
+    function togglePasswordVisibility(inputElement, button) {
+        if (inputElement.type === 'password') {
+            inputElement.type = 'text';
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(function () {
+                inputElement.type = 'password';
+            }, 5000);
+        } else {
+            inputElement.type = 'password';
+            clearTimeout(timeoutId);
+        }
+    }
+</script>
+
+@code {
+    private string? errorMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel? Input { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+        Input ??= new();
+    }
+
+    public async Task LoginUser()
+    {
+        // This doesn't count login failures towards account lockout
+        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+        var result = await SignInManager.PasswordSignInAsync(Input!.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User logged in.");
+            RedirectManager.RedirectTo(ReturnUrl);
+        }
+        else if (result.RequiresTwoFactor)
+        {
+            RedirectManager.RedirectTo(
+                "Account/LoginWith2fa",
+                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+        }
+        else if (result.IsLockedOut)
+        {
+            Logger.LogWarning("User account locked out.");
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            errorMessage = "Error: Invalid login attempt.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}

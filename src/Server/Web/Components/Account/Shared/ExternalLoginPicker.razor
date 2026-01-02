@@ -1,0 +1,41 @@
+﻿@using K7.Server.Infrastructure.Database.Context.Identity
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using MudBlazor
+@using MudBlazor.StaticInput
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityRedirectManager RedirectManager
+
+@if (externalLogins.Length > 0)
+{
+    <form class="form-horizontal" action="Account/PerformExternalLogin" method="post" style="width: 100%;">
+        <AntiforgeryToken />
+        <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+        <MudStack AlignItems="AlignItems.Center" Style="width: 100%;" Spacing="2">
+            @foreach (var provider in externalLogins)
+            {
+                <MudStaticButton Variant="Variant.Outlined"
+                                 Size="Size.Small"
+                                 FullWidth="true"
+                                 name="provider"
+                                 value="@provider.Name"
+                                 type="submit">
+                    @provider.DisplayName
+                </MudStaticButton>
+            }
+        </MudStack>
+    </form>
+}
+
+@code {
+    private AuthenticationScheme[] externalLogins = [];
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
+    }
+}

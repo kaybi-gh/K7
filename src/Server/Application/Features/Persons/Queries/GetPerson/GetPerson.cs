@@ -1,37 +1,34 @@
 ﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Models.Dtos;
+using K7.Server.Domain.Entities.Metadatas;
 
 namespace K7.Server.Application.Features.Persons.Queries.GetPerson;
 
-public record GetPersonQuery(Guid Id) : IRequest<PersonDto>;
+public record GetPersonQuery(Guid Id) : IRequest<Person>;
 
-public class GetPersonQueryHandler : IRequestHandler<GetPersonQuery, PersonDto>
+public class GetPersonQueryHandler : IRequestHandler<GetPersonQuery, Person>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMapper _mapper;
 
-    public GetPersonQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetPersonQueryHandler(IApplicationDbContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<PersonDto> Handle(GetPersonQuery request, CancellationToken cancellationToken)
+    public async Task<Person> Handle(GetPersonQuery request, CancellationToken cancellationToken)
     {
         var entity = await _context.Persons
         .AsNoTracking()
         .Include(x => x.ExternalIds)
         .Include(x => x.PortraitPicture)
         .Include(x => x.Roles)
-            .ThenInclude(x => x.Metadata)
-                .ThenInclude(x => x.Media)
+            .ThenInclude(x => x.Media)
         .Include(x => x.Roles)
-            .ThenInclude(x => x.Metadata)
+            .ThenInclude(x => x.Media)
                 .ThenInclude(x => x.Pictures)
         .Where(x => x.Id == request.Id)
         .SingleOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
-        return _mapper.Map<PersonDto>(entity);
+        return entity;
     }
 }

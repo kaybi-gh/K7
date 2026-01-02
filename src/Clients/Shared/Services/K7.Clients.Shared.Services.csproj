@@ -11,13 +11,15 @@
   </PropertyGroup>
 	
   <ItemGroup>
-    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Http" />
 	  <PackageReference Include="MudBlazor" />
   </ItemGroup>
 	
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\K7.Shared\K7.Shared.csproj" />
     <ProjectReference Include="..\Models\K7.Clients.Shared.Domain.csproj" />
   </ItemGroup>
 

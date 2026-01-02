@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="K7.Clients.MAUI.SetupPage">
+
+    <VerticalStackLayout Padding="20">
+        <Label Text="Entrez l'URL de votre backend :" />
+        <Entry x:Name="BackendUrlEntry" Placeholder="https://k7.local" />
+        <Button Text="Valider" Clicked="OnValidateClicked" />
+        <Label x:Name="InfoLabel" Text="" IsVisible="False" />
+    </VerticalStackLayout>
+
+</ContentPage>

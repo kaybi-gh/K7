@@ -1,0 +1,227 @@
+@using System.Globalization
+@inject IPlayerService PlayerService
+
+<div class="seekbar-container"
+@onmousemove="HandleMouseMove"
+@onmouseleave="() => IsHovering = false"
+@onpointerdown="OnPointerDown"
+@onpointermove="OnPointerMove"
+@onpointerup="OnPointerUp"
+@onpointercancel="OnPointerUp"
+@ref="SeekBarRef">
+
+    @if (!Chapters.Any())
+    {
+        <div class="seekbar-track">
+            <div class="progress" style="width: @CurrentPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+            @if (IsHovering)
+            {
+                <div class="hover" style="width: @HoverPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+            }
+            <div class="buffered" style="width: @BufferedPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+        </div>
+    }
+    else
+    {
+        @for (int i = 0; i < Chapters.Count; i++)
+        {
+            var chapterStart = Chapters[i].Start;
+            var chapterEnd = (i + 1 < Chapters.Count) ? Chapters[i + 1].Start : PlayerService.Duration;
+            var chapterDuration = chapterEnd - chapterStart;
+
+            var left = chapterStart / PlayerService.Duration * 100;
+            var width = chapterDuration / PlayerService.Duration * 100;
+
+            var gap = 0.2;
+
+            var adjustedLeft = left + (i > 0 ? gap / 2 : 0);
+            var adjustedWidth = width - (i > 0 ? gap / 2 : 0) - (i + 1 < Chapters.Count ? gap / 2 : 0);
+
+            var progressPercent = Math.Clamp((PlayerService.CurrentTime - chapterStart) / chapterDuration * 100, 0, 100);
+            var bufferPercent = Math.Clamp((PlayerService.BufferedTime - chapterStart) / chapterDuration * 100, 0, 100);
+            var hoverPercent = Math.Clamp((HoverTime - chapterStart) / chapterDuration * 100, 0, 100);
+
+            <div class="chapter-segment-container"
+            style="left: @adjustedLeft.ToString(CultureInfo.InvariantCulture)%; width: @adjustedWidth.ToString(CultureInfo.InvariantCulture)%">
+
+                <div class="chapter-segment">
+                    <div class="chapter-progress" style="width: @progressPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+                    @if (IsHovering)
+                    {
+                        <div class="chapter-hover" style="width: @hoverPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+                    }
+                    <div class="chapter-buffered" style="width: @bufferPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+                </div>
+            </div>
+        }
+    }
+
+    @if (IsHovering)
+    {
+        <div class="thumb" style="left: @CurrentPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+
+        <div class="thumbnail" style="left: @HoverPercent.ToString(CultureInfo.InvariantCulture)%">
+            @if (ThumbnailsUri != null)
+            {
+                <div class="thumbnail-image" style="@GetSpriteStyle(HoverTime)"></div>
+
+            }
+            @if (Chapters.Any())
+            {
+                var hoveredChapter = GetHoveredChapter(HoverTime);
+                @if (hoveredChapter is not null)
+                {
+                    <div class="thumbnail-chapter-title">@hoveredChapter.Title</div>
+                }
+            }
+            <div class="thumbnail-time">@GetHumanReadableTime(HoverTime)</div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        PlayerService.DurationChanged += duration =>
+        {
+            PlayerService.Duration = duration;
+            InvokeAsync(StateHasChanged);
+        };
+        PlayerService.CurrentTimeChanged += time =>
+        {
+            PlayerService.CurrentTime = time;
+            InvokeAsync(StateHasChanged);
+        };
+        PlayerService.BufferedTimeChanged += time =>
+        {
+            PlayerService.BufferedTime = time;
+            InvokeAsync(StateHasChanged);
+        };
+    }
+
+    public class Chapter
+    {
+        public string? Title { get; set; }
+        public double Start { get; set; }
+    }
+
+    private ElementReference SeekBarRef;
+    private bool IsHovering;
+    private double HoverPercent;
+    private double HoverTime;
+
+    private double SeekBarWidth = 1;
+    private double SeekBarLeft;
+
+    [Parameter] public EventCallback<bool> OnDragChanged { get; set; }
+    [Parameter] public Uri? ThumbnailsUri { get; set; }
+    [Parameter] public List<Chapter> Chapters { get; set; } = [];
+    [Parameter] public bool IsVisible { get; set; }
+
+    private const int ThumbWidth = 180;
+    private const int ThumbHeight = 100;
+    private const int IntervalSeconds = 10;
+    private const int ThumbsPerRow = 5;
+
+    double CurrentPercent => (PlayerService.CurrentTime / PlayerService.Duration) * 100;
+    double BufferedPercent => (PlayerService.BufferedTime / PlayerService.Duration) * 100;
+
+    private async Task HandleMouseMove(MouseEventArgs e)
+    {
+        if (IsVisible)
+        {
+            if (SeekBarWidth <= 1)
+            {
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
+            }
+
+            UpdateHover(e.ClientX);
+            IsHovering = true;
+        }
+    }
+
+    private async Task OnPointerDown(PointerEventArgs e)
+    {
+        if (IsVisible)
+        {
+            if (SeekBarWidth <= 1)
+            {
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
+            }
+
+            UpdateHover(e.ClientX);
+            IsHovering = true;
+            await OnDragChanged.InvokeAsync(true);
+        }
+    }
+
+    private async Task OnPointerMove(PointerEventArgs e)
+    {
+        if (IsVisible && IsHovering)
+        {
+            if (!IsHovering)
+            {
+                return;
+            }
+
+            UpdateHover(e.ClientX);
+            await OnDragChanged.InvokeAsync(true);
+        }
+    }
+
+    private async Task OnPointerUp(PointerEventArgs e)
+    {
+        if (IsVisible && IsHovering)
+        {
+            double x = e.ClientX - SeekBarLeft;
+            double percent = Math.Clamp(x / SeekBarWidth, 0, 1);
+            double seekTime = PlayerService.Duration * percent;
+
+            PlayerService.Seek(seekTime);
+            IsHovering = false;
+            await OnDragChanged.InvokeAsync(false);
+        }
+    }
+
+    private void UpdateHover(double clientX)
+    {
+        double relativeX = clientX - SeekBarLeft;
+        double percent = Math.Clamp(relativeX / SeekBarWidth, 0, 1);
+        HoverPercent = percent * 100;
+        HoverTime = PlayerService.Duration * percent;
+    }
+
+    private string GetSpriteStyle(double time)
+    {
+        int index = (int)(time / IntervalSeconds);
+        int col = index % ThumbsPerRow;
+        int row = index / ThumbsPerRow;
+
+        return $"background-image: url('{ThumbnailsUri!.AbsolutePath}'); " +
+               $"background-position: -{col * ThumbWidth}px -{row * ThumbHeight}px; " +
+               $"width: {ThumbWidth}px; height: {ThumbHeight}px;";
+    }
+
+    private string GetHumanReadableTime(double seconds)
+    {
+        TimeSpan time = TimeSpan.FromSeconds(seconds);
+        return time.Hours > 0
+            ? time.ToString(@"h\:mm\:ss")
+            : time.ToString(@"m\:ss");
+    }
+
+    private Chapter? GetHoveredChapter(double seconds)
+    {
+        for (int i = Chapters.Count - 1; i >= 0; i--)
+        {
+            if (Chapters[i].Start <= seconds)
+                return Chapters[i];
+        }
+
+        return null;
+    }
+}

@@ -1,6 +1,20 @@
 ﻿<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly" AdditionalAssemblies="new [] { typeof(ISharedComponentsPointer).Assembly }">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        <CascadingAuthenticationState>
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                @* Add guest page or redirect instantly to login page *@
+                @* <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized> *@
+            </AuthorizeRouteView>
+        </CascadingAuthenticationState>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@* TODO - Put in seperated file and rename class *@
+<style>
+    #preload {
+        display: none;
+    }
+</style>

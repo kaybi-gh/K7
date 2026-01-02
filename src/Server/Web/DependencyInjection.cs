@@ -1,12 +1,15 @@
 ﻿using System.Text.Json.Serialization;
+using K7.Clients.Shared.Services;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Infrastructure.Context.Data;
 using K7.Server.Web.Services;
 using Microsoft.AspNetCore.Mvc;
-using NSwag;
-using NSwag.Generation.Processors.Security;
+using MudBlazor.Services;
 using Serilog;
-using ZymLabs.NSwag.FluentValidation;
+using K7.Server.Web.Components.Account;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
+using K7.Server.Infrastructure.Database.Context.Data;
 
 namespace K7.Server.Web;
 
@@ -14,23 +17,58 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddWebServices(this IServiceCollection services)
     {
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = "X-XSRF-TOKEN";
+            options.Cookie.Name = "__Host-X-XSRF-TOKEN";
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        });
+
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
+
+        var authenticationBuilder = services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = IdentityConstants.ApplicationScheme;
+            options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
+        });
+        authenticationBuilder.AddIdentityCookies();
+        authenticationBuilder.AddJwtBearer();
+
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = "/Account/Login";
+            options.LogoutPath = "/Account/Logout";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+        });
+
+        services.AddAuthorization();
+
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();
+        //services.AddHttpForwarderWithServiceDiscovery(); // TODO - To keep or not?
         services.AddHttpContextAccessor();
+        services.AddScoped<IdentityUserAccessor>();
+        services.AddScoped<IdentityRedirectManager>();
+        services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
 
         services.AddExceptionHandler<CustomExceptionHandler>();
-        services.AddRazorPages();
-
-        services.AddScoped(provider =>
-        {
-            var validationRules = provider.GetService<IEnumerable<FluentValidationRule>>();
-            var loggerFactory = provider.GetService<ILoggerFactory>();
-
-            return new FluentValidationSchemaProcessor(provider, validationRules, loggerFactory);
-        });
+        services.AddRazorComponents()
+            .AddInteractiveServerComponents()
+            .AddInteractiveWebAssemblyComponents()
+            .AddAuthenticationStateSerialization();
+        services.AddMudServices();
+        services.AddScoped<ThemeService>();
 
         // Customise default API behaviour
         services.Configure<ApiBehaviorOptions>(options =>
@@ -43,31 +81,7 @@ public static class DependencyInjection
             x.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             x.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             x.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        });
-
-        services.AddOpenApiDocument((configure, sp) =>
-        {
-            configure.Title = "K7 Server API";
-
-            // Add the fluent validations schema processor
-            //var fluentValidationSchemaProcessor =
-            //    sp.CreateScope().ServiceProvider.GetRequiredService<FluentValidationSchemaProcessor>();
-
-            // BUG: SchemaProcessors is missing in NSwag 14 (https://github.com/RicoSuter/NSwag/issues/4524#issuecomment-1811897079)
-            //configure.SchemaProcessors.Add(fluentValidationSchemaProcessor);
-
-            // Add JWT
-            configure.AddSecurity("JWT", [], new OpenApiSecurityScheme
-            {
-                Type = OpenApiSecuritySchemeType.ApiKey,
-                Name = "Authorization",
-                In = OpenApiSecurityApiKeyLocation.Header,
-                Description = "Type into the textbox: Bearer {your JWT token}."
-            });
-
-            configure.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
-            configure.SchemaSettings.GenerateEnumMappingDescription = true;
-        });
+        }); // TODO - Share jsonOptions between server and clients?
 
         return services;
     }

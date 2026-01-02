@@ -8,9 +8,9 @@ public record IndexLibraryFilesCommand(Guid Id) : IRequest;
 public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFilesCommand>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IFileIndexerService _fileIndexerService;
+    private readonly IFileIndexer _fileIndexerService;
 
-    public IndexLibraryFilesCommandHandler(IApplicationDbContext context, IFileIndexerService fileIndexerService)
+    public IndexLibraryFilesCommandHandler(IApplicationDbContext context, IFileIndexer fileIndexerService)
     {
         _context = context;
         _fileIndexerService = fileIndexerService;

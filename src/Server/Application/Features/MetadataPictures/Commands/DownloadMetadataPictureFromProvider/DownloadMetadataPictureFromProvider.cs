@@ -1,5 +1,4 @@
 ﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Entities;
 using K7.Server.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -38,7 +37,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             {
                 { PersonId: not null } => Path.Combine("persons", $"{entity.PersonId}"),
                 { PersonRoleId: not null } => Path.Combine("person-roles", $"{entity.PersonRoleId}"),
-                { MetadataId: not null } => Path.Combine("medias", $"{entity.MetadataId}"),
+                { MediaId: not null } => Path.Combine("medias", $"{entity.MediaId}"),
                 _ => throw new InvalidOperationException("No valid metadata id found.")
             };
 

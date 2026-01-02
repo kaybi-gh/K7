@@ -1,0 +1,17 @@
+﻿@inherits LayoutComponentBase
+@inject ThemeService ThemeService
+
+<MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled />
+<MudPopoverProvider />
+
+<MudLayout>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

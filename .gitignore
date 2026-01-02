@@ -488,3 +488,6 @@ $RECYCLE.BIN/
 
 # Development appsettings
 /src/Server/Web/appsettings.Development.json
+
+# Client libraries
+**/wwwroot/dist/

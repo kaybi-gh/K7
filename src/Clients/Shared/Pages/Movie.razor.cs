@@ -1,4 +1,7 @@
 using K7.Clients.Shared.Domain.Models;
+using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -6,27 +9,32 @@ namespace K7.Clients.Shared.Pages;
 
 public partial class Movie
 {
-    [Parameter]
-    public required string Id { get; set; }
+    [Parameter] public required string Id { get; set; }
 
-    private static Domain.Models.Movie? _movie;
+    private bool isLoading { get; set; } = true;
+    private static MovieDto? _movie;
     private static MediaPosterViewModel? _mediaPoster;
     private bool _isSmallDevice;
     private bool _overviewExpanded;
+    private VideoFileTrackDto? _selectedVideoFileTrack;
+    private AudioFileTrackDto? _selectedAudioFileTrack;
 
     protected override async Task OnInitializedAsync()
     {
-        _movie = await MediaServerService.GetMovieAsync(Guid.Parse(Id));
+        _movie = await k7ServerService.GetMovieAsync(Guid.Parse(Id));
         if (_movie != null)
         {
             _mediaPoster = new MediaPosterViewModel()
             {
-                Id = _movie.Id,
+                Id = _movie.Id.ToString(),
                 Title = _movie.Title,
-                PosterPictureHref = _movie.PosterPictureHref
+                PosterPictureHref = k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
             };
+            _selectedVideoFileTrack = ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).VideoTracks.First(x => x.IsDefault);
+            _selectedAudioFileTrack = ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).AudioTracks.First(x => x.IsDefault);
         }
         base.OnInitialized();
+        isLoading = false;
     }
 
     private void ScreenResized(Breakpoint breakpoint)
@@ -39,10 +47,14 @@ public partial class Movie
         _overviewExpanded = !_overviewExpanded;
     }
 
-    private void Play()
+    private async Task PlayAsync()
     {
-        PlayerService.Sources = _movie!.Sources.ToList();
-        PlayerService.Poster = _movie.PosterPictureHref;
-        PlayerService.Show();
+        PlayerService.Source = new PlayerSource()
+        {
+            Url = k7ServerService.GetAbsoluteUri($"api/indexed-files/{_movie!.IndexedFiles!.First().Id}/direct-stream")!.AbsolutePath,
+            MimeType = "video/mp4"
+        };
+        await PlayerService.ShowAsync();
+        PlayerService.Play();
     }
 }

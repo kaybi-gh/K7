@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "MAUI + backend",
+    "Projects": [
+      {
+        "Path": "src\\Clients\\MAUI\\K7.Clients.MAUI.csproj",
+        "Action": "Start",
+        "DebugTarget": "Windows Machine"
+      },
+      {
+        "Path": "src\\Server\\Web\\K7.Server.Web.csproj",
+        "Action": "Start",
+        "DebugTarget": "K7.Server.Web"
+      }
+    ]
+  }
+]

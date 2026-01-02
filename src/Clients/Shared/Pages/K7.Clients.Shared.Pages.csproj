@@ -8,6 +8,7 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AddDefaultStaticWebAssetsEndpoints>true</AddDefaultStaticWebAssetsEndpoints>
   </PropertyGroup>
 	
   <ItemGroup>
@@ -15,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
 	  <PackageReference Include="MudBlazor" />
   </ItemGroup>
@@ -23,6 +25,12 @@
     <ProjectReference Include="..\Components\K7.Clients.Shared.Components.csproj" />
     <ProjectReference Include="..\Models\K7.Clients.Shared.Domain.csproj" />
     <ProjectReference Include="..\Services\K7.Clients.Shared.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Layout\EmptyLayout.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
   </ItemGroup>
 
 </Project>

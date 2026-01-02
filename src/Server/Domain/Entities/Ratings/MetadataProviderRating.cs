@@ -1,5 +1,5 @@
 ﻿namespace K7.Server.Domain.Entities.Ratings;
-public class MetadataProviderRating : BaseRating
+public class MetadataProviderRating : BaseRating // TODO - Use tags instead?
 {
     public MetadataProviderRating() : base(RatingSource.MetadataProvider) { }
 

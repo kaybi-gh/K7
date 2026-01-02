@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Metadatas.Medias;
+﻿using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Ratings;
 
 namespace K7.Server.Domain.Entities.Medias;
 
@@ -6,6 +7,14 @@ public abstract class BaseMedia(MediaType type) : BaseSlugEntity
 {
     public MediaType Type { get; protected set; } = type;
 
-    public virtual BaseMediaMetadata? Metadata { get; set; }
-    public virtual IList<IndexedFile> IndexedFiles { get; set; } = [];
+    public string? Title { get; set; }
+    public string? OriginalTitle { get; set; }
+    public DateOnly? ReleaseDate { get; set; }
+
+    public IList<ExternalId> ExternalIds { get; set; } = [];
+    public IList<MetadataPicture> Pictures { get; set; } = [];
+    public IList<BaseRating> Ratings { get; set; } = [];
+    public IList<BasePersonRole> PersonRoles { get; set; } = [];
+    public IList<string> Genres { get; set; } = []; // TODO - Use typed tags instead
+    public IList<IndexedFile> IndexedFiles { get; set; } = [];
 }

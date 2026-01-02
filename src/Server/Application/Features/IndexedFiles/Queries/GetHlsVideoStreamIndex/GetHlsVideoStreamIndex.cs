@@ -40,7 +40,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
     {
         if (query.VideoResolutionIdentifier != "original")
         {
-            var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
+            var quality = Constants.VideoQualities.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
             Guard.Against.Null(quality, nameof(query.VideoResolutionIdentifier), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
         }        
 

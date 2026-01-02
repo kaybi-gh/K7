@@ -1,0 +1,2620 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "K7 Server API",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/persons/{id}": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "GetPerson",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persons": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "GetPersons",
+        "parameters": [
+          {
+            "name": "Ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "MediaIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListDtoOfPersonDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/metadata-pictures/{id}": {
+      "get": {
+        "tags": [
+          "MetadataPictures"
+        ],
+        "operationId": "GetMetadataPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{id}": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMedia",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/medias": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMedias",
+        "parameters": [
+          {
+            "name": "LibraryIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "Ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "MediaTypes",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "OrderBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListDtoOfLiteMediaDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/libraries/{id}": {
+      "delete": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "DeleteLibrary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetLibrary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "UpdateLibrary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLibraryCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/libraries": {
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetLibraries",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/libraries/{id}/index-files": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "IndexLibraryFiles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/media-formats": {
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetMediaFormats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaFormatDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/media-formats/{id}/sample": {
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetMediaFormatSample",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/direct-stream": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetDirectStream",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/audios/{index}/{quality}/index.m3u8": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsAudioStreamIndex",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/audios/{index}/{quality}/segments/{segmentId}.ts": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsAudioStreamSegment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "segmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/manifest.m3u8": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsStreamManifest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transcodingAudioCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transcodingVideoCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/video/{quality}/index.m3u8": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsVideoStreamIndex",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/video/{quality}/segments/{segmentId}.ts": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsVideoStreamSegment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "quality",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "segmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/streams": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetStreamUri",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "deviceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexedFileStreamUri"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "CreateDevice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "GetDevices",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{id}": {
+      "delete": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "DeleteDevice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "GetDevice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "UpdateDevice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/connect/authorize": {
+      "get": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "Authorize",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "Authorize",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/connect/logout": {
+      "post": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "Logout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/connect/token": {
+      "post": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "Token",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/connect/userinfo": {
+      "get": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "UserInfo",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "UserInfo",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/background-tasks/{id}": {
+      "delete": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "DeleteBackgroundTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "GetBackgroundTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/background-tasks": {
+      "get": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "GetBackgroundTasks",
+        "parameters": [
+          {
+            "name": "Ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Priority",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListDtoOfBackgroundTaskDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/authentication/login": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "LogIn",
+        "parameters": [
+          {
+            "name": "returnUrl",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/authentication/callback/login/{provider}": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "LogInCallback",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "LogInCallback",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AudioFileTrackDto": {
+        "required": [
+          "codec",
+          "channels"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "codec": {
+            "type": "string"
+          },
+          "channels": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "channelLayout": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sampleRateHz": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "profile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "index": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BackgroundTaskDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "targetEntityType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BackgroundTaskStatus"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/BackgroundTaskPriority"
+          },
+          "retryCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maxRetryCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "BackgroundTaskPriority": {
+        "type": "integer"
+      },
+      "BackgroundTaskStatus": {
+        "type": "integer"
+      },
+      "CreateDeviceCommand": {
+        "type": "object",
+        "properties": {
+          "deviceUniqueId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceType": {
+            "$ref": "#/components/schemas/DeviceType"
+          },
+          "operatingSystem": {
+            "$ref": "#/components/schemas/OperatingSystem"
+          },
+          "operatingSystemVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "displayWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "supportedMediaFormatIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "supportedSubtitlesCodecs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "supportsHDR": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeviceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceUniqueId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceType": {
+            "$ref": "#/components/schemas/DeviceType"
+          },
+          "operatingSystem": {
+            "$ref": "#/components/schemas/OperatingSystem"
+          },
+          "operatingSystemVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "displayWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "supportedMediaFormats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaFormatDto"
+            }
+          },
+          "supportedSubtitlesCodecs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "supportsHDR": {
+            "type": "boolean"
+          },
+          "lastSeen": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DeviceType": {
+        "type": "integer"
+      },
+      "ExternalIdDto": {
+        "required": [
+          "platform",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "FileMetadataDto": {
+        "required": [
+          "$type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FileMetadataDtoAudioFileMetadataDto"
+          },
+          {
+            "$ref": "#/components/schemas/FileMetadataDtoVideoFileMetadataDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "AudioFileMetadata": "#/components/schemas/FileMetadataDtoAudioFileMetadataDto",
+            "VideoFileMetadata": "#/components/schemas/FileMetadataDtoVideoFileMetadataDto"
+          }
+        }
+      },
+      "FileMetadataDtoAudioFileMetadataDto": {
+        "required": [
+          "container"
+        ],
+        "properties": {
+          "$type": {
+            "enum": [
+              "AudioFileMetadata"
+            ],
+            "type": "string"
+          },
+          "audioTrack": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AudioFileTrackDto"
+              }
+            ]
+          },
+          "duration": {
+            "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "container": {
+            "type": "string"
+          }
+        }
+      },
+      "FileMetadataDtoVideoFileMetadataDto": {
+        "required": [
+          "videoBitrate",
+          "videoResolution",
+          "container"
+        ],
+        "properties": {
+          "$type": {
+            "enum": [
+              "VideoFileMetadata"
+            ],
+            "type": "string"
+          },
+          "videoBitrate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "duration": {
+            "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+            "type": "string"
+          },
+          "videoResolution": {
+            "$ref": "#/components/schemas/VideoResolutionIdentifier"
+          },
+          "audioTracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AudioFileTrackDto"
+            }
+          },
+          "videoTracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VideoFileTrackDto"
+            }
+          },
+          "thumbnails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "container": {
+            "type": "string"
+          }
+        }
+      },
+      "IndexedFileDto": {
+        "required": [
+          "id",
+          "libraryId",
+          "name",
+          "extension",
+          "path",
+          "hash",
+          "size"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "extension": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "parentDirectory": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hash": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "uint32"
+          },
+          "size": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "isSplitPart": {
+            "type": "boolean"
+          },
+          "isComposite": {
+            "type": "boolean"
+          },
+          "fileMetadata": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileMetadataDto"
+              }
+            ]
+          }
+        }
+      },
+      "IndexedFileStreamUri": {
+        "required": [
+          "uri",
+          "mimeType"
+        ],
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri"
+          },
+          "mimeType": {
+            "type": "string"
+          }
+        }
+      },
+      "LibraryDto": {
+        "required": [
+          "id",
+          "title",
+          "mediaType",
+          "rootPath"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/LibraryMediaType"
+          },
+          "rootPath": {
+            "type": "string"
+          }
+        }
+      },
+      "LibraryMediaType": {
+        "type": "integer"
+      },
+      "LiteMediaDto": {
+        "required": [
+          "$type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/LiteMediaDtoLiteMovieDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "Movie": "#/components/schemas/LiteMediaDtoLiteMovieDto"
+          }
+        }
+      },
+      "LiteMediaDtoLiteMovieDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "Movie"
+            ],
+            "type": "string"
+          },
+          "toto": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          }
+        }
+      },
+      "LitePersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gender": {
+            "$ref": "#/components/schemas/PersonGender"
+          },
+          "birthday": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "deathday": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "birthPlace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          }
+        }
+      },
+      "LitePersonRoleDto": {
+        "required": [
+          "$type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/LitePersonRoleDtoLiteActorDto"
+          },
+          {
+            "$ref": "#/components/schemas/LitePersonRoleDtoLiteCrewMemberDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "Actor": "#/components/schemas/LitePersonRoleDtoLiteActorDto",
+            "CrewMember": "#/components/schemas/LitePersonRoleDtoLiteCrewMemberDto"
+          }
+        }
+      },
+      "LitePersonRoleDtoLiteActorDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "Actor"
+            ],
+            "type": "string"
+          },
+          "characterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "person": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LitePersonDto"
+              }
+            ]
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          }
+        }
+      },
+      "LitePersonRoleDtoLiteCrewMemberDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "CrewMember"
+            ],
+            "type": "string"
+          },
+          "department": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "job": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "person": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LitePersonDto"
+              }
+            ]
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          }
+        }
+      },
+      "MediaDto": {
+        "required": [
+          "$type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/MediaDtoMovieDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "Movie": "#/components/schemas/MediaDtoMovieDto"
+          }
+        }
+      },
+      "MediaDtoMovieDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "Movie"
+            ],
+            "type": "string"
+          },
+          "tagLine": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "personRoles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LitePersonRoleDto"
+            }
+          },
+          "ratings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RatingDto"
+            }
+          },
+          "indexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "genres": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MediaFormatDto": {
+        "required": [
+          "$type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/MediaFormatDtoAudioMediaFormatDto"
+          },
+          {
+            "$ref": "#/components/schemas/MediaFormatDtoVideoMediaFormatDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "AudioMediaFormat": "#/components/schemas/MediaFormatDtoAudioMediaFormatDto",
+            "VideoMediaFormat": "#/components/schemas/MediaFormatDtoVideoMediaFormatDto"
+          }
+        }
+      },
+      "MediaFormatDtoAudioMediaFormatDto": {
+        "required": [
+          "codec",
+          "id",
+          "container"
+        ],
+        "properties": {
+          "$type": {
+            "enum": [
+              "AudioMediaFormat"
+            ],
+            "type": "string"
+          },
+          "codec": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "container": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaFormatDtoVideoMediaFormatDto": {
+        "required": [
+          "videoCodec",
+          "id",
+          "container"
+        ],
+        "properties": {
+          "$type": {
+            "enum": [
+              "VideoMediaFormat"
+            ],
+            "type": "string"
+          },
+          "audioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "videoCodec": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "container": {
+            "type": "string"
+          }
+        }
+      },
+      "MetadataPictureDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MetadataPictureType"
+          },
+          "uri": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          }
+        }
+      },
+      "MetadataPictureType": {
+        "type": "integer"
+      },
+      "OperatingSystem": {
+        "type": "integer"
+      },
+      "PaginatedListDtoOfBackgroundTaskDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BackgroundTaskDto"
+            }
+          },
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaginatedListDtoOfLiteMediaDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiteMediaDto"
+            }
+          },
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaginatedListDtoOfPersonDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PersonDto"
+            }
+          },
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gender": {
+            "$ref": "#/components/schemas/PersonGender"
+          },
+          "biography": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "birthday": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "deathday": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "birthPlace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonRoleDto"
+            }
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          }
+        }
+      },
+      "PersonGender": {
+        "type": "integer"
+      },
+      "PersonRoleDto": {
+        "required": [
+          "$type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PersonRoleDtoActorDto"
+          },
+          {
+            "$ref": "#/components/schemas/PersonRoleDtoCrewMemberDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "Actor": "#/components/schemas/PersonRoleDtoActorDto",
+            "CrewMember": "#/components/schemas/PersonRoleDtoCrewMemberDto"
+          }
+        }
+      },
+      "PersonRoleDtoActorDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "Actor"
+            ],
+            "type": "string"
+          },
+          "characterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "media": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaDto"
+              }
+            ]
+          },
+          "person": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LitePersonDto"
+              }
+            ]
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          }
+        }
+      },
+      "PersonRoleDtoCrewMemberDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "CrewMember"
+            ],
+            "type": "string"
+          },
+          "department": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "job": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "media": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaDto"
+              }
+            ]
+          },
+          "person": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LitePersonDto"
+              }
+            ]
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          }
+        }
+      },
+      "RatingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RatingSource"
+              }
+            ]
+          },
+          "value": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "minimumValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maximumValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "RatingSource": {
+        "type": "integer"
+      },
+      "UpdateDeviceCommand": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UpdateLibraryCommand": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "VideoFileTrackDto": {
+        "required": [
+          "width",
+          "height",
+          "codec",
+          "profile",
+          "level"
+        ],
+        "type": "object",
+        "properties": {
+          "width": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "codec": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "level": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pixelFormat": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bitDepth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "index": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
+      },
+      "VideoResolutionIdentifier": {
+        "type": "integer"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Persons"
+    },
+    {
+      "name": "MetadataPictures"
+    },
+    {
+      "name": "Medias"
+    },
+    {
+      "name": "Libraries"
+    },
+    {
+      "name": "IndexedFiles"
+    },
+    {
+      "name": "Devices"
+    },
+    {
+      "name": "Connect"
+    },
+    {
+      "name": "BackgroundTasks"
+    },
+    {
+      "name": "Authentication"
+    }
+  ]
+}

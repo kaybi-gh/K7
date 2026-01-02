@@ -1,11 +1,6 @@
-﻿using System.Drawing;
-using FFMpegCore;
-using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Entities;
+﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.Enums;
-using K7.Server.Infrastructure.Configuration;
-using Microsoft.Extensions.Options;
+using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
 public record GenerateThumbnailsCommand : IRequest
@@ -16,12 +11,14 @@ public record GenerateThumbnailsCommand : IRequest
 public class GenerateThumbnailsCommandHandler : IRequestHandler<GenerateThumbnailsCommand>
 {
     private readonly IApplicationDbContext _context;
-    private readonly PathsConfiguration _pathsConfiguration;
+    private readonly IMediaAnalysisService _mediaAnalysisService;
 
-    public GenerateThumbnailsCommandHandler(IApplicationDbContext context, IOptions<PathsConfiguration> pathsConfiguration)
+    public GenerateThumbnailsCommandHandler(
+        IApplicationDbContext context,
+        IMediaAnalysisService mediaAnalysisService)
     {
         _context = context;
-        _pathsConfiguration = pathsConfiguration.Value;
+        _mediaAnalysisService = mediaAnalysisService;
     }
 
     public async Task Handle(GenerateThumbnailsCommand request, CancellationToken cancellationToken)
@@ -45,28 +42,9 @@ public class GenerateThumbnailsCommandHandler : IRequestHandler<GenerateThumbnai
             throw new FileNotFoundException("File not found.", entity.Path);
         }
 
-        var mediaInfo = await FFProbe.AnalyseAsync(entity.Path, cancellationToken: cancellationToken);
-        var computedWidth = (double)144 * mediaInfo.PrimaryVideoStream!.Width / mediaInfo.PrimaryVideoStream!.Height;
-        var thumbnails = new List<MetadataPicture>();
-        for (int i = 1; i < mediaInfo.Duration.TotalSeconds / 10; i++)
-        {
-            var basePath = Path.Combine(_pathsConfiguration.Metadatas, "thumbnails", $"{entity.FileMetadata.Id}");
-            var thumbnailPath = Path.Combine(basePath, $"{i}");
-            Directory.CreateDirectory(basePath);
+        var thumbnails = await _mediaAnalysisService.GenerateThumbnailsAsync(entity, cancellationToken: cancellationToken);
 
-            if (FFMpeg.Snapshot(entity.Path, thumbnailPath, new Size((int)computedWidth, 144), TimeSpan.FromSeconds(i * 10)))
-            {
-                thumbnails.Add(new MetadataPicture()
-                {
-                    Type = MetadataPictureType.Thumbnail,
-                    VideoFileMetadataId = entity.FileMetadata.Id,
-                    LocalPath = thumbnailPath
-                });
-            }
-        }
-
-        // TODO - Does it clear pictures?
-
+        // TODO - Does it clear picture?
         videoFileMetadata.Thumbnails = thumbnails;
         await _context.SaveChangesAsync(cancellationToken);
     }

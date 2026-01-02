@@ -1,13 +1,10 @@
 ﻿using System.Collections.Concurrent;
-using FFMpegCore;
-using FFMpegCore.Enums;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Entities;
+using K7.Server.Domain.Interfaces;
 using K7.Server.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using AudioQuality = K7.Server.Domain.Constants.AudioQuality;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 
@@ -40,11 +37,16 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _segmentLocks = new ConcurrentDictionary<string, SemaphoreSlim>();
     private readonly IApplicationDbContext _context;
     private readonly PathsConfiguration _pathsConfiguration;
+    private readonly IMediaTranscoder _mediaTranscodingService;
 
-    public GetHlsAudioStreamSegmentQueryHandler(IApplicationDbContext context, IOptions<PathsConfiguration> pathsConfiguration)
+    public GetHlsAudioStreamSegmentQueryHandler(
+        IApplicationDbContext context,
+        IOptions<PathsConfiguration> pathsConfiguration,
+        IMediaTranscoder mediaTranscodingService)
     {
         _context = context;
         _pathsConfiguration = pathsConfiguration.Value;
+        _mediaTranscodingService = mediaTranscodingService;
     }
 
     public async Task<IResult> Handle(GetHlsAudioStreamSegmentQuery query, CancellationToken cancellationToken)
@@ -52,7 +54,7 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
         // TODO - Create specific enum
         if (query.AudioQualityIdentifier != "original")
         {
-            var quality = Qualities.Video.Where(kvp => kvp.Value.Name == query.AudioQualityIdentifier).FirstOrDefault();
+            var quality = Constants.VideoQualities.Where(kvp => kvp.Value.Name == query.AudioQualityIdentifier).FirstOrDefault();
             Guard.Against.Null(quality, nameof(query.AudioQualityIdentifier), $"Provided quality '{query.AudioQualityIdentifier}' is not valid.");
         }
 
@@ -90,12 +92,23 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
 
             if (query.AudioQualityIdentifier == "original")
             {
-                await GenerateRemuxedHlsSegmentAsync(indexedFile.Path, tempDirectory, segmentPath, segments, query.Index);
+                await _mediaTranscodingService.GenerateRemuxedAudioHlsSegmentAsync(
+                    indexedFile.Path,
+                    tempDirectory,
+                    segmentPath,
+                    segments,
+                    query.Index);
             }
             else
             {
-                var quality = Qualities.Audio.Where(kvp => kvp.Value.Name == query.AudioQualityIdentifier).FirstOrDefault();
-                await GenerateTranscodedHlsSegmentAsync(indexedFile.Path, tempDirectory, segmentPath, segments, query.Index, quality.Value);
+                var quality = Constants.AudioQualities.Where(kvp => kvp.Value.Name == query.AudioQualityIdentifier).FirstOrDefault();
+                await _mediaTranscodingService.GenerateTranscodedAudioHlsSegmentAsync(
+                    indexedFile.Path,
+                    tempDirectory,
+                    segmentPath,
+                    segments,
+                    query.Index,
+                    quality.Value);
             }
         }
         finally
@@ -105,76 +118,5 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
         }
 
         return Results.File(file.OpenRead(), contentType: "video/mp2t");
-    }
-
-    private static async Task GenerateRemuxedHlsSegmentAsync(string inputFilePath, string tempDirectory, string outputFilePath, List<HlsSegment> segments, int fileStreamIndex)
-    {
-        var firstSegment = segments.First();
-        var lastSegment = segments.Last();
-
-        await FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true, options => options
-                .ConfigureSeekOptions(firstSegment, lastSegment))
-            .OutputToFile(Path.Combine(tempDirectory, "output.m3u8"), overwrite: false, options => options
-                .ConfigureGenericHlsOptions(tempDirectory, firstSegment)
-                .SelectStream(fileStreamIndex)
-                .CopyChannel(Channel.Audio))
-            .ProcessAsynchronously(throwOnError: true);
-
-        var segmentFile = new FileInfo(Path.Combine(tempDirectory, $"{firstSegment.Number}.ts"));
-        if (segmentFile.Exists)
-        {
-            File.Move(segmentFile.FullName, outputFilePath);
-            Directory.Delete(tempDirectory, recursive: true);
-        }
-    }
-
-    private static async Task GenerateTranscodedHlsSegmentAsync(string inputFilePath, string tempDirectory, string outputFilePath, List<HlsSegment> segments, int fileStreamIndex, AudioQuality audioQuality)
-    {
-        var firstSegment = segments.First();
-        var lastSegment = segments.Last();
-
-        await FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true, options => options
-               .ConfigureSeekOptions(firstSegment, lastSegment))
-            .OutputToFile(Path.Combine(tempDirectory, "output.m3u8"), overwrite: false, options => options
-                .ConfigureGenericHlsOptions(tempDirectory, firstSegment)
-                .SelectStream(fileStreamIndex)
-                .WithAudioCodec(AudioCodec.Aac)
-                .WithCustomArgument($"-ac  6"))
-            .ProcessAsynchronously(throwOnError: true);
-
-        var segmentFile = new FileInfo(Path.Combine(tempDirectory, $"{firstSegment.Number}.ts"));
-        if (segmentFile.Exists)
-        {
-            File.Move(segmentFile.FullName, outputFilePath);
-            Directory.Delete(tempDirectory, recursive: true);
-        }
-    }
-}
-
-internal static class FFMpegArgumentsExtensions
-{
-    public static FFMpegArgumentOptions ConfigureSeekOptions(this FFMpegArgumentOptions options, HlsSegment firstSegment, HlsSegment lastSegment)
-    {
-        var startTimeStamp = TimeSpan.FromMilliseconds(firstSegment.StartTimestamp);
-
-        return firstSegment != lastSegment
-            ? options
-                .Seek(startTimeStamp)
-                .EndSeek(TimeSpan.FromMilliseconds(lastSegment.StartTimestamp + 10))
-            : options
-                .Seek(startTimeStamp);
-        //.EndSeek(startTimeStamp.Add(TimeSpan.FromMilliseconds(firstSegment.Duration))); // TODO - Useful or not?
-    }
-
-    public static FFMpegArgumentOptions ConfigureGenericHlsOptions(this FFMpegArgumentOptions options, string tempDirectory, HlsSegment firstSegment)
-    {
-        return options
-            .WithStartNumber(firstSegment.Number)
-            .WithCustomArgument($"-hls_time {firstSegment.Duration}ms")
-            .WithCustomArgument("-hls_list_size 0")
-            .WithCustomArgument("-copyts")
-            .WithCustomArgument($"-hls_segment_filename {Path.Combine(tempDirectory, "%01d.ts")}");
     }
 }

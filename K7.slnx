@@ -1,0 +1,51 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Dockerfile" />
+    <File Path="entrypoint.sh" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Source/" />
+  <Folder Name="/Source/Clients/">
+    <Project Path="src/Clients/MAUI/K7.Clients.MAUI.csproj">
+      <Deploy />
+    </Project>
+    <Project Path="src/Clients/Web/K7.Clients.Web.csproj" />
+  </Folder>
+  <Folder Name="/Source/Clients/Shared/">
+    <Project Path="src/Clients/Shared/Components/K7.Clients.Shared.Components.csproj" />
+    <Project Path="src/Clients/Shared/Models/K7.Clients.Shared.Domain.csproj" />
+    <Project Path="src/Clients/Shared/Pages/K7.Clients.Shared.Pages.csproj" />
+    <Project Path="src/Clients/Shared/Services/K7.Clients.Shared.Services.csproj" />
+  </Folder>
+  <Folder Name="/Source/Server/">
+    <Project Path="src/Server/Application/K7.Server.Application.csproj" />
+    <Project Path="src/Server/Domain/K7.Server.Domain.csproj" />
+    <Project Path="src/Server/Web/K7.Server.Web.csproj" />
+  </Folder>
+  <Folder Name="/Source/Server/Infrastructure/">
+    <Project Path="src/Server/Infrastructure/Configuration/K7.Server.Infrastructure.Configuration.csproj" />
+    <Project Path="src/Server/Infrastructure/FileSystem/K7.Server.Infrastructure.FileSystem.csproj" />
+    <Project Path="src/Server/Infrastructure/MediaProcessing/K7.Server.Infrastructure.MediaProcessing.csproj" Id="87216e44-671d-469e-a23c-df31108b1139" />
+  </Folder>
+  <Folder Name="/Source/Server/Infrastructure/Database/" Id="02ea681e-c7d8-13c7-8484-4ac65e1b71e8">
+    <Project Path="src/Server/Infrastructure/Database/Context/K7.Server.Infrastructure.Database.Context.csproj" Id="1db93f3b-ccaa-419b-378c-c034ed2e3d6e" />
+  </Folder>
+  <Folder Name="/Source/Server/Infrastructure/Database/Providers/" Id="340e39c9-8b31-70a8-7dab-9ebee47a2b5b">
+    <Project Path="src/Server/Infrastructure/Database/Providers/Postgres/K7.Server.Infrastructure.Database.Providers.Postgres.csproj" Id="726f452b-a13a-4dfa-063b-c2f19df62850" />
+    <Project Path="src/Server/Infrastructure/Database/Providers/Sqlite/K7.Server.Infrastructure.Database.Providers.Sqlite.csproj" Id="d70d224e-6517-e6d9-a393-0390d1b91534" />
+  </Folder>
+  <Folder Name="/Source/Shared/">
+    <Project Path="src/Shared/K7.Shared/K7.Shared.csproj" Id="1cab36ec-2301-4f09-b4a1-68940a7186b3" />
+  </Folder>
+  <Folder Name="/Source/Shared/Aspire/">
+    <Project Path="src/Shared/Aspire/AppHost/K7.Shared.Aspire.AppHost.csproj" />
+    <Project Path="src/Shared/Aspire/ServiceDefaults/K7.Shared.Aspire.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/Tests/" />
+</Solution>

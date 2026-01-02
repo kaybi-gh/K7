@@ -1,9 +1,10 @@
 ﻿@inherits LayoutComponentBase
 @inject ThemeService ThemeService
 
-<MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled/>
-
-<VideoPlayer ></VideoPlayer>
+<MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled />
+<MudPopoverProvider />
+<MudDialogProvider />
+<VideoPlayer />
 
 <MudBreakpointProvider>
     <MudHidden Breakpoint="Breakpoint.SmAndUp">
@@ -24,3 +25,9 @@
         </MudLayout>
     </MudHidden>
 </MudBreakpointProvider>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

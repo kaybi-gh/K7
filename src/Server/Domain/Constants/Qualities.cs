@@ -5,16 +5,16 @@ namespace K7.Server.Domain.Constants;
 public sealed record AudioQuality(string Name, int AverageBitrate, int MaxBitrate);
 public sealed record VideoResolution(string Name, int Width, int Height, int AverageBitrate, int MaxBitrate);
 
-public static class Qualities
+public static partial class Constants
 {
-    public static readonly FrozenDictionary<AudioQualityIdentifier, AudioQuality> Audio = new Dictionary<AudioQualityIdentifier, AudioQuality>
+    public static readonly FrozenDictionary<AudioQualityIdentifier, AudioQuality> AudioQualities = new Dictionary<AudioQualityIdentifier, AudioQuality>
     {
         { AudioQualityIdentifier.LowAac, new("LowAac",  128000, 128000 ) },
         { AudioQualityIdentifier.MediumAac, new("MediumAac",  256000, 256000 ) },
         { AudioQualityIdentifier.HighAac, new("HighAac",  360000, 360000 ) },
     }.ToFrozenDictionary();
 
-    public static readonly FrozenDictionary<VideoResolutionIdentifier, VideoResolution> Video = new Dictionary<VideoResolutionIdentifier, VideoResolution>
+    public static readonly FrozenDictionary<VideoResolutionIdentifier, VideoResolution> VideoQualities = new Dictionary<VideoResolutionIdentifier, VideoResolution>
     {
         { VideoResolutionIdentifier._144p, new("144p", 256, 144, 150000, 200000) },
         { VideoResolutionIdentifier._240p, new("240p", 426, 240, 400000, 500000) },
@@ -26,4 +26,19 @@ public static class Qualities
         { VideoResolutionIdentifier._2160p, new("2160p", 3840, 2160, 20000000, 25000000) },
         { VideoResolutionIdentifier._4320p, new("4320p", 7680, 4320, 50000000, 60000000) }
     }.ToFrozenDictionary();
+
+    public static VideoResolutionIdentifier GetVideoResolutionIdentifier(double width, double height)
+    {
+        foreach (var videoResolution in VideoQualities)
+        {
+            var resolution = videoResolution.Value;
+
+            if (width <= resolution.Width && height <= resolution.Height)
+            {
+                return videoResolution.Key;
+            }
+        }
+
+        return VideoQualities.Last().Key;
+    }
 }

@@ -1,4 +1,6 @@
 using K7.Clients.Shared.Domain.Models;
+using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -9,25 +11,26 @@ public partial class Person
     [Parameter]
     public required string Id { get; set; }
 
-    private static Domain.Models.Person? _person;
+    private static PersonDto? _person;
     private static List<MediaPosterViewModel>? _movies;
     private bool _isSmallDevice;
     private bool _overviewExpanded;
 
     protected override async Task OnInitializedAsync()
     {
-        _person = await mediaServerService.GetPersonAsync(Guid.Parse(Id));
+        _person = await k7ServerService.GetPersonAsync(Guid.Parse(Id));
         if (_person != null)
         {
-            if (_person.Medias != null && _person.Medias.OfType<LiteMovie>().Any())
+            var personMedias = _person.Roles.Select(x => x.Media);
+            if (personMedias != null && personMedias.OfType<LiteMovieDto>().Any())
             {
-                _movies = _person.Medias.OfType<LiteMovie>()
+                _movies = personMedias.OfType<LiteMovieDto>()
                     .Select(item => new MediaPosterViewModel()
                     {
                         Id = item.Id.ToString(),
                         Title = item.Title,
-                        AdditionalInformations = item.ReleaseDate.HasValue ? item.ReleaseDate.Value.Year.ToString() : "",
-                        PosterPictureHref = item.PosterPictureHref
+                        AdditionalInformations = item.ReleaseDate,
+                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
                     }).ToList();
             }
         }

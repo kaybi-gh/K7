@@ -1,25 +1,25 @@
+@using K7.Clients.Shared.Domain.Interfaces
 @inject IJSRuntime JSRuntime
-@inject PlayerService PlayerService
+@inject IPlayerService PlayerService
+@inject IDeviceService DeviceService
 
 @if (PlayerService.IsVisible)
 {
-    <div class="video-container">
-        <media-player title="Sprite Fight" crossorigin playsinline autoplay @ref="_player">
-            <media-provider>
-                @foreach (var source in PlayerService.Sources)
-                {
-                    <source src="@source" type="application/x-mpegurl" />
-                }
-                <media-poster class="vds-poster"
-                              src="@PlayerService.Poster"
-                              alt="Alt"></media-poster>
-            </media-provider>
-            <!-- Layouts -->
-            <media-video-layout thumbnails="https://files.vidstack.io/sprite-fight/thumbnails.vtt"></media-video-layout>
-        </media-player>
+    <VideoPlayerControlsOverlay />
+    @if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
+    {
+        <div class="video-container" @ref="_videoContainer">
+            <video id="video-player" class="video-js" @ref="_player">
+                <source src="@SourceUri" type="@SourceMimeType" />
+                <p class="vjs-no-js">
+                    To view this video please enable JavaScript, and consider upgrading to a
+                    web browser that
+                    <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                </p>
+            </video>
 
-        <MudIconButton Icon="Icons.Material.Filled.Close" Size="Size.Medium" Color="Color.Primary" OnClick="PlayerService.Hide" Style="position: absolute; top: 10px; right: 10px;"></MudIconButton>
-    </div>
+        </div>
+    }
 }
 @* 
 Sources
@@ -31,13 +31,3 @@ Title
 Thumbnails VTT
 
 Tracks? *@
-
-<script>
-    window.playerInterop = {
-        logAudioTracksLength: function (player) {
-            console.log("coucou2");
-            console.log(player.audioTracks);
-            console.log(player.audioTracks.length);
-        }
-    };
-</script>

@@ -7,7 +7,7 @@ public static class FileInfoExtensions
 {
     public static bool IsSupportedFile(this FileInfo fileInfo)
     {
-        return FileExtensions.MediaFiles.Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase);
+        return Constants.MediaFiles.Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase);
     }
 
     public static uint ComputeFileHash(this FileInfo fileInfo)

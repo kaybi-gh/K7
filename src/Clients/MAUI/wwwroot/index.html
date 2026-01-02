@@ -5,26 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>K7</title>
     <base href="/" />
-    <link rel="stylesheet" href="_content/K7.Clients.Shared.Components/K7.Clients.Shared.Components.bundle.scp.css" />
-    <link rel="stylesheet" href="_content/K7.Clients.Shared.Pages/K7.Clients.Shared.Pages.bundle.scp.css" />
-    <link rel="stylesheet" href="_content/K7.Clients.Shared.Components/css/splide-core.min.css" />
-    <!--<link rel="stylesheet" href="_content/K7.Clients.Shared.Components/css/vidstack.min.css" />-->
-    <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
-    <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+
     <link rel="stylesheet" href="_content/MudBlazor/MudBlazor.min.css" />
+    <link rel="stylesheet" href="_content/K7.Clients.Shared.Components/dist/splidejs/css/splide-core.min.css" />
+    <link rel="stylesheet" href="K7.Server.Web.styles.css" />
+    <link rel="stylesheet" href="K7.Clients.MAUI.styles.css" />
+    <link rel="stylesheet" href="_content/K7.Clients.Shared.Pages/app.css" />
 
     <link rel="icon" type="image/png" href="_content/K7.Clients.Shared.Pages/assets/favicon.png" />
 </head>
 
 <body>
     <div class="status-bar-safe-area"></div>
-    <div id="app">Loading...</div>
+    <div id="app">
+        <div id="preload">
+            <svg class="loading-progress">
+                <circle r="40%" cx="50%" cy="50%" />
+                <circle r="40%" cx="50%" cy="50%" />
+            </svg>
+            <div class="loading-progress-text"></div>
+            <!--TODO - Customize splash-->
+    </div>
+    </div>
+
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
-    <script src="_content/K7.Clients.Shared.Components/js/splide.min.js"></script>
-    <script src="https://cdn.vidstack.io/player" type="module"></script>
-    <!--<script src="_content/K7.Clients.Shared.Components/js/vidstack.min.js" type="module"></script>-->
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="_content/K7.Clients.Shared.Components/dist/splidejs/js/splide.min.js"></script>
 </body>
 
 </html>

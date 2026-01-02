@@ -1,98 +1,144 @@
 @page "/movies/{id}"
-@inject IMediaServerService MediaServerService
-@inject PlayerService PlayerService
+@using K7.Shared.Dtos.Entities.PersonRoles
+@using K7.Shared.Dtos.Entities.Metadatas.Files;
+@inject IK7ServerService k7ServerService
+@inject IPlayerService PlayerService
+@inject IDeviceStorageService DeviceStorageService
 <PageTitle>@_movie?.Title</PageTitle>
 <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
-@if (_movie != null)
+@if (isLoading)
 {
-    <div class="background" style="--background-picture: url(@_movie.BackgroundPictureHref)" />
-
     <div>
         <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
             <MudItem xs="12" sm="4" lg="1">
                 <MudStack AlignItems="AlignItems.Center">
-                    <MediaPoster Model="@_mediaPoster" />
+                    <MediaPoster Skeleton="true" />
                 </MudStack>
             </MudItem>
             <MudItem xs="12" sm="6" lg="5">
                 <MudStack AlignItems="@(_isSmallDevice ? AlignItems.Center : AlignItems.Start)">
-                    <MudText Typo="Typo.h4">@_movie.Title</MudText>
+                    <MudSkeleton Animation="Animation.Wave" Height="50px" Width="200px" />
                     <MudStack Row="true">
-                        <MudText Typo="Typo.caption">@_movie.AdditionalInformations</MudText>
-                        <MudText Typo="Typo.caption">@_movie.Duration</MudText>
+                        <MudSkeleton Animation="Animation.Wave" Height="100%" Width="50px" />
+                        <MudSkeleton Animation="Animation.Wave" Height="100%" Width="30px" />
                     </MudStack>
                     <MudStack Row="true">
-                        <MudRating SelectedValue="@_movie.Rating" />
+                        <MudRating />
                     </MudStack>
-                    <MudStack Row="true">
-                        @foreach (var genre in _movie.Genres)
+                    <MudGrid>
+                        @for (int i = 0; i < 3; i++)
                         {
-                            <MudChip Label="true" Variant="Variant.Outlined">@genre</MudChip>
+                            <MudItem>
+                                <MudSkeleton Animation="Animation.Wave" Height="100%" Width="30px" />
+                            </MudItem>
                         }
-                    </MudStack>
+                    </MudGrid>
                     <MudStack Row="true">
-                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="Play">Play</MudButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="edit"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions"></MudIconButton>
+                        <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="30px" Width="30px" Class="ml-3 mb-2" />
+                        <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="30px" Width="30px" Class="ml-3 mb-2" />
+                        <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="30px" Width="30px" Class="ml-3 mb-2" />
+                        <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="30px" Width="30px" Class="ml-3 mb-2" />
+                        <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="30px" Width="30px" Class="ml-3 mb-2" />
                     </MudStack>
                     <MudStack>
                         <div class="overview-container mx-4">
-                            <MudText Class="@(_overviewExpanded ? "" : "overview-collapsed")">@_movie.Synopsis</MudText>
+                            <MudSkeleton Animation="Animation.Wave" Height="150px" Width="200px" />
                         </div>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
-                            <MudButton Variant="Variant.Text" Size="Size.Small" EndIcon="@(_overviewExpanded ? @Icons.Material.Filled.KeyboardArrowUp : @Icons.Material.Filled.KeyboardArrowDown)" OnClick="ToggleOverview">@(_overviewExpanded ? "Less" : "More")</MudButton>
+                            <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="30px" Width="30px" Class="ml-3 mb-2" />
                         </MudStack>
                     </MudStack>
                 </MudStack>
             </MudItem>
             <MudItem xs="12" sm="12" lg="12">
-                <HorizontalScrollableStack Title="Casting and crew">
-                    <HorizontalScrollableStackItem>
-                        @*
-                    <MudAvatar Style="height:100px; width:100px;">
-                    <MudImage Src="https://mudblazor.com/images/mony.jpg" Alt="Mony the dog" />
-                    </MudAvatar> *@
-                    </HorizontalScrollableStackItem>
-                    @foreach (var cast in _movie.Casting.Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
+                <HorizontalScrollableStack Skeleton="true">
+                    @for (int i = 0; i < 10; i++)
                     {
-                        @if (cast is LiteActor actor)
-                        {
-                            <HorizontalScrollableStackItem>
-                                <a href="@("/persons/" + @actor.Person!.Id)">
-                                    <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
-                                        <MudAvatar Style="height:150px; width:150px;" Elevation="2">
-                                            <MudImage Src="@actor.PortraitPictureHref" Alt="@actor.Person!.Name" />
-                                        </MudAvatar>
-                                        <div class="person-text">
-                                            <MudStack Class="person-text" Spacing=" 0" Row="false" AlignItems="AlignItems.Center">
-                                                <MudText Class="person-text mt-2" Typo="Typo.caption ">@actor.Person!.Name</MudText>
-                                                <MudText Class="person-text" Typo="Typo.subtitle2">@actor.CharacterName</MudText>
-                                            </MudStack/>
-                                        </div>
-                                    </MudStack>
-                                </a>
-                            </HorizontalScrollableStackItem>
-                        }
-                        else if (cast is LiteCrewMember crewMember)
-                        {
-                            <HorizontalScrollableStackItem>
-                                <a href="@("/persons/" + @crewMember.Person!.Id)">
-                                    <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
-                                        <MudAvatar Style="height:150px; width:150px;">
-                                            <MudImage Src="@crewMember.PortraitPictureHref" Alt="@crewMember.Person!.Name" />
-                                        </MudAvatar>
-                                        <MudText Class="mt-2" Typo="Typo.caption ">@crewMember.Person!.Name</MudText>
-                                        <MudText Typo="Typo.subtitle2">@crewMember.Department / @crewMember.Job</MudText>
-                                    </MudStack>
-                                </a>
-                            </HorizontalScrollableStackItem>
-                        }
+                        <HorizontalScrollableStackItem>
+                            <PersonRole Skeleton="true" />
+                        </HorizontalScrollableStackItem>
                     }
                 </HorizontalScrollableStack>
             </MudItem>
         </MudGrid>
     </div>
+}
+else
+{
+    @if (_movie != null)
+    {
+        <div class="hero-page-stack">
+            <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+                <div class="background-image" style="--background-picture: url(@k7ServerService.GetAbsoluteUri(k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop)?.Uri?.OriginalString)?.AbsoluteUri)?.AbsoluteUri)" />
+                @if (k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.Uri?.OriginalString)?.AbsoluteUri is string logoUri)
+                {
+                    <MudImage Style="max-width: 80vw;" Height="150" ObjectFit="ObjectFit.ScaleDown" Src="@logoUri"></MudImage>
+                }
+                else
+                {
+                    <MudText Typo="Typo.h4">@_movie.Title</MudText>
+                }
+                <MudStack Row="true">
+                    @foreach (var genre in _movie.Genres ?? [])
+                    {
+                        <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@genre</MudChip>
+                    }
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <MudText Style="font-size: 20px;" Typo="Typo.overline">@_movie.ReleaseDate!.Value.Year</MudText>
+                    |
+                    <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@($"{(int)((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.TotalHours}h {((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.Minutes:D2}min")</MudText>
+                </MudStack>
+                @*<MudText Style="font-style: italic; font-size: 20px; font-family: initial;">
+                “@_movie.TagLine”
+            </MudText>*@
+                @*<MudStack Row="true">
+                <MudRating SelectedValue="@Convert.ToInt32(_movie.Ratings?.FirstOrDefault(x => x.Source == Server.Domain.Enums.RatingSource.MetadataProvider)?.Value ?? 0)" />
+            </MudStack>*@
+                <MudStack Row="true">
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="PlayAsync">Play</MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Settings" aria-label="settings"></MudIconButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions"></MudIconButton>
+                </MudStack>
+                <MudIcon Style="position: absolute; left: 50%; top: 90vh;" Size="Size.Medium" Icon="@Icons.Material.Filled.KeyboardArrowDown" />
+            </MudStack>
+        </div>
+        <div>
+            <MudStack AlignItems="@(_isSmallDevice? AlignItems.Center: AlignItems.Start)" Class="px-10">
+                <MudStack Style="width: 100%;">
+                    <MudSelect @bind-Value="_selectedVideoFileTrack" Label="Video track" Variant="Variant.Filled" FullWidth="true">
+                        @foreach (var track in ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).VideoTracks ?? [])
+                        {
+                            <MudSelectItem Value="@track">@($"{track.Codec} - {track.Width}x{track.Height}")</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSelect @bind-Value="_selectedAudioFileTrack" Label="Audio track" Variant="Variant.Filled" FullWidth="true">
+                        @foreach (var track in ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).AudioTracks ?? [])
+                        {
+                            <MudSelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+            </MudStack>
+            <MudStack Class="pa-10">
+                <MudText Typo="Typo.h6">Overview</MudText>
+                <MudText Typo="Typo.body2">@_movie.Overview</MudText>
+            </MudStack>
+            <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
+                <MudItem xs="12" sm="12" lg="12">
+                    <HorizontalScrollableStack Title="Casting and crew">
+                        @foreach (var cast in (_movie.PersonRoles ?? []).Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
+                        {
+                            <HorizontalScrollableStackItem>
+                                <PersonRole LitePersonRoleDto="@cast" />
+                            </HorizontalScrollableStackItem>
+                        }
+                    </HorizontalScrollableStack>
+                </MudItem>
+            </MudGrid>
+        </div>
+    }
 }

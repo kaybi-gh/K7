@@ -12,4 +12,8 @@
   </privileges> 
   <dependencies />
   <provides-appdefined-privileges />
+  <app-control>
+    <operation name="http://tizen.org/appcontrol/operation/default"/>
+    <uri-scheme name="k7"/>
+  </app-control>
 </manifest>

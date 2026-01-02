@@ -1,14 +1,48 @@
 ﻿using System.Text;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 
-public record GetHlsStreamManifestQuery(Guid Id) : IRequest<IResult>;
+public static class GetHlsStreamManifestQueryUriBuilder
+{
+    public const string Route = "{id}/hls-stream/manifest.m3u8";
+
+    public static string Build(GetHlsStreamManifestQuery query)
+    {
+        var route = Route.Replace("{id}", $"{query.Id}");
+
+        var queryParams = new Dictionary<string, string?>
+        {
+            { nameof(query.TranscodingAudioCodec), query.TranscodingAudioCodec },
+            { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec }
+        };
+
+        var filteredParams = queryParams
+            .Where(x => !string.IsNullOrEmpty(x.Value))
+            .ToDictionary(x => x.Key, x => x.Value!);
+
+        return filteredParams.Count > 0
+            ? QueryHelpers.AddQueryString(route, filteredParams!)
+            : route;
+    }
+
+    // TODO - Use Build with original query params
+    public static string Build(Guid id) => Route
+        .Replace("{id}", $"{id}");
+}
+
+public record GetHlsStreamManifestQuery : IRequest<IResult>
+{
+    public required Guid Id { get; set; }
+    public string? TranscodingAudioCodec { get; set; } = null;
+    public string? TranscodingVideoCodec { get; set; } = null;
+    // TODO - Add container
+};
 
 public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, IResult>
 {
@@ -68,11 +102,11 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         playlist.AppendLine();
 
         var fileResolutionIdentifier = videoFileMetadata.VideoResolution;
-        var fileResolution = Qualities.Video.Single(x => x.Key == fileResolutionIdentifier).Value;
+        var fileResolution = Constants.VideoQualities.Single(x => x.Key == fileResolutionIdentifier).Value;
 
         //var availableTranscodingResolutions = VideoResolutions.Video.TakeWhile(x => x.Key == fileResolution);
-        var availableTranscodingResolutions = Qualities.Video
-            .Where((x, y) => y <= Qualities.Video.Keys.IndexOf(fileResolutionIdentifier))
+        var availableTranscodingResolutions = Constants.VideoQualities
+            .Where((x, y) => y <= Constants.VideoQualities.Keys.IndexOf(fileResolutionIdentifier))
             .Reverse()
             .Select(x => x.Value);
 
@@ -82,7 +116,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             $"BANDWIDTH={fileResolution.MaxBitrate}," +
             $"AVERAGE-BANDWIDTH={fileResolution.AverageBitrate}," +
             $"RESOLUTION={fileResolution.Width}x{fileResolution.Height}," +
-            $"CODECS=\"{HlsCodecStringHelpers.GetHlsCodecs(videoFileMetadata)}\"," +
+            $"CODECS=\"{/*HlsCodecStringHelpers.GetHlsCodecs(videoFileMetadata)*/""}\"," +
             $"AUDIO=\"audio\"");
         playlist.AppendLine(GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath("original"));
 
