@@ -1,0 +1,21 @@
+@page "/playertest"
+@layout K7.Clients.Shared.Pages.Layout.EmptyLayout
+@inject IJSRuntime JS
+@inject IPlayerService PlayerService
+<PageTitle>Player</PageTitle>
+
+<VideoPlayer SourceUri="https://vjs.zencdn.net/v/oceans.mp4" SourceMimeType="video/mp4" />
+
+<style>
+    html, body, #app {
+    background-color: transparent !important;
+    }
+</style>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await PlayerService.ShowAsync();
+        base.OnInitialized();
+    }
+}

@@ -1,6 +1,6 @@
-﻿using K7.Server.Domain.Entities.Metadatas;
+﻿using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.Entities.Metadatas.Medias;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 
 namespace K7.Server.Domain.Entities;
@@ -10,8 +10,8 @@ public class MetadataPicture : BaseAuditableEntity
     public Uri? OriginalRemoteUri { get; set; }
     public string? LocalPath { get; set; }
 
-    public Guid? MetadataId { get; set; }
-    public virtual BaseMediaMetadata? Metadata { get; set; }
+    public Guid? MediaId { get; set; }
+    public virtual BaseMedia? Media { get; set; }
     public Guid? VideoFileMetadataId { get; set; }
     public virtual VideoFileMetadata? VideoFileMetadata { get; set; }
     public Guid? PersonId { get; set; }

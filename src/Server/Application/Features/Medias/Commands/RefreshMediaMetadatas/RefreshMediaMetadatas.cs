@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Services;
-using K7.Server.Domain.Enums;
+using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.External;
+using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 
@@ -15,13 +16,11 @@ public record RefreshMediaMetadatasCommand : IRequest
 public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaMetadatasCommand>
 {
     private readonly IApplicationDbContext _context;
-    private readonly ISender _sender;
-    private readonly TMDbMetadataProvider _metadataProvider;
+    private readonly IMetadataProvider<ExternalMovieMetadata> _metadataProvider;
 
-    public RefreshMediaMetadatasCommandHandler(IApplicationDbContext context, ISender sender, TMDbMetadataProvider metadataProvider)
+    public RefreshMediaMetadatasCommandHandler(IApplicationDbContext context, IMetadataProvider<ExternalMovieMetadata> metadataProvider)
     {
         _context = context;
-        _sender = sender;
         _metadataProvider = metadataProvider;
     }
 
@@ -31,15 +30,22 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .FindAsync([request.MediaId], cancellationToken);
         Guard.Against.NotFound(request.MediaId, media);
 
-        var metadata = media.Type switch
+        var metadataUpdate = media switch
         {
-            MediaType.Movie => await _metadataProvider.FetchMovieMetadata(media.Id,
-                request.MetadataProviderExternalId,
-                request.Language,
-                cancellationToken),
+            Movie movie => HandleMovieAsync(request, movie, cancellationToken),
             _ => throw new NotImplementedException()
         };
-        
+
+        await metadataUpdate;
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task HandleMovieAsync(RefreshMediaMetadatasCommand request, Movie movie, CancellationToken cancellationToken = default)
+    {
+        var metadata = await _metadataProvider.FetchMetadata(request.MetadataProviderExternalId,
+                request.Language,
+                cancellationToken);
+
         if (metadata != null)
         {
             foreach (var personRole in metadata.PersonRoles)
@@ -71,14 +77,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 }
             }
 
-            await _context.MediaMetadatas.AddAsync(metadata, cancellationToken);
-            media.Metadata = metadata;
-            await _context.SaveChangesAsync(cancellationToken);
-
-            // TODO - Remove the extra method FetchMetadataPictures
-            var mediaPictures = await _metadataProvider.FetchMetadataPictures(metadata.Id, request.MetadataProviderExternalId, "fr", cancellationToken, fallbackLanguage: "en");
-            media.Metadata.Pictures = mediaPictures;
-            await _context.SaveChangesAsync(cancellationToken);
+            movie.ApplyMetadata(metadata);
         }
     }
 }

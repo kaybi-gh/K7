@@ -6,7 +6,7 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity Name="k7" Publisher="CN=User Name" Version="0.0.0.0" />
+  <Identity Name="com.k7.maui" Publisher="CN=User Name" Version="0.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="B5803E3B-3EAD-49C1-BD72-1EE0A3C2F3A9" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
@@ -36,6 +36,11 @@
         <uap:DefaultTile Square71x71Logo="$placeholder$.png" Wide310x150Logo="$placeholder$.png" Square310x310Logo="$placeholder$.png" />
         <uap:SplashScreen Image="$placeholder$.png" />
       </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="k7" />
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

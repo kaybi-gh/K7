@@ -1,10 +1,15 @@
 using K7.Clients.Shared.Services;
+using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities.Medias;
 
 namespace K7.Clients.Shared.Pages;
 
 public partial class Settings
 {
-    private List<string>? _supportedCodecs;
+    private DeviceType _deviceType;
+    private List<MediaFormatDto>? _supportedMediaFormats;
+    private bool? _hdrSupport;
+    private string? _backendUrl;
 
     protected override void OnInitialized()
     {
@@ -14,7 +19,10 @@ public partial class Settings
 
     protected override async Task OnInitializedAsync()
     {
-        _supportedCodecs = await DeviceService.GetSupportedCodecsAsync();
+        _deviceType = await DeviceService.GetDeviceTypeAsync();
+        _supportedMediaFormats = await DeviceService.GetSupportedMediaFormatsAsync();
+        _hdrSupport = await DeviceService.GetHdrSupportAsync();
+        _backendUrl = K7ServerService.GetAbsoluteUri()?.AbsoluteUri;
     }
 
     public void Dispose()
@@ -27,5 +35,18 @@ public partial class Settings
     {
         ThemeService.ToggleDarkMode();
         StateHasChanged();
+    }
+
+    private async Task ChangeBackendUrl()
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Warning",
+            "Changing K7 server URL will remove all elements related to current K7 server (statistics and files).",
+            yesText: "Continue", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            //K7ServerService.RemoveRegisteredBackendUrl(); // TODO - How do we manage that?
+        }
     }
 }

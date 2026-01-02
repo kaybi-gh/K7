@@ -1,16 +1,13 @@
-﻿using K7.Server.Application.Common.Models.Dtos;
-using K7.Server.Application.Common.Interfaces;
+﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Mappings;
-using K7.Server.Application.Features.Medias.Queries.GetMedias;
-using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.BackgroundTasks.Queries.GetBackgroundTasksWithPagination;
 
 //[Authorize]
-public record GetBackgroundTasksWithPaginationQuery : IRequest<PaginatedList<BackgroundTaskDto>>
+public record GetBackgroundTasksWithPaginationQuery : IRequest<PaginatedList<BackgroundTask>>
 {
     public Guid[]? Ids { get; init; }
     public EnumHashSetQueryParam<BackgroundTaskStatus>? Status { get; init; }
@@ -19,30 +16,22 @@ public record GetBackgroundTasksWithPaginationQuery : IRequest<PaginatedList<Bac
     public required int PageSize { get; init; } = 10;
 }
 
-public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetBackgroundTasksWithPaginationQuery, PaginatedList<BackgroundTaskDto>>
+public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetBackgroundTasksWithPaginationQuery, PaginatedList<BackgroundTask>>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMapper _mapper;
 
-    public GetBackgroundTasksWithPaginationQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetBackgroundTasksWithPaginationQueryHandler(IApplicationDbContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<PaginatedList<BackgroundTaskDto>> Handle(GetBackgroundTasksWithPaginationQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedList<BackgroundTask>> Handle(GetBackgroundTasksWithPaginationQuery request, CancellationToken cancellationToken)
     {
         var query = _context.BackgroundTasks.AsQueryable();
 
         query = ApplyFilters(request, query);
         var orderedQuery = query.OrderByDescending(x => x.Priority).ThenBy(x => x.Created); // TODO - Add custom sorting?
-        var page = await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
-
-        List<BackgroundTaskDto> dtos = page.Items
-            .Select(_mapper.Map<BackgroundTaskDto>)
-            .ToList();
-
-        return new PaginatedList<BackgroundTaskDto>(dtos.AsReadOnly(), page.TotalCount, request.PageNumber, request.PageSize);
+        return await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 
     private static IQueryable<BackgroundTask> ApplyFilters(GetBackgroundTasksWithPaginationQuery request, IQueryable<BackgroundTask> query)

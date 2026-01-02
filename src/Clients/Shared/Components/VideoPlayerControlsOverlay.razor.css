@@ -1,0 +1,134 @@
+﻿.video-controls-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    background-color: rgba(0, 0, 0, 0);
+    color: white;
+    z-index: 100000;
+}
+
+    .video-controls-overlay::before {
+        content: '';
+        --gradient-steps: hsl(0 0% 0% / 0) 0%, hsl(0 0% 0% / 0.013) 8.1%, hsl(0 0% 0% / 0.049) 15.5%, hsl(0 0% 0% / 0.104) 22.5%, hsl(0 0% 0% / 0.175) 29%, hsl(0 0% 0% / 0.259) 35.3%, hsl(0 0% 0% / 0.352) 41.2%, hsl(0 0% 0% / 0.45) 47.1%, hsl(0 0% 0% / 0.55) 52.9%, hsl(0 0% 0% / 0.648) 58.8%, hsl(0 0% 0% / 0.741) 64.7%, hsl(0 0% 0% / 0.825) 71%, hsl(0 0% 0% / 0.896) 77.5%, hsl(0 0% 0% / 0.951) 84.5%, hsl(0 0% 0% / 0.987) 91.9%, hsl(0 0% 0%) 100%;
+        position: absolute;
+        inset: 0;
+        opacity: 0.7;
+        background: linear-gradient(to bottom, var(--gradient-steps));
+        z-index: 99999;
+    }
+
+.controls-bar {
+    position: absolute;
+    color: white;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: auto;
+    z-index: 100005;
+}
+
+    .controls-bar.top {
+        top: 0;
+    }
+
+    .controls-bar.bottom {
+        bottom: 0;
+    }
+
+    .controls-bar button,
+    .controls-bar select {
+        background: #ffffff22;
+        border: none;
+        color: white;
+        padding: 0.3rem 0.6rem;
+        border-radius: 0.3rem;
+    }
+
+.volume-slider-popover {
+    padding: 0;
+    border-radius: 12px;
+    touch-action: none;
+    user-select: none;
+}
+
+.volume-slider-container {
+    position: relative;
+    height: min(15rem, 30vh);
+    width: 3rem;
+    touch-action: none;
+    user-select: none;
+}
+
+    .volume-slider-container::before, .volume-slider-container::after {
+        display: block;
+        position: absolute;
+        z-index: 99;
+        color: #fff;
+        width: 100%;
+        text-align: center;
+        font-size: 1.5rem;
+        line-height: 1;
+        padding: 0.75rem 0;
+        pointer-events: none;
+    }
+
+    .volume-slider-container::before {
+        content: "+";
+    }
+
+    .volume-slider-container::after {
+        content: "−";
+        bottom: 0;
+    }
+
+::deep .volume-slider .mud-slider-input {
+    -webkit-appearance: none !important;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: min(15rem, 50vh) !important;
+    height: 3.5rem !important;
+    transform: translate(-50%, -50%) rotate(-90deg) !important;
+    border-radius: 1rem !important;
+    overflow: hidden !important;
+    cursor: row-resize !important;
+}
+
+::deep .volume-slider .mud-slider-container {
+    position: inherit !important;
+}
+
+::deep .volume-slider .mud-slider-input::-webkit-slider-runnable-track {
+    background: transparent !important;
+    height: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+::deep .volume-slider .mud-slider-input::-moz-range-track {
+    background: transparent !important;
+    height: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+::deep .volume-slider .mud-slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    width: 0 !important;
+    box-shadow: calc(-1 * min(15rem, 50vh)) 0 0 min(15rem, 50vh) rgba(255, 255, 255, 0.2) !important;
+}
+
+::deep .volume-slider .mud-slider-input::-moz-range-thumb {
+    border: none !important;
+    width: 0 !important;
+    box-shadow: calc(-1 * min(15rem, 50vh)) 0 0 min(15rem, 50vh) rgba(255, 255, 255, 0.2) !important;
+}

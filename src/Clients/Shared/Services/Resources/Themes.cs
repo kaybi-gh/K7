@@ -10,7 +10,7 @@ public static class Themes
 
     public static readonly ThemeWrapper Plex = new("Plex", new()
     {
-        Palette = new PaletteLight()
+        PaletteLight = new PaletteLight()
         {
             Primary = "#000000",
             Secondary = "#000000",
@@ -22,6 +22,7 @@ public static class Themes
         {
             Primary = "#e5a00d",
             Secondary = "#ffffff",
+            TextPrimary = "#ffffff",
             //Background = "#1d1d1d",
             Background = "#212121",
             DrawerText = "#ffffff",

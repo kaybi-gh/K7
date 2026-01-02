@@ -1,27 +1,24 @@
 ﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Models.Dtos;
+using K7.Server.Domain.Entities;
 
 namespace K7.Server.Application.Features.Libraries.Queries.GetLibraries;
 
 //[Authorize]
-public record GetLibrariesQuery : IRequest<IEnumerable<LibraryDto>>;
+public record GetLibrariesQuery : IRequest<IEnumerable<Library>>;
 
-public class GetLibrariesQueryHandler : IRequestHandler<GetLibrariesQuery, IEnumerable<LibraryDto>>
+public class GetLibrariesQueryHandler : IRequestHandler<GetLibrariesQuery, IEnumerable<Library>>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMapper _mapper;
 
-    public GetLibrariesQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetLibrariesQueryHandler(IApplicationDbContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<IEnumerable<LibraryDto>> Handle(GetLibrariesQuery request, CancellationToken cancellationToken)
+    public async Task<IEnumerable<Library>> Handle(GetLibrariesQuery request, CancellationToken cancellationToken)
     {
         return await _context.Libraries
             .AsNoTracking()
-            .ProjectTo<LibraryDto>(_mapper.ConfigurationProvider)
             .OrderBy(t => t.Title)
             .ToListAsync(cancellationToken);
     }

@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K7</title>
+    <base href="/" />
+
+    <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/K7.Clients.Shared.Components/dist/splidejs/css/splide-core.min.css"]" />
+    <link rel="stylesheet" href="@Assets["K7.Server.Web.styles.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/K7.Clients.Shared.Pages/app.css"]" />
+    <link rel="stylesheet" href="@Assets["dist/video.js/video-js.min.css"]" />
+    <ImportMap />
+    <link rel="icon" type="image/png" href="@Assets["_content/K7.Clients.Shared.Pages/assets/favicon.png"]" />
+    <HeadOutlet @rendermode="PageRenderMode" />
+</head>
+
+<body>
+    <div id="preload">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+        @* TODO - Customize splash *@
+    </div>
+    <Routes @rendermode="PageRenderMode" />
+
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
+    <script src="@Assets["_content/Extensions.MudBlazor.StaticInput/NavigationObserver.js"]"></script>
+    <script src="@Assets["_content/K7.Clients.Shared.Components/dist/splidejs/js/splide.min.js"]"></script>
+    <script src="@Assets["dist/bowser/es5.min.js"]"></script>
+    <script src="@Assets["dist/video.js/video.min.js"]"></script>
+    <script src="@Assets["js/videoplayer.js"]"></script>
+    <script src="@Assets["js/deviceUtils.js"]"></script>
+</body>
+
+</html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/login") || HttpContext.Request.Path.StartsWithSegments("/Account")
+        ? null
+        : new InteractiveWebAssemblyRenderMode(false);
+}

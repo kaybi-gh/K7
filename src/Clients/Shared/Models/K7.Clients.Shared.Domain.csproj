@@ -13,5 +13,9 @@
 	<ItemGroup>
 		<PackageReference Include="MudBlazor" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\Shared\K7.Shared\K7.Shared.csproj" />
+	</ItemGroup>
 	
 </Project>

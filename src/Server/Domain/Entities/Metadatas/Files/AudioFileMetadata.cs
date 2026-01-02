@@ -4,4 +4,5 @@ namespace K7.Server.Domain.Entities.Metadatas.Files;
 public class AudioFileMetadata() : BaseFileMetadata(FileType.Audio)
 {
     public AudioFileTrack? AudioTrack {  get; set; }
+    public TimeSpan Duration { get; set; }
 }

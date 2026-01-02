@@ -9,7 +9,7 @@ indent_style = space
 indent_size = 2
 
 # Json files
-[*.{json,config,nswag}]
+[*.{json,config}]
 indent_size = 2
 
 # C# files

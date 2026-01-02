@@ -1,22 +1,24 @@
 ﻿@implements IDisposable
+@inject NavigationManager NavigationManager
 @inject SidebarService SidebarService
+@inject ICustomAuthenticationStateProvider CustomAuthenticationStateProvider
 
 <MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini">
     <MudStack AlignItems="AlignItems.Center">
         <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
-                                Icon="@Icons.Material.Filled.Menu" Color="@Color.Inherit" Title="Off"
-                                ToggledIcon="@Icons.Material.Filled.Close" ToggledColor="@Color.Inherit" ToggledTitle="On" />
+            Icon="@Icons.Material.Filled.Menu" title="@(SidebarService.IsOpen ? "Off" : "On")"
+            ToggledIcon="@Icons.Material.Filled.Close" />
         <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-4">
             <MudIcon Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.TwoTone.Cyclone" />
             @if (SidebarService.IsOpen)
             {
-                <MudText Color="Color.Primary" Typo="Typo.h6">MediaServer</MudText>
+                <MudText Color="Color.Primary" Typo="Typo.h6">K7</MudText>
             }
         </MudStack>
         <MudStack Row="true" AlignItems="AlignItems.Center">
             @if (SidebarService.IsOpen)
             {
-                <MudTextField Class="sidebar-search-bar mx-4" DisableUnderLine="true" Label="Search" DebounceInterval="500" OnDebounceIntervalElapsed="Search" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
+                <MudTextField Class="sidebar-search-bar mx-4" UnderLine="false" Label="Search" DebounceInterval="500" OnDebounceIntervalElapsed="Search" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
             }
             else
             {
@@ -30,28 +32,40 @@
         <MudNavLink Href="/library/movies-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Theaters">Movies</MudNavLink>
         <MudNavLink Href="/library/series-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Tv">Series</MudNavLink>
         <MudNavLink Href="/library/music-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.MusicNote">Music</MudNavLink>
+        <MudNavLink Href="/playertest" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Science">PlayerTest</MudNavLink>
     </MudNavMenu>
     <MudSpacer />
     <MudNavMenu Bordered="true" Style="width: 100%;">
         <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
     </MudNavMenu>
 
-    @if (!SidebarService.IsOpen)
-    {
-        <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
-            <MudAvatar Color="Color.Primary">K</MudAvatar>
-        </MudStack>
-    }
-    else
-    {
-        <MudPaper Class="px-8 py-4 ma-4">
-            <MudStack Row="true">
-                <MudAvatar Color="Color.Primary">K</MudAvatar>
-                <MudStack Justify="Justify.Center" Spacing="0">
-                    <MudText Typo="Typo.body1">Kaybi</MudText>
-                    <MudText Typo="Typo.body2">kaybi@cool.fr</MudText>
+    <AuthorizeView>
+        <Authorized>
+            @if (!SidebarService.IsOpen)
+            {
+                <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
+                    <MudAvatar Color="Color.Primary">K</MudAvatar>
                 </MudStack>
+            }
+            else
+            {
+                <MudPaper Class="px-8 py-4 ma-4">
+                    <MudStack Row="true">
+                        <MudAvatar Color="Color.Primary">K</MudAvatar>
+                        <MudStack Justify="Justify.Center" Spacing="0">
+                            <MudText Typo="Typo.body1">@context.User.Identity?.Name</MudText>
+                            <MudText Typo="Typo.body2">@context.User.Identity?.Name</MudText>
+                            <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Logout" OnClick="Logout" />
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+        </Authorized>
+        <NotAuthorized>
+            <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
+                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Login" OnClick="Login" />
             </MudStack>
-        </MudPaper>
-    }
+        </NotAuthorized>
+    </AuthorizeView>
+    
 </MudDrawer>

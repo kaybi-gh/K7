@@ -1,6 +1,6 @@
 ﻿namespace K7.Clients.Shared.Domain.Models;
 
-public record PaginatedList<T>
+/*public record PaginatedList<T>
 {
     public IReadOnlyCollection<T> Items { get; init; } = [];
     public int PageNumber { get; init; }
@@ -8,4 +8,4 @@ public record PaginatedList<T>
     public int TotalCount { get; init; }
     public bool HasPreviousPage { get; init; }
     public bool HasNextPage { get; init; }
-}
+}*/

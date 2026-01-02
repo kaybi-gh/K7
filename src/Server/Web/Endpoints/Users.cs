@@ -1,12 +1,12 @@
-﻿using K7.Server.Infrastructure.Context.Identity;
+﻿using K7.Server.Infrastructure.Database.Context.Identity;
 
 namespace K7.Server.Web.Endpoints;
 
-public class Users : EndpointGroupBase
+/*public class Users : EndpointGroupBase
 {
-    public override void Map(WebApplication app)
+    public override void Map(IEndpointRouteBuilder endpointRouteBuilder)
     {
-        app.MapGroup(this)
+        endpointRouteBuilder.MapGroup(this)
             .MapIdentityApi<ApplicationUser>();
     }
-}
+}*/

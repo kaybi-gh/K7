@@ -1,9 +1,16 @@
 ﻿@inject IJSRuntime JSRuntime
 
 <MudStack>
-    <div class="splide" aria-label="Basic Structure Example" @ref=_splide>
+    <div class="splide" @ref=_splide>
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="ml-4">
-            <MudText Typo="Typo.h6">@Title</MudText>
+            @if (Skeleton)
+            {
+                <MudSkeleton Animation="Animation.Wave" Height="50px" Width="330px" Class="rounded-lg" />
+            }
+            else
+            {
+                <MudText Typo="Typo.h6">@Title</MudText>
+            }
             <div class="splide__arrows">
                 <MudStack Row="true">
                     <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Class="py-0 pr-3 splide__arrow splide__arrow--prev" />

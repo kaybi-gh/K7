@@ -1,4 +1,4 @@
-﻿using K7.Server.Domain.Entities.Metadatas.Medias;
+﻿using K7.Server.Domain.Entities.Medias;
 
 namespace K7.Server.Domain.Entities.Ratings;
 public abstract class BaseRating : BaseAuditableEntity
@@ -13,6 +13,6 @@ public abstract class BaseRating : BaseAuditableEntity
     public double MinimumValue { get; set; }
     public double MaximumValue { get; set; }
 
-    public Guid MetadataId { get; set; }
-    public virtual BaseMediaMetadata Metadata { get; set; } = null!;
+    public Guid MediaId { get; set; }
+    public virtual BaseMedia Media { get; set; } = null!;
 }

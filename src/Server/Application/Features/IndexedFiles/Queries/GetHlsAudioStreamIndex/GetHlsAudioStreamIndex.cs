@@ -42,7 +42,7 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
     {
         if (query.AudioQualityIdentifier != "original")
         {
-            var quality = Qualities.Audio.Where(kvp => kvp.Value.Name == query.AudioQualityIdentifier).FirstOrDefault();
+            var quality = Constants.AudioQualities.Where(kvp => kvp.Value.Name == query.AudioQualityIdentifier).FirstOrDefault();
             Guard.Against.Null(quality, nameof(query.AudioQualityIdentifier), $"Provided quality '{query.AudioQualityIdentifier}' is not valid.");
         }        
 

@@ -20,4 +20,14 @@ public partial class Sidebar
     {
         
     }
+
+    private async Task Login()
+    {
+        await CustomAuthenticationStateProvider.LoginAsync();
+    }
+
+    private async void Logout()
+    {
+        await CustomAuthenticationStateProvider.LogoutAsync();
+    }
 }

@@ -1,51 +1,37 @@
 ﻿using System.Reflection;
-using System.Text.RegularExpressions;
+using K7.Server.Web.Endpoints;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace K7.Server.Web.Infrastructure;
 
 public static partial class WebApplicationExtensions
 {
-    public static RouteGroupBuilder MapGroup(this WebApplication app, EndpointGroupBase group)
+    public static IServiceCollection AddEndpoints(
+        this IServiceCollection services)
     {
-        var groupName = group.GetType().Name;
+        var assembly = typeof(Program).Assembly;
 
-        return app
-            .MapGroup($"/api/{groupName.PascalToKebabCase()}")
-            .WithGroupName(groupName)
-            .WithTags(groupName)
-            .WithOpenApi();
+        var serviceDescriptors = assembly
+            .DefinedTypes
+            .Where(type => type is { IsAbstract: false, IsInterface: false } &&
+                           type.IsAssignableTo(typeof(IEndpoint)))
+            .Select(type => ServiceDescriptor.Transient(typeof(IEndpoint), type));
+
+        services.TryAddEnumerable(serviceDescriptors);
+
+        return services;
     }
 
     public static WebApplication MapEndpoints(this WebApplication app)
     {
-        var endpointGroupType = typeof(EndpointGroupBase);
+        var endpoints = app.Services.GetRequiredService<IEnumerable<IEndpoint>>();
 
-        var assembly = Assembly.GetExecutingAssembly();
-
-        var endpointGroupTypes = assembly.GetExportedTypes()
-            .Where(t => t.IsSubclassOf(endpointGroupType));
-
-        foreach (var type in endpointGroupTypes)
+        foreach (var endpoint in endpoints)
         {
-            if (Activator.CreateInstance(type) is EndpointGroupBase instance)
-            {
-                instance.Map(app);
-            }
+            endpoint.Map(app);
         }
 
         return app;
     }
-
-    private static string PascalToKebabCase(this string value)
-    {
-        return string.IsNullOrEmpty(value)
-            ? value
-            : PascalSpaces()
-                .Replace(value, "-$1")
-                .Trim()
-                .ToLower();
-    }
-
-    [GeneratedRegex("(?<!^)([A-Z][a-z]|(?<=[a-z])[A-Z0-9])", RegexOptions.Compiled)]
-    private static partial Regex PascalSpaces();
 }
+

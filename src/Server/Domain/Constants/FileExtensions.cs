@@ -2,7 +2,7 @@
 
 namespace K7.Server.Domain.Constants;
 
-public static class FileExtensions
+public static partial class Constants
 {
     public static readonly FrozenSet<string> AudioFileExtensions = new List<string>
     {

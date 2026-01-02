@@ -3,8 +3,8 @@
 namespace K7.Server.Domain.Entities.Users;
 public class User : BaseAuditableEntity
 {
-    public required string Username { get; set; }
-    public required string AuthenticationProviderId { get; set; }
+    public required string DisplayName { get; set; }
 
-    public virtual IEnumerable<UserRating>? Ratings { get; set; }
+    public ICollection<Guid> AccessibleLibraryIds { get; set; } = [];
+    public ICollection<UserRating> Ratings { get; set; } = [];
 }

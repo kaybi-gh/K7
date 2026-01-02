@@ -1,14 +1,13 @@
-﻿using K7.Server.Application.Common.Converters;
-using K7.Server.Application.Common.Interfaces;
+﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
-using K7.Server.Application.Common.Models.Dtos;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Requests;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedias;
 
-public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto>>
+public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
 {
     public Guid[]? LibraryIds { get; init; }
     public Guid[]? Ids { get; init; }
@@ -19,38 +18,27 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<LiteMediaDto
     public required int PageSize { get; init; } = 10;
 }
 
-public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<LiteMediaDto>>
+public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMapper _mapper;
 
-    public GetMediasQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetMediasQueryHandler(IApplicationDbContext context)
     {
         _context = context;
-        _mapper = mapper;
     }
 
-    public async Task<PaginatedList<LiteMediaDto>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedList<BaseMedia>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Medias
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.ExternalIds)
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.Pictures)
-            .Include(x => x.Metadata)
-                .ThenInclude(x => x!.Ratings)
+            .Include(x => x.ExternalIds)
+            .Include(x => x.Pictures)
+            .Include(x => x.Ratings)
             .Include(x => x.IndexedFiles)
             .AsQueryable();
 
         query = ApplyFilters(request, query);
         var orderedQuery = ApplyOrdering(request.OrderBy, query);
-        var page = await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
-
-        List<LiteMediaDto> dtos = page.Items
-            .Select(x => x.ConvertToLiteDto(_mapper))
-            .ToList();
-
-        return new PaginatedList<LiteMediaDto>(dtos.AsReadOnly(), page.TotalCount, request.PageNumber, request.PageSize);
+        return await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 
     private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query)
@@ -96,27 +84,27 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
                 MediaOrderingOption.LocalRatingAsc => throw new NotImplementedException(),
                 MediaOrderingOption.LocalRatingDesc => throw new NotImplementedException(),
                 MediaOrderingOption.OriginalTitleAsc => orderedQueryable == null ?
-                    queryable.OrderBy(x => x.Metadata!.OriginalTitle)
-                    : orderedQueryable.ThenBy(x => x.Metadata!.OriginalTitle),
+                    queryable.OrderBy(x => x.OriginalTitle)
+                    : orderedQueryable.ThenBy(x => x.OriginalTitle),
                 MediaOrderingOption.OriginalTitleDesc => orderedQueryable == null ?
-                    queryable.OrderByDescending(x => x.Metadata!.OriginalTitle)
-                    : orderedQueryable.ThenByDescending(x => x.Metadata!.OriginalTitle),
+                    queryable.OrderByDescending(x => x.OriginalTitle)
+                    : orderedQueryable.ThenByDescending(x => x.OriginalTitle),
                 MediaOrderingOption.PlayCountAsc => throw new NotImplementedException(),
                 MediaOrderingOption.PlayCountDesc => throw new NotImplementedException(),
                 MediaOrderingOption.PopularityAsc => throw new NotImplementedException(),
                 MediaOrderingOption.PopularityDesc => throw new NotImplementedException(),
                 MediaOrderingOption.ReleaseDateAsc => orderedQueryable == null ?
-                    queryable.OrderBy(x => x.Metadata!.ReleaseDate)
-                    : orderedQueryable.ThenBy(x => x.Metadata!.ReleaseDate),
+                    queryable.OrderBy(x => x.ReleaseDate)
+                    : orderedQueryable.ThenBy(x => x.ReleaseDate),
                 MediaOrderingOption.ReleaseDateDesc => orderedQueryable == null ?
-                    queryable.OrderByDescending(x => x.Metadata!.ReleaseDate)
-                    : orderedQueryable.ThenByDescending(x => x.Metadata!.ReleaseDate),
+                    queryable.OrderByDescending(x => x.ReleaseDate)
+                    : orderedQueryable.ThenByDescending(x => x.ReleaseDate),
                 MediaOrderingOption.TitleAsc => orderedQueryable == null ?
-                    queryable.OrderBy(x => x.Metadata!.Title)
-                    : orderedQueryable.ThenBy(x => x.Metadata!.Title),
+                    queryable.OrderBy(x => x.Title)
+                    : orderedQueryable.ThenBy(x => x.Title),
                 MediaOrderingOption.TitleDesc => orderedQueryable == null ?
-                    queryable.OrderByDescending(x => x.Metadata!.Title)
-                    : orderedQueryable.ThenByDescending(x => x.Metadata!.Title),
+                    queryable.OrderByDescending(x => x.Title)
+                    : orderedQueryable.ThenByDescending(x => x.Title),
                 _ => throw new InvalidOperationException($"Unsupported media ordering option: {order}")
             };
         }

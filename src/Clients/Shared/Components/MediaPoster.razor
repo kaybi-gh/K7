@@ -1,32 +1,52 @@
-﻿<MudItem Elevation="0">
-    <div class="media-item-container">
-        <MudImage Src="@Model.PosterPictureHref" Alt="Tata" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
+﻿@if (Skeleton)
+{
+    <MudPaper Style="background-color:transparent;" Elevation="0">
+        <div class="media-item-container">
+            <MudSkeleton Animation="Animation.Wave" SkeletonType="SkeletonType.Rectangle" Class="rounded-lg" Height="100%" Width="100%" />
+        </div>
 
-        @if (WatchedStatusEnabled && Model.Watched)
+        @if (FooterVisible)
         {
-            <div class="media-item-watched">
-                <MudIcon Size="Size.Small" class="ma-1" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" />
+            <div class="media-item-text">
+                <MudStack AlignItems="AlignItems.Center" Spacing="0">
+                    <MudSkeleton Animation="Animation.Wave" Height="100%" Width="80%" />
+                    <MudSkeleton Animation="Animation.Wave" Height="100%" Width="50%" />
+                </MudStack>
             </div>
         }
+    </MudPaper>
+}
+else
+{
+    <MudPaper Style="background-color:transparent;" Elevation="0">
+        <div class="media-item-container">
+            <MudImage Src="@Model.PosterPictureHref" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
 
-        @if (ProgressEnabled && !ProgressBarIsHidden())
-        {
-            <div class="media-item-progress-bar">
-                <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Model.Progress" />
-            </div>
-        }
+            @if (WatchedStatusEnabled && Model.Watched)
+            {
+                <div class="media-item-watched">
+                    <MudIcon Size="Size.Small" class="ma-1" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" />
+                </div>
+            }
 
-        @if (OverlayEnabled)
-        {
-            <a class="media-item-overlay" href="@("/movies/" + Model.Id)">
-                <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" />
+            @if (ProgressEnabled && !ProgressBarIsHidden())
+            {
+                <div class="media-item-progress-bar">
+                    <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Model.Progress" />
+                </div>
+            }
 
-                @* <MudMenu Icon="@Icons.Material.Filled.MoreVert" PositionAtCursor="true">
+            @if (OverlayEnabled)
+            {
+                <a class="media-item-overlay" href="@("/movies/" + Model.Id)">
+                    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" />
+
+                    @* <MudMenu Icon="@Icons.Material.Filled.MoreVert" PositionAtCursor="true">
             <MudMenuItem>Profile</MudMenuItem>
             <MudMenuItem>My account</MudMenuItem>
             <MudMenuItem>Logout</MudMenuItem>
             </MudMenu> *@
-                @* <MudMenu Dense="true">
+                    @* <MudMenu Dense="true">
             <ActivatorContent>
             <div class="media-item-overlay-more">
             <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" />
@@ -42,37 +62,30 @@
             <MudMenuItem>File(s) informations</MudMenuItem>
             </ChildContent>
             </MudMenu> *@
-            </a>
-        }
-    </div>
-
-    @if (FooterVisible)
-    {
-        <div class="media-item-text">
-            <MudStack AlignItems="AlignItems.Center" Spacing="0">
-                <MudLink Class="media-item-text" Typo="Typo.body2" Href="@("/movies/" + Model.Id)">@Model.Title</MudLink>
-                <MudText Class="media-item-text" Typo="Typo.caption">@Model.AdditionalInformations</MudText>
-            </MudStack>
+                </a>
+            }
         </div>
-    }
 
-</MudItem>
+        @if (FooterVisible)
+        {
+            <div class="media-item-text">
+                <MudStack AlignItems="AlignItems.Center" Spacing="0">
+                    <MudLink Class="media-item-text" Typo="Typo.body2" Href="@("/movies/" + Model.Id)">@Model.Title</MudLink>
+                    <MudText Class="media-item-text" Typo="Typo.caption">@Model.AdditionalInformations</MudText>
+                </MudStack>
+            </div>
+        }
+
+    </MudPaper>
+}
 
 @code {
-    [Parameter]
-    public required MediaPosterViewModel Model { get; set; }
-
-    [Parameter]
-    public bool OverlayEnabled { get; set; } = false;
-
-    [Parameter]
-    public bool ProgressEnabled { get; set; } = false;
-
-    [Parameter]
-    public bool WatchedStatusEnabled { get; set; } = false;
-
-    [Parameter]
-    public bool FooterVisible { get; set; } = false;
+    [Parameter] public bool Skeleton { get; set; } = false;
+    [Parameter] public required MediaPosterViewModel Model { get; set; }
+    [Parameter] public bool OverlayEnabled { get; set; } = false;
+    [Parameter] public bool ProgressEnabled { get; set; } = false;
+    [Parameter] public bool WatchedStatusEnabled { get; set; } = false;
+    [Parameter] public bool FooterVisible { get; set; } = false;
 
     private bool ProgressBarIsHidden() => Model.Progress == 0 || Model.Progress == 100;
 }

@@ -1,6 +1,4 @@
-﻿using MediatR;
-
-namespace K7.Server.Domain.Entities;
+﻿namespace K7.Server.Domain.Entities;
 
 public class BackgroundTask : BaseAuditableEntity
 {

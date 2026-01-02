@@ -3,12 +3,7 @@ using Projects;
 var builder = DistributedApplication.CreateBuilder(args);
 
 
-var server = builder.AddProject<K7_Server_Web>("K7Server")
+var server = builder.AddProject<K7_Server_Web>("k7-server")
     .WithArgs("--init-db");
-
-builder.AddProject<K7_Clients_Web>("K7WebClient")
-    .WithReference(server)
-    .WaitFor(server);
-
-
+    
 builder.Build().Run();

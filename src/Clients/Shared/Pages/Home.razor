@@ -1,69 +1,147 @@
 @page "/"
-@inject Domain.Interfaces.IMediaServerService mediaServerService
+@using K7.Shared.Dtos.Requests
+@inject IK7ServerService k7ServerService
 <PageTitle>Home</PageTitle>
 
-<HorizontalScrollableStack Title="RealItems">
-    @foreach (var item in realItems)
+@if (isLoading)
+{
+    @for (int i = 0; i < 3; i++)
     {
-        <HorizontalScrollableStackItem>
-            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
-        </HorizontalScrollableStackItem>
+        <HorizontalScrollableStack Skeleton="true">
+            @for (int i = 0; i < 10; i++)
+            {
+                <HorizontalScrollableStackItem>
+                    <MediaPoster Skeleton="true" FooterVisible="true" />
+                </HorizontalScrollableStackItem>
+            }
+        </HorizontalScrollableStack>
     }
-</HorizontalScrollableStack>
+}
+else
+{
+    <HorizontalScrollableStack Title="Recently added">
+        @foreach (var item in recentlyAddedMedias)
+        {
+            <HorizontalScrollableStackItem>
+                <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+            </HorizontalScrollableStackItem>
+        }
+    </HorizontalScrollableStack>
 
-<HorizontalScrollableStack Title="All">
-    @foreach (var item in MockedMediaServiceService.All)
-    {
-        <HorizontalScrollableStackItem>
-            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
-        </HorizontalScrollableStackItem>
-    }
-</HorizontalScrollableStack>
+    <HorizontalScrollableStack Title="Recently released">
+        @foreach (var item in recentlyReleasedMedias)
+        {
+            <HorizontalScrollableStackItem>
+                <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+            </HorizontalScrollableStackItem>
+        }
+    </HorizontalScrollableStack>
 
-<HorizontalScrollableStack Title="Bond, James Bond">
-    @foreach (var item in MockedMediaServiceService.JamesBond)
-    {
-        <HorizontalScrollableStackItem>
-            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
-        </HorizontalScrollableStackItem>
-    }
-</HorizontalScrollableStack>
-
-<HorizontalScrollableStack Title="No daddyyyyy">
-    @foreach (var item in MockedMediaServiceService.StarWars)
-    {
-        <HorizontalScrollableStackItem>
-            <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
-        </HorizontalScrollableStackItem>
-    }
-</HorizontalScrollableStack>
+    <HorizontalScrollableStack Title="Last played">
+        @foreach (var item in lastPlayedMedias)
+        {
+            <HorizontalScrollableStackItem>
+                <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+            </HorizontalScrollableStackItem>
+        }
+    </HorizontalScrollableStack>
+}
 
 @code {
-    List<MediaPosterViewModel> realItems = [];
+    private bool isLoading { get; set; } = true;
+    List<MediaPosterViewModel> recentlyAddedMedias = [];
+    List<MediaPosterViewModel> recentlyReleasedMedias = [];
+    List<MediaPosterViewModel> lastPlayedMedias = [];
+
     protected override async Task OnInitializedAsync()
+    {
+        await InitializeRecentlyAddedMedias();
+        await InitializeRecentlyReleasedMedias();
+        await InitializeLastPlayedMedias();
+        isLoading = false;
+    }
+
+    private async Task InitializeRecentlyAddedMedias()
     {
         try
         {
-            var test = await mediaServerService.GetLiteMediasAsync(new GetLiteMediasQuery()
-                {
-                    PageNumber = 1,
-                    PageSize = 50
-                });
-
-            if (test != null && test.Items != null)
+            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
             {
-                foreach (var item in test.Items)
+                OrderBy = [K7.Shared.Dtos.Requests.MediaOrderingOption.CreatedDesc],
+                PageNumber = 1,
+                PageSize = 40
+            });
+
+            if (mediasPage != null && mediasPage.Items != null)
+            {
+                foreach (var item in mediasPage.Items)
                 {
-                    realItems.Add(new MediaPosterViewModel()
-                        {
-                            Id = item.Id.ToString(),
-                            Title = item.Title,
-                            AdditionalInformations = item.ReleaseDate.HasValue ? item.ReleaseDate.Value.Year.ToString() : "",
-                            PosterPictureHref = item.PosterPictureHref
-                        });
+                    recentlyAddedMedias.Add(new MediaPosterViewModel()
+                    {
+                        Id = item.Id.ToString(),
+                        Title = item.Title,
+                        AdditionalInformations = item.ReleaseDate,
+                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
+                    });
                 }
             }
         }
-        catch {}
+        catch { }
+    }
+
+    private async Task InitializeRecentlyReleasedMedias()
+    {
+        try
+        {
+            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
+            {
+                OrderBy = [K7.Shared.Dtos.Requests.MediaOrderingOption.ReleaseDateDesc],
+                PageNumber = 1,
+                PageSize = 40
+            });
+
+            if (mediasPage != null && mediasPage.Items != null)
+            {
+                foreach (var item in mediasPage.Items)
+                {
+                    recentlyReleasedMedias.Add(new MediaPosterViewModel()
+                    {
+                        Id = item.Id.ToString(),
+                        Title = item.Title,
+                        AdditionalInformations = item.ReleaseDate,
+                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
+                    });
+                }
+            }
+        }
+        catch { }
+    }
+
+    private async Task InitializeLastPlayedMedias()
+    {
+        try
+        {
+            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
+                {
+                    OrderBy = [K7.Shared.Dtos.Requests.MediaOrderingOption.TitleDesc], // TODO - Fake sorting here
+                    PageNumber = 1,
+                PageSize = 40
+            });
+
+            if (mediasPage != null && mediasPage.Items != null)
+            {
+                foreach (var item in mediasPage.Items)
+                {
+                    lastPlayedMedias.Add(new MediaPosterViewModel()
+                    {
+                        Id = item.Id.ToString(),
+                        Title = item.Title,
+                        AdditionalInformations = item.ReleaseDate,
+                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
+                    });
+                }
+            }
+        }
+        catch { }
     }
 }

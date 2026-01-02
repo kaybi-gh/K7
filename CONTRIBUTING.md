@@ -34,10 +34,10 @@ Run these commands from the root repository folder:
 
 ### Postgres
 ```bash
-dotnet ef migrations add InitialCreate --project ./src/Server/Infrastructure/DatabaseProviders/Postgres --startup-project ./src/Server/Web -- --Database:Provider Postgres
+dotnet ef migrations add InitialCreate --project ./src/Server/Infrastructure/Database/Providers/Postgres --startup-project ./src/Server/Web -- --Database:Provider Postgres
 ```
 ### Sqlite
 ```bash
-dotnet ef migrations add InitialCreate --project ./src/Server/Infrastructure/DatabaseProviders/Sqlite --startup-project ./src/Server/Web -- --Database:Provider Sqlite
+dotnet ef migrations add InitialCreate --project ./src/Server/Infrastructure/Database/Providers/Sqlite --startup-project ./src/Server/Web -- --Database:Provider Sqlite
 
 ```

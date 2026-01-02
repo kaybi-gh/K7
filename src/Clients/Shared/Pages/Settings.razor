@@ -1,6 +1,8 @@
 @page "/settings"
 @inject ThemeService ThemeService
 @inject IDeviceService DeviceService
+@inject IK7ServerService K7ServerService
+@inject IDialogService DialogService
 <PageTitle>Settings</PageTitle>
 
 <MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="Dark mode" />
@@ -11,20 +13,33 @@
     }
 </MudSelect>
 
-<MudText>Platform: @DeviceService.GetPlatform()</MudText>
-<MudText>FormFactor: @DeviceService.GetFormFactor()</MudText>
+@if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
+{
+    <MudTextField @bind-Value="@_backendUrl" Label="K7 server URL" ReadOnly="true" Variant="Variant.Text" />
+}
+else
+{
+    <MudTextField @bind-Value="@_backendUrl" Label="K7 server URL" ReadOnly="true" Variant="Variant.Text" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Delete" OnAdornmentClick="ChangeBackendUrl" />
+}
 
-<h3>Supported Codecs</h3>
-<ul>
-    @if (_supportedCodecs != null)
-    {
-        foreach (var codec in _supportedCodecs)
-        {
-            <li>@codec</li>
-        }
-    }
-    else
-    {
-        <p>Loading...</p>
-    }
-</ul>
+<MudText>Platform: @DeviceService.GetPlatform()</MudText>
+<MudText>FormFactor: @_deviceType</MudText>
+<MudText>HDR: @_hdrSupport</MudText>
+
+<MudExpansionPanels>
+    <MudExpansionPanel Text="Supported Codecs" MaxHeight="1000">
+        <ul>
+            @if (_supportedMediaFormats != null)
+            {
+                foreach (var supportedMediaFormat in _supportedMediaFormats)
+                {
+                    <li>@supportedMediaFormat.Id</li>
+                }
+            }
+            else
+            {
+                <p>Loading...</p>
+            }
+        </ul>
+    </MudExpansionPanel>
+</MudExpansionPanels>

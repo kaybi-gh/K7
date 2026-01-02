@@ -1,0 +1,20 @@
+.person-text {
+    max-width: 150px;
+}
+
+::deep .person-text:nth-child(1) {
+    max-width: 150px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+@media(max-width:600px) {
+    .person-text {
+        max-width: 30vw;
+    }
+
+    ::deep .person-text:nth-child(1) {
+        max-width: 30vw;
+    }
+}
