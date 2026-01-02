@@ -17,7 +17,7 @@ public class LogInCallback : IEndpoint
         string groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapMethods("/api/authentication/callback/login/{provider}", [HttpMethods.Get, HttpMethods.Post],
-            async (HttpContext context, [FromServices] UserManager<ApplicationUser> userManager, [FromQuery] string provider, CancellationToken cancellationToken) =>
+            async (HttpContext context, [FromServices] UserManager<ApplicationUser> userManager, [FromRoute] string provider, CancellationToken cancellationToken) =>
         {
             // Retrieve the authorization data validated by OpenIddict as part of the callback handling.
             var result = await context.AuthenticateAsync(OpenIddictClientAspNetCoreDefaults.AuthenticationScheme);

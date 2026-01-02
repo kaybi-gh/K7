@@ -29,17 +29,17 @@
 
             <MudGrid>
                 <MudItem md="12">
-                    <MudStaticTextField For="@(() => Input.Email)" @bind-Value="Input.Email"
+                    <MudStaticTextField For="@(() => Input!.Email)" @bind-Value="Input!.Email"
                                         Label="Email" Placeholder="name@example.com"
                                         UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } } )" />
                 </MudItem>
                 <MudItem md="12">
-                    <MudStaticTextField For="@(() => Input.Password)" @bind-Value="Input.Password"
+                    <MudStaticTextField For="@(() => Input!.Password)" @bind-Value="Input!.Password"
                                         Label="Password" InputType="InputType.Password" Placeholder="password"
                                         UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } } )" />
                 </MudItem>
                 <MudItem md="12">
-                    <MudStaticTextField For="@(() => Input.ConfirmPassword)" @bind-Value="Input.ConfirmPassword"
+                    <MudStaticTextField For="@(() => Input!.ConfirmPassword)" @bind-Value="Input!.ConfirmPassword"
                                         Label="Confirm Password" InputType="InputType.Password" Placeholder="confirm password"
                                         UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } } )" />
                 </MudItem>
@@ -59,18 +59,23 @@
     private IEnumerable<IdentityError>? identityErrors;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = null!;
+    private InputModel? Input { get; set; }
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
+    protected override void OnInitialized()
+    {
+        Input ??= new();
+    }
+
     public async Task RegisterUser(EditContext editContext)
     {
         var user = CreateUser();
 
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, Input!.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
         var result = await UserManager.CreateAsync(user, Input.Password);

@@ -35,9 +35,9 @@
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email." />
+                <InputText @bind-Value="Input!.Email" id="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email." />
                 <label for="Input.Email" class="form-label">Email</label>
-                <ValidationMessage For="() => Input.Email" />
+                <ValidationMessage For="() => Input!.Email" />
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </EditForm>
@@ -54,7 +54,7 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = null!;
+    private InputModel? Input { get; set; }
 
     [SupplyParameterFromQuery]
     private string? RemoteError { get; set; }
@@ -69,6 +69,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Input ??= new();
+
         if (RemoteError is not null)
         {
             RedirectManager.RedirectToWithStatus("Account/Login", $"Error from external provider: {RemoteError}", HttpContext);
@@ -126,7 +128,7 @@
         // If the user does not have an account, then ask the user to create an account.
         if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
         {
-            Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+            Input!.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
         }
     }
 
@@ -140,7 +142,7 @@
         var emailStore = GetEmailStore();
         var user = CreateUser();
 
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, Input!.Email, CancellationToken.None);
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
 
         var result = await UserManager.CreateAsync(user);
