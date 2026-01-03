@@ -40,6 +40,10 @@ public class PlayerService(IDeviceStorageService deviceStorageService) : IPlayer
             if (_source != value)
             {
                 _source = value;
+                CurrentTime = 0;
+                Duration = 0;
+                BufferedTime = 0;
+                PlaybackState = PlaybackState.Idle;
                 SourceChanged?.Invoke(value);
             }
         }

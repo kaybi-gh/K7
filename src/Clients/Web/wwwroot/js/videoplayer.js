@@ -1,6 +1,16 @@
 ﻿let players = {};
 
 window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetRef) {
+    // If a player already exists for this id, dispose it first to avoid duplicate streams/listeners
+    if (players[id]) {
+        try {
+            players[id].dispose();
+        } catch (e) {
+            console.warn('Error disposing existing player before re-init', e);
+        }
+        delete players[id];
+    }
+
     const player = videojs(videoPlayer, options);
     player.volume(options.volume);
 
@@ -95,6 +105,18 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
 
     players[id] = player;
     return player;
+}
+
+window.disposeVideoJs = function (id) {
+    const player = players[id];
+    if (player) {
+        try {
+            player.dispose();
+        } catch (e) {
+            console.warn('Error disposing Video.js player', e);
+        }
+        delete players[id];
+    }
 }
 
 window.play = function (id) {

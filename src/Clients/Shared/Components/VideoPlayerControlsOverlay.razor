@@ -100,6 +100,13 @@
     private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
+    private void OnPlaybackStateChanged(PlaybackState state) => InvokeAsync(StateHasChanged);
+    private void OnIsMutedChanged(bool isMuted) => InvokeAsync(StateHasChanged);
+    private void OnVolumeChanged(double volume) => InvokeAsync(StateHasChanged);
+    private void OnCurrentTimeChanged(double time) => InvokeAsync(StateHasChanged);
+    private void OnPlaybackRateChanged(double rate) => InvokeAsync(StateHasChanged);
+    private void OnIsFullScreenChanged(bool isFullScreen) => InvokeAsync(StateHasChanged);
+
     protected override async Task OnInitializedAsync()
     {
         _deviceType = await DeviceService.GetDeviceTypeAsync();
@@ -110,13 +117,12 @@
             await InvokeAsync(StateHasChanged);
         };
         _overlayVisibleTimer.Start();
-
-        PlayerService.PlaybackStateChanged += async (state) => await InvokeAsync(StateHasChanged);
-        PlayerService.IsMutedChanged += async (isMuted) => await InvokeAsync(StateHasChanged);
-        PlayerService.VolumeChanged += async (volume) => await InvokeAsync(StateHasChanged);
-        PlayerService.CurrentTimeChanged += async (time) => await InvokeAsync(StateHasChanged);
-        PlayerService.PlaybackRateChanged += async (playbackRate) => await InvokeAsync(StateHasChanged);
-        PlayerService.IsFullScreenChanged += async (isFullScreen) => await InvokeAsync(StateHasChanged);
+        PlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
+        PlayerService.IsMutedChanged += OnIsMutedChanged;
+        PlayerService.VolumeChanged += OnVolumeChanged;
+        PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
+        PlayerService.PlaybackRateChanged += OnPlaybackRateChanged;
+        PlayerService.IsFullScreenChanged += OnIsFullScreenChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
     }
 
@@ -329,6 +335,12 @@
     public async ValueTask DisposeAsync()
     {
         _overlayVisibleTimer?.Dispose();
+        PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
+        PlayerService.IsMutedChanged -= OnIsMutedChanged;
+        PlayerService.VolumeChanged -= OnVolumeChanged;
+        PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
+        PlayerService.PlaybackRateChanged -= OnPlaybackRateChanged;
+        PlayerService.IsFullScreenChanged -= OnIsFullScreenChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);
     }
 }
