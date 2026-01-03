@@ -5,10 +5,12 @@ using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.Components;
 
-public partial class VideoPlayer
+public partial class VideoPlayer : IAsyncDisposable
 {
     private ElementReference _player;
     private ElementReference _videoContainer;
+    private DotNetObjectReference<VideoPlayer>? _dotNetRef;
+    private bool _isInitialized;
     // TODO - Fix bug when window gets resized, thumb seekbar is not anymore accurately following mouse hover
     [Parameter] public string SourceUri { get; set; } = string.Empty;
     [Parameter] public string SourceMimeType { get; set; } = string.Empty;
@@ -17,7 +19,7 @@ public partial class VideoPlayer
     {
         if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
         {
-            if (PlayerService.IsVisible)
+            if (PlayerService.IsVisible && !_isInitialized)
             {
                 var options = new
                 {
@@ -25,7 +27,28 @@ public partial class VideoPlayer
                     muted = PlayerService.IsMuted
                 };
 
-                await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, DotNetObjectReference.Create(this));
+                _dotNetRef ??= DotNetObjectReference.Create(this);
+
+                await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, _dotNetRef);
+                _isInitialized = true;
+            }
+            else if (!PlayerService.IsVisible && _isInitialized)
+            {
+                if (!string.IsNullOrEmpty(_player.Id))
+                {
+                    try
+                    {
+                        await JSRuntime.InvokeVoidAsync("disposeVideoJs", _player.Id);
+                    }
+                    catch (JSDisconnectedException)
+                    {
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+                }
+
+                _isInitialized = false;
             }
         }
     }
@@ -49,13 +72,40 @@ public partial class VideoPlayer
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
         {
+            PlayerService.PlayRequested -= PlayAsync;
+            PlayerService.PauseRequested -= PauseAsync;
+            PlayerService.MuteRequested -= MuteAsync;
+            PlayerService.UnmuteRequest -= UnmuteAsync;
+            PlayerService.VolumeChangeRequested -= SetVolumeAsync;
+            PlayerService.PlaybackRateChangeRequested -= SetPlaybackRateAsync;
+            PlayerService.StopRequested -= StopAsync;
+            PlayerService.EnterFullScreenRequested -= EnterFullScreenAsync;
+            PlayerService.ExitFullScreenRequested -= ExitFullScreenAsync;
+            PlayerService.SeekRequested -= SeekAsync;
             PlayerService.SourceChanged -= OnSourceChange;
-            PlayerService.IsVisibleChanged -= StateHasChanged; 
+            PlayerService.IsVisibleChanged -= StateHasChanged;
+
+            if (!string.IsNullOrEmpty(_player.Id))
+            {
+                try
+                {
+                    await JSRuntime.InvokeVoidAsync("disposeVideoJs", _player.Id);
+                }
+                catch (JSDisconnectedException)
+                {
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            }
         }
+
+        _dotNetRef?.Dispose();
+        _dotNetRef = null;
     }
 
     private void OnSourceChange(PlayerSource playerSource)
