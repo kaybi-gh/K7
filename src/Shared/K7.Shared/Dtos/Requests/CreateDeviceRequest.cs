@@ -16,7 +16,6 @@ public sealed record CreateDeviceRequest
     public NativeDeviceDetailsDto? NativeDeviceDetails { get; init; }
     public WebDeviceDetailsDto? WebDeviceDetails { get; init; }
     public required CreateDeviceRequestPlaybackCapibilities PlaybackCapabilities { get; init; }
-    public required IEnumerable<UserDto> Users { get; init; }
 }
 
 public sealed record CreateDeviceRequestPlaybackCapibilities
