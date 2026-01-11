@@ -34,6 +34,7 @@ public class GetMediasQueryHandler : IRequestHandler<GetMediasWithPaginationQuer
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.IndexedFiles)
+            .AsNoTracking()
             .AsQueryable();
 
         query = ApplyFilters(request, query);

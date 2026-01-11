@@ -17,7 +17,7 @@ public sealed record DeviceDto
     public NativeDeviceDetailsDto? NativeDeviceDetails { get; init; }
     public WebDeviceDetailsDto? WebDeviceDetails { get; init; }
     public required DevicePlaybackCapabilitiesDto PlaybackCapabilities { get; init; }
-    public required IEnumerable<UserDto> Users { get; init; }
+    public required IEnumerable<UserDto> Users { get; init; } // TODO - LiteUserDto
     public DateTimeOffset LastSeen { get; init; }
 
     public static DeviceDto FromDomain(Device domain) => new()

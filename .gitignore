@@ -491,3 +491,6 @@ $RECYCLE.BIN/
 
 # Client libraries
 **/wwwroot/dist/
+
+# Coding agents
+.github/agents

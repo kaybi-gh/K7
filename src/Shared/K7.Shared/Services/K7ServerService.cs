@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Devices;
 using K7.Shared.Interfaces;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Entities.Medias;
@@ -35,12 +36,12 @@ public class K7ServerService : IK7ServerService
             : HttpClient.BaseAddress;
     }
 
-    public async Task<Guid> CreateDeviceAsync(CreateDeviceRequest request)
+    public async Task<Guid> CreateDeviceAsync(CreateDeviceRequest request, CancellationToken cancellationToken = default)
     {
         var requestUri = CreateDeviceRequestUriBuilder.Route;
         var responseMessage = await HttpClient.PostAsJsonAsync(requestUri, request, _serializerOptions);
         responseMessage.EnsureSuccessStatusCode();
-        var result = await responseMessage.Content.ReadFromJsonAsync<GetDeviceQuery>(_serializerOptions);
+        var result = await responseMessage.Content.ReadFromJsonAsync<GetDeviceQuery>(_serializerOptions, cancellationToken);
         return result!.Id;
     }
 
@@ -50,17 +51,23 @@ public class K7ServerService : IK7ServerService
         responseMessage.EnsureSuccessStatusCode();
     }
 
-    public async Task<List<MediaFormatDto>> GetMediaFormatsAsync()
+    public async Task<PaginatedListDto<DeviceDto>?> GetDevicesAsync(GetDevicesQuery? query = null, CancellationToken cancellationToken = default)
     {
-        var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions);
+        var requestUri = GetDevicesQueryUriBuilder.Build(query);
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<DeviceDto>>(requestUri, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default)
+    {
+        var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions, cancellationToken);
         return formats ?? [];
     }
 
-    public async Task<MovieDto?> GetMovieAsync(Guid id)
+    public async Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try
         {
-            return await HttpClient.GetFromJsonAsync<MovieDto>($"api/medias/{id}", _serializerOptions);
+            return await HttpClient.GetFromJsonAsync<MovieDto>($"api/medias/{id}", _serializerOptions, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -69,14 +76,14 @@ public class K7ServerService : IK7ServerService
         }
     }
 
-    public async Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query)
+    public async Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default)
     {
         var requestUri = GetMediasWithPaginationQueryUriBuilder.Build(query);
-        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteMediaDto>>(requestUri, _serializerOptions);
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteMediaDto>>(requestUri, _serializerOptions, cancellationToken);
     }
 
-    public async Task<PersonDto?> GetPersonAsync(Guid id)
+    public async Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<PersonDto>($"api/persons/{id}", _serializerOptions);
+        return await HttpClient.GetFromJsonAsync<PersonDto>($"api/persons/{id}", _serializerOptions, cancellationToken);
     }
 }
