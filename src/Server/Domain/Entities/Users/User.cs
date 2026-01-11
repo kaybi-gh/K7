@@ -5,7 +5,6 @@ namespace K7.Server.Domain.Entities.Users;
 public class User : BaseAuditableEntity
 {
     public string? IdentityUserId { get; set; }
-    public required string DisplayName { get; set; }
     public ICollection<Guid> AccessibleLibraryIds { get; set; } = [];
     public ICollection<UserRating> Ratings { get; set; } = [];
     public ICollection<Device> Devices { get; set; } = [];

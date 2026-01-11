@@ -85,29 +85,28 @@ public class ApplicationDbContextInitializer
                 {
                     await _userManager.AddToRolesAsync(administrator, [administratorRole.Name]);
                 }
-            }
 
-            // Create domain user
-            var adminIdentityUser = await _userManager.FindByNameAsync("administrator@localhost");
-            if (adminIdentityUser is not null)
-            {
-                var existingDomainAdmin = await _context.Users
-                    .SingleOrDefaultAsync(u => u.IdentityUserId == adminIdentityUser.Id);
-
-                if (existingDomainAdmin is null)
+                // Create domain user
+                var adminIdentityUser = await _userManager.FindByNameAsync("administrator@localhost");
+                if (adminIdentityUser is not null)
                 {
-                    var displayName = adminIdentityUser.Email ?? adminIdentityUser.UserName ?? adminIdentityUser.Id;
+                    var existingDomainAdmin = await _context.Users
+                        .SingleOrDefaultAsync(u => u.IdentityUserId == adminIdentityUser.Id);
 
-                    var domainAdmin = new User
+                    if (existingDomainAdmin is null)
                     {
-                        IdentityUserId = adminIdentityUser.Id,
-                        DisplayName = displayName
-                    };
+                        var displayName = adminIdentityUser.Email ?? adminIdentityUser.UserName ?? adminIdentityUser.Id;
 
-                    _context.Users.Add(domainAdmin);
-                    await _context.SaveChangesAsync();
+                        var domainAdmin = new User
+                        {
+                            IdentityUserId = adminIdentityUser.Id
+                        };
+
+                        _context.Users.Add(domainAdmin);
+                        await _context.SaveChangesAsync();
+                    }
                 }
-            }
+            }            
         }        
     }
 }

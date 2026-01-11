@@ -5,7 +5,6 @@ namespace K7.Shared.Dtos;
 
 public sealed record UserDto
 {
-    public required string DisplayName { get; init; }
     public required ICollection<Guid> AccessibleLibraryIds { get; init; }
     public required IEnumerable<DeviceDto> Devices { get; init; }
 
@@ -13,7 +12,6 @@ public sealed record UserDto
     {
         return new()
         {
-            DisplayName = domain.DisplayName,
             AccessibleLibraryIds = domain.AccessibleLibraryIds,
             Devices = domain.Devices.Select(DeviceDto.FromDomain)
         };

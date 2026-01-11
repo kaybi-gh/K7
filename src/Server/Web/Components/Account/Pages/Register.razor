@@ -98,8 +98,7 @@
         {
             var domainUser = new User
             {
-                IdentityUserId = userId,
-                DisplayName = Input.Email
+                IdentityUserId = userId
             };
 
             ApplicationDbContext.Users.Add(domainUser);

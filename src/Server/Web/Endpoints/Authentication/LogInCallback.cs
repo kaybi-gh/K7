@@ -105,8 +105,7 @@ public class LogInCallback : IEndpoint
 
                 domainUser = new User
                 {
-                    IdentityUserId = identityUserId,
-                    DisplayName = displayName
+                    IdentityUserId = identityUserId
                 };
 
                 applicationDbContext.Users.Add(domainUser);
