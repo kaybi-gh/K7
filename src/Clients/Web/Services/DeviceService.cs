@@ -40,10 +40,9 @@ public class DeviceService(IJSRuntime jsRuntime, IK7ServerService k7ServerServic
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
             {
                 SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id),
-                SupportedSubtitlesCodecs = null, // TODO
+                SupportedSubtitlesCodecs = ["webvtt"], // TODO - For now we limit to webvtt
                 SupportsHDR = await GetHdrSupportAsync()
-            },
-            Users = [] // TODO - Current user
+            }
         };
     }
 

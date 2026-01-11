@@ -32,10 +32,9 @@ namespace K7.Clients.MAUI.Services
                 PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
                 {
                     SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id),
-                    SupportedSubtitlesCodecs = null, // TODO
+                    SupportedSubtitlesCodecs = ["webvtt"], // TODO - For now we limit to webvtt
                     SupportsHDR = await GetHdrSupportAsync()
-                },
-                Users = [] // TODO - Current user
+                }
             };
         }
 

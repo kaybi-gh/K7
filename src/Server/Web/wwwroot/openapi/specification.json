@@ -1232,8 +1232,7 @@
       },
       "CreateDeviceRequest": {
         "required": [
-          "playbackCapabilities",
-          "users"
+          "playbackCapabilities"
         ],
         "type": "object",
         "properties": {
@@ -1302,12 +1301,6 @@
           },
           "playbackCapabilities": {
             "$ref": "#/components/schemas/CreateDeviceRequestPlaybackCapibilities"
-          },
-          "users": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserDto"
-            }
           }
         }
       },

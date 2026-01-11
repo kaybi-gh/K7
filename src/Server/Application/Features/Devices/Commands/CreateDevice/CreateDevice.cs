@@ -16,17 +16,20 @@ public record CreateDeviceCommand : IRequest<IResult>
 public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, IResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUser _user;
 
-    public CreateDeviceCommandHandler(IApplicationDbContext context)
+    public CreateDeviceCommandHandler(IApplicationDbContext context, IUser user)
     {
         _context = context;
+        _user = user;
     }
 
     public async Task<IResult> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(request.CreateDeviceRequest.DeviceUniqueId))
         {
-            var existingDevice = await _context.Devices.FirstOrDefaultAsync(x => x.DeviceUniqueId == request.CreateDeviceRequest.DeviceUniqueId, cancellationToken: cancellationToken);
+            var existingDevice = await _context.Devices
+                .FirstOrDefaultAsync(x => x.DeviceUniqueId == request.CreateDeviceRequest.DeviceUniqueId, cancellationToken: cancellationToken);
             if (existingDevice != null)
             {
                 var existingDeviceQuery = new GetDeviceQuery()
@@ -57,6 +60,17 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
             },
             LastSeen = DateTimeOffset.UtcNow
         };
+
+        if (!string.IsNullOrWhiteSpace(_user.Id))
+        {
+            var domainUser = await _context.Users
+                .SingleOrDefaultAsync(u => u.IdentityUserId == _user.Id, cancellationToken);
+
+            if (domainUser is not null)
+            {
+                entity.Users.Add(domainUser);
+            }
+        }
 
         if (request.CreateDeviceRequest.ClientType == ClientType.Native && request.CreateDeviceRequest.NativeDeviceDetails != null)
         {
