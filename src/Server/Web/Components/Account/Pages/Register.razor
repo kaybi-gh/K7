@@ -3,7 +3,9 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Text
 @using System.Text.Encodings.Web
+@using K7.Server.Domain.Entities.Users
 @using K7.Server.Infrastructure.Database.Context.Identity
+@using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 
@@ -14,6 +16,7 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject K7.Server.Application.Common.Interfaces.IApplicationDbContext ApplicationDbContext
 
 <PageTitle>Register</PageTitle>
 
@@ -89,6 +92,20 @@
         Logger.LogInformation("User created a new account with password.");
 
         var userId = await UserManager.GetUserIdAsync(user);
+        // Ensure corresponding domain user exists
+        var existingDomainUser = await ApplicationDbContext.Users.SingleOrDefaultAsync(u => u.IdentityUserId == userId, CancellationToken.None);
+        if (existingDomainUser is null)
+        {
+            var domainUser = new User
+            {
+                IdentityUserId = userId,
+                DisplayName = Input.Email
+            };
+
+            ApplicationDbContext.Users.Add(domainUser);
+            await ApplicationDbContext.SaveChangesAsync(CancellationToken.None);
+        }
+
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
         var callbackUrl = NavigationManager.GetUriWithQueryParameters(

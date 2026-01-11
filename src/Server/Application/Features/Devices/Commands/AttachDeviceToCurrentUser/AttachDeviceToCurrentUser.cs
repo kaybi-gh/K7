@@ -39,7 +39,7 @@ public class AttachDeviceToCurrentUserCommandHandler : IRequestHandler<AttachDev
 
         if (domainUser is null)
         {
-            return Results.NotFound("User not found");
+            return Results.NotFound();
         }
 
         if (device.Users.Any(u => u.Id == domainUser.Id))

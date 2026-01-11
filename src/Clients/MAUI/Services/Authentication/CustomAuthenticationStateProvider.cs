@@ -1,5 +1,7 @@
 ﻿using K7.Clients.MAUI.Interfaces;
 using K7.Clients.Shared.Domain.Interfaces;
+using K7.Shared;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Identity.Client;
 using System.Security.Claims;
@@ -9,11 +11,15 @@ namespace K7.Clients.MAUI.Services.Authentication;
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider, ICustomAuthenticationStateProvider
 {
     private readonly IMsalClientService _msalClientService;
+    private readonly IK7ServerService _k7ServerService;
+    private readonly IDeviceStorageService _deviceStorageService;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
 
-    public CustomAuthenticationStateProvider(IMsalClientService msalClientService)
+    public CustomAuthenticationStateProvider(IMsalClientService msalClientService, IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService)
     {
         _msalClientService = msalClientService;
+        _k7ServerService = k7ServerService;
+        _deviceStorageService = deviceStorageService;
     }
 
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -74,6 +80,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (result != null)
         {
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.ClaimsPrincipal.Claims, "AuthenticationTypes.Federation"));
+            await TryAttachCurrentUserToDeviceAsync(cancellationToken);
         }
         else
         {
@@ -95,5 +102,18 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
+    }
+
+    private async Task TryAttachCurrentUserToDeviceAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var storedDeviceId = _deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
+            if (Guid.TryParse(storedDeviceId, out var parsedId))
+            {
+                await _k7ServerService.AttachCurrentUserToDeviceAsync(parsedId, cancellationToken);
+            }
+        }
+        catch { }
     }
 }

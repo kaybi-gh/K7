@@ -704,6 +704,30 @@
         }
       }
     },
+    "/api/devices/{id}/attach-user": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "AttachDeviceToCurrentUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/devices": {
       "post": {
         "tags": [

@@ -1,10 +1,13 @@
 ﻿using System.Security.Claims;
+using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Client.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace K7.Server.Web.Endpoints.Authentication;
@@ -17,7 +20,11 @@ public class LogInCallback : IEndpoint
         string groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapMethods("/api/authentication/callback/login/{provider}", [HttpMethods.Get, HttpMethods.Post],
-            async (HttpContext context, [FromServices] UserManager<ApplicationUser> userManager, [FromRoute] string provider, CancellationToken cancellationToken) =>
+            async (HttpContext context,
+                   [FromServices] UserManager<ApplicationUser> userManager,
+                   [FromServices] IApplicationDbContext applicationDbContext,
+                   [FromRoute] string provider,
+                   CancellationToken cancellationToken) =>
         {
             // Retrieve the authorization data validated by OpenIddict as part of the callback handling.
             var result = await context.AuthenticateAsync(OpenIddictClientAspNetCoreDefaults.AuthenticationScheme);
@@ -85,6 +92,25 @@ public class LogInCallback : IEndpoint
                 {
                     throw new InvalidOperationException($"Failed to associate LogIn: {string.Join(", ", addLogInResult.Errors.Select(e => e.Description))}");
                 }
+            }
+
+            // Ensure a corresponding domain user exists for this identity user
+            var identityUserId = user.Id;
+            var domainUser = await applicationDbContext.Users
+                .SingleOrDefaultAsync(u => u.IdentityUserId == identityUserId, cancellationToken);
+
+            if (domainUser is null)
+            {
+                var displayName = name ?? email ?? identityUserId;
+
+                domainUser = new User
+                {
+                    IdentityUserId = identityUserId,
+                    DisplayName = displayName
+                };
+
+                applicationDbContext.Users.Add(domainUser);
+                await applicationDbContext.SaveChangesAsync(cancellationToken);
             }
 
             ///
