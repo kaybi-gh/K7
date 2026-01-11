@@ -44,6 +44,12 @@ public class K7ServerService : IK7ServerService
         return result!.Id;
     }
 
+    public async Task<List<MediaFormatDto>> GetMediaFormatsAsync()
+    {
+        var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions);
+        return formats ?? [];
+    }
+
     public async Task<MovieDto?> GetMovieAsync(Guid id)
     {
         try

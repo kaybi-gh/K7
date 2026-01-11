@@ -38,7 +38,7 @@ builder.Services.AddHttpClient("BackendAPI", client =>
 
 var wasmHost = builder.Build();
 
-//await DeviceInitializer.InitializeDeviceAsync(wasmHost.Services);
+await DeviceInitializer.InitializeDeviceAsync(wasmHost.Services);
 
 await wasmHost.RunAsync();
 

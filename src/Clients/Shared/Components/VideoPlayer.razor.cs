@@ -17,7 +17,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
+        if (DeviceService.GetClientType() == ClientType.Web)
         {
             if (PlayerService.IsVisible && !_isInitialized)
             {
@@ -55,7 +55,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
     protected override void OnInitialized()
     {
-        if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
+        if (DeviceService.GetClientType() == ClientType.Web)
         {
             PlayerService.PlayRequested += PlayAsync;
             PlayerService.PauseRequested += PauseAsync;
@@ -74,7 +74,7 @@ public partial class VideoPlayer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
+        if (DeviceService.GetClientType() == ClientType.Web)
         {
             PlayerService.PlayRequested -= PlayAsync;
             PlayerService.PauseRequested -= PauseAsync;

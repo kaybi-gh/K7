@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Libraries;
 
+// TODO - Remove?
 public class GetMediaFormatSample : IEndpoint
 {
     public void Map(IEndpointRouteBuilder endpointRouteBuilder)

@@ -72,7 +72,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         var requiresVideoTranscoding = false;
         
         if (selectedAudioTrack != null &&
-            !device.SupportedMediaFormats.OfType<AudioMediaFormat>().Any(x => x.Container == videoFileMetadata.Container && x.Codec == selectedAudioTrack.Codec))
+            !device.PlaybackCapabilities.SupportedMediaFormats.OfType<AudioMediaFormat>().Any(x => x.Container == videoFileMetadata.Container && x.Codec == selectedAudioTrack.Codec))
         {
             requiresAudioTranscoding = true;
         }
@@ -83,7 +83,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         //}
 
         if (selectedVideoTrack != null &&
-            !device.SupportedMediaFormats.OfType<VideoMediaFormat>().Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec))
+            !device.PlaybackCapabilities.SupportedMediaFormats.OfType<VideoMediaFormat>().Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec))
         {
             requiresVideoTranscoding = true;
         }
@@ -95,12 +95,12 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
             if (requiresAudioTranscoding)
             {
-                audioTranscodingMediaFormat = GetDeviceBestSupportedAudioMediaFormat([.. device.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
+                audioTranscodingMediaFormat = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
             }
 
             if (requiresAudioTranscoding)
             {
-                videoTranscodingMediaFormat = GetDeviceBestSupportedVideoMediaFormat([.. device.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Video)]);
+                videoTranscodingMediaFormat = GetDeviceBestSupportedVideoMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Video)]);
             }
 
             return new()

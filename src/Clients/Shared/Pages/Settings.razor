@@ -13,7 +13,7 @@
     }
 </MudSelect>
 
-@if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
+@if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
 {
     <MudTextField @bind-Value="@_backendUrl" Label="K7 server URL" ReadOnly="true" Variant="Variant.Text" />
 }
@@ -22,7 +22,6 @@ else
     <MudTextField @bind-Value="@_backendUrl" Label="K7 server URL" ReadOnly="true" Variant="Variant.Text" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Delete" OnAdornmentClick="ChangeBackendUrl" />
 }
 
-<MudText>Platform: @DeviceService.GetPlatform()</MudText>
 <MudText>FormFactor: @_deviceType</MudText>
 <MudText>HDR: @_hdrSupport</MudText>
 

@@ -714,7 +714,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateDeviceCommand"
+                "$ref": "#/components/schemas/CreateDeviceRequest"
               }
             }
           },
@@ -1224,7 +1224,17 @@
       "BackgroundTaskStatus": {
         "type": "integer"
       },
-      "CreateDeviceCommand": {
+      "Browser": {
+        "type": "integer"
+      },
+      "ClientType": {
+        "type": "integer"
+      },
+      "CreateDeviceRequest": {
+        "required": [
+          "playbackCapabilities",
+          "users"
+        ],
         "type": "object",
         "properties": {
           "deviceUniqueId": {
@@ -1238,6 +1248,9 @@
               "null",
               "string"
             ]
+          },
+          "clientType": {
+            "$ref": "#/components/schemas/ClientType"
           },
           "deviceType": {
             "$ref": "#/components/schemas/DeviceType"
@@ -1267,14 +1280,54 @@
             ],
             "format": "double"
           },
-          "supportedMediaFormatIds": {
+          "nativeDeviceDetails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NativeDeviceDetailsDto"
+              }
+            ]
+          },
+          "webDeviceDetails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WebDeviceDetailsDto"
+              }
+            ]
+          },
+          "playbackCapabilities": {
+            "$ref": "#/components/schemas/CreateDeviceRequestPlaybackCapibilities"
+          },
+          "users": {
             "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDto"
+            }
+          }
+        }
+      },
+      "CreateDeviceRequestPlaybackCapibilities": {
+        "type": "object",
+        "properties": {
+          "supportedMediaFormatIds": {
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string"
             }
           },
           "supportedSubtitlesCodecs": {
-            "type": "array",
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string"
             }
@@ -1285,6 +1338,10 @@
         }
       },
       "DeviceDto": {
+        "required": [
+          "playbackCapabilities",
+          "users"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1303,6 +1360,9 @@
               "string"
             ]
           },
+          "clientType": {
+            "$ref": "#/components/schemas/ClientType"
+          },
           "deviceType": {
             "$ref": "#/components/schemas/DeviceType"
           },
@@ -1331,6 +1391,48 @@
             ],
             "format": "double"
           },
+          "nativeDeviceDetails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NativeDeviceDetailsDto"
+              }
+            ]
+          },
+          "webDeviceDetails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WebDeviceDetailsDto"
+              }
+            ]
+          },
+          "playbackCapabilities": {
+            "$ref": "#/components/schemas/DevicePlaybackCapabilitiesDto"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDto"
+            }
+          },
+          "lastSeen": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DevicePlaybackCapabilitiesDto": {
+        "required": [
+          "supportedMediaFormats",
+          "supportedSubtitlesCodecs"
+        ],
+        "type": "object",
+        "properties": {
           "supportedMediaFormats": {
             "type": "array",
             "items": {
@@ -1345,10 +1447,6 @@
           },
           "supportsHDR": {
             "type": "boolean"
-          },
-          "lastSeen": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -2061,6 +2159,53 @@
       "MetadataPictureType": {
         "type": "integer"
       },
+      "NativeDeviceDetailsDto": {
+        "type": "object",
+        "properties": {
+          "rawModel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawManufacturer": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawPlatform": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawIdiom": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawDeviceType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "OperatingSystem": {
         "type": "integer"
       },
@@ -2515,6 +2660,32 @@
           }
         }
       },
+      "UserDto": {
+        "required": [
+          "displayName",
+          "accessibleLibraryIds",
+          "devices"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "accessibleLibraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceDto"
+            }
+          }
+        }
+      },
       "VideoFileTrackDto": {
         "required": [
           "width",
@@ -2585,6 +2756,68 @@
       },
       "VideoResolutionIdentifier": {
         "type": "integer"
+      },
+      "WebDeviceDetailsDto": {
+        "type": "object",
+        "properties": {
+          "browser": {
+            "$ref": "#/components/schemas/Browser"
+          },
+          "rawUserAgent": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawBrowserName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawBrowserVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawOperatingSystemName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawOperatingSystemVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawOperatingSystemVersionName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawPlatformType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawEngineName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawEngineVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },
