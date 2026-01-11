@@ -1,11 +1,32 @@
-﻿window.getDeviceType = () => {
-    const browser = bowser.getParser(window.navigator.userAgent);
-    if (browser.getPlatformType) {
-        const type = browser.getPlatformType();
-        return type.charAt(0).toUpperCase() + type.slice(1);
+﻿window.getRawUserAgent = () => navigator.userAgent;
+
+window.getParsedUserAgent = () => {
+    try {
+        const parsedUserAgent = bowser.parse(window.navigator.userAgent)
+
+        return {
+            BrowserName: parsedUserAgent.browser.name || null,
+            BrowserVersion: parsedUserAgent.browser.version || null,
+            OsName: parsedUserAgent.os.name|| null,
+            OsVersion: parsedUserAgent.os.version || null,
+            OsVersionName: parsedUserAgent.os.versionName || null,
+            PlatformType: parsedUserAgent.platform.type || null,
+            EngineName: parsedUserAgent.engine.name || null,
+            EngineVersion: parsedUserAgent.engine.version || null
+        };
+    } catch (e) {
+        console.warn('getBrowserInfo failed', e);
+        return {
+            BrowserName: null,
+            BrowserVersion: null,
+            OsName: null,
+            OsVersion: null,
+            OsVersionName: null,
+            PlatformType: null,
+            EngineName: null,
+            EngineVersion: null
+        };
     }
-    console.log(browser);
-    return 'Unknown';
 };
 
 window.getDisplayHeight = () => {
@@ -83,8 +104,9 @@ window.getHdrSupport = async function () {
                 contentType: "video/webm; codecs=vp9.2",
                 width: 1920,
                 height: 1080,
+                bitrate: 8000000,
                 framerate: 60,
-                hdrMetadataType: "smpte2084", // HDR10
+                hdrMetadataType: "smpteSt2084",
             }
         });
 

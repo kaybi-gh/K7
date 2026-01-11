@@ -1,26 +1,16 @@
 ﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using K7.Shared.Dtos.Requests;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Http;
-using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Server.Application.Features.Devices.Commands.CreateDevice;
 
 public record CreateDeviceCommand : IRequest<IResult>
 {
-    public string? DeviceUniqueId { get; set; }
-    public string? DeviceName { get; set; }
-    public DeviceType DeviceType { get; set; } = DeviceType.Unknown;
-    public OperatingSystem OperatingSystem { get; set; } = OperatingSystem.Unknown;
-    public string? OperatingSystemVersion { get; set; }
-    public double DisplayHeight { get; set; }
-    public double DisplayWidth { get; set; }
-    public ICollection<string> SupportedMediaFormatIds { get; set; } = [];
-    public ICollection<string> SupportedSubtitlesCodecs { get; set; } = [];
-    public bool SupportsHDR { get; set; }
+    public required CreateDeviceRequest CreateDeviceRequest { get; set; }
 }
 
 public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, IResult>
@@ -34,12 +24,12 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
 
     public async Task<IResult> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrEmpty(request.DeviceUniqueId))
+        if (!string.IsNullOrEmpty(request.CreateDeviceRequest.DeviceUniqueId))
         {
-            var existingDevice = await _context.Devices.FirstOrDefaultAsync(x => x.DeviceUniqueId == request.DeviceUniqueId, cancellationToken: cancellationToken);
+            var existingDevice = await _context.Devices.FirstOrDefaultAsync(x => x.DeviceUniqueId == request.CreateDeviceRequest.DeviceUniqueId, cancellationToken: cancellationToken);
             if (existingDevice != null)
             {
-                var existingDeviceQuery = new Shared.Dtos.Requests.GetDeviceQuery()
+                var existingDeviceQuery = new GetDeviceQuery()
                 {
                     Id = existingDevice.Id
                 };
@@ -51,24 +41,59 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
         var entity = new Device
         {
             Id = Guid.NewGuid(),
-            DeviceUniqueId = request.DeviceUniqueId,
-            DeviceName = request.DeviceName,
-            DeviceType = request.DeviceType,
-            OperatingSystem = request.OperatingSystem,
-            OperatingSystemVersion = request.OperatingSystemVersion,
-            DisplayHeight = request.DisplayHeight,
-            DisplayWidth = request.DisplayWidth,
-            SupportedMediaFormats = [.. Constants.MediaFormats.Where(x => request.SupportedMediaFormatIds.Contains(x.Id))],
-            SupportedSubtitlesCodecs = request.SupportedSubtitlesCodecs,
-            SupportsHDR = request.SupportsHDR,
+            DeviceUniqueId = request.CreateDeviceRequest.DeviceUniqueId,
+            DeviceName = request.CreateDeviceRequest.DeviceName,
+            ClientType = request.CreateDeviceRequest.ClientType,
+            DeviceType = request.CreateDeviceRequest.DeviceType,
+            OperatingSystem = request.CreateDeviceRequest.OperatingSystem,
+            OperatingSystemVersion = request.CreateDeviceRequest.OperatingSystemVersion,
+            DisplayHeight = request.CreateDeviceRequest.DisplayHeight,
+            DisplayWidth = request.CreateDeviceRequest.DisplayWidth,
+            PlaybackCapabilities = new DevicePlaybackCapabilities
+            {
+                SupportedMediaFormatIds = request.CreateDeviceRequest.PlaybackCapabilities.SupportedMediaFormatIds?.ToList() ?? [],
+                SupportedSubtitlesCodecs = request.CreateDeviceRequest.PlaybackCapabilities.SupportedSubtitlesCodecs?.ToList() ?? [],
+                SupportsHDR = request.CreateDeviceRequest.PlaybackCapabilities.SupportsHDR
+            },
             LastSeen = DateTimeOffset.UtcNow
         };
+
+        if (request.CreateDeviceRequest.ClientType == ClientType.Native && request.CreateDeviceRequest.NativeDeviceDetails != null)
+        {
+            entity.NativeDeviceDetails = new NativeDeviceDetails
+            {
+                RawDeviceType = request.CreateDeviceRequest.NativeDeviceDetails.RawDeviceType,
+                RawIdiom = request.CreateDeviceRequest.NativeDeviceDetails.RawIdiom,
+                RawManufacturer = request.CreateDeviceRequest.NativeDeviceDetails.RawManufacturer,
+                RawModel = request.CreateDeviceRequest.NativeDeviceDetails.RawModel,
+                RawName = request.CreateDeviceRequest.NativeDeviceDetails.RawName,
+                RawPlatform = request.CreateDeviceRequest.NativeDeviceDetails.RawPlatform,
+                RawVersion = request.CreateDeviceRequest.NativeDeviceDetails.RawVersion
+            };
+        }
+
+        if (request.CreateDeviceRequest.ClientType == ClientType.Web && request.CreateDeviceRequest.WebDeviceDetails != null)
+        {
+            entity.WebDeviceDetails = new WebDeviceDetails
+            {
+                Browser = request.CreateDeviceRequest.WebDeviceDetails.Browser,
+                RawUserAgent = request.CreateDeviceRequest.WebDeviceDetails.RawUserAgent,
+                RawBrowserName = request.CreateDeviceRequest.WebDeviceDetails.RawBrowserName,
+                RawBrowserVersion = request.CreateDeviceRequest.WebDeviceDetails.RawBrowserVersion,
+                RawOperatingSystemName = request.CreateDeviceRequest.WebDeviceDetails.RawOperatingSystemName,
+                RawOperatingSystemVersion = request.CreateDeviceRequest.WebDeviceDetails.RawOperatingSystemVersion,
+                RawOperatingSystemVersionName = request.CreateDeviceRequest.WebDeviceDetails.RawOperatingSystemVersionName,
+                RawPlatformType = request.CreateDeviceRequest.WebDeviceDetails.RawPlatformType,
+                RawEngineName = request.CreateDeviceRequest.WebDeviceDetails.RawEngineName,
+                RawEngineVersion = request.CreateDeviceRequest.WebDeviceDetails.RawEngineVersion                
+            };
+        }
 
         entity.AddDomainEvent(new DeviceCreatedEvent(entity));
         _context.Devices.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        var query = new Shared.Dtos.Requests.GetDeviceQuery()
+        var query = new GetDeviceQuery()
         {
             Id = entity.Id
         };

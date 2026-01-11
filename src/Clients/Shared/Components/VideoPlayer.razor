@@ -6,7 +6,7 @@
 @if (PlayerService.IsVisible)
 {
     <VideoPlayerControlsOverlay />
-    @if (DeviceService.GetOperatingSystem() == Server.Domain.Enums.OperatingSystem.Browser)
+    @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
     {
         <div class="video-container" @ref="_videoContainer">
             <video id="video-player" class="video-js" @ref="_player">

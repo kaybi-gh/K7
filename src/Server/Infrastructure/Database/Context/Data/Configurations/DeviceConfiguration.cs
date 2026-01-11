@@ -8,6 +8,11 @@ public class DeviceConfiguration : IEntityTypeConfiguration<Device>
 {
     public void Configure(EntityTypeBuilder<Device> builder)
     {
-        builder.Ignore(x => x.SupportedMediaFormats);
+        builder.OwnsOne(x => x.NativeDeviceDetails);
+        builder.OwnsOne(x => x.WebDeviceDetails);
+        builder.OwnsOne(x => x.PlaybackCapabilities, navigationBuilder =>
+        {
+            navigationBuilder.Ignore(x => x.SupportedMediaFormats);
+        });
     }
 }

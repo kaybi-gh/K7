@@ -4,8 +4,8 @@ public enum OperatingSystem
 {
     Unknown,
     Android,
-    Browser,
     iOS,
+    Linux,
     MacCatalyst,
     Windows
 }

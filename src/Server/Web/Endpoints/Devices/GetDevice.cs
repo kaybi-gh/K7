@@ -1,5 +1,5 @@
 ﻿using K7.Server.Application.Features.Devices.Queries.GetDevice;
-using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Devices;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Mvc;
 

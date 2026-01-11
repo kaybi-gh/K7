@@ -71,7 +71,7 @@ public static partial class MauiProgram
         var app = builder.Build();
 
         var k7ServerManagerService = app.Services.GetRequiredService<K7ServerManagerService>();
-        //k7ServerManagerService.BaseAddressUpdated += (sender, baseAddress) => K7ServerManagerService_BaseAddressUpdated(sender, baseAddress, app.Services);
+        k7ServerManagerService.BaseAddressUpdated += (sender, baseAddress) => K7ServerManagerService_BaseAddressUpdated(sender, baseAddress, app.Services);
 
         return app;
     }

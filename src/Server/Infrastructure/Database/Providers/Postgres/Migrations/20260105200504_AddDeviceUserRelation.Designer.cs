@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260105200504_AddDeviceUserRelation")]
+    partial class AddDeviceUserRelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,9 +98,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<int>("ClientType")
-                        .HasColumnType("integer");
 
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
@@ -1376,89 +1376,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                                 .HasForeignKey("DeviceId");
                         });
 
-                    b.OwnsOne("K7.Server.Domain.Entities.Devices.NativeDeviceDetails", "NativeDeviceDetails", b1 =>
-                        {
-                            b1.Property<Guid>("DeviceId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("RawDeviceType")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawIdiom")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawManufacturer")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawModel")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawName")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawPlatform")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawVersion")
-                                .HasColumnType("text");
-
-                            b1.HasKey("DeviceId");
-
-                            b1.ToTable("Devices");
-
-                            b1.WithOwner()
-                                .HasForeignKey("DeviceId");
-                        });
-
-                    b.OwnsOne("K7.Server.Domain.Entities.Devices.WebDeviceDetails", "WebDeviceDetails", b1 =>
-                        {
-                            b1.Property<Guid>("DeviceId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<int>("Browser")
-                                .HasColumnType("integer");
-
-                            b1.Property<string>("RawBrowserName")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawBrowserVersion")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawEngineName")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawEngineVersion")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawOperatingSystemName")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawOperatingSystemVersion")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawOperatingSystemVersionName")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawPlatformType")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("RawUserAgent")
-                                .HasColumnType("text");
-
-                            b1.HasKey("DeviceId");
-
-                            b1.ToTable("Devices");
-
-                            b1.WithOwner()
-                                .HasForeignKey("DeviceId");
-                        });
-
-                    b.Navigation("NativeDeviceDetails");
-
                     b.Navigation("PlaybackCapabilities")
                         .IsRequired();
-
-                    b.Navigation("WebDeviceDetails");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
