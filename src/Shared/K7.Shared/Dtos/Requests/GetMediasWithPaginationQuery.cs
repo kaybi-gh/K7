@@ -2,7 +2,7 @@
 
 namespace K7.Shared.Dtos.Requests;
 
-public record GetMediasWithPaginationQuery
+public sealed record GetMediasWithPaginationQuery
 {
     public Guid[]? LibraryIds { get; init; }
     public Guid[]? Ids { get; init; }
@@ -11,4 +11,22 @@ public record GetMediasWithPaginationQuery
     public HashSet<MediaOrderingOption>? OrderBy { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;
+}
+
+public enum MediaOrderingOption
+{
+    CreatedAsc,
+    CreatedDesc,
+    LocalRatingAsc,
+    LocalRatingDesc,
+    OriginalTitleAsc,
+    OriginalTitleDesc,
+    PlayCountAsc,
+    PlayCountDesc,
+    PopularityAsc,
+    PopularityDesc,
+    ReleaseDateAsc,
+    ReleaseDateDesc,
+    TitleAsc,
+    TitleDesc
 }

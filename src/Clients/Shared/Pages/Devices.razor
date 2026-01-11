@@ -1,0 +1,69 @@
+@page "/admin/devices"
+@using K7.Shared.Dtos.Devices
+@inject IK7ServerService K7ServerService
+
+<h3>All Devices</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    if (devices != null)
+    {
+        if (devices.TotalCount == 0)
+        {
+            <p>No devices found.</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Client</th>
+                        <th>OS</th>
+                        <th>Last Seen</th>
+                        <th>Users</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in devices.Items!)
+                    {
+                        <tr>
+                            <td>@d.Id</td>
+                            <td>@d.DeviceName</td>
+                            <td>@d.ClientType</td>
+                            <td>@d.OperatingSystem @d.OperatingSystemVersion</td>
+                            <td>@d.LastSeen.LocalDateTime</td>
+                            <td>@d.Users.Count()</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@code {
+    private bool isLoading = true;
+    private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? devices;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            devices = await K7ServerService.GetDevicesAsync(); // TODO - Filter on current user
+        }
+        catch
+        {
+            
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
