@@ -44,6 +44,12 @@ public class K7ServerService : IK7ServerService
         return result!.Id;
     }
 
+    public async Task AttachCurrentUserToDeviceAsync(Guid deviceId, CancellationToken cancellationToken = default)
+    {
+        var responseMessage = await HttpClient.PostAsync($"/api/devices/{deviceId}/attach-user", null, cancellationToken);
+        responseMessage.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<MediaFormatDto>> GetMediaFormatsAsync()
     {
         var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions);

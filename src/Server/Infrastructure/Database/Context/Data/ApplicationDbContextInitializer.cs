@@ -1,4 +1,5 @@
 ﻿using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
@@ -75,11 +76,38 @@ public class ApplicationDbContextInitializer
 
         if (await _userManager.Users.AllAsync(u => u.UserName != administrator.UserName))
         {
-            await _userManager.CreateAsync(administrator, "Administrator1!");
-            if (!string.IsNullOrWhiteSpace(administratorRole.Name))
+            // Create identity
+            var result = await _userManager.CreateAsync(administrator, "Administrator1!");
+            
+            if (result.Succeeded)
             {
-                await _userManager.AddToRolesAsync(administrator, [administratorRole.Name]);
+                if (!string.IsNullOrWhiteSpace(administratorRole.Name))
+                {
+                    await _userManager.AddToRolesAsync(administrator, [administratorRole.Name]);
+                }
             }
-        }
+
+            // Create domain user
+            var adminIdentityUser = await _userManager.FindByNameAsync("administrator@localhost");
+            if (adminIdentityUser is not null)
+            {
+                var existingDomainAdmin = await _context.Users
+                    .SingleOrDefaultAsync(u => u.IdentityUserId == adminIdentityUser.Id);
+
+                if (existingDomainAdmin is null)
+                {
+                    var displayName = adminIdentityUser.Email ?? adminIdentityUser.UserName ?? adminIdentityUser.Id;
+
+                    var domainAdmin = new User
+                    {
+                        IdentityUserId = adminIdentityUser.Id,
+                        DisplayName = displayName
+                    };
+
+                    _context.Users.Add(domainAdmin);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }        
     }
 }
