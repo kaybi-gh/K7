@@ -5,17 +5,28 @@ namespace K7.Server.Web.Endpoints.IndexedFiles;
 
 public class GetHlsVideoStreamSegment : IEndpoint
 {
-    public void Map(IEndpointRouteBuilder endpointRouteBuilder)
+    public void Map(IEndpointRouteBuilder app)
     {
-        var type = GetType();
-        string groupName = type.Namespace!.Split('.').Last();
-
-        endpointRouteBuilder.MapGet($"/api/indexed-files/{GetHlsVideoStreamSegmentQueryUriBuilder.Route}", async ([FromServices] ISender sender, [FromRoute] Guid id, [FromRoute] string quality, [FromRoute] int segmentId, CancellationToken cancellationToken) =>
-        {
-            return await sender.Send(new GetHlsVideoStreamSegmentQuery(id, quality, segmentId), cancellationToken: cancellationToken);
-        })
-        //.RequireAuthorization()
-        .WithName(type.Name)
-        .WithTags(groupName);
+        app.MapGet($"/api/indexed-files/{{id}}/hls-stream/video/{{quality}}/segments/{{segmentNumber}}.m4s",
+                async (
+                    [FromRoute] Guid id, 
+                    [FromRoute] string quality, 
+                    [FromRoute] string segmentNumber,
+                    [FromQuery] string? TranscodingVideoCodec,
+                    [FromQuery] string? TranscodingAudioCodec,
+                    [FromServices] ISender sender, 
+                    CancellationToken cancellationToken) =>
+                {
+                    // Parse segmentNumber as int, or use -1 for init
+                    var segmentIndex = segmentNumber.ToLower() == "init" ? -1 : int.Parse(segmentNumber);
+                    return await sender.Send(new GetHlsVideoStreamSegmentQuery(
+                        id, 
+                        quality, 
+                        segmentIndex,
+                        TranscodingVideoCodec,
+                        TranscodingAudioCodec), cancellationToken);
+                })
+            .WithName(nameof(GetHlsVideoStreamSegment))
+            .WithTags("IndexedFiles");
     }
 }

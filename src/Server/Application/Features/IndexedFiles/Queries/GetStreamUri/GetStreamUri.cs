@@ -49,6 +49,14 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
         if (indexedFile.FileMetadata is VideoFileMetadata videoFileMetadata)
         {
+            await _context.Entry(videoFileMetadata)
+                .Collection(v => v.AudioTracks)
+                .LoadAsync(cancellationToken);
+
+            await _context.Entry(videoFileMetadata)
+                .Collection(v => v.VideoTracks)
+                .LoadAsync(cancellationToken);
+
             return GetVideoFileStreamUri(device, indexedFile, videoFileMetadata);
         }
 
@@ -61,64 +69,70 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         // TODO - Add user preferences to automatically chose audio track
         var selectedAudioTrack = videoFileMetadata.AudioTracks
             .OrderBy(x => x.IsDefault)
-            .FirstOrDefault();
+            .FirstOrDefault()
+            ?? throw new InvalidOperationException($"Indexed file with id '{indexedFile.Id}' has no audio tracks.");
 
         //var selectedSubtitlesTrack = videoFileMetadata.SubtitleTracks // TODO - Subtitles
 
-        var selectedVideoTrack = videoFileMetadata.VideoTracks.FirstOrDefault();
+        var selectedVideoTrack = videoFileMetadata.VideoTracks.FirstOrDefault()
+            ?? throw new InvalidOperationException($"Indexed file with id '{indexedFile.Id}' has no video tracks.");
 
-        var requiresAudioTranscoding = false;
-        //var requiresSubtitlesTranscoding = false; // TODO - Subtitles
-        var requiresVideoTranscoding = false;
-        
-        if (selectedAudioTrack != null &&
-            !device.PlaybackCapabilities.SupportedMediaFormats.OfType<AudioMediaFormat>().Any(x => x.Container == videoFileMetadata.Container && x.Codec == selectedAudioTrack.Codec))
+        var supportedAudioFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<AudioMediaFormat>().ToList();
+        var supportedVideoFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<VideoMediaFormat>().ToList();
+
+        var audioDirectSupported = selectedAudioTrack != null &&
+                                   supportedAudioFormats.Any(x => x.Container == videoFileMetadata.Container && x.Codec == selectedAudioTrack.Codec);
+
+        var videoDirectSupported = selectedVideoTrack != null &&
+                                   supportedVideoFormats.Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec);
+
+        // If both audio and video are directly supported (container + codec), return a direct-stream URL
+        if (audioDirectSupported && videoDirectSupported)
         {
-            requiresAudioTranscoding = true;
-        }
+            var mimeType = Constants.ContainerMimeTypeMapping.TryGetValue(videoFileMetadata.Container, out var directMime)
+                ? directMime
+                : "application/octet-stream";
 
-        //if (selectedSubtitlesTrack != null && !device.SupportedVideoCodecs.Contains(selectedVideoTrack.CodecName)) // TODO - Subtitles
-        //{
-        //    requiresSubtitlesTranscoding = true;
-        //}
-
-        if (selectedVideoTrack != null &&
-            !device.PlaybackCapabilities.SupportedMediaFormats.OfType<VideoMediaFormat>().Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec))
-        {
-            requiresVideoTranscoding = true;
-        }
-        
-        if (requiresAudioTranscoding /*|| requiresSubtitlesTranscoding*/ || requiresVideoTranscoding)
-        {
-            AudioMediaFormat? audioTranscodingMediaFormat = null;
-            VideoMediaFormat? videoTranscodingMediaFormat = null;
-
-            if (requiresAudioTranscoding)
+            return new IndexedFileStreamUri
             {
-                audioTranscodingMediaFormat = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
-            }
-
-            if (requiresAudioTranscoding)
-            {
-                videoTranscodingMediaFormat = GetDeviceBestSupportedVideoMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Video)]);
-            }
-
-            return new()
-            {
-                Uri = new Uri(GetHlsStreamManifestQueryUriBuilder.Build(new GetHlsStreamManifestQuery()
-                {
-                    Id = indexedFile.Id,
-                    TranscodingAudioCodec = audioTranscodingMediaFormat?.Codec,
-                    TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec
-                }), UriKind.Absolute),
-                MimeType = "application/vnd.apple.mpegurl"
+                Uri = new Uri(GetIndexedFileDirectStreamQueryUriBuilder.Build(indexedFile.Id), UriKind.Relative),
+                MimeType = mimeType
             };
         }
 
-        return new IndexedFileStreamUri()
+        // Otherwise we go through HLS; decide what really needs transcoding based on codec support only
+        var audioCodecSupported = selectedAudioTrack != null &&
+                                  supportedAudioFormats.Any(x => x.Codec == selectedAudioTrack.Codec);
+
+        var videoCodecSupported = selectedVideoTrack != null &&
+                                  supportedVideoFormats.Any(x => x.VideoCodec == selectedVideoTrack.Codec);
+
+        var requiresAudioTranscoding = !audioCodecSupported;
+        //var requiresSubtitlesTranscoding = false; // TODO - Subtitles
+        var requiresVideoTranscoding = !videoCodecSupported;
+
+        AudioMediaFormat? audioTranscodingMediaFormat = null;
+        VideoMediaFormat? videoTranscodingMediaFormat = null;
+
+        if (requiresAudioTranscoding)
         {
-            Uri = new Uri(GetIndexedFileDirectStreamQueryUriBuilder.Build(indexedFile.Id), UriKind.Absolute),
-            MimeType = Constants.ExtensionFormatMapping[indexedFile.Extension]
+            audioTranscodingMediaFormat = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
+        }
+
+        if (requiresVideoTranscoding)
+        {
+            videoTranscodingMediaFormat = GetDeviceBestSupportedVideoMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Video)]);
+        }
+
+        return new()
+        {
+            Uri = new Uri(GetHlsStreamManifestQueryUriBuilder.Build(new GetHlsStreamManifestQuery()
+            {
+                Id = indexedFile.Id,
+                TranscodingAudioCodec = audioTranscodingMediaFormat?.Codec,
+                TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec
+            }), UriKind.Relative),
+            MimeType = "application/vnd.apple.mpegurl"
         };
     }
 

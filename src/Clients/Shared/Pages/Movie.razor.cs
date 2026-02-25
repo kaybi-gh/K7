@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Domain.Models;
+using K7.Clients.Shared.Domain.Interfaces;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
@@ -49,12 +50,12 @@ public partial class Movie
 
     private async Task PlayAsync()
     {
-        PlayerService.Source = new PlayerSource()
+        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any())
         {
-            Url = k7ServerService.GetAbsoluteUri($"api/indexed-files/{_movie!.IndexedFiles!.First().Id}/direct-stream")!.AbsolutePath,
-            MimeType = "video/mp4"
-        };
-        await PlayerService.ShowAsync();
-        PlayerService.Play();
+            return;
+        }
+
+        var indexedFileId = _movie.IndexedFiles.First().Id;
+        await PlayerService.PlayIndexedFileAsync(indexedFileId);
     }
 }

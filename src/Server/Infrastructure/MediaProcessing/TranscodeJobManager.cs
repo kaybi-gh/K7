@@ -1,0 +1,370 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using K7.Server.Infrastructure.Configuration;
+
+namespace K7.Server.Infrastructure.MediaProcessing;
+
+public class TranscodeJobManager : ITranscodeJobManager
+{
+    private readonly ConcurrentDictionary<Guid, TranscodeJob> _activeJobs = new();
+    private readonly SemaphoreSlim _jobLock = new(1, 1);
+    private readonly ILogger<TranscodeJobManager> _logger;
+    private readonly IMediaTranscoder _mediaTranscoder;
+    private readonly PathsConfiguration _pathsConfig;
+
+    public TranscodeJobManager(
+        ILogger<TranscodeJobManager> logger,
+        IMediaTranscoder mediaTranscoder,
+        IOptions<PathsConfiguration> pathsOptions)
+    {
+        _logger = logger;
+        _mediaTranscoder = mediaTranscoder;
+        _pathsConfig = pathsOptions.Value;
+    }
+
+    public async Task<TranscodeJob> GetOrStartJobAsync(
+        Guid indexedFileId,
+        string inputFilePath,
+        string quality,
+        string? videoCodec,
+        string? audioCodec,
+        Guid streamSessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodec ?? "copy");
+
+        if (_activeJobs.TryGetValue(jobKey, out var existingJob))
+        {
+            existingJob.AttachedStreamSessions.Add(streamSessionId);
+            existingJob.LastPingTime = DateTime.UtcNow;
+            _logger.LogInformation(
+                "Reusing existing transcode job {JobId} for session {SessionId}",
+                existingJob.JobId,
+                streamSessionId);
+            return existingJob;
+        }
+
+        await _jobLock.WaitAsync(cancellationToken);
+        try
+        {
+            // Double-check after acquiring lock
+            if (_activeJobs.TryGetValue(jobKey, out existingJob))
+            {
+                existingJob.AttachedStreamSessions.Add(streamSessionId);
+                existingJob.LastPingTime = DateTime.UtcNow;
+                return existingJob;
+            }
+
+            // Create new job - note: we don't start ffmpeg here yet
+            // It will be started on-demand in EnsureSegmentWillBeGeneratedAsync
+            var outputDir = Path.Combine(
+                _pathsConfig.Transcoding ?? throw new InvalidOperationException("Transcoding path not configured"),
+                indexedFileId.ToString("N"),
+                $"{quality}-{videoCodec ?? "copy"}-{audioCodec ?? "copy"}");
+
+            Directory.CreateDirectory(outputDir);
+
+            var job = new TranscodeJob
+            {
+                JobId = jobKey,
+                IndexedFileId = indexedFileId,
+                Quality = quality,
+                VideoCodec = videoCodec,
+                AudioCodec = audioCodec,
+                OutputDirectory = outputDir,
+                InputFilePath = inputFilePath,
+                TargetSegmentIndex = 0
+            };
+
+            job.AttachedStreamSessions.Add(streamSessionId);
+            _activeJobs[jobKey] = job;
+
+            _logger.LogInformation(
+                "Created new transcode job {JobId} for IndexedFile {IndexedFileId}, Quality {Quality}, OutputDir: {OutputDir}",
+                job.JobId,
+                indexedFileId,
+                quality,
+                outputDir);
+
+            return job;
+        }
+        finally
+        {
+            _jobLock.Release();
+        }
+    }
+
+    public void PingJob(Guid jobId, Guid streamSessionId)
+    {
+        if (_activeJobs.TryGetValue(jobId, out var job))
+        {
+            job.LastPingTime = DateTime.UtcNow;
+            job.AttachedStreamSessions.Add(streamSessionId);
+        }
+    }
+
+    public async Task EnsureSegmentWillBeGeneratedAsync(
+        Guid jobId,
+        int requestedSegmentIndex,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_activeJobs.TryGetValue(jobId, out var job))
+        {
+            throw new InvalidOperationException($"Job {jobId} not found");
+        }
+
+        var currentIndex = job.GetCurrentSegmentIndex();
+        var gap = requestedSegmentIndex - currentIndex;
+
+        // Calculate gap duration
+        var gapDuration = CalculateGapDuration(currentIndex, requestedSegmentIndex, allSegments);
+
+        _logger.LogDebug(
+            "Job {JobId}: Requested segment {RequestedIndex}, current {CurrentIndex}, gap {Gap} segments ({GapSeconds}s)",
+            jobId,
+            requestedSegmentIndex,
+            currentIndex,
+            gap,
+            gapDuration.TotalSeconds);
+
+        // Restart threshold: 30 segments or 60 seconds
+        if (gap > 30 || gapDuration.TotalSeconds > 60)
+        {
+            _logger.LogInformation(
+                "Job {JobId}: Gap too large ({Gap} segments, {GapSeconds}s), restarting with seek",
+                jobId,
+                gap,
+                gapDuration.TotalSeconds);
+
+            await RestartJobWithSeekAsync(job, requestedSegmentIndex - 5, allSegments, cancellationToken);
+        }
+        else if (requestedSegmentIndex >= job.TargetSegmentIndex || job.FfmpegProcess == null || job.FfmpegProcess.HasExited)
+        {
+            // Extend the target or start/restart ffmpeg
+            var newTarget = Math.Max(job.TargetSegmentIndex, requestedSegmentIndex + job.BufferSize);
+            
+            if (newTarget != job.TargetSegmentIndex || job.FfmpegProcess == null || job.FfmpegProcess.HasExited)
+            {
+                _logger.LogInformation(
+                    "Job {JobId}: Extending target from {OldTarget} to {NewTarget} (process running: {ProcessRunning})",
+                    jobId,
+                    job.TargetSegmentIndex,
+                    newTarget,
+                    job.FfmpegProcess != null && !job.FfmpegProcess.HasExited);
+
+                job.TargetSegmentIndex = newTarget;
+
+                // If ffmpeg has finished or not started, continue/start
+                if (job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
+                {
+                    await ContinueJobAsync(job, allSegments, cancellationToken);
+                }
+            }
+        }
+    }
+
+    public void DetachSession(Guid jobId, Guid streamSessionId)
+    {
+        if (_activeJobs.TryGetValue(jobId, out var job))
+        {
+            job.AttachedStreamSessions.Remove(streamSessionId);
+            _logger.LogInformation(
+                "Detached session {SessionId} from job {JobId}. Remaining sessions: {Count}",
+                streamSessionId,
+                jobId,
+                job.AttachedStreamSessions.Count);
+        }
+    }
+
+    public async Task CleanupStaleJobsAsync(TimeSpan staleThreshold, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var staleJobs = _activeJobs.Values
+            .Where(j => j.AttachedStreamSessions.Count == 0 && (now - j.LastPingTime) > staleThreshold)
+            .ToList();
+
+        foreach (var job in staleJobs)
+        {
+            _logger.LogInformation(
+                "Cleaning up stale job {JobId} (last ping: {LastPing})",
+                job.JobId,
+                job.LastPingTime);
+
+            if (job.FfmpegCancellation != null && !job.FfmpegCancellation.IsCancellationRequested)
+            {
+                try
+                {
+                    job.FfmpegCancellation.Cancel();
+                    if (job.FfmpegTask != null)
+                    {
+                        await job.FfmpegTask;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to cancel ffmpeg task for job {JobId}", job.JobId);
+                }
+            }
+
+            _activeJobs.TryRemove(job.JobId, out _);
+
+            // Optionally delete segments (for now, keep them for potential reuse)
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public int GetCurrentSegmentIndex(Guid jobId)
+    {
+        if (_activeJobs.TryGetValue(jobId, out var job))
+        {
+            return job.GetCurrentSegmentIndex();
+        }
+        return -1;
+    }
+
+    private async Task RestartJobWithSeekAsync(
+        TranscodeJob job,
+        int startSegmentIndex,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        // Kill existing process
+        if (job.FfmpegCancellation != null && !job.FfmpegCancellation.IsCancellationRequested)
+        {
+            try
+            {
+                job.FfmpegCancellation.Cancel();
+                if (job.FfmpegTask != null)
+                {
+                    await job.FfmpegTask;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error cancelling ffmpeg task for job {JobId}", job.JobId);
+            }
+        }
+
+        // Update target
+        job.TargetSegmentIndex = startSegmentIndex + job.BufferSize;
+
+        // Start from the requested position
+        await StartFfmpegAsync(job, startSegmentIndex, allSegments, cancellationToken);
+    }
+
+    private async Task ContinueJobAsync(
+        TranscodeJob job,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        var currentIndex = job.GetCurrentSegmentIndex();
+        var startIndex = currentIndex + 1;
+
+        _logger.LogInformation(
+            "Job {JobId}: ContinueJobAsync - currentIndex={CurrentIndex}, startIndex={StartIndex}, targetIndex={TargetIndex}, totalSegments={TotalSegments}",
+            job.JobId,
+            currentIndex,
+            startIndex,
+            job.TargetSegmentIndex,
+            allSegments.Count);
+
+        if (startIndex >= allSegments.Count)
+        {
+            _logger.LogInformation("Job {JobId}: All segments already generated", job.JobId);
+            return;
+        }
+
+        await StartFfmpegAsync(job, startIndex, allSegments, cancellationToken);
+    }
+
+    private async Task StartFfmpegAsync(
+        TranscodeJob job,
+        int startSegmentIndex,
+        List<HlsSegment> allSegments,
+        CancellationToken cancellationToken)
+    {
+        if (startSegmentIndex < 0 || startSegmentIndex >= allSegments.Count)
+        {
+            _logger.LogWarning(
+                "Job {JobId}: Invalid start segment index {Index} (total segments: {Total})",
+                job.JobId,
+                startSegmentIndex,
+                allSegments.Count);
+            return;
+        }
+
+        var segmentsToGenerate = job.TargetSegmentIndex - startSegmentIndex + 1;
+        if (segmentsToGenerate <= 0)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "Job {JobId}: Starting ffmpeg from segment {Start} to {Target} ({Count} segments)",
+            job.JobId,
+            startSegmentIndex,
+            job.TargetSegmentIndex,
+            segmentsToGenerate);
+
+        // Determine video and audio codecs for transcoding
+        var videoCodec = job.VideoCodec != "copy" ? job.VideoCodec : null;
+        var audioCodec = job.AudioCodec != "copy" ? job.AudioCodec : null;
+
+        try
+        {
+            // Create a cancellation token for this specific ffmpeg task
+            job.FfmpegCancellation = new CancellationTokenSource();
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, job.FfmpegCancellation.Token);
+
+            // Start ffmpeg in background
+            job.FfmpegTask = Task.Run(async () =>
+            {
+                await _mediaTranscoder.StartStreamingTranscodeAsync(
+                    job.InputFilePath,
+                    job.OutputDirectory,
+                    allSegments,
+                    startSegmentIndex,
+                    Math.Min(job.TargetSegmentIndex + 1, allSegments.Count),
+                    linkedCts.Token,
+                    videoCodec,
+                    audioCodec,
+                    job.Quality);
+            }, linkedCts.Token);
+
+            _logger.LogInformation(
+                "Job {JobId}: ffmpeg task started in background",
+                job.JobId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Job {JobId}: Failed to start ffmpeg task", job.JobId);
+            throw;
+        }
+    }
+
+    private static Guid GenerateJobKey(Guid indexedFileId, string quality, string videoCodec, string audioCodec)
+    {
+        var keyString = $"{indexedFileId}|{quality}|{videoCodec}|{audioCodec}";
+        return Guid.Parse(System.Security.Cryptography.MD5.HashData(
+            System.Text.Encoding.UTF8.GetBytes(keyString))
+            .Take(16).ToArray().Aggregate("", (s, b) => s + b.ToString("x2")));
+    }
+
+    private static TimeSpan CalculateGapDuration(int fromIndex, int toIndex, List<HlsSegment> allSegments)
+    {
+        if (fromIndex < 0 || toIndex >= allSegments.Count || fromIndex >= toIndex)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var startTimestamp = fromIndex >= 0 ? allSegments[fromIndex].StartTimestamp : 0;
+        var endTimestamp = allSegments[toIndex].StartTimestamp;
+        return TimeSpan.FromMilliseconds(endTimestamp - startTimestamp);
+    }
+}

@@ -25,7 +25,11 @@ public static class GetHlsVideoStreamIndexQueryUriBuilder
         .Replace("{id}/hls-stream/", "")
         .Replace("{quality}", $"{videoResolutionIdentifier}");
 }
-public record GetHlsVideoStreamIndexQuery(Guid Id, string VideoResolutionIdentifier) : IRequest<IResult>;
+public record GetHlsVideoStreamIndexQuery(
+    Guid Id, 
+    string VideoResolutionIdentifier,
+    string? TranscodingVideoCodec = null,
+    string? TranscodingAudioCodec = null) : IRequest<IResult>;
 
 public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, IResult>
 {
@@ -40,7 +44,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
     {
         if (query.VideoResolutionIdentifier != "original")
         {
-            var quality = Constants.VideoQualities.Where(kvp => kvp.Value.Name == query.VideoResolutionIdentifier).FirstOrDefault();
+            var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.VideoResolutionIdentifier);
             Guard.Against.Null(quality, nameof(query.VideoResolutionIdentifier), $"Provided quality '{query.VideoResolutionIdentifier}' is not valid.");
         }        
 
@@ -60,28 +64,91 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             return Results.NotFound();
         }
 
-        var indexPlaylist = GenerateHlsIndexContent(entity.FileMetadata.HlsSegments);
+        var isTransmuxing = query.VideoResolutionIdentifier == "original";
+        var indexPlaylist = GenerateHlsIndexContent(
+            entity.FileMetadata.HlsSegments, 
+            isTransmuxing,
+            query.TranscodingVideoCodec,
+            query.TranscodingAudioCodec);
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
-    private static string GenerateHlsIndexContent(IEnumerable<HlsSegment> hlsSegments)
+    private static string GenerateHlsIndexContent(
+        IEnumerable<HlsSegment> hlsSegments, 
+        bool isTransmuxing,
+        string? transcodingVideoCodec,
+        string? transcodingAudioCodec)
     {
+        var segmentsList = hlsSegments.ToList();
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
         content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
-        content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(hlsSegments.Max(x => x.Duration) / 1000.0)}");
-        content.AppendLine("#EXT-X-VERSION:4"); // TODO - Use the right version
+        
+        double[] segmentDurations;
+        if (isTransmuxing)
+        {
+            // Use native keyframe-based segments
+            segmentDurations = segmentsList.Select(s => s.Duration / 1000.0).ToArray();
+        }
+        else
+        {
+            // Generate equal-length segments (6s each, except last)
+            var totalDurationMs = segmentsList.Sum(s => s.Duration);
+            segmentDurations = ComputeEqualLengthSegments(6000, totalDurationMs);
+        }
+        
+        // Build query string for segment URLs if transcoding parameters are specified
+        var queryString = "";
+        if (!string.IsNullOrEmpty(transcodingVideoCodec) || !string.IsNullOrEmpty(transcodingAudioCodec))
+        {
+            var queryParams = new List<string>();
+            if (!string.IsNullOrEmpty(transcodingVideoCodec))
+                queryParams.Add($"TranscodingVideoCodec={transcodingVideoCodec}");
+            if (!string.IsNullOrEmpty(transcodingAudioCodec))
+                queryParams.Add($"TranscodingAudioCodec={transcodingAudioCodec}");
+            queryString = "?" + string.Join("&", queryParams);
+        }
+        
+        content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(segmentDurations.Max())}");
+        content.AppendLine("#EXT-X-VERSION:7"); // Version 7 required for fMP4
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
         content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
+        content.AppendLine($"#EXT-X-MAP:URI=\"segments/init.m4s{queryString}\"");
 
-        foreach (var segment in hlsSegments)
+        for (int i = 0; i < segmentDurations.Length; i++)
         {
-            content.AppendLine($"#EXTINF:{(segment.Duration / 1000.0).ToString("F6", CultureInfo.InvariantCulture)},");
-            content.AppendLine(GetHlsVideoStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(segment.Number));
+            content.AppendLine($"#EXTINF:{segmentDurations[i].ToString("F6", CultureInfo.InvariantCulture)},");
+            content.AppendLine($"{GetHlsVideoStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(i)}{queryString}");
         }
 
         content.AppendLine("#EXT-X-ENDLIST");
 
         return content.ToString();
+    }
+    
+    private static double[] ComputeEqualLengthSegments(int desiredSegmentLengthMs, double totalDurationMs)
+    {
+        if (desiredSegmentLengthMs == 0 || totalDurationMs == 0)
+        {
+            throw new InvalidOperationException($"Invalid segment length ({desiredSegmentLengthMs}) or duration ({totalDurationMs})");
+        }
+
+        var wholeSegments = (int)(totalDurationMs / desiredSegmentLengthMs);
+        var remainingMs = totalDurationMs % desiredSegmentLengthMs;
+
+        var segmentsLen = wholeSegments + (remainingMs > 0 ? 1 : 0);
+        var segments = new double[segmentsLen];
+        
+        for (int i = 0; i < wholeSegments; i++)
+        {
+            segments[i] = desiredSegmentLengthMs / 1000.0;
+        }
+
+        if (remainingMs > 0)
+        {
+            segments[^1] = remainingMs / 1000.0;
+        }
+
+        return segments;
     }
 }

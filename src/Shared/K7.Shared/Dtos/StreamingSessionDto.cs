@@ -9,5 +9,11 @@ public class StreamingSessionDto
     public PlaybackState State { get; set; }
     public double Position { get; set; }
     public required PlaybackSettingsDto PlaybackSettings { get; set; }
+
+    /// <summary>
+    /// Initial stream URL and MIME type selected for this session
+    /// (e.g. direct-play or HLS manifest in MP4/HEVC).
+    /// </summary>
+    public IndexedFileStreamUri? Source { get; set; }
 }
 

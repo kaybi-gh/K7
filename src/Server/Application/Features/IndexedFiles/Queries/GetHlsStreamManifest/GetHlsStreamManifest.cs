@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,7 @@ namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManife
 
 public static class GetHlsStreamManifestQueryUriBuilder
 {
-    public const string Route = "{id}/hls-stream/manifest.m3u8";
+    public const string Route = "/api/indexed-files/{id}/hls-stream/manifest.m3u8";
 
     public static string Build(GetHlsStreamManifestQuery query)
     {
@@ -73,7 +74,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var masterPlaylist = indexedFile.FileMetadata switch
         {
             AudioFileMetadata x => throw new NotImplementedException(),
-            VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x),
+            VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x, query),
             _ => throw new InvalidOperationException()
         };
         return Results.Content(masterPlaylist, "application/vnd.apple.mpegurl");
@@ -93,7 +94,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         }
     }
 
-    private string GenerateVideoFileMasterPlaylist(VideoFileMetadata videoFileMetadata)
+    private string GenerateVideoFileMasterPlaylist(VideoFileMetadata videoFileMetadata, GetHlsStreamManifestQuery query)
     {
         var playlist = new StringBuilder();
         playlist.AppendLine("#EXTM3U");
@@ -104,62 +105,68 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var fileResolutionIdentifier = videoFileMetadata.VideoResolution;
         var fileResolution = Constants.VideoQualities.Single(x => x.Key == fileResolutionIdentifier).Value;
 
-        //var availableTranscodingResolutions = VideoResolutions.Video.TakeWhile(x => x.Key == fileResolution);
-        var availableTranscodingResolutions = Constants.VideoQualities
-            .Where((x, y) => y <= Constants.VideoQualities.Keys.IndexOf(fileResolutionIdentifier))
-            .Reverse()
-            .Select(x => x.Value);
+        var originalCodecs = HlsCodecStringHelpers.GetHlsCodecs(videoFileMetadata);
 
-        // Add original stream
-        playlist.AppendLine("# Video playlists");
+        var originalVideoCodec = string.Empty;
+        var originalAudioCodec = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(originalCodecs))
+        {
+            var parts = originalCodecs.Split(',', 2);
+            originalVideoCodec = parts[0];
+            if (parts.Length > 1)
+            {
+                originalAudioCodec = parts[1];
+            }
+        }
+
+        var hasAudioTranscoding = !string.IsNullOrWhiteSpace(query.TranscodingAudioCodec);
+        var hasVideoTranscoding = !string.IsNullOrWhiteSpace(query.TranscodingVideoCodec);
+
+        string codecsAttribute;
+
+        if (!hasAudioTranscoding && !hasVideoTranscoding)
+        {
+            codecsAttribute = originalCodecs;
+        }
+        else
+        {
+            var effectiveVideoCodecId = hasVideoTranscoding
+                ? query.TranscodingVideoCodec
+                : originalVideoCodec;
+
+            var effectiveAudioCodecId = hasAudioTranscoding
+                ? query.TranscodingAudioCodec
+                : originalAudioCodec;
+
+            var transcodingCodecs = HlsCodecStringHelpers.GetHlsCodecs(effectiveVideoCodecId, effectiveAudioCodecId);
+
+            codecsAttribute = string.IsNullOrWhiteSpace(transcodingCodecs)
+                ? originalCodecs
+                : transcodingCodecs;
+        }
+
         playlist.AppendLine($"#EXT-X-STREAM-INF:" +
             $"BANDWIDTH={fileResolution.MaxBitrate}," +
             $"AVERAGE-BANDWIDTH={fileResolution.AverageBitrate}," +
             $"RESOLUTION={fileResolution.Width}x{fileResolution.Height}," +
-            $"CODECS=\"{/*HlsCodecStringHelpers.GetHlsCodecs(videoFileMetadata)*/""}\"," +
-            $"AUDIO=\"audio\"");
-        playlist.AppendLine(GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath("original"));
+            $"CODECS=\"{codecsAttribute}\"");
 
-        // Add transcoded streams
-        foreach (var resolution in availableTranscodingResolutions)
-        {
-            playlist.AppendLine($"#EXT-X-STREAM-INF:" +
-                $"BANDWIDTH={resolution.MaxBitrate}," +
-                $"AVERAGE-BANDWIDTH={resolution.AverageBitrate}," +
-                $"RESOLUTION={resolution.Width}x{resolution.Height}," +
-                $"CODECS=\"avc1.640028,mp4a.40.2\"," +
-                $"AUDIO=\"audio\"");
-            playlist.AppendLine(GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(resolution.Name));
-        }
+        var playlistQuality = hasVideoTranscoding ? fileResolution.Name : "original";
+        var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);
+        
+        // Add transcoding parameters to the playlist URL
+        var queryParams = new List<string>();
+        if (!string.IsNullOrEmpty(query.TranscodingVideoCodec))
+            queryParams.Add($"TranscodingVideoCodec={query.TranscodingVideoCodec}");
+        if (!string.IsNullOrEmpty(query.TranscodingAudioCodec))
+            queryParams.Add($"TranscodingAudioCodec={query.TranscodingAudioCodec}");
+        
+        if (queryParams.Count > 0)
+            playlistUrl += "?" + string.Join("&", queryParams);
+        
+        playlist.AppendLine(playlistUrl);
         playlist.AppendLine();
-
-        // Add audio streams
-        // TODO - Cleanup useless and unusable streams
-        playlist.AppendLine("# Audio playlists");
-        foreach (var audioStream in videoFileMetadata.AudioTracks)
-        {
-            playlist.AppendLine(
-                $"#EXT-X-MEDIA:" +
-                $"TYPE=AUDIO," +
-                $"GROUP-ID=\"audio\"," +
-                $"NAME=\"{audioStream.Name}\"," +
-                $"DEFAULT={(audioStream.IsDefault ? "YES" : "NO")}," +
-                $"AUTOSELECT=YES," +
-                $"LANGUAGE=\"{audioStream.Language}\"," +
-                $"URI={GetHlsAudioStreamIndexQueryUriBuilder.BuildManifestRelativePath(audioStream.Index, "original")}"
-            );
-
-            playlist.AppendLine(
-                $"#EXT-X-MEDIA:" +
-                $"TYPE=AUDIO," +
-                $"GROUP-ID=\"audio\"," +
-                $"NAME=\"{audioStream.Name} transcode\"," +
-                $"DEFAULT={(audioStream.IsDefault ? "YES" : "NO")}," +
-                $"AUTOSELECT=YES," +
-                $"LANGUAGE=\"{audioStream.Language}\"," +
-                $"URI={GetHlsAudioStreamIndexQueryUriBuilder.BuildManifestRelativePath(audioStream.Index, "LowAac")}"
-            );
-        }
 
         return playlist.ToString();
     }

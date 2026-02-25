@@ -10,9 +10,18 @@ public class GetHlsVideoStreamIndex : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet($"/api/indexed-files/{GetHlsVideoStreamIndexQueryUriBuilder.Route}", async ([FromServices] ISender sender, [FromRoute] Guid id, [FromRoute] string quality) =>
+        endpointRouteBuilder.MapGet($"/api/indexed-files/{GetHlsVideoStreamIndexQueryUriBuilder.Route}", async (
+            [FromServices] ISender sender, 
+            [FromRoute] Guid id, 
+            [FromRoute] string quality,
+            [FromQuery] string? TranscodingVideoCodec,
+            [FromQuery] string? TranscodingAudioCodec) =>
         {
-            return await sender.Send(new GetHlsVideoStreamIndexQuery(id, quality));
+            return await sender.Send(new GetHlsVideoStreamIndexQuery(
+                id, 
+                quality,
+                TranscodingVideoCodec,
+                TranscodingAudioCodec));
         })
         //.RequireAuthorization()
         .WithName(type.Name)

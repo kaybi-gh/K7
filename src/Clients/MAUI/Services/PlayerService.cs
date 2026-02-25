@@ -38,14 +38,16 @@ internal class PlayerService : IPlayerService
 
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
+    private readonly IStreamUriService _streamUriService;
 
     private PlayerPage? _playerPage;
     public PlayerViewModel ViewModel { get; private set; } = new();
 
-    public PlayerService(IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService)
+    public PlayerService(IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService, IStreamUriService streamUriService)
     {
         _k7ServerService = k7ServerService;
         _deviceStorageService = deviceStorageService;
+        _streamUriService = streamUriService;
         ViewModel.MediaElement.StateChanged += MediaElement_StateChanged;
 
         _volume = _deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
@@ -265,6 +267,21 @@ internal class PlayerService : IPlayerService
     public void Stop() => StopRequested?.Invoke();
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
+
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
+    {
+        var session = await _streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken);
+
+        if (session.Source is null)
+        {
+            throw new InvalidOperationException("Streaming session did not return a source URI.");
+        }
+
+        _playerPage ??= new PlayerPage(ViewModel);
+        _playerPage.ChangeSource(session.Source.Uri.OriginalString);
+        await ShowAsync();
+        Play();
+    }
 }
 
 public class HiddenPlayerService : IDisposable

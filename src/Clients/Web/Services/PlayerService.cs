@@ -5,7 +5,7 @@ using K7.Shared;
 
 namespace K7.Clients.Web.Services;
 
-public class PlayerService(IDeviceStorageService deviceStorageService) : IPlayerService
+public class PlayerService(IStreamUriService streamUriService, IDeviceStorageService deviceStorageService) : IPlayerService
 {
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
@@ -165,6 +165,26 @@ public class PlayerService(IDeviceStorageService deviceStorageService) : IPlayer
                 IsMutedChanged?.Invoke(value);
             }
         }
+    }
+
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
+    {
+        var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken);
+
+        if (session.Source is null)
+        {
+            throw new InvalidOperationException("Streaming session did not return a source URI.");
+        }
+
+        var playerSource = new PlayerSource
+        {
+            Url = session.Source.Uri.OriginalString,
+            MimeType = session.Source.MimeType
+        };
+
+        Source = playerSource;
+        await ShowAsync();
+        Play();
     }
 
     public Task ShowAsync()
