@@ -31,6 +31,7 @@ public record GetHlsVideoStreamSegmentQuery(
     Guid Id, 
     string Quality, 
     int SegmentNumber,
+    Guid StreamSessionId,
     string? TranscodingVideoCodec = null,
     string? TranscodingAudioCodec = null) : IRequest<IResult>;
 
@@ -108,7 +109,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         var videoCodec = query.TranscodingVideoCodec;
         var audioCodec = query.TranscodingAudioCodec;
 
-        var streamSessionId = Guid.NewGuid(); // TODO - Should come from request/session
+        var streamSessionId = query.StreamSessionId;
         var job = await _transcodeJobManager.GetOrStartJobAsync(
             query.Id,
             entity.Path,

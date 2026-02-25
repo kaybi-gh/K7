@@ -71,13 +71,13 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
         content.AppendLine("#EXTM3U");
         content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
         content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(hlsSegments.Max(x => x.Duration) / 1000.0)}");
-        content.AppendLine("#EXT-X-VERSION:4"); // TODO - Use the right version
+        content.AppendLine("#EXT-X-VERSION:7");
         content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
         content.AppendLine("#EXT-X-INDEPENDENT-SEGMENTS");
 
         foreach (var segment in hlsSegments)
         {
-            content.AppendLine($"#EXTINF:{(segment.Duration / 1000.0).ToString("F6", CultureInfo.InvariantCulture)},");
+            content.AppendLine($"#EXTINF:{(segment.Duration / 1000.0).ToString("F6", CultureInfo.InvariantCulture)}");
             //content.AppendLine(GetHlsAudioStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(segment.Number));
         }
 

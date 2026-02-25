@@ -19,6 +19,7 @@ public static class GetHlsStreamManifestQueryUriBuilder
 
         var queryParams = new Dictionary<string, string?>
         {
+            { nameof(query.StreamSessionId), query.StreamSessionId.ToString() },
             { nameof(query.TranscodingAudioCodec), query.TranscodingAudioCodec },
             { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec }
         };
@@ -40,6 +41,7 @@ public static class GetHlsStreamManifestQueryUriBuilder
 public record GetHlsStreamManifestQuery : IRequest<IResult>
 {
     public required Guid Id { get; set; }
+    public required Guid StreamSessionId { get; set; }
     public string? TranscodingAudioCodec { get; set; } = null;
     public string? TranscodingVideoCodec { get; set; } = null;
     // TODO - Add container
@@ -98,9 +100,6 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
     {
         var playlist = new StringBuilder();
         playlist.AppendLine("#EXTM3U");
-        playlist.AppendLine("#EXT-X-VERSION:4");
-        playlist.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
-        playlist.AppendLine();
 
         var fileResolutionIdentifier = videoFileMetadata.VideoResolution;
         var fileResolution = Constants.VideoQualities.Single(x => x.Key == fileResolutionIdentifier).Value;
@@ -156,14 +155,18 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);
         
         // Add transcoding parameters to the playlist URL
-        var queryParams = new List<string>();
+        var queryParams = new List<string>
+        {
+            $"streamSessionId={query.StreamSessionId}"
+        };
+        
         if (!string.IsNullOrEmpty(query.TranscodingVideoCodec))
             queryParams.Add($"TranscodingVideoCodec={query.TranscodingVideoCodec}");
         if (!string.IsNullOrEmpty(query.TranscodingAudioCodec))
             queryParams.Add($"TranscodingAudioCodec={query.TranscodingAudioCodec}");
-        
-        if (queryParams.Count > 0)
-            playlistUrl += "?" + string.Join("&", queryParams);
+            
+        var queryString = "?" + string.Join("&", queryParams);
+        playlistUrl += queryString;
         
         playlist.AppendLine(playlistUrl);
         playlist.AppendLine();

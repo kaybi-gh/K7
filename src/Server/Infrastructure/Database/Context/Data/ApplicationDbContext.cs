@@ -30,6 +30,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<BaseRating> Ratings => Set<BaseRating>();
     public DbSet<ExternalId> ExternalIds => Set<ExternalId>();
     public DbSet<HlsSegment> HlsSegments => Set<HlsSegment>();
+    public DbSet<StreamSession> StreamSessions => Set<StreamSession>();
     public DbSet<BaseFileTrack> FileTracks => Set<BaseFileTrack>();
     public DbSet<BackgroundTask> BackgroundTasks => Set<BackgroundTask>();
     public DbSet<Device> Devices => Set<Device>();

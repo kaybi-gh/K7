@@ -1,4 +1,4 @@
-using K7.Server.Web.Streaming;
+using K7.Server.Application.Features.StreamSessions.Queries.GetStreamSession;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.StreamSessions;
@@ -11,12 +11,13 @@ public sealed class GetStreamSessionHlsFile : IEndpoint
         string groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapGet("/api/stream-sessions/{sessionId:guid}/hls/{*file}", async (
-            [FromServices] IHlsSessionStore hlsSessionStore,
+            [FromServices] ISender sender,
             [FromRoute] Guid sessionId,
             [FromRoute] string file,
             CancellationToken cancellationToken) =>
         {
-            if (!hlsSessionStore.TryGet(sessionId, out var sessionInfo) || sessionInfo is null)
+            var sessionInfo = await sender.Send(new GetStreamSessionQuery(sessionId), cancellationToken);
+            if (sessionInfo is null)
             {
                 return Results.NotFound();
             }

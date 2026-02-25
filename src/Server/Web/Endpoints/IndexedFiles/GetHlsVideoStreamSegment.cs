@@ -12,6 +12,7 @@ public class GetHlsVideoStreamSegment : IEndpoint
                     [FromRoute] Guid id, 
                     [FromRoute] string quality, 
                     [FromRoute] string segmentNumber,
+                    [FromQuery] Guid streamSessionId,
                     [FromQuery] string? TranscodingVideoCodec,
                     [FromQuery] string? TranscodingAudioCodec,
                     [FromServices] ISender sender, 
@@ -23,6 +24,7 @@ public class GetHlsVideoStreamSegment : IEndpoint
                         id, 
                         quality, 
                         segmentIndex,
+                        streamSessionId,
                         TranscodingVideoCodec,
                         TranscodingAudioCodec), cancellationToken);
                 })

@@ -28,6 +28,7 @@ public static class GetHlsVideoStreamIndexQueryUriBuilder
 public record GetHlsVideoStreamIndexQuery(
     Guid Id, 
     string VideoResolutionIdentifier,
+    Guid StreamSessionId,
     string? TranscodingVideoCodec = null,
     string? TranscodingAudioCodec = null) : IRequest<IResult>;
 
@@ -68,6 +69,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         var indexPlaylist = GenerateHlsIndexContent(
             entity.FileMetadata.HlsSegments, 
             isTransmuxing,
+            query.StreamSessionId,
             query.TranscodingVideoCodec,
             query.TranscodingAudioCodec);
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
@@ -76,6 +78,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
     private static string GenerateHlsIndexContent(
         IEnumerable<HlsSegment> hlsSegments, 
         bool isTransmuxing,
+        Guid streamSessionId,
         string? transcodingVideoCodec,
         string? transcodingAudioCodec)
     {
@@ -98,16 +101,17 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         }
         
         // Build query string for segment URLs if transcoding parameters are specified
-        var queryString = "";
-        if (!string.IsNullOrEmpty(transcodingVideoCodec) || !string.IsNullOrEmpty(transcodingAudioCodec))
+        var queryParams = new List<string>
         {
-            var queryParams = new List<string>();
-            if (!string.IsNullOrEmpty(transcodingVideoCodec))
-                queryParams.Add($"TranscodingVideoCodec={transcodingVideoCodec}");
-            if (!string.IsNullOrEmpty(transcodingAudioCodec))
-                queryParams.Add($"TranscodingAudioCodec={transcodingAudioCodec}");
-            queryString = "?" + string.Join("&", queryParams);
-        }
+            $"streamSessionId={streamSessionId}"
+        };
+        
+        if (!string.IsNullOrEmpty(transcodingVideoCodec))
+            queryParams.Add($"TranscodingVideoCodec={transcodingVideoCodec}");
+        if (!string.IsNullOrEmpty(transcodingAudioCodec))
+            queryParams.Add($"TranscodingAudioCodec={transcodingAudioCodec}");
+            
+        var queryString = "?" + string.Join("&", queryParams);
         
         content.AppendLine($"#EXT-X-TARGETDURATION:{Math.Ceiling(segmentDurations.Max())}");
         content.AppendLine("#EXT-X-VERSION:7"); // Version 7 required for fMP4

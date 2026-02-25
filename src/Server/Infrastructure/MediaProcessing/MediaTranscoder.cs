@@ -140,18 +140,16 @@ public class MediaTranscoder : IMediaTranscoder
             videoCodec ?? "copy",
             audioCodec ?? "copy");
 
-        // Build ffmpeg command using FFMpegCore
-        await FFMpegArguments
+        var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options => options
                 .WithHardwareAcceleration(HardwareAccelerationDevice.Auto)
                 .Seek(startTime))
             .OutputToFile("index.m3u8", overwrite: true, options =>
             {
-                // Map video and audio streams explicitly
+                // TODO - Allow specific audio and video streams
                 options.WithCustomArgument("-map 0:v:0");
                 options.WithCustomArgument("-map 0:a:0");
 
-                // Video codec and settings
                 if (needsVideoTranscode)
                 {
                     if (videoCodec == "h264")
@@ -166,7 +164,6 @@ public class MediaTranscoder : IMediaTranscoder
                         options.WithCustomArgument("-c:v libx265");
                     }
 
-                    // Apply resolution scaling if specified
                     if (!string.IsNullOrEmpty(videoResolutionIdentifier) && videoResolutionIdentifier != "original")
                     {
                         var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
@@ -179,9 +176,9 @@ public class MediaTranscoder : IMediaTranscoder
                 else
                 {
                     options.WithCustomArgument("-c:v copy");
+                    options.WithCustomArgument("-tag:v hvc1");
                 }
 
-                // Audio codec and settings
                 if (needsAudioTranscode)
                 {
                     if (audioCodec == "aac")
@@ -201,24 +198,34 @@ public class MediaTranscoder : IMediaTranscoder
                     options.WithCustomArgument("-c:a copy");
                 }
 
-                // Duration limit
-                options.WithCustomArgument($"-t {duration.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
+                // Duration limit (using -to because of -copyts)
+                options.WithCustomArgument($"-to {endTime.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
+
+                // Use absolute timestamps to align with the initial init.m4s
+                options.WithCustomArgument("-copyts")
+                    .WithCustomArgument("-avoid_negative_ts disabled");
 
                 // HLS output format with fMP4
                 options.WithCustomArgument("-f hls")
                     .WithCustomArgument("-hls_time 6")
                     .WithCustomArgument("-hls_segment_type fmp4")
+                    .WithCustomArgument("-hls_segment_options movflags=+frag_discont")
                     .WithCustomArgument("-hls_flags independent_segments")
                     .WithCustomArgument($"-start_number {startSegmentIndex}")
                     .WithCustomArgument("-hls_fmp4_init_filename init.m4s")
-                    .WithCustomArgument("-hls_segment_filename %d.m4s");
+                    .WithCustomArgument("-hls_segment_filename %d.m4s")
+                    .WithCustomArgument("-hls_playlist_type vod")
+                    .WithCustomArgument("-hls_list_size 0");
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
-            .CancellableThrough(cancellationToken)
-            .ProcessAsynchronously(throwOnError: false);
+            .NotifyOnOutput((output) => _logger.LogInformation("FFmpeg stdout: {Output}", output))
+            .NotifyOnError((error) => _logger.LogError("FFmpeg stderr: {Error}", error))
+            .CancellableThrough(cancellationToken);
 
-        _logger.LogInformation("FFmpeg process completed for output directory: {OutputDir}", outputDirectory);
+        var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+
+        _logger.LogInformation("FFmpeg process completed for output directory: {OutputDir}, Success: {Success}", outputDirectory, result);
     }
 }
 

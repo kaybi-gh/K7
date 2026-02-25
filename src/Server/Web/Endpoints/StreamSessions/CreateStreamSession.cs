@@ -1,5 +1,5 @@
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
-using K7.Server.Application.Features.StreamSessions;
+using K7.Server.Application.Features.StreamSessions.Commands.CreateStreamSession;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.StreamSessions;
@@ -22,13 +22,10 @@ public class CreateStreamSession : IEndpoint
             var streamUri = await sender.Send(new GetStreamUriQuery
             {
                 Id = session.IndexedFileId,
-                DeviceId = command.DeviceId
+                DeviceId = command.DeviceId,
+                StreamSessionId = session.Id
             }, cancellationToken);
 
-            // For both direct-play and HLS cases, propagate the negotiated URI.
-            // When HLS is selected, this points to GetHlsStreamManifest, which
-            // generates the master playlist on demand based on the indexed file
-            // and device capabilities.
             session.Source = streamUri;
             return Results.Created($"/api/stream-sessions/{session.Id}", session);
         })

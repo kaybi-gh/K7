@@ -24,6 +24,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<BaseRating> Ratings { get; }
     DbSet<ExternalId> ExternalIds { get; }
     DbSet<HlsSegment> HlsSegments { get; }
+    DbSet<StreamSession> StreamSessions { get; }
     DbSet<BackgroundTask> BackgroundTasks { get; }
     DbSet<Device> Devices { get; }
     DbSet<User> Users { get; }
