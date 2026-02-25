@@ -121,16 +121,27 @@ public class TranscodeJobManager : ITranscodeJobManager
         var currentIndex = job.GetCurrentSegmentIndex();
         var gap = requestedSegmentIndex - currentIndex;
 
+        // Check if requested segment already exists on disk (for backward seeks)
+        var segmentPath = Path.Combine(job.OutputDirectory, $"{requestedSegmentIndex}.m4s");
+        var segmentExists = File.Exists(segmentPath);
+
         // Calculate gap duration
         var gapDuration = CalculateGapDuration(currentIndex, requestedSegmentIndex, allSegments);
 
         _logger.LogDebug(
-            "Job {JobId}: Requested segment {RequestedIndex}, current {CurrentIndex}, gap {Gap} segments ({GapSeconds}s)",
+            "Job {JobId}: Requested segment {RequestedIndex}, current {CurrentIndex}, gap {Gap} segments ({GapSeconds}s), exists: {Exists}",
             jobId,
             requestedSegmentIndex,
             currentIndex,
             gap,
-            gapDuration.TotalSeconds);
+            gapDuration.TotalSeconds,
+            segmentExists);
+
+        // If segment exists, nothing to do
+        if (segmentExists)
+        {
+            return;
+        }
 
         // Restart threshold: 30 segments or 60 seconds
         if (gap > 30 || gapDuration.TotalSeconds > 60)
@@ -141,7 +152,20 @@ public class TranscodeJobManager : ITranscodeJobManager
                 gap,
                 gapDuration.TotalSeconds);
 
-            await RestartJobWithSeekAsync(job, requestedSegmentIndex - 5, allSegments, cancellationToken);
+            var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
+            await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+        }
+        else if (gap < 0)
+        {
+            // Backward seek: segment should exist but doesn't, restart with seek
+            _logger.LogInformation(
+                "Job {JobId}: Backward seek detected (gap {Gap}), but segment {RequestedIndex} doesn't exist, restarting with seek",
+                jobId,
+                gap,
+                requestedSegmentIndex);
+
+            var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
+            await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
         }
         else if (requestedSegmentIndex >= job.TargetSegmentIndex || job.FfmpegProcess == null || job.FfmpegProcess.HasExited)
         {
@@ -213,7 +237,7 @@ public class TranscodeJobManager : ITranscodeJobManager
 
             _activeJobs.TryRemove(job.JobId, out _);
 
-            // Optionally delete segments (for now, keep them for potential reuse)
+            // TODO - Optionally delete segments (for now, keep them for potential reuse)
         }
 
         await Task.CompletedTask;
@@ -358,13 +382,26 @@ public class TranscodeJobManager : ITranscodeJobManager
 
     private static TimeSpan CalculateGapDuration(int fromIndex, int toIndex, List<HlsSegment> allSegments)
     {
-        if (fromIndex < 0 || toIndex >= allSegments.Count || fromIndex >= toIndex)
+        // toIndex -1 means init.m4s request, no gap calculation needed
+        if (toIndex < 0 || toIndex >= allSegments.Count)
         {
             return TimeSpan.Zero;
         }
 
+        if (fromIndex >= 0 && fromIndex >= toIndex)
+        {
+            return TimeSpan.Zero;
+        }
+
+        if (fromIndex >= allSegments.Count)
+        {
+            return TimeSpan.Zero;
+        }
+
+        // If fromIndex is -1 (no segments generated yet), calculate from start
         var startTimestamp = fromIndex >= 0 ? allSegments[fromIndex].StartTimestamp : 0;
         var endTimestamp = allSegments[toIndex].StartTimestamp;
+
         return TimeSpan.FromMilliseconds(endTimestamp - startTimestamp);
     }
 }

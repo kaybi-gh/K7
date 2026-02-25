@@ -14,12 +14,14 @@ public class GetHlsVideoStreamIndex : IEndpoint
             [FromServices] ISender sender, 
             [FromRoute] Guid id, 
             [FromRoute] string quality,
+            [FromQuery] Guid streamSessionId,
             [FromQuery] string? TranscodingVideoCodec,
             [FromQuery] string? TranscodingAudioCodec) =>
         {
             return await sender.Send(new GetHlsVideoStreamIndexQuery(
                 id, 
                 quality,
+                streamSessionId,
                 TranscodingVideoCodec,
                 TranscodingAudioCodec));
         })

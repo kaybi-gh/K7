@@ -76,13 +76,23 @@ public class TranscodeJob
             return -1;
         }
 
-        var segmentFiles = Directory.GetFiles(OutputDirectory, "segment_*.m4s")
+        var segmentFiles = Directory.GetFiles(OutputDirectory, "*.m4s")
             .Select(f =>
             {
-                var match = System.Text.RegularExpressions.Regex.Match(
-                    Path.GetFileName(f),
-                    @"segment_(\d+)\.m4s");
-                return match.Success ? int.Parse(match.Groups[1].Value) : -1;
+                var fileName = Path.GetFileNameWithoutExtension(f);
+                // Skip init.m4s
+                if (fileName == "init")
+                {
+                    return -1;
+                }
+                
+                // Match pattern: 0.m4s, 1.m4s, 958.m4s, etc.
+                if (int.TryParse(fileName, out var segmentIndex))
+                {
+                    return segmentIndex;
+                }
+                
+                return -1;
             })
             .Where(n => n >= 0)
             .OrderByDescending(n => n);

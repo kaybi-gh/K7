@@ -12,10 +12,11 @@ using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 
-public record GetStreamUriQuery() : IRequest<IndexedFileStreamUri>
+public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
 {
     public required Guid Id { get; set; }
     public Guid? DeviceId { get; set; }
+    public Guid StreamSessionId { get; set; }
 };
 
 public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
@@ -27,20 +28,20 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         _context = context;
     }
 
-    public async Task<IndexedFileStreamUri> Handle(GetStreamUriQuery query, CancellationToken cancellationToken)
+    public async Task<IndexedFileStreamUri> Handle(GetStreamUriQuery request, CancellationToken cancellationToken)
     {
-        Guard.Against.NullOrEmpty(query.DeviceId);
+        Guard.Against.NullOrEmpty(request.DeviceId);
 
         var indexedFile = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
-            .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
-        Guard.Against.NotFound(query.Id, indexedFile);
+        Guard.Against.NotFound(request.Id, indexedFile);
 
         var device = await _context.Devices
-            .FindAsync([query.DeviceId], cancellationToken);
+            .FindAsync([request.DeviceId], cancellationToken);
             
-        Guard.Against.NotFound((Guid)query.DeviceId, device);
+        Guard.Against.NotFound((Guid)request.DeviceId, device);
 
         if (indexedFile.FileMetadata is AudioFileMetadata audioFileMetadata)
         {
@@ -57,13 +58,13 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 .Collection(v => v.VideoTracks)
                 .LoadAsync(cancellationToken);
 
-            return GetVideoFileStreamUri(device, indexedFile, videoFileMetadata);
+            return GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request);
         }
 
         throw new InvalidOperationException();
     }
 
-    private static IndexedFileStreamUri GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata)
+    private static IndexedFileStreamUri GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request)
     {
         // TODO - Add possibility to manually chose audio track (query param?)
         // TODO - Add user preferences to automatically chose audio track
@@ -129,6 +130,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             Uri = new Uri(GetHlsStreamManifestQueryUriBuilder.Build(new GetHlsStreamManifestQuery()
             {
                 Id = indexedFile.Id,
+                StreamSessionId = request.StreamSessionId,
                 TranscodingAudioCodec = audioTranscodingMediaFormat?.Codec,
                 TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec
             }), UriKind.Relative),

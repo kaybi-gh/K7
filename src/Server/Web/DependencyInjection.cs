@@ -76,8 +76,6 @@ public static class DependencyInjection
 
         services.AddEndpointsApiExplorer();
 
-        services.AddSingleton<Streaming.IHlsSessionStore, Streaming.HlsSessionStore>();
-
         services.ConfigureHttpJsonOptions(x =>
         {
             x.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
