@@ -494,3 +494,6 @@ $RECYCLE.BIN/
 
 # Coding agents
 .github/agents
+/.vscode/tasks.json
+/docs
+experiments/

@@ -26,6 +26,7 @@ builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<IDeviceService, DeviceService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();

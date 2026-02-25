@@ -17,6 +17,8 @@ public static class DependencyInjection
         services.AddSingleton<IMediaAnalysisService, MediaAnalysisService>();
         services.AddSingleton<IMediaTranscoder, MediaTranscoder>();
         services.AddSingleton<IMediaFormatSampleGenerator, MediaFormatSampleGenerator>();
+        services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
+        services.AddHostedService<TranscodeJobCleanupService>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>, TMDbMetadataProvider>(); // TODO - Make it customizable
 
         services.AddSignalR();

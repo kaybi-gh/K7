@@ -59,6 +59,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<K7ServerManagerService>();
 
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
+        builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
         builder.Services.AddSingleton<IPlayerService, PlayerService>();
         builder.Services.AddSingleton<IMediaStreamSession, MediaSessionService>();
         builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();

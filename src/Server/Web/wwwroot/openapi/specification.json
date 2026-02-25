@@ -5,6 +5,61 @@
     "version": "v1"
   },
   "paths": {
+    "/api/stream-sessions": {
+      "post": {
+        "tags": [
+          "StreamSessions"
+        ],
+        "operationId": "CreateStreamSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStreamSessionCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/stream-sessions/{sessionId}/hls/{file}": {
+      "get": {
+        "tags": [
+          "StreamSessions"
+        ],
+        "operationId": "GetStreamSessionHlsFile",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/persons/{id}": {
       "get": {
         "tags": [
@@ -245,6 +300,59 @@
         }
       }
     },
+    "/api/libraries": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "summary": "Test",
+        "operationId": "CreateLibrary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLibraryCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetLibraries",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/libraries/{id}": {
       "delete": {
         "tags": [
@@ -326,29 +434,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/libraries": {
-      "get": {
-        "tags": [
-          "Libraries"
-        ],
-        "operationId": "GetLibraries",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LibraryDto"
-                  }
-                }
-              }
-            }
           }
         }
       }
@@ -492,64 +577,6 @@
         }
       }
     },
-    "/api/indexed-files/{id}/hls-stream/audios/{index}/{quality}/segments/{segmentId}.ts": {
-      "get": {
-        "tags": [
-          "IndexedFiles"
-        ],
-        "operationId": "GetHlsAudioStreamSegment",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "index",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          },
-          {
-            "name": "quality",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "segmentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/indexed-files/{id}/hls-stream/manifest.m3u8": {
       "get": {
         "tags": [
@@ -611,6 +638,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "TranscodingVideoCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "TranscodingAudioCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -620,7 +661,7 @@
         }
       }
     },
-    "/api/indexed-files/{id}/hls-stream/video/{quality}/segments/{segmentId}.ts": {
+    "/api/indexed-files/{id}/hls-stream/video/{quality}/segments/{segmentNumber}.m4s": {
       "get": {
         "tags": [
           "IndexedFiles"
@@ -645,61 +686,31 @@
             }
           },
           {
-            "name": "segmentId",
+            "name": "segmentNumber",
             "in": "path",
             "required": true,
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
+              "type": "string"
+            }
+          },
+          {
+            "name": "TranscodingVideoCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "TranscodingAudioCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
             "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/indexed-files/{id}/streams": {
-      "get": {
-        "tags": [
-          "IndexedFiles"
-        ],
-        "operationId": "GetStreamUri",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "deviceId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IndexedFileStreamUri"
-                }
-              }
-            }
           }
         }
       }
@@ -1429,6 +1440,45 @@
           }
         }
       },
+      "CreateLibraryCommand": {
+        "required": [
+          "title",
+          "mediaType",
+          "rootPath"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/LibraryMediaType"
+          },
+          "rootPath": {
+            "type": "string"
+          },
+          "triggerFileIndexingOnCreation": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateStreamSessionCommand": {
+        "required": [
+          "indexedFileId",
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "indexedFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "DeviceDto": {
         "required": [
           "playbackCapabilities",
@@ -1744,22 +1794,6 @@
                 "$ref": "#/components/schemas/FileMetadataDto"
               }
             ]
-          }
-        }
-      },
-      "IndexedFileStreamUri": {
-        "required": [
-          "uri",
-          "mimeType"
-        ],
-        "type": "object",
-        "properties": {
-          "uri": {
-            "type": "string",
-            "format": "uri"
-          },
-          "mimeType": {
-            "type": "string"
           }
         }
       },
@@ -2957,6 +2991,9 @@
     }
   },
   "tags": [
+    {
+      "name": "StreamSessions"
+    },
     {
       "name": "Persons"
     },

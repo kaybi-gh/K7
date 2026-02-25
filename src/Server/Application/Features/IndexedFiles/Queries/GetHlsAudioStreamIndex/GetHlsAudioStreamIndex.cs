@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
+//using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using Microsoft.AspNetCore.Http;
@@ -78,7 +78,7 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
         foreach (var segment in hlsSegments)
         {
             content.AppendLine($"#EXTINF:{(segment.Duration / 1000.0).ToString("F6", CultureInfo.InvariantCulture)},");
-            content.AppendLine(GetHlsAudioStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(segment.Number));
+            //content.AppendLine(GetHlsAudioStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(segment.Number));
         }
 
         content.AppendLine("#EXT-X-ENDLIST");

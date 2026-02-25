@@ -53,4 +53,6 @@ public interface IPlayerService
     Task ShowAsync();
     Task HideAsync();
 
+    Task PlayIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default);
+
 }

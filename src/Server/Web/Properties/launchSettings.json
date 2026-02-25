@@ -3,6 +3,7 @@
     "K7.Server.Web": {
       "commandName": "Project",
       "commandLineArgs": "--init-db",
+      "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
@@ -12,7 +13,7 @@
       "commandName": "Project",
       "commandLineArgs": "--init-db",
       "launchBrowser": true,
-      "launchUrl": "https://localhost:5001/playertest",
+      "launchUrl": "https://localhost:5001",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

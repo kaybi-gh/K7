@@ -17,7 +17,6 @@ public class CreateLibrary : IEndpoint
         //.RequireAuthorization()
         .WithName(type.Name)
         .WithTags(groupName)
-        .WithGroupName(groupName)
         .AddOpenApiOperationTransformer((operation, context, ct) =>
         {
             operation.Summary = "Test";
