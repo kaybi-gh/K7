@@ -32,10 +32,11 @@ public class TranscodeJobManager : ITranscodeJobManager
         string quality,
         string? videoCodec,
         string? audioCodec,
+        int audioTrackIndex,
         Guid streamSessionId,
         CancellationToken cancellationToken = default)
     {
-        var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodec ?? "copy");
+        var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodec ?? "copy", audioTrackIndex);
 
         if (_activeJobs.TryGetValue(jobKey, out var existingJob))
         {
@@ -64,7 +65,7 @@ public class TranscodeJobManager : ITranscodeJobManager
             var outputDir = Path.Combine(
                 _pathsConfig.Transcoding ?? throw new InvalidOperationException("Transcoding path not configured"),
                 indexedFileId.ToString("N"),
-                $"{quality}-{videoCodec ?? "copy"}-{audioCodec ?? "copy"}");
+                $"{quality}-{videoCodec ?? "copy"}-{audioCodec ?? "copy"}-a{audioTrackIndex}");
 
             Directory.CreateDirectory(outputDir);
 
@@ -75,6 +76,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                 Quality = quality,
                 VideoCodec = videoCodec,
                 AudioCodec = audioCodec,
+                AudioTrackIndex = audioTrackIndex,
                 OutputDirectory = outputDir,
                 InputFilePath = inputFilePath,
                 TargetSegmentIndex = 0
@@ -358,7 +360,8 @@ public class TranscodeJobManager : ITranscodeJobManager
                     linkedCts.Token,
                     videoCodec,
                     audioCodec,
-                    job.Quality);
+                    job.Quality,
+                    job.AudioTrackIndex);
             }, linkedCts.Token);
 
             _logger.LogInformation(
@@ -372,9 +375,9 @@ public class TranscodeJobManager : ITranscodeJobManager
         }
     }
 
-    private static Guid GenerateJobKey(Guid indexedFileId, string quality, string videoCodec, string audioCodec)
+    private static Guid GenerateJobKey(Guid indexedFileId, string quality, string videoCodec, string audioCodec, int audioTrackIndex)
     {
-        var keyString = $"{indexedFileId}|{quality}|{videoCodec}|{audioCodec}";
+        var keyString = $"{indexedFileId}|{quality}|{videoCodec}|{audioCodec}|a{audioTrackIndex}";
         return Guid.Parse(System.Security.Cryptography.MD5.HashData(
             System.Text.Encoding.UTF8.GetBytes(keyString))
             .Take(16).ToArray().Aggregate("", (s, b) => s + b.ToString("x2")));

@@ -20,6 +20,7 @@ public static class GetHlsStreamManifestQueryUriBuilder
         var queryParams = new Dictionary<string, string?>
         {
             { nameof(query.StreamSessionId), query.StreamSessionId.ToString() },
+            { nameof(query.AudioTrackIndex), query.AudioTrackIndex.ToString() },
             { nameof(query.TranscodingAudioCodec), query.TranscodingAudioCodec },
             { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec }
         };
@@ -42,6 +43,7 @@ public record GetHlsStreamManifestQuery : IRequest<IResult>
 {
     public required Guid Id { get; set; }
     public required Guid StreamSessionId { get; set; }
+    public required int AudioTrackIndex { get; set; }
     public string? TranscodingAudioCodec { get; set; } = null;
     public string? TranscodingVideoCodec { get; set; } = null;
     // TODO - Add container
@@ -154,10 +156,11 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var playlistQuality = hasVideoTranscoding ? fileResolution.Name : "original";
         var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);
         
-        // Add transcoding parameters to the playlist URL
+        // Add parameters to the playlist URL
         var queryParams = new List<string>
         {
-            $"streamSessionId={query.StreamSessionId}"
+            $"streamSessionId={query.StreamSessionId}",
+            $"audioTrackIndex={query.AudioTrackIndex}"
         };
         
         if (!string.IsNullOrEmpty(query.TranscodingVideoCodec))

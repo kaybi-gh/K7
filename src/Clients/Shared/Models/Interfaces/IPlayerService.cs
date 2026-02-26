@@ -1,5 +1,6 @@
 ﻿using K7.Clients.Shared.Domain.Models;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Clients.Shared.Domain.Interfaces;
 
@@ -26,6 +27,10 @@ public interface IPlayerService
     event Action<double>? VolumeChanged;
     event Action<double>? PlaybackRateChanged;
     event Action<bool>? IsMutedChanged;
+    event Action<AudioFileTrackDto?>? AudioTrackChanged;
+
+    IReadOnlyList<AudioFileTrackDto> AudioTracks { get; }
+    AudioFileTrackDto? SelectedAudioTrack { get; }
 
     PlayerSource Source { get; set; }
     bool IsVisible { get; }
@@ -53,6 +58,7 @@ public interface IPlayerService
     Task ShowAsync();
     Task HideAsync();
 
-    Task PlayIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default);
+    Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, int? audioTrackIndex = null, CancellationToken cancellationToken = default);
+    Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default);
 
 }

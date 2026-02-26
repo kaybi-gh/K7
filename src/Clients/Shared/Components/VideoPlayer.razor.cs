@@ -108,11 +108,17 @@ public partial class VideoPlayer : IAsyncDisposable
         _dotNetRef = null;
     }
 
-    private void OnSourceChange(PlayerSource playerSource)
+    private async void OnSourceChange(PlayerSource playerSource)
     {
         SourceUri = playerSource.Url!;
         SourceMimeType = playerSource.MimeType!;
-        StateHasChanged();
+
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        {
+            await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, SourceUri, SourceMimeType);
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     public async Task PlayAsync() => await JSRuntime.InvokeVoidAsync("play", _player.Id);

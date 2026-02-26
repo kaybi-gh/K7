@@ -32,6 +32,7 @@ public record GetHlsVideoStreamSegmentQuery(
     string Quality, 
     int SegmentNumber,
     Guid StreamSessionId,
+    int AudioTrackIndex,
     string? TranscodingVideoCodec = null,
     string? TranscodingAudioCodec = null) : IRequest<IResult>;
 
@@ -116,6 +117,7 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             query.Quality,
             videoCodec,
             audioCodec,
+            query.AudioTrackIndex,
             streamSessionId,
             cancellationToken);
 

@@ -29,6 +29,7 @@ public record GetHlsVideoStreamIndexQuery(
     Guid Id, 
     string VideoResolutionIdentifier,
     Guid StreamSessionId,
+    int AudioTrackIndex,
     string? TranscodingVideoCodec = null,
     string? TranscodingAudioCodec = null) : IRequest<IResult>;
 
@@ -70,6 +71,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             entity.FileMetadata.HlsSegments, 
             isTransmuxing,
             query.StreamSessionId,
+            query.AudioTrackIndex,
             query.TranscodingVideoCodec,
             query.TranscodingAudioCodec);
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
@@ -79,6 +81,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         IEnumerable<HlsSegment> hlsSegments, 
         bool isTransmuxing,
         Guid streamSessionId,
+        int audioTrackIndex,
         string? transcodingVideoCodec,
         string? transcodingAudioCodec)
     {
@@ -100,10 +103,11 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             segmentDurations = ComputeEqualLengthSegments(6000, totalDurationMs);
         }
         
-        // Build query string for segment URLs if transcoding parameters are specified
+        // Build query string for segment URLs
         var queryParams = new List<string>
         {
-            $"streamSessionId={streamSessionId}"
+            $"streamSessionId={streamSessionId}",
+            $"audioTrackIndex={audioTrackIndex}"
         };
         
         if (!string.IsNullOrEmpty(transcodingVideoCodec))
