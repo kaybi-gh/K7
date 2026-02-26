@@ -23,7 +23,8 @@ public class CreateStreamSession : IEndpoint
             {
                 Id = session.IndexedFileId,
                 DeviceId = command.DeviceId,
-                StreamSessionId = session.Id
+                StreamSessionId = session.Id,
+                AudioTrackIndex = command.AudioTrackIndex
             }, cancellationToken);
 
             session.Source = streamUri;

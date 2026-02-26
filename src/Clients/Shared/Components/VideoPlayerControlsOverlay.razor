@@ -1,4 +1,5 @@
 ﻿@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
 @using Microsoft.JSInterop
 @using System.Timers
 @using System.Globalization
@@ -54,7 +55,15 @@
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudMenu Icon="@Icons.Material.Outlined.Settings" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomRight"
                 @bind-Open="_isMenuOpen" Color="Color.Inherit">
-                    <MudMenuItem Icon="@Icons.Material.Outlined.Audiotrack" Label="Audio" />
+                    <MudMenu Label="Audio" StartIcon="@Icons.Material.Outlined.Audiotrack">
+                        @foreach (var track in PlayerService.AudioTracks)
+                        {
+                            <MudMenuItem OnClick="@(() => OnAudioTrackSelected(track))"
+                                         Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? Icons.Material.Filled.CheckCircle : null)">
+                                @($"{track.Language} - {track.Name} ({track.Codec} {track.ChannelLayout})")
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
 
                     @* @if (Captions.Any())
                     { *@
@@ -106,6 +115,7 @@
     private void OnCurrentTimeChanged(double time) => InvokeAsync(StateHasChanged);
     private void OnPlaybackRateChanged(double rate) => InvokeAsync(StateHasChanged);
     private void OnIsFullScreenChanged(bool isFullScreen) => InvokeAsync(StateHasChanged);
+    private void OnAudioTrackChanged(AudioFileTrackDto? track) => InvokeAsync(StateHasChanged);
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,6 +133,7 @@
         PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
         PlayerService.PlaybackRateChanged += OnPlaybackRateChanged;
         PlayerService.IsFullScreenChanged += OnIsFullScreenChanged;
+        PlayerService.AudioTrackChanged += OnAudioTrackChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
     }
 
@@ -332,6 +343,16 @@
         public string? Url { get; set; }
     }
 
+    private async Task OnAudioTrackSelected(AudioFileTrackDto track)
+    {
+        if (PlayerService.SelectedAudioTrack?.Index == track.Index)
+        {
+            return;
+        }
+
+        await PlayerService.ChangeAudioTrackAsync(track);
+    }
+
     public async ValueTask DisposeAsync()
     {
         _overlayVisibleTimer?.Dispose();
@@ -341,6 +362,7 @@
         PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
         PlayerService.PlaybackRateChanged -= OnPlaybackRateChanged;
         PlayerService.IsFullScreenChanged -= OnIsFullScreenChanged;
+        PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);
     }
 }

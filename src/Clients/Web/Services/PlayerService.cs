@@ -2,6 +2,7 @@
 using K7.Clients.Shared.Domain.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Clients.Web.Services;
 
@@ -30,6 +31,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Action<double>? VolumeChanged;
     public event Action<double>? PlaybackRateChanged;
     public event Action<bool>? IsMutedChanged;
+    public event Action<AudioFileTrackDto?>? AudioTrackChanged;
 
     private PlayerSource _source = new();
     public PlayerSource Source
@@ -167,9 +169,22 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         }
     }
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
+    private Guid? _currentIndexedFileId;
+    private List<AudioFileTrackDto> _audioTracks = [];
+    public IReadOnlyList<AudioFileTrackDto> AudioTracks => _audioTracks;
+
+    private AudioFileTrackDto? _selectedAudioTrack;
+    public AudioFileTrackDto? SelectedAudioTrack => _selectedAudioTrack;
+
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
     {
-        var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken);
+        _currentIndexedFileId = indexedFileId;
+        _audioTracks = audioTracks.ToList();
+        _selectedAudioTrack = audioTrackIndex is int idx
+            ? _audioTracks.FirstOrDefault(t => t.Index == idx)
+            : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
+
+        var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, _selectedAudioTrack?.Index, cancellationToken);
 
         if (session.Source is null)
         {
@@ -183,8 +198,44 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         };
 
         Source = playerSource;
+        AudioTrackChanged?.Invoke(_selectedAudioTrack);
         await ShowAsync();
         Play();
+    }
+
+    public async Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
+    {
+        if (_currentIndexedFileId is null)
+        {
+            return;
+        }
+
+        var resumeTime = CurrentTime;
+
+        _selectedAudioTrack = track;
+        AudioTrackChanged?.Invoke(track);
+
+        var session = await streamUriService.GetOrCreateSessionAsync(_currentIndexedFileId.Value, track.Index, cancellationToken);
+
+        if (session.Source is null)
+        {
+            throw new InvalidOperationException("Streaming session did not return a source URI.");
+        }
+
+        var playerSource = new PlayerSource
+        {
+            Url = session.Source.Uri.OriginalString,
+            MimeType = session.Source.MimeType
+        };
+
+        Source = playerSource;
+        Play();
+
+        // Restore playback position after the source change
+        if (resumeTime > 0)
+        {
+            Seek(resumeTime);
+        }
     }
 
     public Task ShowAsync()

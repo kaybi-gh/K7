@@ -9,5 +9,5 @@ public interface IStreamUriService
     /// returns the associated session information, including the initial source
     /// URL (direct play or HLS session manifest).
     /// </summary>
-    Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, CancellationToken cancellationToken = default);
+    Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default);
 }

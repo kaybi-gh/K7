@@ -15,6 +15,7 @@ public class GetHlsVideoStreamIndex : IEndpoint
             [FromRoute] Guid id, 
             [FromRoute] string quality,
             [FromQuery] Guid streamSessionId,
+            [FromQuery] int audioTrackIndex,
             [FromQuery] string? TranscodingVideoCodec,
             [FromQuery] string? TranscodingAudioCodec) =>
         {
@@ -22,6 +23,7 @@ public class GetHlsVideoStreamIndex : IEndpoint
                 id, 
                 quality,
                 streamSessionId,
+                audioTrackIndex,
                 TranscodingVideoCodec,
                 TranscodingAudioCodec));
         })

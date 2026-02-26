@@ -132,6 +132,13 @@ window.stop = function (id) {
     players[id]?.currentTime(0);
 }
 
+window.changeSource = function (id, src, type) {
+    const player = players[id];
+    if (player) {
+        player.src({ src: src, type: type });
+    }
+}
+
 window.seek = function (id, seconds) {
     players[id]?.currentTime(seconds);
 }

@@ -14,6 +14,7 @@ public interface ITranscodeJobManager
         string quality,
         string? videoCodec,
         string? audioCodec,
+        int audioTrackIndex,
         Guid streamSessionId,
         CancellationToken cancellationToken = default);
 
@@ -55,6 +56,7 @@ public class TranscodeJob
     public required string Quality { get; init; }
     public required string? VideoCodec { get; init; }
     public required string? AudioCodec { get; init; }
+    public required int AudioTrackIndex { get; init; }
     public required string OutputDirectory { get; init; }
     public required string InputFilePath { get; init; }
     

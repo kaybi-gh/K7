@@ -17,7 +17,7 @@ public class StreamUriService : IStreamUriService
         _deviceStorageService = deviceStorageService;
     }
 
-    public async Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
+    public async Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
     {
         var storedDeviceId = _deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
 
@@ -26,7 +26,8 @@ public class StreamUriService : IStreamUriService
             var request = new CreateStreamSessionRequest
             {
                 IndexedFileId = indexedFileId,
-                DeviceId = Guid.Parse(storedDeviceId)
+                DeviceId = Guid.Parse(storedDeviceId),
+                AudioTrackIndex = audioTrackIndex
             };
 
             var session = await _k7ServerService.CreateStreamSessionAsync(request, cancellationToken)

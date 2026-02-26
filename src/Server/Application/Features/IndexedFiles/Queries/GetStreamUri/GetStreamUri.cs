@@ -5,6 +5,7 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.MediaFormats;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.QueryBuilders;
@@ -17,6 +18,7 @@ public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
     public required Guid Id { get; set; }
     public Guid? DeviceId { get; set; }
     public Guid StreamSessionId { get; set; }
+    public int? AudioTrackIndex { get; set; }
 };
 
 public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
@@ -66,12 +68,19 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
     private static IndexedFileStreamUri GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request)
     {
-        // TODO - Add possibility to manually chose audio track (query param?)
-        // TODO - Add user preferences to automatically chose audio track
-        var selectedAudioTrack = videoFileMetadata.AudioTracks
-            .OrderBy(x => x.IsDefault)
-            .FirstOrDefault()
-            ?? throw new InvalidOperationException($"Indexed file with id '{indexedFile.Id}' has no audio tracks.");
+        AudioFileTrack selectedAudioTrack;
+        if (request.AudioTrackIndex is int audioIdx)
+        {
+            selectedAudioTrack = videoFileMetadata.AudioTracks.FirstOrDefault(t => t.Index == audioIdx)
+                ?? throw new InvalidOperationException($"Audio track index '{audioIdx}' not found for indexed file '{indexedFile.Id}'.");
+        }
+        else
+        {
+            selectedAudioTrack = videoFileMetadata.AudioTracks
+                .OrderByDescending(x => x.IsDefault)
+                .FirstOrDefault()
+                ?? throw new InvalidOperationException($"Indexed file with id '{indexedFile.Id}' has no audio tracks.");
+        }
 
         //var selectedSubtitlesTrack = videoFileMetadata.SubtitleTracks // TODO - Subtitles
 
@@ -81,11 +90,9 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         var supportedAudioFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<AudioMediaFormat>().ToList();
         var supportedVideoFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<VideoMediaFormat>().ToList();
 
-        var audioDirectSupported = selectedAudioTrack != null &&
-                                   supportedAudioFormats.Any(x => x.Container == videoFileMetadata.Container && x.Codec == selectedAudioTrack.Codec);
+        var audioDirectSupported = supportedAudioFormats.Any(x => x.Container == videoFileMetadata.Container && x.Codec == selectedAudioTrack.Codec);
 
-        var videoDirectSupported = selectedVideoTrack != null &&
-                                   supportedVideoFormats.Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec);
+        var videoDirectSupported = supportedVideoFormats.Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec);
 
         // If both audio and video are directly supported (container + codec), return a direct-stream URL
         if (audioDirectSupported && videoDirectSupported)
@@ -102,11 +109,9 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         }
 
         // Otherwise we go through HLS; decide what really needs transcoding based on codec support only
-        var audioCodecSupported = selectedAudioTrack != null &&
-                                  supportedAudioFormats.Any(x => x.Codec == selectedAudioTrack.Codec);
+        var audioCodecSupported = supportedAudioFormats.Any(x => x.Codec == selectedAudioTrack.Codec);
 
-        var videoCodecSupported = selectedVideoTrack != null &&
-                                  supportedVideoFormats.Any(x => x.VideoCodec == selectedVideoTrack.Codec);
+        var videoCodecSupported = supportedVideoFormats.Any(x => x.VideoCodec == selectedVideoTrack.Codec);
 
         var requiresAudioTranscoding = !audioCodecSupported;
         //var requiresSubtitlesTranscoding = false; // TODO - Subtitles
@@ -131,6 +136,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             {
                 Id = indexedFile.Id,
                 StreamSessionId = request.StreamSessionId,
+                AudioTrackIndex = selectedAudioTrack.Index,
                 TranscodingAudioCodec = audioTranscodingMediaFormat?.Codec,
                 TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec
             }), UriKind.Relative),

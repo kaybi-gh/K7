@@ -34,5 +34,6 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken,
         string? videoCodec = null,
         string? audioCodec = null,
-        string? videoResolutionIdentifier = null);
+        string? videoResolutionIdentifier = null,
+        int audioTrackIndex = 0);
 }

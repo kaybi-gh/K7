@@ -9,6 +9,7 @@ public record CreateStreamSessionCommand : IRequest<StreamingSessionDto>
 {
     public required Guid IndexedFileId { get; init; }
     public required Guid DeviceId { get; init; }
+    public int? AudioTrackIndex { get; init; }
 };
 
 public class CreateStreamSessionCommandHandler : IRequestHandler<CreateStreamSessionCommand, StreamingSessionDto>

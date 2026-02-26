@@ -111,7 +111,8 @@ public class MediaTranscoder : IMediaTranscoder
         CancellationToken cancellationToken,
         string? videoCodec = null,
         string? audioCodec = null,
-        string? videoResolutionIdentifier = null)
+        string? videoResolutionIdentifier = null,
+        int audioTrackIndex = 0)
     {
         if (startSegmentIndex < 0 || endSegmentIndex > allSegments.Count || startSegmentIndex >= endSegmentIndex)
         {
@@ -146,9 +147,8 @@ public class MediaTranscoder : IMediaTranscoder
                 .Seek(startTime))
             .OutputToFile("index.m3u8", overwrite: true, options =>
             {
-                // TODO - Allow specific audio and video streams
                 options.WithCustomArgument("-map 0:v:0");
-                options.WithCustomArgument("-map 0:a:0");
+                options.WithCustomArgument($"-map 0:{audioTrackIndex}");
 
                 if (needsVideoTranscode)
                 {
