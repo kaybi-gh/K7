@@ -21,12 +21,10 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Starts a streaming transcode job with throttling support.
-    /// Generates segments from startSegmentIndex up to (but not including) endSegmentIndex.
-    /// When <paramref name="isAudioOnly"/> is true, produces audio-only fMP4 segments.
-    /// When false, produces video-only fMP4 segments.
+    /// Starts a video-only streaming transcode job.
+    /// Generates video fMP4 segments from startSegmentIndex up to (but not including) endSegmentIndex.
     /// </summary>
-    Task StartStreamingTranscodeAsync(
+    Task StartVideoStreamingTranscodeAsync(
         string inputFilePath,
         string outputDirectory,
         List<HlsSegment> allSegments,
@@ -34,8 +32,19 @@ public interface IMediaTranscoder
         int endSegmentIndex,
         CancellationToken cancellationToken,
         string? videoCodec = null,
-        string? audioCodec = null,
-        string? videoResolutionIdentifier = null,
-        int audioTrackIndex = 0,
-        bool isAudioOnly = false);
+        string? videoResolutionIdentifier = null);
+
+    /// <summary>
+    /// Starts an audio-only streaming transcode job.
+    /// Generates audio fMP4 segments from startSegmentIndex up to (but not including) endSegmentIndex.
+    /// </summary>
+    Task StartAudioStreamingTranscodeAsync(
+        string inputFilePath,
+        string outputDirectory,
+        List<HlsSegment> allSegments,
+        int startSegmentIndex,
+        int endSegmentIndex,
+        CancellationToken cancellationToken,
+        int audioTrackIndex,
+        string? audioCodec = null);
 }
