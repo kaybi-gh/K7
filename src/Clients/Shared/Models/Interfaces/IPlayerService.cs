@@ -17,6 +17,8 @@ public interface IPlayerService
     event Func<double, Task>? VolumeChangeRequested;
     event Func<double, Task>? PlaybackRateChangeRequested;
 
+
+    event Action<int>? SwitchAudioTrackRequested;
     event Action<PlayerSource>? SourceChanged;
     event Action? IsVisibleChanged;
     event Action<bool>? IsFullScreenChanged;

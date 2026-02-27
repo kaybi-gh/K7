@@ -23,7 +23,8 @@ public interface IMediaTranscoder
     /// <summary>
     /// Starts a streaming transcode job with throttling support.
     /// Generates segments from startSegmentIndex up to (but not including) endSegmentIndex.
-    /// Returns a task that represents the ffmpeg process execution.
+    /// When <paramref name="isAudioOnly"/> is true, produces audio-only fMP4 segments.
+    /// When false, produces video-only fMP4 segments.
     /// </summary>
     Task StartStreamingTranscodeAsync(
         string inputFilePath,
@@ -35,5 +36,6 @@ public interface IMediaTranscoder
         string? videoCodec = null,
         string? audioCodec = null,
         string? videoResolutionIdentifier = null,
-        int audioTrackIndex = 0);
+        int audioTrackIndex = 0,
+        bool isAudioOnly = false);
 }

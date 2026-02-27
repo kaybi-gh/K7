@@ -136,7 +136,6 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             {
                 Id = indexedFile.Id,
                 StreamSessionId = request.StreamSessionId,
-                AudioTrackIndex = selectedAudioTrack.Index,
                 TranscodingAudioCodec = audioTranscodingMediaFormat?.Codec,
                 TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec
             }), UriKind.Relative),

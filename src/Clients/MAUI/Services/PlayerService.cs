@@ -23,6 +23,7 @@ internal class PlayerService : IPlayerService
     public event Func<Task>? UnmuteRequest;
     public event Func<double, Task>? VolumeChangeRequested;
     public event Func<double, Task>? PlaybackRateChangeRequested;
+    public event Action<int>? SwitchAudioTrackRequested;
 
 #pragma warning disable CS0067
     public event Action<PlayerSource>? SourceChanged;
@@ -285,7 +286,7 @@ internal class PlayerService : IPlayerService
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
 
-        var session = await _streamUriService.GetOrCreateSessionAsync(indexedFileId, _selectedAudioTrack?.Index, cancellationToken);
+        var session = await _streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
 
         if (session.Source is null)
         {
@@ -299,33 +300,24 @@ internal class PlayerService : IPlayerService
         Play();
     }
 
-    public async Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
+    public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
     {
         if (_currentIndexedFileId is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        var resumeTime = CurrentTime;
+        var trackIndex = _audioTracks.IndexOf(track);
+        if (trackIndex < 0)
+        {
+            return Task.CompletedTask;
+        }
 
         _selectedAudioTrack = track;
         AudioTrackChanged?.Invoke(track);
+        SwitchAudioTrackRequested?.Invoke(trackIndex);
 
-        var session = await _streamUriService.GetOrCreateSessionAsync(_currentIndexedFileId.Value, track.Index, cancellationToken);
-
-        if (session.Source is null)
-        {
-            throw new InvalidOperationException("Streaming session did not return a source URI.");
-        }
-
-        _playerPage ??= new PlayerPage(ViewModel);
-        _playerPage.ChangeSource(session.Source.Uri.OriginalString);
-        Play();
-
-        if (resumeTime > 0)
-        {
-            Seek(resumeTime);
-        }
+        return Task.CompletedTask;
     }
 }
 

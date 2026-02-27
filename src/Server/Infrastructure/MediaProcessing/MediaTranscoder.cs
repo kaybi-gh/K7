@@ -112,7 +112,8 @@ public class MediaTranscoder : IMediaTranscoder
         string? videoCodec = null,
         string? audioCodec = null,
         string? videoResolutionIdentifier = null,
-        int audioTrackIndex = 0)
+        int audioTrackIndex = 0,
+        bool isAudioOnly = false)
     {
         if (startSegmentIndex < 0 || endSegmentIndex > allSegments.Count || startSegmentIndex >= endSegmentIndex)
         {
@@ -147,55 +148,65 @@ public class MediaTranscoder : IMediaTranscoder
                 .Seek(startTime))
             .OutputToFile("index.m3u8", overwrite: true, options =>
             {
-                options.WithCustomArgument("-map 0:v:0");
-                options.WithCustomArgument($"-map 0:{audioTrackIndex}");
-
-                if (needsVideoTranscode)
+                if (isAudioOnly)
                 {
-                    if (videoCodec == "h264")
-                    {
-                        options.WithCustomArgument("-c:v h264")
-                            .WithCustomArgument("-profile:v main")
-                            .WithCustomArgument("-level:v 4.0")
-                            .WithCustomArgument("-pix_fmt yuv420p");
-                    }
-                    else if (videoCodec == "hevc")
-                    {
-                        options.WithCustomArgument("-c:v libx265");
-                    }
+                    // Audio-only: map only the selected audio stream, strip video
+                    options.WithCustomArgument($"-map 0:{audioTrackIndex}");
+                    options.WithCustomArgument("-vn");
 
-                    if (!string.IsNullOrEmpty(videoResolutionIdentifier) && videoResolutionIdentifier != "original")
+                    if (needsAudioTranscode)
                     {
-                        var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
-                        if (quality?.Height is int height)
+                        if (audioCodec == "aac")
                         {
-                            options.ConfigureVideoScalingHlsOptions(height);
+                            options.WithCustomArgument("-c:a aac")
+                                .WithCustomArgument("-ac 2")
+                                .WithCustomArgument("-ar 48000")
+                                .WithCustomArgument("-b:a 128k");
+                        }
+                        else if (audioCodec == "opus")
+                        {
+                            options.WithCustomArgument("-c:a libopus");
                         }
                     }
+                    else
+                    {
+                        options.WithCustomArgument("-c:a copy");
+                    }
                 }
                 else
                 {
-                    options.WithCustomArgument("-c:v copy");
-                    options.WithCustomArgument("-tag:v hvc1");
-                }
+                    // Video-only: map only the first video stream, strip audio
+                    options.WithCustomArgument("-map 0:v:0");
+                    options.WithCustomArgument("-an");
 
-                if (needsAudioTranscode)
-                {
-                    if (audioCodec == "aac")
+                    if (needsVideoTranscode)
                     {
-                        options.WithCustomArgument("-c:a aac")
-                            .WithCustomArgument("-ac 2")
-                            .WithCustomArgument("-ar 48000")
-                            .WithCustomArgument("-b:a 128k");
+                        if (videoCodec == "h264")
+                        {
+                            options.WithCustomArgument("-c:v h264")
+                                .WithCustomArgument("-profile:v main")
+                                .WithCustomArgument("-level:v 4.0")
+                                .WithCustomArgument("-pix_fmt yuv420p");
+                        }
+                        else if (videoCodec == "hevc")
+                        {
+                            options.WithCustomArgument("-c:v libx265");
+                        }
+
+                        if (!string.IsNullOrEmpty(videoResolutionIdentifier) && videoResolutionIdentifier != "original")
+                        {
+                            var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
+                            if (quality?.Height is int height)
+                            {
+                                options.ConfigureVideoScalingHlsOptions(height);
+                            }
+                        }
                     }
-                    else if (audioCodec == "opus")
+                    else
                     {
-                        options.WithCustomArgument("-c:a libopus");
+                        options.WithCustomArgument("-c:v copy");
+                        options.WithCustomArgument("-tag:v hvc1");
                     }
-                }
-                else
-                {
-                    options.WithCustomArgument("-c:a copy");
                 }
 
                 // Duration limit (using -to because of -copyts)

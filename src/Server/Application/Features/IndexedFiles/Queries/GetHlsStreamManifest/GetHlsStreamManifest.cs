@@ -1,9 +1,11 @@
 ﻿using System.Text;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -20,9 +22,9 @@ public static class GetHlsStreamManifestQueryUriBuilder
         var queryParams = new Dictionary<string, string?>
         {
             { nameof(query.StreamSessionId), query.StreamSessionId.ToString() },
-            { nameof(query.AudioTrackIndex), query.AudioTrackIndex.ToString() },
             { nameof(query.TranscodingAudioCodec), query.TranscodingAudioCodec },
-            { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec }
+            { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec },
+            { nameof(query.DefaultAudioTrackIndex), query.DefaultAudioTrackIndex?.ToString() }
         };
 
         var filteredParams = queryParams
@@ -34,7 +36,6 @@ public static class GetHlsStreamManifestQueryUriBuilder
             : route;
     }
 
-    // TODO - Use Build with original query params
     public static string Build(Guid id) => Route
         .Replace("{id}", $"{id}");
 }
@@ -43,10 +44,9 @@ public record GetHlsStreamManifestQuery : IRequest<IResult>
 {
     public required Guid Id { get; set; }
     public required Guid StreamSessionId { get; set; }
-    public required int AudioTrackIndex { get; set; }
-    public string? TranscodingAudioCodec { get; set; } = null;
-    public string? TranscodingVideoCodec { get; set; } = null;
-    // TODO - Add container
+    public string? TranscodingAudioCodec { get; set; }
+    public string? TranscodingVideoCodec { get; set; }
+    public int? DefaultAudioTrackIndex { get; set; }
 };
 
 public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, IResult>
@@ -106,74 +106,104 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         var fileResolutionIdentifier = videoFileMetadata.VideoResolution;
         var fileResolution = Constants.VideoQualities.Single(x => x.Key == fileResolutionIdentifier).Value;
 
-        var originalCodecs = HlsCodecStringHelpers.GetHlsCodecs(videoFileMetadata);
-
-        var originalVideoCodec = string.Empty;
-        var originalAudioCodec = string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(originalCodecs))
-        {
-            var parts = originalCodecs.Split(',', 2);
-            originalVideoCodec = parts[0];
-            if (parts.Length > 1)
-            {
-                originalAudioCodec = parts[1];
-            }
-        }
-
         var hasAudioTranscoding = !string.IsNullOrWhiteSpace(query.TranscodingAudioCodec);
         var hasVideoTranscoding = !string.IsNullOrWhiteSpace(query.TranscodingVideoCodec);
 
-        string codecsAttribute;
+        var originalVideoTrack = videoFileMetadata.VideoTracks
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .FirstOrDefault();
 
-        if (!hasAudioTranscoding && !hasVideoTranscoding)
+        var videoCodecString = hasVideoTranscoding
+            ? HlsCodecStringHelpers.GetHlsCodecs(query.TranscodingVideoCodec, audioCodec: null)
+            : (originalVideoTrack != null
+                ? HlsCodecStringHelpers.GetHlsCodecs(originalVideoTrack.Codec, audioCodec: null)
+                : string.Empty);
+
+        var defaultAudioTrack = videoFileMetadata.AudioTracks
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .FirstOrDefault();
+
+        var audioCodecString = defaultAudioTrack != null
+            ? (hasAudioTranscoding
+                ? HlsCodecStringHelpers.GetHlsCodecs(videoCodec: null, query.TranscodingAudioCodec)
+                : HlsCodecStringHelpers.GetHlsCodecs(videoCodec: null, defaultAudioTrack.Codec))
+            : string.Empty;
+
+        var codecsAttribute = (videoCodecString, audioCodecString) switch
         {
-            codecsAttribute = originalCodecs;
-        }
-        else
+            (not "", not "") => $"{videoCodecString},{audioCodecString}",
+            (not "", _) => videoCodecString,
+            (_, not "") => audioCodecString,
+            _ => string.Empty
+        };
+
+        var audioQueryParams = new List<string>
         {
-            var effectiveVideoCodecId = hasVideoTranscoding
-                ? query.TranscodingVideoCodec
-                : originalVideoCodec;
+            $"streamSessionId={query.StreamSessionId}"
+        };
 
-            var effectiveAudioCodecId = hasAudioTranscoding
-                ? query.TranscodingAudioCodec
-                : originalAudioCodec;
+        if (!string.IsNullOrEmpty(query.TranscodingAudioCodec))
+            audioQueryParams.Add($"TranscodingAudioCodec={query.TranscodingAudioCodec}");
 
-            var transcodingCodecs = HlsCodecStringHelpers.GetHlsCodecs(effectiveVideoCodecId, effectiveAudioCodecId);
+        var audioQueryString = "?" + string.Join("&", audioQueryParams);
 
-            codecsAttribute = string.IsNullOrWhiteSpace(transcodingCodecs)
-                ? originalCodecs
-                : transcodingCodecs;
+        var audioTracks = videoFileMetadata.AudioTracks
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .ToList();
+
+        foreach (var track in audioTracks)
+        {
+            var isDefault = query.DefaultAudioTrackIndex.HasValue
+                ? track.Index == query.DefaultAudioTrackIndex.Value
+                : track == audioTracks[0];
+            var trackName = !string.IsNullOrEmpty(track.Name) ? track.Name : $"Track {track.Index}";
+            var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";
+
+            var audioUri = GetHlsAudioStreamIndexQueryUriBuilder.BuildManifestRelativePath(track.Index)
+                + audioQueryString;
+
+            playlist.AppendLine(
+                $"#EXT-X-MEDIA:TYPE=AUDIO," +
+                $"GROUP-ID=\"audio\"," +
+                $"NAME=\"{EscapeHlsAttribute(trackName)}\"," +
+                $"LANGUAGE=\"{language}\"," +
+                $"DEFAULT={BoolToYesNo(isDefault)}," +
+                $"AUTOSELECT={BoolToYesNo(isDefault)}," +
+                $"URI=\"{audioUri}\"");
         }
 
         playlist.AppendLine($"#EXT-X-STREAM-INF:" +
             $"BANDWIDTH={fileResolution.MaxBitrate}," +
             $"AVERAGE-BANDWIDTH={fileResolution.AverageBitrate}," +
             $"RESOLUTION={fileResolution.Width}x{fileResolution.Height}," +
-            $"CODECS=\"{codecsAttribute}\"");
+            $"CODECS=\"{codecsAttribute}\"," +
+            $"AUDIO=\"audio\"");
 
         var playlistQuality = hasVideoTranscoding ? fileResolution.Name : "original";
         var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);
-        
-        // Add parameters to the playlist URL
-        var queryParams = new List<string>
+
+        var videoQueryParams = new List<string>
         {
-            $"streamSessionId={query.StreamSessionId}",
-            $"audioTrackIndex={query.AudioTrackIndex}"
+            $"streamSessionId={query.StreamSessionId}"
         };
-        
+
         if (!string.IsNullOrEmpty(query.TranscodingVideoCodec))
-            queryParams.Add($"TranscodingVideoCodec={query.TranscodingVideoCodec}");
-        if (!string.IsNullOrEmpty(query.TranscodingAudioCodec))
-            queryParams.Add($"TranscodingAudioCodec={query.TranscodingAudioCodec}");
-            
-        var queryString = "?" + string.Join("&", queryParams);
-        playlistUrl += queryString;
-        
+            videoQueryParams.Add($"TranscodingVideoCodec={query.TranscodingVideoCodec}");
+
+        var videoQueryString = "?" + string.Join("&", videoQueryParams);
+        playlistUrl += videoQueryString;
+
         playlist.AppendLine(playlistUrl);
         playlist.AppendLine();
 
         return playlist.ToString();
     }
+
+    private static string BoolToYesNo(bool value) => value ? "YES" : "NO";
+
+    private static string EscapeHlsAttribute(string value) =>
+        value.Replace("\"", "'");
 }
