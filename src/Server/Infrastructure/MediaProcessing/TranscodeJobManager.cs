@@ -348,6 +348,7 @@ public class TranscodeJobManager : ITranscodeJobManager
         // Determine video and audio codecs for transcoding
         var videoCodec = job.VideoCodec != "copy" ? job.VideoCodec : null;
         var audioCodec = job.AudioCodec != "copy" ? job.AudioCodec : null;
+        var endSegmentIndex = Math.Min(job.TargetSegmentIndex + 1, allSegments.Count);
 
         try
         {
@@ -358,18 +359,30 @@ public class TranscodeJobManager : ITranscodeJobManager
             // Start ffmpeg in background
             job.FfmpegTask = Task.Run(async () =>
             {
-                await _mediaTranscoder.StartStreamingTranscodeAsync(
-                    job.InputFilePath,
-                    job.OutputDirectory,
-                    allSegments,
-                    startSegmentIndex,
-                    Math.Min(job.TargetSegmentIndex + 1, allSegments.Count),
-                    linkedCts.Token,
-                    videoCodec,
-                    audioCodec,
-                    job.Quality,
-                    job.AudioTrackIndex,
-                    job.IsAudioOnly);
+                if (job.IsAudioOnly)
+                {
+                    await _mediaTranscoder.StartAudioStreamingTranscodeAsync(
+                        job.InputFilePath,
+                        job.OutputDirectory,
+                        allSegments,
+                        startSegmentIndex,
+                        endSegmentIndex,
+                        linkedCts.Token,
+                        job.AudioTrackIndex,
+                        audioCodec);
+                }
+                else
+                {
+                    await _mediaTranscoder.StartVideoStreamingTranscodeAsync(
+                        job.InputFilePath,
+                        job.OutputDirectory,
+                        allSegments,
+                        startSegmentIndex,
+                        endSegmentIndex,
+                        linkedCts.Token,
+                        videoCodec,
+                        job.Quality);
+                }
             }, linkedCts.Token);
 
             _logger.LogInformation(

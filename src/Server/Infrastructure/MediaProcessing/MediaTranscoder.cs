@@ -102,7 +102,7 @@ public class MediaTranscoder : IMediaTranscoder
         }
     }
 
-    public async Task StartStreamingTranscodeAsync(
+    public async Task StartVideoStreamingTranscodeAsync(
         string inputFilePath,
         string outputDirectory,
         List<HlsSegment> allSegments,
@@ -110,10 +110,128 @@ public class MediaTranscoder : IMediaTranscoder
         int endSegmentIndex,
         CancellationToken cancellationToken,
         string? videoCodec = null,
-        string? audioCodec = null,
-        string? videoResolutionIdentifier = null,
-        int audioTrackIndex = 0,
-        bool isAudioOnly = false)
+        string? videoResolutionIdentifier = null)
+    {
+        var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
+        Directory.CreateDirectory(outputDirectory);
+
+        var needsTranscode = !string.IsNullOrEmpty(videoCodec);
+
+        _logger.LogInformation(
+            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}",
+            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy");
+
+        var ffmpegTask = FFMpegArguments
+            .FromFileInput(inputFilePath, verifyExists: true, options => options
+                .WithHardwareAcceleration(HardwareAccelerationDevice.Auto)
+                .Seek(startTime))
+            .OutputToFile("index.m3u8", overwrite: true, options =>
+            {
+                options.WithCustomArgument("-map 0:v:0");
+                options.WithCustomArgument("-an");
+
+                if (needsTranscode)
+                {
+                    if (videoCodec == "h264")
+                    {
+                        options.WithCustomArgument("-c:v h264")
+                            .WithCustomArgument("-profile:v main")
+                            .WithCustomArgument("-level:v 4.0")
+                            .WithCustomArgument("-pix_fmt yuv420p");
+                    }
+                    else if (videoCodec == "hevc")
+                    {
+                        options.WithCustomArgument("-c:v libx265");
+                    }
+
+                    if (!string.IsNullOrEmpty(videoResolutionIdentifier) && videoResolutionIdentifier != "original")
+                    {
+                        var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
+                        if (quality?.Height is int height)
+                        {
+                            options.ConfigureVideoScalingHlsOptions(height);
+                        }
+                    }
+                }
+                else
+                {
+                    options.WithCustomArgument("-c:v copy");
+                    options.WithCustomArgument("-tag:v hvc1");
+                }
+
+                ConfigureHlsOutput(options, startSegmentIndex, endTime);
+            })
+            .Configure(options => options.WorkingDirectory = outputDirectory)
+            .Configure(options => options.TemporaryFilesFolder = outputDirectory)
+            .NotifyOnOutput((output) => _logger.LogInformation("FFmpeg stdout: {Output}", output))
+            .NotifyOnError((error) => _logger.LogError("FFmpeg stderr: {Error}", error))
+            .CancellableThrough(cancellationToken);
+
+        var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        _logger.LogInformation("FFmpeg video process completed for output directory: {OutputDir}, Success: {Success}", outputDirectory, result);
+    }
+
+    public async Task StartAudioStreamingTranscodeAsync(
+        string inputFilePath,
+        string outputDirectory,
+        List<HlsSegment> allSegments,
+        int startSegmentIndex,
+        int endSegmentIndex,
+        CancellationToken cancellationToken,
+        int audioTrackIndex,
+        string? audioCodec = null)
+    {
+        var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
+        Directory.CreateDirectory(outputDirectory);
+
+        var needsTranscode = !string.IsNullOrEmpty(audioCodec);
+
+        _logger.LogInformation(
+            "Starting audio streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, audioCodec={AudioCodec}, track={Track}",
+            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, audioCodec ?? "copy", audioTrackIndex);
+
+        var ffmpegTask = FFMpegArguments
+            .FromFileInput(inputFilePath, verifyExists: true, options => options
+                .WithHardwareAcceleration(HardwareAccelerationDevice.Auto)
+                .Seek(startTime))
+            .OutputToFile("index.m3u8", overwrite: true, options =>
+            {
+                options.WithCustomArgument($"-map 0:{audioTrackIndex}");
+                options.WithCustomArgument("-vn");
+
+                if (needsTranscode)
+                {
+                    if (audioCodec == "aac")
+                    {
+                        options.WithCustomArgument("-c:a aac")
+                            .WithCustomArgument("-ac 2")
+                            .WithCustomArgument("-ar 48000")
+                            .WithCustomArgument("-b:a 128k");
+                    }
+                    else if (audioCodec == "opus")
+                    {
+                        options.WithCustomArgument("-c:a libopus");
+                    }
+                }
+                else
+                {
+                    options.WithCustomArgument("-c:a copy");
+                }
+
+                ConfigureHlsOutput(options, startSegmentIndex, endTime);
+            })
+            .Configure(options => options.WorkingDirectory = outputDirectory)
+            .Configure(options => options.TemporaryFilesFolder = outputDirectory)
+            .NotifyOnOutput((output) => _logger.LogInformation("FFmpeg stdout: {Output}", output))
+            .NotifyOnError((error) => _logger.LogError("FFmpeg stderr: {Error}", error))
+            .CancellableThrough(cancellationToken);
+
+        var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        _logger.LogInformation("FFmpeg audio process completed for output directory: {OutputDir}, Success: {Success}", outputDirectory, result);
+    }
+
+    private static (TimeSpan StartTime, TimeSpan EndTime) ValidateAndComputeTimeRange(
+        List<HlsSegment> allSegments, int startSegmentIndex, int endSegmentIndex)
     {
         if (startSegmentIndex < 0 || endSegmentIndex > allSegments.Count || startSegmentIndex >= endSegmentIndex)
         {
@@ -125,118 +243,30 @@ public class MediaTranscoder : IMediaTranscoder
 
         var startTime = TimeSpan.FromMilliseconds(firstSegment.StartTimestamp);
         var endTime = TimeSpan.FromMilliseconds(lastSegment.StartTimestamp + lastSegment.Duration);
-        var duration = endTime - startTime;
 
-        Directory.CreateDirectory(outputDirectory);
+        return (startTime, endTime);
+    }
 
-        // Determine if we need transcoding
-        var needsVideoTranscode = !string.IsNullOrEmpty(videoCodec);
-        var needsAudioTranscode = !string.IsNullOrEmpty(audioCodec);
+    private static void ConfigureHlsOutput(FFMpegArgumentOptions options, int startSegmentIndex, TimeSpan endTime)
+    {
+        // Duration limit (using -to because of -copyts)
+        options.WithCustomArgument($"-to {endTime.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
 
-        _logger.LogInformation(
-            "Starting streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, audioCodec={AudioCodec}",
-            inputFilePath,
-            outputDirectory,
-            startSegmentIndex,
-            endSegmentIndex,
-            videoCodec ?? "copy",
-            audioCodec ?? "copy");
+        // Use absolute timestamps to align with the initial init.m4s
+        options.WithCustomArgument("-copyts")
+            .WithCustomArgument("-avoid_negative_ts disabled");
 
-        var ffmpegTask = FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true, options => options
-                .WithHardwareAcceleration(HardwareAccelerationDevice.Auto)
-                .Seek(startTime))
-            .OutputToFile("index.m3u8", overwrite: true, options =>
-            {
-                if (isAudioOnly)
-                {
-                    // Audio-only: map only the selected audio stream, strip video
-                    options.WithCustomArgument($"-map 0:{audioTrackIndex}");
-                    options.WithCustomArgument("-vn");
-
-                    if (needsAudioTranscode)
-                    {
-                        if (audioCodec == "aac")
-                        {
-                            options.WithCustomArgument("-c:a aac")
-                                .WithCustomArgument("-ac 2")
-                                .WithCustomArgument("-ar 48000")
-                                .WithCustomArgument("-b:a 128k");
-                        }
-                        else if (audioCodec == "opus")
-                        {
-                            options.WithCustomArgument("-c:a libopus");
-                        }
-                    }
-                    else
-                    {
-                        options.WithCustomArgument("-c:a copy");
-                    }
-                }
-                else
-                {
-                    // Video-only: map only the first video stream, strip audio
-                    options.WithCustomArgument("-map 0:v:0");
-                    options.WithCustomArgument("-an");
-
-                    if (needsVideoTranscode)
-                    {
-                        if (videoCodec == "h264")
-                        {
-                            options.WithCustomArgument("-c:v h264")
-                                .WithCustomArgument("-profile:v main")
-                                .WithCustomArgument("-level:v 4.0")
-                                .WithCustomArgument("-pix_fmt yuv420p");
-                        }
-                        else if (videoCodec == "hevc")
-                        {
-                            options.WithCustomArgument("-c:v libx265");
-                        }
-
-                        if (!string.IsNullOrEmpty(videoResolutionIdentifier) && videoResolutionIdentifier != "original")
-                        {
-                            var quality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == videoResolutionIdentifier).Value;
-                            if (quality?.Height is int height)
-                            {
-                                options.ConfigureVideoScalingHlsOptions(height);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        options.WithCustomArgument("-c:v copy");
-                        options.WithCustomArgument("-tag:v hvc1");
-                    }
-                }
-
-                // Duration limit (using -to because of -copyts)
-                options.WithCustomArgument($"-to {endTime.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
-
-                // Use absolute timestamps to align with the initial init.m4s
-                options.WithCustomArgument("-copyts")
-                    .WithCustomArgument("-avoid_negative_ts disabled");
-
-                // HLS output format with fMP4
-                options.WithCustomArgument("-f hls")
-                    .WithCustomArgument("-hls_time 6")
-                    .WithCustomArgument("-hls_segment_type fmp4")
-                    .WithCustomArgument("-hls_segment_options movflags=+frag_discont")
-                    .WithCustomArgument("-hls_flags independent_segments")
-                    .WithCustomArgument($"-start_number {startSegmentIndex}")
-                    .WithCustomArgument("-hls_fmp4_init_filename init.m4s")
-                    .WithCustomArgument("-hls_segment_filename %d.m4s")
-                    .WithCustomArgument("-hls_playlist_type vod")
-                    .WithCustomArgument("-hls_list_size 0");
-            })
-            .Configure(options => options.WorkingDirectory = outputDirectory)
-            .Configure(options => options.TemporaryFilesFolder = outputDirectory)
-            .NotifyOnOutput((output) => _logger.LogInformation("FFmpeg stdout: {Output}", output))
-            .NotifyOnError((error) => _logger.LogError("FFmpeg stderr: {Error}", error))
-            .CancellableThrough(cancellationToken);
-
-        var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
-
-        _logger.LogInformation("FFmpeg process completed for output directory: {OutputDir}, Success: {Success}", outputDirectory, result);
+        // HLS output format with fMP4
+        options.WithCustomArgument("-f hls")
+            .WithCustomArgument("-hls_time 6")
+            .WithCustomArgument("-hls_segment_type fmp4")
+            .WithCustomArgument("-hls_segment_options movflags=+frag_discont")
+            .WithCustomArgument("-hls_flags independent_segments")
+            .WithCustomArgument($"-start_number {startSegmentIndex}")
+            .WithCustomArgument("-hls_fmp4_init_filename init.m4s")
+            .WithCustomArgument("-hls_segment_filename %d.m4s")
+            .WithCustomArgument("-hls_playlist_type vod")
+            .WithCustomArgument("-hls_list_size 0");
     }
 }
 
