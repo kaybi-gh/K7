@@ -11,15 +11,15 @@ public class GetHlsStreamManifest : IEndpoint
         string groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapGet(GetHlsStreamManifestQueryUriBuilder.Route,
-            async ([FromServices] ISender sender, [FromRoute] Guid id, [FromQuery] Guid streamSessionId, [FromQuery] int audioTrackIndex, [FromQuery] string? transcodingAudioCodec, [FromQuery] string? transcodingVideoCodec) =>
+            async ([FromServices] ISender sender, [FromRoute] Guid id, [FromQuery] Guid streamSessionId, [FromQuery] string? transcodingAudioCodec, [FromQuery] string? transcodingVideoCodec, [FromQuery] int? defaultAudioTrackIndex) =>
         {
             return await sender.Send(new GetHlsStreamManifestQuery()
             {
                 Id = id,
                 StreamSessionId = streamSessionId,
-                AudioTrackIndex = audioTrackIndex,
                 TranscodingAudioCodec = transcodingAudioCodec,
-                TranscodingVideoCodec = transcodingVideoCodec
+                TranscodingVideoCodec = transcodingVideoCodec,
+                DefaultAudioTrackIndex = defaultAudioTrackIndex
             });
         })
         //.RequireAuthorization()

@@ -69,6 +69,7 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SeekRequested += SeekAsync;
             PlayerService.SourceChanged += OnSourceChange;
             PlayerService.IsVisibleChanged += StateHasChanged;
+            PlayerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
         }
     }
 
@@ -88,6 +89,7 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SeekRequested -= SeekAsync;
             PlayerService.SourceChanged -= OnSourceChange;
             PlayerService.IsVisibleChanged -= StateHasChanged;
+            PlayerService.SwitchAudioTrackRequested -= OnSwitchAudioTrack;
 
             if (!string.IsNullOrEmpty(_player.Id))
             {
@@ -119,6 +121,14 @@ public partial class VideoPlayer : IAsyncDisposable
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async void OnSwitchAudioTrack(int trackIndex)
+    {
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        {
+            await JSRuntime.InvokeVoidAsync("switchAudioTrack", _player.Id, trackIndex);
+        }
     }
 
     public async Task PlayAsync() => await JSRuntime.InvokeVoidAsync("play", _player.Id);

@@ -532,7 +532,7 @@
         }
       }
     },
-    "/api/indexed-files/{id}/hls-stream/audios/{index}/{quality}/index.m3u8": {
+    "/api/indexed-files/{id}/hls-stream/audio/{audioTrackIndex}/index.m3u8": {
       "get": {
         "tags": [
           "IndexedFiles"
@@ -549,7 +549,7 @@
             }
           },
           {
-            "name": "index",
+            "name": "audioTrackIndex",
             "in": "path",
             "required": true,
             "schema": {
@@ -562,9 +562,78 @@
             }
           },
           {
-            "name": "quality",
+            "name": "streamSessionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "TranscodingAudioCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/audio/{audioTrackIndex}/segments/{segmentNumber}.m4s": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsAudioStreamSegment",
+        "parameters": [
+          {
+            "name": "id",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "audioTrackIndex",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "segmentNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "streamSessionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "TranscodingAudioCodec",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -603,19 +672,6 @@
             }
           },
           {
-            "name": "audioTrackIndex",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          },
-          {
             "name": "transcodingAudioCodec",
             "in": "query",
             "schema": {
@@ -627,6 +683,18 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "defaultAudioTrackIndex",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           }
         ],
@@ -671,27 +739,7 @@
             }
           },
           {
-            "name": "audioTrackIndex",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          },
-          {
             "name": "TranscodingVideoCodec",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "TranscodingAudioCodec",
             "in": "query",
             "schema": {
               "type": "string"
@@ -747,27 +795,7 @@
             }
           },
           {
-            "name": "audioTrackIndex",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          },
-          {
             "name": "TranscodingVideoCodec",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "TranscodingAudioCodec",
             "in": "query",
             "schema": {
               "type": "string"

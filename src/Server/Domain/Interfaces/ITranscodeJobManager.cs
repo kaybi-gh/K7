@@ -7,6 +7,8 @@ public interface ITranscodeJobManager
 {
     /// <summary>
     /// Gets an existing transcode job or starts a new one for the specified parameters.
+    /// When <paramref name="isAudioOnly"/> is true, creates an audio-only job keyed by audio codec and track index.
+    /// When false, creates a video-only job keyed by quality and video codec.
     /// </summary>
     Task<TranscodeJob> GetOrStartJobAsync(
         Guid indexedFileId,
@@ -15,6 +17,7 @@ public interface ITranscodeJobManager
         string? videoCodec,
         string? audioCodec,
         int audioTrackIndex,
+        bool isAudioOnly,
         Guid streamSessionId,
         CancellationToken cancellationToken = default);
 
@@ -57,6 +60,7 @@ public class TranscodeJob
     public required string? VideoCodec { get; init; }
     public required string? AudioCodec { get; init; }
     public required int AudioTrackIndex { get; init; }
+    public required bool IsAudioOnly { get; init; }
     public required string OutputDirectory { get; init; }
     public required string InputFilePath { get; init; }
     

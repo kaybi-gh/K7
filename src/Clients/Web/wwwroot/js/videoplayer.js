@@ -139,6 +139,38 @@ window.changeSource = function (id, src, type) {
     }
 }
 
+window.switchAudioTrack = function (id, trackIndex) {
+    const player = players[id];
+    if (!player) return false;
+
+    const audioTracks = player.audioTracks();
+    if (!audioTracks || trackIndex < 0 || trackIndex >= audioTracks.length) return false;
+
+    for (let i = 0; i < audioTracks.length; i++) {
+        audioTracks[i].enabled = (i === trackIndex);
+    }
+    return true;
+}
+
+window.getAudioTracks = function (id) {
+    const player = players[id];
+    if (!player) return [];
+
+    const audioTracks = player.audioTracks();
+    if (!audioTracks) return [];
+
+    const result = [];
+    for (let i = 0; i < audioTracks.length; i++) {
+        result.push({
+            label: audioTracks[i].label,
+            language: audioTracks[i].language,
+            enabled: audioTracks[i].enabled,
+            index: i
+        });
+    }
+    return result;
+}
+
 window.seek = function (id, seconds) {
     players[id]?.currentTime(seconds);
 }

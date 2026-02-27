@@ -29,9 +29,7 @@ public record GetHlsVideoStreamIndexQuery(
     Guid Id, 
     string VideoResolutionIdentifier,
     Guid StreamSessionId,
-    int AudioTrackIndex,
-    string? TranscodingVideoCodec = null,
-    string? TranscodingAudioCodec = null) : IRequest<IResult>;
+    string? TranscodingVideoCodec = null) : IRequest<IResult>;
 
 public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStreamIndexQuery, IResult>
 {
@@ -71,9 +69,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             entity.FileMetadata.HlsSegments, 
             isTransmuxing,
             query.StreamSessionId,
-            query.AudioTrackIndex,
-            query.TranscodingVideoCodec,
-            query.TranscodingAudioCodec);
+            query.TranscodingVideoCodec);
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
@@ -81,9 +77,7 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         IEnumerable<HlsSegment> hlsSegments, 
         bool isTransmuxing,
         Guid streamSessionId,
-        int audioTrackIndex,
-        string? transcodingVideoCodec,
-        string? transcodingAudioCodec)
+        string? transcodingVideoCodec)
     {
         var segmentsList = hlsSegments.ToList();
         var content = new StringBuilder();
@@ -106,14 +100,11 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         // Build query string for segment URLs
         var queryParams = new List<string>
         {
-            $"streamSessionId={streamSessionId}",
-            $"audioTrackIndex={audioTrackIndex}"
+            $"streamSessionId={streamSessionId}"
         };
         
         if (!string.IsNullOrEmpty(transcodingVideoCodec))
             queryParams.Add($"TranscodingVideoCodec={transcodingVideoCodec}");
-        if (!string.IsNullOrEmpty(transcodingAudioCodec))
-            queryParams.Add($"TranscodingAudioCodec={transcodingAudioCodec}");
             
         var queryString = "?" + string.Join("&", queryParams);
         
