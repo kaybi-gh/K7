@@ -2,6 +2,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
+using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -91,6 +92,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             case VideoFileMetadata videoMetadata:
                 await _context.Entry(videoMetadata).Collection(v => v.AudioTracks).LoadAsync(cancellationToken);
                 await _context.Entry(videoMetadata).Collection(v => v.VideoTracks).LoadAsync(cancellationToken);
+                await _context.Entry(videoMetadata).Collection(v => v.SubtitleTracks).LoadAsync(cancellationToken);
                 break;
             case AudioFileMetadata audioMetadata:
                 await _context.Entry(audioMetadata).Reference(a => a.AudioTrack).LoadAsync(cancellationToken);
@@ -175,12 +177,47 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 $"URI=\"{audioUri}\"");
         }
 
+        // Generate #EXT-X-MEDIA:TYPE=SUBTITLES entries for text-based subtitle tracks
+        var subtitleQueryString = $"?streamSessionId={query.StreamSessionId}";
+        var textSubtitleTracks = videoFileMetadata.SubtitleTracks
+            .Where(t => t.IsTextBased)
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .ToList();
+
+        var hasSubtitles = textSubtitleTracks.Count > 0;
+
+        foreach (var track in textSubtitleTracks)
+        {
+            var isDefault = track == textSubtitleTracks[0] && track.IsDefault;
+            var trackName = !string.IsNullOrEmpty(track.Name) ? track.Name : $"Subtitle {track.Index}";
+            var trackSlug = $"sub-{track.Index}";
+            var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";
+
+            var subtitleUri = GetHlsSubtitleStreamIndexQueryUriBuilder.BuildManifestRelativePath(track.Index)
+                + subtitleQueryString;
+
+            playlist.AppendLine(
+                $"#EXT-X-MEDIA:TYPE=SUBTITLES," +
+                $"GROUP-ID=\"subs\"," +
+                $"NAME=\"{EscapeHlsAttribute(trackSlug)}\"," +
+                $"LANGUAGE=\"{language}\"," +
+                $"DEFAULT={BoolToYesNo(isDefault)}," +
+                $"AUTOSELECT={BoolToYesNo(isDefault)}," +
+                $"FORCED={BoolToYesNo(track.IsForced)}," +
+                $"URI=\"{subtitleUri}\"");
+        }
+
+        // Generate #EXT-X-STREAM-INF for the video variant
+        var subtitlesAttribute = hasSubtitles ? ",SUBTITLES=\"subs\"" : "";
+
         playlist.AppendLine($"#EXT-X-STREAM-INF:" +
             $"BANDWIDTH={fileResolution.MaxBitrate}," +
             $"AVERAGE-BANDWIDTH={fileResolution.AverageBitrate}," +
             $"RESOLUTION={fileResolution.Width}x{fileResolution.Height}," +
             $"CODECS=\"{codecsAttribute}\"," +
-            $"AUDIO=\"audio\"");
+            $"AUDIO=\"audio\"" +
+            subtitlesAttribute);
 
         var playlistQuality = hasVideoTranscoding ? fileResolution.Name : "original";
         var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);

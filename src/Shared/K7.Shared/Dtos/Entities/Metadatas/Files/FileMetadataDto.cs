@@ -28,6 +28,7 @@ public abstract record FileMetadataDto
             Duration = videoFileMetadata.Duration,
             AudioTracks = videoFileMetadata.AudioTracks.Select(AudioFileTrackDto.FromDomain),
             VideoTracks = videoFileMetadata.VideoTracks.Select(VideoFileTrackDto.FromDomain),
+            SubtitleTracks = videoFileMetadata.SubtitleTracks.Select(SubtitleFileTrackDto.FromDomain),
             VideoBitrate = videoFileMetadata.VideoBitrate,
             VideoResolution = videoFileMetadata.VideoResolution,
             Thumbnails = videoFileMetadata.Thumbnails != null ? MetadataPictureDto.FromDomain(videoFileMetadata.Thumbnails) : null

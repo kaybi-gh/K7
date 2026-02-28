@@ -9,5 +9,6 @@ public class VideoFileMetadata() : BaseFileMetadata(FileType.Video)
 
     public ICollection<AudioFileTrack> AudioTracks { get; set; } = [];
     public ICollection<VideoFileTrack> VideoTracks { get; set; } = [];
+    public ICollection<SubtitleFileTrack> SubtitleTracks { get; set; } = [];
     public MetadataPicture? Thumbnails { get; set; }
 }

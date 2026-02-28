@@ -35,9 +35,10 @@ public class TranscodeJobManager : ITranscodeJobManager
         int audioTrackIndex,
         bool isAudioOnly,
         Guid streamSessionId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? subtitleBurnInStreamIndex = null)
     {
-        var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodec ?? "copy", audioTrackIndex, isAudioOnly);
+        var jobKey = GenerateJobKey(indexedFileId, quality, videoCodec ?? "copy", audioCodec ?? "copy", audioTrackIndex, isAudioOnly, subtitleBurnInStreamIndex);
 
         if (_activeJobs.TryGetValue(jobKey, out var existingJob))
         {
@@ -63,15 +64,14 @@ public class TranscodeJobManager : ITranscodeJobManager
 
             // Create new job - note: we don't start ffmpeg here yet
             // It will be started on-demand in EnsureSegmentWillBeGeneratedAsync
+            var transcodingPath = _pathsConfig.Transcoding ?? throw new InvalidOperationException("Transcoding path not configured");
+            var videoSubDir = subtitleBurnInStreamIndex.HasValue
+                ? $"video-{quality}-{videoCodec ?? "copy"}-sub{subtitleBurnInStreamIndex.Value}"
+                : $"video-{quality}-{videoCodec ?? "copy"}";
+
             var outputDir = isAudioOnly
-                ? Path.Combine(
-                    _pathsConfig.Transcoding ?? throw new InvalidOperationException("Transcoding path not configured"),
-                    indexedFileId.ToString("N"),
-                    $"audio-{audioCodec ?? "copy"}-a{audioTrackIndex}")
-                : Path.Combine(
-                    _pathsConfig.Transcoding ?? throw new InvalidOperationException("Transcoding path not configured"),
-                    indexedFileId.ToString("N"),
-                    $"video-{quality}-{videoCodec ?? "copy"}");
+                ? Path.Combine(transcodingPath, indexedFileId.ToString("N"), $"audio-{audioCodec ?? "copy"}-a{audioTrackIndex}")
+                : Path.Combine(transcodingPath, indexedFileId.ToString("N"), videoSubDir);
 
             Directory.CreateDirectory(outputDir);
 
@@ -84,6 +84,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                 AudioCodec = audioCodec,
                 AudioTrackIndex = audioTrackIndex,
                 IsAudioOnly = isAudioOnly,
+                SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex,
                 OutputDirectory = outputDir,
                 InputFilePath = inputFilePath,
                 TargetSegmentIndex = 0
@@ -381,7 +382,8 @@ public class TranscodeJobManager : ITranscodeJobManager
                         endSegmentIndex,
                         linkedCts.Token,
                         videoCodec,
-                        job.Quality);
+                        job.Quality,
+                        job.SubtitleBurnInStreamIndex);
                 }
             }, linkedCts.Token);
 
@@ -396,11 +398,12 @@ public class TranscodeJobManager : ITranscodeJobManager
         }
     }
 
-    private static Guid GenerateJobKey(Guid indexedFileId, string quality, string videoCodec, string audioCodec, int audioTrackIndex, bool isAudioOnly)
+    private static Guid GenerateJobKey(Guid indexedFileId, string quality, string videoCodec, string audioCodec, int audioTrackIndex, bool isAudioOnly, int? subtitleBurnInStreamIndex = null)
     {
+        var subtitleSuffix = subtitleBurnInStreamIndex.HasValue ? $"|sub{subtitleBurnInStreamIndex.Value}" : "";
         var keyString = isAudioOnly
             ? $"{indexedFileId}|audio|{audioCodec}|a{audioTrackIndex}"
-            : $"{indexedFileId}|video|{quality}|{videoCodec}";
+            : $"{indexedFileId}|video|{quality}|{videoCodec}{subtitleSuffix}";
         return Guid.Parse(System.Security.Cryptography.MD5.HashData(
             System.Text.Encoding.UTF8.GetBytes(keyString))
             .Take(16).ToArray().Aggregate("", (s, b) => s + b.ToString("x2")));

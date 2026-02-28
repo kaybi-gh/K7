@@ -65,18 +65,19 @@
                         }
                     </MudMenu>
 
-                    @* @if (Captions.Any())
-                    { *@
                     <MudMenu Label="Subtitles" StartIcon="@Icons.Material.Outlined.Subtitles">
-                        @* @foreach (var caption in Captions)
-                    {
-                        <MudMenuItem OnClick="@(() => SelectCaption(caption))"
-                                     Icon="@(SelectedCaption?.Id == caption.Id ? @Icons.Material.Filled.CheckCircle : null)">
-                            @caption.Label
-                        </MudMenuItem>
-                    } *@
+                        <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
+                                     Icon="@(PlayerService.SelectedSubtitleTrack is null ? Icons.Material.Filled.CheckCircle : null)">
+                            Off
+                        </MudMenuItem> @* TODO - Maybe change the way disabling titles is done *@
+                        @foreach (var track in PlayerService.SubtitleTracks)
+                        {
+                            <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
+                                         Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? Icons.Material.Filled.CheckCircle : null)">
+                                @($"{track.Language} - {track.Name}{(track.IsForced ? " (Forced)" : "")} ({track.Codec})")
+                            </MudMenuItem> // TODO - Maybe use only the track name
+                        }
                     </MudMenu>
-                    @* } *@
                     <MudMenuItem Icon="@Icons.Material.Outlined.Tune" Label="Quality" />
                 </MudMenu>
 
@@ -94,8 +95,6 @@
     [Parameter] public string? ThumbnailsSource { get; set; }
     [Parameter] public int ThumbnailsRows { get; set; } = 5;
     [Parameter] public int ThumbnailsCols { get; set; } = 5;
-    [Parameter] public bool EnableCaptions { get; set; } = false;
-    [Parameter] public List<CaptionTrack> Captions { get; set; } = new List<CaptionTrack>();
     [Parameter] public EventCallback<PlayerState> OnStateChange { get; set; }
 
     private DeviceType _deviceType;
@@ -116,6 +115,7 @@
     private void OnPlaybackRateChanged(double rate) => InvokeAsync(StateHasChanged);
     private void OnIsFullScreenChanged(bool isFullScreen) => InvokeAsync(StateHasChanged);
     private void OnAudioTrackChanged(AudioFileTrackDto? track) => InvokeAsync(StateHasChanged);
+    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? track) => InvokeAsync(StateHasChanged);
 
     protected override async Task OnInitializedAsync()
     {
@@ -134,6 +134,7 @@
         PlayerService.PlaybackRateChanged += OnPlaybackRateChanged;
         PlayerService.IsFullScreenChanged += OnIsFullScreenChanged;
         PlayerService.AudioTrackChanged += OnAudioTrackChanged;
+        PlayerService.SubtitleTrackChanged += OnSubtitleTrackChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
     }
 
@@ -242,7 +243,25 @@
         }
     }
 
-    private CaptionTrack? SelectedCaption = null;
+    private async Task OnAudioTrackSelected(AudioFileTrackDto track)
+    {
+        if (PlayerService.SelectedAudioTrack?.Index == track.Index)
+        {
+            return;
+        }
+
+        await PlayerService.ChangeAudioTrackAsync(track);
+    }
+
+    private async Task OnSubtitleTrackSelected(SubtitleFileTrackDto? track)
+    {
+        if (PlayerService.SelectedSubtitleTrack?.Index == track?.Index)
+        {
+            return;
+        }
+
+        await PlayerService.ChangeSubtitleTrackAsync(track);
+    }
 
     private void TogglePlayPause()
     {
@@ -283,14 +302,6 @@
             PlayerService.IsFullScreen = false;
             PlayerService.ExitFullScreen();
         }
-    }
-
-    private async Task SelectCaption(CaptionTrack? track)
-    {
-        SelectedCaption = track;
-        //await JSRuntime.InvokeVoidAsync("sutroPlayer.selectCaption", videoElement, track?.Id);
-        await Task.Delay(0);
-        //ResetHideControlsTimer();
     }
 
     private string FormatTime(double seconds)
@@ -335,24 +346,6 @@
         public bool IsFullscreen { get; set; }
     }
 
-    public class CaptionTrack
-    {
-        public string? Id { get; set; }
-        public string? Label { get; set; }
-        public string? Language { get; set; }
-        public string? Url { get; set; }
-    }
-
-    private async Task OnAudioTrackSelected(AudioFileTrackDto track)
-    {
-        if (PlayerService.SelectedAudioTrack?.Index == track.Index)
-        {
-            return;
-        }
-
-        await PlayerService.ChangeAudioTrackAsync(track);
-    }
-
     public async ValueTask DisposeAsync()
     {
         _overlayVisibleTimer?.Dispose();
@@ -363,6 +356,7 @@
         PlayerService.PlaybackRateChanged -= OnPlaybackRateChanged;
         PlayerService.IsFullScreenChanged -= OnIsFullScreenChanged;
         PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
+        PlayerService.SubtitleTrackChanged -= OnSubtitleTrackChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);
     }
 }

@@ -19,7 +19,8 @@ public interface ITranscodeJobManager
         int audioTrackIndex,
         bool isAudioOnly,
         Guid streamSessionId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        int? subtitleBurnInStreamIndex = null);
 
     /// <summary>
     /// Signals that a session is still actively using this job.
@@ -61,6 +62,7 @@ public class TranscodeJob
     public required string? AudioCodec { get; init; }
     public required int AudioTrackIndex { get; init; }
     public required bool IsAudioOnly { get; init; }
+    public int? SubtitleBurnInStreamIndex { get; init; }
     public required string OutputDirectory { get; init; }
     public required string InputFilePath { get; init; }
     

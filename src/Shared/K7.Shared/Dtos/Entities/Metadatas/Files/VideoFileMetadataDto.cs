@@ -10,5 +10,6 @@ public sealed record VideoFileMetadataDto : FileMetadataDto
 
     public IEnumerable<AudioFileTrackDto> AudioTracks { get; init; } = [];
     public IEnumerable<VideoFileTrackDto> VideoTracks { get; init; } = [];
+    public IEnumerable<SubtitleFileTrackDto> SubtitleTracks { get; init; } = [];
     public MetadataPictureDto? Thumbnails { get; init; }
 }

@@ -110,16 +110,19 @@ public class MediaTranscoder : IMediaTranscoder
         int endSegmentIndex,
         CancellationToken cancellationToken,
         string? videoCodec = null,
-        string? videoResolutionIdentifier = null)
+        string? videoResolutionIdentifier = null,
+        int? subtitleBurnInStreamIndex = null)
     {
         var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
         Directory.CreateDirectory(outputDirectory);
 
-        var needsTranscode = !string.IsNullOrEmpty(videoCodec);
+        var hasBurnIn = subtitleBurnInStreamIndex.HasValue;
+        // Burn-in forces a transcode (can't stream copy when overlaying subtitles)
+        var needsTranscode = !string.IsNullOrEmpty(videoCodec) || hasBurnIn;
 
         _logger.LogInformation(
-            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}",
-            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy");
+            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, burnIn={BurnIn}",
+            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy", subtitleBurnInStreamIndex?.ToString() ?? "none");
 
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options => options
@@ -127,19 +130,34 @@ public class MediaTranscoder : IMediaTranscoder
                 .Seek(startTime))
             .OutputToFile("index.m3u8", overwrite: true, options =>
             {
-                options.WithCustomArgument("-map 0:v:0");
-                options.WithCustomArgument("-an");
+                if (hasBurnIn)
+                {
+                    // Map both video and subtitle for overlay filter
+                    options.WithCustomArgument("-map 0:v:0");
+                    options.WithCustomArgument("-an");
+
+                    // Apply subtitle overlay filter
+                    options.WithCustomArgument($"-filter_complex \"[0:v][0:{subtitleBurnInStreamIndex!.Value}]overlay\"");
+                }
+                else
+                {
+                    options.WithCustomArgument("-map 0:v:0");
+                    options.WithCustomArgument("-an");
+                }
 
                 if (needsTranscode)
                 {
-                    if (videoCodec == "h264")
+                    // Determine effective codec: use specified or default to h264 for burn-in
+                    var effectiveCodec = videoCodec ?? (hasBurnIn ? "h264" : null);
+
+                    if (effectiveCodec == "h264")
                     {
                         options.WithCustomArgument("-c:v h264")
                             .WithCustomArgument("-profile:v main")
                             .WithCustomArgument("-level:v 4.0")
                             .WithCustomArgument("-pix_fmt yuv420p");
                     }
-                    else if (videoCodec == "hevc")
+                    else if (effectiveCodec == "hevc")
                     {
                         options.WithCustomArgument("-c:v libx265");
                     }
@@ -267,6 +285,40 @@ public class MediaTranscoder : IMediaTranscoder
             .WithCustomArgument("-hls_segment_filename %d.m4s")
             .WithCustomArgument("-hls_playlist_type vod")
             .WithCustomArgument("-hls_list_size 0");
+    }
+
+    public async Task ExtractSubtitleAsVttAsync(
+        string inputFilePath,
+        int subtitleStreamIndex,
+        string outputVttPath,
+        CancellationToken cancellationToken = default)
+    {
+        var outputDir = Path.GetDirectoryName(outputVttPath)!;
+        Directory.CreateDirectory(outputDir);
+
+        _logger.LogInformation(
+            "Extracting subtitle stream {StreamIndex} from {Input} to {Output}",
+            subtitleStreamIndex, inputFilePath, outputVttPath);
+
+        var result = await FFMpegArguments
+            .FromFileInput(inputFilePath, verifyExists: true)
+            .OutputToFile(outputVttPath, overwrite: true, options =>
+            {
+                options.WithCustomArgument($"-map 0:{subtitleStreamIndex}");
+                options.WithCustomArgument("-c:s webvtt");
+            })
+            .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg subtitle stdout: {Output}", output))
+            .NotifyOnError((error) => _logger.LogDebug("FFmpeg subtitle stderr: {Error}", error))
+            .CancellableThrough(cancellationToken)
+            .ProcessAsynchronously(throwOnError: false);
+
+        if (!result || !File.Exists(outputVttPath))
+        {
+            _logger.LogError("Failed to extract subtitle stream {StreamIndex} from {Input}", subtitleStreamIndex, inputFilePath);
+            throw new InvalidOperationException($"FFmpeg failed to extract subtitle stream {subtitleStreamIndex}");
+        }
+
+        _logger.LogInformation("Subtitle extraction completed: {Output}", outputVttPath);
     }
 }
 

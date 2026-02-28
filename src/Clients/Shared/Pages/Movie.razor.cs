@@ -56,8 +56,10 @@ public partial class Movie
         }
 
         var indexedFileId = _movie.IndexedFiles.First().Id;
-        var audioTracks = ((VideoFileMetadataDto)_movie.IndexedFiles.First().FileMetadata!).AudioTracks;
+        var videoMetadata = (VideoFileMetadataDto)_movie.IndexedFiles.First().FileMetadata!;
+        var audioTracks = videoMetadata.AudioTracks;
+        var subtitleTracks = videoMetadata.SubtitleTracks;
         var audioTrackIndex = _selectedAudioFileTrack?.Index;
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, audioTrackIndex);
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex);
     }
 }

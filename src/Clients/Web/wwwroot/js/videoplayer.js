@@ -152,6 +152,37 @@ window.switchAudioTrack = function (id, trackIndex) {
     return true;
 }
 
+window.switchSubtitleTrack = function (id, slug) {
+    const player = players[id];
+    if (!player) return false;
+
+    const textTracks = player.textTracks();
+    if (!textTracks) return false;
+
+    // null slug disables all subtitle tracks
+    if (!slug) {
+        for (let i = 0; i < textTracks.length; i++) {
+            if (textTracks[i].kind === 'subtitles') {
+                textTracks[i].mode = 'disabled';
+            }
+        }
+        return true;
+    }
+
+    let found = false;
+    for (let i = 0; i < textTracks.length; i++) {
+        if (textTracks[i].kind === 'subtitles') {
+            if (textTracks[i].label === slug) {
+                textTracks[i].mode = 'showing';
+                found = true;
+            } else {
+                textTracks[i].mode = 'disabled';
+            }
+        }
+    }
+    return found;
+}
+
 window.getAudioTracks = function (id) {
     const player = players[id];
     if (!player) return [];

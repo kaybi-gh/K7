@@ -705,6 +705,111 @@
         }
       }
     },
+    "/api/indexed-files/{id}/hls-stream/subtitles/{subtitleTrackIndex}/index.m3u8": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsSubtitleStreamIndex",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subtitleTrackIndex",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "streamSessionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/hls-stream/subtitles/{subtitleTrackIndex}/segments/{segmentNumber}.vtt": {
+      "get": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetHlsSubtitleStreamSegment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subtitleTrackIndex",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "segmentNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "streamSessionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/indexed-files/{id}/hls-stream/video/{quality}/index.m3u8": {
       "get": {
         "tags": [
@@ -1812,6 +1917,12 @@
               "$ref": "#/components/schemas/VideoFileTrackDto"
             }
           },
+          "subtitleTracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubtitleFileTrackDto"
+            }
+          },
           "thumbnails": {
             "oneOf": [
               {
@@ -1951,12 +2062,6 @@
               "Movie"
             ],
             "type": "string"
-          },
-          "toto": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "id": {
             "type": "string",
@@ -2911,6 +3016,46 @@
       },
       "RatingSource": {
         "type": "integer"
+      },
+      "SubtitleFileTrackDto": {
+        "required": [
+          "codec"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "codec": {
+            "type": "string"
+          },
+          "isTextBased": {
+            "type": "boolean"
+          },
+          "isForced": {
+            "type": "boolean"
+          },
+          "index": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        }
       },
       "UpdateDeviceCommand": {
         "type": "object",
