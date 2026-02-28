@@ -20,6 +20,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Func<double, Task>? PlaybackRateChangeRequested;
     public event Action<int>? SwitchAudioTrackRequested;
     public event Action<string?>? SwitchSubtitleTrackRequested;
+    public event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
 #pragma warning disable CS0067
     public event Action<PlayerSource>? SourceChanged;
@@ -36,6 +37,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Action<AudioFileTrackDto?>? AudioTrackChanged;
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
     public event Action<VideoQualityOption?>? QualityChanged;
+    public event Action<AspectRatioMode>? AspectRatioModeChanged;
 
     private PlayerSource _source = new();
     public PlayerSource Source
@@ -192,6 +194,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private VideoQualityOption? _selectedQuality;
     public VideoQualityOption? SelectedQuality => _selectedQuality;
 
+    private AspectRatioMode _aspectRatioMode = AspectRatioMode.Fit;
+    public AspectRatioMode AspectRatio => _aspectRatioMode;
+
     /// <summary>
     /// Base manifest URL (without Quality param) used to rebuild the source when switching quality.
     /// </summary>
@@ -332,6 +337,14 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public void Stop() => StopRequested?.Invoke();
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
+
+    public void SetAspectRatioMode(AspectRatioMode mode)
+    {
+        _aspectRatioMode = mode;
+        AspectRatioModeChanged?.Invoke(mode);
+        AspectRatioModeChangeRequested?.Invoke(mode);
+    }
+
     // TODO - Maybe slugify on file indexing 
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
 

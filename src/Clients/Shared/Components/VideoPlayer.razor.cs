@@ -71,6 +71,7 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.IsVisibleChanged += StateHasChanged;
             PlayerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
             PlayerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
+            PlayerService.AspectRatioModeChangeRequested += OnAspectRatioModeChange;
         }
     }
 
@@ -92,6 +93,7 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.IsVisibleChanged -= StateHasChanged;
             PlayerService.SwitchAudioTrackRequested -= OnSwitchAudioTrack;
             PlayerService.SwitchSubtitleTrackRequested -= OnSwitchSubtitleTrack;
+            PlayerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChange;
 
             if (!string.IsNullOrEmpty(_player.Id))
             {
@@ -145,6 +147,14 @@ public partial class VideoPlayer : IAsyncDisposable
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
             await JSRuntime.InvokeVoidAsync("switchSubtitleTrack", _player.Id, slug);
+        }
+    }
+
+    private async void OnAspectRatioModeChange(AspectRatioMode mode)
+    {
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        {
+            await JSRuntime.InvokeVoidAsync("setAspectRatioMode", _player.Id, mode.ToString());
         }
     }
 

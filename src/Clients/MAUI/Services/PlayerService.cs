@@ -25,6 +25,7 @@ internal class PlayerService : IPlayerService
     public event Func<double, Task>? PlaybackRateChangeRequested;
     public event Action<int>? SwitchAudioTrackRequested;
     public event Action<string?>? SwitchSubtitleTrackRequested;
+    public event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
 #pragma warning disable CS0067
     public event Action<PlayerSource>? SourceChanged;
@@ -41,6 +42,7 @@ internal class PlayerService : IPlayerService
     public event Action<AudioFileTrackDto?>? AudioTrackChanged;
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
     public event Action<VideoQualityOption?>? QualityChanged;
+    public event Action<AspectRatioMode>? AspectRatioModeChanged;
 
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
@@ -222,6 +224,9 @@ internal class PlayerService : IPlayerService
     private VideoQualityOption? _selectedQuality;
     public VideoQualityOption? SelectedQuality => _selectedQuality;
 
+    private AspectRatioMode _aspectRatioMode = AspectRatioMode.Fit;
+    public AspectRatioMode AspectRatio => _aspectRatioMode;
+
     public async Task ShowAsync()
     {
         var navigation = Application.Current?.Windows[0]?.Navigation;
@@ -290,6 +295,13 @@ internal class PlayerService : IPlayerService
     public void Stop() => StopRequested?.Invoke();
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
+
+    public void SetAspectRatioMode(AspectRatioMode mode)
+    {
+        _aspectRatioMode = mode;
+        AspectRatioModeChanged?.Invoke(mode);
+        AspectRatioModeChangeRequested?.Invoke(mode);
+    }
 
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, CancellationToken cancellationToken = default)
     {

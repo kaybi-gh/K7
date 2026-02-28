@@ -13,6 +13,8 @@ window.initVideoJs = function (id, videoPlayer, videoContainer, options, dotNetR
 
     const player = videojs(videoPlayer, options);
     player.volume(options.volume);
+    // Make the player wrapper fill the .video-container so object-fit works on the <video>
+    player.fill(true);
 
     const otherEvents = [
         'beforepluginsetup', // Signals that a plugin is about to be set up on a player.
@@ -233,7 +235,7 @@ window.changeVolume = function (id, volume) {
 }
 
 window.changePlaybackRate = function (id, rate) {
-    players[id]?.rate(rate);
+    players[id]?.playbackRate(rate);
 }
 
 window.getCurrentTime = function (id) {
@@ -250,6 +252,16 @@ window.enterFullscreen = function (videoContainer) {
 
 window.exitFullscreen = function () {
     document?.exitFullscreen();
+}
+
+// ── Aspect ratio ──
+window.setAspectRatioMode = function (id, mode) {
+    const player = players[id];
+    if (!player) return;
+    const videoEl = player.el()?.querySelector('video');
+    if (!videoEl) return;
+    const fit = mode === 'Fill' ? 'cover' : mode === 'Stretch' ? 'fill' : 'contain';
+    videoEl.style.setProperty('object-fit', fit, 'important');
 }
 
 window.hideBodyScroll = (hide) => {
