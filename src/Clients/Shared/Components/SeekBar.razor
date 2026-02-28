@@ -1,6 +1,9 @@
 @using System.Globalization
+@using MudBlazor.Services
 @implements IAsyncDisposable
+@implements IBrowserViewportObserver
 @inject IPlayerService PlayerService
+@inject IBrowserViewportService BrowserViewportService
 
 <div class="seekbar-container"
 @onmousemove="HandleMouseMove"
@@ -99,7 +102,7 @@
     private double HoverPercent;
     private double HoverTime;
 
-    private double SeekBarWidth = 1;
+    private double SeekBarWidth = 0;
     private double SeekBarLeft;
 
     [Parameter] public EventCallback<bool> OnDragChanged { get; set; }
@@ -119,7 +122,7 @@
     {
         if (IsVisible)
         {
-            if (SeekBarWidth <= 1)
+            if (SeekBarWidth <= 0)
             {
                 var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
                 SeekBarWidth = bounds.Width;
@@ -135,7 +138,7 @@
     {
         if (IsVisible)
         {
-            if (SeekBarWidth <= 1)
+            if (SeekBarWidth <= 0)
             {
                 var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
                 SeekBarWidth = bounds.Width;
@@ -152,9 +155,11 @@
     {
         if (IsVisible && IsHovering)
         {
-            if (!IsHovering)
+            if (SeekBarWidth <= 0)
             {
-                return;
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
             }
 
             UpdateHover(e.ClientX);
@@ -166,11 +171,22 @@
     {
         if (IsVisible && IsHovering)
         {
-            double x = e.ClientX - SeekBarLeft;
-            double percent = Math.Clamp(x / SeekBarWidth, 0, 1);
-            double seekTime = PlayerService.Duration * percent;
+            if (SeekBarWidth <= 0)
+            {
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
+            }
 
-            PlayerService.Seek(seekTime);
+            if (SeekBarWidth > 0)
+            {
+                double x = e.ClientX - SeekBarLeft;
+                double percent = Math.Clamp(x / SeekBarWidth, 0, 1);
+                double seekTime = PlayerService.Duration * percent;
+
+                PlayerService.Seek(seekTime);
+            }
+            
             IsHovering = false;
             await OnDragChanged.InvokeAsync(false);
         }
@@ -178,6 +194,8 @@
 
     private void UpdateHover(double clientX)
     {
+        if (SeekBarWidth <= 0) return;
+        
         double relativeX = clientX - SeekBarLeft;
         double percent = Math.Clamp(relativeX / SeekBarWidth, 0, 1);
         HoverPercent = percent * 100;
@@ -229,11 +247,33 @@
         InvokeAsync(StateHasChanged);
     }
 
-    public ValueTask DisposeAsync()
+    Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
+
+    ResizeOptions IBrowserViewportObserver.ResizeOptions { get; } = new()
+    {
+        ReportRate = 50,
+        NotifyOnBreakpointOnly = false
+    };
+
+    Task IBrowserViewportObserver.NotifyBrowserViewportChangeAsync(BrowserViewportEventArgs browserViewportEventArgs)
+    {
+        SeekBarWidth = 0;
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await BrowserViewportService.SubscribeAsync(this);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
     {
         PlayerService.DurationChanged -= OnDurationChanged;
         PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
         PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;
-        return ValueTask.CompletedTask;
+        await BrowserViewportService.UnsubscribeAsync(this);
     }
 }
