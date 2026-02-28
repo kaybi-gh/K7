@@ -696,6 +696,13 @@
               ],
               "format": "int32"
             }
+          },
+          {
+            "name": "quality",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

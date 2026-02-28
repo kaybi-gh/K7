@@ -60,6 +60,7 @@ public partial class Movie
         var audioTracks = videoMetadata.AudioTracks;
         var subtitleTracks = videoMetadata.SubtitleTracks;
         var audioTrackIndex = _selectedAudioFileTrack?.Index;
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex);
+        var videoResolution = videoMetadata.VideoResolution;
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex, videoResolution);
     }
 }

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using K7.Server.Domain.Entities;
 
 namespace K7.Server.Domain.Interfaces;
@@ -66,13 +65,17 @@ public class TranscodeJob
     public required string OutputDirectory { get; init; }
     public required string InputFilePath { get; init; }
     
-    public Process? FfmpegProcess { get; set; }
     public CancellationTokenSource? FfmpegCancellation { get; set; }
     public Task? FfmpegTask { get; set; }
     public HashSet<Guid> AttachedStreamSessions { get; } = new();
     public DateTime LastPingTime { get; set; } = DateTime.UtcNow;
     public int TargetSegmentIndex { get; set; }
     public int BufferSize { get; init; } = 15;
+
+    /// <summary>
+    /// Per-job lock to prevent concurrent FFmpeg process starts from parallel segment requests.
+    /// </summary>
+    public SemaphoreSlim FfmpegStartLock { get; } = new(1, 1);
     
     /// <summary>
     /// Gets the index of the last segment that has been completely written to disk.

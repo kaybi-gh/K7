@@ -40,6 +40,7 @@ internal class PlayerService : IPlayerService
     public event Action<bool>? IsMutedChanged;
     public event Action<AudioFileTrackDto?>? AudioTrackChanged;
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
+    public event Action<VideoQualityOption?>? QualityChanged;
 
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
@@ -215,6 +216,12 @@ internal class PlayerService : IPlayerService
     private SubtitleFileTrackDto? _selectedSubtitleTrack;
     public SubtitleFileTrackDto? SelectedSubtitleTrack => _selectedSubtitleTrack;
 
+    private List<VideoQualityOption> _availableQualities = [];
+    public IReadOnlyList<VideoQualityOption> AvailableQualities => _availableQualities;
+
+    private VideoQualityOption? _selectedQuality;
+    public VideoQualityOption? SelectedQuality => _selectedQuality;
+
     public async Task ShowAsync()
     {
         var navigation = Application.Current?.Windows[0]?.Navigation;
@@ -284,7 +291,7 @@ internal class PlayerService : IPlayerService
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
@@ -297,6 +304,12 @@ internal class PlayerService : IPlayerService
         _selectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
+
+        _availableQualities = videoResolution is not null
+            ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
+            : [];
+        _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
+            ?? _availableQualities.FirstOrDefault();
 
         var session = await _streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
 
@@ -350,6 +363,14 @@ internal class PlayerService : IPlayerService
 
     // TODO - Maybe slugify on file indexing 
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
+
+    public Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default)
+    {
+        // TODO - MAUI player does not currently support quality switching
+        _selectedQuality = quality;
+        QualityChanged?.Invoke(quality);
+        return Task.CompletedTask;
+    }
 }
 
 public class HiddenPlayerService : IDisposable

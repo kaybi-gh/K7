@@ -25,7 +25,8 @@ public static class GetHlsStreamManifestQueryUriBuilder
             { nameof(query.StreamSessionId), query.StreamSessionId.ToString() },
             { nameof(query.TranscodingAudioCodec), query.TranscodingAudioCodec },
             { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec },
-            { nameof(query.DefaultAudioTrackIndex), query.DefaultAudioTrackIndex?.ToString() }
+            { nameof(query.DefaultAudioTrackIndex), query.DefaultAudioTrackIndex?.ToString() },
+            { nameof(query.Quality), query.Quality }
         };
 
         var filteredParams = queryParams
@@ -48,6 +49,7 @@ public record GetHlsStreamManifestQuery : IRequest<IResult>
     public string? TranscodingAudioCodec { get; set; }
     public string? TranscodingVideoCodec { get; set; }
     public int? DefaultAudioTrackIndex { get; set; }
+    public string? Quality { get; set; }
 };
 
 public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, IResult>
@@ -211,15 +213,43 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         // Generate #EXT-X-STREAM-INF for the video variant
         var subtitlesAttribute = hasSubtitles ? ",SUBTITLES=\"subs\"" : "";
 
+        // Determine the target resolution (requested quality or source quality)
+        var targetResolution = fileResolution;
+        var playlistQuality = "original";
+        var effectiveVideoCodec = query.TranscodingVideoCodec;
+
+        if (!string.IsNullOrEmpty(query.Quality) && query.Quality != "original")
+        {
+            var requestedQuality = Constants.VideoQualities.FirstOrDefault(kvp => kvp.Value.Name == query.Quality);
+            if (requestedQuality.Value is not null && requestedQuality.Value.Height < fileResolution.Height)
+            {
+                targetResolution = requestedQuality.Value;
+                playlistQuality = requestedQuality.Value.Name;
+                // Downscaling requires transcoding — force h264 if no codec was specified
+                effectiveVideoCodec ??= "h264";
+            }
+        }
+
+        var effectiveVideoCodecString = !string.IsNullOrEmpty(effectiveVideoCodec)
+            ? HlsCodecStringHelpers.GetHlsCodecs(effectiveVideoCodec, audioCodec: null)
+            : videoCodecString;
+
+        var effectiveCodecsAttribute = (effectiveVideoCodecString, audioCodecString) switch
+        {
+            (not "", not "") => $"{effectiveVideoCodecString},{audioCodecString}",
+            (not "", _) => effectiveVideoCodecString,
+            (_, not "") => audioCodecString,
+            _ => string.Empty
+        };
+
         playlist.AppendLine($"#EXT-X-STREAM-INF:" +
-            $"BANDWIDTH={fileResolution.MaxBitrate}," +
-            $"AVERAGE-BANDWIDTH={fileResolution.AverageBitrate}," +
-            $"RESOLUTION={fileResolution.Width}x{fileResolution.Height}," +
-            $"CODECS=\"{codecsAttribute}\"," +
+            $"BANDWIDTH={targetResolution.MaxBitrate}," +
+            $"AVERAGE-BANDWIDTH={targetResolution.AverageBitrate}," +
+            $"RESOLUTION={targetResolution.Width}x{targetResolution.Height}," +
+            $"CODECS=\"{effectiveCodecsAttribute}\"," +
             $"AUDIO=\"audio\"" +
             subtitlesAttribute);
 
-        var playlistQuality = hasVideoTranscoding ? fileResolution.Name : "original";
         var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);
 
         var videoQueryParams = new List<string>
@@ -227,8 +257,8 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             $"streamSessionId={query.StreamSessionId}"
         };
 
-        if (!string.IsNullOrEmpty(query.TranscodingVideoCodec))
-            videoQueryParams.Add($"TranscodingVideoCodec={query.TranscodingVideoCodec}");
+        if (!string.IsNullOrEmpty(effectiveVideoCodec))
+            videoQueryParams.Add($"TranscodingVideoCodec={effectiveVideoCodec}");
 
         var videoQueryString = "?" + string.Join("&", videoQueryParams);
         playlistUrl += videoQueryString;

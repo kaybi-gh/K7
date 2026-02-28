@@ -139,6 +139,20 @@ window.changeSource = function (id, src, type) {
     }
 }
 
+window.changeSourceAndSeek = function (id, src, type, seekTime) {
+    const player = players[id];
+    if (!player) return;
+
+    player.one('loadeddata', function () {
+        player.currentTime(seekTime);
+        player.play();
+    });
+    player.one('error', function () {
+        console.error('changeSourceAndSeek: failed to load source', src, player.error());
+    });
+    player.src({ src: src, type: type });
+}
+
 window.switchAudioTrack = function (id, trackIndex) {
     const player = players[id];
     if (!player) return false;

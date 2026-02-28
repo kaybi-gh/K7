@@ -32,12 +32,16 @@ public interface IPlayerService
     event Action<bool>? IsMutedChanged;
     event Action<AudioFileTrackDto?>? AudioTrackChanged;
     event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
+    event Action<VideoQualityOption?>? QualityChanged;
 
     IReadOnlyList<AudioFileTrackDto> AudioTracks { get; }
     AudioFileTrackDto? SelectedAudioTrack { get; }
 
     IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks { get; }
     SubtitleFileTrackDto? SelectedSubtitleTrack { get; }
+
+    IReadOnlyList<VideoQualityOption> AvailableQualities { get; }
+    VideoQualityOption? SelectedQuality { get; }
 
     PlayerSource Source { get; set; }
     bool IsVisible { get; }
@@ -65,8 +69,9 @@ public interface IPlayerService
     Task ShowAsync();
     Task HideAsync();
 
-    Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, CancellationToken cancellationToken = default);
+    Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, CancellationToken cancellationToken = default);
     Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default);
     Task ChangeSubtitleTrackAsync(SubtitleFileTrackDto? track, CancellationToken cancellationToken = default);
+    Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default);
 
 }

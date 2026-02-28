@@ -78,7 +78,15 @@
                             </MudMenuItem> // TODO - Maybe use only the track name
                         }
                     </MudMenu>
-                    <MudMenuItem Icon="@Icons.Material.Outlined.Tune" Label="Quality" />
+                    <MudMenu Label="Quality" StartIcon="@Icons.Material.Outlined.Tune">
+                        @foreach (var quality in PlayerService.AvailableQualities)
+                        {
+                            <MudMenuItem OnClick="@(() => OnQualitySelected(quality))"
+                                         Icon="@(PlayerService.SelectedQuality == quality ? Icons.Material.Filled.CheckCircle : null)">
+                                @quality.Label
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
                 </MudMenu>
 
                 @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
@@ -116,6 +124,7 @@
     private void OnIsFullScreenChanged(bool isFullScreen) => InvokeAsync(StateHasChanged);
     private void OnAudioTrackChanged(AudioFileTrackDto? track) => InvokeAsync(StateHasChanged);
     private void OnSubtitleTrackChanged(SubtitleFileTrackDto? track) => InvokeAsync(StateHasChanged);
+    private void OnQualityChanged(VideoQualityOption? quality) => InvokeAsync(StateHasChanged);
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,6 +144,7 @@
         PlayerService.IsFullScreenChanged += OnIsFullScreenChanged;
         PlayerService.AudioTrackChanged += OnAudioTrackChanged;
         PlayerService.SubtitleTrackChanged += OnSubtitleTrackChanged;
+        PlayerService.QualityChanged += OnQualityChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
     }
 
@@ -263,6 +273,16 @@
         await PlayerService.ChangeSubtitleTrackAsync(track);
     }
 
+    private async Task OnQualitySelected(VideoQualityOption quality)
+    {
+        if (PlayerService.SelectedQuality == quality)
+        {
+            return;
+        }
+
+        await PlayerService.ChangeQualityAsync(quality);
+    }
+
     private void TogglePlayPause()
     {
         Console.WriteLine(PlayerService.PlaybackState);
@@ -357,6 +377,7 @@
         PlayerService.IsFullScreenChanged -= OnIsFullScreenChanged;
         PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
         PlayerService.SubtitleTrackChanged -= OnSubtitleTrackChanged;
+        PlayerService.QualityChanged -= OnQualityChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);
     }
 }
