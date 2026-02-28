@@ -223,6 +223,11 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
             ?? _availableQualities.FirstOrDefault();
 
+        Source = new PlayerSource();
+
+        await ShowAsync();
+        Play();
+
         var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
 
         if (session.Source is null)
@@ -242,8 +247,6 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         AudioTrackChanged?.Invoke(_selectedAudioTrack);
         SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
         QualityChanged?.Invoke(_selectedQuality);
-        await ShowAsync();
-        Play();
     }
 
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)

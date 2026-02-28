@@ -10,7 +10,10 @@
         <div class="video-container" @ref="_videoContainer">
             <VideoPlayerControlsOverlay />
             <video id="video-player" class="video-js" @ref="_player">
-                <source src="@SourceUri" type="@SourceMimeType" />
+                @if (!string.IsNullOrEmpty(SourceUri))
+                {
+                    <source src="@SourceUri" type="@SourceMimeType" />
+                }
                 <p class="vjs-no-js">
                     To view this video please enable JavaScript, and consider upgrading to a
                     web browser that
