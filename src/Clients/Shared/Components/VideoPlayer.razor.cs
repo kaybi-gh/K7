@@ -119,7 +119,14 @@ public partial class VideoPlayer : IAsyncDisposable
 
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
-            await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, SourceUri, SourceMimeType);
+            if (playerSource.PendingSeekTime is double seekTime)
+            {
+                await JSRuntime.InvokeVoidAsync("changeSourceAndSeek", _player.Id, SourceUri, SourceMimeType, seekTime);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, SourceUri, SourceMimeType);
+            }
         }
 
         await InvokeAsync(StateHasChanged);

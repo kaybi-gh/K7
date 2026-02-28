@@ -181,8 +181,8 @@ public class MediaTranscoder : IMediaTranscoder
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
-            .NotifyOnOutput((output) => _logger.LogInformation("FFmpeg stdout: {Output}", output))
-            .NotifyOnError((error) => _logger.LogError("FFmpeg stderr: {Error}", error))
+            .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg stdout: {Output}", output))
+            .NotifyOnError((error) => _logger.LogDebug("FFmpeg stderr: {Error}", error))
             .CancellableThrough(cancellationToken);
 
         var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
@@ -240,8 +240,8 @@ public class MediaTranscoder : IMediaTranscoder
             })
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
-            .NotifyOnOutput((output) => _logger.LogInformation("FFmpeg stdout: {Output}", output))
-            .NotifyOnError((error) => _logger.LogError("FFmpeg stderr: {Error}", error))
+            .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg stdout: {Output}", output))
+            .NotifyOnError((error) => _logger.LogDebug("FFmpeg stderr: {Error}", error))
             .CancellableThrough(cancellationToken);
 
         var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);

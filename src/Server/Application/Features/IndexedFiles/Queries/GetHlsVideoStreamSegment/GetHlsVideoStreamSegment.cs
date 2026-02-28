@@ -85,21 +85,42 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             return Results.NotFound("Source file not found");
         }
 
+        var isTransmuxing = query.Quality == "original";
         List<HlsSegment> allSegments;
-        if (query.SegmentNumber == -1)
+
+        if (isTransmuxing)
         {
-            allSegments = await _context.HlsSegments
-                .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
-                .OrderBy(s => s.Number)
-                .Take(20)
-                .ToListAsync(cancellationToken);
+            // Transmux (stream copy): use keyframe-based segments from the database
+            if (query.SegmentNumber == -1)
+            {
+                allSegments = await _context.HlsSegments
+                    .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
+                    .OrderBy(s => s.Number)
+                    .Take(20)
+                    .ToListAsync(cancellationToken);
+            }
+            else
+            {
+                Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
+                allSegments = entity.FileMetadata.HlsSegments.OrderBy(s => s.Number).ToList();
+            }
         }
         else
         {
-            Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
-            allSegments = entity.FileMetadata.HlsSegments.OrderBy(s => s.Number).ToList();
+            // Transcode: use equal-length 6s segments matching the index playlist
+            var dbSegments = query.SegmentNumber == -1
+                ? await _context.HlsSegments
+                    .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
+                    .ToListAsync(cancellationToken)
+                : entity.FileMetadata.HlsSegments?.ToList()
+                    ?? await _context.HlsSegments
+                        .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
+                        .ToListAsync(cancellationToken);
+
+            var totalDurationMs = dbSegments.Sum(s => s.Duration);
+            allSegments = ComputeEqualLengthHlsSegments(totalDurationMs);
         }
-        
+
         if (query.SegmentNumber >= 0 && query.SegmentNumber >= allSegments.Count)
         {
             return Results.NotFound($"Segment index {query.SegmentNumber} out of range (0-{allSegments.Count - 1})");
@@ -201,5 +222,32 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         }
 
         return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
+    }
+
+    /// <summary>
+    /// Computes equal-length synthetic HlsSegments that match the index playlist layout
+    /// when transcoding. Transcoded video can be split at any frame boundary, so we use
+    /// fixed 6-second segments instead of keyframe-based segments from the source file.
+    /// </summary>
+    private static List<HlsSegment> ComputeEqualLengthHlsSegments(long totalDurationMs, int desiredSegmentLengthMs = 6000)
+    {
+        var segments = new List<HlsSegment>();
+        long offset = 0;
+        var index = 0;
+
+        while (offset < totalDurationMs)
+        {
+            var duration = Math.Min(desiredSegmentLengthMs, totalDurationMs - offset);
+            segments.Add(new HlsSegment
+            {
+                Number = index,
+                StartTimestamp = offset,
+                Duration = duration
+            });
+            offset += desiredSegmentLengthMs;
+            index++;
+        }
+
+        return segments;
     }
 }

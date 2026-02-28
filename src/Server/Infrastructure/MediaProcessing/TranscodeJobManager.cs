@@ -153,52 +153,71 @@ public class TranscodeJobManager : ITranscodeJobManager
             return;
         }
 
-        // Restart threshold: 30 segments or 60 seconds
-        if (gap > 30 || gapDuration.TotalSeconds > 60)
+        // Acquire per-job lock to prevent concurrent FFmpeg starts from parallel segment requests
+        await job.FfmpegStartLock.WaitAsync(cancellationToken);
+        try
         {
-            _logger.LogInformation(
-                "Job {JobId}: Gap too large ({Gap} segments, {GapSeconds}s), restarting with seek",
-                jobId,
-                gap,
-                gapDuration.TotalSeconds);
+            // Re-check after acquiring lock — another request may have already started FFmpeg
+            segmentExists = File.Exists(segmentPath);
+            if (segmentExists)
+            {
+                return;
+            }
 
-            var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
-            await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
-        }
-        else if (gap < 0)
-        {
-            // Backward seek: segment should exist but doesn't, restart with seek
-            _logger.LogInformation(
-                "Job {JobId}: Backward seek detected (gap {Gap}), but segment {RequestedIndex} doesn't exist, restarting with seek",
-                jobId,
-                gap,
-                requestedSegmentIndex);
+            currentIndex = job.GetCurrentSegmentIndex();
+            gap = requestedSegmentIndex - currentIndex;
 
-            var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
-            await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
-        }
-        else if (requestedSegmentIndex >= job.TargetSegmentIndex || job.FfmpegProcess == null || job.FfmpegProcess.HasExited)
-        {
-            // Extend the target or start/restart ffmpeg
-            var newTarget = Math.Max(job.TargetSegmentIndex, requestedSegmentIndex + job.BufferSize);
-            
-            if (newTarget != job.TargetSegmentIndex || job.FfmpegProcess == null || job.FfmpegProcess.HasExited)
+            // Restart threshold: 30 segments or 60 seconds
+            if (gap > 30 || gapDuration.TotalSeconds > 60)
             {
                 _logger.LogInformation(
-                    "Job {JobId}: Extending target from {OldTarget} to {NewTarget} (process running: {ProcessRunning})",
+                    "Job {JobId}: Gap too large ({Gap} segments, {GapSeconds}s), restarting with seek",
                     jobId,
-                    job.TargetSegmentIndex,
-                    newTarget,
-                    job.FfmpegProcess != null && !job.FfmpegProcess.HasExited);
+                    gap,
+                    gapDuration.TotalSeconds);
 
-                job.TargetSegmentIndex = newTarget;
+                var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
+                await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+            }
+            else if (gap < 0)
+            {
+                // Backward seek: segment should exist but doesn't, restart with seek
+                _logger.LogInformation(
+                    "Job {JobId}: Backward seek detected (gap {Gap}), but segment {RequestedIndex} doesn't exist, restarting with seek",
+                    jobId,
+                    gap,
+                    requestedSegmentIndex);
 
-                // If ffmpeg has finished or not started, continue/start
-                if (job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
+                var startSegmentIndex = Math.Clamp(requestedSegmentIndex - 5, 0, allSegments.Count - 1);
+                await RestartJobWithSeekAsync(job, startSegmentIndex, allSegments, cancellationToken);
+            }
+            else if (requestedSegmentIndex >= job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
+            {
+                // Extend the target or start/restart ffmpeg
+                var newTarget = Math.Max(job.TargetSegmentIndex, requestedSegmentIndex + job.BufferSize);
+
+                if (newTarget != job.TargetSegmentIndex || job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
                 {
-                    await ContinueJobAsync(job, allSegments, cancellationToken);
+                    _logger.LogInformation(
+                        "Job {JobId}: Extending target from {OldTarget} to {NewTarget} (ffmpeg running: {FfmpegRunning})",
+                        jobId,
+                        job.TargetSegmentIndex,
+                        newTarget,
+                        job.FfmpegTask != null && !job.FfmpegTask.IsCompleted);
+
+                    job.TargetSegmentIndex = newTarget;
+
+                    // If ffmpeg has finished or not started, continue/start
+                    if (job.FfmpegTask == null || job.FfmpegTask.IsCompleted)
+                    {
+                        await ContinueJobAsync(job, allSegments, cancellationToken);
+                    }
                 }
             }
+        }
+        finally
+        {
+            job.FfmpegStartLock.Release();
         }
     }
 

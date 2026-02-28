@@ -35,6 +35,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Action<bool>? IsMutedChanged;
     public event Action<AudioFileTrackDto?>? AudioTrackChanged;
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
+    public event Action<VideoQualityOption?>? QualityChanged;
 
     private PlayerSource _source = new();
     public PlayerSource Source
@@ -185,7 +186,18 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     private SubtitleFileTrackDto? _selectedSubtitleTrack;
     public SubtitleFileTrackDto? SelectedSubtitleTrack => _selectedSubtitleTrack;
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    private List<VideoQualityOption> _availableQualities = [];
+    public IReadOnlyList<VideoQualityOption> AvailableQualities => _availableQualities;
+
+    private VideoQualityOption? _selectedQuality;
+    public VideoQualityOption? SelectedQuality => _selectedQuality;
+
+    /// <summary>
+    /// Base manifest URL (without Quality param) used to rebuild the source when switching quality.
+    /// </summary>
+    private string? _baseManifestUrl;
+
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
@@ -199,6 +211,13 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
 
+        // Build quality options from the source resolution
+        _availableQualities = videoResolution is not null
+            ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
+            : [];
+        _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
+            ?? _availableQualities.FirstOrDefault();
+
         var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
 
         if (session.Source is null)
@@ -206,15 +225,18 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             throw new InvalidOperationException("Streaming session did not return a source URI.");
         }
 
+        _baseManifestUrl = session.Source.Uri.OriginalString;
+
         var playerSource = new PlayerSource
         {
-            Url = session.Source.Uri.OriginalString,
+            Url = _baseManifestUrl,
             MimeType = session.Source.MimeType
         };
 
         Source = playerSource;
         AudioTrackChanged?.Invoke(_selectedAudioTrack);
         SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
+        QualityChanged?.Invoke(_selectedQuality);
         await ShowAsync();
         Play();
     }
@@ -256,6 +278,36 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Switches the video quality by rebuilding the manifest URL with the requested quality param.
+    /// The player source changes, causing Video.js to reload the stream at the new resolution.
+    /// </summary>
+    public Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default)
+    {
+        if (_currentIndexedFileId is null || _baseManifestUrl is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        _selectedQuality = quality;
+        QualityChanged?.Invoke(quality);
+
+        // Save current playback position before changing source
+        var seekTime = CurrentTime;
+
+        // Rebuild the manifest URL with the Quality parameter
+        var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
+
+        Source = new PlayerSource
+        {
+            Url = newUrl,
+            MimeType = "application/vnd.apple.mpegurl",
+            PendingSeekTime = seekTime > 0 ? seekTime : null
+        };
+
+        return Task.CompletedTask;
+    }
+
     public Task ShowAsync()
     {
         IsVisible = true;
@@ -282,4 +334,24 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
     // TODO - Maybe slugify on file indexing 
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
+
+    /// <summary>
+    /// Appends or replaces the Quality query parameter on the manifest URL.
+    /// </summary>
+    private static string BuildManifestUrlWithQuality(string baseUrl, VideoQualityOption? quality)
+    {
+        var url = baseUrl;
+        var qualityValue = quality is null || quality.IsOriginal ? (string?)null : quality.Label;
+
+        // Strip existing Quality param
+        url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]Quality=[^&]*", "");
+
+        if (!string.IsNullOrEmpty(qualityValue))
+        {
+            var separator = url.Contains('?') ? "&" : "?";
+            url += $"{separator}Quality={Uri.EscapeDataString(qualityValue)}";
+        }
+
+        return url;
+    }
 }
