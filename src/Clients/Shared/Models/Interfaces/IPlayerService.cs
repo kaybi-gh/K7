@@ -16,6 +16,7 @@ public interface IPlayerService
     event Func<Task>? UnmuteRequest;
     event Func<double, Task>? VolumeChangeRequested;
     event Func<double, Task>? PlaybackRateChangeRequested;
+    event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
 
     event Action<int>? SwitchAudioTrackRequested;
@@ -33,6 +34,7 @@ public interface IPlayerService
     event Action<AudioFileTrackDto?>? AudioTrackChanged;
     event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
     event Action<VideoQualityOption?>? QualityChanged;
+    event Action<AspectRatioMode>? AspectRatioModeChanged;
 
     IReadOnlyList<AudioFileTrackDto> AudioTracks { get; }
     AudioFileTrackDto? SelectedAudioTrack { get; }
@@ -53,6 +55,7 @@ public interface IPlayerService
     double Volume { get; set; }
     double PlaybackRate { get; set; }
     bool IsMuted { get; set; }
+    AspectRatioMode AspectRatio { get; }
 
     void Play();
     void Pause();
@@ -64,6 +67,7 @@ public interface IPlayerService
     void SetVolume(double volume);
     void SetPlaybackRate(double rate);
     void Stop();
+    void SetAspectRatioMode(AspectRatioMode mode);
 
 
     Task ShowAsync();

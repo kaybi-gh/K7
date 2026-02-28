@@ -1,4 +1,5 @@
-﻿@using K7.Server.Domain.Enums
+﻿@using K7.Clients.Shared.Domain.Models
+@using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
 @using Microsoft.JSInterop
 @using System.Timers
@@ -87,6 +88,16 @@
                             </MudMenuItem>
                         }
                     </MudMenu>
+
+                    <MudMenu Label="Aspect Ratio" StartIcon="@Icons.Material.Outlined.AspectRatio">
+                        @foreach (var mode in _aspectRatioOptions)
+                        {
+                            <MudMenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
+                                         Icon="@(PlayerService.AspectRatio == mode ? Icons.Material.Filled.CheckCircle : null)">
+                                @GetAspectRatioLabel(mode)
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
                 </MudMenu>
 
                 @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
@@ -116,6 +127,8 @@
     private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
+    private static readonly AspectRatioMode[] _aspectRatioOptions = [AspectRatioMode.Fit, AspectRatioMode.Fill, AspectRatioMode.Stretch];
+
     private void OnPlaybackStateChanged(PlaybackState state) => InvokeAsync(StateHasChanged);
     private void OnIsMutedChanged(bool isMuted) => InvokeAsync(StateHasChanged);
     private void OnVolumeChanged(double volume) => InvokeAsync(StateHasChanged);
@@ -125,6 +138,7 @@
     private void OnAudioTrackChanged(AudioFileTrackDto? track) => InvokeAsync(StateHasChanged);
     private void OnSubtitleTrackChanged(SubtitleFileTrackDto? track) => InvokeAsync(StateHasChanged);
     private void OnQualityChanged(VideoQualityOption? quality) => InvokeAsync(StateHasChanged);
+    private void OnAspectRatioModeChanged(AspectRatioMode mode) => InvokeAsync(StateHasChanged);
 
     protected override async Task OnInitializedAsync()
     {
@@ -145,6 +159,7 @@
         PlayerService.AudioTrackChanged += OnAudioTrackChanged;
         PlayerService.SubtitleTrackChanged += OnSubtitleTrackChanged;
         PlayerService.QualityChanged += OnQualityChanged;
+        PlayerService.AspectRatioModeChanged += OnAspectRatioModeChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
     }
 
@@ -242,6 +257,16 @@
             await Task.Delay(0);
         }
     }
+
+    private void OnAspectRatioSelected(AspectRatioMode mode) => PlayerService.SetAspectRatioMode(mode);
+
+    private static string GetAspectRatioLabel(AspectRatioMode mode) => mode switch
+    {
+        AspectRatioMode.Fit => "Fit",
+        AspectRatioMode.Fill => "Fill (crop)",
+        AspectRatioMode.Stretch => "Stretch",
+        _ => mode.ToString()
+    };
 
     private async Task ChangeQuality(ChangeEventArgs e)
     {
@@ -378,6 +403,7 @@
         PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
         PlayerService.SubtitleTrackChanged -= OnSubtitleTrackChanged;
         PlayerService.QualityChanged -= OnQualityChanged;
+        PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
         await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);
     }
 }
