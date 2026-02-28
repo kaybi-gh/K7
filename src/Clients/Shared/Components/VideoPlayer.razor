@@ -5,10 +5,10 @@
 
 @if (PlayerService.IsVisible)
 {
-    <VideoPlayerControlsOverlay />
     @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
     {
         <div class="video-container" @ref="_videoContainer">
+            <VideoPlayerControlsOverlay />
             <video id="video-player" class="video-js" @ref="_player">
                 <source src="@SourceUri" type="@SourceMimeType" />
                 <p class="vjs-no-js">
