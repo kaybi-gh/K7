@@ -11,7 +11,9 @@ public partial class VideoPlayer : IAsyncDisposable
     private ElementReference _videoContainer;
     private DotNetObjectReference<VideoPlayer>? _dotNetRef;
     private bool _isInitialized;
-    // TODO - Fix bug when window gets resized, thumb seekbar is not anymore accurately following mouse hover
+    private bool _playPending;
+    private string? _lastPlayerId;
+    
     [Parameter] public string SourceUri { get; set; } = string.Empty;
     [Parameter] public string SourceMimeType { get; set; } = string.Empty;
 
@@ -24,21 +26,29 @@ public partial class VideoPlayer : IAsyncDisposable
                 var options = new
                 {
                     volume = PlayerService.Volume,
-                    muted = PlayerService.IsMuted
+                    muted = PlayerService.IsMuted,
+                    autoplay = _playPending
                 };
 
                 _dotNetRef ??= DotNetObjectReference.Create(this);
 
                 await JSRuntime.InvokeVoidAsync("initVideoJs", _player.Id, _player, _videoContainer, options, _dotNetRef);
                 _isInitialized = true;
+                _lastPlayerId = _player.Id;
+
+                if (_playPending && !string.IsNullOrEmpty(_player.Id))
+                {
+                    _playPending = false;
+                    await JSRuntime.InvokeVoidAsync("play", _player.Id);
+                }
             }
             else if (!PlayerService.IsVisible && _isInitialized)
             {
-                if (!string.IsNullOrEmpty(_player.Id))
+                if (!string.IsNullOrEmpty(_lastPlayerId))
                 {
                     try
                     {
-                        await JSRuntime.InvokeVoidAsync("disposeVideoJs", _player.Id);
+                        await JSRuntime.InvokeVoidAsync("disposeVideoJs", _lastPlayerId);
                     }
                     catch (JSDisconnectedException)
                     {
@@ -49,6 +59,8 @@ public partial class VideoPlayer : IAsyncDisposable
                 }
 
                 _isInitialized = false;
+                _playPending = false;
+                _lastPlayerId = null;
             }
         }
     }
@@ -95,11 +107,11 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SwitchSubtitleTrackRequested -= OnSwitchSubtitleTrack;
             PlayerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChange;
 
-            if (!string.IsNullOrEmpty(_player.Id))
+            if (!string.IsNullOrEmpty(_lastPlayerId))
             {
                 try
                 {
-                    await JSRuntime.InvokeVoidAsync("disposeVideoJs", _player.Id);
+                    await JSRuntime.InvokeVoidAsync("disposeVideoJs", _lastPlayerId);
                 }
                 catch (JSDisconnectedException)
                 {
@@ -158,9 +170,40 @@ public partial class VideoPlayer : IAsyncDisposable
         }
     }
 
-    public async Task PlayAsync() => await JSRuntime.InvokeVoidAsync("play", _player.Id);
-    public async Task PauseAsync() => await JSRuntime.InvokeVoidAsync("pause", _player.Id);
-    public async Task StopAsync() => await JSRuntime.InvokeVoidAsync("stop", _player.Id);
+    public async Task PlayAsync()
+    {
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        {
+            await JSRuntime.InvokeVoidAsync("play", _player.Id);
+        }
+        else
+        {
+            _playPending = true;
+        }
+    }
+    public async Task PauseAsync()
+    {
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        {
+            await JSRuntime.InvokeVoidAsync("pause", _player.Id);
+        }
+        else
+        {
+            _playPending = false;
+        }
+    }
+    
+    public async Task StopAsync()
+    {
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        {
+            await JSRuntime.InvokeVoidAsync("stop", _player.Id);
+        }
+        else
+        {
+            _playPending = false;
+        }
+    }
     public async Task SeekAsync(double seconds) => await JSRuntime.InvokeVoidAsync("seek", _player.Id, seconds);
     public async Task MuteAsync() => await JSRuntime.InvokeVoidAsync("mute", _player.Id);
     public async Task UnmuteAsync() => await JSRuntime.InvokeVoidAsync("unmute", _player.Id);

@@ -122,7 +122,17 @@ window.disposeVideoJs = function (id) {
 }
 
 window.play = function (id) {
-    players[id]?.play();
+    const player = players[id];
+    if (player) {
+        player.ready(function () {
+            var promise = player.play();
+            if (promise !== undefined) {
+                promise.catch(function (error) {
+                    console.warn('Auto-play was prevented', error);
+                });
+            }
+        });
+    }
 }
 
 window.pause = function (id) {
@@ -138,6 +148,14 @@ window.changeSource = function (id, src, type) {
     const player = players[id];
     if (player) {
         player.src({ src: src, type: type });
+        player.ready(function () {
+            var promise = player.play();
+            if (promise !== undefined) {
+                promise.catch(function (error) {
+                    console.warn('Auto-play was prevented after changing source', error);
+                });
+            }
+        });
     }
 }
 
