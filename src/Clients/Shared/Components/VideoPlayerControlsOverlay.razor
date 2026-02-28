@@ -89,6 +89,16 @@
                         }
                     </MudMenu>
 
+                    <MudMenu Label="Speed" StartIcon="@Icons.Material.Outlined.Speed">
+                        @foreach (var speed in _playbackSpeedOptions)
+                        {
+                            <MudMenuItem OnClick="@(() => OnSpeedSelected(speed))"
+                                         Icon="@(IsCurrentSpeed(speed) ? Icons.Material.Filled.CheckCircle : null)">
+                                @(speed == 1.0 ? "Normal" : $"{speed}x")
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
+
                     <MudMenu Label="Aspect Ratio" StartIcon="@Icons.Material.Outlined.AspectRatio">
                         @foreach (var mode in _aspectRatioOptions)
                         {
@@ -127,6 +137,7 @@
     private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
+    private static readonly double[] _playbackSpeedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     private static readonly AspectRatioMode[] _aspectRatioOptions = [AspectRatioMode.Fit, AspectRatioMode.Fill, AspectRatioMode.Stretch];
 
     private void OnPlaybackStateChanged(PlaybackState state) => InvokeAsync(StateHasChanged);
@@ -249,14 +260,8 @@
         catch (TaskCanceledException) { }
     }
 
-    private async Task ChangePlaybackSpeed(ChangeEventArgs e)
-    {
-        if (double.TryParse(e.Value?.ToString(), out var speed))
-        {
-            //await PlayerService.SetPlaybackSpeed(speed);
-            await Task.Delay(0);
-        }
-    }
+    private void OnSpeedSelected(double speed) => PlayerService.SetPlaybackRate(speed);
+    private bool IsCurrentSpeed(double speed) => Math.Abs(PlayerService.PlaybackRate - speed) < 0.01;
 
     private void OnAspectRatioSelected(AspectRatioMode mode) => PlayerService.SetAspectRatioMode(mode);
 
@@ -267,16 +272,6 @@
         AspectRatioMode.Stretch => "Stretch",
         _ => mode.ToString()
     };
-
-    private async Task ChangeQuality(ChangeEventArgs e)
-    {
-        var quality = e.Value?.ToString();
-        if (!string.IsNullOrEmpty(quality))
-        {
-            //await PlayerService.SetQuality(quality);
-            await Task.Delay(0);
-        }
-    }
 
     private async Task OnAudioTrackSelected(AudioFileTrackDto track)
     {
@@ -310,7 +305,6 @@
 
     private void TogglePlayPause()
     {
-        Console.WriteLine(PlayerService.PlaybackState);
         if (PlayerService.PlaybackState != PlaybackState.Playing)
         {
             PlayerService.Play();
