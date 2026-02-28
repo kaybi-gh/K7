@@ -2,5 +2,4 @@
 
 public sealed record LiteMovieDto : LiteMediaDto
 {
-    public string? Toto { get; init; } = "test2";
 }

@@ -1,0 +1,92 @@
+using System.Globalization;
+using System.Text;
+using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
+using Microsoft.AspNetCore.Http;
+
+namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
+
+public static class GetHlsSubtitleStreamIndexQueryUriBuilder
+{
+    public const string Route = "{id}/hls-stream/subtitles/{subtitleTrackIndex}/index.m3u8";
+
+    public static string Build(Guid id, int subtitleTrackIndex) => Route
+        .Replace("{id}", $"{id}")
+        .Replace("{subtitleTrackIndex}", $"{subtitleTrackIndex}");
+
+    /// <summary>
+    /// Builds a path relative to the master manifest location for use in #EXT-X-MEDIA URI.
+    /// </summary>
+    public static string BuildManifestRelativePath(int subtitleTrackIndex) => Route
+        .Replace("{id}/hls-stream/", "")
+        .Replace("{subtitleTrackIndex}", $"{subtitleTrackIndex}");
+}
+
+public record GetHlsSubtitleStreamIndexQuery(
+    Guid Id,
+    int SubtitleTrackIndex,
+    Guid StreamSessionId) : IRequest<IResult>;
+
+public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubtitleStreamIndexQuery, IResult>
+{
+    private readonly IApplicationDbContext _context;
+
+    public GetHlsSubtitleStreamIndexQueryHandler(IApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IResult> Handle(GetHlsSubtitleStreamIndexQuery query, CancellationToken cancellationToken)
+    {
+        var entity = await _context.IndexedFiles
+            .Include(x => x.FileMetadata)
+                .ThenInclude(x => x!.HlsSegments)
+            .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
+
+        Guard.Against.NotFound(query.Id, entity);
+        Guard.Against.NullOrEmpty(entity.Path);
+        Guard.Against.Null(entity.FileMetadata);
+        Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
+
+        var file = new FileInfo(entity.Path);
+        if (!file.Exists)
+        {
+            return Results.NotFound();
+        }
+
+        var totalDurationMs = entity.FileMetadata.HlsSegments.Sum(s => s.Duration);
+        var indexPlaylist = GenerateSubtitlePlaylist(totalDurationMs, query.StreamSessionId);
+
+        return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
+    }
+
+    private const int SubtitleSegmentDurationSeconds = 30;
+
+    private static string GenerateSubtitlePlaylist(long totalDurationMs, Guid streamSessionId)
+    {
+        var totalDurationSeconds = totalDurationMs / 1000.0;
+        var segmentCount = (int)Math.Ceiling(totalDurationSeconds / SubtitleSegmentDurationSeconds);
+
+        var content = new StringBuilder();
+        content.AppendLine("#EXTM3U");
+        content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
+        content.AppendLine($"#EXT-X-TARGETDURATION:{SubtitleSegmentDurationSeconds}");
+        content.AppendLine("#EXT-X-VERSION:3");
+        content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
+
+        var queryString = $"?streamSessionId={streamSessionId}";
+
+        for (int i = 0; i < segmentCount; i++)
+        {
+            var segmentStart = i * SubtitleSegmentDurationSeconds;
+            var segmentDuration = Math.Min(SubtitleSegmentDurationSeconds, totalDurationSeconds - segmentStart);
+
+            content.AppendLine($"#EXTINF:{segmentDuration.ToString("F6", CultureInfo.InvariantCulture)},");
+            content.AppendLine($"{GetHlsSubtitleStreamSegmentQueryUriBuilder.BuildPlaylistRelativePath(i)}{queryString}");
+        }
+
+        content.AppendLine("#EXT-X-ENDLIST");
+
+        return content.ToString();
+    }
+}

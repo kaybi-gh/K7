@@ -14,7 +14,8 @@ public class FileTrackConfiguration : IEntityTypeConfiguration<BaseFileTrack>
         builder
             .HasDiscriminator(m => m.Type)
             .HasValue<AudioFileTrack>(FileTrackType.Audio)
-            .HasValue<VideoFileTrack>(FileTrackType.Video);
+            .HasValue<VideoFileTrack>(FileTrackType.Video)
+            .HasValue<SubtitleFileTrack>(FileTrackType.Subtitle);
     }
 
     public void Configure(EntityTypeBuilder<AudioFileTrack> builder)

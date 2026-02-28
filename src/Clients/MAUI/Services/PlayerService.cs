@@ -24,6 +24,7 @@ internal class PlayerService : IPlayerService
     public event Func<double, Task>? VolumeChangeRequested;
     public event Func<double, Task>? PlaybackRateChangeRequested;
     public event Action<int>? SwitchAudioTrackRequested;
+    public event Action<string?>? SwitchSubtitleTrackRequested;
 
 #pragma warning disable CS0067
     public event Action<PlayerSource>? SourceChanged;
@@ -38,6 +39,7 @@ internal class PlayerService : IPlayerService
     public event Action<double>? PlaybackRateChanged;
     public event Action<bool>? IsMutedChanged;
     public event Action<AudioFileTrackDto?>? AudioTrackChanged;
+    public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
 
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
@@ -207,6 +209,12 @@ internal class PlayerService : IPlayerService
     private AudioFileTrackDto? _selectedAudioTrack;
     public AudioFileTrackDto? SelectedAudioTrack => _selectedAudioTrack;
 
+    private List<SubtitleFileTrackDto> _subtitleTracks = [];
+    public IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks => _subtitleTracks;
+
+    private SubtitleFileTrackDto? _selectedSubtitleTrack;
+    public SubtitleFileTrackDto? SelectedSubtitleTrack => _selectedSubtitleTrack;
+
     public async Task ShowAsync()
     {
         var navigation = Application.Current?.Windows[0]?.Navigation;
@@ -263,8 +271,6 @@ internal class PlayerService : IPlayerService
         var directPlay = await hiddenPlayerService.TryPlayMediaAsync(MediaSource.FromUri(directPlayUri)!);
         _playerPage.ChangeSource(directPlayUri!.OriginalString);
         //_mediaStreamSession.GetIndexedFileDirectStreamUri()
-        var toto = "test";
-        Console.WriteLine(toto);
     }
 
     public void Play() => PlayRequested?.Invoke();
@@ -278,10 +284,16 @@ internal class PlayerService : IPlayerService
     public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
     public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
+        _subtitleTracks = subtitleTracks
+            ?.Where(t => t.IsTextBased)
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .ToList() ?? [];
+        _selectedSubtitleTrack = null; // TODO - Maybe not default to null
         _selectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
@@ -319,6 +331,25 @@ internal class PlayerService : IPlayerService
 
         return Task.CompletedTask;
     }
+
+    public Task ChangeSubtitleTrackAsync(SubtitleFileTrackDto? track, CancellationToken cancellationToken = default)
+    {
+        if (_currentIndexedFileId is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        _selectedSubtitleTrack = track;
+        SubtitleTrackChanged?.Invoke(track);
+
+        var slug = track is not null ? BuildSubtitleTrackSlug(track) : null;
+        SwitchSubtitleTrackRequested?.Invoke(slug);
+
+        return Task.CompletedTask;
+    }
+
+    // TODO - Maybe slugify on file indexing 
+    private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
 }
 
 public class HiddenPlayerService : IDisposable

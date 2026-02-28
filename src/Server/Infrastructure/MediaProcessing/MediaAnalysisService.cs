@@ -43,7 +43,8 @@ public class MediaAnalysisService : IMediaAnalysisService
                 .First().Key,
             Container = GetMediaContainer(filePath, mediaAnalysis.Format.FormatName),
             AudioTracks = ExtractAudioTracksFromMediaAnalysis(mediaAnalysis),
-            VideoTracks = ExtractVideoTracksFromMediaAnalysis(mediaAnalysis)
+            VideoTracks = ExtractVideoTracksFromMediaAnalysis(mediaAnalysis),
+            SubtitleTracks = ExtractSubtitleTracksFromMediaAnalysis(mediaAnalysis)
         };
 
         return fileMetadata;
@@ -265,6 +266,26 @@ public class MediaAnalysisService : IMediaAnalysisService
         return hasDefaultTrack ?
             disposition?.Any(x => x.Key == "default" && x.Value) ?? false
             : index == 0;
+    }
+
+    private static readonly HashSet<string> TextBasedSubtitleCodecs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "subrip", "srt", "ass", "ssa", "webvtt", "mov_text", "text", "ttml"
+    };
+
+    private static List<SubtitleFileTrack> ExtractSubtitleTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
+    {
+        bool hasDefaultSub = mediaAnalysis.SubtitleStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
+        return [.. mediaAnalysis.SubtitleStreams.Select(x => new SubtitleFileTrack
+        {
+            Index = x.Index,
+            IsDefault = IsDefaultTrack(hasDefaultSub, x.Disposition, x.Index),
+            Language = x.Language,
+            Name = x.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? x.Language,
+            Codec = x.CodecName,
+            IsTextBased = TextBasedSubtitleCodecs.Contains(x.CodecName),
+            IsForced = x.Disposition?.Any(d => d.Key == "forced" && d.Value) ?? false
+        })];
     }
 }
 

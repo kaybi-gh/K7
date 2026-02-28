@@ -70,6 +70,7 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SourceChanged += OnSourceChange;
             PlayerService.IsVisibleChanged += StateHasChanged;
             PlayerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
+            PlayerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
         }
     }
 
@@ -90,6 +91,7 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.SourceChanged -= OnSourceChange;
             PlayerService.IsVisibleChanged -= StateHasChanged;
             PlayerService.SwitchAudioTrackRequested -= OnSwitchAudioTrack;
+            PlayerService.SwitchSubtitleTrackRequested -= OnSwitchSubtitleTrack;
 
             if (!string.IsNullOrEmpty(_player.Id))
             {
@@ -128,6 +130,14 @@ public partial class VideoPlayer : IAsyncDisposable
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
             await JSRuntime.InvokeVoidAsync("switchAudioTrack", _player.Id, trackIndex);
+        }
+    }
+
+    private async void OnSwitchSubtitleTrack(string? slug)
+    {
+        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        {
+            await JSRuntime.InvokeVoidAsync("switchSubtitleTrack", _player.Id, slug);
         }
     }
 

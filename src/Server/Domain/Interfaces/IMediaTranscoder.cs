@@ -23,6 +23,7 @@ public interface IMediaTranscoder
     /// <summary>
     /// Starts a video-only streaming transcode job.
     /// Generates video fMP4 segments from startSegmentIndex up to (but not including) endSegmentIndex.
+    /// When <paramref name="subtitleBurnInStreamIndex"/> is set, burns the bitmap subtitle into the video.
     /// </summary>
     Task StartVideoStreamingTranscodeAsync(
         string inputFilePath,
@@ -32,7 +33,8 @@ public interface IMediaTranscoder
         int endSegmentIndex,
         CancellationToken cancellationToken,
         string? videoCodec = null,
-        string? videoResolutionIdentifier = null);
+        string? videoResolutionIdentifier = null,
+        int? subtitleBurnInStreamIndex = null);
 
     /// <summary>
     /// Starts an audio-only streaming transcode job.
@@ -47,4 +49,14 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken,
         int audioTrackIndex,
         string? audioCodec = null);
+
+    /// <summary>
+    /// Extracts a subtitle track from the input file and converts it to WebVTT format.
+    /// The result is cached at <paramref name="outputVttPath"/>.
+    /// </summary>
+    Task ExtractSubtitleAsVttAsync(
+        string inputFilePath,
+        int subtitleStreamIndex,
+        string outputVttPath,
+        CancellationToken cancellationToken = default);
 }
