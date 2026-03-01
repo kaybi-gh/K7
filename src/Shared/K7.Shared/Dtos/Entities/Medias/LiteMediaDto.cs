@@ -10,6 +10,7 @@ public abstract record LiteMediaDto
     public string? Title { get; init; }
     public string? ReleaseDate { get; init; }
     public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
+    public UserMediaStateDto? UserState { get; init; }
 
     public static LiteMediaDto FromDomain(BaseMedia domain) => domain switch
     {
@@ -18,7 +19,10 @@ public abstract record LiteMediaDto
             Id = domain.Id,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain)
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
+            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                ? UserMediaStateDto.FromDomain(state)
+                : null
         },
         _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
     };

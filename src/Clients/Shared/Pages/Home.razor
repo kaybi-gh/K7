@@ -1,6 +1,12 @@
 @page "/"
 @using K7.Shared.Dtos.Requests
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@implements IDisposable
 @inject IK7ServerService k7ServerService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject K7.Clients.Shared.Services.K7HubClient K7HubClient
 <PageTitle>Home</PageTitle>
 
 @if (isLoading)
@@ -19,6 +25,18 @@
 }
 else
 {
+    @if (isAuthenticated && continueWatchingMedias.Count > 0)
+    {
+        <HorizontalScrollableStack Title="Continue watching">
+            @foreach (var item in continueWatchingMedias)
+            {
+                <HorizontalScrollableStackItem>
+                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                </HorizontalScrollableStackItem>
+            }
+        </HorizontalScrollableStack>
+    }
+
     <HorizontalScrollableStack Title="Recently added">
         @foreach (var item in recentlyAddedMedias)
         {
@@ -49,16 +67,79 @@ else
 
 @code {
     private bool isLoading { get; set; } = true;
+    private bool isAuthenticated;
+    List<MediaPosterViewModel> continueWatchingMedias = [];
     List<MediaPosterViewModel> recentlyAddedMedias = [];
     List<MediaPosterViewModel> recentlyReleasedMedias = [];
     List<MediaPosterViewModel> lastPlayedMedias = [];
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+
+        if (isAuthenticated)
+        {
+            K7HubClient.ProgressUpdated += OnProgressUpdated;
+
+            await InitializeContinueWatchingMedias();
+        }
+
         await InitializeRecentlyAddedMedias();
         await InitializeRecentlyReleasedMedias();
         await InitializeLastPlayedMedias();
         isLoading = false;
+    }
+
+    private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted)
+    {
+        var id = mediaId.ToString();
+        bool changed = false;
+
+        foreach (var list in new[] { continueWatchingMedias, recentlyAddedMedias, recentlyReleasedMedias, lastPlayedMedias })
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Id == id)
+                {
+                    list[i] = list[i] with { Progress = progressPercentage, Watched = isCompleted };
+                    changed = true;
+                }
+            }
+        }
+
+        if (changed)
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        K7HubClient.ProgressUpdated -= OnProgressUpdated;
+    }
+
+    private async Task InitializeContinueWatchingMedias()
+    {
+        try
+        {
+            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
+            {
+                ContinueWatching = true,
+                OrderBy = [K7.Shared.Dtos.Requests.MediaOrderingOption.LastInteractedDesc],
+                PageNumber = 1,
+                PageSize = 20
+            });
+
+            if (mediasPage?.Items != null)
+            {
+                foreach (var item in mediasPage.Items)
+                {
+                    continueWatchingMedias.Add(MapToViewModel(item));
+                }
+            }
+        }
+        catch { }
     }
 
     private async Task InitializeRecentlyAddedMedias()
@@ -72,17 +153,11 @@ else
                 PageSize = 40
             });
 
-            if (mediasPage != null && mediasPage.Items != null)
+            if (mediasPage?.Items != null)
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    recentlyAddedMedias.Add(new MediaPosterViewModel()
-                    {
-                        Id = item.Id.ToString(),
-                        Title = item.Title,
-                        AdditionalInformations = item.ReleaseDate,
-                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
-                    });
+                    recentlyAddedMedias.Add(MapToViewModel(item));
                 }
             }
         }
@@ -100,17 +175,11 @@ else
                 PageSize = 40
             });
 
-            if (mediasPage != null && mediasPage.Items != null)
+            if (mediasPage?.Items != null)
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    recentlyReleasedMedias.Add(new MediaPosterViewModel()
-                    {
-                        Id = item.Id.ToString(),
-                        Title = item.Title,
-                        AdditionalInformations = item.ReleaseDate,
-                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
-                    });
+                    recentlyReleasedMedias.Add(MapToViewModel(item));
                 }
             }
         }
@@ -122,26 +191,35 @@ else
         try
         {
             var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
-                {
-                    OrderBy = [K7.Shared.Dtos.Requests.MediaOrderingOption.TitleDesc], // TODO - Fake sorting here
-                    PageNumber = 1,
+            {
+                OrderBy = [K7.Shared.Dtos.Requests.MediaOrderingOption.LastInteractedDesc],
+                PageNumber = 1,
                 PageSize = 40
             });
 
-            if (mediasPage != null && mediasPage.Items != null)
+            if (mediasPage?.Items != null)
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    lastPlayedMedias.Add(new MediaPosterViewModel()
-                    {
-                        Id = item.Id.ToString(),
-                        Title = item.Title,
-                        AdditionalInformations = item.ReleaseDate,
-                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
-                    });
+                    lastPlayedMedias.Add(MapToViewModel(item));
                 }
             }
         }
         catch { }
+    }
+
+    private MediaPosterViewModel MapToViewModel(K7.Shared.Dtos.Entities.Medias.LiteMediaDto item)
+    {
+        var userState = item.UserState;
+
+        return new MediaPosterViewModel
+        {
+            Id = item.Id.ToString(),
+            Title = item.Title,
+            AdditionalInformations = item.ReleaseDate,
+            PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri,
+            Watched = userState?.IsCompleted ?? false,
+            Progress = userState?.ProgressPercentage ?? 0
+        };
     }
 }

@@ -35,6 +35,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<BackgroundTask> BackgroundTasks => Set<BackgroundTask>();
     public DbSet<Device> Devices => Set<Device>();
     public new DbSet<User> Users => Set<User>();
+    public DbSet<UserMediaState> UserMediaStates => Set<UserMediaState>();
+    public DbSet<MediaPlaybackSession> MediaPlaybackSessions => Set<MediaPlaybackSession>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

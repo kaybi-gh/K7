@@ -28,6 +28,8 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<BackgroundTask> BackgroundTasks { get; }
     DbSet<Device> Devices { get; }
     DbSet<User> Users { get; }
+    DbSet<UserMediaState> UserMediaStates { get; }
+    DbSet<MediaPlaybackSession> MediaPlaybackSessions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

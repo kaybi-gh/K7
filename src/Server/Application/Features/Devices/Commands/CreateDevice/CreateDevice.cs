@@ -61,10 +61,10 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
             LastSeen = DateTimeOffset.UtcNow
         };
 
-        if (!string.IsNullOrWhiteSpace(_user.Id))
+        if (!string.IsNullOrWhiteSpace(_user.IdentityId))
         {
             var domainUser = await _context.Users
-                .SingleOrDefaultAsync(u => u.IdentityUserId == _user.Id, cancellationToken);
+                .SingleOrDefaultAsync(u => u.IdentityUserId == _user.IdentityId, cancellationToken);
 
             if (domainUser is not null)
             {

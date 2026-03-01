@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260301103820_AddUserMediaStateTracking")]
+    partial class AddUserMediaStateTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -781,9 +784,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<int>("PlayCount")
                         .HasColumnType("integer");
-
-                    b.Property<double>("ProgressPercentage")
-                        .HasColumnType("double precision");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -1828,7 +1828,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaState", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
-                        .WithMany("UserMediaStates")
+                        .WithMany()
                         .HasForeignKey("MediaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2017,8 +2017,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Pictures");
 
                     b.Navigation("Ratings");
-
-                    b.Navigation("UserMediaStates");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", b =>

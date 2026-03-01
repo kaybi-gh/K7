@@ -41,7 +41,7 @@ public class CreateStreamSessionCommandHandler : IRequestHandler<CreateStreamSes
             Id = Guid.NewGuid(),
             IndexedFileId = command.IndexedFileId,
             DeviceId = command.DeviceId,
-            UserId = _user.Id != null ? Guid.Parse(_user.Id) : null,
+            UserId = _user.Id,
             State = Domain.Enums.PlaybackState.Idle,
             Position = 0,
             PlaybackSettingsJson = JsonSerializer.Serialize(playbackSettings)
