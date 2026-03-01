@@ -1,9 +1,12 @@
 @page "/movies/{id}"
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Shared.Dtos.Entities.Metadatas.Files;
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IK7ServerService k7ServerService
 @inject IPlayerService PlayerService
 @inject IDeviceStorageService DeviceStorageService
+@inject PlaybackProgressTracker PlaybackProgressTracker
+@inject AuthenticationStateProvider AuthenticationStateProvider
 <PageTitle>@_movie?.Title</PageTitle>
 <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
@@ -91,7 +94,7 @@ else
                     <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@($"{(int)((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.TotalHours}h {((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.Minutes:D2}min")</MudText>
                 </MudStack>
                 @*<MudText Style="font-style: italic; font-size: 20px; font-family: initial;">
-                ì@_movie.TagLineî
+                ‚Äú@_movie.TagLine‚Äù
             </MudText>*@
                 @*<MudStack Row="true">
                 <MudRating SelectedValue="@Convert.ToInt32(_movie.Ratings?.FirstOrDefault(x => x.Source == Server.Domain.Enums.RatingSource.MetadataProvider)?.Value ?? 0)" />

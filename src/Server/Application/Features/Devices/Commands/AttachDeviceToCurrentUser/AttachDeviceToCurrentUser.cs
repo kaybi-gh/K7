@@ -21,7 +21,7 @@ public class AttachDeviceToCurrentUserCommandHandler : IRequestHandler<AttachDev
 
     public async Task<IResult> Handle(AttachDeviceToCurrentUserCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_user.Id))
+        if (string.IsNullOrWhiteSpace(_user.IdentityId))
         {
             return Results.Unauthorized();
         }
@@ -35,7 +35,7 @@ public class AttachDeviceToCurrentUserCommandHandler : IRequestHandler<AttachDev
             return Results.NotFound();
         }
 
-        var domainUser = await _context.Users.SingleOrDefaultAsync(u => u.IdentityUserId == _user.Id, cancellationToken);
+        var domainUser = await _context.Users.SingleOrDefaultAsync(u => u.IdentityUserId == _user.IdentityId, cancellationToken);
 
         if (domainUser is null)
         {

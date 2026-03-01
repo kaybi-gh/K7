@@ -103,4 +103,11 @@ public class K7ServerService : IK7ServerService
 
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
     }
+
+    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, double position, double duration, CancellationToken cancellationToken = default)
+    {
+        var payload = new { MediaId = mediaId, SessionId = sessionId, Position = position, Duration = duration };
+        var response = await HttpClient.PostAsJsonAsync("api/medias/playback-progress", payload, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }

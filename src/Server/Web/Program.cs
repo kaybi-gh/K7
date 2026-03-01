@@ -10,6 +10,7 @@ using K7.Server.Web;
 using K7.Server.Web.Components;
 using K7.Server.Web.Components.Account;
 using K7.Server.Web.Endpoints.Hubs;
+using K7.Server.Web.Services;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -73,7 +74,7 @@ try
     app.UseExceptionHandler(options => { });
     app.MapEndpoints();
     app.MapAdditionalIdentityEndpoints();
-    app.MapHub<MediaStreamSessionHub>("/media-session-hub");
+    app.MapHub<K7Hub>("/hub");
     app.MapRazorComponents<App>()
         .WithStaticAssets()
         .AddInteractiveServerRenderMode()

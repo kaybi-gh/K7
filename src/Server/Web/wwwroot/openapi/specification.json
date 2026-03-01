@@ -246,6 +246,13 @@
             }
           },
           {
+            "name": "ContinueWatching",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "MediaTypes",
             "in": "query",
             "schema": {
@@ -296,6 +303,29 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/medias/playback-progress": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "ReportPlaybackProgress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlaybackProgressCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -2094,6 +2124,16 @@
             "items": {
               "$ref": "#/components/schemas/MetadataPictureDto"
             }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
           }
         }
       },
@@ -2400,6 +2440,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
           }
         }
       },
@@ -3088,6 +3138,41 @@
           }
         }
       },
+      "UpdatePlaybackProgressCommand": {
+        "required": [
+          "mediaId",
+          "sessionId",
+          "position",
+          "duration"
+        ],
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "duration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "UserDto": {
         "required": [
           "accessibleLibraryIds",
@@ -3107,6 +3192,45 @@
             "items": {
               "$ref": "#/components/schemas/DeviceDto"
             }
+          }
+        }
+      },
+      "UserMediaStateDto": {
+        "type": "object",
+        "properties": {
+          "lastPlaybackPosition": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "progressPercentage": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isCompleted": {
+            "type": "boolean"
+          },
+          "playCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lastInteractedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },

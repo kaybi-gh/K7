@@ -16,6 +16,7 @@ public abstract record MediaDto
     public IEnumerable<RatingDto>? Ratings { get; init; }
     public IEnumerable<IndexedFileDto>? IndexedFiles { get; init; }
     public IEnumerable<string>? Genres { get; init; }
+    public UserMediaStateDto? UserState { get; init; }
 
     public static MediaDto FromDomain(BaseMedia domain) => domain switch
     {
@@ -32,7 +33,10 @@ public abstract record MediaDto
             Genres = domain.Genres,
             Overview = movie.Overview,
             OriginalLanguage = movie.OriginalLanguage,
-            TagLine = movie.Tagline
+            TagLine = movie.Tagline,
+            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                ? UserMediaStateDto.FromDomain(state)
+                : null
         },
         _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
     };

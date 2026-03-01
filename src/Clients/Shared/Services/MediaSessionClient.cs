@@ -27,7 +27,7 @@ public class MediaSessionService : IMediaStreamSession
         }
 
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri($"/media-session-hub"))//?userId={userId}&deviceId={deviceId}&mediaId={mediaId}"))
+            .WithUrl(_navigationManager.ToAbsoluteUri($"/hub"))
             .Build();
 
         await _hubConnection.StartAsync();

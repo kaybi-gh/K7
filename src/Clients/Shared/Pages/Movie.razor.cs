@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Domain.Models;
 using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
@@ -61,6 +62,21 @@ public partial class Movie
         var subtitleTracks = videoMetadata.SubtitleTracks;
         var audioTrackIndex = _selectedAudioFileTrack?.Index;
         var videoResolution = videoMetadata.VideoResolution;
+
+        PlaybackProgressTracker.StartTracking(_movie.Id, await IsAuthenticatedAsync());
+
         await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex, videoResolution);
+
+        // If there's a saved position, seek to it
+        if (_movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+        {
+            PlayerService.Seek(_movie.UserState.LastPlaybackPosition);
+        }
+    }
+
+    private async Task<bool> IsAuthenticatedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return authState.User.Identity?.IsAuthenticated == true;
     }
 }

@@ -53,6 +53,8 @@ public static class DependencyInjection
 
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();
+        services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
+        services.AddSignalR();
         //services.AddHttpForwarderWithServiceDiscovery(); // TODO - To keep or not?
         services.AddHttpContextAccessor();
         services.AddScoped<IdentityUserAccessor>();
@@ -66,7 +68,7 @@ public static class DependencyInjection
         services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents()
-            .AddAuthenticationStateSerialization();
+            .AddAuthenticationStateSerialization(options => options.SerializeAllClaims = true);
         services.AddMudServices();
         services.AddScoped<ThemeService>();
 
