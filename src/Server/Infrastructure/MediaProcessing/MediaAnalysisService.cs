@@ -246,8 +246,13 @@ public class MediaAnalysisService : IMediaAnalysisService
 
     private static List<VideoFileTrack> ExtractVideoTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
     {
-        bool hasDefaultVideo = mediaAnalysis.VideoStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
-        return [.. mediaAnalysis.VideoStreams.Select(x => new VideoFileTrack
+        var realVideoStreams = mediaAnalysis.VideoStreams
+            .Where(x => !(x.Disposition?.Any(d => d.Key == "attached_pic" && d.Value) ?? false))
+            .ToList();
+
+        bool hasDefaultVideo = realVideoStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
+        
+        return [.. realVideoStreams.Select(x => new VideoFileTrack
         {
             Codec = x.CodecName,
             Width = x.Width,
