@@ -44,5 +44,11 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .WithOne()
             .HasForeignKey(x => x.VideoFileMetadataId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(x => x.SubtitleTracks)
+            .WithOne()
+            .HasForeignKey(x => x.VideoFileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
