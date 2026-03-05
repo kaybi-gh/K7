@@ -1,5 +1,7 @@
 ﻿using System.Collections.Frozen;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
+using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
@@ -11,9 +13,10 @@ using TMDbLib.Client;
 using TMDbLib.Objects.Movies;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
-public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>
+public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider
 {
     private const string Token = "8e7586ad850237f5d506d8789f4c3936";
+    public string ProviderName => "tmdb";
     private readonly TMDbClient _tdmbClient;
 
     private readonly FrozenSet<(string Department, string Job)> _wantedCrewRoles = new List<(string, string)>
@@ -46,6 +49,57 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>
             Console.WriteLine($"Error while fetching TMDbId for {movieIdentification}: {ex.Message}");
             return null;
         }
+    }
+
+    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, CancellationToken cancellationToken)
+    {
+        var results = new List<MetadataSearchResult>();
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(providerId) && int.TryParse(providerId, out var tmdbId))
+            {
+                var movie = await _tdmbClient.GetMovieAsync(tmdbId, "fr", cancellationToken: cancellationToken);
+                if (movie != null)
+                {
+                    results.Add(MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview));
+                }
+                return results;
+            }
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var searchResult = await _tdmbClient.SearchMovieAsync(query, language: "fr", year: year ?? 0, cancellationToken: cancellationToken);
+                if (searchResult?.Results != null)
+                {
+                    results.AddRange(searchResult.Results.Select(movie => 
+                        MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview)));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error while searching TMDb for {query}: {ex.Message}");
+        }
+
+        return results;
+    }
+
+    private MetadataSearchResult MapToSearchResult(int id, string title, DateTime? releaseDate, string posterPath, string overview)
+    {
+        var posterUrl = !string.IsNullOrEmpty(posterPath) 
+            ? _tdmbClient.GetImageUrl("w500", posterPath, true)?.ToString() 
+            : null;
+
+        return new MetadataSearchResult
+        {
+            Provider = ProviderName,
+            ExternalId = id.ToString(),
+            Title = title,
+            Year = releaseDate?.Year,
+            PosterUrl = posterUrl,
+            Overview = overview
+        };
     }
 
     public async Task<ExternalMovieMetadata> FetchMetadata(string metadataProviderExternalId, string language, CancellationToken cancellationToken = default)

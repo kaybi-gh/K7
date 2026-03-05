@@ -1,0 +1,174 @@
+@using K7.Shared.Dtos.Entities.Metadatas
+@using K7.Shared.Dtos.Requests
+@using K7.Shared.Interfaces
+@using MudBlazor
+@inject IK7ServerService k7ServerService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4">
+            <MudTextField @bind-Value="_searchQuery" Label="Titre" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" OnAdornmentClick="SearchAsync" OnKeyDown="HandleKeyDown" />
+            
+            <MudStack Row="true" Spacing="4">
+                <MudNumericField @bind-Value="_searchYear" Label="Année (Optionnel)" Variant="Variant.Outlined" Clearable="true" />
+                <MudTextField @bind-Value="_searchProviderId" Label="ID Provider (Ex: TMDB ID)" Variant="Variant.Outlined" Clearable="true" />
+            </MudStack>
+            
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SearchAsync" Disabled="_isSearching">
+                @if (_isSearching)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Recherche...</MudText>
+                }
+                else
+                {
+                    <MudText>Chercher</MudText>
+                }
+            </MudButton>
+
+            @if (_results != null)
+            {
+                if (!_results.Any())
+                {
+                    <MudText Color="Color.Warning">Aucun résultat trouvé.</MudText>
+                }
+                else
+                {
+                    <MudList T="MetadataSearchResult" SelectionMode="SelectionMode.SingleSelection" @bind-SelectedValue="_selectedResult" Style="max-height: 400px; overflow-y: auto;">
+                        @foreach (var result in _results)
+                        {
+                            <MudListItem Value="result">
+                                <MudGrid>
+                                    <MudItem xs="3">
+                                        @if (!string.IsNullOrEmpty(result.PosterUrl))
+                                        {
+                                            <MudImage Src="@result.PosterUrl" ObjectFit="ObjectFit.Cover" Height="100" Width="70" Elevation="25" Class="rounded-lg" />
+                                        }
+                                        else
+                                        {
+                                            <MudPaper Height="100px" Width="70px" Class="d-flex align-center justify-center rounded-lg">
+                                                <MudIcon Icon="@Icons.Material.Filled.ImageNotSupported" />
+                                            </MudPaper>
+                                        }
+                                    </MudItem>
+                                    <MudItem xs="9">
+                                        <MudStack Spacing="0">
+                                            <MudText Typo="Typo.subtitle1"><b>@result.Title</b> @(result.Year.HasValue ? $"({result.Year})" : "")</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Provider: @result.Provider | ID: @result.ExternalId</MudText>
+                                            <MudText Typo="Typo.body2" Style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">@result.Overview</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="@(_selectedResult == null || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+            }
+            else
+            {
+                <MudText>Valider</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public Guid IndexedFileId { get; set; }
+
+    [Parameter]
+    public string? InitialSearchQuery { get; set; }
+
+    private string _searchQuery = "";
+    private int? _searchYear;
+    private string? _searchProviderId;
+    
+    private bool _isSearching;
+    private bool _isSubmitting;
+    
+    private List<MetadataSearchResult>? _results;
+    private MetadataSearchResult? _selectedResult;
+
+    protected override void OnInitialized()
+    {
+        _searchQuery = InitialSearchQuery ?? "";
+        base.OnInitialized();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery) && string.IsNullOrWhiteSpace(_searchProviderId))
+        {
+            Snackbar.Add("Veuillez entrer un titre ou un ID.", Severity.Warning);
+            return;
+        }
+
+        _isSearching = true;
+        _selectedResult = null;
+        StateHasChanged();
+
+        try
+        {
+            var results = await k7ServerService.SearchMetadataAsync(_searchQuery, _searchYear, _searchProviderId);
+            _results = results.ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur lors de la recherche : {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSearching = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_selectedResult == null) return;
+
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new ReidentifyIndexedFileRequest
+            {
+                SelectedProvider = _selectedResult.Provider,
+                SelectedExternalId = _selectedResult.ExternalId
+            };
+            
+            await k7ServerService.ReidentifyIndexedFileAsync(IndexedFileId, request);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur lors de la ré-identification : {ex.Message}", Severity.Error);
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
