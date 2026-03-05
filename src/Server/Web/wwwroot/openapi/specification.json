@@ -951,6 +951,30 @@
         }
       }
     },
+    "/api/indexed-files/{id}/refresh": {
+      "post": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "RefreshIndexedFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/devices/{id}/attach-user": {
       "post": {
         "tags": [

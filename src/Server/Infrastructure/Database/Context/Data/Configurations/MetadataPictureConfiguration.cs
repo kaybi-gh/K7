@@ -18,6 +18,7 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .HasOne(mp => mp.VideoFileMetadata)
             .WithOne(m => m.Thumbnails)
             .HasForeignKey<MetadataPicture>(mp => mp.VideoFileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
 
         builder
