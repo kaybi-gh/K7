@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
+using K7.Server.Application.Common.Interfaces;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
 
@@ -19,7 +20,9 @@ public static class DependencyInjection
         services.AddSingleton<IMediaFormatSampleGenerator, MediaFormatSampleGenerator>();
         services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
         services.AddHostedService<TranscodeJobCleanupService>();
-        services.AddScoped<IMetadataProvider<ExternalMovieMetadata>, TMDbMetadataProvider>(); // TODO - Make it customizable
+        services.AddScoped<TMDbMetadataProvider>();
+        services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
+        services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>()); // TODO - Make it customizable
 
         services.AddSignalR();
         return services;

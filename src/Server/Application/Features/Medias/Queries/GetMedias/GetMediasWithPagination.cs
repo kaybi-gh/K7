@@ -46,6 +46,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
     private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)
     {
+        query = query.Where(x => x.IndexedFiles.Any());
+
         if (request.LibraryIds?.Length > 0)
         {
             query = query.Where(x => x.IndexedFiles != null && x.IndexedFiles.Any(x => request.LibraryIds.Contains(x.LibraryId)));

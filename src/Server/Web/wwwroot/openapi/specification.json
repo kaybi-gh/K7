@@ -161,6 +161,48 @@
         }
       }
     },
+    "/api/metadata/search": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "SearchMetadata",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "providerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/metadata-pictures/{id}": {
       "get": {
         "tags": [
@@ -968,6 +1010,40 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/indexed-files/{id}/reidentify": {
+      "post": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "ReidentifyIndexedFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReidentifyIndexedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -3098,6 +3174,21 @@
       "RatingSource": {
         "type": "integer"
       },
+      "ReidentifyIndexedFileRequest": {
+        "required": [
+          "selectedProvider",
+          "selectedExternalId"
+        ],
+        "type": "object",
+        "properties": {
+          "selectedProvider": {
+            "type": "string"
+          },
+          "selectedExternalId": {
+            "type": "string"
+          }
+        }
+      },
       "SubtitleFileTrackDto": {
         "required": [
           "codec"
@@ -3399,6 +3490,9 @@
     },
     {
       "name": "Persons"
+    },
+    {
+      "name": "Metadata"
     },
     {
       "name": "MetadataPictures"

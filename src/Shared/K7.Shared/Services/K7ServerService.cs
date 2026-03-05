@@ -4,6 +4,7 @@ using K7.Shared.Dtos.Devices;
 using K7.Shared.Interfaces;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Shared.Dtos.Entities.Persons;
@@ -108,6 +109,31 @@ public class K7ServerService : IK7ServerService
     {
         var payload = new { MediaId = mediaId, SessionId = sessionId, Position = position, Duration = duration };
         var response = await HttpClient.PostAsJsonAsync("api/medias/playback-progress", payload, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string> { $"query={Uri.EscapeDataString(query)}" };
+        
+        if (year.HasValue)
+        {
+            queryParams.Add($"year={year.Value}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(providerId))
+        {
+            queryParams.Add($"providerId={Uri.EscapeDataString(providerId)}");
+        }
+
+        var queryString = string.Join("&", queryParams);
+        var formats = await HttpClient.GetFromJsonAsync<IEnumerable<MetadataSearchResult>>($"api/metadata/search?{queryString}", _serializerOptions, cancellationToken);
+        return formats ?? [];
+    }
+
+    public async Task ReidentifyIndexedFileAsync(Guid id, ReidentifyIndexedFileRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/indexed-files/{id}/reidentify", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 }

@@ -4,6 +4,7 @@ using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Clients.Shared.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -11,6 +12,9 @@ namespace K7.Clients.Shared.Pages;
 
 public partial class Movie
 {
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
     [Parameter] public required string Id { get; set; }
 
     private bool isLoading { get; set; } = true;
@@ -78,5 +82,27 @@ public partial class Movie
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         return authState.User.Identity?.IsAuthenticated == true;
+    }
+
+    private async Task OpenReIdentifyDialogAsync()
+    {
+        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any()) return;
+        
+        var indexedFile = _movie.IndexedFiles.First();
+
+        var parameters = new DialogParameters<ReIdentifyDialog>
+        {
+            { x => x.IndexedFileId, indexedFile.Id },
+            { x => x.InitialSearchQuery, _movie.Title }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>("Re-identify media", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            Snackbar.Add("Ré-identification envoyée et en cours de traitement par le serveur en tâche de fond.", Severity.Success);
+        }
     }
 }
