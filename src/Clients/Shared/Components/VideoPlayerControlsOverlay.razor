@@ -51,7 +51,7 @@
                 <span>@FormatTime(PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
             </MudStack>
 
-            <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" />
+            <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />
 
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudMenu Icon="@Icons.Material.Outlined.Settings" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomRight"

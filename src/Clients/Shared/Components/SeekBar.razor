@@ -110,10 +110,10 @@
     [Parameter] public List<Chapter> Chapters { get; set; } = [];
     [Parameter] public bool IsVisible { get; set; }
 
-    private const int ThumbWidth = 180;
-    private const int ThumbHeight = 100;
-    private const int IntervalSeconds = 10;
-    private const int ThumbsPerRow = 5;
+    private const int ThumbWidth = 320;
+    private const int ThumbHeight = 180;
+    private const int IntervalSeconds = 30;
+    private const int ThumbsPerRow = 10;
 
     double CurrentPercent => (PlayerService.CurrentTime / PlayerService.Duration) * 100;
     double BufferedPercent => (PlayerService.BufferedTime / PlayerService.Duration) * 100;
@@ -208,7 +208,7 @@
         int col = index % ThumbsPerRow;
         int row = index / ThumbsPerRow;
 
-        return $"background-image: url('{ThumbnailsUri!.AbsolutePath}'); " +
+        return $"background-image: url('{ThumbnailsUri}'); " +
                $"background-position: -{col * ThumbWidth}px -{row * ThumbHeight}px; " +
                $"width: {ThumbWidth}px; height: {ThumbHeight}px;";
     }

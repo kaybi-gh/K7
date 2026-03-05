@@ -303,7 +303,7 @@ internal class PlayerService : IPlayerService
         AspectRatioModeChangeRequested?.Invoke(mode);
     }
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
