@@ -16,6 +16,7 @@ public partial class VideoPlayer : IAsyncDisposable
     
     [Parameter] public string SourceUri { get; set; } = string.Empty;
     [Parameter] public string SourceMimeType { get; set; } = string.Empty;
+    [Parameter] public string? ThumbnailsSource { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -130,6 +131,7 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         SourceUri = playerSource.Url!;
         SourceMimeType = playerSource.MimeType!;
+        ThumbnailsSource = playerSource.ThumbnailsUrl;
 
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {

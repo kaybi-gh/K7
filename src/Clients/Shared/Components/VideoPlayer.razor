@@ -8,7 +8,7 @@
     @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
     {
         <div class="video-container" @ref="_videoContainer">
-            <VideoPlayerControlsOverlay />
+            <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" />
             <video id="video-player" class="video-js" @ref="_player">
                 @if (!string.IsNullOrEmpty(SourceUri))
                 {

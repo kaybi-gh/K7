@@ -66,10 +66,11 @@ public partial class Movie
         var subtitleTracks = videoMetadata.SubtitleTracks;
         var audioTrackIndex = _selectedAudioFileTrack?.Index;
         var videoResolution = videoMetadata.VideoResolution;
+        var thumbnailsUrl = videoMetadata.Thumbnails?.Uri?.ToString();
 
         PlaybackProgressTracker.StartTracking(_movie.Id, await IsAuthenticatedAsync());
 
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex, videoResolution);
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex, videoResolution, thumbnailsUrl);
 
         // If there's a saved position, seek to it
         if (_movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
