@@ -1,9 +1,11 @@
-﻿namespace K7.Server.Application.Helpers;
+﻿using System.Collections.Concurrent;
+
+namespace K7.Server.Application.Helpers;
 public static class FileInfoHelper
 {
     public static List<FileInfo> GetAllFileInfosRecursively(string rootDirectory)
     {
-        List<FileInfo> fileInfos = [];
+        ConcurrentBag<FileInfo> fileInfos = [];
 
         try
         {
@@ -21,6 +23,6 @@ public static class FileInfoHelper
             Console.WriteLine($"Error retrieving files in directory {rootDirectory}: {ex.Message}");
         }
 
-        return fileInfos;
+        return [.. fileInfos];
     }
 }
