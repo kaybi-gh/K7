@@ -17,9 +17,29 @@ public class Movie() : BaseMedia(MediaType.Movie)
         Overview = metadata.Overview ?? Overview;
         Tagline = metadata.Tagline ?? Tagline;
         OriginalLanguage = metadata.OriginalLanguage ?? OriginalLanguage;
-        Genres = metadata.Genres ?? Genres;
-        PersonRoles = metadata.PersonRoles ?? PersonRoles;
-        ExternalIds = metadata.ExternalIds ?? ExternalIds;
-        Pictures = metadata.Pictures ?? Pictures;
+
+        if (metadata.Genres?.Count > 0)
+        {
+            Genres.Clear();
+            foreach (var genre in metadata.Genres) Genres.Add(genre);
+        }
+
+        if (metadata.PersonRoles?.Count > 0)
+        {
+            PersonRoles.Clear();
+            foreach (var role in metadata.PersonRoles) PersonRoles.Add(role);
+        }
+
+        if (metadata.ExternalIds?.Count > 0)
+        {
+            ExternalIds.Clear();
+            foreach (var ex in metadata.ExternalIds) ExternalIds.Add(ex);
+        }
+
+        if (metadata.Pictures?.Count > 0)
+        {
+            Pictures.Clear();
+            foreach (var pic in metadata.Pictures) Pictures.Add(pic);
+        }
     }
 }

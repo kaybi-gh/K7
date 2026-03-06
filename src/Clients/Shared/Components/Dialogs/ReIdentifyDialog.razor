@@ -87,7 +87,10 @@
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter]
-    public Guid IndexedFileId { get; set; }
+    public Guid? IndexedFileId { get; set; }
+
+    [Parameter]
+    public Guid? MediaId { get; set; }
 
     [Parameter]
     public string? InitialSearchQuery { get; set; }
@@ -153,13 +156,25 @@
 
         try
         {
-            var request = new ReidentifyIndexedFileRequest
+            if (MediaId.HasValue)
             {
-                SelectedProvider = _selectedResult.Provider,
-                SelectedExternalId = _selectedResult.ExternalId
-            };
-            
-            await k7ServerService.ReidentifyIndexedFileAsync(IndexedFileId, request);
+                var request = new ReidentifyMediaRequest
+                {
+                    SelectedProvider = _selectedResult.Provider,
+                    SelectedExternalId = _selectedResult.ExternalId
+                };
+                await k7ServerService.ReidentifyMediaAsync(MediaId.Value, request);
+            }
+            else if (IndexedFileId.HasValue)
+            {
+                var request = new ReidentifyIndexedFileRequest
+                {
+                    SelectedProvider = _selectedResult.Provider,
+                    SelectedExternalId = _selectedResult.ExternalId
+                };
+                await k7ServerService.ReidentifyIndexedFileAsync(IndexedFileId.Value, request);
+            }
+
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
