@@ -136,4 +136,10 @@ public class K7ServerService : IK7ServerService
         var response = await HttpClient.PostAsJsonAsync($"api/indexed-files/{id}/reidentify", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/medias/{id}/reidentify", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }

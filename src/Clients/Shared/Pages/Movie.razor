@@ -103,7 +103,7 @@ else
                     <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="PlayAsync">Play</MudButton>
                     <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
                     <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.FindReplace" title="Re-Identify" aria-label="re-identify" OnClick="OpenReIdentifyDialogAsync"></MudIconButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.FindReplace" title="Re-Identify" aria-label="re-identify" OnClick="OpenMediaReIdentifyDialogAsync"></MudIconButton>
                     <MudIconButton Icon="@Icons.Material.Filled.Settings" aria-label="settings"></MudIconButton>
                     <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions"></MudIconButton>
                 </MudStack>
@@ -143,6 +143,33 @@ else
                     </HorizontalScrollableStack>
                 </MudItem>
             </MudGrid>
+
+            <MudStack Class="pa-10">
+                <MudText Typo="Typo.h6">Versions / Fichiers Indexés</MudText>
+                <MudGrid>
+                    @foreach (var file in _movie.IndexedFiles ?? [])
+                    {
+                        var vMeta = file.FileMetadata as VideoFileMetadataDto;
+                        <MudItem xs="12" sm="6">
+                            <MudPaper Class="pa-4" Outlined="true">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudStack Spacing="0" Style="overflow: hidden;">
+                                        <MudText Typo="Typo.body1" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@file.Name">@file.Name</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@file.Path">@file.Path</MudText>
+                                        @if (vMeta != null)
+                                        {
+                                            <MudText Typo="Typo.caption">
+                                                @($"{vMeta.VideoResolution} | {(int)vMeta.Duration.TotalHours}h {vMeta.Duration.Minutes:D2}min | {file.Size / (1024 * 1024):N0} MB")
+                                            </MudText>
+                                        }
+                                    </MudStack>
+                                    <MudIconButton Icon="@Icons.Material.Filled.FindReplace" title="Ré-identifier ce fichier" OnClick="@(() => OpenFileReIdentifyDialogAsync(file.Id))" />
+                                </MudStack>
+                            </MudPaper>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudStack>
         </div>
     }
 }

@@ -27,7 +27,14 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
     {
         var media = await _context.Medias
-            .FindAsync([request.MediaId], cancellationToken);
+            .Include(m => m.ExternalIds)
+            .Include(m => m.Pictures)
+            .Include(m => m.PersonRoles)
+                .ThenInclude(pr => pr.ExternalIds)
+            .Include(m => m.PersonRoles)
+                .ThenInclude(pr => pr.PortraitPicture)
+            .Include(m => m.Ratings)
+            .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
         Guard.Against.NotFound(request.MediaId, media);
 
         var metadataUpdate = media switch

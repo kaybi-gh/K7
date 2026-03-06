@@ -349,6 +349,40 @@
         }
       }
     },
+    "/api/medias/{id}/reidentify": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "ReidentifyMedia",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReidentifyMediaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/playback-progress": {
       "post": {
         "tags": [
@@ -3175,6 +3209,21 @@
         "type": "integer"
       },
       "ReidentifyIndexedFileRequest": {
+        "required": [
+          "selectedProvider",
+          "selectedExternalId"
+        ],
+        "type": "object",
+        "properties": {
+          "selectedProvider": {
+            "type": "string"
+          },
+          "selectedExternalId": {
+            "type": "string"
+          }
+        }
+      },
+      "ReidentifyMediaRequest": {
         "required": [
           "selectedProvider",
           "selectedExternalId"

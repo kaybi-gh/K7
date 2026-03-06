@@ -12,6 +12,7 @@ namespace K7.Clients.Shared.Pages;
 
 public partial class Movie
 {
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
@@ -85,15 +86,13 @@ public partial class Movie
         return authState.User.Identity?.IsAuthenticated == true;
     }
 
-    private async Task OpenReIdentifyDialogAsync()
+private async Task OpenMediaReIdentifyDialogAsync()
     {
-        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any()) return;
-        
-        var indexedFile = _movie.IndexedFiles.First();
+        if (_movie == null) return;
 
         var parameters = new DialogParameters<ReIdentifyDialog>
         {
-            { x => x.IndexedFileId, indexedFile.Id },
+            { x => x.MediaId, _movie.Id },
             { x => x.InitialSearchQuery, _movie.Title }
         };
 
@@ -103,7 +102,27 @@ public partial class Movie
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Ré-identification envoyée et en cours de traitement par le serveur en tâche de fond.", Severity.Success);
+            Snackbar.Add("Ré-identification du média envoyée et en cours de traitement par le serveur en tâche de fond.", Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task OpenFileReIdentifyDialogAsync(Guid indexedFileId)
+    {
+        var parameters = new DialogParameters<ReIdentifyDialog>
+        {
+            { x => x.IndexedFileId, indexedFileId },
+            { x => x.InitialSearchQuery, _movie?.Title }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>("Re-identify file", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            Snackbar.Add("Ré-identification du fichier envoyée et en cours de traitement par le serveur en tâche de fond.", Severity.Success);
+            NavigationManager.NavigateTo("/");
         }
     }
 }
