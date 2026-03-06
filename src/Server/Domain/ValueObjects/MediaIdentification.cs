@@ -12,6 +12,9 @@ public class MediaIdentification : ValueObject
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return Title;
-        yield return ReleaseYear!;
+        if (ReleaseYear.HasValue)
+        {
+            yield return ReleaseYear.Value;
+        }
     }
 }
