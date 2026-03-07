@@ -1,5 +1,5 @@
 ### Setup build-env layer
-FROM mcr.microsoft.com/dotnet/sdk:10.0-bookworm-slim AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:10.0-bookworm AS build-env
 WORKDIR /app
 COPY . ./
 
@@ -8,7 +8,7 @@ RUN dotnet restore "./src/Server/Web/K7.Server.Web.csproj"
 RUN dotnet publish "./src/Server/Web/K7.Server.Web.csproj" -c Release -o /k7 --no-restore
 
 ### Setup runtime layer
-FROM mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-bookworm-slim
 
 # Install dependencies
 RUN echo "deb http://deb.debian.org/debian/ bookworm main" > /etc/apt/sources.list.d/debian-stable.list && \
