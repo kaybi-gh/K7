@@ -112,7 +112,6 @@ public class FileIndexer : IFileIndexer
                         _ => throw new InvalidOperationException(),
                     }));
                 }
-                await _context.SaveChangesAsync(cancellationToken);
             }
 
             if (removedFiles.Any())
@@ -159,8 +158,9 @@ public class FileIndexer : IFileIndexer
 
                     _context.IndexedFiles.Update(oldFile);
                 }
-                await _context.SaveChangesAsync(cancellationToken);
             }
+
+            await _context.SaveChangesAsync(cancellationToken);
 
             foreach (var request in backgroundTasks)
             {
