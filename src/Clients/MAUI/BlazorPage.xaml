@@ -17,7 +17,8 @@
                               HorizontalOptions="Fill"
                               VerticalOptions="Fill"
                               Source="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-                              ShouldShowPlaybackControls="False" ZIndex="1"/>
+                              ShouldShowPlaybackControls="False"
+                              InputTransparent="True" ZIndex="1"/>
         
         <!-- Blazor overlay -->
         <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html"

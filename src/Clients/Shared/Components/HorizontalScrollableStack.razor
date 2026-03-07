@@ -13,8 +13,8 @@
             }
             <div class="splide__arrows">
                 <MudStack Row="true">
-                    <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Class="py-0 pr-3 splide__arrow splide__arrow--prev" />
-                    <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Class="py-0 pl-3 splide__arrow splide__arrow--next" />
+                    <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Class="py-0 pr-3 splide__arrow splide__arrow--prev" tabindex="-1" />
+                    <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Class="py-0 pl-3 splide__arrow splide__arrow--next" tabindex="-1" />
                 </MudStack>
             </div>
         </MudStack>
@@ -41,8 +41,10 @@
             gap: '16px',
             padding: '16px',
             lazyLoad: 'nearby',
-            paginationKeyboard: true,
-            keyboard: 'focused'
+            paginationKeyboard: false,
+            keyboard: false,  // We handle navigation ourselves via spatial-navigation.js
+            slideFocus: false, // Prevent Splide from messing with slide focusability
+            focusableNodes: 'a' // Tell Splide what's focusable
         });
 
         splide.on('overflow', function (isOverflow) {
@@ -62,5 +64,6 @@
         // });
 
         splide.mount();
+        element.__splide = splide;
     };
 </script>

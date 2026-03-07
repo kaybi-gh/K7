@@ -7,6 +7,7 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
+@inject IJSRuntime JSRuntime
 <PageTitle>Home</PageTitle>
 
 @if (isLoading)
@@ -89,6 +90,14 @@ else
         await InitializeRecentlyReleasedMedias();
         await InitializeLastPlayedMedias();
         isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("SpatialNavigation.focusFirst", ".splide__slide");
+        }
     }
 
     private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted)

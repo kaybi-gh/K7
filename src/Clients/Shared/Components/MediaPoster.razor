@@ -19,58 +19,59 @@
 else
 {
     <MudPaper Style="background-color:transparent;" Elevation="0">
-        <div class="media-item-container">
-            <MudImage Src="@Model.PosterPictureHref" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
+        <a class="media-item-link" href="@("/movies/" + Model.Id)">
+            <div class="media-item-container">
+                <MudImage Src="@Model.PosterPictureHref" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
 
-            @if (WatchedStatusEnabled && Model.Watched)
-            {
-                <div class="media-item-watched">
-                    <MudIcon Size="Size.Small" class="ma-1" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" />
-                </div>
-            }
+                @if (WatchedStatusEnabled && Model.Watched)
+                {
+                    <div class="media-item-watched">
+                        <MudIcon Size="Size.Small" class="ma-1" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" />
+                    </div>
+                }
 
-            @if (ProgressEnabled && !ProgressBarIsHidden())
-            {
-                <div class="media-item-progress-bar">
-                    <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Model.Progress" />
-                </div>
-            }
+                @if (ProgressEnabled && !ProgressBarIsHidden())
+                {
+                    <div class="media-item-progress-bar">
+                        <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Model.Progress" />
+                    </div>
+                }
 
-            @if (OverlayEnabled)
-            {
-                <a class="media-item-overlay" href="@("/movies/" + Model.Id)">
-                    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" />
-
-                    @* <MudMenu Icon="@Icons.Material.Filled.MoreVert" PositionAtCursor="true">
-            <MudMenuItem>Profile</MudMenuItem>
-            <MudMenuItem>My account</MudMenuItem>
-            <MudMenuItem>Logout</MudMenuItem>
-            </MudMenu> *@
-                    @* <MudMenu Dense="true">
-            <ActivatorContent>
-            <div class="media-item-overlay-more">
-            <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" />
+                @if (OverlayEnabled)
+                {
+                    <div class="media-item-overlay">
+                        <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" tabindex="-1" />
+                        @* <MudMenu Icon="@Icons.Material.Filled.MoreVert" PositionAtCursor="true">
+                        <MudMenuItem>Profile</MudMenuItem>
+                        <MudMenuItem>My account</MudMenuItem>
+                        <MudMenuItem>Logout</MudMenuItem>
+                        </MudMenu> *@
+                                    @* <MudMenu Dense="true">
+                        <ActivatorContent>
+                        <div class="media-item-overlay-more">
+                        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" />
+                        </div>
+                        </ActivatorContent>
+                        <ChildContent>
+                        <MudMenuItem>Mark as shown</MudMenuItem>
+                        <MudMenuItem>Add to...</MudMenuItem>
+                        <MudMenuItem>Remove from this section</MudMenuItem>
+                        <MudMenuItem>Download</MudMenuItem>
+                        <MudMenuItem>Edit metadata</MudMenuItem>
+                        <MudMenuItem>Refresh metadata</MudMenuItem>
+                        <MudMenuItem>File(s) informations</MudMenuItem>
+                        </ChildContent>
+                        </MudMenu> *@
+                    </div>
+                }
             </div>
-            </ActivatorContent>
-            <ChildContent>
-            <MudMenuItem>Mark as shown</MudMenuItem>
-            <MudMenuItem>Add to...</MudMenuItem>
-            <MudMenuItem>Remove from this section</MudMenuItem>
-            <MudMenuItem>Download</MudMenuItem>
-            <MudMenuItem>Edit metadata</MudMenuItem>
-            <MudMenuItem>Refresh metadata</MudMenuItem>
-            <MudMenuItem>File(s) informations</MudMenuItem>
-            </ChildContent>
-            </MudMenu> *@
-                </a>
-            }
-        </div>
+        </a>
 
         @if (FooterVisible)
         {
             <div class="media-item-text">
                 <MudStack AlignItems="AlignItems.Center" Spacing="0">
-                    <MudLink Class="media-item-text" Typo="Typo.body2" Href="@("/movies/" + Model.Id)">@Model.Title</MudLink>
+                    <MudText Class="media-item-text" Typo="Typo.body2">@Model.Title</MudText>
                     <MudText Class="media-item-text" Typo="Typo.caption">@Model.AdditionalInformations</MudText>
                 </MudStack>
             </div>

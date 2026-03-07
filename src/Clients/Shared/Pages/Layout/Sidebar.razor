@@ -2,8 +2,9 @@
 @inject NavigationManager NavigationManager
 @inject SidebarService SidebarService
 @inject ICustomAuthenticationStateProvider CustomAuthenticationStateProvider
+@inject IJSRuntime JSRuntime
 
-<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini">
+<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini" data-nav-column="sidebar">
     <MudStack AlignItems="AlignItems.Center">
         <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
             Icon="@Icons.Material.Filled.Menu" title="@(SidebarService.IsOpen ? "Off" : "On")"

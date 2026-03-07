@@ -1,11 +1,11 @@
 using K7.Clients.Shared.Domain.Models;
-using K7.Clients.Shared.Domain.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Clients.Shared.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using MudBlazor;
 
 namespace K7.Clients.Shared.Pages;
@@ -15,6 +15,7 @@ public partial class Movie
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
 
@@ -42,6 +43,14 @@ public partial class Movie
         }
         base.OnInitialized();
         isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("SpatialNavigation.focusFirst", "[data-nav-row] .mud-button-root");
+        }
     }
 
     private void ScreenResized(Breakpoint breakpoint)
