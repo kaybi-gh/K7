@@ -411,7 +411,6 @@
         "tags": [
           "Libraries"
         ],
-        "summary": "Test",
         "operationId": "CreateLibrary",
         "requestBody": {
           "content": {
