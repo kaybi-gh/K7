@@ -14,7 +14,7 @@ public static class FileInfoExtensions
     {
         // Changing count will invalidate every IndexedFile seed
         const int kiloBytesCount = 10;
-        const int bufferSize = 1024;
+        const int bufferSize = kiloBytesCount * 1024;
 
         byte[] buffer = new byte[bufferSize];
         int bytesRead;
@@ -22,7 +22,7 @@ public static class FileInfoExtensions
         using var fileStream = fileInfo.OpenRead();
         using var bufferedStream = new BufferedStream(fileStream, bufferSize);
 
-        bytesRead = bufferedStream.Read(buffer, 0, Math.Min(bufferSize, kiloBytesCount * 1024));
+        bytesRead = bufferedStream.Read(buffer, 0, bufferSize);
         if (bytesRead == 0) return 0;
         byte[] hashBytes = SHA256.HashData(buffer.AsSpan(0, bytesRead));
 
