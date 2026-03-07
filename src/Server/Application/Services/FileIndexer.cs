@@ -169,7 +169,8 @@ public class FileIndexer : IFileIndexer
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error indexing files in directory {library.RootPath}: {ex.Message}");
+            _logger.LogError(ex, "Error indexing files in directory {RootPath}.", library.RootPath);
+            throw;
         }
     }
 }
