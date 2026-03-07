@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Common.Interfaces;
+﻿using System.Collections.Concurrent;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Extensions;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
@@ -62,15 +63,14 @@ public class FileIndexer : IFileIndexer
 
     private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths) ScanFiles(Library library)
     {
-        List<IndexedFile> indexedFiles = [];
-        HashSet<string> skippedFilePaths = [];
         var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
+        ConcurrentBag<IndexedFile> indexedFiles = [];
+        ConcurrentBag<string> skippedFilePaths = [];
 
-        foreach (var fileInfo in fileInfos)
+        Parallel.ForEach(fileInfos, fileInfo =>
         {
             try
             {
-                _logger.LogDebug("Processing file {FilePath}.", fileInfo.FullName);
                 var indexedFile = fileInfo.ToIndexedFile(library.Id);
                 if (indexedFile != null)
                 {
@@ -82,9 +82,9 @@ public class FileIndexer : IFileIndexer
                 _logger.LogWarning(ex, "Failed to index file {FilePath}, skipping.", fileInfo.FullName);
                 skippedFilePaths.Add(fileInfo.FullName);
             }
-        }
+        });
 
-        return (indexedFiles, skippedFilePaths);
+        return ([.. indexedFiles], [.. skippedFilePaths]);
     }
 
     private static void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<IBaseRequest> backgroundTasks)
