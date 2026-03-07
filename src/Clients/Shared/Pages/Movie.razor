@@ -99,7 +99,7 @@ else
                 @*<MudStack Row="true">
                 <MudRating SelectedValue="@Convert.ToInt32(_movie.Ratings?.FirstOrDefault(x => x.Source == Server.Domain.Enums.RatingSource.MetadataProvider)?.Value ?? 0)" />
             </MudStack>*@
-                <MudStack Row="true">
+                <MudStack Row="true" data-nav-row>
                     <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="PlayAsync">Play</MudButton>
                     <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
                     <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>

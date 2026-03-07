@@ -17,7 +17,7 @@
 }
 else
 {
-    <a href="@("/persons/" + LitePersonRoleDto.Person!.Id)">
+    <a class="personrole-item-link" href="@("/persons/" + LitePersonRoleDto.Person!.Id)">
         <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
             <MudAvatar Style="height:150px; width:150px;">
                 @if (LitePersonRoleDto.PortraitPicture is not null)
