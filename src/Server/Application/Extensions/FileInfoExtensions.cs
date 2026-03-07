@@ -39,30 +39,21 @@ public static class FileInfoExtensions
 
     public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, Guid libraryId)
     {
-        try
+        if (!fileInfo.IsSupportedFile())
         {
-            if (fileInfo.IsSupportedFile())
-            {
-                IndexedFile indexedFile = new()
-                {
-                    Id = Guid.NewGuid(),
-                    LibraryId = libraryId,
-                    Name = Path.GetFileNameWithoutExtension(fileInfo.Name),
-                    Extension = fileInfo.Extension,
-                    Path = fileInfo.FullName,
-                    ParentDirectory = fileInfo.Directory?.Name,
-                    Hash = fileInfo.ComputeFileHash(),
-                    Size = fileInfo.Length
-                };
-
-                return indexedFile;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error creating IndexedFile for {fileInfo.FullName}: {ex.Message}");
+            return null;
         }
 
-        return null;
+        return new IndexedFile()
+        {
+            Id = Guid.NewGuid(),
+            LibraryId = libraryId,
+            Name = Path.GetFileNameWithoutExtension(fileInfo.Name),
+            Extension = fileInfo.Extension,
+            Path = fileInfo.FullName,
+            ParentDirectory = fileInfo.Directory?.Name,
+            Hash = fileInfo.ComputeFileHash(),
+            Size = fileInfo.Length
+        };
     }
 }
