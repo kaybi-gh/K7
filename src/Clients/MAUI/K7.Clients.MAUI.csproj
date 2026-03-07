@@ -14,7 +14,7 @@
       The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
       either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
     <!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
-
+    
     <OutputType>Exe</OutputType>
     <RootNamespace>K7.Clients.MAUI</RootNamespace>
 		<AssemblyName>K7.Clients.MAUI</AssemblyName>
@@ -46,12 +46,22 @@
     <DefaultLanguage>en</DefaultLanguage>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidUseAapt2>True</AndroidUseAapt2>
     <AndroidCreatePackagePerAbi>False</AndroidCreatePackagePerAbi>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
+    <AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
+    <RuntimeIdentifiers>android-arm;android-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
+    <AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
+    <RuntimeIdentifiers>android-arm;android-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+  
   <ItemGroup>
     <!-- App Icon -->
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
