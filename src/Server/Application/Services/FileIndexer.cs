@@ -33,14 +33,14 @@ public class FileIndexer : IFileIndexer
 
         try
         {
-            _logger.LogInformation($"Starting indexing files of library with library id {library.Id}.");
+            _logger.LogInformation("Starting indexing files of library {LibraryId}.", library.Id);
             var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
 
             foreach (var fileInfo in fileInfos)
             {
                 try
                 {
-                    _logger.LogDebug(fileInfo.FullName);
+                    _logger.LogDebug("Processing file {FilePath}.", fileInfo.FullName);
                     var indexedFile = fileInfo.ToIndexedFile(library.Id);
                     if (indexedFile != null)
                     {
@@ -56,11 +56,8 @@ public class FileIndexer : IFileIndexer
             var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
             var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)); // TODO - Add indexedFiles that don't have metadata
 
-            _logger.LogInformation($"Found {unchangedFiles.Count()} unchanged files," +
-                $"{addedFiles.Count()} added files," +
-                $"{removedFiles.Count()} removed files," +
-                $"{renamedFiles.Count()} renamed files.\n" +
-                $"This makes {toBeIdentifiedFiles.Count()} files to be identified.");
+            _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified.",
+                unchangedFiles.Count(), addedFiles.Count(), removedFiles.Count(), renamedFiles.Count(), toBeIdentifiedFiles.Count());
 
             if (toBeIdentifiedFiles.Any())
             {
