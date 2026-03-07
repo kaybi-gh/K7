@@ -55,7 +55,7 @@ var SpatialNavigation = (function () {
     }
 
     function findContainingRow(el) {
-        return el.closest('[data-nav-row], .splide');
+        return el.closest('[data-nav-row], .splide, [data-nav-grid]');
     }
 
     function resolveFocusable(el) {
@@ -119,6 +119,34 @@ var SpatialNavigation = (function () {
             }
         }
         return best;
+    }
+
+    function findClosest2D(candidates, refRect, directionDown) {
+        var refCenterX = refRect.left + refRect.width / 2;
+        var refCenterY = refRect.top + refRect.height / 2;
+        var best = null;
+        var bestDist = Infinity;
+        for (var i = 0; i < candidates.length; i++) {
+            var r = getRect(candidates[i]);
+            if (r.width === 0 && r.height === 0) continue;
+            var centerX = r.left + r.width / 2;
+            var centerY = r.top + r.height / 2;
+            
+            // Only consider items strictly below if moving down, or strictly above if moving up
+            if (directionDown === true && centerY < refCenterY + 5) continue;
+            if (directionDown === false && centerY > refCenterY - 5) continue;
+
+            // X distance is penalized heavily to jump strictly vertical where possible
+            var dx = Math.abs(centerX - refCenterX);
+            var dy = Math.abs(centerY - refCenterY);
+            
+            var dist = (dx * 10) + dy;
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = candidates[i];
+            }
+        }
+        return best || candidates[0]; // fallback
     }
 
     var _sidebarCallback = null;
@@ -322,8 +350,8 @@ var SpatialNavigation = (function () {
             }
             if (best) {
                 focusAndScroll(best);
-            } else if (!forward && activeRect.left < 50) {
-                // If moving left and no item found on same line, check if we should jump to sidebar
+            } else if (!forward) {
+                // If moving left and no item found on same line, jump to sidebar
                 jumpToSidebar(active);
             }
             return;
@@ -390,7 +418,7 @@ var SpatialNavigation = (function () {
                 }
             }
             if (bestRow !== null) {
-                focusClosestInRow(rows[bestRow], active);
+                focusClosestInRow(rows[bestRow], active, down);
             }
             return;
         }
@@ -401,22 +429,33 @@ var SpatialNavigation = (function () {
             // Inside a grid, vertical movement should find the nearest item above/below visually
             var items = getRowFocusables(rows[currentRowIndex]);
             var activeRect = getRect(active);
+            var activeCenterX = activeRect.left + activeRect.width / 2;
+            var activeCenterY = activeRect.top + activeRect.height / 2;
+            
             var best = null;
             var bestDist = Infinity;
+            
             for (var i = 0; i < items.length; i++) {
                 var cand = items[i];
                 if (cand === active) continue;
-                var r = getRect(cand);
                 
-                // Must be roughly the same horizontal column
+                var r = getRect(cand);
                 var centerX = r.left + r.width / 2;
-                var activeCenterX = activeRect.left + activeRect.width / 2;
-                if (Math.abs(centerX - activeCenterX) < activeRect.width / 2) {
-                    var dist = down ? r.top - activeRect.bottom : activeRect.top - r.bottom;
-                    if (dist > -20 && dist < bestDist) {
-                        bestDist = dist;
-                        best = cand;
-                    }
+                var centerY = r.top + r.height / 2;
+                
+                // Must be physically above/below based on direction
+                if (down && centerY <= activeCenterY + 5) continue;
+                if (!down && centerY >= activeCenterY - 5) continue;
+                
+                var dx = Math.abs(centerX - activeCenterX);
+                var dy = Math.abs(centerY - activeCenterY);
+                
+                // Weight horizontal difference strongly to prefer same column
+                var dist = (dx * 10) + dy;
+                
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = cand;
                 }
             }
             if (best) {
@@ -451,15 +490,20 @@ var SpatialNavigation = (function () {
             return;
         }
 
-        focusClosestInRow(rows[targetRowIndex], active);
+        focusClosestInRow(rows[targetRowIndex], active, down);
     }
 
-    function focusClosestInRow(row, referenceEl) {
+    function focusClosestInRow(row, referenceEl, directionDown) {
         var items = getRowFocusables(row);
         if (items.length === 0) return;
 
         var refRect = getRect(referenceEl);
-        var best = findClosestHorizontally(items, refRect);
+        var best;
+        if (row.hasAttribute('data-nav-grid')) {
+            best = findClosest2D(items, refRect, directionDown);
+        } else {
+            best = findClosestHorizontally(items, refRect);
+        }
         if (!best) best = items[0];
         focusAndScroll(best);
     }
@@ -490,7 +534,7 @@ var SpatialNavigation = (function () {
                 setTimeout(function () {
                     // If no element currently has focus, or we lost focus completely
                     if (!document.activeElement || document.activeElement === document.body) {
-                        focusFirst('[data-nav-row] ' + FOCUSABLE + ', .splide ' + FOCUSABLE);
+                        focusFirst('[data-nav-row] ' + FOCUSABLE + ', .splide ' + FOCUSABLE + ', [data-nav-grid] ' + FOCUSABLE);
                     }
                 }, 100);
             }
