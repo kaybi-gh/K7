@@ -10,21 +10,25 @@
     height: 300px;
 }
 
-    .media-item-container:hover .media-item-progress-bar/*,
-    .media-item-container.active .media-item-progress-bar*/ {
+    .media-item-container:hover .media-item-progress-bar,
+    .media-item-link:focus-visible .media-item-progress-bar {
         display: none;
     }
 
-    .media-item-container:hover .media-item-overlay/*,
-    .media-item-container.active .media-item-overlay*/ {
+    .media-item-container:hover .media-item-overlay,
+    .media-item-link:focus-visible .media-item-overlay {
         display: flex;
     }
 
-    .media-item-container:hover .media-item-watched/*,
-    .media-item-container.active .media-item-watched*/ {
+    .media-item-container:hover .media-item-watched,
+    .media-item-link:focus-visible .media-item-watched {
         display: flex;
         background-color: var(--mud-palette-overlay-dark);
     }
+
+.media-item-link:focus-visible {
+    outline: none !important; /* Désactive le contour (outline) global orange pour ce composant */
+}
 
 
 .media-item-watched {
