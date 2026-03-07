@@ -38,11 +38,18 @@ public class FileIndexer : IFileIndexer
 
             foreach (var fileInfo in fileInfos)
             {
-                _logger.LogDebug(fileInfo.FullName);
-                var indexedFile = fileInfo.ToIndexedFile(library.Id);
-                if (indexedFile != null)
+                try
                 {
-                    indexedFiles.Add(indexedFile);
+                    _logger.LogDebug(fileInfo.FullName);
+                    var indexedFile = fileInfo.ToIndexedFile(library.Id);
+                    if (indexedFile != null)
+                    {
+                        indexedFiles.Add(indexedFile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to index file {FilePath}, skipping.", fileInfo.FullName);
                 }
             }
 
