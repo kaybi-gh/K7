@@ -2,6 +2,21 @@
     max-width: 150px;
 }
 
+.personrole-item-link {
+    display: flex;
+    padding: 4px;
+}
+
+.personrole-item-link:focus-visible {
+    outline: none !important;
+}
+
+.personrole-item-link:hover ::deep .mud-avatar,
+.personrole-item-link:focus-visible ::deep .mud-avatar {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
+}
+
 ::deep .person-text:nth-child(1) {
     max-width: 150px;
     text-overflow: ellipsis;
