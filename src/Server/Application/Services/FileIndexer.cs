@@ -34,12 +34,12 @@ public class FileIndexer : IFileIndexer
         {
             _logger.LogInformation("Starting indexing files of library {LibraryId}.", library.Id);
 
-            var indexedFiles = ScanFiles(library);
-            var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
+            var (indexedFiles, skippedFilePaths) = ScanFiles(library);
+            var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles, skippedFilePaths);
             var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)).ToList();
 
-            _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified.",
-                unchangedFiles.Count(), addedFiles.Count(), removedFiles.Count(), renamedFiles.Count(), toBeIdentifiedFiles.Count);
+            _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {SkippedCount} skipped, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified.",
+                unchangedFiles.Count(), addedFiles.Count(), removedFiles.Count(), skippedFilePaths.Count, renamedFiles.Count(), toBeIdentifiedFiles.Count);
 
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
             ProcessAddedFiles(library, addedFiles);
@@ -60,9 +60,10 @@ public class FileIndexer : IFileIndexer
         }
     }
 
-    private List<IndexedFile> ScanFiles(Library library)
+    private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths) ScanFiles(Library library)
     {
         List<IndexedFile> indexedFiles = [];
+        HashSet<string> skippedFilePaths = [];
         var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
 
         foreach (var fileInfo in fileInfos)
@@ -79,10 +80,11 @@ public class FileIndexer : IFileIndexer
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to index file {FilePath}, skipping.", fileInfo.FullName);
+                skippedFilePaths.Add(fileInfo.FullName);
             }
         }
 
-        return indexedFiles;
+        return (indexedFiles, skippedFilePaths);
     }
 
     private static void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<IBaseRequest> backgroundTasks)
