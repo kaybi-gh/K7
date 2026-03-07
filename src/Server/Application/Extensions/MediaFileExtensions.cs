@@ -17,20 +17,57 @@ public static class MediaFileExtensions
         }
 
         var comparer = new IndexedFileComparer();
-        var unchanged = oldIndexedFiles.Intersect(newIndexedFiles, comparer);
-        var added = newIndexedFiles.Except(oldIndexedFiles, comparer).ToList();
-        var removed = oldIndexedFiles.Except(newIndexedFiles, comparer)
+
+        var oldFilesDict = new Dictionary<IndexedFile, IndexedFile>(comparer);
+        foreach (var file in oldIndexedFiles)
+        {
+            oldFilesDict.TryAdd(file, file);
+        }
+
+        List<IndexedFile> unchanged = [];
+        List<IndexedFile> added = [];
+        var matchedOld = new HashSet<IndexedFile>(comparer);
+
+        foreach (var newFile in newIndexedFiles)
+        {
+            if (oldFilesDict.TryGetValue(newFile, out var oldFile))
+            {
+                unchanged.Add(oldFile);
+                matchedOld.Add(oldFile);
+            }
+            else
+            {
+                added.Add(newFile);
+            }
+        }
+
+        var removed = oldFilesDict.Values
+            .Where(f => !matchedOld.Contains(f))
             .Where(f => skippedFilePaths == null || !skippedFilePaths.Contains(f.Path))
             .ToList();
-        var renamed = added
-            .Join(removed,
-                addedFile => new { addedFile.Hash, addedFile.Size },
-                removedFile => new { removedFile.Hash, removedFile.Size },
-                (addedFile, removedFile) => (NewFile: addedFile, OldFile: removedFile))
-            .ToList();
 
-        added.RemoveAll(x => renamed.Any(r => comparer.Equals(x, r.NewFile)));
-        removed.RemoveAll(x => renamed.Any(r => comparer.Equals(x, r.OldFile)));
+        var removedByHashSize = removed.ToLookup(f => (f.Hash, f.Size));
+        List<(IndexedFile NewFile, IndexedFile OldFile)> renamed = [];
+        var renamedAdded = new HashSet<IndexedFile>();
+        var renamedRemoved = new HashSet<IndexedFile>();
+
+        foreach (var addedFile in added)
+        {
+            var match = removedByHashSize[(addedFile.Hash, addedFile.Size)]
+                .FirstOrDefault(c => !renamedRemoved.Contains(c));
+            if (match != null)
+            {
+                renamed.Add((addedFile, match));
+                renamedAdded.Add(addedFile);
+                renamedRemoved.Add(match);
+            }
+        }
+
+        if (renamed.Count > 0)
+        {
+            added.RemoveAll(renamedAdded.Contains);
+            removed.RemoveAll(renamedRemoved.Contains);
+        }
 
         return (unchanged, added, removed, renamed);
     }
