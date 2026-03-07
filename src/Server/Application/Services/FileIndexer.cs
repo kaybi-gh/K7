@@ -28,141 +28,23 @@ public class FileIndexer : IFileIndexer
 
     public async Task IndexAsync(Library library, CancellationToken cancellationToken)
     {
-        List<IndexedFile> indexedFiles = [];
         List<IBaseRequest> backgroundTasks = [];
 
         try
         {
             _logger.LogInformation("Starting indexing files of library {LibraryId}.", library.Id);
-            var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
 
-            foreach (var fileInfo in fileInfos)
-            {
-                try
-                {
-                    _logger.LogDebug("Processing file {FilePath}.", fileInfo.FullName);
-                    var indexedFile = fileInfo.ToIndexedFile(library.Id);
-                    if (indexedFile != null)
-                    {
-                        indexedFiles.Add(indexedFile);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to index file {FilePath}, skipping.", fileInfo.FullName);
-                }
-            }
-
+            var indexedFiles = ScanFiles(library);
             var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles);
-            var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)); // TODO - Add indexedFiles that don't have metadata
+            var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)).ToList();
 
             _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified.",
-                unchangedFiles.Count(), addedFiles.Count(), removedFiles.Count(), renamedFiles.Count(), toBeIdentifiedFiles.Count());
+                unchangedFiles.Count(), addedFiles.Count(), removedFiles.Count(), renamedFiles.Count(), toBeIdentifiedFiles.Count);
 
-            if (toBeIdentifiedFiles.Any())
-            {
-                if (library.MediaType == LibraryMediaType.Movie)
-                {
-                    foreach (var toBeIdentifiedFile in toBeIdentifiedFiles)
-                    {
-                        if (toBeIdentifiedFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
-                        {
-                            toBeIdentifiedFile.Identification = movieIdentification;
-                            backgroundTasks.Add(new CreateBackgroundTaskCommand()
-                            {
-                                Request = new CreateMediaCommand() // TODO - Move to IndexedFileCreatedEventHandler
-                                {
-                                    IndexedFileId = toBeIdentifiedFile.Id,
-                                    MediaType = MediaType.Movie
-                                },
-                                Priority = BackgroundTaskPriority.Normal,
-                                TargetEntityTypeName = nameof(BaseMedia),
-                                MaxRetryCount = 5
-                            });
-                        }
-                    }
-                }
-                else if (library.MediaType == LibraryMediaType.Music)
-                {
-                    var filesGroupedByParentDirectory = toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory);
-
-                    foreach (var parentDirectory in filesGroupedByParentDirectory)
-                    {
-                        var addedFilesInSameDirectory = parentDirectory.ToList();
-                        foreach (var addedFile in addedFilesInSameDirectory)
-                        {
-                            addedFile.TryIdentifyMusicTrack(library, addedFilesInSameDirectory);
-                        }
-                    }
-                }
-                else if (library.MediaType == LibraryMediaType.Serie)
-                {
-                    var filesGroupedByParentDirectory = toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory);
-
-                    foreach (var parentDirectory in filesGroupedByParentDirectory)
-                    {
-                        //addedFile.TryIdentifySerieEpisode(library);
-                    }
-                }
-
-                _context.IndexedFiles.AddRange(addedFiles);
-                foreach (var file in addedFiles)
-                {
-                    file.AddDomainEvent(new IndexedFileCreatedEvent(file, library.MediaType switch
-                    {
-                        LibraryMediaType.Movie => FileType.Video,
-                        LibraryMediaType.Music => FileType.Audio,
-                        LibraryMediaType.Serie => FileType.Video,
-                        _ => throw new InvalidOperationException(),
-                    }));
-                }
-            }
-
-            if (removedFiles.Any())
-            {
-                backgroundTasks.AddRange(removedFiles.Select(x => new CreateBackgroundTaskCommand()
-                {
-                    Request = new DeleteIndexedFileCommand(x.Id),
-                    Priority = BackgroundTaskPriority.Normal,
-                    TargetEntityTypeName = nameof(BaseMedia),
-                    MaxRetryCount = 5
-                }));
-            }
-
-            if (renamedFiles.Any())
-            {
-                foreach (var (newFile, oldFile) in renamedFiles)
-                {
-                    oldFile.Extension = newFile.Extension;
-                    oldFile.Hash = newFile.Hash;
-                    oldFile.IsComposite = newFile.IsComposite;
-                    oldFile.IsSplitPart = newFile.IsSplitPart;
-                    oldFile.Name = newFile.Name;
-                    oldFile.ParentDirectory = newFile.ParentDirectory;
-                    oldFile.Path = newFile.Path;
-                    oldFile.Size = newFile.Size;
-
-                    if (library.MediaType == LibraryMediaType.Movie
-                        && newFile.TryIdentifyMovie(out MediaIdentification? movieIdentification)
-                        && movieIdentification != oldFile.Identification)
-                    {
-                        oldFile.Identification = movieIdentification;
-                        backgroundTasks.Add(new CreateBackgroundTaskCommand()
-                        {
-                            Request = new CreateMediaCommand()
-                            {
-                                IndexedFileId = oldFile.Id,
-                                MediaType = MediaType.Movie
-                            },
-                            Priority = BackgroundTaskPriority.Normal,
-                            TargetEntityTypeName = nameof(BaseMedia),
-                            MaxRetryCount = 5
-                        });
-                    }
-
-                    _context.IndexedFiles.Update(oldFile);
-                }
-            }
+            IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
+            ProcessAddedFiles(library, addedFiles);
+            ProcessRemovedFiles(removedFiles, backgroundTasks);
+            ProcessRenamedFiles(library, renamedFiles, backgroundTasks);
 
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -175,6 +57,139 @@ public class FileIndexer : IFileIndexer
         {
             _logger.LogError(ex, "Error indexing files in directory {RootPath}.", library.RootPath);
             throw;
+        }
+    }
+
+    private List<IndexedFile> ScanFiles(Library library)
+    {
+        List<IndexedFile> indexedFiles = [];
+        var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
+
+        foreach (var fileInfo in fileInfos)
+        {
+            try
+            {
+                _logger.LogDebug("Processing file {FilePath}.", fileInfo.FullName);
+                var indexedFile = fileInfo.ToIndexedFile(library.Id);
+                if (indexedFile != null)
+                {
+                    indexedFiles.Add(indexedFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to index file {FilePath}, skipping.", fileInfo.FullName);
+            }
+        }
+
+        return indexedFiles;
+    }
+
+    private static void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<IBaseRequest> backgroundTasks)
+    {
+        if (toBeIdentifiedFiles.Count == 0) return;
+
+        switch (library.MediaType)
+        {
+            case LibraryMediaType.Movie:
+                foreach (var file in toBeIdentifiedFiles)
+                {
+                    if (file.TryIdentifyMovie(out MediaIdentification? movieIdentification))
+                    {
+                        file.Identification = movieIdentification;
+                        backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                        {
+                            Request = new CreateMediaCommand()
+                            {
+                                IndexedFileId = file.Id,
+                                MediaType = MediaType.Movie
+                            },
+                            Priority = BackgroundTaskPriority.Normal,
+                            TargetEntityTypeName = nameof(BaseMedia),
+                            MaxRetryCount = 5
+                        });
+                    }
+                }
+                break;
+
+            case LibraryMediaType.Music:
+                foreach (var group in toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory))
+                {
+                    var filesInSameDirectory = group.ToList();
+                    foreach (var file in filesInSameDirectory)
+                    {
+                        file.TryIdentifyMusicTrack(library, filesInSameDirectory);
+                    }
+                }
+                break;
+
+            case LibraryMediaType.Serie:
+                foreach (var group in toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory))
+                {
+                    //file.TryIdentifySerieEpisode(library);
+                }
+                break;
+        }
+    }
+
+    private void ProcessAddedFiles(Library library, IEnumerable<IndexedFile> addedFiles)
+    {
+        _context.IndexedFiles.AddRange(addedFiles);
+        foreach (var file in addedFiles)
+        {
+            file.AddDomainEvent(new IndexedFileCreatedEvent(file, library.MediaType switch
+            {
+                LibraryMediaType.Movie => FileType.Video,
+                LibraryMediaType.Music => FileType.Audio,
+                LibraryMediaType.Serie => FileType.Video,
+                _ => throw new InvalidOperationException(),
+            }));
+        }
+    }
+
+    private static void ProcessRemovedFiles(IEnumerable<IndexedFile> removedFiles, List<IBaseRequest> backgroundTasks)
+    {
+        backgroundTasks.AddRange(removedFiles.Select(x => new CreateBackgroundTaskCommand()
+        {
+            Request = new DeleteIndexedFileCommand(x.Id),
+            Priority = BackgroundTaskPriority.Normal,
+            TargetEntityTypeName = nameof(BaseMedia),
+            MaxRetryCount = 5
+        }));
+    }
+
+    private void ProcessRenamedFiles(Library library, IEnumerable<(IndexedFile NewFile, IndexedFile OldFile)> renamedFiles, List<IBaseRequest> backgroundTasks)
+    {
+        foreach (var (newFile, oldFile) in renamedFiles)
+        {
+            oldFile.Extension = newFile.Extension;
+            oldFile.Hash = newFile.Hash;
+            oldFile.IsComposite = newFile.IsComposite;
+            oldFile.IsSplitPart = newFile.IsSplitPart;
+            oldFile.Name = newFile.Name;
+            oldFile.ParentDirectory = newFile.ParentDirectory;
+            oldFile.Path = newFile.Path;
+            oldFile.Size = newFile.Size;
+
+            if (library.MediaType == LibraryMediaType.Movie
+                && newFile.TryIdentifyMovie(out MediaIdentification? movieIdentification)
+                && movieIdentification != oldFile.Identification)
+            {
+                oldFile.Identification = movieIdentification;
+                backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                {
+                    Request = new CreateMediaCommand()
+                    {
+                        IndexedFileId = oldFile.Id,
+                        MediaType = MediaType.Movie
+                    },
+                    Priority = BackgroundTaskPriority.Normal,
+                    TargetEntityTypeName = nameof(BaseMedia),
+                    MaxRetryCount = 5
+                });
+            }
+
+            _context.IndexedFiles.Update(oldFile);
         }
     }
 }
