@@ -139,17 +139,22 @@ public class FileIndexer : IFileIndexer
                     oldFile.Path = newFile.Path;
                     oldFile.Size = newFile.Size;
 
-                    if (newFile.TryIdentifyMovie(out MediaIdentification? movieIdentification))
+                    if (library.MediaType == LibraryMediaType.Movie
+                        && newFile.TryIdentifyMovie(out MediaIdentification? movieIdentification)
+                        && movieIdentification != oldFile.Identification)
                     {
-                        if (movieIdentification != oldFile.Identification)
+                        oldFile.Identification = movieIdentification;
+                        backgroundTasks.Add(new CreateBackgroundTaskCommand()
                         {
-                            oldFile.Identification = movieIdentification;
-                            backgroundTasks.Add(new CreateMediaCommand()
+                            Request = new CreateMediaCommand()
                             {
                                 IndexedFileId = oldFile.Id,
                                 MediaType = MediaType.Movie
-                            });
-                        }
+                            },
+                            Priority = BackgroundTaskPriority.Normal,
+                            TargetEntityTypeName = nameof(BaseMedia),
+                            MaxRetryCount = 5
+                        });
                     }
 
                     _context.IndexedFiles.Update(oldFile);
