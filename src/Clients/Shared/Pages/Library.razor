@@ -9,14 +9,14 @@
     <MudSlider @bind-Value="_spacing" Min="0" Max="20" Color="Color.Info" Class="mb-6">Spacing: @_spacing.ToString()</MudSlider>
 </MudDrawer>
 
-<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.Center">
+<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.Center" data-nav-row="true">
     <span>@MediaPosterViewModels.Count items</span>
     <MudIconButton Icon="@Icons.Material.Outlined.SortByAlpha"></MudIconButton>
     <MudIconButton Icon="@Icons.Material.Outlined.FilterList"></MudIconButton>
     <MudIconButton Icon="@Icons.Material.Outlined.GridView" OnClick="() => _gridDrawerOpen = true"></MudIconButton>
 </MudStack>
 
-<MudGrid Style="max-width:100%;" Spacing="@_spacing" Justify="Justify.FlexStart">
+<MudGrid Style="max-width:100%;" Spacing="@_spacing" Justify="Justify.FlexStart" data-nav-grid="true">
     @foreach (var item in MediaPosterViewModels)
     {
         <MudItem>

@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Domain.Models;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.Pages;
 
@@ -8,6 +9,9 @@ public partial class Library
 {
     [Parameter]
     public required string Id { get; set; }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
 
     private List<MediaPosterViewModel> MediaPosterViewModels { get; set; } = [];
 
@@ -36,5 +40,15 @@ public partial class Library
             }
         }
         base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // The top icons row is already focusable, but we can set focus to the first media poster if there are items
+            // MudGrid items don't have [data-nav-row], we should let the user discover them via standard vertical movement
+            await JSRuntime.InvokeVoidAsync("SpatialNavigation.focusFirst", ".media-item-link");
+        }
     }
 }
