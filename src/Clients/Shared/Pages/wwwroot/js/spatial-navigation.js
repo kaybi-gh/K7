@@ -80,9 +80,28 @@ var SpatialNavigation = (function () {
     }
 
     function focusAndScroll(el) {
-        el.focus({ preventScroll: false });
+        el.focus({ preventScroll: true });
         scrollSplideToElement(el);
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+
+        var container = findContainingRow(el);
+        var allContainers = Array.from(document.querySelectorAll('[data-nav-row], .splide, [data-nav-grid]'));
+        
+        if (allContainers.length > 0 && container === allContainers[0]) {
+            // Remonter tout en haut de la page
+            var mainContent = document.querySelector('.mud-main-content');
+            if (mainContent) {
+                mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // S'assurer que ça scrolle horizontalement si besoin
+            var rect = el.getBoundingClientRect();
+            if (rect.left < 0 || rect.right > window.innerWidth) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+        } else {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
     }
 
     // Find the closest item vertically in a list of candidates
