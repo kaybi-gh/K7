@@ -1,0 +1,15 @@
+@page "/admin"
+
+<PageTitle>Administration</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Administration</MudText>
+
+<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true">
+    <MudTabPanel Text="Librairies" Icon="@Icons.Material.Filled.VideoLibrary">
+        <AdminLibrariesPanel />
+    </MudTabPanel>
+
+    <MudTabPanel Text="Appareils" Icon="@Icons.Material.Filled.Devices">
+        <AdminDevicesPanel />
+    </MudTabPanel>
+</MudTabs>
