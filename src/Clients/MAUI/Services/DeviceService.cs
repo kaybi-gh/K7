@@ -2,6 +2,7 @@ using K7.Clients.MAUI.Interfaces;
 using K7.Clients.Shared.Domain.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Interfaces;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
@@ -10,23 +11,24 @@ using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Clients.MAUI.Services
 {
-    public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdService, IDeviceStorageService deviceStorageService) : IDeviceService
+    public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdService, IDeviceStorageService deviceStorageService, IK7ServerService k7ServerService) : IDeviceService
     {
         public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
         {
             var supportedMediaFormats = await GetSupportedMediaFormatsAsync();
             var nativeDeviceDetails = await GetNativeDeviceDetailsAsync();
+            var displayInfo = await MainThread.InvokeOnMainThreadAsync(() => DeviceDisplay.MainDisplayInfo);
 
             return new CreateDeviceRequest
             {
-                DeviceUniqueId = null,
+                DeviceUniqueId = deviceIdService.GetDeviceId(),
                 DeviceName = DeviceInfo.Name,
                 ClientType = GetClientType(),
                 DeviceType = await GetDeviceTypeAsync(),
                 OperatingSystem = await GetOperatingSystemAsync(),
                 OperatingSystemVersion = nativeDeviceDetails.RawVersion,
-                DisplayHeight = DeviceDisplay.MainDisplayInfo.Orientation == DisplayOrientation.Landscape ? DeviceDisplay.MainDisplayInfo.Height : DeviceDisplay.MainDisplayInfo.Width,
-                DisplayWidth = DeviceDisplay.MainDisplayInfo.Orientation == DisplayOrientation.Landscape ? DeviceDisplay.MainDisplayInfo.Width : DeviceDisplay.MainDisplayInfo.Height,
+                DisplayHeight = displayInfo.Orientation == DisplayOrientation.Landscape ? displayInfo.Height : displayInfo.Width,
+                DisplayWidth = displayInfo.Orientation == DisplayOrientation.Landscape ? displayInfo.Width : displayInfo.Height,
                 NativeDeviceDetails = nativeDeviceDetails,
                 WebDeviceDetails = null,
                 PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
@@ -63,9 +65,33 @@ namespace K7.Clients.MAUI.Services
             return Task.FromResult(MapOperatingSystem(DeviceInfo.Platform));
         }
 
-        public Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
+        public async Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
         {
-            return Task.FromResult(new List<MediaFormatDto>()); // TODO
+            var allFormats = await k7ServerService.GetMediaFormatsAsync();
+
+            var supportedContainers = await codecHelper.GetSupportedContainersAsync();
+            var supportedAudioCodecs = await codecHelper.GetSupportedAudioCodecsAsync();
+            var supportedVideoCodecs = await codecHelper.GetSupportedVideoCodecsAsync();
+
+            var containerSet = new HashSet<string>(supportedContainers ?? [], StringComparer.OrdinalIgnoreCase);
+            var audioSet = new HashSet<string>(supportedAudioCodecs ?? [], StringComparer.OrdinalIgnoreCase);
+            var videoSet = new HashSet<string>(supportedVideoCodecs ?? [], StringComparer.OrdinalIgnoreCase);
+
+            var supported = allFormats.Where(f => f switch
+            {
+                AudioMediaFormatDto audio =>
+                    containerSet.Contains(audio.Container) &&
+                    audioSet.Contains(audio.Codec),
+
+                VideoMediaFormatDto video =>
+                    containerSet.Contains(video.Container) &&
+                    videoSet.Contains(video.VideoCodec) &&
+                    (string.IsNullOrEmpty(video.AudioCodec) || audioSet.Contains(video.AudioCodec)),
+
+                _ => false
+            }).ToList();
+
+            return supported;
         }
 
         public Task<bool> GetHdrSupportAsync()

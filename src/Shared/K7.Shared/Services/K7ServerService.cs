@@ -99,7 +99,8 @@ public class K7ServerService : IK7ServerService
         var response = await HttpClient.PostAsJsonAsync("api/stream-sessions", request, _serializerOptions, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            return null;
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Creating stream session failed with status {response.StatusCode}: {content}");
         }
 
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
