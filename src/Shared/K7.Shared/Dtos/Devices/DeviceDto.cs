@@ -17,7 +17,7 @@ public sealed record DeviceDto
     public NativeDeviceDetailsDto? NativeDeviceDetails { get; init; }
     public WebDeviceDetailsDto? WebDeviceDetails { get; init; }
     public required DevicePlaybackCapabilitiesDto PlaybackCapabilities { get; init; }
-    public required IEnumerable<UserDto> Users { get; init; } // TODO - LiteUserDto
+    public required IEnumerable<LiteUserDto> Users { get; init; }
     public DateTimeOffset LastSeen { get; init; }
 
     public static DeviceDto FromDomain(Device domain) => new()
@@ -34,7 +34,7 @@ public sealed record DeviceDto
         NativeDeviceDetails = NativeDeviceDetailsDto.FromDomain(domain.NativeDeviceDetails),
         WebDeviceDetails = WebDeviceDetailsDto.FromDomain(domain.WebDeviceDetails),
         PlaybackCapabilities = DevicePlaybackCapabilitiesDto.FromDomain(domain.PlaybackCapabilities),
-        Users = domain.Users.Select(UserDto.FromDomain),
+        Users = domain.Users.Select(LiteUserDto.FromDomain),
         LastSeen = domain.LastSeen
     };
 }

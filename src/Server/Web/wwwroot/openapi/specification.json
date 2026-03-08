@@ -1959,7 +1959,7 @@
           "users": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UserDto"
+              "$ref": "#/components/schemas/LiteUserDto"
             }
           },
           "lastSeen": {
@@ -2485,6 +2485,21 @@
             "items": {
               "$ref": "#/components/schemas/ExternalIdDto"
             }
+          }
+        }
+      },
+      "LiteUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "identityUserId": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3355,28 +3370,6 @@
               "string"
             ],
             "format": "double"
-          }
-        }
-      },
-      "UserDto": {
-        "required": [
-          "accessibleLibraryIds",
-          "devices"
-        ],
-        "type": "object",
-        "properties": {
-          "accessibleLibraryIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "devices": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DeviceDto"
-            }
           }
         }
       },
