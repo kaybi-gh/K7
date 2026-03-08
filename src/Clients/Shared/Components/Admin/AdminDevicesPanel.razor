@@ -1,0 +1,56 @@
+@using K7.Shared.Dtos.Devices
+@inject IK7ServerService K7ServerService
+
+@if (_isLoading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_devices == null || _devices.TotalCount == 0)
+{
+    <MudText Color="Color.Secondary">Aucun appareil trouvé.</MudText>
+}
+else
+{
+    <MudSimpleTable Dense="true" Bordered="true">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Client</th>
+                <th>OS</th>
+                <th>Dernière activité</th>
+                <th>Utilisateurs</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in _devices.Items!)
+            {
+                <tr>
+                    <td>@d.DeviceName</td>
+                    <td>@d.ClientType</td>
+                    <td>@d.OperatingSystem @d.OperatingSystemVersion</td>
+                    <td>@d.LastSeen.LocalDateTime</td>
+                    <td>@d.Users.Count()</td>
+                </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+
+@code {
+    private bool _isLoading = true;
+    private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? _devices;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _devices = await K7ServerService.GetDevicesAsync();
+        }
+        catch { }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}
