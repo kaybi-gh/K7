@@ -261,8 +261,6 @@ internal class PlayerService : IPlayerService
     private void MediaElement_StateChanged(object? sender, MediaStateChangedEventArgs e)
     {
         //_mediaStreamSession.SendPlaybackState()
-        var test = "cool";
-        Console.WriteLine(test);
     }
 
     public async Task PlayAsync(IndexedFileDto indexedFile)
