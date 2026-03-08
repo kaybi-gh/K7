@@ -1,4 +1,6 @@
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateAllMissingMetadataPictureVariants;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.MetadataPictures;
@@ -12,8 +14,12 @@ public class GenerateAllMissingMetadataPictureVariants : IEndpoint
 
         endpointRouteBuilder.MapPost("/api/metadata-pictures/generate-missing-variants", async ([FromServices] ISender sender, CancellationToken cancellationToken) =>
         {
-            var count = await sender.Send(new GenerateAllMissingMetadataPictureVariantsCommand(), cancellationToken);
-            return Results.Ok(new { EnqueuedCount = count });
+            await sender.Send(new CreateBackgroundTaskCommand
+            {
+                Request = new GenerateAllMissingMetadataPictureVariantsCommand(),
+                Priority = BackgroundTaskPriority.Low,
+            }, cancellationToken);
+            return Results.Accepted();
         })
         //.RequireAuthorization()
         .WithName(type.Name)
