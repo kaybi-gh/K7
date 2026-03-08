@@ -22,11 +22,11 @@ else
             <MudAvatar Style="height:150px; width:150px;">
                 @if (LitePersonRoleDto.PortraitPicture is not null)
                 {
-                    <MudImage Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.PortraitPicture?.Uri?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                    <MudImage Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="ObjectFit.Cover" />
                 }
                 else if (LitePersonRoleDto.Person?.PortraitPicture is not null)
                 {
-                    <MudImage Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.Person.PortraitPicture?.Uri?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                    <MudImage Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.Person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="ObjectFit.Cover" />
                 }
                 else
                 {

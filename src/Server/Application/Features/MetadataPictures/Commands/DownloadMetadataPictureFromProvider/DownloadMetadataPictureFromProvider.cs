@@ -1,4 +1,9 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Interfaces;
 using K7.Server.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -13,12 +18,21 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 {
     private readonly IApplicationDbContext _context;
     private readonly HttpClient _httpClient;
+    private readonly IImageProcessor _imageProcessor;
+    private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
 
-    public DownloadMetadataPictureFromProviderCommandHandler(IApplicationDbContext context, HttpClient httpClient, IOptions<PathsConfiguration> pathsConfiguration)
+    public DownloadMetadataPictureFromProviderCommandHandler(
+        IApplicationDbContext context,
+        HttpClient httpClient,
+        IImageProcessor imageProcessor,
+        ISender sender,
+        IOptions<PathsConfiguration> pathsConfiguration)
     {
         _context = context;
         _httpClient = httpClient;
+        _imageProcessor = imageProcessor;
+        _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
     }
 
@@ -31,7 +45,6 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         try
         {
             var basePath = _pathsConfiguration.Metadatas;
-            var fileName = $"{entity.Id}{Path.GetExtension(entity.OriginalRemoteUri!.LocalPath)}";
 
             var subDirectory = entity switch
             {
@@ -41,15 +54,45 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                 _ => throw new InvalidOperationException("No valid metadata id found.")
             };
 
-            var filePath = Path.Combine(basePath, subDirectory, fileName);
-        
-            var imageData = await _httpClient.GetByteArrayAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
-            var file = new FileInfo(filePath);
-            file.Directory?.Create();
-            await File.WriteAllBytesAsync(filePath, imageData, cancellationToken);
+            var directory = Path.Combine(basePath, subDirectory);
+            var originalExtension = Path.GetExtension(entity.OriginalRemoteUri!.LocalPath);
+            var tempFilePath = Path.Combine(directory, $"{entity.Id}{originalExtension}");
 
-            entity.LocalPath = filePath;
+            var imageData = await _httpClient.GetByteArrayAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
+            var file = new FileInfo(tempFilePath);
+            file.Directory?.Create();
+            await File.WriteAllBytesAsync(tempFilePath, imageData, cancellationToken);
+
+            // Convert to WebP
+            var webpFilePath = Path.Combine(directory, $"{entity.Id}.webp");
+            if (!string.Equals(originalExtension, ".webp", StringComparison.OrdinalIgnoreCase))
+            {
+                await _imageProcessor.ConvertToWebPAsync(tempFilePath, webpFilePath, cancellationToken: cancellationToken);
+                File.Delete(tempFilePath);
+            }
+            else
+            {
+                webpFilePath = tempFilePath;
+            }
+
+            entity.LocalPath = webpFilePath;
             await _context.SaveChangesAsync(cancellationToken);
+
+            // Enqueue variant generation as a background task
+            if (entity.Type != MetadataPictureType.Thumbnail)
+            {
+                await _sender.Send(new CreateBackgroundTaskCommand
+                {
+                    Request = new GenerateMetadataPictureVariantsCommand
+                    {
+                        MetadataPictureId = entity.Id
+                    },
+                    Priority = BackgroundTaskPriority.Lowest,
+                    TargetEntityId = entity.Id,
+                    TargetEntityTypeName = nameof(MetadataPicture),
+                    MaxRetryCount = 3
+                }, cancellationToken);
+            }
         }
         catch (HttpRequestException ex)
         {

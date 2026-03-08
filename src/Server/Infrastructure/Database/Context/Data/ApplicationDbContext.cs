@@ -25,6 +25,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<BaseMedia> Medias => Set<BaseMedia>();
     public DbSet<BaseFileMetadata> FileMetadatas => Set<BaseFileMetadata>();
     public DbSet<MetadataPicture> MetadataPictures => Set<MetadataPicture>();
+    public DbSet<MetadataPictureVariant> MetadataPictureVariants => Set<MetadataPictureVariant>();
     public DbSet<Person> Persons => Set<Person>();
     public DbSet<BasePersonRole> PersonRoles => Set<BasePersonRole>();
     public DbSet<BaseRating> Ratings => Set<BaseRating>();

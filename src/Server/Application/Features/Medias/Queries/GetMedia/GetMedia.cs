@@ -17,6 +17,7 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
             .AsNoTracking()
             .Include(x => x.ExternalIds)
             .Include(x => x.Pictures)
+                .ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
             .Include(x => x.PersonRoles)
                 .ThenInclude(x => x.PortraitPicture)
