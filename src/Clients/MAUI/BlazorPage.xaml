@@ -12,11 +12,10 @@
         <!-- Native MediaElement -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
-                              IsVisible="True"
+                              IsVisible="False"
                               ShouldAutoPlay="False"
                               HorizontalOptions="Fill"
                               VerticalOptions="Fill"
-                              Source="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
                               ShouldShowPlaybackControls="False"
                               InputTransparent="True" ZIndex="1"/>
         
@@ -29,31 +28,3 @@
         </BlazorWebView>
     </Grid>
 </ContentPage>
-
-<!--<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:K7.Clients.MAUI"
-             xmlns:sharedPages="clr-namespace:K7.Clients.Shared.Pages;assembly=K7.Clients.Shared.Pages"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             x:Class="K7.Clients.MAUI.BlazorPage"
-             NavigationPage.HasNavigationBar="False"
-             BackgroundColor="{DynamicResource PageBackgroundColor}">
-
-    <Grid x:Name="RootGrid">
-        <toolkit:MediaElement x:Name="hiddenPlayer"
-                      IsVisible="True"
-                      Opacity="0"
-                      ShouldMute="True"
-                      ShouldAutoPlay="False"
-                      InputTransparent="True"
-                      HeightRequest="1"
-                      WidthRequest="1" />
-
-        <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
-            <BlazorWebView.RootComponents>
-                <RootComponent Selector="#app" ComponentType="{x:Type sharedPages:Routes}" />
-            </BlazorWebView.RootComponents>
-        </BlazorWebView>
-    </Grid>
-</ContentPage>-->

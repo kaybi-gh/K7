@@ -1,17 +1,12 @@
-﻿using CommunityToolkit.Maui.Core;
-using CommunityToolkit.Maui.Views;
-using K7.Clients.MAUI.Pages;
-using K7.Clients.Shared.Domain.Interfaces;
+﻿using K7.Clients.Shared.Domain.Interfaces;
 using K7.Clients.Shared.Domain.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
-using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
-using K7.Shared.Interfaces;
-using K7.Shared.QueryBuilders;
 
 namespace K7.Clients.MAUI.Services;
-internal class PlayerService : IPlayerService
+
+internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageService deviceStorageService) : IPlayerService
 {
     public event Func<Task>? PlayRequested;
     public event Func<Task>? PauseRequested;
@@ -27,10 +22,8 @@ internal class PlayerService : IPlayerService
     public event Action<string?>? SwitchSubtitleTrackRequested;
     public event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
-#pragma warning disable CS0067
     public event Action<PlayerSource>? SourceChanged;
     public event Action? IsVisibleChanged;
-#pragma warning restore CS0067
     public event Action<bool>? IsFullScreenChanged;
     public event Action<PlaybackState>? PlaybackStateChanged;
     public event Action<double>? DurationChanged;
@@ -43,32 +36,6 @@ internal class PlayerService : IPlayerService
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
     public event Action<VideoQualityOption?>? QualityChanged;
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
-
-    private readonly IK7ServerService _k7ServerService;
-    private readonly IDeviceStorageService _deviceStorageService;
-    private readonly IStreamUriService _streamUriService;
-
-    private PlayerPage? _playerPage;
-    public PlayerViewModel ViewModel { get; private set; } = new();
-
-    public PlayerService(IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService, IStreamUriService streamUriService)
-    {
-        _k7ServerService = k7ServerService;
-        _deviceStorageService = deviceStorageService;
-        _streamUriService = streamUriService;
-        ViewModel.MediaElement.StateChanged += MediaElement_StateChanged;
-
-        _volume = _deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
-        _playbackRate = _deviceStorageService.Get(PreferenceKeys.PLAYER_PLAYBACK_RATE, 1);
-        _isMuted = _deviceStorageService.Get(PreferenceKeys.PLAYER_IS_MUTED, false);
-    }
-
-    private IndexedFileDto? _indexedFile;
-    public IndexedFileDto? IndexedFile
-    {
-        get => _indexedFile;
-        set => _indexedFile = value;
-    }
 
     private PlayerSource _source = new();
     public PlayerSource Source
@@ -160,7 +127,7 @@ internal class PlayerService : IPlayerService
         }
     }
 
-    private double _volume;
+    private double _volume = deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
     public double Volume
     {
         get => _volume;
@@ -169,13 +136,13 @@ internal class PlayerService : IPlayerService
             if (_volume != value)
             {
                 _volume = value;
-                _deviceStorageService.Set(PreferenceKeys.PLAYER_VOLUME, value);
+                deviceStorageService.Set(PreferenceKeys.PLAYER_VOLUME, value);
                 VolumeChanged?.Invoke(value);
             }
         }
     }
 
-    private double _playbackRate;
+    private double _playbackRate = deviceStorageService.Get(PreferenceKeys.PLAYER_PLAYBACK_RATE, 1);
     public double PlaybackRate
     {
         get => _playbackRate;
@@ -184,13 +151,13 @@ internal class PlayerService : IPlayerService
             if (_playbackRate != value)
             {
                 _playbackRate = value;
-                _deviceStorageService.Set(PreferenceKeys.PLAYER_PLAYBACK_RATE, value);
+                deviceStorageService.Set(PreferenceKeys.PLAYER_PLAYBACK_RATE, value);
                 PlaybackRateChanged?.Invoke(value);
             }
         }
     }
 
-    private bool _isMuted;
+    private bool _isMuted = deviceStorageService.Get(PreferenceKeys.PLAYER_IS_MUTED, false);
     public bool IsMuted
     {
         get => _isMuted;
@@ -199,7 +166,7 @@ internal class PlayerService : IPlayerService
             if (_isMuted != value)
             {
                 _isMuted = value;
-                _deviceStorageService.Set(PreferenceKeys.PLAYER_IS_MUTED, value);
+                deviceStorageService.Set(PreferenceKeys.PLAYER_IS_MUTED, value);
                 IsMutedChanged?.Invoke(value);
             }
         }
@@ -227,79 +194,10 @@ internal class PlayerService : IPlayerService
     private AspectRatioMode _aspectRatioMode = AspectRatioMode.Fit;
     public AspectRatioMode AspectRatio => _aspectRatioMode;
 
-    public async Task ShowAsync()
-    {
-        var navigation = Application.Current?.Windows[0]?.Navigation;
-        if (navigation == null)
-        {
-            return;
-        }
-
-        _playerPage ??= new PlayerPage(ViewModel);
-        if (!navigation.ModalStack.Contains(_playerPage))
-        {
-            await navigation.PushModalAsync(_playerPage);
-        }
-    }
-
-    public async Task HideAsync()
-    {
-        var navigation = Application.Current?.Windows[0]?.Navigation;
-        if (navigation == null)
-        {
-            return;
-        }
-
-        if (_playerPage != null && navigation.ModalStack.Contains(_playerPage))
-        {
-            await navigation.PopModalAsync();
-        }
-    }
-
-
-
-    private void MediaElement_StateChanged(object? sender, MediaStateChangedEventArgs e)
-    {
-        //_mediaStreamSession.SendPlaybackState()
-    }
-
-    public async Task PlayAsync(IndexedFileDto indexedFile)
-    {
-        _indexedFile = indexedFile;
-        _playerPage ??= new PlayerPage(ViewModel);
-
-        /*if (_indexedFile.Media is MusicTrack musicTrack)
-        {
-            ViewModel.MediaElement.MetadataArtist = musicTrack.Metadata?.PersonRoles?.FirstOrDefault()?.Person?.Name ?? "";
-        }
-
-        ViewModel.MediaElement.MetadataTitle = _indexedFile.Media?.Metadata?.Title ?? "";
-        ViewModel.MediaElement.MetadataArtworkUrl = _indexedFile.Media?.Metadata?.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.LocalPath ?? "";*/
-
-        var hiddenPlayerService = new HiddenPlayerService();
-        var directPlayUri = _k7ServerService.GetAbsoluteUri(GetIndexedFileDirectStreamQueryUriBuilder.Build(indexedFile.Id));
-        var directPlay = await hiddenPlayerService.TryPlayMediaAsync(MediaSource.FromUri(directPlayUri)!);
-        _playerPage.ChangeSource(directPlayUri!.OriginalString);
-        //_mediaStreamSession.GetIndexedFileDirectStreamUri()
-    }
-
-    public void Play() => PlayRequested?.Invoke();
-    public void Pause() => PauseRequested?.Invoke();
-    public void Seek(double time) => SeekRequested?.Invoke(time);
-    public void Mute() => MuteRequested?.Invoke();
-    public void Unmute() => UnmuteRequest?.Invoke();
-    public void SetVolume(double volume) => VolumeChangeRequested?.Invoke(volume);
-    public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
-    public void Stop() => StopRequested?.Invoke();
-    public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
-    public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
-
-    public void SetAspectRatioMode(AspectRatioMode mode)
-    {
-        _aspectRatioMode = mode;
-        AspectRatioModeChanged?.Invoke(mode);
-        AspectRatioModeChangeRequested?.Invoke(mode);
-    }
+    /// <summary>
+    /// Base manifest URL (without Quality param) used to rebuild the source when switching quality.
+    /// </summary>
+    private string? _baseManifestUrl;
 
     public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, CancellationToken cancellationToken = default)
     {
@@ -310,7 +208,7 @@ internal class PlayerService : IPlayerService
             .OrderByDescending(t => t.IsDefault)
             .ThenBy(t => t.Index)
             .ToList() ?? [];
-        _selectedSubtitleTrack = null; // TODO - Maybe not default to null
+        _selectedSubtitleTrack = null;
         _selectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
@@ -321,18 +219,31 @@ internal class PlayerService : IPlayerService
         _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
             ?? _availableQualities.FirstOrDefault();
 
-        var session = await _streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
+        Source = new PlayerSource();
+
+        await ShowAsync();
+        Play();
+
+        var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
 
         if (session.Source is null)
         {
             throw new InvalidOperationException("Streaming session did not return a source URI.");
         }
 
-        _playerPage ??= new PlayerPage(ViewModel);
-        _playerPage.ChangeSource(session.Source.Uri.OriginalString);
+        _baseManifestUrl = session.Source.Uri.OriginalString;
+
+        var playerSource = new PlayerSource
+        {
+            Url = _baseManifestUrl,
+            MimeType = session.Source.MimeType,
+            ThumbnailsUrl = thumbnailsUrl
+        };
+
+        Source = playerSource;
         AudioTrackChanged?.Invoke(_selectedAudioTrack);
-        await ShowAsync();
-        Play();
+        SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
+        QualityChanged?.Invoke(_selectedQuality);
     }
 
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
@@ -371,97 +282,83 @@ internal class PlayerService : IPlayerService
         return Task.CompletedTask;
     }
 
-    // TODO - Maybe slugify on file indexing 
-    private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
-
+    /// <summary>
+    /// Switches the video quality by rebuilding the manifest URL with the requested quality param.
+    /// </summary>
     public Task ChangeQualityAsync(VideoQualityOption? quality, CancellationToken cancellationToken = default)
     {
-        // TODO - MAUI player does not currently support quality switching
+        if (_currentIndexedFileId is null || _baseManifestUrl is null)
+        {
+            return Task.CompletedTask;
+        }
+
         _selectedQuality = quality;
         QualityChanged?.Invoke(quality);
-        return Task.CompletedTask;
-    }
-}
 
-public class HiddenPlayerService : IDisposable
-{
-    private readonly MediaElement _mediaElement;
-    private TaskCompletionSource<bool>? _mediaIsPlayable;
-    private bool _isAttached;
+        var seekTime = CurrentTime;
 
-    public HiddenPlayerService()
-    {
-        _mediaElement = new MediaElement
+        var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
+
+        Source = new PlayerSource
         {
-            IsVisible = true,
-            Opacity = 0,
-            InputTransparent = true,
-            ShouldKeepScreenOn = false,
-            ShouldAutoPlay = false,
-            ShouldMute = true,
-            HeightRequest = 1,
-            WidthRequest = 1
+            Url = newUrl,
+            MimeType = "application/vnd.apple.mpegurl",
+            PendingSeekTime = seekTime > 0 ? seekTime : null
         };
 
-        _mediaElement.MediaOpened += (s, e) => _mediaIsPlayable?.TrySetResult(true);
-        _mediaElement.MediaFailed += (s, e) => _mediaIsPlayable?.TrySetResult(false);
-        _mediaElement.MediaFailed += (s, e) => Test(e);
+        return Task.CompletedTask;
     }
 
-    private void Test(MediaFailedEventArgs e)
+    public Task ShowAsync()
     {
-        var toto = e.ErrorMessage;
+        IsVisible = true;
+        IsVisibleChanged?.Invoke();
+        return Task.CompletedTask;
     }
 
-    private void EnsureAttachedToVisualTree()
+    public Task HideAsync()
     {
-        if (_isAttached)
-            return;
+        IsVisible = false;
+        IsVisibleChanged?.Invoke();
+        return Task.CompletedTask;
+    }
 
-        var page = Application.Current?.Windows[0].Page;
-        if (page is not NavigationPage navigationPage)
-            return;
+    public void Play() => PlayRequested?.Invoke();
+    public void Pause() => PauseRequested?.Invoke();
+    public void Seek(double time) => SeekRequested?.Invoke(time);
+    public void Mute() => MuteRequested?.Invoke();
+    public void Unmute() => UnmuteRequest?.Invoke();
+    public void SetVolume(double volume) => VolumeChangeRequested?.Invoke(volume);
+    public void SetPlaybackRate(double rate) => PlaybackRateChangeRequested?.Invoke(rate);
+    public void Stop() => StopRequested?.Invoke();
+    public void EnterFullScreen() => EnterFullScreenRequested?.Invoke();
+    public void ExitFullScreen() => ExitFullScreenRequested?.Invoke();
 
-        if (navigationPage.CurrentPage is not ContentPage contentPage)
-            return;
+    public void SetAspectRatioMode(AspectRatioMode mode)
+    {
+        _aspectRatioMode = mode;
+        AspectRatioModeChanged?.Invoke(mode);
+        AspectRatioModeChangeRequested?.Invoke(mode);
+    }
 
-        if (contentPage.Content is Layout layout)
+    private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
+
+    /// <summary>
+    /// Appends or replaces the Quality query parameter on the manifest URL.
+    /// </summary>
+    private static string BuildManifestUrlWithQuality(string baseUrl, VideoQualityOption? quality)
+    {
+        var url = baseUrl;
+        var qualityValue = quality is null || quality.IsOriginal ? (string?)null : quality.Label;
+
+        url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]Quality=[^&]*", "");
+
+        if (!string.IsNullOrEmpty(qualityValue))
         {
-            layout.Children.Add(_mediaElement);
-            _isAttached = true;
-        }
-        else if (contentPage.Content is View view)
-        {
-            // Remplacer Content par une Grid qui contient l'ancien contenu + player
-            var grid = new Grid();
-            grid.Children.Add(view);
-            grid.Children.Add(_mediaElement);
-            contentPage.Content = grid;
-            _isAttached = true;
-        }
-    }
-
-    public async Task<bool> TryPlayMediaAsync(MediaSource mediaSource, int timeoutMs = 15000)
-    {
-        EnsureAttachedToVisualTree();
-        _mediaIsPlayable = new TaskCompletionSource<bool>();
-
-        _mediaElement.Source = mediaSource;
-        _mediaElement.Play();
-
-        var completedTask = await Task.WhenAny(_mediaIsPlayable.Task, Task.Delay(timeoutMs));
-
-        if (completedTask != _mediaIsPlayable.Task)
-        {
-            return false;
+            var separator = url.Contains('?') ? "&" : "?";
+            url += $"{separator}Quality={Uri.EscapeDataString(qualityValue)}";
         }
 
-        return _mediaIsPlayable.Task.Result;
-    }
-
-    public void Dispose()
-    {
-        _mediaElement?.Dispose();
-        _mediaIsPlayable = null;
+        return url;
     }
 }

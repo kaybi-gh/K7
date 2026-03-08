@@ -68,6 +68,9 @@ public partial class VideoPlayer : IAsyncDisposable
 
     protected override void OnInitialized()
     {
+        PlayerService.SourceChanged += OnSourceChange;
+        PlayerService.IsVisibleChanged += StateHasChanged;
+
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             PlayerService.PlayRequested += PlayAsync;
@@ -80,8 +83,6 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.EnterFullScreenRequested += EnterFullScreenAsync;
             PlayerService.ExitFullScreenRequested += ExitFullScreenAsync;
             PlayerService.SeekRequested += SeekAsync;
-            PlayerService.SourceChanged += OnSourceChange;
-            PlayerService.IsVisibleChanged += StateHasChanged;
             PlayerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
             PlayerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
             PlayerService.AspectRatioModeChangeRequested += OnAspectRatioModeChange;
@@ -90,6 +91,9 @@ public partial class VideoPlayer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        PlayerService.SourceChanged -= OnSourceChange;
+        PlayerService.IsVisibleChanged -= StateHasChanged;
+
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             PlayerService.PlayRequested -= PlayAsync;
@@ -102,8 +106,6 @@ public partial class VideoPlayer : IAsyncDisposable
             PlayerService.EnterFullScreenRequested -= EnterFullScreenAsync;
             PlayerService.ExitFullScreenRequested -= ExitFullScreenAsync;
             PlayerService.SeekRequested -= SeekAsync;
-            PlayerService.SourceChanged -= OnSourceChange;
-            PlayerService.IsVisibleChanged -= StateHasChanged;
             PlayerService.SwitchAudioTrackRequested -= OnSwitchAudioTrack;
             PlayerService.SwitchSubtitleTrackRequested -= OnSwitchSubtitleTrack;
             PlayerService.AspectRatioModeChangeRequested -= OnAspectRatioModeChange;
@@ -133,7 +135,7 @@ public partial class VideoPlayer : IAsyncDisposable
         SourceMimeType = playerSource.MimeType!;
         ThumbnailsSource = playerSource.ThumbnailsUrl;
 
-        if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
+        if (DeviceService.GetClientType() == ClientType.Web && _isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
             if (playerSource.PendingSeekTime is double seekTime)
             {

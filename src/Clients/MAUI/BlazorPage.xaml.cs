@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Domain.Models;
 
 namespace K7.Clients.MAUI;
 
@@ -13,17 +14,6 @@ public partial class BlazorPage : ContentPage
         _playerService = playerService;
         InitializeComponent();
         InitializePlayer();
-//        BlazorWebViewHandler.BlazorWebViewMapper.AppendToMapping("MyBlazorCustomization", (handler, view) => {
-//#if IOS || MACCATALYST
-//        handler.PlatformView.Opaque = false;
-//        handler.PlatformView.BackgroundColor = UIKit.UIColor.Clear;
-//#elif WINDOWS
-//        handler.PlatformView.Opacity = 1;
-//        handler.PlatformView.DefaultBackgroundColor = new Windows.UI.Color() { A = 0, R = 0, G = 0, B = 0 };
-//#elif ANDROID
-//        handler.PlatformView.SetBackgroundColor(Android.Graphics.Color.Argb(alpha: 0, red: 0, green: 0, blue: 0));
-//#endif
-//        });
     }
 
     private void InitializePlayer()
@@ -34,6 +24,9 @@ public partial class BlazorPage : ContentPage
         NativePlayer.MediaEnded += NativePlayer_MediaEnded;
         NativePlayer.MediaFailed += NativePlayer_MediaFailed;
         NativePlayer.PositionChanged += NativePlayer_PositionChanged;
+
+        _playerService.SourceChanged += OnSourceChanged;
+        _playerService.IsVisibleChanged += OnIsVisibleChanged;
         _playerService.PlayRequested += () => { NativePlayer.Play(); return Task.CompletedTask; };
         _playerService.PauseRequested += () => { NativePlayer.Pause(); return Task.CompletedTask; };
         _playerService.MuteRequested += () => { NativePlayer.ShouldMute = true; return Task.CompletedTask; };
@@ -41,10 +34,9 @@ public partial class BlazorPage : ContentPage
         _playerService.VolumeChangeRequested += (volume) => { NativePlayer.Volume = volume; return Task.CompletedTask; };
         _playerService.PlaybackRateChangeRequested += (rate) => { NativePlayer.Speed = rate; return Task.CompletedTask; };
         _playerService.StopRequested += () => { NativePlayer.Stop(); return Task.CompletedTask; };
-        //_playerService.EnterFullScreenRequested += () => { NativePlayer.full(); return Task.CompletedTask; };
-        //_playerService.ExitFullScreenRequested += ExitFullScreenAsync;
         _playerService.SeekRequested += (position) => { NativePlayer.SeekTo(TimeSpan.FromSeconds(position)); return Task.CompletedTask; };
-        _playerService.Duration = NativePlayer.Duration.TotalSeconds;
+        _playerService.AspectRatioModeChangeRequested += OnAspectRatioModeChanged;
+
         NativePlayer.PropertyChanged += (sender, e) =>
         {
             if (e.PropertyName == nameof(MediaElement.Duration))
@@ -61,38 +53,72 @@ public partial class BlazorPage : ContentPage
             }
             if (e.PropertyName == nameof(MediaElement.CurrentState))
             {
-                switch (NativePlayer.CurrentState)
+                _playerService.PlaybackState = NativePlayer.CurrentState switch
                 {
-                    case MediaElementState.Buffering:
-                        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Buffering;
-                        break;
-
-                    case MediaElementState.Failed:
-                        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Unknown;
-                        break;
-
-                    case MediaElementState.None:
-                        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Unknown;
-                        break;
-
-                    case MediaElementState.Opening:
-                        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Idle;
-                        break;
-
-                    case MediaElementState.Paused:
-                        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Paused;
-                        break;
-
-                    case MediaElementState.Playing:
-                        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Playing;
-                        break;
-
-                    case MediaElementState.Stopped:
-                        _playerService.PlaybackState = Server.Domain.Enums.PlaybackState.Idle;
-                        break;
+                    MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
+                    MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
+                    MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
+                    MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Idle,
+                    MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
+                    _ => Server.Domain.Enums.PlaybackState.Unknown,
                 };
             }
         };
+    }
+
+    private void OnSourceChanged(PlayerSource source)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!string.IsNullOrEmpty(source.Url))
+            {
+                System.Diagnostics.Debug.WriteLine($"[K7-Player] Setting source: {source.Url}");
+                System.Diagnostics.Debug.WriteLine($"[K7-Player] Volume={NativePlayer.Volume}, ShouldMute={NativePlayer.ShouldMute}");
+                NativePlayer.Source = MediaSource.FromUri(source.Url);
+            }
+        });
+    }
+
+    private void OnIsVisibleChanged()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            NativePlayer.IsVisible = _playerService.IsVisible;
+
+            if (_playerService.IsVisible)
+            {
+#if WINDOWS
+                // WebView2 transparency is broken on WinUI3 (microsoft-ui-xaml#6527).
+                // Place MediaElement in front of the BlazorWebView and use native controls.
+                NativePlayer.ZIndex = 3;
+                NativePlayer.ShouldShowPlaybackControls = true;
+                NativePlayer.InputTransparent = false;
+#endif
+            }
+            else
+            {
+                NativePlayer.Stop();
+                NativePlayer.Source = null;
+#if WINDOWS
+                NativePlayer.ZIndex = 1;
+                NativePlayer.ShouldShowPlaybackControls = false;
+                NativePlayer.InputTransparent = true;
+#endif
+            }
+        });
+    }
+
+    private void OnAspectRatioModeChanged(AspectRatioMode mode)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            NativePlayer.Aspect = mode switch
+            {
+                AspectRatioMode.Fill => Aspect.AspectFill,
+                AspectRatioMode.Stretch => Aspect.Fill,
+                _ => Aspect.AspectFit,
+            };
+        });
     }
 
     private void NativePlayer_MediaOpened(object? sender, EventArgs e)
@@ -107,7 +133,7 @@ public partial class BlazorPage : ContentPage
 
     private void NativePlayer_MediaFailed(object? sender, MediaFailedEventArgs e)
     {
-        
+        System.Diagnostics.Debug.WriteLine($"[K7-Player] Media playback failed: {e.ErrorMessage}");
     }
 
     private void NativePlayer_PositionChanged(object? sender, MediaPositionChangedEventArgs e)
@@ -118,14 +144,6 @@ public partial class BlazorPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        DisposeMediaElement();
-    }
-
-    private void DisposeMediaElement()
-    {
-        if (NativePlayer != null)
-        {
-            NativePlayer.Stop();
-        }
+        NativePlayer.Stop();
     }
 }
