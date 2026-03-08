@@ -27,12 +27,6 @@ public class BackgroundTasksProcessingService : BackgroundService
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            long memoryUsage = GC.GetTotalMemory(false);
-            _logger.LogWarning($"[Thread pool starvation] Memory usage: {memoryUsage / (1024 * 1024)} MB");
-            _logger.LogWarning($"[Thread pool starvation] Worker threads: {ThreadPool.ThreadCount}");
-            ThreadPool.GetAvailableThreads(out int workerThreads, out int ioThreads);
-            _logger.LogWarning($"[Thread pool starvation] Available workers: {workerThreads}, IO threads: {ioThreads}");
-
             using var backgroundServiceExecutionScope = _serviceProvider.CreateScope();
             var context = backgroundServiceExecutionScope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
 
