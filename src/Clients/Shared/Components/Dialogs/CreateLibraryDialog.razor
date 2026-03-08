@@ -1,0 +1,248 @@
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Requests
+@using K7.Shared.Interfaces
+@using MudBlazor
+@inject IK7ServerService K7ServerService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        @* Step indicators *@
+        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center" Class="mb-6">
+            <MudChip T="string" Color="@(_activeStep >= 0 ? Color.Primary : Color.Default)" Size="Size.Small">1. Type</MudChip>
+            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+            <MudChip T="string" Color="@(_activeStep >= 1 ? Color.Primary : Color.Default)" Size="Size.Small">2. Configuration</MudChip>
+            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+            <MudChip T="string" Color="@(_activeStep >= 2 ? Color.Primary : Color.Default)" Size="Size.Small">3. Confirmation</MudChip>
+        </MudStack>
+
+        @* Step 1: Choose media type *@
+        @if (_activeStep == 0)
+        {
+            <MudText Typo="Typo.h6" Class="mb-4">Quel type de contenu contiendra cette librairie ?</MudText>
+            <MudGrid Spacing="4" Justify="Justify.Center">
+                <MudItem xs="12" sm="4">
+                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Movie)">
+                        <MudCardContent Class="d-flex flex-column align-center pa-6">
+                            <MudIcon Icon="@Icons.Material.Filled.Theaters" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
+                            <MudText Typo="Typo.h6" Class="mt-2">Films</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Films et documentaires</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Serie)">
+                        <MudCardContent Class="d-flex flex-column align-center pa-6">
+                            <MudIcon Icon="@Icons.Material.Filled.Tv" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
+                            <MudText Typo="Typo.h6" Class="mt-2">Séries</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Séries TV et animes</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Music)">
+                        <MudCardContent Class="d-flex flex-column align-center pa-6">
+                            <MudIcon Icon="@Icons.Material.Filled.MusicNote" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
+                            <MudText Typo="Typo.h6" Class="mt-2">Musique</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Albums et morceaux</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        }
+
+        @* Step 2: Name and path *@
+        @if (_activeStep == 1)
+        {
+            <MudStack Spacing="4" Class="mt-2">
+                <MudTextField @bind-Value="_title" Label="Nom de la librairie" Variant="Variant.Outlined"
+                              Required="true" RequiredError="Le nom est requis"
+                              Placeholder="Ex: Mes Films, Séries TV..." />
+
+                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
+                    <MudTextField @bind-Value="_rootPath" Label="Chemin du dossier" Variant="Variant.Outlined"
+                                  Required="true" RequiredError="Le chemin est requis"
+                                  Placeholder="Ex: /media/movies, D:\Films..."
+                                  HelperText="Chemin absolu vers le dossier contenant les fichiers média"
+                                  Style="flex: 1;" />
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="BrowseFolderAsync" Class="mb-6">
+                        Parcourir
+                    </MudButton>
+                </MudStack>
+
+                <MudCheckBox @bind-Value="_triggerIndexing" Label="Indexer les fichiers automatiquement après la création" Color="Color.Primary" />
+            </MudStack>
+        }
+
+        @* Step 3: Summary *@
+        @if (_activeStep == 2)
+        {
+            <MudText Typo="Typo.h6" Class="mb-4">Résumé de la librairie</MudText>
+            <MudSimpleTable Dense="true" Bordered="true" Class="mb-4">
+                <tbody>
+                    <tr>
+                        <td><strong>Nom</strong></td>
+                        <td>@_title</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type</strong></td>
+                        <td>
+                            <MudChip T="string" Color="Color.Primary" Size="Size.Small">@GetMediaTypeLabel(_selectedMediaType)</MudChip>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Chemin</strong></td>
+                        <td><code>@_rootPath</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Indexation automatique</strong></td>
+                        <td>@(_triggerIndexing ? "Oui" : "Non")</td>
+                    </tr>
+                </tbody>
+            </MudSimpleTable>
+
+            @if (_isSubmitting)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        @if (_activeStep > 0)
+        {
+            <MudButton OnClick="PreviousStep" Variant="Variant.Outlined">Précédent</MudButton>
+        }
+        @if (_activeStep < 2)
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="NextStep" Disabled="!CanAdvance()">Suivant</MudButton>
+        }
+        else
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_isSubmitting">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Création...</MudText>
+                }
+                else
+                {
+                    <MudText>Créer la librairie</MudText>
+                }
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private int _activeStep;
+    private LibraryMediaType _selectedMediaType;
+    private bool _mediaTypeSelected;
+    private string _title = "";
+    private string _rootPath = "";
+    private bool _triggerIndexing = true;
+    private bool _isSubmitting;
+
+    private void SelectMediaType(LibraryMediaType mediaType)
+    {
+        _selectedMediaType = mediaType;
+        _mediaTypeSelected = true;
+    }
+
+    private string GetMediaTypeCardClass(LibraryMediaType type)
+    {
+        return _mediaTypeSelected && _selectedMediaType == type
+            ? "border-4 mud-border-primary"
+            : "";
+    }
+
+    private Color GetMediaTypeColor(LibraryMediaType type)
+    {
+        return _mediaTypeSelected && _selectedMediaType == type
+            ? Color.Primary
+            : Color.Default;
+    }
+
+    private static string GetMediaTypeLabel(LibraryMediaType type) => type switch
+    {
+        LibraryMediaType.Movie => "Films",
+        LibraryMediaType.Serie => "Séries",
+        LibraryMediaType.Music => "Musique",
+        _ => type.ToString()
+    };
+
+    private bool CanAdvance() => _activeStep switch
+    {
+        0 => _mediaTypeSelected,
+        1 => !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_rootPath),
+        _ => true
+    };
+
+    private void NextStep()
+    {
+        if (CanAdvance() && _activeStep < 2)
+            _activeStep++;
+    }
+
+    private void PreviousStep()
+    {
+        if (_activeStep > 0)
+            _activeStep--;
+    }
+
+    private async Task BrowseFolderAsync()
+    {
+        var parameters = new DialogParameters<FolderBrowserDialog>
+        {
+            { x => x.InitialPath, string.IsNullOrWhiteSpace(_rootPath) ? null : _rootPath }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<FolderBrowserDialog>("Sélectionner un dossier", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string selectedPath })
+        {
+            _rootPath = selectedPath;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new CreateLibraryRequest
+            {
+                Title = _title.Trim(),
+                MediaType = _selectedMediaType,
+                RootPath = _rootPath.Trim(),
+                TriggerFileIndexingOnCreation = _triggerIndexing
+            };
+
+            await K7ServerService.CreateLibraryAsync(request);
+            Snackbar.Add($"Librairie « {_title} » créée avec succès !", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur lors de la création : {ex.Message}", Severity.Error);
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

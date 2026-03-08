@@ -1084,6 +1084,28 @@
         }
       }
     },
+    "/api/filesystem/directories": {
+      "get": {
+        "tags": [
+          "FileSystem"
+        ],
+        "operationId": "GetDirectories",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/devices/{id}/attach-user": {
       "post": {
         "tags": [
@@ -3553,6 +3575,9 @@
     },
     {
       "name": "IndexedFiles"
+    },
+    {
+      "name": "FileSystem"
     },
     {
       "name": "Devices"

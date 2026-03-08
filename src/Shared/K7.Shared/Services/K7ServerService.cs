@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Interfaces;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Entities.Medias;
@@ -142,5 +143,26 @@ public class K7ServerService : IK7ServerService
     {
         var response = await HttpClient.PostAsJsonAsync($"api/medias/{id}/reidentify", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default)
+    {
+        var libraries = await HttpClient.GetFromJsonAsync<List<LibraryDto>>("api/libraries", _serializerOptions, cancellationToken);
+        return libraries ?? [];
+    }
+
+    public async Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/libraries", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default)
+    {
+        var requestUri = string.IsNullOrWhiteSpace(path)
+            ? "api/filesystem/directories"
+            : $"api/filesystem/directories?path={Uri.EscapeDataString(path)}";
+        return await HttpClient.GetFromJsonAsync<DirectoryContentDto>(requestUri, _serializerOptions, cancellationToken);
     }
 }
