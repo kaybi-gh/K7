@@ -105,9 +105,6 @@
     <Compile Update="BlazorPage.xaml.cs">
       <DependentUpon>BlazorPage.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Pages\PlayerPage.xaml.cs">
-      <DependentUpon>Pages\PlayerPage.xaml</DependentUpon>
-    </Compile>
     <Compile Update="Platforms\iOS\Services\CodecService.cs">
       <ExcludeFromCurrentConfiguration>false</ExcludeFromCurrentConfiguration>
     </Compile>
@@ -120,9 +117,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <MauiXaml Update="Pages\PlayerPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </MauiXaml>
     <MauiXaml Update="SetupPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
