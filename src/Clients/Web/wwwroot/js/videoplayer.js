@@ -173,17 +173,23 @@ window.changeSourceAndSeek = function (id, src, type, seekTime) {
     player.src({ src: src, type: type });
 }
 
-window.switchAudioTrack = function (id, trackIndex) {
+window.switchAudioTrack = function (id, trackName) {
     const player = players[id];
     if (!player) return false;
 
     const audioTracks = player.audioTracks();
-    if (!audioTracks || trackIndex < 0 || trackIndex >= audioTracks.length) return false;
+    if (!audioTracks) return false;
 
+    let found = false;
     for (let i = 0; i < audioTracks.length; i++) {
-        audioTracks[i].enabled = (i === trackIndex);
+        if (audioTracks[i].label === trackName) {
+            audioTracks[i].enabled = true;
+            found = true;
+        } else {
+            audioTracks[i].enabled = false;
+        }
     }
-    return true;
+    return found;
 }
 
 window.switchSubtitleTrack = function (id, slug) {

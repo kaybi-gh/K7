@@ -150,11 +150,11 @@ public partial class VideoPlayer : IAsyncDisposable
         await InvokeAsync(StateHasChanged);
     }
 
-    private async void OnSwitchAudioTrack(int trackIndex)
+    private async void OnSwitchAudioTrack(string trackName)
     {
         if (_isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
-            await JSRuntime.InvokeVoidAsync("switchAudioTrack", _player.Id, trackIndex);
+            await JSRuntime.InvokeVoidAsync("switchAudioTrack", _player.Id, trackName);
         }
     }
 
