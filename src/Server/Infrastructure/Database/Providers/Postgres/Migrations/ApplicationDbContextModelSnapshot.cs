@@ -413,6 +413,48 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("MetadataPictures");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.MetadataPictureVariant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LocalPath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("MetadataPictureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Size")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MetadataPictureId", "Size")
+                        .IsUnique();
+
+                    b.ToTable("MetadataPictureVariants");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1740,6 +1782,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("VideoFileMetadata");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.MetadataPictureVariant", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.MetadataPicture", "MetadataPicture")
+                        .WithMany("Variants")
+                        .HasForeignKey("MetadataPictureId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MetadataPicture");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.IndexedFile", "IndexedFile")
@@ -2020,6 +2073,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Ratings");
 
                     b.Navigation("UserMediaStates");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.MetadataPicture", b =>
+                {
+                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", b =>

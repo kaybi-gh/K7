@@ -29,6 +29,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         var query = context.Medias
             .Include(x => x.ExternalIds)
             .Include(x => x.Pictures)
+                .ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
             .Include(x => x.IndexedFiles)
             .AsNoTracking()

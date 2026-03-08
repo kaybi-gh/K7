@@ -19,6 +19,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<BaseFileMetadata> FileMetadatas { get; }
     DbSet<BaseFileTrack> FileTracks { get; }
     DbSet<MetadataPicture> MetadataPictures { get; }
+    DbSet<MetadataPictureVariant> MetadataPictureVariants { get; }
     DbSet<Person> Persons { get; }
     DbSet<BasePersonRole> PersonRoles { get; }
     DbSet<BaseRating> Ratings { get; }

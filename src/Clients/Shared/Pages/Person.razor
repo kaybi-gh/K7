@@ -5,14 +5,14 @@
 
 @if (_person != null)
 {
-    <div class="background" style="--background-picture: url(@k7ServerService.GetAbsoluteUri(_person.PortraitPicture?.Uri?.OriginalString)?.AbsoluteUri)" />
+    <div class="background" style="--background-picture: url(@k7ServerService.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)" />
     <div>
         <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
             <MudItem xs="12" sm="4" lg="1">
                 <MudStack AlignItems="AlignItems.Center">
                     @if (_person.PortraitPicture is not null)
                     {
-                        <MudImage Src="@k7ServerService.GetAbsoluteUri(_person.PortraitPicture?.Uri?.OriginalString)?.AbsoluteUri" Alt="@_person.Name" Class="rounded-lg" Style="max-width: 220px;" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                        <MudImage Src="@k7ServerService.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri" Alt="@_person.Name" Class="rounded-lg" Style="max-width: 220px;" Fluid="true" ObjectFit="ObjectFit.Cover" />
                     }
                     else
                     {

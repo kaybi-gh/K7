@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddSingleton<IMediaAnalysisService, MediaAnalysisService>();
         services.AddSingleton<IMediaTranscoder, MediaTranscoder>();
         services.AddSingleton<IMediaFormatSampleGenerator, MediaFormatSampleGenerator>();
+        services.AddSingleton<IImageProcessor, ImageProcessor>();
         services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
         services.AddHostedService<TranscodeJobCleanupService>();
         services.AddScoped<TMDbMetadataProvider>();

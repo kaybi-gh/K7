@@ -73,8 +73,8 @@ else
     {
         <div class="hero-page-stack">
             <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
-                <div class="background-image" style="--background-picture: url(@k7ServerService.GetAbsoluteUri(k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop)?.Uri?.OriginalString)?.AbsoluteUri)?.AbsoluteUri)" />
-                @if (k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.Uri?.OriginalString)?.AbsoluteUri is string logoUri)
+                <div class="background-image" style="--background-picture: url(@k7ServerService.GetAbsoluteUri(k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri)" />
+                @if (k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri is string logoUri)
                 {
                     <MudImage Style="max-width: 80vw;" Height="150" ObjectFit="ObjectFit.ScaleDown" Src="@logoUri"></MudImage>
                 }

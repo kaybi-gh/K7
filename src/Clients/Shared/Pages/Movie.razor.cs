@@ -36,7 +36,7 @@ public partial class Movie
             {
                 Id = _movie.Id.ToString(),
                 Title = _movie.Title,
-                PosterPictureHref = k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.Uri?.OriginalString)?.AbsoluteUri
+                PosterPictureHref = k7ServerService.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
             };
             _selectedVideoFileTrack = ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).VideoTracks.First(x => x.IsDefault);
             _selectedAudioFileTrack = ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).AudioTracks.First(x => x.IsDefault);

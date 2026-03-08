@@ -1,11 +1,12 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 
 namespace K7.Server.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
 
 //[Authorize]
-public record GetMetadataPictureQuery(Guid Id) : IRequest<IResult>;
+public record GetMetadataPictureQuery(Guid Id, MetadataPictureSize? Size = null) : IRequest<IResult>;
 
 public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPictureQuery, IResult>
 {
@@ -21,43 +22,55 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
     public async Task<IResult> Handle(GetMetadataPictureQuery query, CancellationToken cancellationToken)
     {
         var entity = await _context.MetadataPictures
-            .FindAsync([query.Id], cancellationToken);
+            .Include(p => p.Variants)
+            .FirstOrDefaultAsync(p => p.Id == query.Id, cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
 
-        // Picture not yet downloaded
-        if (entity.LocalPath == null)
+        // Resolve the file path: use variant if requested, fallback to original
+        string? localPath = entity.LocalPath;
+        DateTimeOffset lastModified = entity.LastModified;
+        Guid entityId = entity.Id;
+
+        if (query.Size is { } requestedSize)
+        {
+            var variant = entity.Variants.FirstOrDefault(v => v.Size == requestedSize);
+            if (variant is not null)
+            {
+                localPath = variant.LocalPath;
+                lastModified = variant.LastModified;
+                entityId = variant.Id;
+            }
+            // If variant not found, fall back to the original
+        }
+
+        if (localPath is null)
         {
             return Results.NotFound();
         }
 
-        var file = new FileInfo(entity.LocalPath);
+        var file = new FileInfo(localPath);
         if (!file.Exists)
         {
             return Results.NotFound();
         }
 
+        var contentType = GetContentType(file.Extension);
+
         var httpContext = _httpContextAccessor.HttpContext;
 
-        // If we don't have an HTTP context (e.g. background usage), just return the file
         if (httpContext is null)
         {
-            return Results.File(file.OpenRead(), contentType: file.Extension switch
-            {
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                _ => "application/octet-stream"
-            });
+            return Results.File(file.OpenRead(), contentType: contentType);
         }
 
-        var eTag = new EntityTagHeaderValue($"\"{entity.Id}-{entity.LastModified.ToUnixTimeSeconds()}\"");
+        var eTag = new EntityTagHeaderValue($"\"{entityId}-{lastModified.ToUnixTimeSeconds()}\"");
 
-        httpContext.Response.GetTypedHeaders().LastModified = entity.LastModified;
+        httpContext.Response.GetTypedHeaders().LastModified = lastModified;
         httpContext.Response.GetTypedHeaders().ETag = eTag;
 
         var requestHeaders = httpContext.Request.GetTypedHeaders();
 
-        // Handle If-None-Match first (ETag validation)
         if (requestHeaders.IfNoneMatch is { Count: > 0 })
         {
             if (requestHeaders.IfNoneMatch.Any(tag => tag.Tag.Equals(eTag.Tag, StringComparison.Ordinal)))
@@ -65,19 +78,20 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
                 return Results.StatusCode(StatusCodes.Status304NotModified);
             }
         }
-        // Fallback to If-Modified-Since if no ETag header is present
         else if (requestHeaders.IfModifiedSince is { } ifModifiedSince
-                 && entity.LastModified <= ifModifiedSince)
+                 && lastModified <= ifModifiedSince)
         {
             return Results.StatusCode(StatusCodes.Status304NotModified);
         }
 
-        return Results.File(file.OpenRead(), contentType: file.Extension switch
-        {
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".png" => "image/png",
-            _ => "application/octet-stream"
-        });
-        // TODO - Manage mime-type in database or with a better class
+        return Results.File(file.OpenRead(), contentType: contentType);
     }
+
+    private static string GetContentType(string extension) => extension.ToLowerInvariant() switch
+    {
+        ".webp" => "image/webp",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".png" => "image/png",
+        _ => "application/octet-stream"
+    };
 }

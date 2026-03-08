@@ -18,4 +18,6 @@ public class MetadataPicture : BaseAuditableEntity
     public virtual Person? Person { get; set; }
     public Guid? PersonRoleId { get; set; }
     public virtual BasePersonRole? PersonRole { get; set; }
+
+    public virtual ICollection<MetadataPictureVariant> Variants { get; set; } = [];
 }

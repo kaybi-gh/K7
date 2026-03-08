@@ -218,6 +218,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MetadataPictureSize"
+            }
           }
         ],
         "responses": {
@@ -2714,8 +2721,17 @@
               "string"
             ],
             "format": "uri"
+          },
+          "availableSizes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureSize"
+            }
           }
         }
+      },
+      "MetadataPictureSize": {
+        "type": "integer"
       },
       "MetadataPictureType": {
         "type": "integer"
