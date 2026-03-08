@@ -18,10 +18,15 @@ public partial class Library
     private bool _gridDrawerOpen = false;
     private int _spacing { get; set; } = 6;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        MediaPosterViewModels.Clear();
+
+        var libraryId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
+
         var liteMediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
         {
+            LibraryIds = libraryId.HasValue ? [libraryId.Value] : null,
             PageNumber = 1,
             PageSize = 1000
         });
@@ -39,7 +44,6 @@ public partial class Library
                 });
             }
         }
-        base.OnInitialized();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

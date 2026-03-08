@@ -1,7 +1,10 @@
 ﻿@implements IDisposable
+@using K7.Shared.Dtos.Entities
+@using K7.Server.Domain.Enums
 @inject NavigationManager NavigationManager
 @inject SidebarService SidebarService
 @inject ICustomAuthenticationStateProvider CustomAuthenticationStateProvider
+@inject IK7ServerService K7ServerService
 @inject IJSRuntime JSRuntime
 
 <MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini" data-nav-column="sidebar">
@@ -28,11 +31,11 @@
         </MudStack>
     </MudStack>
     <MudNavMenu Bordered="true" Style="width: 100%;">
-        @* TODO - Dynamic nav tree *@
         <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-        <MudNavLink Href="/library/movies-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Theaters">Movies</MudNavLink>
-        <MudNavLink Href="/library/series-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Tv">Series</MudNavLink>
-        <MudNavLink Href="/library/music-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.MusicNote">Music</MudNavLink>
+        @foreach (var library in _libraries)
+        {
+            <MudNavLink Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)">@library.Title</MudNavLink>
+        }
     </MudNavMenu>
     <MudSpacer />
     <MudNavMenu Bordered="true" Style="width: 100%;">
