@@ -19,7 +19,7 @@ public interface IPlayerService
     event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
 
-    event Action<int>? SwitchAudioTrackRequested;
+    event Action<string>? SwitchAudioTrackRequested;
     event Action<string?>? SwitchSubtitleTrackRequested;
     event Action<PlayerSource>? SourceChanged;
     event Action? IsVisibleChanged;

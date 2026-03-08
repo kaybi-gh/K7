@@ -18,7 +18,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
     public event Func<Task>? UnmuteRequest;
     public event Func<double, Task>? VolumeChangeRequested;
     public event Func<double, Task>? PlaybackRateChangeRequested;
-    public event Action<int>? SwitchAudioTrackRequested;
+    public event Action<string>? SwitchAudioTrackRequested;
     public event Action<string?>? SwitchSubtitleTrackRequested;
     public event Action<AspectRatioMode>? AspectRatioModeChangeRequested;
 
@@ -253,15 +253,16 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             return Task.CompletedTask;
         }
 
-        var trackIndex = _audioTracks.IndexOf(track);
-        if (trackIndex < 0)
+        if (!_audioTracks.Contains(track))
         {
             return Task.CompletedTask;
         }
 
         _selectedAudioTrack = track;
         AudioTrackChanged?.Invoke(track);
-        SwitchAudioTrackRequested?.Invoke(trackIndex);
+
+        var trackName = track.Name ?? $"Track {track.Index}";
+        SwitchAudioTrackRequested?.Invoke(trackName);
 
         return Task.CompletedTask;
     }
