@@ -203,6 +203,19 @@
         }
       }
     },
+    "/api/metadata-pictures/generate-missing-variants": {
+      "post": {
+        "tags": [
+          "MetadataPictures"
+        ],
+        "operationId": "GenerateAllMissingMetadataPictureVariants",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/metadata-pictures/{id}": {
       "get": {
         "tags": [

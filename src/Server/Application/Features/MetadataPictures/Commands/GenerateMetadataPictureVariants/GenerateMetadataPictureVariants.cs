@@ -75,6 +75,23 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             return;
         }
 
+        // Convert original to WebP if it isn't already
+        if (!picture.LocalPath.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+        {
+            var webpPath = Path.ChangeExtension(picture.LocalPath, ".webp");
+            try
+            {
+                await _imageProcessor.ConvertToWebPAsync(picture.LocalPath, webpPath, cancellationToken: cancellationToken);
+                File.Delete(picture.LocalPath);
+                picture.LocalPath = webpPath;
+                _logger.LogInformation("Converted original MetadataPicture {Id} to WebP", picture.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to convert MetadataPicture {Id} to WebP, continuing with original", picture.Id);
+            }
+        }
+
         var directory = Path.GetDirectoryName(picture.LocalPath)!;
         var existingSizes = picture.Variants.Select(v => v.Size).ToHashSet();
 
