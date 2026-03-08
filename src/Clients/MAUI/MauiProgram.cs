@@ -37,12 +37,14 @@ public static partial class MauiProgram
 		builder.Logging.AddDebug();
 #endif
 
-//        builder.ConfigureMauiHandlers(handlers =>
-//        {
-//#if WINDOWS
-//    handlers.AddHandler<BlazorWebView, TransparentBlazorWebViewHandler>();
-//#endif
-//        });
+        // https://github.com/dotnet/maui/issues/14185
+        // https://github.com/microsoft/microsoft-ui-xaml/issues/6527
+        builder.ConfigureMauiHandlers(handlers =>
+        {
+#if WINDOWS
+            handlers.AddHandler<BlazorWebView, TransparentBlazorWebViewHandler>();
+#endif
+        });
 
         //#if WINDOWS
         //        builder.ConfigureWindowsLifecycleEvents();
