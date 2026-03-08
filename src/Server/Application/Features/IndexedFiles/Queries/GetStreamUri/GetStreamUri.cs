@@ -9,7 +9,6 @@ using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.QueryBuilders;
-using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 
@@ -108,26 +107,30 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             };
         }
 
-        // Otherwise we go through HLS; decide what really needs transcoding based on codec support only
-        var audioCodecSupported = supportedAudioFormats.Any(x => x.Codec == selectedAudioTrack.Codec);
-
+        // Otherwise we go through HLS
         var videoCodecSupported = supportedVideoFormats.Any(x => x.VideoCodec == selectedVideoTrack.Codec);
 
-        var requiresAudioTranscoding = !audioCodecSupported;
         //var requiresSubtitlesTranscoding = false; // TODO - Subtitles
         var requiresVideoTranscoding = !videoCodecSupported;
 
-        AudioMediaFormat? audioTranscodingMediaFormat = null;
         VideoMediaFormat? videoTranscodingMediaFormat = null;
-
-        if (requiresAudioTranscoding)
-        {
-            audioTranscodingMediaFormat = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
-        }
 
         if (requiresVideoTranscoding)
         {
             videoTranscodingMediaFormat = GetDeviceBestSupportedVideoMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Video)]);
+        }
+
+        Dictionary<int, string>? audioTrackTranscodings = null;
+        var supportedAudioCodecSet = supportedAudioFormats.Select(x => x.Codec).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var audioTrack in videoFileMetadata.AudioTracks)
+        {
+            if (!supportedAudioCodecSet.Contains(audioTrack.Codec))
+            {
+                audioTrackTranscodings ??= [];
+                var fallback = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
+                audioTrackTranscodings[audioTrack.Index] = fallback.Codec;
+            }
         }
 
         return new()
@@ -136,8 +139,9 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             {
                 Id = indexedFile.Id,
                 StreamSessionId = request.StreamSessionId,
-                TranscodingAudioCodec = audioTranscodingMediaFormat?.Codec,
-                TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec
+                TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec,
+                AudioTrackTranscodings = audioTrackTranscodings,
+                DefaultAudioTrackIndex = request.AudioTrackIndex
             }), UriKind.Relative),
             MimeType = "application/vnd.apple.mpegurl"
         };

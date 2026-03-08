@@ -777,13 +777,6 @@
             }
           },
           {
-            "name": "transcodingAudioCodec",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "transcodingVideoCodec",
             "in": "query",
             "schema": {
@@ -804,6 +797,13 @@
           },
           {
             "name": "quality",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "audioTrackTranscodings",
             "in": "query",
             "schema": {
               "type": "string"
