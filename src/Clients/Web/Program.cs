@@ -28,6 +28,7 @@ builder.Services.AddSingleton<IDeviceService, DeviceService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
+builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
 builder.Services.AddSingleton<K7HubClient>();
 builder.Services.AddBlazoredLocalStorageAsSingleton();
