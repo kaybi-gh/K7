@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddSingleton<IMediaFormatSampleGenerator, MediaFormatSampleGenerator>();
         services.AddSingleton<IImageProcessor, ImageProcessor>();
         services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
+        services.AddSingleton<IAudioTagReader, TagLibAudioTagReader>();
         services.AddHostedService<TranscodeJobCleanupService>();
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
