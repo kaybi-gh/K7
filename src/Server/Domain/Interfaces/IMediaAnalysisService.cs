@@ -4,6 +4,7 @@ namespace K7.Server.Domain.Interfaces;
 
 public interface IMediaAnalysisService
 {
+    Task<AudioFileMetadata> GetAudioFileMetadataAsync(string filePath, CancellationToken cancellationToken = default);
     Task<VideoFileMetadata> GetVideoFileMetadataAsync(string filePath, CancellationToken cancellationToken = default);
     Task<List<HlsSegment>> ComputeKeyframeBasedHlsSegmentsAsync(
         IndexedFile indexedFile,

@@ -36,15 +36,20 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
             throw new FileNotFoundException("File not found.", indexedFile.Path);
         }
 
-        var fileMetadata = request.FileType switch
+        BaseFileMetadata fileMetadata = request.FileType switch
         {
-            FileType.Audio => throw new NotImplementedException(),
+            FileType.Audio => await _mediaAnalysisService.GetAudioFileMetadataAsync(indexedFile.Path, cancellationToken),
             FileType.Video => await _mediaAnalysisService.GetVideoFileMetadataAsync(indexedFile.Path, cancellationToken),
             _ => throw new NotImplementedException(),
         };
 
         // Clear existing file metadatas
-        if (indexedFile.FileMetadata is VideoFileMetadata vfm)
+        if (indexedFile.FileMetadata is AudioFileMetadata afm)
+        {
+            await _context.FileMetadatas.Entry(afm).Reference(x => ((AudioFileMetadata)x).AudioTrack).LoadAsync(cancellationToken);
+            _context.FileMetadatas.Remove(indexedFile.FileMetadata);
+        }
+        else if (indexedFile.FileMetadata is VideoFileMetadata vfm)
         {
             await _context.FileMetadatas.Entry(vfm).Collection(x => ((VideoFileMetadata)x).AudioTracks).LoadAsync(cancellationToken);
             await _context.FileMetadatas.Entry(vfm).Collection(x => ((VideoFileMetadata)x).SubtitleTracks).LoadAsync(cancellationToken);
