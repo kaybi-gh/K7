@@ -49,4 +49,16 @@ public static partial class Regexes
     }.ToFrozenSet();
 
     #endregion
+
+    #region Music track number extraction
+
+    // Matches: "01 - Song Title", "01. Song Title", "1 Song Title", "01-Song Title"
+    [GeneratedRegex(@"^\s*(?<output>\d{1,3})[\s.\-_]+(?<trimmedInput>.+)$")]
+    private static partial Regex TrackNumber_LeadingNumber();
+
+    public static readonly FrozenSet<Regex> TrackNumberExtractionRegexes = new List<Regex> {
+        TrackNumber_LeadingNumber()
+    }.ToFrozenSet();
+
+    #endregion
 }
