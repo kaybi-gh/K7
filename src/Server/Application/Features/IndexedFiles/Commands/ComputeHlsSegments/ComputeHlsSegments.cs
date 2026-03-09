@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Interfaces;
 
@@ -44,11 +45,12 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
         switch (entity.FileMetadata)
         {
             case AudioFileMetadata audioFileMetadata:
-                // TODO - Compute audio segments
-                //var segments = ComputeHlsSegments(request, (long)audioFileMetadata.Duration.TotalMilliseconds);
-                // TODO - Does it clear current segments?
-                //audioFileMetadata.HlsSegments = segments;
-                throw new InvalidOperationException("File metadata must be computed first.");
+                var audioSegments = ComputeTimeBasedHlsSegments(
+                    (long)audioFileMetadata.Duration.TotalMilliseconds,
+                    entity.FileMetadata.Id,
+                    entity.Id);
+                audioFileMetadata.HlsSegments = audioSegments;
+                break;
 
             case VideoFileMetadata videoFileMetadata:
                 var segments = await _mediaAnalysisService.ComputeKeyframeBasedHlsSegmentsAsync(
@@ -65,5 +67,29 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static List<HlsSegment> ComputeTimeBasedHlsSegments(long totalDurationMs, Guid fileMetadataId, Guid indexedFileId, int segmentLengthMs = 6000)
+    {
+        var segments = new List<HlsSegment>();
+        long offset = 0;
+        var index = 0;
+
+        while (offset < totalDurationMs)
+        {
+            var duration = Math.Min(segmentLengthMs, totalDurationMs - offset);
+            segments.Add(new HlsSegment
+            {
+                FileMetadataId = fileMetadataId,
+                IndexedFileId = indexedFileId,
+                Number = index,
+                StartTimestamp = offset,
+                Duration = duration
+            });
+            offset += segmentLengthMs;
+            index++;
+        }
+
+        return segments;
     }
 }

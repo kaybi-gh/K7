@@ -106,7 +106,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         var masterPlaylist = indexedFile.FileMetadata switch
         {
-            AudioFileMetadata x => throw new NotImplementedException(),
+            AudioFileMetadata x => GenerateAudioFileMasterPlaylist(x, query),
             VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x, query),
             _ => throw new InvalidOperationException()
         };
@@ -126,6 +126,56 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                 await _context.Entry(audioMetadata).Reference(a => a.AudioTrack).LoadAsync(cancellationToken);
                 break;
         }
+    }
+
+    private static string GenerateAudioFileMasterPlaylist(AudioFileMetadata audioFileMetadata, GetHlsStreamManifestQuery query)
+    {
+        var playlist = new StringBuilder();
+        playlist.AppendLine("#EXTM3U");
+
+        var audioTrack = audioFileMetadata.AudioTrack;
+        var audioTrackIndex = audioTrack?.Index ?? 0;
+
+        var audioTrackTranscodings = query.AudioTrackTranscodings ?? [];
+        var needsTranscoding = audioTrackTranscodings.TryGetValue(audioTrackIndex, out var transcodingCodec);
+
+        var codecString = needsTranscoding
+            ? HlsCodecStringHelpers.GetHlsCodecs(videoCodec: null, transcodingCodec)
+            : (audioTrack != null
+                ? HlsCodecStringHelpers.GetHlsCodecs(videoCodec: null, audioTrack.Codec)
+                : string.Empty);
+
+        var trackAudioParams = new List<string>
+        {
+            $"streamSessionId={query.StreamSessionId}"
+        };
+
+        if (needsTranscoding)
+            trackAudioParams.Add($"TranscodingAudioCodec={transcodingCodec}");
+
+        var audioQueryString = "?" + string.Join("&", trackAudioParams);
+
+        var audioUri = GetHlsAudioStreamIndexQueryUriBuilder.BuildManifestRelativePath(audioTrackIndex)
+            + audioQueryString;
+
+        playlist.AppendLine(
+            $"#EXT-X-MEDIA:TYPE=AUDIO," +
+            $"GROUP-ID=\"audio\"," +
+            $"NAME=\"default\"," +
+            $"LANGUAGE=\"und\"," +
+            $"DEFAULT=YES," +
+            $"AUTOSELECT=YES," +
+            $"URI=\"{audioUri}\"");
+
+        playlist.AppendLine($"#EXT-X-STREAM-INF:" +
+            $"BANDWIDTH=256000," +
+            (string.IsNullOrEmpty(codecString) ? "" : $"CODECS=\"{codecString}\",") +
+            $"AUDIO=\"audio\"");
+
+        playlist.AppendLine(audioUri);
+        playlist.AppendLine();
+
+        return playlist.ToString();
     }
 
     private static string GenerateVideoFileMasterPlaylist(VideoFileMetadata videoFileMetadata, GetHlsStreamManifestQuery query)
