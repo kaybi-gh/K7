@@ -4,6 +4,8 @@ using K7.Server.Domain.Entities.Medias;
 namespace K7.Shared.Dtos.Entities.Medias;
 
 [JsonDerivedType(typeof(LiteMovieDto), nameof(Movie))]
+[JsonDerivedType(typeof(LiteMusicAlbumDto), nameof(MusicAlbum))]
+[JsonDerivedType(typeof(LiteMusicTrackDto), nameof(MusicTrack))]
 public abstract record LiteMediaDto
 {
     public Guid Id { get; init; }
@@ -20,6 +22,28 @@ public abstract record LiteMediaDto
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate?.ToString(),
             Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
+            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                ? UserMediaStateDto.FromDomain(state)
+                : null
+        },
+        MusicAlbum album => new LiteMusicAlbumDto()
+        {
+            Id = domain.Id,
+            Title = domain.Title,
+            ReleaseDate = domain.ReleaseDate?.ToString(),
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
+            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                ? UserMediaStateDto.FromDomain(state)
+                : null
+        },
+        MusicTrack track => new LiteMusicTrackDto()
+        {
+            Id = domain.Id,
+            Title = domain.Title,
+            ReleaseDate = domain.ReleaseDate?.ToString(),
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
+            AlbumId = track.AlbumId,
+            TrackNumber = track.TrackNumber,
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null
