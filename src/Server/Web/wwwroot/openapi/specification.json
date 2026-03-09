@@ -121,6 +121,13 @@
             }
           },
           {
+            "name": "RoleTypes",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "PageNumber",
             "in": "query",
             "required": true,

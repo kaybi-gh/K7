@@ -2,6 +2,7 @@
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities.Metadatas;
+using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetPersons;
 
@@ -9,8 +10,7 @@ public record GetPersonsWithPaginationQuery : IRequest<PaginatedList<Person>>
 {
     public Guid[]? Ids { get; init; }
     public Guid[]? MediaIds { get; init; }
-    //public EnumHashSetQueryParam<PersonJob>? JobTypes { get; init; }
-    //public EnumHashSetQueryParam<PersonOrderingOption>? OrderBy { get; init; }
+    public EnumHashSetQueryParam<PersonRoleType>? RoleTypes { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;
 }
@@ -47,6 +47,11 @@ public class GetPersonsQueryHandler : IRequestHandler<GetPersonsWithPaginationQu
         if (request.MediaIds?.Length > 0)
         {
             query = query.Where(x => x.Roles.Any(x => request.MediaIds.Contains(x.MediaId)));
+        }
+
+        if (request.RoleTypes?.Count > 0)
+        {
+            query = query.Where(x => x.Roles.Any(r => request.RoleTypes.Contains(r.Type)));
         }
 
         return query;
