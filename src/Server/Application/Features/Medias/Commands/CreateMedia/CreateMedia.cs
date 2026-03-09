@@ -26,6 +26,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IMetadataProvider<ExternalMovieMetadata> _metadataProvider;
+    private readonly IMetadataProvider<ExternalMusicAlbumMetadata> _musicMetadataProvider;
     private readonly IAudioTagReader _audioTagReader;
     private readonly PathsConfiguration _pathsConfiguration;
 
@@ -33,12 +34,14 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         IApplicationDbContext context,
         ISender sender,
         IMetadataProvider<ExternalMovieMetadata> metadataProvider,
+        IMetadataProvider<ExternalMusicAlbumMetadata> musicMetadataProvider,
         IAudioTagReader audioTagReader,
         IOptions<PathsConfiguration> pathsConfiguration)
     {
         _context = context;
         _sender = sender;
         _metadataProvider = metadataProvider;
+        _musicMetadataProvider = musicMetadataProvider;
         _audioTagReader = audioTagReader;
         _pathsConfiguration = pathsConfiguration.Value;
     }
@@ -154,6 +157,32 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             // Attach cover art to album
             await TryAttachAlbumCover(indexedFile, album, tags, cancellationToken);
+
+            // Queue MusicBrainz enrichment for the new album
+            var albumIdentification = new MediaIdentification(album.Title ?? albumName ?? "Unknown Album")
+            {
+                AlbumName = album.Title,
+                ArtistName = albumArtistName,
+                ReleaseYear = releaseYear
+            };
+            var musicBrainzId = await _musicMetadataProvider.SearchAsync(albumIdentification, cancellationToken);
+            if (!string.IsNullOrEmpty(musicBrainzId))
+            {
+                await _sender.Send(new CreateBackgroundTaskCommand()
+                {
+                    Request = new RefreshMediaMetadatasCommand()
+                    {
+                        MediaId = album.Id,
+                        MetadataProviderExternalId = musicBrainzId,
+                        Language = "en",
+                        FallbackLanguage = "en"
+                    },
+                    Priority = BackgroundTaskPriority.Low,
+                    TargetEntityId = album.Id,
+                    TargetEntityTypeName = nameof(BaseMedia),
+                    MaxRetryCount = 3
+                }, cancellationToken);
+            }
         }
 
         // Create the track
