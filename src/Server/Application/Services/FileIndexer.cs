@@ -120,7 +120,21 @@ public class FileIndexer : IFileIndexer
                     var filesInSameDirectory = group.ToList();
                     foreach (var file in filesInSameDirectory)
                     {
-                        file.TryIdentifyMusicTrack(library, filesInSameDirectory);
+                        if (file.TryIdentifyMusicTrack(library, filesInSameDirectory))
+                        {
+                            file.Identification = file.Identification;
+                            backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                            {
+                                Request = new CreateMediaCommand()
+                                {
+                                    IndexedFileId = file.Id,
+                                    MediaType = MediaType.MusicTrack
+                                },
+                                Priority = BackgroundTaskPriority.Normal,
+                                TargetEntityTypeName = nameof(BaseMedia),
+                                MaxRetryCount = 5
+                            });
+                        }
                     }
                 }
                 break;

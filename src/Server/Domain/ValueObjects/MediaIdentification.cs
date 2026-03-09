@@ -4,6 +4,11 @@ public class MediaIdentification : ValueObject
     public string Title { get; set; }
     public DateOnly? ReleaseYear { get; set; }
 
+    // Music-specific
+    public int? TrackNumber { get; set; }
+    public string? AlbumName { get; set; }
+    public string? ArtistName { get; set; }
+
     public MediaIdentification(string title)
     {
         Title = title;

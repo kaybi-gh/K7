@@ -50,8 +50,76 @@ public static class IndexedFileExtensions
         return false;
     }
 
-    public static void TryIdentifyMusicTrack(this IndexedFile indexedFile, Library library, IEnumerable<IndexedFile> similarIndexedFiles)
+    public static bool TryIdentifyMusicTrack(this IndexedFile indexedFile, Library library, IEnumerable<IndexedFile> similarIndexedFiles)
     {
+        string? trackTitle = indexedFile.Name;
+        int? trackNumber = null;
+
+        // Extract track number from filename (e.g., "01 - Song Title" → trackNumber=1, trackTitle="Song Title")
+        if (StringParsingHelper.TryApplyRegexes(trackTitle, Regexes.TrackNumberExtractionRegexes, false, out var trackNumberResult))
+        {
+            if (int.TryParse(trackNumberResult?.Output, out int parsedTrackNumber))
+            {
+                trackNumber = parsedTrackNumber;
+            }
+            trackTitle = trackNumberResult?.TrimmedInput ?? trackTitle;
+        }
+
+        // Clean the track title from noise
+        if (StringParsingHelper.TryApplyRegexes(trackTitle, Regexes.TitleCleaningRegexes, true, out var cleanedResult))
+        {
+            trackTitle = cleanedResult?.Output ?? trackTitle;
+        }
+
+        if (string.IsNullOrWhiteSpace(trackTitle))
+        {
+            return false;
+        }
+
+        // Album name = parent directory, Artist name = grandparent directory
+        // Structure: Artist/Album/01 - Track.flac  OR  Album/01 - Track.flac
+        var albumName = indexedFile.ParentDirectory;
+
+        // Extract year from album directory name if present
+        DateOnly? releaseYear = null;
+        if (!string.IsNullOrEmpty(albumName) &&
+            StringParsingHelper.TryApplyRegexes(albumName, Regexes.YearExtractionRegexes, false, out var albumYearResult))
+        {
+            if (int.TryParse(albumYearResult?.Output, out int year))
+            {
+                releaseYear = new DateOnly(year, 1, 1);
+            }
+            albumName = albumYearResult?.TrimmedInput ?? albumName;
+        }
+
+        indexedFile.Identification = new MediaIdentification(trackTitle)
+        {
+            ReleaseYear = releaseYear,
+            TrackNumber = trackNumber,
+            AlbumName = albumName,
+            ArtistName = GetGrandparentDirectory(indexedFile, library)
+        };
+
+        return true;
+    }
+
+    private static string? GetGrandparentDirectory(IndexedFile indexedFile, Library library)
+    {
+        var directory = Path.GetDirectoryName(indexedFile.Path);
+        if (string.IsNullOrEmpty(directory)) return null;
+
+        var grandparent = Path.GetDirectoryName(directory);
+        if (string.IsNullOrEmpty(grandparent)) return null;
+
+        // Don't return the library root as the grandparent
+        var normalizedGrandparent = Path.GetFullPath(grandparent);
+        var normalizedRoot = Path.GetFullPath(library.RootPath);
+        if (string.Equals(normalizedGrandparent, normalizedRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return Path.GetFileName(grandparent);
     }
 
     public static void TryIdentifySerieEpisode(this IndexedFile indexedFile, Library library, IEnumerable<IndexedFile> similarIndexedFiles)
