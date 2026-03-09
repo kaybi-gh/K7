@@ -39,6 +39,11 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
             .Include(x => x.IndexedFiles)
                 .ThenInclude(x => x.FileMetadata)
                     .ThenInclude(x => (x as VideoFileMetadata)!.Thumbnails)
+            .Include(x => (x as MusicAlbum)!.Tracks)
+                .ThenInclude(t => t.Pictures)
+                    .ThenInclude(p => p.Variants)
+            .Include(x => (x as MusicAlbum)!.Tracks)
+                .ThenInclude(t => t.IndexedFiles)
             .AsQueryable();
 
         if (userId.HasValue)

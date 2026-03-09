@@ -2258,12 +2258,20 @@
         "anyOf": [
           {
             "$ref": "#/components/schemas/LiteMediaDtoLiteMovieDto"
+          },
+          {
+            "$ref": "#/components/schemas/LiteMediaDtoLiteMusicAlbumDto"
+          },
+          {
+            "$ref": "#/components/schemas/LiteMediaDtoLiteMusicTrackDto"
           }
         ],
         "discriminator": {
           "propertyName": "$type",
           "mapping": {
-            "Movie": "#/components/schemas/LiteMediaDtoLiteMovieDto"
+            "Movie": "#/components/schemas/LiteMediaDtoLiteMovieDto",
+            "MusicAlbum": "#/components/schemas/LiteMediaDtoLiteMusicAlbumDto",
+            "MusicTrack": "#/components/schemas/LiteMediaDtoLiteMusicTrackDto"
           }
         }
       },
@@ -2274,6 +2282,162 @@
               "Movie"
             ],
             "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "LiteMediaDtoLiteMusicAlbumDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "MusicAlbum"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "LiteMediaDtoLiteMusicTrackDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "MusicTrack"
+            ],
+            "type": "string"
+          },
+          "albumId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "LiteMusicTrackDto": {
+        "type": "object",
+        "properties": {
+          "albumId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "id": {
             "type": "string",
@@ -2531,12 +2695,20 @@
         "anyOf": [
           {
             "$ref": "#/components/schemas/MediaDtoMovieDto"
+          },
+          {
+            "$ref": "#/components/schemas/MediaDtoMusicAlbumDto"
+          },
+          {
+            "$ref": "#/components/schemas/MediaDtoMusicTrackDto"
           }
         ],
         "discriminator": {
           "propertyName": "$type",
           "mapping": {
-            "Movie": "#/components/schemas/MediaDtoMovieDto"
+            "Movie": "#/components/schemas/MediaDtoMovieDto",
+            "MusicAlbum": "#/components/schemas/MediaDtoMusicAlbumDto",
+            "MusicTrack": "#/components/schemas/MediaDtoMusicTrackDto"
           }
         }
       },
@@ -2565,6 +2737,249 @@
               "null",
               "string"
             ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "personRoles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LitePersonRoleDto"
+            }
+          },
+          "ratings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RatingDto"
+            }
+          },
+          "indexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "genres": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "MediaDtoMusicAlbumDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "MusicAlbum"
+            ],
+            "type": "string"
+          },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tracks": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiteMusicTrackDto"
+            }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "personRoles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LitePersonRoleDto"
+            }
+          },
+          "ratings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RatingDto"
+            }
+          },
+          "indexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "genres": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "MediaDtoMusicTrackDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "MusicTrack"
+            ],
+            "type": "string"
+          },
+          "albumId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trackNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lyrics": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lyricsLrc": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bpm": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "musicalKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "loudnessLufs": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           },
           "id": {
             "type": "string",
