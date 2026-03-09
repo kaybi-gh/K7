@@ -25,6 +25,8 @@ public static class DependencyInjection
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>()); // TODO - Make it customizable
+        services.AddScoped<MusicBrainzMetadataProvider>();
+        services.AddScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
 
         services.AddSignalR();
         return services;

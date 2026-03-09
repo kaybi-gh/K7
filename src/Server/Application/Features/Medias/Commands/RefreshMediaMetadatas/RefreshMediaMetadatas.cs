@@ -16,12 +16,17 @@ public record RefreshMediaMetadatasCommand : IRequest
 public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaMetadatasCommand>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMetadataProvider<ExternalMovieMetadata> _metadataProvider;
+    private readonly IMetadataProvider<ExternalMovieMetadata> _movieMetadataProvider;
+    private readonly IMetadataProvider<ExternalMusicAlbumMetadata> _musicMetadataProvider;
 
-    public RefreshMediaMetadatasCommandHandler(IApplicationDbContext context, IMetadataProvider<ExternalMovieMetadata> metadataProvider)
+    public RefreshMediaMetadatasCommandHandler(
+        IApplicationDbContext context,
+        IMetadataProvider<ExternalMovieMetadata> movieMetadataProvider,
+        IMetadataProvider<ExternalMusicAlbumMetadata> musicMetadataProvider)
     {
         _context = context;
-        _metadataProvider = metadataProvider;
+        _movieMetadataProvider = movieMetadataProvider;
+        _musicMetadataProvider = musicMetadataProvider;
     }
 
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
@@ -40,6 +45,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         var metadataUpdate = media switch
         {
             Movie movie => HandleMovieAsync(request, movie, cancellationToken),
+            MusicAlbum album => HandleMusicAlbumAsync(request, album, cancellationToken),
             _ => throw new NotImplementedException()
         };
 
@@ -49,7 +55,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
     private async Task HandleMovieAsync(RefreshMediaMetadatasCommand request, Movie movie, CancellationToken cancellationToken = default)
     {
-        var metadata = await _metadataProvider.FetchMetadata(request.MetadataProviderExternalId,
+        var metadata = await _movieMetadataProvider.FetchMetadata(request.MetadataProviderExternalId,
                 request.Language,
                 cancellationToken);
 
@@ -85,6 +91,17 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
 
             movie.ApplyMetadata(metadata);
+        }
+    }
+
+    private async Task HandleMusicAlbumAsync(RefreshMediaMetadatasCommand request, MusicAlbum album, CancellationToken cancellationToken)
+    {
+        var metadata = await _musicMetadataProvider.FetchMetadata(
+            request.MetadataProviderExternalId, request.Language, cancellationToken);
+
+        if (metadata != null)
+        {
+            album.ApplyMetadata(metadata);
         }
     }
 }
