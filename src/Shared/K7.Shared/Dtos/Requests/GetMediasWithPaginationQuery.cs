@@ -17,6 +17,8 @@ public enum MediaOrderingOption
 {
     CreatedAsc,
     CreatedDesc,
+    DiscNumberAsc,
+    DiscNumberDesc,
     LastInteractedAsc,
     LastInteractedDesc,
     LocalRatingAsc,
@@ -30,5 +32,7 @@ public enum MediaOrderingOption
     ReleaseDateAsc,
     ReleaseDateDesc,
     TitleAsc,
-    TitleDesc
+    TitleDesc,
+    TrackNumberAsc,
+    TrackNumberDesc
 }

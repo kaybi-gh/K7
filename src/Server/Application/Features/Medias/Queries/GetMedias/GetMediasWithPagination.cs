@@ -153,6 +153,18 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 MediaOrderingOption.TitleDesc => orderedQueryable == null ?
                     queryable.OrderByDescending(x => x.Title)
                     : orderedQueryable.ThenByDescending(x => x.Title),
+                MediaOrderingOption.TrackNumberAsc => orderedQueryable == null ?
+                    queryable.OrderBy(x => (x as MusicTrack)!.TrackNumber)
+                    : orderedQueryable.ThenBy(x => (x as MusicTrack)!.TrackNumber),
+                MediaOrderingOption.TrackNumberDesc => orderedQueryable == null ?
+                    queryable.OrderByDescending(x => (x as MusicTrack)!.TrackNumber)
+                    : orderedQueryable.ThenByDescending(x => (x as MusicTrack)!.TrackNumber),
+                MediaOrderingOption.DiscNumberAsc => orderedQueryable == null ?
+                    queryable.OrderBy(x => (x as MusicTrack)!.DiscNumber)
+                    : orderedQueryable.ThenBy(x => (x as MusicTrack)!.DiscNumber),
+                MediaOrderingOption.DiscNumberDesc => orderedQueryable == null ?
+                    queryable.OrderByDescending(x => (x as MusicTrack)!.DiscNumber)
+                    : orderedQueryable.ThenByDescending(x => (x as MusicTrack)!.DiscNumber),
                 _ => throw new InvalidOperationException($"Unsupported media ordering option: {order}")
             };
         }
