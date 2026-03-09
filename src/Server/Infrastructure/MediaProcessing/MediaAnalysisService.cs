@@ -22,6 +22,36 @@ public class MediaAnalysisService : IMediaAnalysisService
         _pathsConfiguration = pathsConfiguration.Value;
     }
 
+    public async Task<AudioFileMetadata> GetAudioFileMetadataAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        var mediaAnalysis = await FFProbe.AnalyseAsync(filePath, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        var primaryAudio = mediaAnalysis.PrimaryAudioStream
+            ?? throw new InvalidOperationException("No audio stream found.");
+
+        var audioTrack = new AudioFileTrack()
+        {
+            Index = primaryAudio.Index,
+            IsDefault = true,
+            Language = primaryAudio.Language,
+            Name = primaryAudio.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? primaryAudio.Language,
+            Codec = primaryAudio.CodecName,
+            Channels = primaryAudio.Channels,
+            ChannelLayout = primaryAudio.ChannelLayout,
+            Profile = primaryAudio.Profile,
+            SampleRateHz = primaryAudio.SampleRateHz
+        };
+
+        return new AudioFileMetadata()
+        {
+            Id = Guid.NewGuid(),
+            Duration = mediaAnalysis.Duration,
+            Container = GetMediaContainer(filePath, mediaAnalysis.Format.FormatName),
+            AudioTrack = audioTrack
+        };
+    }
+
     public async Task<VideoFileMetadata> GetVideoFileMetadataAsync(string filePath, CancellationToken cancellationToken = default)
     {
         var mediaAnalysis = await FFProbe.AnalyseAsync(filePath, cancellationToken: cancellationToken)
