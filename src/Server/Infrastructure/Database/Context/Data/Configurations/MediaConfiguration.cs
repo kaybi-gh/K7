@@ -34,6 +34,11 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
 
     public static void Configure(EntityTypeBuilder<MusicAlbum> builder)
     {
+        builder
+            .HasMany(a => a.Tracks)
+            .WithOne(t => t.Album)
+            .HasForeignKey(t => t.AlbumId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public static void Configure(EntityTypeBuilder<MusicTrack> builder)
