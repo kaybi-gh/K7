@@ -46,7 +46,11 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
         if (indexedFile.FileMetadata is AudioFileMetadata audioFileMetadata)
         {
-            throw new NotImplementedException();
+            await _context.Entry(audioFileMetadata)
+                .Reference(a => a.AudioTrack)
+                .LoadAsync(cancellationToken);
+
+            return GetAudioFileStreamUri(device, indexedFile, audioFileMetadata, request);
         }
 
         if (indexedFile.FileMetadata is VideoFileMetadata videoFileMetadata)
@@ -155,5 +159,44 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
     public static VideoMediaFormat GetDeviceBestSupportedVideoMediaFormat(ICollection<BaseMediaFormat> supportedVideoCodecs)
     {
         return supportedVideoCodecs.OfType<VideoMediaFormat>().First(); // TODO - Implement prioritizing algorithm (cost vs size vs quality)
+    }
+
+    private static IndexedFileStreamUri GetAudioFileStreamUri(Device device, IndexedFile indexedFile, AudioFileMetadata audioFileMetadata, GetStreamUriQuery request)
+    {
+        var audioTrack = audioFileMetadata.AudioTrack
+            ?? throw new InvalidOperationException($"Indexed file '{indexedFile.Id}' has no audio track metadata.");
+
+        var supportedAudioFormats = device.PlaybackCapabilities.SupportedMediaFormats.OfType<AudioMediaFormat>().ToList();
+
+        var directSupported = supportedAudioFormats.Any(x =>
+            x.Container == audioFileMetadata.Container && x.Codec == audioTrack.Codec);
+
+        if (directSupported)
+        {
+            var mimeType = Constants.ContainerMimeTypeMapping.TryGetValue(audioFileMetadata.Container, out var mime)
+                ? mime
+                : "application/octet-stream";
+
+            return new IndexedFileStreamUri
+            {
+                Uri = new Uri(GetIndexedFileDirectStreamQueryUriBuilder.Build(indexedFile.Id), UriKind.Relative),
+                MimeType = mimeType
+            };
+        }
+
+        // Transcode via HLS
+        var fallbackFormat = GetDeviceBestSupportedAudioMediaFormat(
+            [.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
+
+        return new IndexedFileStreamUri
+        {
+            Uri = new Uri(GetHlsStreamManifestQueryUriBuilder.Build(new GetHlsStreamManifestQuery()
+            {
+                Id = indexedFile.Id,
+                StreamSessionId = request.StreamSessionId,
+                AudioTrackTranscodings = new Dictionary<int, string> { [audioTrack.Index] = fallbackFormat.Codec }
+            }), UriKind.Relative),
+            MimeType = "application/vnd.apple.mpegurl"
+        };
     }
 }

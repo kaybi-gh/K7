@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetDirectStream;
@@ -17,7 +18,8 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
     public async Task<IResult> Handle(GetDirectStreamQuery query, CancellationToken cancellationToken)
     {
         var entity = await _context.IndexedFiles
-            .FindAsync([query.Id], cancellationToken);
+            .Include(x => x.FileMetadata)
+            .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
@@ -28,14 +30,11 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
             return Results.NotFound();
         }
 
-        return Results.Stream(file.OpenRead(), contentType: file.Extension switch
-        {
-            ".mkv" => "video/x-matroska",
-            ".mpd" => "video/vnd.mpeg.dash.mpd",
-            ".mpegts" => "video/mp2t",
-            _ => $"video/{file.Extension.TrimStart('.')}"
-        },
-        enableRangeProcessing: true);
-        // TODO - Manage mime-type in database or with a better class
+        var container = entity.FileMetadata?.Container;
+        var mimeType = container != null && Constants.ContainerMimeTypeMapping.TryGetValue(container, out var mime)
+            ? mime
+            : "application/octet-stream";
+
+        return Results.Stream(file.OpenRead(), contentType: mimeType, enableRangeProcessing: true);
     }
 }
