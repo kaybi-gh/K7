@@ -35,6 +35,14 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .AsNoTracking()
             .AsQueryable();
 
+        if (request.MediaTypes?.Contains(MediaType.MusicTrack) == true)
+        {
+            query = query
+                .Include(x => ((MusicTrack)x).Album)
+                    .ThenInclude(a => a.PersonRoles)
+                        .ThenInclude(r => r.Person);
+        }
+
         if (userId.HasValue)
         {
             query = query.Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value));

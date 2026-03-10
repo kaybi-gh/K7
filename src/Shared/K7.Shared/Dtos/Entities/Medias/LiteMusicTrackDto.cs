@@ -6,4 +6,6 @@ public sealed record LiteMusicTrackDto : LiteMediaDto
     public int? TrackNumber { get; init; }
     public Guid? IndexedFileId { get; init; }
     public double? Duration { get; init; }
+    public string? AlbumTitle { get; init; }
+    public string? ArtistName { get; init; }
 }
