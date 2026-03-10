@@ -4,13 +4,11 @@
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IMediaPlayerService MediaPlayerService
 
 <MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled />
 <MudPopoverProvider />
 <MudDialogProvider />
-<VideoPlayer />
-<AudioPlayer />
+<MediaPlayer />
 <MiniMusicPlayer />
 <FullScreenMusicPlayer />
 
