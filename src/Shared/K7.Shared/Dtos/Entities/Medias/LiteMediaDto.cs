@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 
 namespace K7.Shared.Dtos.Entities.Medias;
 
@@ -47,6 +48,8 @@ public abstract record LiteMediaDto
             TrackNumber = track.TrackNumber,
             IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
             Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
+            AlbumTitle = track.Album?.Title,
+            ArtistName = track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null

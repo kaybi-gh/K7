@@ -2409,6 +2409,18 @@
             ],
             "format": "double"
           },
+          "albumTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "artistName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -2477,6 +2489,18 @@
               "string"
             ],
             "format": "double"
+          },
+          "albumTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "artistName": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "id": {
             "type": "string",
