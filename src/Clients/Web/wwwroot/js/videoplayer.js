@@ -278,7 +278,6 @@ window.exitFullscreen = function () {
     document?.exitFullscreen();
 }
 
-// ── Aspect ratio ──
 window.setAspectRatioMode = function (id, mode) {
     const player = players[id];
     if (!player) return;
