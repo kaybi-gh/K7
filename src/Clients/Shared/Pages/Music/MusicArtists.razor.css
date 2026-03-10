@@ -1,0 +1,30 @@
+.artist-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.artist-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 160px;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.artist-card:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+::deep .artist-avatar {
+    border-radius: 50%;
+}
+
+.artist-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}

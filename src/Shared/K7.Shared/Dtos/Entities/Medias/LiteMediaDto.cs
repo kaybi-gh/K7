@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas.Files;
 
 namespace K7.Shared.Dtos.Entities.Medias;
 
@@ -44,6 +45,8 @@ public abstract record LiteMediaDto
             Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
             AlbumId = track.AlbumId,
             TrackNumber = track.TrackNumber,
+            IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
+            Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null

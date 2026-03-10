@@ -2393,6 +2393,22 @@
             ],
             "format": "int32"
           },
+          "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "duration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -2445,6 +2461,22 @@
               "string"
             ],
             "format": "int32"
+          },
+          "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "duration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           },
           "id": {
             "type": "string",
@@ -2545,13 +2577,17 @@
           },
           {
             "$ref": "#/components/schemas/LitePersonRoleDtoLiteCrewMemberDto"
+          },
+          {
+            "$ref": "#/components/schemas/LitePersonRoleDtoLiteMusicArtistRoleDto"
           }
         ],
         "discriminator": {
           "propertyName": "$type",
           "mapping": {
             "Actor": "#/components/schemas/LitePersonRoleDtoLiteActorDto",
-            "CrewMember": "#/components/schemas/LitePersonRoleDtoLiteCrewMemberDto"
+            "CrewMember": "#/components/schemas/LitePersonRoleDtoLiteCrewMemberDto",
+            "MusicArtist": "#/components/schemas/LitePersonRoleDtoLiteMusicArtistRoleDto"
           }
         }
       },
@@ -2633,6 +2669,62 @@
               "null",
               "string"
             ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "person": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LitePersonDto"
+              }
+            ]
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          }
+        }
+      },
+      "LitePersonRoleDtoLiteMusicArtistRoleDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "MusicArtist"
+            ],
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
           },
           "id": {
             "type": "string",
@@ -3492,13 +3584,17 @@
           },
           {
             "$ref": "#/components/schemas/PersonRoleDtoCrewMemberDto"
+          },
+          {
+            "$ref": "#/components/schemas/PersonRoleDtoMusicArtistRoleDto"
           }
         ],
         "discriminator": {
           "propertyName": "$type",
           "mapping": {
             "Actor": "#/components/schemas/PersonRoleDtoActorDto",
-            "CrewMember": "#/components/schemas/PersonRoleDtoCrewMemberDto"
+            "CrewMember": "#/components/schemas/PersonRoleDtoCrewMemberDto",
+            "MusicArtist": "#/components/schemas/PersonRoleDtoMusicArtistRoleDto"
           }
         }
       },
@@ -3590,6 +3686,72 @@
               "null",
               "string"
             ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "order": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "portraitPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "media": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiteMediaDto"
+              }
+            ]
+          },
+          "person": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LitePersonDto"
+              }
+            ]
+          },
+          "externalIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          }
+        }
+      },
+      "PersonRoleDtoMusicArtistRoleDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "MusicArtist"
+            ],
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
           },
           "id": {
             "type": "string",
