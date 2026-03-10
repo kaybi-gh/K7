@@ -71,6 +71,11 @@ public interface IAudioPlayerService
     void ToggleShuffle();
     void CycleRepeatMode();
 
+    // Full screen
+    bool IsFullScreenVisible { get; }
+    event Action? IsFullScreenVisibleChanged;
+    void ToggleFullScreen();
+
     // Visibility
     Task ShowAsync();
     Task HideAsync();

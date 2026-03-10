@@ -13,7 +13,7 @@
         </div>
 
         <div class="mini-player-content">
-            <div class="mini-player-track-info">
+            <div class="mini-player-track-info" @onclick="Audio.ToggleFullScreen" style="cursor: pointer;">
                 @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
                 {
                     <MudImage Src="@Audio.CurrentTrack.CoverUrl"
