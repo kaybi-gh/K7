@@ -84,6 +84,19 @@ public class K7ServerService : IK7ServerService
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteMediaDto>>(requestUri, _serializerOptions, cancellationToken);
     }
 
+    public async Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await HttpClient.GetFromJsonAsync<MediaDto>($"api/medias/{id}", _serializerOptions, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return null;
+        }
+    }
+
     public async Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<PersonDto>($"api/persons/{id}", _serializerOptions, cancellationToken);

@@ -1,0 +1,77 @@
+@page "/music/albums"
+@inject IK7ServerService k7ServerService
+<PageTitle>Albums</PageTitle>
+
+<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
+    <MudText Typo="Typo.h5">Albums</MudText>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+        <MudTextField T="string"
+                      @bind-Value="_searchText"
+                      Placeholder="Rechercher un album..."
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      DebounceInterval="400"
+                      OnDebounceIntervalElapsed="OnSearchChanged"
+                      Margin="Margin.Dense"
+                      Style="max-width: 300px;" />
+    </MudStack>
+</MudStack>
+
+@if (_loading)
+{
+    <MudGrid Style="max-width:100%;" Spacing="6" Justify="Justify.FlexStart" Class="pa-4">
+        @for (var i = 0; i < 12; i++)
+        {
+            <MudItem>
+                <MudPaper Style="width: 160px;" Elevation="0">
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="160px" Height="160px" Class="rounded-lg" />
+                    <MudSkeleton Width="90%" Class="mt-2" />
+                    <MudSkeleton Width="60%" />
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+else if (_albums.Count == 0)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudIcon Icon="@Icons.Material.Outlined.Album" Style="font-size: 64px; opacity: 0.3;" />
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">Aucun album trouvé</MudText>
+    </MudStack>
+}
+else
+{
+    <MudGrid Style="max-width:100%;" Spacing="6" Justify="Justify.FlexStart" Class="pa-4">
+        @foreach (var album in _albums)
+        {
+            <MudItem>
+                <a href="@($"/music/albums/{album.Id}")" class="album-card-link">
+                    <MudPaper Class="album-card" Elevation="0">
+                        @if (album.CoverUrl is not null)
+                        {
+                            <MudImage Src="@album.CoverUrl"
+                                      Alt="@album.Title"
+                                      Width="160" Height="160"
+                                      ObjectFit="ObjectFit.Cover"
+                                      Class="album-cover" />
+                        }
+                        else
+                        {
+                            <div class="album-cover-placeholder">
+                                <MudIcon Icon="@Icons.Material.Outlined.Album"
+                                         Style="font-size: 48px; opacity: 0.3;" />
+                            </div>
+                        }
+                        <MudText Typo="Typo.subtitle2" Class="mt-2 album-title">@album.Title</MudText>
+                        @if (!string.IsNullOrEmpty(album.Artist))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="album-artist">@album.Artist</MudText>
+                        }
+                    </MudPaper>
+                </a>
+            </MudItem>
+        }
+    </MudGrid>
+}

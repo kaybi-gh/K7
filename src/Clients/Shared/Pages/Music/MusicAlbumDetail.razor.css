@@ -1,0 +1,93 @@
+.album-detail-page {
+    position: relative;
+    overflow: hidden;
+}
+
+.album-hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 400px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(40px) brightness(0.3);
+    transform: scale(1.2);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.album-header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 32px;
+    padding: 32px 24px;
+    align-items: flex-end;
+}
+
+.album-detail-cover {
+    width: 240px;
+    height: 240px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.album-detail-cover-placeholder {
+    width: 240px;
+    height: 240px;
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.album-detail-title {
+    font-weight: 700;
+}
+
+.album-artist-link {
+    text-decoration: none;
+}
+
+.album-artist-link:hover {
+    text-decoration: underline;
+}
+
+.album-tracklist {
+    position: relative;
+    z-index: 1;
+    padding: 0 24px 24px;
+}
+
+.disc-header {
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+::deep .cursor-pointer {
+    cursor: pointer;
+}
+
+.album-overview {
+    position: relative;
+    z-index: 1;
+    padding: 0 24px 32px;
+    max-width: 800px;
+}
+
+@media (max-width: 600px) {
+    .album-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .album-detail-cover,
+    .album-detail-cover-placeholder {
+        width: 200px;
+        height: 200px;
+    }
+}
