@@ -1,0 +1,46 @@
+.album-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.album-card {
+    display: flex;
+    flex-direction: column;
+    width: 160px;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.album-card:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+::deep .album-cover {
+    border-radius: 8px;
+}
+
+.album-cover-placeholder {
+    width: 160px;
+    height: 160px;
+    border-radius: 8px;
+    background: var(--mud-palette-background-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.album-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.album-artist {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}

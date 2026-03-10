@@ -1,0 +1,156 @@
+@page "/music/albums/{Id}"
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.PersonRoles
+@inject IK7ServerService k7ServerService
+<PageTitle>@_album?.Title</PageTitle>
+
+@if (_album is not null)
+{
+    <div class="album-detail-page">
+        @if (_coverUrl is not null)
+        {
+            <div class="album-hero-bg" style="background-image: url('@_coverUrl')"></div>
+        }
+
+        <div class="album-header">
+            <div class="album-header-cover">
+                @if (_coverUrl is not null)
+                {
+                    <MudImage Src="@_coverUrl"
+                              Alt="@_album.Title"
+                              Class="album-detail-cover"
+                              ObjectFit="ObjectFit.Cover" />
+                }
+                else
+                {
+                    <div class="album-detail-cover-placeholder">
+                        <MudIcon Icon="@Icons.Material.Outlined.Album"
+                                 Style="font-size: 64px; opacity: 0.3;" />
+                    </div>
+                }
+            </div>
+
+            <div class="album-header-info">
+                <MudText Typo="Typo.overline">Album</MudText>
+                <MudText Typo="Typo.h4" Class="album-detail-title">@_album.Title</MudText>
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                    @foreach (var artist in _artists)
+                    {
+                        <a href="@($"/music/artists/{artist.PersonId}")" class="album-artist-link">
+                            <MudText Typo="Typo.subtitle1" Color="Color.Primary">@artist.Name</MudText>
+                        </a>
+                    }
+                </MudStack>
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                    @if (_album.ReleaseDate.HasValue)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_album.ReleaseDate.Value.Year</MudText>
+                    }
+                    @if (_trackCount > 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">· @_trackCount morceaux</MudText>
+                    }
+                    @if (_totalDuration > 0)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">· @FormatTotalDuration(_totalDuration)</MudText>
+                    }
+                </MudStack>
+
+                @if (_album.Genres?.Any() == true)
+                {
+                    <MudStack Row="true" Spacing="1" Class="mt-2" Wrap="Wrap.Wrap">
+                        @foreach (var genre in _album.Genres)
+                        {
+                            <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@genre</MudChip>
+                        }
+                    </MudStack>
+                }
+
+                <MudStack Row="true" Spacing="2" Class="mt-3">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.PlayArrow"
+                               OnClick="PlayAll">
+                        Tout lire
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Shuffle"
+                               OnClick="ShuffleAll">
+                        Aléatoire
+                    </MudButton>
+                </MudStack>
+            </div>
+        </div>
+
+        <div class="album-tracklist">
+            @foreach (var discGroup in _tracksByDisc)
+            {
+                @if (_tracksByDisc.Count > 1)
+                {
+                    <MudText Typo="Typo.subtitle1" Class="disc-header">Disque @discGroup.Key</MudText>
+                }
+
+                <MudTable Items="discGroup.Value"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          T="TrackViewModel"
+                          OnRowClick="OnTrackClick"
+                          RowClass="cursor-pointer">
+                    <HeaderContent>
+                        <MudTh Style="width: 50px;">#</MudTh>
+                        <MudTh>Titre</MudTh>
+                        <MudTh Style="width: 100px; text-align: right;">
+                            <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @if (context.IsPlaying)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Equalizer"
+                                         Size="Size.Small"
+                                         Color="Color.Primary" />
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@context.TrackNumber</MudText>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            <MudStack Spacing="0">
+                                <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">
+                                    @context.Title
+                                </MudText>
+                                @if (!string.IsNullOrEmpty(context.ArtistName))
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ArtistName</MudText>
+                                }
+                            </MudStack>
+                        </MudTd>
+                        <MudTd Style="text-align: right;">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(_album.Overview))
+        {
+            <div class="album-overview">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">À propos</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@_album.Overview</MudText>
+            </div>
+        }
+    </div>
+}
+else if (_loading)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudProgressCircular Indeterminate="true" />
+    </MudStack>
+}

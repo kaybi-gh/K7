@@ -17,6 +17,7 @@ public interface IK7ServerService
     Task<PaginatedListDto<DeviceDto>?> GetDevicesAsync(GetDevicesQuery? query = null, CancellationToken cancellationToken = default);
     Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default);
     Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default);
     Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<PersonDto>?> GetPersonsAsync(GetPersonsWithPaginationQuery query, CancellationToken cancellationToken = default);
