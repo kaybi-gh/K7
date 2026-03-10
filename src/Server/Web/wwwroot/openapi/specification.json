@@ -60,6 +60,184 @@
         }
       }
     },
+    "/api/smart-playlists": {
+      "post": {
+        "tags": [
+          "SmartPlaylists"
+        ],
+        "operationId": "CreateSmartPlaylist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSmartPlaylistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SmartPlaylists"
+        ],
+        "operationId": "GetSmartPlaylists",
+        "parameters": [
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnonymousTypeOfintAndintAndintAndIEnumerableOfLiteSmartPlaylistDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/smart-playlists/{id}": {
+      "delete": {
+        "tags": [
+          "SmartPlaylists"
+        ],
+        "operationId": "DeleteSmartPlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SmartPlaylists"
+        ],
+        "operationId": "GetSmartPlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartPlaylistDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SmartPlaylists"
+        ],
+        "operationId": "UpdateSmartPlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSmartPlaylistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/smart-playlists/{id}/evaluate": {
+      "post": {
+        "tags": [
+          "SmartPlaylists"
+        ],
+        "operationId": "EvaluateSmartPlaylist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/playlists/{playlistId}/items": {
       "post": {
         "tags": [
@@ -2014,6 +2192,50 @@
           }
         }
       },
+      "AnonymousTypeOfintAndintAndintAndIEnumerableOfLiteSmartPlaylistDto": {
+        "required": [
+          "pageNumber",
+          "totalPages",
+          "totalCount",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiteSmartPlaylistDto"
+            }
+          }
+        }
+      },
       "AnonymousTypeOfintAndintAndintAndIEnumerableOfPlaylistItemDto": {
         "required": [
           "pageNumber",
@@ -2321,6 +2543,57 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "CreateSmartPlaylistRequest": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            ]
+          },
+          "matchCondition": {
+            "$ref": "#/components/schemas/SmartPlaylistMatchCondition"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SmartPlaylistRuleRequest"
+            }
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/SmartPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
           }
         }
       },
@@ -3258,6 +3531,9 @@
               "string"
             ]
           },
+          "isSmartPlaylist": {
+            "type": "boolean"
+          },
           "coverPicture": {
             "oneOf": [
               {
@@ -3275,6 +3551,63 @@
               "string"
             ],
             "format": "int32"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LiteSmartPlaylistDto": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            ]
+          },
+          "ruleCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "coverPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
           },
           "created": {
             "type": "string",
@@ -3746,6 +4079,9 @@
             "type": "string"
           }
         }
+      },
+      "MediaType": {
+        "type": "integer"
       },
       "MetadataPictureDto": {
         "type": "object",
@@ -4346,6 +4682,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "isSmartPlaylist": {
+            "type": "boolean"
+          },
           "coverPicture": {
             "oneOf": [
               {
@@ -4533,6 +4872,144 @@
           }
         }
       },
+      "SmartPlaylistDto": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            ]
+          },
+          "matchCondition": {
+            "$ref": "#/components/schemas/SmartPlaylistMatchCondition"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SmartPlaylistRuleDto"
+            }
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/SmartPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
+          },
+          "coverPicture": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          },
+          "itemCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lastEvaluatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SmartPlaylistField": {
+        "type": "integer"
+      },
+      "SmartPlaylistMatchCondition": {
+        "type": "integer"
+      },
+      "SmartPlaylistOperator": {
+        "type": "integer"
+      },
+      "SmartPlaylistOrderBy": {
+        "type": "integer"
+      },
+      "SmartPlaylistRuleDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/SmartPlaylistField"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/SmartPlaylistOperator"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SmartPlaylistRuleRequest": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/SmartPlaylistField"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/SmartPlaylistOperator"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SubtitleFileTrackDto": {
         "required": [
           "codec"
@@ -4651,6 +5128,57 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "UpdateSmartPlaylistRequest": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            ]
+          },
+          "matchCondition": {
+            "$ref": "#/components/schemas/SmartPlaylistMatchCondition"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SmartPlaylistRuleRequest"
+            }
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orderBy": {
+            "$ref": "#/components/schemas/SmartPlaylistOrderBy"
+          },
+          "orderDescending": {
+            "type": "boolean"
           }
         }
       },
@@ -4831,6 +5359,9 @@
   "tags": [
     {
       "name": "StreamSessions"
+    },
+    {
+      "name": "SmartPlaylists"
     },
     {
       "name": "Playlists"
