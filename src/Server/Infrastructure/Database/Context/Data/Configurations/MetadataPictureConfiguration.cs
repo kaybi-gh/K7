@@ -33,6 +33,13 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .HasForeignKey<MetadataPicture>(mp => mp.PersonRoleId)
             .IsRequired(false);
 
+        builder
+            .HasOne(mp => mp.Playlist)
+            .WithOne(p => p.CoverPicture)
+            .HasForeignKey<MetadataPicture>(mp => mp.PlaylistId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
         builder.Property(m => m.OriginalRemoteUri)
             .HasConversion(
                 v => v != null ? v.ToString() : null,
