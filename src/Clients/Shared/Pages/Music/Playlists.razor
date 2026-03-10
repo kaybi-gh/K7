@@ -1,0 +1,64 @@
+@page "/playlists"
+@using K7.Shared.Dtos.Entities.Playlists
+@inject IK7ServerService K7ServerService
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
+<PageTitle>Playlists</PageTitle>
+
+<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
+    <MudText Typo="Typo.h5">Playlists</MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenCreateDialog">
+        Nouvelle playlist
+    </MudButton>
+</MudStack>
+
+@if (_loading)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudProgressCircular Indeterminate="true" />
+    </MudStack>
+}
+else if (_playlists.Count == 0)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudIcon Icon="@Icons.Material.Outlined.QueueMusic" Style="font-size: 64px; opacity: 0.3;" />
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">Aucune playlist</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Créez votre première playlist pour organiser vos morceaux.</MudText>
+    </MudStack>
+}
+else
+{
+    <div class="pa-4">
+        <MudGrid Spacing="4">
+            @foreach (var playlist in _playlists)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <MudCard Outlined="true" Class="playlist-card" @onclick="() => GoToPlaylist(playlist.Id)" Style="cursor: pointer;">
+                        <MudCardContent>
+                            <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                                @if (playlist.CoverPicture is not null)
+                                {
+                                    <MudImage Src="@GetCoverUrl(playlist)"
+                                              Width="120" Height="120"
+                                              ObjectFit="ObjectFit.Cover"
+                                              Class="rounded" />
+                                }
+                                else
+                                {
+                                    <div class="playlist-cover-placeholder">
+                                        <MudIcon Icon="@Icons.Material.Filled.QueueMusic" Style="font-size: 48px; opacity: 0.3;" />
+                                    </div>
+                                }
+                                <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="playlist-title">@playlist.Title</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount morceaux</MudText>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    </div>
+}

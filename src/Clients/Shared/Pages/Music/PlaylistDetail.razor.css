@@ -1,0 +1,23 @@
+.playlist-detail-page {
+    padding: 16px;
+}
+
+.playlist-header {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.playlist-cover-placeholder-large {
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+::deep .cursor-pointer {
+    cursor: pointer;
+}

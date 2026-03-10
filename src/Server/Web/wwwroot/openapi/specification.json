@@ -4399,6 +4399,25 @@
               "string"
             ]
           },
+          "artistName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "albumTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "duration": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
@@ -4407,6 +4426,15 @@
               "string"
             ],
             "format": "double"
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
           }
         }
       },

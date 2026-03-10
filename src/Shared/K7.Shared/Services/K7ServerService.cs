@@ -9,6 +9,7 @@ using K7.Shared.Dtos.Entities.Metadatas;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Shared.Dtos.Entities.Persons;
+using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
@@ -183,5 +184,54 @@ public class K7ServerService : IK7ServerService
             ? "api/filesystem/directories"
             : $"api/filesystem/directories?path={Uri.EscapeDataString(path)}";
         return await HttpClient.GetFromJsonAsync<DirectoryContentDto>(requestUri, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LitePlaylistDto>>(
+            $"api/playlists?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<PlaylistDto?> GetPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<PlaylistDto>($"api/playlists/{id}", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<PlaylistItemDto>>(
+            $"api/playlists/{playlistId}/items?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<Guid> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/playlists", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdatePlaylistAsync(Guid id, UpdatePlaylistRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/playlists/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeletePlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/playlists/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/playlists/{playlistId}/items", new { MediaId = mediaId }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task RemovePlaylistItemAsync(Guid playlistId, Guid itemId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/playlists/{playlistId}/items/{itemId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }

@@ -4,6 +4,7 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Entities.Persons;
+using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 
 namespace K7.Shared.Interfaces;
@@ -30,4 +31,14 @@ public interface IK7ServerService
     Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default);
     Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default);
     Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default);
+
+    // Playlists
+    Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default);
+    Task<PlaylistDto?> GetPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default);
+    Task<Guid> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default);
+    Task UpdatePlaylistAsync(Guid id, UpdatePlaylistRequest request, CancellationToken cancellationToken = default);
+    Task DeletePlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Guid> AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default);
+    Task RemovePlaylistItemAsync(Guid playlistId, Guid itemId, CancellationToken cancellationToken = default);
 }
