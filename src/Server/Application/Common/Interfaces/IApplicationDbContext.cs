@@ -5,6 +5,7 @@ using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -31,6 +32,8 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<User> Users { get; }
     DbSet<UserMediaState> UserMediaStates { get; }
     DbSet<MediaPlaybackSession> MediaPlaybackSessions { get; }
+    DbSet<Playlist> Playlists { get; }
+    DbSet<PlaylistItem> PlaylistItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

@@ -2,6 +2,7 @@
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Playlists;
 
 namespace K7.Server.Domain.Entities;
 public class MetadataPicture : BaseAuditableEntity
@@ -18,6 +19,8 @@ public class MetadataPicture : BaseAuditableEntity
     public virtual Person? Person { get; set; }
     public Guid? PersonRoleId { get; set; }
     public virtual BasePersonRole? PersonRole { get; set; }
+    public Guid? PlaylistId { get; set; }
+    public virtual Playlist? Playlist { get; set; }
 
     public virtual ICollection<MetadataPictureVariant> Variants { get; set; } = [];
 }
