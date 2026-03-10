@@ -1,0 +1,76 @@
+@using K7.Shared.Dtos.Requests
+@inject IK7ServerService K7ServerService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4" Class="mt-2">
+            <MudTextField @bind-Value="_title"
+                          Label="Nom de la playlist"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Le nom est requis"
+                          MaxLength="200"
+                          Immediate="true" />
+            <MudTextField @bind-Value="_description"
+                          Label="Description (optionnelle)"
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          MaxLength="2000" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="SubmitAsync"
+                   Disabled="@(string.IsNullOrWhiteSpace(_title) || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Création...</MudText>
+            }
+            else
+            {
+                <MudText>Créer</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string _title = "";
+    private string? _description;
+    private bool _isSubmitting;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title)) return;
+
+        _isSubmitting = true;
+        try
+        {
+            var id = await K7ServerService.CreatePlaylistAsync(new CreatePlaylistRequest
+            {
+                Title = _title.Trim(),
+                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim()
+            });
+
+            Snackbar.Add("Playlist créée", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(id));
+        }
+        catch
+        {
+            Snackbar.Add("Erreur lors de la création", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

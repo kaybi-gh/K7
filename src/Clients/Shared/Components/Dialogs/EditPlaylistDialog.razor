@@ -1,0 +1,83 @@
+@using K7.Shared.Dtos.Requests
+@inject IK7ServerService K7ServerService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4" Class="mt-2">
+            <MudTextField @bind-Value="Title"
+                          Label="Nom de la playlist"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Le nom est requis"
+                          MaxLength="200"
+                          Immediate="true" />
+            <MudTextField @bind-Value="Description"
+                          Label="Description (optionnelle)"
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          MaxLength="2000" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="SubmitAsync"
+                   Disabled="@(string.IsNullOrWhiteSpace(Title) || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Enregistrement...</MudText>
+            }
+            else
+            {
+                <MudText>Enregistrer</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public Guid PlaylistId { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    private bool _isSubmitting;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Title)) return;
+
+        _isSubmitting = true;
+        try
+        {
+            await K7ServerService.UpdatePlaylistAsync(PlaylistId, new UpdatePlaylistRequest
+            {
+                Title = Title.Trim(),
+                Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim()
+            });
+
+            Snackbar.Add("Playlist modifiée", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch
+        {
+            Snackbar.Add("Erreur lors de la modification", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}
