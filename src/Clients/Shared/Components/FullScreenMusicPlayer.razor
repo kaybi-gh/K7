@@ -1,0 +1,166 @@
+@inject IAudioPlayerService Audio
+
+@if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
+{
+    <div class="fullscreen-player" @onclick="OnBackdropClick">
+        @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+        {
+            <div class="fullscreen-player-bg"
+                 style="background-image: url('@Audio.CurrentTrack.CoverUrl')">
+            </div>
+        }
+
+        <div class="fullscreen-player-content" @onclick:stopPropagation="true">
+            <div class="fullscreen-player-header">
+                <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown"
+                               Color="Color.Inherit"
+                               OnClick="Close" />
+                <span class="fullscreen-player-header-title">En cours de lecture</span>
+                <MudIconButton Icon="@Icons.Material.Filled.QueueMusic"
+                               Color="@(_showQueue ? Color.Primary : Color.Inherit)"
+                               OnClick="ToggleQueue" />
+            </div>
+
+            @if (!_showQueue)
+            {
+                <div class="fullscreen-player-artwork">
+                    @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+                    {
+                        <MudImage Src="@Audio.CurrentTrack.CoverUrl"
+                                  Alt="Cover"
+                                  ObjectFit="ObjectFit.Cover"
+                                  Class="artwork-image" />
+                    }
+                    else
+                    {
+                        <div class="artwork-placeholder">
+                            <MudIcon Icon="@Icons.Material.Outlined.MusicNote"
+                                     Style="font-size: 96px;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="fullscreen-player-info">
+                    <span class="fullscreen-player-title">@Audio.CurrentTrack.Title</span>
+                    <span class="fullscreen-player-artist">@Audio.CurrentTrack.Artist</span>
+                    @if (!string.IsNullOrEmpty(Audio.CurrentTrack.AlbumTitle))
+                    {
+                        <span class="fullscreen-player-album">@Audio.CurrentTrack.AlbumTitle</span>
+                    }
+                </div>
+
+                <div class="fullscreen-player-seek">
+                    <div class="seek-bar" @ref="_seekBarRef"
+                         @onclick="OnSeekClick"
+                         @onpointerdown="OnSeekPointerDown"
+                         @onpointermove="OnSeekPointerMove"
+                         @onpointerup="OnSeekPointerUp">
+                        <div class="seek-buffered" style="width: @BufferedPercent%"></div>
+                        <div class="seek-current" style="width: @CurrentPercent%"></div>
+                        <div class="seek-thumb" style="left: @CurrentPercent%"></div>
+                    </div>
+                    <div class="seek-times">
+                        <span>@FormatTime(Audio.CurrentTime)</span>
+                        <span>@FormatTime(Audio.Duration)</span>
+                    </div>
+                </div>
+
+                <div class="fullscreen-player-controls">
+                    <MudIconButton Icon="@ShuffleIcon"
+                                   Size="Size.Small"
+                                   Color="@(Audio.Shuffle ? Color.Primary : Color.Inherit)"
+                                   OnClick="Audio.ToggleShuffle" />
+
+                    <MudIconButton Icon="@Icons.Material.Filled.SkipPrevious"
+                                   Size="Size.Medium"
+                                   Color="Color.Inherit"
+                                   OnClick="OnPrevious" />
+
+                    <MudFab icon="@PlayPauseIcon"
+                            Size="Size.Large"
+                            Color="Color.Primary"
+                            OnClick="TogglePlayPause" />
+
+                    <MudIconButton Icon="@Icons.Material.Filled.SkipNext"
+                                   Size="Size.Medium"
+                                   Color="Color.Inherit"
+                                   OnClick="OnNext" />
+
+                    <MudIconButton Icon="@RepeatIcon"
+                                   Size="Size.Small"
+                                   Color="@(Audio.Repeat != RepeatMode.Off ? Color.Primary : Color.Inherit)"
+                                   OnClick="Audio.CycleRepeatMode" />
+                </div>
+
+                <div class="fullscreen-player-volume">
+                    <MudIconButton Icon="@VolumeIcon"
+                                   Size="Size.Small"
+                                   Color="Color.Inherit"
+                                   OnClick="ToggleMute" />
+                    <MudSlider T="double"
+                               Value="Audio.Volume"
+                               ValueChanged="OnVolumeChanged"
+                               Min="0" Max="1" Step="0.01"
+                               Immediate="true"
+                               Class="fullscreen-volume-slider" />
+                </div>
+            }
+            else
+            {
+                <div class="fullscreen-player-queue">
+                    <div class="queue-header">
+                        <span class="queue-title">File d'attente</span>
+                        <span class="queue-count">@Audio.Queue.Count morceaux</span>
+                    </div>
+                    <div class="queue-list">
+                        @for (var i = 0; i < Audio.Queue.Count; i++)
+                        {
+                            var index = i;
+                            var track = Audio.Queue[i];
+                            var isCurrent = i == Audio.CurrentIndex;
+
+                            <div class="queue-item @(isCurrent ? "queue-item-current" : "")"
+                                 @onclick="() => PlayFromQueue(index)">
+                                <div class="queue-item-index">
+                                    @if (isCurrent)
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Equalizer"
+                                                 Size="Size.Small"
+                                                 Color="Color.Primary" />
+                                    }
+                                    else
+                                    {
+                                        <span>@(i + 1)</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(track.CoverUrl))
+                                {
+                                    <MudImage Src="@track.CoverUrl"
+                                              Alt="Cover"
+                                              Width="40" Height="40"
+                                              ObjectFit="ObjectFit.Cover"
+                                              Class="queue-item-cover" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Outlined.MusicNote"
+                                             Class="queue-item-cover-placeholder" />
+                                }
+                                <div class="queue-item-info">
+                                    <span class="queue-item-title">@track.Title</span>
+                                    <span class="queue-item-artist">@track.Artist</span>
+                                </div>
+                                <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
+                                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                               Size="Size.Small"
+                                               Color="Color.Inherit"
+                                               OnClick="() => Audio.RemoveFromQueue(index)"
+                                               Class="queue-item-remove" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

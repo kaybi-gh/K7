@@ -20,6 +20,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 #pragma warning disable CS0067
     public event Action<PlayerSource>? SourceChanged;
     public event Action? IsVisibleChanged;
+    public event Action? IsFullScreenVisibleChanged;
 #pragma warning restore CS0067
     public event Action<PlaybackState>? PlaybackStateChanged;
     public event Action<double>? DurationChanged;
@@ -94,6 +95,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     }
 
     public bool IsVisible { get; private set; }
+    public bool IsFullScreenVisible { get; private set; }
 
     // Queue state
     private readonly List<AudioQueueItem> _queue = [];
@@ -140,6 +142,12 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         IsVisible = false;
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;
+    }
+
+    public void ToggleFullScreen()
+    {
+        IsFullScreenVisible = !IsFullScreenVisible;
+        IsFullScreenVisibleChanged?.Invoke();
     }
 
     // Queue management
