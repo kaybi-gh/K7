@@ -89,6 +89,12 @@ public class K7ServerService : IK7ServerService
         return await HttpClient.GetFromJsonAsync<PersonDto>($"api/persons/{id}", _serializerOptions, cancellationToken);
     }
 
+    public async Task<PaginatedListDto<PersonDto>?> GetPersonsAsync(GetPersonsWithPaginationQuery query, CancellationToken cancellationToken = default)
+    {
+        var requestUri = GetPersonsWithPaginationQueryUriBuilder.Build(query);
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<PersonDto>>(requestUri, _serializerOptions, cancellationToken);
+    }
+
     public async Task<IndexedFileStreamUri?> GetIndexedFileStreamUriAsync(GetIndexedFileStreamsUriQuery query, CancellationToken cancellationToken = default)
     {
         var requestUri = GetIndexedFileStreamsUriQueryUriBuilder.Build(query);

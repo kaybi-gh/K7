@@ -1,0 +1,39 @@
+.artist-detail-page {
+    position: relative;
+}
+
+.artist-hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 300px;
+    background-size: cover;
+    background-position: center top;
+    filter: blur(40px) brightness(0.3);
+    transform: scale(1.2);
+    pointer-events: none;
+    z-index: 0;
+}
+
+::deep .artist-portrait {
+    max-width: 200px;
+    border-radius: 50%;
+    aspect-ratio: 1;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.overview-container {
+    max-width: 600px;
+}
+
+.overview-collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}

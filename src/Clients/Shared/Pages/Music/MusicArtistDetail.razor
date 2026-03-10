@@ -1,0 +1,124 @@
+@page "/music/artists/{Id}"
+@using K7.Shared.Dtos.Entities.Medias
+@inject IK7ServerService k7ServerService
+<PageTitle>@_person?.Name</PageTitle>
+<MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
+
+@if (_person is not null)
+{
+    <div class="artist-detail-page">
+        @if (_portraitUrl is not null)
+        {
+            <div class="artist-hero-bg" style="background-image: url('@_portraitUrl')"></div>
+        }
+
+        <MudGrid Justify="Justify.SpaceEvenly" Style="max-width: 100%; position: relative;" Spacing="0">
+            <MudItem xs="12" sm="4" lg="2">
+                <MudStack AlignItems="AlignItems.Center" Class="pa-4">
+                    @if (_portraitUrl is not null)
+                    {
+                        <MudImage Src="@_portraitUrl"
+                                  Alt="@_person.Name"
+                                  Class="artist-portrait"
+                                  Fluid="true"
+                                  ObjectFit="ObjectFit.Cover" />
+                    }
+                    else
+                    {
+                        <MudAvatar Style="width: 200px; height: 200px; font-size: 64px;"
+                                   Color="Color.Dark">
+                            @(_person.Name?[..1].ToUpperInvariant())
+                        </MudAvatar>
+                    }
+                </MudStack>
+            </MudItem>
+            <MudItem xs="12" sm="8" lg="10">
+                <MudStack AlignItems="@(_isSmallDevice ? AlignItems.Center : AlignItems.Start)" Class="pa-4">
+                    <MudText Typo="Typo.h4">@_person.Name</MudText>
+                    @if (!string.IsNullOrEmpty(_person.Biography))
+                    {
+                        <div class="overview-container">
+                            <MudText Class="@(_overviewExpanded ? "" : "overview-collapsed")">@_person.Biography</MudText>
+                        </div>
+                        <MudButton Variant="Variant.Text"
+                                   Size="Size.Small"
+                                   EndIcon="@(_overviewExpanded ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)"
+                                   OnClick="() => _overviewExpanded = !_overviewExpanded">
+                            @(_overviewExpanded ? "Moins" : "Plus")
+                        </MudButton>
+                    }
+                </MudStack>
+            </MudItem>
+
+            @if (_albums.Count > 0)
+            {
+                <MudItem xs="12">
+                    <HorizontalScrollableStack Title="Albums">
+                        @foreach (var album in _albums)
+                        {
+                            <HorizontalScrollableStackItem>
+                                <MediaPoster Model="album" FooterVisible="true" />
+                            </HorizontalScrollableStackItem>
+                        }
+                    </HorizontalScrollableStack>
+                </MudItem>
+            }
+
+            @if (_tracks.Count > 0)
+            {
+                <MudItem xs="12" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-2">Morceaux</MudText>
+                    <MudTable Items="_tracks"
+                              Dense="true"
+                              Hover="true"
+                              Elevation="0"
+                              T="TrackViewModel"
+                              OnRowClick="OnTrackClick"
+                              RowClass="cursor-pointer">
+                        <HeaderContent>
+                            <MudTh Style="width: 40px;">#</MudTh>
+                            <MudTh>Titre</MudTh>
+                            <MudTh>Album</MudTh>
+                            <MudTh Style="width: 80px;">Durée</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                @if (context.IsPlaying)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Equalizer" Size="Size.Small" Color="Color.Primary" />
+                                }
+                                else
+                                {
+                                    @context.TrackNumber
+                                }
+                            </MudTd>
+                            <MudTd>
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    @if (context.CoverUrl is not null)
+                                    {
+                                        <MudImage Src="@context.CoverUrl" Width="36" Height="36"
+                                                  ObjectFit="ObjectFit.Cover"
+                                                  Class="rounded" />
+                                    }
+                                    <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">@context.Title</MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudItem>
+            }
+        </MudGrid>
+    </div>
+}
+else if (_loading)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudProgressCircular Indeterminate="true" />
+    </MudStack>
+}

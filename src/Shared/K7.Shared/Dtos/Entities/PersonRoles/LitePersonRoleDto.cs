@@ -6,6 +6,7 @@ namespace K7.Shared.Dtos.Entities.PersonRoles;
 
 [JsonDerivedType(typeof(LiteActorDto), nameof(Actor))]
 [JsonDerivedType(typeof(LiteCrewMemberDto), nameof(CrewMember))]
+[JsonDerivedType(typeof(LiteMusicArtistRoleDto), nameof(MusicArtist))]
 public abstract record LitePersonRoleDto
 {
     public Guid Id { get; init; }
@@ -35,6 +36,15 @@ public abstract record LitePersonRoleDto
             Person = LitePersonDto.FromDomain(domain.Person),
             Department = crewMember.Department,
             Job = crewMember.Department
+        },
+        MusicArtist musicArtist => new LiteMusicArtistRoleDto()
+        {
+            Id = domain.Id,
+            MediaId = domain.MediaId,
+            Order = domain.Order,
+            PortraitPicture = domain.PortraitPicture != null ? MetadataPictureDto.FromDomain(domain.PortraitPicture) : null,
+            Person = LitePersonDto.FromDomain(domain.Person),
+            IsGuest = musicArtist.IsGuest
         },
         _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
     };
