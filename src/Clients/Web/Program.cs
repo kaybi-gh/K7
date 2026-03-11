@@ -31,6 +31,7 @@ builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
 builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
+builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 builder.Services.AddSingleton<K7HubClient>();
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
@@ -44,6 +45,9 @@ builder.Services.AddHttpClient("BackendAPI", client =>
 var wasmHost = builder.Build();
 
 await DeviceInitializer.InitializeDeviceAsync(wasmHost.Services);
+
+// Eagerly resolve so it starts listening to audio player events
+wasmHost.Services.GetRequiredService<AudioPlaybackProgressTracker>();
 
 await wasmHost.RunAsync();
 
