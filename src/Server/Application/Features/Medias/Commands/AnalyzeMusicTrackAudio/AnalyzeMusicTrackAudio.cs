@@ -12,13 +12,11 @@ public record AnalyzeMusicTrackAudioCommand : IRequest
 public class AnalyzeMusicTrackAudioCommandHandler(
     IApplicationDbContext context,
     IAudioAnalyzer audioAnalyzer,
+    IWaveformGenerator waveformGenerator,
     ILogger<AnalyzeMusicTrackAudioCommandHandler> logger) : IRequestHandler<AnalyzeMusicTrackAudioCommand>
 {
     public async Task Handle(AnalyzeMusicTrackAudioCommand request, CancellationToken cancellationToken)
     {
-        if (!audioAnalyzer.IsAvailable)
-            return;
-
         var track = await context.Medias
             .OfType<MusicTrack>()
             .Include(t => t.IndexedFiles)
@@ -44,15 +42,23 @@ public class AnalyzeMusicTrackAudioCommandHandler(
             return;
         }
 
+        // Essentia analysis (optional — may not be installed)
         var analysis = await audioAnalyzer.AnalyzeAsync(filePath, cancellationToken);
-        if (analysis is null)
+
+        // Waveform peaks via ffmpeg (always available)
+        var waveformPeaks = await waveformGenerator.GenerateAsync(filePath, cancellationToken: cancellationToken);
+
+        if (analysis is null && waveformPeaks is null)
             return;
 
+        analysis ??= new AudioAnalysis { AnalyzedAt = DateTime.UtcNow };
+        analysis.WaveformPeaks = waveformPeaks;
         analysis.MusicTrackId = track.Id;
+
         context.AudioAnalysis.Add(analysis);
         await context.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Audio analysis completed for '{Title}' (BPM={Bpm}, Key={Key})",
-            track.Title, analysis.Bpm, analysis.MusicalKey);
+        logger.LogInformation("Audio analysis completed for '{Title}' (BPM={Bpm}, Key={Key}, Waveform={HasWaveform})",
+            track.Title, analysis.Bpm, analysis.MusicalKey, waveformPeaks is not null);
     }
 }

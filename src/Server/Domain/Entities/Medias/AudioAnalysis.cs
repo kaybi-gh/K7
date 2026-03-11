@@ -48,6 +48,10 @@ public class AudioAnalysis : BaseAuditableEntity
     // Inferred from mode (major/minor), tempo, and harmonic content.
     public double? Valence { get; set; }
 
+    // Normalized amplitude peaks (0.0–1.0) sampled across the track duration.
+    // Used to render waveform visualization in the player UI.
+    public float[]? WaveformPeaks { get; set; }
+
     // When the analysis was performed. Null if not yet analyzed.
     public DateTime? AnalyzedAt { get; set; }
 

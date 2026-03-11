@@ -79,6 +79,7 @@ public abstract record MediaDto
             Energy = track.AudioAnalysis?.Energy,
             Danceability = track.AudioAnalysis?.Danceability,
             Valence = track.AudioAnalysis?.Valence,
+            WaveformPeaks = track.AudioAnalysis?.WaveformPeaks,
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null

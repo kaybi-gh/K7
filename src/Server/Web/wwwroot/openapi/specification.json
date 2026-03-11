@@ -4180,6 +4180,20 @@
             ],
             "format": "double"
           },
+          "waveformPeaks": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "float"
+            }
+          },
           "id": {
             "type": "string",
             "format": "uuid"
