@@ -79,7 +79,8 @@ public partial class MusicTracks
         AlbumTitle = t.AlbumTitle,
         Genre = t.Genre,
         CoverUrl = t.CoverUrl,
-        Duration = t.Duration
+        Duration = t.Duration,
+        UserRating = t.UserRating
     };
 
     private TrackViewModel ToViewModel(LiteMusicTrackDto track) => new()
@@ -96,6 +97,7 @@ public partial class MusicTracks
             track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         Duration = track.Duration ?? 0,
+        UserRating = track.UserRating,
         IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
     };
 
@@ -120,6 +122,7 @@ public partial class MusicTracks
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
+        public int? UserRating { get; init; }
         public bool IsPlaying { get; init; }
     }
 }

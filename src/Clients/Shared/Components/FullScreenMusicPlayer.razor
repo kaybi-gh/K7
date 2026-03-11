@@ -47,6 +47,11 @@
                     {
                         <span class="fullscreen-player-album">@Audio.CurrentTrack.AlbumTitle</span>
                     }
+                    <K7.Clients.Shared.Components.RatingStars
+                        MediaId="Audio.CurrentTrack.MediaId"
+                        Value="Audio.CurrentTrack.UserRating"
+                        ValueChanged="OnRatingChanged"
+                        Size="Size.Medium" />
                 </div>
 
                 <div class="fullscreen-player-seek">

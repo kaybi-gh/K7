@@ -32,6 +32,8 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
             .Include(i => i.Media)
                 .ThenInclude(m => m.PersonRoles)
                     .ThenInclude(r => r.Person)
+            .Include(i => i.Media)
+                .ThenInclude(m => m.Ratings)
             .Where(i => i.PlaylistId == request.PlaylistId)
             .OrderBy(i => i.Order)
             .AsNoTracking();

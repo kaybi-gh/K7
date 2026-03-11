@@ -3096,6 +3096,15 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3141,6 +3150,15 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3240,6 +3258,15 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3334,6 +3361,15 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -4859,6 +4895,15 @@
               "string"
             ],
             "format": "double"
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "pictures": {
             "type": [

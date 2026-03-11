@@ -16,4 +16,5 @@ public class AudioQueueItem
     public double? Duration { get; init; }
     public Guid? ArtistPersonId { get; init; }
     public string? Genre { get; init; }
+    public int? UserRating { get; set; }
 }

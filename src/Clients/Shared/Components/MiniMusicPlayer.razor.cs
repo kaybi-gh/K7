@@ -85,6 +85,12 @@ public partial class MiniMusicPlayer : IDisposable
 
     private void OnVolumeChanged(double value) => Audio.SetVolume(value);
 
+    private void OnRatingChanged(int? value)
+    {
+        if (Audio.CurrentTrack is not null)
+            Audio.CurrentTrack.UserRating = value;
+    }
+
     private async Task OnProgressClick(MouseEventArgs e)
     {
         if (_isDragging) return;
