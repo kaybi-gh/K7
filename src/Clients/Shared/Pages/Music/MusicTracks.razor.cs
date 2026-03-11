@@ -62,21 +62,25 @@ public partial class MusicTracks
 
         var queueItems = _tracks
             .Where(t => t.IndexedFileId.HasValue)
-            .Select(t => new AudioQueueItem
-            {
-                IndexedFileId = t.IndexedFileId!.Value,
-                MediaId = t.Id,
-                Title = t.Title,
-                Artist = t.ArtistName,
-                AlbumTitle = t.AlbumTitle,
-                CoverUrl = t.CoverUrl,
-                Duration = t.Duration
-            })
+            .Select(BuildQueueItem)
             .ToList();
 
         var index = queueItems.FindIndex(q => q.MediaId == track.Id);
         await Audio.PlayTracksAsync(queueItems, index >= 0 ? index : 0);
     }
+
+    private static AudioQueueItem BuildQueueItem(TrackViewModel t) => new()
+    {
+        IndexedFileId = t.IndexedFileId!.Value,
+        MediaId = t.Id,
+        Title = t.Title,
+        Artist = t.ArtistName,
+        ArtistPersonId = t.ArtistPersonId,
+        AlbumTitle = t.AlbumTitle,
+        Genre = t.Genre,
+        CoverUrl = t.CoverUrl,
+        Duration = t.Duration
+    };
 
     private TrackViewModel ToViewModel(LiteMusicTrackDto track) => new()
     {
@@ -84,9 +88,10 @@ public partial class MusicTracks
         IndexedFileId = track.IndexedFileId,
         Title = track.Title ?? "Sans titre",
         ArtistName = track.ArtistName,
-        ArtistPersonId = null,
+        ArtistPersonId = track.ArtistPersonId,
         AlbumId = track.AlbumId,
         AlbumTitle = track.AlbumTitle,
+        Genre = track.Genre,
         CoverUrl = k7ServerService.GetAbsoluteUri(
             track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
@@ -112,6 +117,7 @@ public partial class MusicTracks
         public Guid? ArtistPersonId { get; init; }
         public Guid AlbumId { get; init; }
         public string? AlbumTitle { get; init; }
+        public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
         public bool IsPlaying { get; init; }

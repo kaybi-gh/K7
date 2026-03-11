@@ -13,6 +13,8 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
     public Guid[]? Ids { get; init; }
     // TODO - public bool? Seen { get; init; }
     public bool? ContinueWatching { get; init; }
+    public Guid[]? PersonIds { get; init; }
+    public string[]? Genres { get; init; }
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
     public required int PageNumber { get; init; } = 1;
@@ -78,6 +80,18 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 s.UserId == userId.Value
                 && !s.IsCompleted
                 && s.LastPlaybackPosition > 0));
+        }
+
+        if (request.PersonIds?.Length > 0)
+        {
+            query = query.Where(x => x.PersonRoles.Any(r => request.PersonIds.Contains(r.PersonId))
+                || (x is MusicTrack && ((MusicTrack)x).Album.PersonRoles.Any(r => request.PersonIds.Contains(r.PersonId))));
+        }
+
+        if (request.Genres?.Length > 0)
+        {
+            query = query.Where(x => x.Genres.Any(g => request.Genres.Contains(g))
+                || (x is MusicTrack && ((MusicTrack)x).Album.Genres.Any(g => request.Genres.Contains(g))));
         }
 
         return query;

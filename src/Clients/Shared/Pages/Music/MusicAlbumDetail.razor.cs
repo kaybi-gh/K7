@@ -58,6 +58,8 @@ public partial class MusicAlbumDetail
                     Title = t.Title ?? "Sans titre",
                     TrackNumber = t.TrackNumber,
                     ArtistName = artistName,
+                    ArtistPersonId = _artists.FirstOrDefault()?.PersonId,
+                    Genre = album.Genres?.FirstOrDefault(),
                     CoverUrl = _coverUrl,
                     Duration = t.Duration ?? 0,
                     DiscNumber = 1,
@@ -104,23 +106,30 @@ public partial class MusicAlbumDetail
 
     private List<AudioQueueItem> BuildQueueItems()
     {
+        return _tracks
+            .Where(t => t.IndexedFileId.HasValue)
+            .Select(BuildQueueItem)
+            .ToList();
+    }
+
+    private AudioQueueItem BuildQueueItem(TrackViewModel t)
+    {
         var artistName = _artists.Count > 0
             ? string.Join(", ", _artists.Select(a => a.Name))
             : null;
 
-        return _tracks
-            .Where(t => t.IndexedFileId.HasValue)
-            .Select(t => new AudioQueueItem
-            {
-                IndexedFileId = t.IndexedFileId!.Value,
-                MediaId = t.Id,
-                Title = t.Title,
-                Artist = artistName,
-                AlbumTitle = _album?.Title,
-                CoverUrl = t.CoverUrl,
-                Duration = t.Duration
-            })
-            .ToList();
+        return new AudioQueueItem
+        {
+            IndexedFileId = t.IndexedFileId!.Value,
+            MediaId = t.Id,
+            Title = t.Title,
+            Artist = artistName,
+            ArtistPersonId = t.ArtistPersonId,
+            AlbumTitle = _album?.Title,
+            Genre = t.Genre,
+            CoverUrl = t.CoverUrl,
+            Duration = t.Duration
+        };
     }
 
     private static string FormatTime(double seconds)
@@ -149,6 +158,8 @@ public partial class MusicAlbumDetail
         public required string Title { get; init; }
         public int? TrackNumber { get; init; }
         public string? ArtistName { get; init; }
+        public Guid? ArtistPersonId { get; init; }
+        public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
         public int DiscNumber { get; init; }

@@ -52,7 +52,9 @@ public partial class SmartPlaylistDetail
         Order = item.Order,
         Title = item.MediaTitle ?? "Sans titre",
         ArtistName = item.ArtistName,
+        ArtistPersonId = item.ArtistPersonId,
         AlbumTitle = item.AlbumTitle,
+        Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
         CoverUrl = K7ServerService.GetAbsoluteUri(
             item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
@@ -89,17 +91,21 @@ public partial class SmartPlaylistDetail
     private List<AudioQueueItem> BuildQueueItems() =>
         _items
             .Where(i => i.IndexedFileId.HasValue)
-            .Select(i => new AudioQueueItem
-            {
-                IndexedFileId = i.IndexedFileId!.Value,
-                MediaId = i.MediaId,
-                Title = i.Title,
-                Artist = i.ArtistName,
-                AlbumTitle = i.AlbumTitle,
-                CoverUrl = i.CoverUrl,
-                Duration = i.Duration
-            })
+            .Select(BuildQueueItem)
             .ToList();
+
+    private static AudioQueueItem BuildQueueItem(SmartPlaylistItemViewModel i) => new()
+    {
+        IndexedFileId = i.IndexedFileId!.Value,
+        MediaId = i.MediaId,
+        Title = i.Title,
+        Artist = i.ArtistName,
+        ArtistPersonId = i.ArtistPersonId,
+        AlbumTitle = i.AlbumTitle,
+        Genre = i.Genre,
+        CoverUrl = i.CoverUrl,
+        Duration = i.Duration
+    };
 
     private async Task EvaluateAsync()
     {
@@ -239,7 +245,9 @@ public partial class SmartPlaylistDetail
         public int Order { get; init; }
         public required string Title { get; init; }
         public string? ArtistName { get; init; }
+        public Guid? ArtistPersonId { get; init; }
         public string? AlbumTitle { get; init; }
+        public string? Genre { get; init; }
         public Guid? IndexedFileId { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }

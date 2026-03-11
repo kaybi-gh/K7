@@ -827,6 +827,27 @@
             }
           },
           {
+            "name": "PersonIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "Genres",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
             "name": "MediaTypes",
             "in": "query",
             "schema": {
@@ -3138,6 +3159,19 @@
               "string"
             ]
           },
+          "artistPersonId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "genre": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -3214,6 +3248,19 @@
             ]
           },
           "artistName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "artistPersonId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "genre": {
             "type": [
               "null",
               "string"
@@ -4744,7 +4791,20 @@
               "string"
             ]
           },
+          "artistPersonId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "albumTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "genre": {
             "type": [
               "null",
               "string"

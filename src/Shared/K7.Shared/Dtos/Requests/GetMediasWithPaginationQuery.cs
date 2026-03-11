@@ -7,6 +7,8 @@ public sealed record GetMediasWithPaginationQuery
     public Guid[]? LibraryIds { get; init; }
     public Guid[]? Ids { get; init; }
     public bool? ContinueWatching { get; init; }
+    public Guid[]? PersonIds { get; init; }
+    public string[]? Genres { get; init; }
     public HashSet<MediaType>? MediaTypes { get; init; }
     public HashSet<MediaOrderingOption>? OrderBy { get; init; }
     public required int PageNumber { get; init; } = 1;

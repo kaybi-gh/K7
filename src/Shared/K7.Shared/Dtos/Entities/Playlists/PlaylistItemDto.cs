@@ -12,7 +12,9 @@ public sealed record PlaylistItemDto
     public int Order { get; init; }
     public string? MediaTitle { get; init; }
     public string? ArtistName { get; init; }
+    public Guid? ArtistPersonId { get; init; }
     public string? AlbumTitle { get; init; }
+    public string? Genre { get; init; }
     public Guid? IndexedFileId { get; init; }
     public double? Duration { get; init; }
     public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
@@ -22,16 +24,24 @@ public sealed record PlaylistItemDto
         var media = domain.Media;
         var indexedFile = media?.IndexedFiles.FirstOrDefault();
 
+        var artistRole = media is MusicTrack track
+            ? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()
+            : media?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault();
+
+        var genre = media is MusicTrack t2
+            ? (t2.Album?.Genres?.FirstOrDefault() ?? t2.Genres?.FirstOrDefault())
+            : media?.Genres?.FirstOrDefault();
+
         return new()
         {
             Id = domain.Id,
             MediaId = domain.MediaId,
             Order = domain.Order,
             MediaTitle = media?.Title,
-            ArtistName = media is MusicTrack track
-                ? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name
-                : media?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
+            ArtistName = artistRole?.Person?.Name,
+            ArtistPersonId = artistRole?.PersonId,
             AlbumTitle = media is MusicTrack t ? t.Album?.Title : null,
+            Genre = genre,
             IndexedFileId = indexedFile?.Id,
             Duration = (indexedFile?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
             Pictures = media?.Pictures.Select(MetadataPictureDto.FromDomain)

@@ -1,0 +1,19 @@
+@inject IAudioPlayerService Audio
+@inject IK7ServerService K7ServerService
+@inject ISnackbar Snackbar
+
+<span @onclick:stopPropagation="true">
+    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
+        <MudMenuItem Icon="@Icons.Material.Filled.PlaylistPlay" OnClick="PlayNext">Jouer ensuite</MudMenuItem>
+        <MudMenuItem Icon="@Icons.Material.Filled.QueueMusic" OnClick="AddToQueue">Ajouter à la queue</MudMenuItem>
+        @if (!string.IsNullOrEmpty(Track.Artist))
+        {
+            <MudDivider />
+            <MudMenuItem Icon="@Icons.Material.Filled.Radio" OnClick="RadioArtist">Radio @Track.Artist</MudMenuItem>
+        }
+        @if (!string.IsNullOrEmpty(Track.Genre))
+        {
+            <MudMenuItem Icon="@Icons.Material.Filled.Sensors" OnClick="RadioGenre">Radio @Track.Genre</MudMenuItem>
+        }
+    </MudMenu>
+</span>
