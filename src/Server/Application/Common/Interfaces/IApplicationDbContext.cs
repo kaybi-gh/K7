@@ -34,6 +34,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<MediaPlaybackSession> MediaPlaybackSessions { get; }
     DbSet<Playlist> Playlists { get; }
     DbSet<PlaylistItem> PlaylistItems { get; }
+    DbSet<AudioAnalysis> AudioAnalysis { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

@@ -192,7 +192,6 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             TrackNumber = trackNumber,
             DiscNumber = tags?.DiscNumber,
             ReleaseDate = releaseYear,
-            Bpm = tags?.Bpm,
             Lyrics = tags?.Lyrics,
             AlbumId = album.Id,
             IndexedFiles = [indexedFile]

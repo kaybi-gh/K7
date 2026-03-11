@@ -73,9 +73,12 @@ public abstract record MediaDto
             DiscNumber = track.DiscNumber,
             Lyrics = track.Lyrics,
             LyricsLrc = track.LyricsLrc,
-            Bpm = track.Bpm,
-            MusicalKey = track.MusicalKey,
-            LoudnessLufs = track.LoudnessLufs,
+            Bpm = track.AudioAnalysis?.Bpm,
+            MusicalKey = track.AudioAnalysis?.MusicalKey,
+            LoudnessLufs = track.AudioAnalysis?.LoudnessLufs,
+            Energy = track.AudioAnalysis?.Energy,
+            Danceability = track.AudioAnalysis?.Danceability,
+            Valence = track.AudioAnalysis?.Valence,
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null
