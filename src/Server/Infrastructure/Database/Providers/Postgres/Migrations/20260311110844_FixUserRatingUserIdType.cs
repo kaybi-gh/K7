@@ -23,14 +23,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "UserId1",
                 table: "Ratings");
 
-            migrationBuilder.AlterColumn<Guid>(
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "Ratings");
+
+            migrationBuilder.AddColumn<Guid>(
                 name: "UserId",
                 table: "Ratings",
                 type: "uuid",
-                nullable: true,
-                oldClrType: typeof(int),
-                oldType: "integer",
-                oldNullable: true);
+                nullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Ratings_UserId",
@@ -57,14 +58,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 name: "IX_Ratings_UserId",
                 table: "Ratings");
 
-            migrationBuilder.AlterColumn<int>(
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "Ratings");
+
+            migrationBuilder.AddColumn<int>(
                 name: "UserId",
                 table: "Ratings",
                 type: "integer",
-                nullable: true,
-                oldClrType: typeof(Guid),
-                oldType: "uuid",
-                oldNullable: true);
+                nullable: true);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "UserId1",
