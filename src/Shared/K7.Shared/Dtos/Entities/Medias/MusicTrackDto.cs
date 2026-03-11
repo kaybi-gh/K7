@@ -10,4 +10,7 @@ public sealed record MusicTrackDto : MediaDto
     public double? Bpm { get; init; }
     public string? MusicalKey { get; init; }
     public double? LoudnessLufs { get; init; }
+    public double? Energy { get; init; }
+    public double? Danceability { get; init; }
+    public double? Valence { get; init; }
 }

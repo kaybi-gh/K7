@@ -41,6 +41,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<MediaPlaybackSession> MediaPlaybackSessions => Set<MediaPlaybackSession>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<PlaylistItem> PlaylistItems => Set<PlaylistItem>();
+    public DbSet<AudioAnalysis> AudioAnalysis => Set<AudioAnalysis>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

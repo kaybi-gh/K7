@@ -59,7 +59,7 @@ public static class SmartPlaylistEvaluator
             SmartPlaylistField.AlbumTitle => BuildAlbumTitlePredicate(rule),
             SmartPlaylistField.TrackNumber => BuildNullableIntPredicate(m => ((MusicTrack)m).TrackNumber, rule),
             SmartPlaylistField.DiscNumber => BuildNullableIntPredicate(m => ((MusicTrack)m).DiscNumber, rule),
-            SmartPlaylistField.Bpm => BuildNullableDoublePredicate(m => ((MusicTrack)m).Bpm, rule),
+            SmartPlaylistField.Bpm => BuildNullableDoublePredicate(m => ((MusicTrack)m).AudioAnalysis!.Bpm, rule),
             SmartPlaylistField.Duration => BuildDurationPredicate(rule),
             SmartPlaylistField.OriginalLanguage => BuildStringPredicate(m => ((Movie)m).OriginalLanguage!, rule),
             _ => _ => true
@@ -275,8 +275,8 @@ public static class SmartPlaylistEvaluator
                 ? query.OrderByDescending(m => ((MusicTrack)m).TrackNumber)
                 : query.OrderBy(m => ((MusicTrack)m).TrackNumber),
             SmartPlaylistOrderBy.Bpm => desc
-                ? query.OrderByDescending(m => ((MusicTrack)m).Bpm)
-                : query.OrderBy(m => ((MusicTrack)m).Bpm),
+                ? query.OrderByDescending(m => ((MusicTrack)m).AudioAnalysis!.Bpm)
+                : query.OrderBy(m => ((MusicTrack)m).AudioAnalysis!.Bpm),
             SmartPlaylistOrderBy.PlayCount => desc
                 ? query.OrderByDescending(m => m.UserMediaStates.Sum(s => s.PlayCount))
                 : query.OrderBy(m => m.UserMediaStates.Sum(s => s.PlayCount)),

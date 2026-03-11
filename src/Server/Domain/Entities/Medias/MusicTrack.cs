@@ -10,9 +10,7 @@ public class MusicTrack() : BaseMedia(MediaType.MusicTrack)
     public string? Lyrics { get; set; }
     public string? LyricsLrc { get; set; }
 
-    public double? Bpm { get; set; }
-    public string? MusicalKey { get; set; }
-    public double? LoudnessLufs { get; set; }
+    public virtual AudioAnalysis? AudioAnalysis { get; set; }
 
     public override string GetSlugSource() => $"{Album.Slug}-{Title}";
 }
