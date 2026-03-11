@@ -1,4 +1,5 @@
 @inject IAudioPlayerService Audio
+@inject IK7ServerService Server
 
 @if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
 {
@@ -16,12 +17,15 @@
                                Color="Color.Inherit"
                                OnClick="Close" />
                 <span class="fullscreen-player-header-title">En cours de lecture</span>
+                <MudIconButton Icon="@Icons.Material.Filled.Lyrics"
+                               Color="@(_view == FullScreenView.Lyrics ? Color.Primary : Color.Inherit)"
+                               OnClick="ToggleLyrics" />
                 <MudIconButton Icon="@Icons.Material.Filled.QueueMusic"
-                               Color="@(_showQueue ? Color.Primary : Color.Inherit)"
+                               Color="@(_view == FullScreenView.Queue ? Color.Primary : Color.Inherit)"
                                OnClick="ToggleQueue" />
             </div>
 
-            @if (!_showQueue)
+            @if (_view == FullScreenView.Player)
             {
                 <div class="fullscreen-player-artwork">
                     @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
@@ -109,6 +113,13 @@
                                Immediate="true"
                                Class="fullscreen-volume-slider" />
                 </div>
+            }
+            else if (_view == FullScreenView.Lyrics)
+            {
+                <SyncedLyricsDisplay LyricsLrc="@_lyricsLrc"
+                                     PlainTextLyrics="@_lyrics"
+                                     CurrentTime="Audio.CurrentTime"
+                                     SeekRequested="OnLyricsSeek" />
             }
             else
             {
