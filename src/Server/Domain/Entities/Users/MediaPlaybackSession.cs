@@ -13,4 +13,7 @@ public class MediaPlaybackSession : BaseAuditableEntity
     public Guid SessionId { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? LastUpdateAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public double PositionSeconds { get; set; }
+    public double DurationSeconds { get; set; }
 }

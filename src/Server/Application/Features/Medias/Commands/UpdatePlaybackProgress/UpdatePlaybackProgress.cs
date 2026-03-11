@@ -20,13 +20,12 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
     {
-        // Silently skip persistence on guest users
         if (_currentUser.Id is not { } userId)
             return;
 
         var media = await _context.Medias
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
-            
+
         if (media == null) return;
 
         var timeNow = DateTime.UtcNow;
@@ -51,6 +50,9 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
             session.LastUpdateAt = timeNow;
         }
 
+        session.PositionSeconds = request.Position;
+        session.DurationSeconds = request.Duration;
+
         var state = await _context.UserMediaStates
             .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == request.MediaId, cancellationToken);
 
@@ -70,18 +72,24 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         state.LastInteractedAt = timeNow;
 
         double progress = request.Duration > 0 ? request.Position / request.Duration : 0;
-        
-        bool isMusic = media.Type == MediaType.MusicTrack;
-        double completionThreshold = isMusic ? 0.95 : 0.80;
 
-        if (progress >= completionThreshold)
+        bool isMusic = media.Type == MediaType.MusicTrack;
+        // Music: 50% or 4 minutes (industry standard scrobble threshold)
+        bool completed = isMusic
+            ? progress >= 0.50 || request.Position >= 240
+            : progress >= 0.80;
+
+        if (completed)
         {
+            if (session.CompletedAt is null)
+                session.CompletedAt = timeNow;
+
             if (!state.IsCompleted)
             {
                 state.PlayCount++;
                 state.IsCompleted = true;
             }
-            state.LastPlaybackPosition = 0; 
+            state.LastPlaybackPosition = 0;
             state.ProgressPercentage = 100;
         }
         else
