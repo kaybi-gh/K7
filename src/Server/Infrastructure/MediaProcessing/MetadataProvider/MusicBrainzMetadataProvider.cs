@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Reflection;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -22,6 +23,10 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
+    // MusicBrainz API restricts to 1 request per second
+    private static readonly SemaphoreSlim _rateLimiter = new(1, 1);
+    private static DateTime _lastRequestTime = DateTime.MinValue;
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<MusicBrainzMetadataProvider> _logger;
 
@@ -34,6 +39,27 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         _logger = logger;
     }
 
+    private async Task WaitRateLimitAsync(CancellationToken cancellationToken)
+    {
+        await _rateLimiter.WaitAsync(cancellationToken);
+        try
+        {
+            var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
+            var requiredDelay = TimeSpan.FromSeconds(1.1); // 1.1s to be safe
+            
+            if (timeSinceLastRequest < requiredDelay)
+            {
+                await Task.Delay(requiredDelay - timeSinceLastRequest, cancellationToken);
+            }
+
+            _lastRequestTime = DateTime.UtcNow;
+        }
+        finally
+        {
+            _rateLimiter.Release();
+        }
+    }
+
     public async Task<string?> SearchAsync(MediaIdentification identification, CancellationToken cancellationToken = default)
     {
         try
@@ -42,6 +68,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             var query = BuildSearchQuery(identification);
             var url = $"{BaseUrl}/release/?query={Uri.EscapeDataString(query)}&limit=5&fmt=json";
 
+            await WaitRateLimitAsync(cancellationToken);
             var response = await _httpClient.GetFromJsonAsync<MbReleaseSearchResult>(url, JsonOptions, cancellationToken);
             var bestMatch = response?.Releases?.FirstOrDefault();
 
@@ -126,6 +153,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         try
         {
             var url = $"{BaseUrl}/release-group/{releaseGroupId}?inc=genres+tags&fmt=json";
+            await WaitRateLimitAsync(cancellationToken);
             return await _httpClient.GetFromJsonAsync<MbReleaseGroup>(url, JsonOptions, cancellationToken);
         }
         catch (Exception ex)
@@ -140,6 +168,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         try
         {
             var url = $"{BaseUrl}/release?release-group={releaseGroupId}&inc=media&fmt=json&limit=10";
+            await WaitRateLimitAsync(cancellationToken);
             var result = await _httpClient.GetFromJsonAsync<MbReleaseList>(url, JsonOptions, cancellationToken);
 
             // Prefer official releases, then by most tracks
@@ -160,6 +189,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         try
         {
             var url = $"{BaseUrl}/release/{releaseId}?inc=recordings+artist-credits&fmt=json";
+            await WaitRateLimitAsync(cancellationToken);
             return await _httpClient.GetFromJsonAsync<MbRelease>(url, JsonOptions, cancellationToken);
         }
         catch (Exception ex)
