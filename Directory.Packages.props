@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Ardalis.GuardClauses" Version="4.2.0" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
     <PackageVersion Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="7.0.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
