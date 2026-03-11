@@ -12,6 +12,75 @@ window.K7.scrollIntoViewSmooth = function (el) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
+// MediaSession API
+window.K7.updateMediaSession = function (title, artist, album, artworkUrl) {
+    if (!('mediaSession' in navigator)) return;
+    const metadata = { title: title || '', artist: artist || '', album: album || '' };
+    if (artworkUrl) {
+        metadata.artwork = [
+            { src: artworkUrl, sizes: '512x512', type: 'image/jpeg' }
+        ];
+    }
+    navigator.mediaSession.metadata = new MediaMetadata(metadata);
+};
+
+window.K7.setupMediaSessionActions = function (dotNetRef) {
+    if (!('mediaSession' in navigator) || !dotNetRef) return;
+    const ms = navigator.mediaSession;
+    ms.setActionHandler('play', () => dotNetRef.invokeMethodAsync('OnMediaSessionPlay'));
+    ms.setActionHandler('pause', () => dotNetRef.invokeMethodAsync('OnMediaSessionPause'));
+    ms.setActionHandler('previoustrack', () => dotNetRef.invokeMethodAsync('OnMediaSessionPrevious'));
+    ms.setActionHandler('nexttrack', () => dotNetRef.invokeMethodAsync('OnMediaSessionNext'));
+    ms.setActionHandler('seekto', (details) => {
+        if (details.seekTime !== undefined)
+            dotNetRef.invokeMethodAsync('OnMediaSessionSeek', details.seekTime);
+    });
+};
+
+window.K7.updateMediaSessionPosition = function (position, duration, playbackRate) {
+    if (!('mediaSession' in navigator)) return;
+    try {
+        navigator.mediaSession.setPositionState({
+            duration: duration || 0,
+            playbackRate: playbackRate || 1,
+            position: Math.min(position || 0, duration || 0)
+        });
+    } catch { }
+};
+
+// Global keyboard shortcuts
+window.K7._keyboardDotNetRef = null;
+window.K7.initKeyboardShortcuts = function (dotNetRef) {
+    window.K7._keyboardDotNetRef = dotNetRef;
+    if (!window.K7._keyboardAttached) {
+        window.K7._keyboardAttached = true;
+        document.addEventListener('keydown', window.K7._onKeyDown);
+    }
+};
+window.K7.disposeKeyboardShortcuts = function () {
+    window.K7._keyboardDotNetRef = null;
+};
+window.K7._onKeyDown = function (e) {
+    const ref = window.K7._keyboardDotNetRef;
+    if (!ref) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+    let action = null;
+    if (e.code === 'Space' && !e.ctrlKey && !e.metaKey && !e.altKey) action = 'PlayPause';
+    else if (e.code === 'ArrowRight' && !e.ctrlKey && !e.shiftKey) action = 'SeekForward';
+    else if (e.code === 'ArrowLeft' && !e.ctrlKey && !e.shiftKey) action = 'SeekBackward';
+    else if (e.code === 'ArrowRight' && e.ctrlKey) action = 'NextTrack';
+    else if (e.code === 'ArrowLeft' && e.ctrlKey) action = 'PreviousTrack';
+    else if ((e.code === 'KeyM') && !e.ctrlKey && !e.metaKey) action = 'ToggleMute';
+    else if (e.code === 'ArrowUp' && !e.ctrlKey) action = 'VolumeUp';
+    else if (e.code === 'ArrowDown' && !e.ctrlKey) action = 'VolumeDown';
+    if (action) {
+        e.preventDefault();
+        ref.invokeMethodAsync('OnKeyboardAction', action)
+            .catch(e => console.error('OnKeyboardAction failed', e));
+    }
+};
+
 window.initAudioPlayer = function (dotNetRef) {
     if (audioState.element) {
         disposeAudioPlayer();

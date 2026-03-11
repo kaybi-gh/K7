@@ -95,6 +95,7 @@ public partial class MusicRadio
             CoverUrl = K7ServerService.GetAbsoluteUri(
                 track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+            CoverDominantColor = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
             Duration = (track.IndexedFiles?.FirstOrDefault()?.FileMetadata as AudioFileMetadataDto)?.Duration.TotalSeconds ?? 0,
             Bpm = track.Bpm,
             MusicalKey = track.MusicalKey,
@@ -113,6 +114,7 @@ public partial class MusicRadio
         AlbumTitle = t.AlbumTitle,
         Genre = t.Genre,
         CoverUrl = t.CoverUrl,
+        CoverDominantColor = t.CoverDominantColor,
         Duration = t.Duration,
         Bpm = t.Bpm,
         MusicalKey = t.MusicalKey,
@@ -138,6 +140,7 @@ public partial class MusicRadio
         public string? AlbumTitle { get; init; }
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
+        public string? CoverDominantColor { get; init; }
         public double Duration { get; init; }
         public double? Bpm { get; init; }
         public string? MusicalKey { get; init; }

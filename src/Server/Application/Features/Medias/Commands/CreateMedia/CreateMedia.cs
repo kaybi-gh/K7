@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -272,6 +273,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private async Task TryAttachAlbumCover(
         IndexedFile indexedFile, MusicAlbum album, AudioTagData? tags, CancellationToken cancellationToken)
     {
+        MetadataPicture? picture = null;
+
         // Look for cover image files in the audio file's directory
         var directory = Path.GetDirectoryName(indexedFile.Path);
         if (!string.IsNullOrEmpty(directory))
@@ -282,18 +285,18 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 var coverPath = Path.Combine(directory, fileName);
                 if (File.Exists(coverPath))
                 {
-                    album.Pictures.Add(new MetadataPicture
+                    picture = new MetadataPicture
                     {
                         Type = MetadataPictureType.Poster,
                         LocalPath = coverPath
-                    });
-                    return;
+                    };
+                    break;
                 }
             }
         }
 
         // Extract embedded cover art from audio tags
-        if (tags?.CoverArtData is { Length: > 0 })
+        if (picture is null && tags?.CoverArtData is { Length: > 0 })
         {
             var extension = tags.CoverArtMimeType?.ToLowerInvariant() switch
             {
@@ -306,11 +309,28 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             var coverPath = Path.Combine(coverDirectory, $"cover{extension}");
             await File.WriteAllBytesAsync(coverPath, tags.CoverArtData, cancellationToken);
 
-            album.Pictures.Add(new MetadataPicture
+            picture = new MetadataPicture
             {
                 Type = MetadataPictureType.Poster,
                 LocalPath = coverPath
-            });
+            };
         }
+
+        if (picture is null) return;
+
+        album.Pictures.Add(picture);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        await _sender.Send(new CreateBackgroundTaskCommand
+        {
+            Request = new GenerateMetadataPictureVariantsCommand
+            {
+                MetadataPictureId = picture.Id
+            },
+            Priority = BackgroundTaskPriority.Lowest,
+            TargetEntityId = picture.Id,
+            TargetEntityTypeName = nameof(MetadataPicture),
+            MaxRetryCount = 3
+        }, cancellationToken);
     }
 }

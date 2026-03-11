@@ -3,7 +3,9 @@
 
 @if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
 {
-    <div class="fullscreen-player" @onclick="OnBackdropClick">
+    <div class="fullscreen-player"
+         style="@DominantColorStyle"
+         @onclick="OnBackdropClick">
         @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
         {
             <div class="fullscreen-player-bg"

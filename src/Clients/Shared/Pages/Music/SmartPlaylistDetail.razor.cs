@@ -59,6 +59,7 @@ public partial class SmartPlaylistDetail
         CoverUrl = K7ServerService.GetAbsoluteUri(
             item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+        CoverDominantColor = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
         Duration = item.Duration ?? 0,
         UserRating = item.UserRating,
         IsPlaying = Audio.CurrentTrack?.MediaId == item.MediaId
@@ -105,6 +106,7 @@ public partial class SmartPlaylistDetail
         AlbumTitle = i.AlbumTitle,
         Genre = i.Genre,
         CoverUrl = i.CoverUrl,
+        CoverDominantColor = i.CoverDominantColor,
         Duration = i.Duration,
         UserRating = i.UserRating
     };
@@ -252,6 +254,7 @@ public partial class SmartPlaylistDetail
         public string? Genre { get; init; }
         public Guid? IndexedFileId { get; init; }
         public string? CoverUrl { get; init; }
+        public string? CoverDominantColor { get; init; }
         public double Duration { get; init; }
         public int? UserRating { get; init; }
         public bool IsPlaying { get; init; }

@@ -8,6 +8,7 @@ public sealed record MetadataPictureDto
     public Guid Id { get; init; }
     public MetadataPictureType Type { get; init; }
     public Uri? Uri { get; init; }
+    public string? DominantColor { get; init; }
     public IEnumerable<MetadataPictureSize> AvailableSizes { get; init; } = [];
 
     /// <summary>
@@ -25,6 +26,7 @@ public sealed record MetadataPictureDto
         Id = domain.Id,
         Type = domain.Type,
         Uri = new Uri($"/api/metadata-pictures/{domain.Id}", UriKind.Relative),
+        DominantColor = domain.DominantColor,
         AvailableSizes = domain.Variants.Select(v => v.Size)
     };
 }

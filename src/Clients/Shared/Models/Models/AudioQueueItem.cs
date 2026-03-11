@@ -13,6 +13,7 @@ public class AudioQueueItem
     public required string? Artist { get; init; }
     public required string? AlbumTitle { get; init; }
     public string? CoverUrl { get; init; }
+    public string? CoverDominantColor { get; init; }
     public double? Duration { get; init; }
     public Guid? ArtistPersonId { get; init; }
     public string? Genre { get; init; }

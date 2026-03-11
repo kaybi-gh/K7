@@ -10,6 +10,8 @@ public partial class AudioPlayer : IAsyncDisposable
 {
     private DotNetObjectReference<AudioPlayer>? _dotNetRef;
     private bool _isInitialized;
+    private Guid? _lastMediaSessionTrackId;
+    private double _lastPositionUpdate;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -17,6 +19,8 @@ public partial class AudioPlayer : IAsyncDisposable
         {
             _dotNetRef ??= DotNetObjectReference.Create(this);
             await JSRuntime.InvokeVoidAsync("initAudioPlayer", _dotNetRef);
+            await JSRuntime.InvokeVoidAsync("K7.setupMediaSessionActions", _dotNetRef);
+            await JSRuntime.InvokeVoidAsync("K7.initKeyboardShortcuts", _dotNetRef);
             _isInitialized = true;
 
             // Apply persisted volume state
@@ -57,6 +61,7 @@ public partial class AudioPlayer : IAsyncDisposable
         {
             try
             {
+                await JSRuntime.InvokeVoidAsync("K7.disposeKeyboardShortcuts");
                 await JSRuntime.InvokeVoidAsync("disposeAudioPlayer");
             }
             catch (JSDisconnectedException) { }
@@ -71,6 +76,7 @@ public partial class AudioPlayer : IAsyncDisposable
     public void OnTimeUpdated(double currentTime)
     {
         AudioPlayerService.CurrentTime = currentTime;
+        UpdateMediaSessionIfNeeded();
     }
 
     [JSInvokable]
@@ -174,5 +180,94 @@ public partial class AudioPlayer : IAsyncDisposable
     private async void OnVisibilityChanged()
     {
         await InvokeAsync(StateHasChanged);
+    }
+
+    // --- MediaSession API ---
+
+    private async void UpdateMediaSessionIfNeeded()
+    {
+        if (!_isInitialized) return;
+
+        var track = AudioPlayerService.CurrentTrack;
+
+        // Update metadata when track changes
+        if (track?.MediaId != _lastMediaSessionTrackId)
+        {
+            _lastMediaSessionTrackId = track?.MediaId;
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("K7.updateMediaSession",
+                    track?.Title, track?.Artist, track?.AlbumTitle, track?.CoverUrl);
+            }
+            catch (JSDisconnectedException) { }
+        }
+
+        // Update position state periodically (every ~1s)
+        var now = AudioPlayerService.CurrentTime;
+        if (Math.Abs(now - _lastPositionUpdate) >= 1.0)
+        {
+            _lastPositionUpdate = now;
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("K7.updateMediaSessionPosition",
+                    now, AudioPlayerService.Duration, 1.0);
+            }
+            catch (JSDisconnectedException) { }
+        }
+    }
+
+    [JSInvokable]
+    public void OnMediaSessionPlay() => AudioPlayerService.Play();
+
+    [JSInvokable]
+    public void OnMediaSessionPause() => AudioPlayerService.Pause();
+
+    [JSInvokable]
+    public async Task OnMediaSessionPrevious() => await AudioPlayerService.PreviousAsync();
+
+    [JSInvokable]
+    public async Task OnMediaSessionNext() => await AudioPlayerService.NextAsync();
+
+    [JSInvokable]
+    public void OnMediaSessionSeek(double time) => AudioPlayerService.Seek(time);
+
+    // --- Keyboard shortcuts ---
+
+    [JSInvokable]
+    public async Task OnKeyboardAction(string action)
+    {
+        if (!AudioPlayerService.IsVisible) return;
+
+        switch (action)
+        {
+            case "PlayPause":
+                if (AudioPlayerService.PlaybackState == PlaybackState.Playing)
+                    AudioPlayerService.Pause();
+                else
+                    AudioPlayerService.Play();
+                break;
+            case "SeekForward":
+                AudioPlayerService.Seek(Math.Min(AudioPlayerService.CurrentTime + 5, AudioPlayerService.Duration));
+                break;
+            case "SeekBackward":
+                AudioPlayerService.Seek(Math.Max(AudioPlayerService.CurrentTime - 5, 0));
+                break;
+            case "NextTrack":
+                await AudioPlayerService.NextAsync();
+                break;
+            case "PreviousTrack":
+                await AudioPlayerService.PreviousAsync();
+                break;
+            case "ToggleMute":
+                if (AudioPlayerService.IsMuted) AudioPlayerService.Unmute();
+                else AudioPlayerService.Mute();
+                break;
+            case "VolumeUp":
+                AudioPlayerService.SetVolume(Math.Min(AudioPlayerService.Volume + 0.05, 1.0));
+                break;
+            case "VolumeDown":
+                AudioPlayerService.SetVolume(Math.Max(AudioPlayerService.Volume - 0.05, 0.0));
+                break;
+        }
     }
 }

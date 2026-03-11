@@ -77,6 +77,7 @@ public partial class PlaylistDetail
         CoverUrl = K7ServerService.GetAbsoluteUri(
             item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+        CoverDominantColor = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
         Duration = item.Duration ?? 0,
         UserRating = item.UserRating,
         Bpm = item.Bpm,
@@ -130,6 +131,7 @@ public partial class PlaylistDetail
         AlbumTitle = i.AlbumTitle,
         Genre = i.Genre,
         CoverUrl = i.CoverUrl,
+        CoverDominantColor = i.CoverDominantColor,
         Duration = i.Duration,
         UserRating = i.UserRating,
         Bpm = i.Bpm,
@@ -227,6 +229,7 @@ public partial class PlaylistDetail
         public string? Genre { get; init; }
         public Guid? IndexedFileId { get; init; }
         public string? CoverUrl { get; init; }
+        public string? CoverDominantColor { get; init; }
         public double Duration { get; init; }
         public int? UserRating { get; init; }
         public double? Bpm { get; init; }
