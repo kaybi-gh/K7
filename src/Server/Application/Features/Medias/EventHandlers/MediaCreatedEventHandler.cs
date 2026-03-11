@@ -1,20 +1,29 @@
-﻿using K7.Server.Domain.Events;
+﻿using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
+using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.EventHandlers;
 
-public class MediaCreatedEventHandler : INotificationHandler<MediaCreatedEvent>
+public class MediaCreatedEventHandler(ISender sender, ILogger<MediaCreatedEventHandler> logger)
+    : INotificationHandler<MediaCreatedEvent>
 {
-    private readonly ILogger<MediaCreatedEventHandler> _logger;
-
-    public MediaCreatedEventHandler(ILogger<MediaCreatedEventHandler> logger)
+    public async Task Handle(MediaCreatedEvent notification, CancellationToken cancellationToken)
     {
-        _logger = logger;
-    }
+        logger.LogInformation("K7.Server Domain Event: {DomainEvent}", notification.GetType().Name);
 
-    public Task Handle(MediaCreatedEvent notification, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("K7.Server Domain Event: {DomainEvent}", notification.GetType().Name);
-        return Task.CompletedTask;
+        if (notification.Media is MusicTrack track)
+        {
+            await sender.Send(new CreateBackgroundTaskCommand
+            {
+                Request = new AnalyzeMusicTrackAudioCommand { TrackId = track.Id },
+                Priority = BackgroundTaskPriority.Low,
+                TargetEntityId = track.Id,
+                TargetEntityTypeName = nameof(MusicTrack),
+                MaxRetryCount = 2
+            }, cancellationToken);
+        }
     }
 }
