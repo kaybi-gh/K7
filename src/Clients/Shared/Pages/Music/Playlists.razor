@@ -2,17 +2,27 @@
 @using K7.Shared.Dtos.Entities.Playlists
 @inject IK7ServerService K7ServerService
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 <PageTitle>Playlists</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
     <MudText Typo="Typo.h5">Playlists</MudText>
-    <MudButton Variant="Variant.Filled"
-               Color="Color.Primary"
-               StartIcon="@Icons.Material.Filled.Add"
-               OnClick="OpenCreateDialog">
-        Nouvelle playlist
-    </MudButton>
+    <MudStack Row="true" Spacing="2">
+        <MudMenu Label="Presets" Variant="Variant.Outlined" Color="Color.Primary"
+                 StartIcon="@Icons.Material.Filled.Lightbulb" Dense="true">
+            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">Ajouts récents</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.MostPlayed)">Les plus écoutés</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.NeverPlayed)">Jamais écoutés</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.HighlyRated)">Mieux notés</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">Écoutés récemment</MudMenuItem>
+        </MudMenu>
+        <MudMenu Label="Nouvelle playlist" Variant="Variant.Filled" Color="Color.Primary"
+                 StartIcon="@Icons.Material.Filled.Add" Dense="true">
+            <MudMenuItem Icon="@Icons.Material.Filled.QueueMusic" OnClick="OpenCreatePlaylistDialog">Playlist</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.AutoAwesome" OnClick="OpenCreateSmartPlaylistDialog">Smart Playlist</MudMenuItem>
+        </MudMenu>
+    </MudStack>
 </MudStack>
 
 @if (_loading)
@@ -36,7 +46,7 @@ else
             @foreach (var playlist in _playlists)
             {
                 <MudItem xs="12" sm="6" md="4" lg="3">
-                    <MudCard Outlined="true" Class="playlist-card" @onclick="() => GoToPlaylist(playlist.Id)" Style="cursor: pointer;">
+                    <MudCard Outlined="true" Class="playlist-card" @onclick="() => GoToPlaylist(playlist)" Style="cursor: pointer;">
                         <MudCardContent>
                             <MudStack AlignItems="AlignItems.Center" Spacing="2">
                                 @if (playlist.CoverPicture is not null)
@@ -49,10 +59,17 @@ else
                                 else
                                 {
                                     <div class="playlist-cover-placeholder">
-                                        <MudIcon Icon="@Icons.Material.Filled.QueueMusic" Style="font-size: 48px; opacity: 0.3;" />
+                                        <MudIcon Icon="@(playlist.IsSmartPlaylist ? Icons.Material.Filled.AutoAwesome : Icons.Material.Filled.QueueMusic)"
+                                                 Style="font-size: 48px; opacity: 0.3;" />
                                     </div>
                                 }
-                                <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="playlist-title">@playlist.Title</MudText>
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="playlist-title">@playlist.Title</MudText>
+                                    @if (playlist.IsSmartPlaylist)
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Color="Color.Secondary" />
+                                    }
+                                </MudStack>
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount morceaux</MudText>
                             </MudStack>
                         </MudCardContent>

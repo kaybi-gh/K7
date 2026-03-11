@@ -41,4 +41,12 @@ public interface IK7ServerService
     Task DeletePlaylistAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Guid> AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default);
     Task RemovePlaylistItemAsync(Guid playlistId, Guid itemId, CancellationToken cancellationToken = default);
+
+    // Smart Playlists
+    Task<PaginatedListDto<LiteSmartPlaylistDto>?> GetSmartPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default);
+    Task<SmartPlaylistDto?> GetSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Guid> CreateSmartPlaylistAsync(CreateSmartPlaylistRequest request, CancellationToken cancellationToken = default);
+    Task UpdateSmartPlaylistAsync(Guid id, UpdateSmartPlaylistRequest request, CancellationToken cancellationToken = default);
+    Task DeleteSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+    Task EvaluateSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
 }

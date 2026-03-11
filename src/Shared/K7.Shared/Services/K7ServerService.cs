@@ -234,4 +234,40 @@ public class K7ServerService : IK7ServerService
         var response = await HttpClient.DeleteAsync($"api/playlists/{playlistId}/items/{itemId}", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<PaginatedListDto<LiteSmartPlaylistDto>?> GetSmartPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteSmartPlaylistDto>>(
+            $"api/smart-playlists?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<SmartPlaylistDto?> GetSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<SmartPlaylistDto>($"api/smart-playlists/{id}", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<Guid> CreateSmartPlaylistAsync(CreateSmartPlaylistRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/smart-playlists", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateSmartPlaylistAsync(Guid id, UpdateSmartPlaylistRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/smart-playlists/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/smart-playlists/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task EvaluateSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/smart-playlists/{id}/evaluate", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }
