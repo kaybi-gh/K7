@@ -57,8 +57,10 @@ public abstract record LiteMediaDto
             IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
             Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
             AlbumTitle = track.Album?.Title,
-            ArtistName = track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
-            ArtistPersonId = track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId,
+            ArtistName = track.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name
+                       ?? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
+            ArtistPersonId = track.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId
+                           ?? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId,
             Genre = track.Album?.Genres.FirstOrDefault() ?? domain.Genres.FirstOrDefault(),
             Bpm = track.AudioAnalysis?.Bpm,
             MusicalKey = track.AudioAnalysis?.MusicalKey,

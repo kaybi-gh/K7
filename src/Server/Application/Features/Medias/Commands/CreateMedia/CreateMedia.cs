@@ -143,7 +143,6 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         if (isNewAlbum)
         {
-            // Set album artist
             if (!string.IsNullOrEmpty(albumArtistName))
             {
                 var albumArtistPerson = await FindOrCreatePerson(albumArtistName, cancellationToken);
@@ -235,7 +234,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             .Include(a => a.IndexedFiles)
             .FirstOrDefaultAsync(a =>
                 a.Title == resolvedAlbumName &&
-                a.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId),
+                a.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId) &&
+                (releaseYear == null || a.ReleaseDate == null || a.ReleaseDate == releaseYear),
                 cancellationToken);
 
         if (existingAlbum != null)
