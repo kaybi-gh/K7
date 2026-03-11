@@ -71,6 +71,14 @@ public interface IAudioPlayerService
     void ToggleShuffle();
     void CycleRepeatMode();
 
+    // Crossfade
+    bool AdaptiveCrossfade { get; }
+    double CrossfadeDuration { get; }
+    event Func<PlayerSource, double, Task>? CrossfadeRequested;
+    void ToggleAdaptiveCrossfade();
+    void SetCrossfadeDuration(double seconds);
+    Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default);
+
     // Full screen
     bool IsFullScreenVisible { get; }
     event Action? IsFullScreenVisibleChanged;

@@ -21,6 +21,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public event Action<PlayerSource>? SourceChanged;
     public event Action? IsVisibleChanged;
     public event Action? IsFullScreenVisibleChanged;
+    public event Func<PlayerSource, double, Task>? CrossfadeRequested;
 #pragma warning restore CS0067
     public event Action<PlaybackState>? PlaybackStateChanged;
     public event Action<double>? DurationChanged;
@@ -96,6 +97,15 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public bool IsVisible { get; private set; }
     public bool IsFullScreenVisible { get; private set; }
+
+    // Crossfade state
+    private bool _adaptiveCrossfade = deviceStorageService.Get(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, true);
+    public bool AdaptiveCrossfade => _adaptiveCrossfade;
+
+    private double _crossfadeDuration = deviceStorageService.Get(PreferenceKeys.PLAYER_CROSSFADE_DURATION, 6.0);
+    public double CrossfadeDuration => _crossfadeDuration;
+
+    private bool _crossfadeTriggered;
 
     // Queue state
     private readonly List<AudioQueueItem> _queue = [];
@@ -297,6 +307,48 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         RepeatModeChanged?.Invoke(_repeat);
     }
 
+    public void ToggleAdaptiveCrossfade()
+    {
+        _adaptiveCrossfade = !_adaptiveCrossfade;
+        deviceStorageService.Set(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, _adaptiveCrossfade);
+    }
+
+    public void SetCrossfadeDuration(double seconds)
+    {
+        _crossfadeDuration = Math.Clamp(seconds, 0, 12);
+        deviceStorageService.Set(PreferenceKeys.PLAYER_CROSSFADE_DURATION, _crossfadeDuration);
+    }
+
+    public async Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default)
+    {
+        if (_crossfadeTriggered || _queue.Count == 0) return;
+        if (_repeat == RepeatMode.One) return;
+
+        var nextIndex = GetNextIndex();
+        if (nextIndex is null) return;
+
+        // Peek without advancing — GetNextIndex already advanced _shufflePosition, undo it
+        if (_shuffle && _shufflePosition >= 0) _shufflePosition--;
+
+        var nextTrack = _queue[nextIndex.Value];
+
+        var session = await streamUriService.GetOrCreateSessionAsync(nextTrack.IndexedFileId, cancellationToken: cancellationToken);
+        if (session.Source is null) return;
+
+        var source = new PlayerSource
+        {
+            Url = session.Source.Uri.OriginalString,
+            MimeType = session.Source.MimeType
+        };
+
+        var duration = _crossfadeDuration;
+        if (_adaptiveCrossfade && CurrentTrack is not null)
+            duration = HarmonicMixHelper.ComputeCrossfadeDuration(CurrentTrack, nextTrack, _crossfadeDuration);
+
+        _crossfadeTriggered = true;
+        CrossfadeRequested?.Invoke(source, duration);
+    }
+
     // Called by the component when JS reports track ended
     public async Task OnTrackEndedAsync(CancellationToken cancellationToken = default)
     {
@@ -304,6 +356,19 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         {
             Seek(0);
             Play();
+            return;
+        }
+
+        if (_crossfadeTriggered)
+        {
+            // Crossfade already started the next track — just advance the index
+            var nextIndex = GetNextIndex();
+            if (nextIndex is not null)
+            {
+                _currentIndex = nextIndex.Value;
+                CurrentTrackChanged?.Invoke(CurrentTrack);
+            }
+            _crossfadeTriggered = false;
             return;
         }
 
@@ -316,6 +381,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         var track = CurrentTrack;
         if (track is null) return;
 
+        _crossfadeTriggered = false;
         CurrentTrackChanged?.Invoke(track);
 
         // Reset state

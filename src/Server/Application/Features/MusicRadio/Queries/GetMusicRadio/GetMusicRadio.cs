@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 
 namespace K7.Server.Application.Features.MusicRadio.Queries.GetMusicRadio;
 
@@ -308,7 +309,7 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
         // Key compatibility bonus (reduce distance if harmonically compatible)
         if (a.MusicalKey is not null && b.MusicalKey is not null)
         {
-            if (AreKeysCompatible(a.MusicalKey, b.MusicalKey))
+            if (CamelotWheel.AreKeysCompatible(a.MusicalKey, b.MusicalKey))
                 distance *= 0.8; // 20% bonus
         }
 
@@ -332,63 +333,6 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
             Bpm = analyses.Where(a => a.Bpm.HasValue).Select(a => a.Bpm!.Value).DefaultIfEmpty(120).Average(),
             MusicalKey = analyses.GroupBy(a => a.MusicalKey).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key
         };
-    }
-
-    // Camelot wheel for harmonic key compatibility
-
-    private static readonly Dictionary<string, (int Number, char Letter)> CamelotMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["A flat minor"] = (1, 'A'), ["G sharp minor"] = (1, 'A'),
-        ["B major"] = (1, 'B'),
-        ["E flat minor"] = (2, 'A'), ["D sharp minor"] = (2, 'A'),
-        ["F sharp major"] = (2, 'B'), ["G flat major"] = (2, 'B'),
-        ["B flat minor"] = (3, 'A'), ["A sharp minor"] = (3, 'A'),
-        ["D flat major"] = (3, 'B'), ["C sharp major"] = (3, 'B'),
-        ["F minor"] = (4, 'A'),
-        ["A flat major"] = (4, 'B'), ["G sharp major"] = (4, 'B'),
-        ["C minor"] = (5, 'A'),
-        ["E flat major"] = (5, 'B'), ["D sharp major"] = (5, 'B'),
-        ["G minor"] = (6, 'A'),
-        ["B flat major"] = (6, 'B'), ["A sharp major"] = (6, 'B'),
-        ["D minor"] = (7, 'A'),
-        ["F major"] = (7, 'B'),
-        ["A minor"] = (8, 'A'),
-        ["C major"] = (8, 'B'),
-        ["E minor"] = (9, 'A'),
-        ["G major"] = (9, 'B'),
-        ["B minor"] = (10, 'A'),
-        ["D major"] = (10, 'B'),
-        ["F sharp minor"] = (11, 'A'), ["G flat minor"] = (11, 'A'),
-        ["A major"] = (11, 'B'),
-        ["C sharp minor"] = (12, 'A'), ["D flat minor"] = (12, 'A'),
-        ["E major"] = (12, 'B'),
-    };
-
-    /// <summary>
-    /// Two keys are harmonically compatible if they are:
-    /// - Same Camelot position
-    /// - ±1 on the wheel (same letter), wrapping 12→1
-    /// - Same number, opposite letter (relative major/minor)
-    /// </summary>
-    internal static bool AreKeysCompatible(string keyA, string keyB)
-    {
-        if (!CamelotMap.TryGetValue(keyA, out var a) || !CamelotMap.TryGetValue(keyB, out var b))
-            return false;
-
-        // Same position
-        if (a == b) return true;
-
-        // Same letter, adjacent number (wrapping)
-        if (a.Letter == b.Letter)
-        {
-            var diff = Math.Abs(a.Number - b.Number);
-            if (diff == 1 || diff == 11) return true;
-        }
-
-        // Same number, opposite letter (relative major/minor)
-        if (a.Number == b.Number && a.Letter != b.Letter) return true;
-
-        return false;
     }
 
     // Mood presets

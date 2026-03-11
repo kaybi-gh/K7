@@ -20,6 +20,9 @@ public sealed record PlaylistItemDto
     public Guid? IndexedFileId { get; init; }
     public double? Duration { get; init; }
     public int? UserRating { get; init; }
+    public double? Bpm { get; init; }
+    public string? MusicalKey { get; init; }
+    public double? Energy { get; init; }
     public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
 
     public static PlaylistItemDto FromDomain(PlaylistItem domain)
@@ -48,6 +51,9 @@ public sealed record PlaylistItemDto
             IndexedFileId = indexedFile?.Id,
             Duration = (indexedFile?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
             UserRating = media?.Ratings.OfType<UserRating>().FirstOrDefault()?.Value is double v ? (int)v : null,
+            Bpm = media is MusicTrack mt ? mt.AudioAnalysis?.Bpm : null,
+            MusicalKey = media is MusicTrack mk ? mk.AudioAnalysis?.MusicalKey : null,
+            Energy = media is MusicTrack me ? me.AudioAnalysis?.Energy : null,
             Pictures = media?.Pictures.Select(MetadataPictureDto.FromDomain)
         };
     }

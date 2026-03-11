@@ -96,6 +96,9 @@ public partial class MusicRadio
                 track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             Duration = (track.IndexedFiles?.FirstOrDefault()?.FileMetadata as AudioFileMetadataDto)?.Duration.TotalSeconds ?? 0,
+            Bpm = track.Bpm,
+            MusicalKey = track.MusicalKey,
+            Energy = track.Energy,
             IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
         };
     }
@@ -110,7 +113,10 @@ public partial class MusicRadio
         AlbumTitle = t.AlbumTitle,
         Genre = t.Genre,
         CoverUrl = t.CoverUrl,
-        Duration = t.Duration
+        Duration = t.Duration,
+        Bpm = t.Bpm,
+        MusicalKey = t.MusicalKey,
+        Energy = t.Energy
     };
 
     private static string FormatTime(double seconds)
@@ -133,6 +139,9 @@ public partial class MusicRadio
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
+        public double? Bpm { get; init; }
+        public string? MusicalKey { get; init; }
+        public double? Energy { get; init; }
         public bool IsPlaying { get; init; }
     }
 

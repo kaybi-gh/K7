@@ -44,6 +44,8 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
                     .ThenInclude(p => p.Variants)
             .Include(x => (x as MusicAlbum)!.Tracks)
                 .ThenInclude(t => t.IndexedFiles)
+            .Include(x => (x as MusicAlbum)!.Tracks)
+                .ThenInclude(t => t.AudioAnalysis)
             .AsQueryable();
 
         if (userId.HasValue)

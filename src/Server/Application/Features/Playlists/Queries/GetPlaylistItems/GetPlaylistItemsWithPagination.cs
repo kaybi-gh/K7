@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Playlists;
 
 namespace K7.Server.Application.Features.Playlists.Queries.GetPlaylistItems;
@@ -34,6 +35,10 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
                     .ThenInclude(r => r.Person)
             .Include(i => i.Media)
                 .ThenInclude(m => m.Ratings)
+            .Include(i => (i.Media as MusicTrack)!.Album)
+                .ThenInclude(a => a!.PersonRoles)
+                    .ThenInclude(r => r.Person)
+            .Include(i => (i.Media as MusicTrack)!.AudioAnalysis)
             .Where(i => i.PlaylistId == request.PlaylistId)
             .OrderBy(i => i.Order)
             .AsNoTracking();

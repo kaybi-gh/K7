@@ -22,6 +22,7 @@ public partial class AudioPlayer : IAsyncDisposable
             // Apply persisted volume state
             await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
             await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
+            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeDuration);
         }
     }
 
@@ -36,6 +37,7 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.VolumeChangeRequested += SetVolumeAsync;
         AudioPlayerService.SourceChanged += OnSourceChanged;
         AudioPlayerService.IsVisibleChanged += OnVisibilityChanged;
+        AudioPlayerService.CrossfadeRequested += OnCrossfadeRequested;
     }
 
     public async ValueTask DisposeAsync()
@@ -49,6 +51,7 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.VolumeChangeRequested -= SetVolumeAsync;
         AudioPlayerService.SourceChanged -= OnSourceChanged;
         AudioPlayerService.IsVisibleChanged -= OnVisibilityChanged;
+        AudioPlayerService.CrossfadeRequested -= OnCrossfadeRequested;
 
         if (_isInitialized)
         {
@@ -105,6 +108,18 @@ public partial class AudioPlayer : IAsyncDisposable
     public async Task OnTrackEnded()
     {
         await AudioPlayerService.OnTrackEndedAsync();
+    }
+
+    [JSInvokable]
+    public async Task OnCrossfadeNeeded()
+    {
+        await AudioPlayerService.OnCrossfadeNeededAsync();
+    }
+
+    private async Task OnCrossfadeRequested(PlayerSource source, double duration)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(source.Url)) return;
+        await JSRuntime.InvokeVoidAsync("audioStartCrossfade", source.Url, source.MimeType, duration);
     }
 
     private async Task PlayAsync()
