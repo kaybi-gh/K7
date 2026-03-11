@@ -673,6 +673,26 @@
         }
       }
     },
+    "/api/music/stats": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "operationId": "GetMusicStats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MusicStatsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/metadata/search": {
       "get": {
         "tags": [
@@ -2933,6 +2953,25 @@
           }
         }
       },
+      "GenreStatDto": {
+        "required": [
+          "genre"
+        ],
+        "type": "object",
+        "properties": {
+          "genre": {
+            "type": "string"
+          },
+          "playCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "IndexedFileDto": {
         "required": [
           "id",
@@ -4231,6 +4270,59 @@
       "MetadataPictureType": {
         "type": "integer"
       },
+      "MusicStatsDto": {
+        "type": "object",
+        "properties": {
+          "totalListeningHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "totalCompletedPlays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "uniqueTracksPlayed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "topArtists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topAlbums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topTracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topGenres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GenreStatDto"
+            }
+          }
+        }
+      },
       "NativeDeviceDetailsDto": {
         "type": "object",
         "properties": {
@@ -5205,6 +5297,35 @@
           }
         }
       },
+      "TopItemDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "playCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "UpdateDeviceCommand": {
         "type": "object",
         "properties": {
@@ -5523,6 +5644,9 @@
     },
     {
       "name": "Persons"
+    },
+    {
+      "name": "Music"
     },
     {
       "name": "Metadata"

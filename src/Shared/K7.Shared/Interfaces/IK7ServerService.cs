@@ -52,4 +52,7 @@ public interface IK7ServerService
 
     // Ratings
     Task RateMediaAsync(Guid mediaId, int value, CancellationToken cancellationToken = default);
+
+    // Stats
+    Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default);
 }
