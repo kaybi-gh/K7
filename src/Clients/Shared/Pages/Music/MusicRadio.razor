@@ -1,0 +1,114 @@
+@page "/music/radio"
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Medias
+@inject IK7ServerService K7ServerService
+<PageTitle>Radio</PageTitle>
+
+<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
+    <MudText Typo="Typo.h5">Radio</MudText>
+</MudStack>
+
+<div class="pa-4">
+    <MudGrid Spacing="4">
+        @foreach (var radio in _radioTypes)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudCard Class="radio-card" Elevation="0" Outlined="true" @onclick="() => PlayRadioAsync(radio)">
+                    <MudCardContent Class="radio-card-content">
+                        <MudIcon Icon="@radio.Icon" Style="font-size: 48px;" Color="@radio.Color" />
+                        <MudText Typo="Typo.h6" Class="mt-2">@radio.Title</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@radio.Description</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+
+    @if (_selectedRadio is not null)
+    {
+        <MudDivider Class="my-6" />
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-4">
+            <MudIcon Icon="@_selectedRadio.Icon" Color="@_selectedRadio.Color" />
+            <MudText Typo="Typo.h6">@_selectedRadio.Title</MudText>
+            @if (!_loading)
+            {
+                <MudSpacer />
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="() => PlayRadioAsync(_selectedRadio)"
+                           Size="Size.Small">
+                    Rafraîchir
+                </MudButton>
+            }
+        </MudStack>
+
+        @if (_loading)
+        {
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-8">
+                <MudProgressCircular Indeterminate="true" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Génération du mix...</MudText>
+            </MudStack>
+        }
+        else if (_tracks.Count == 0)
+        {
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-8">
+                <MudIcon Icon="@Icons.Material.Outlined.MusicOff" Style="font-size: 48px; opacity: 0.3;" />
+                <MudText Typo="Typo.body1" Color="Color.Secondary">Pas assez de données pour ce mix.</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Écoutez plus de musique pour enrichir vos recommandations.</MudText>
+            </MudStack>
+        }
+        else
+        {
+            <MudTable Items="_tracks"
+                      Dense="true"
+                      Hover="true"
+                      Elevation="0"
+                      T="TrackViewModel"
+                      OnRowClick="OnTrackClick"
+                      RowClass="cursor-pointer">
+                <HeaderContent>
+                    <MudTh Style="width: 50px;"></MudTh>
+                    <MudTh>Titre</MudTh>
+                    <MudTh>Album</MudTh>
+                    <MudTh Style="width: 100px; text-align: right;">
+                        <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
+                    </MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        @if (context.CoverUrl is not null)
+                        {
+                            <MudImage Src="@context.CoverUrl" Width="36" Height="36" ObjectFit="ObjectFit.Cover" Class="rounded" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Outlined.MusicNote" />
+                        }
+                    </MudTd>
+                    <MudTd>
+                        <MudStack Spacing="0">
+                            <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">
+                                @context.Title
+                            </MudText>
+                            @if (!string.IsNullOrEmpty(context.ArtistName))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ArtistName</MudText>
+                            }
+                        </MudStack>
+                    </MudTd>
+                    <MudTd>
+                        @if (!string.IsNullOrEmpty(context.AlbumTitle))
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText>
+                        }
+                    </MudTd>
+                    <MudTd Style="text-align: right;">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    }
+</div>
