@@ -140,6 +140,11 @@ public class K7ServerService : IK7ServerService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<MusicStatsDto>("api/music/stats", _serializerOptions, cancellationToken);
+    }
+
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"query={Uri.EscapeDataString(query)}" };
