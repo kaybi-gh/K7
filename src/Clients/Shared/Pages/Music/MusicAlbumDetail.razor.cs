@@ -128,7 +128,8 @@ public partial class MusicAlbumDetail
             AlbumTitle = _album?.Title,
             Genre = t.Genre,
             CoverUrl = t.CoverUrl,
-            Duration = t.Duration
+            Duration = t.Duration,
+            UserRating = t.UserRating
         };
     }
 
@@ -163,6 +164,7 @@ public partial class MusicAlbumDetail
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
         public int DiscNumber { get; init; }
+        public int? UserRating { get; init; }
         public bool IsPlaying { get; init; }
     }
 }

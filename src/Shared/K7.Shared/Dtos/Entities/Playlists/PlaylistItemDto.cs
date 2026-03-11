@@ -2,6 +2,8 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Playlists;
+using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Enums;
 
 namespace K7.Shared.Dtos.Entities.Playlists;
 
@@ -17,6 +19,7 @@ public sealed record PlaylistItemDto
     public string? Genre { get; init; }
     public Guid? IndexedFileId { get; init; }
     public double? Duration { get; init; }
+    public int? UserRating { get; init; }
     public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
 
     public static PlaylistItemDto FromDomain(PlaylistItem domain)
@@ -44,6 +47,7 @@ public sealed record PlaylistItemDto
             Genre = genre,
             IndexedFileId = indexedFile?.Id,
             Duration = (indexedFile?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
+            UserRating = media?.Ratings.OfType<UserRating>().FirstOrDefault()?.Value is double v ? (int)v : null,
             Pictures = media?.Pictures.Select(MetadataPictureDto.FromDomain)
         };
     }

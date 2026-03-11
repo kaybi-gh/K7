@@ -78,6 +78,7 @@ public partial class PlaylistDetail
             item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         Duration = item.Duration ?? 0,
+        UserRating = item.UserRating,
         IsPlaying = Audio.CurrentTrack?.MediaId == item.MediaId
     };
 
@@ -126,7 +127,8 @@ public partial class PlaylistDetail
         AlbumTitle = i.AlbumTitle,
         Genre = i.Genre,
         CoverUrl = i.CoverUrl,
-        Duration = i.Duration
+        Duration = i.Duration,
+        UserRating = i.UserRating
     };
 
     private async Task RemoveItem(PlaylistItemViewModel item)
@@ -220,6 +222,7 @@ public partial class PlaylistDetail
         public Guid? IndexedFileId { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
+        public int? UserRating { get; init; }
         public bool IsPlaying { get; init; }
     }
 }

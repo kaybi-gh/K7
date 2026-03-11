@@ -92,6 +92,12 @@ public partial class FullScreenMusicPlayer : IDisposable
 
     private void OnVolumeChanged(double value) => Audio.SetVolume(value);
 
+    private void OnRatingChanged(int? value)
+    {
+        if (Audio.CurrentTrack is { } track)
+            track.UserRating = value;
+    }
+
     private async Task PlayFromQueue(int index)
     {
         if (index == Audio.CurrentIndex) return;

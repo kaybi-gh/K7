@@ -95,6 +95,7 @@
                         <MudTh Style="width: 80px;">
                             <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
                         </MudTh>
+                        <MudTh Style="width: 130px;"></MudTh>
                         <MudTh Style="width: 50px;"></MudTh>
                         <MudTh Style="width: 50px;"></MudTh>
                     </HeaderContent>
@@ -129,6 +130,9 @@
                         </MudTd>
                         <MudTd>
                             <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
+                        </MudTd>
+                        <MudTd>
+                            <K7.Clients.Shared.Components.RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="Size.Small" />
                         </MudTd>
                         <MudTd>
                             <K7.Clients.Shared.Components.TrackContextMenu Track="BuildQueueItem(context)" />
