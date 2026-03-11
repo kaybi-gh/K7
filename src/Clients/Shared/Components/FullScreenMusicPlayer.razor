@@ -61,15 +61,30 @@
                 </div>
 
                 <div class="fullscreen-player-seek">
-                    <div class="seek-bar" @ref="_seekBarRef"
-                         @onclick="OnSeekClick"
-                         @onpointerdown="OnSeekPointerDown"
-                         @onpointermove="OnSeekPointerMove"
-                         @onpointerup="OnSeekPointerUp">
-                        <div class="seek-buffered" style="width: @BufferedPercent%"></div>
-                        <div class="seek-current" style="width: @CurrentPercent%"></div>
-                        <div class="seek-thumb" style="left: @CurrentPercent%"></div>
-                    </div>
+                    @if (_waveformMaskStyle is not null)
+                    {
+                        <div class="waveform-container" style="@_waveformMaskStyle"
+                             @ref="_seekBarRef"
+                             @onclick="OnSeekClick"
+                             @onpointerdown="OnSeekPointerDown"
+                             @onpointermove="OnSeekPointerMove"
+                             @onpointerup="OnSeekPointerUp">
+                            <div class="waveform-bg"></div>
+                            <div class="waveform-progress" style="width: @(CurrentPercent)%"></div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="seek-bar" @ref="_seekBarRef"
+                             @onclick="OnSeekClick"
+                             @onpointerdown="OnSeekPointerDown"
+                             @onpointermove="OnSeekPointerMove"
+                             @onpointerup="OnSeekPointerUp">
+                            <div class="seek-buffered" style="width: @BufferedPercent%"></div>
+                            <div class="seek-current" style="width: @CurrentPercent%"></div>
+                            <div class="seek-thumb" style="left: @CurrentPercent%"></div>
+                        </div>
+                    }
                     <div class="seek-times">
                         <span>@FormatTime(Audio.CurrentTime)</span>
                         <span>@FormatTime(Audio.Duration)</span>

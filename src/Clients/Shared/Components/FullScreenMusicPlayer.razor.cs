@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using K7.Clients.Shared.Domain.Interfaces;
 using K7.Clients.Shared.Domain.Models;
 using K7.Server.Domain.Enums;
@@ -19,7 +21,9 @@ public partial class FullScreenMusicPlayer : IDisposable
     private FullScreenView _view;
     private string? _lyricsLrc;
     private string? _lyrics;
-    private Guid? _lyricsLoadedForMediaId;
+    private float[]? _waveformPeaks;
+    private string? _waveformMaskStyle;
+    private Guid? _detailsLoadedForMediaId;
 
     private double CurrentPercent => Audio.Duration > 0 ? (Audio.CurrentTime / Audio.Duration) * 100 : 0;
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
@@ -91,24 +95,61 @@ public partial class FullScreenMusicPlayer : IDisposable
         }
 
         _view = FullScreenView.Lyrics;
-        await LoadLyricsIfNeeded();
+        await LoadTrackDetailsAsync();
     }
 
-    private async Task LoadLyricsIfNeeded()
+    private async Task LoadTrackDetailsAsync()
     {
         var mediaId = Audio.CurrentTrack?.MediaId;
-        if (mediaId is null || mediaId == _lyricsLoadedForMediaId) return;
+        if (mediaId is null || mediaId == _detailsLoadedForMediaId) return;
 
-        _lyricsLoadedForMediaId = mediaId;
+        _detailsLoadedForMediaId = mediaId;
         _lyricsLrc = null;
         _lyrics = null;
+        _waveformPeaks = null;
+        _waveformMaskStyle = null;
 
         var media = await Server.GetMediaAsync(mediaId.Value);
         if (media is MusicTrackDto track)
         {
             _lyricsLrc = track.LyricsLrc;
             _lyrics = track.Lyrics;
+            _waveformPeaks = track.WaveformPeaks;
+            BuildWaveformMask();
         }
+    }
+
+    private void BuildWaveformMask()
+    {
+        if (_waveformPeaks is not { Length: > 0 })
+        {
+            _waveformMaskStyle = null;
+            return;
+        }
+
+        var peaks = _waveformPeaks;
+        var count = peaks.Length;
+        var sb = new StringBuilder(count * 60);
+
+        sb.Append("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ");
+        sb.Append(count);
+        sb.Append(" 100' preserveAspectRatio='none'>");
+
+        for (var i = 0; i < count; i++)
+        {
+            var h = Math.Max(peaks[i], 0.03f) * 100;
+            var y = (100 - h) / 2;
+            sb.Append("<rect x='").Append(i).Append("' y='");
+            sb.Append(y.ToString("F1", CultureInfo.InvariantCulture));
+            sb.Append("' width='0.65' height='");
+            sb.Append(h.ToString("F1", CultureInfo.InvariantCulture));
+            sb.Append("' fill='white'/>");
+        }
+
+        sb.Append("</svg>");
+
+        var encoded = Uri.EscapeDataString(sb.ToString());
+        _waveformMaskStyle = $"-webkit-mask-image: url(\"data:image/svg+xml,{encoded}\"); mask-image: url(\"data:image/svg+xml,{encoded}\"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%;";
     }
 
     private void OnLyricsSeek(double seconds) => Audio.Seek(seconds);
@@ -176,9 +217,9 @@ public partial class FullScreenMusicPlayer : IDisposable
     private void OnTimeChanged(double _) => InvokeAsync(StateHasChanged);
     private void OnTrackChanged(AudioQueueItem? _) => InvokeAsync(async () =>
     {
-        _lyricsLoadedForMediaId = null;
-        if (_view == FullScreenView.Lyrics)
-            await LoadLyricsIfNeeded();
+        _detailsLoadedForMediaId = null;
+        if (Audio.IsFullScreenVisible)
+            await LoadTrackDetailsAsync();
         StateHasChanged();
     });
     private void OnQueueChanged() => InvokeAsync(StateHasChanged);
@@ -186,7 +227,12 @@ public partial class FullScreenMusicPlayer : IDisposable
     private void OnRepeatChanged(RepeatMode _) => InvokeAsync(StateHasChanged);
     private void OnVolumeStateChanged(double _) => InvokeAsync(StateHasChanged);
     private void OnMutedStateChanged(bool _) => InvokeAsync(StateHasChanged);
-    private void OnFullScreenVisibilityChanged() => InvokeAsync(StateHasChanged);
+    private void OnFullScreenVisibilityChanged() => InvokeAsync(async () =>
+    {
+        if (Audio.IsFullScreenVisible)
+            await LoadTrackDetailsAsync();
+        StateHasChanged();
+    });
 
     private static string FormatTime(double seconds)
     {

@@ -136,6 +136,30 @@
     flex-shrink: 0;
 }
 
+.waveform-container {
+    position: relative;
+    height: 48px;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+.waveform-bg {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.waveform-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: var(--mud-palette-primary);
+    transition: width 0.1s linear;
+}
+
 .seek-bar {
     position: relative;
     height: 6px;
