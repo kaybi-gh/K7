@@ -60,6 +60,9 @@ public abstract record LiteMediaDto
             ArtistName = track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
             ArtistPersonId = track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId,
             Genre = track.Album?.Genres.FirstOrDefault() ?? domain.Genres.FirstOrDefault(),
+            Bpm = track.AudioAnalysis?.Bpm,
+            MusicalKey = track.AudioAnalysis?.MusicalKey,
+            Energy = track.AudioAnalysis?.Energy,
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null,

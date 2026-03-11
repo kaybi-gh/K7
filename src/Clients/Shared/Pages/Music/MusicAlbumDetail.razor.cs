@@ -63,6 +63,9 @@ public partial class MusicAlbumDetail
                     CoverUrl = _coverUrl,
                     Duration = t.Duration ?? 0,
                     DiscNumber = 1,
+                    Bpm = t.Bpm,
+                    MusicalKey = t.MusicalKey,
+                    Energy = t.Energy,
                     IsPlaying = Audio.CurrentTrack?.MediaId == t.Id
                 })
                 .ToList();
@@ -129,7 +132,10 @@ public partial class MusicAlbumDetail
             Genre = t.Genre,
             CoverUrl = t.CoverUrl,
             Duration = t.Duration,
-            UserRating = t.UserRating
+            UserRating = t.UserRating,
+            Bpm = t.Bpm,
+            MusicalKey = t.MusicalKey,
+            Energy = t.Energy
         };
     }
 
@@ -165,6 +171,9 @@ public partial class MusicAlbumDetail
         public double Duration { get; init; }
         public int DiscNumber { get; init; }
         public int? UserRating { get; init; }
+        public double? Bpm { get; init; }
+        public string? MusicalKey { get; init; }
+        public double? Energy { get; init; }
         public bool IsPlaying { get; init; }
     }
 }

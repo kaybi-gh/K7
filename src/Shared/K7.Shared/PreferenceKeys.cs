@@ -12,4 +12,6 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<double> PLAYER_VOLUME = new("PlayerVolume");
     public static readonly PreferenceKey<double> PLAYER_PLAYBACK_RATE = new("PlayerPlaybackRate");
     public static readonly PreferenceKey<bool> PLAYER_IS_MUTED = new("PlayerIsMuted");
+    public static readonly PreferenceKey<bool> PLAYER_ADAPTIVE_CROSSFADE = new("PlayerAdaptiveCrossfade");
+    public static readonly PreferenceKey<double> PLAYER_CROSSFADE_DURATION = new("PlayerCrossfadeDuration");
 }

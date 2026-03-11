@@ -17,4 +17,9 @@ public class AudioQueueItem
     public Guid? ArtistPersonId { get; init; }
     public string? Genre { get; init; }
     public int? UserRating { get; set; }
+
+    // Audio analysis (for adaptive crossfade & harmonic transitions)
+    public double? Bpm { get; init; }
+    public string? MusicalKey { get; init; }
+    public double? Energy { get; init; }
 }

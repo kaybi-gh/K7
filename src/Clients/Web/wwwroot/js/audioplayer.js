@@ -3,7 +3,8 @@ let audioState = {
     dotNetRef: null,
     crossfadeElement: null,
     crossfadeDuration: 0,
-    crossfadeTimer: null
+    crossfadeTimer: null,
+    crossfadePending: false
 };
 
 window.initAudioPlayer = function (dotNetRef) {
@@ -20,6 +21,20 @@ window.initAudioPlayer = function (dotNetRef) {
     el.addEventListener('timeupdate', () => {
         dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
             .catch(e => console.error('OnTimeUpdated failed', e));
+
+        // Pre-end crossfade detection
+        if (audioState.crossfadeDuration > 0
+            && !audioState.crossfadePending
+            && !audioState.crossfadeTimer
+            && isFinite(el.duration)
+            && el.duration > 0) {
+            const remaining = el.duration - el.currentTime;
+            if (remaining <= audioState.crossfadeDuration && remaining > 0) {
+                audioState.crossfadePending = true;
+                dotNetRef.invokeMethodAsync('OnCrossfadeNeeded')
+                    .catch(e => console.error('OnCrossfadeNeeded failed', e));
+            }
+        }
     });
 
     el.addEventListener('durationchange', () => {
@@ -132,6 +147,8 @@ window.audioChangeSource = function (src, mimeType) {
     const el = audioState.element;
     if (!el) return;
 
+    audioState.crossfadePending = false;
+
     el.src = src;
     el.load();
 
@@ -145,8 +162,8 @@ window.audioSetCrossfadeDuration = function (seconds) {
     audioState.crossfadeDuration = seconds;
 };
 
-window.audioStartCrossfade = function (nextSrc, nextMimeType) {
-    const duration = audioState.crossfadeDuration;
+window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
+    const duration = fadeDuration !== undefined && fadeDuration > 0 ? fadeDuration : audioState.crossfadeDuration;
     if (duration <= 0 || !audioState.element) {
         // No crossfade — just change source directly
         audioChangeSource(nextSrc, nextMimeType);
@@ -178,6 +195,7 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType) {
         if (step >= steps) {
             clearInterval(audioState.crossfadeTimer);
             audioState.crossfadeTimer = null;
+            audioState.crossfadePending = false;
 
             currentEl.pause();
             currentEl.src = '';
@@ -199,6 +217,20 @@ function attachEventsToElement(el, dotNetRef) {
     el.addEventListener('timeupdate', () => {
         dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
             .catch(e => console.error('OnTimeUpdated failed', e));
+
+        // Pre-end crossfade detection
+        if (audioState.crossfadeDuration > 0
+            && !audioState.crossfadePending
+            && !audioState.crossfadeTimer
+            && isFinite(el.duration)
+            && el.duration > 0) {
+            const remaining = el.duration - el.currentTime;
+            if (remaining <= audioState.crossfadeDuration && remaining > 0) {
+                audioState.crossfadePending = true;
+                dotNetRef.invokeMethodAsync('OnCrossfadeNeeded')
+                    .catch(e => console.error('OnCrossfadeNeeded failed', e));
+            }
+        }
     });
 
     el.addEventListener('durationchange', () => {
