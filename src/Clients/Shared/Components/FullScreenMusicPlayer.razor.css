@@ -6,6 +6,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.95);
+    --dominant-color: 128,128,128;
 }
 
 .fullscreen-player-bg {
@@ -13,8 +14,20 @@
     inset: 0;
     background-size: cover;
     background-position: center;
-    filter: blur(60px) brightness(0.3);
+    filter: blur(60px) brightness(0.3) saturate(1.4);
     transform: scale(1.2);
+    pointer-events: none;
+}
+
+.fullscreen-player-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at center bottom,
+        rgba(var(--dominant-color), 0.15) 0%,
+        transparent 70%
+    );
     pointer-events: none;
 }
 

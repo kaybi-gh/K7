@@ -134,6 +134,21 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
             }
         }
 
+        // Extract dominant color if not already set
+        if (picture.DominantColor is null)
+        {
+            try
+            {
+                picture.DominantColor = await _imageProcessor.ExtractDominantColorAsync(picture.LocalPath, cancellationToken);
+                if (picture.DominantColor is not null)
+                    _logger.LogInformation("Extracted dominant color {Color} for MetadataPicture {PictureId}", picture.DominantColor, picture.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to extract dominant color for MetadataPicture {PictureId}", picture.Id);
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

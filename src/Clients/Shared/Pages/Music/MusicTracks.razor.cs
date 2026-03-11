@@ -79,6 +79,7 @@ public partial class MusicTracks
         AlbumTitle = t.AlbumTitle,
         Genre = t.Genre,
         CoverUrl = t.CoverUrl,
+        CoverDominantColor = t.CoverDominantColor,
         Duration = t.Duration,
         UserRating = t.UserRating,
         Bpm = t.Bpm,
@@ -99,6 +100,7 @@ public partial class MusicTracks
         CoverUrl = k7ServerService.GetAbsoluteUri(
             track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+        CoverDominantColor = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
         Duration = track.Duration ?? 0,
         UserRating = track.UserRating,
         Bpm = track.Bpm,
@@ -127,6 +129,7 @@ public partial class MusicTracks
         public string? AlbumTitle { get; init; }
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
+        public string? CoverDominantColor { get; init; }
         public double Duration { get; init; }
         public int? UserRating { get; init; }
         public double? Bpm { get; init; }

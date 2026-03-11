@@ -18,6 +18,7 @@ public partial class MusicAlbumDetail
 
     private MusicAlbumDto? _album;
     private string? _coverUrl;
+    private string? _coverDominantColor;
     private List<ArtistInfo> _artists = [];
     private List<TrackViewModel> _tracks = [];
     private SortedDictionary<int, List<TrackViewModel>> _tracksByDisc = [];
@@ -34,9 +35,10 @@ public partial class MusicAlbumDetail
         {
             _album = album;
 
+            var coverPicture = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
             _coverUrl = k7ServerService.GetAbsoluteUri(
-                album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
-                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+                coverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            _coverDominantColor = coverPicture?.DominantColor;
 
             _artists = album.PersonRoles?
                 .OfType<LiteMusicArtistRoleDto>()
@@ -61,6 +63,7 @@ public partial class MusicAlbumDetail
                     ArtistPersonId = _artists.FirstOrDefault()?.PersonId,
                     Genre = album.Genres?.FirstOrDefault(),
                     CoverUrl = _coverUrl,
+                    CoverDominantColor = _coverDominantColor,
                     Duration = t.Duration ?? 0,
                     DiscNumber = 1,
                     Bpm = t.Bpm,
@@ -131,6 +134,7 @@ public partial class MusicAlbumDetail
             AlbumTitle = _album?.Title,
             Genre = t.Genre,
             CoverUrl = t.CoverUrl,
+            CoverDominantColor = t.CoverDominantColor,
             Duration = t.Duration,
             UserRating = t.UserRating,
             Bpm = t.Bpm,
@@ -168,6 +172,7 @@ public partial class MusicAlbumDetail
         public Guid? ArtistPersonId { get; init; }
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
+        public string? CoverDominantColor { get; init; }
         public double Duration { get; init; }
         public int DiscNumber { get; init; }
         public int? UserRating { get; init; }

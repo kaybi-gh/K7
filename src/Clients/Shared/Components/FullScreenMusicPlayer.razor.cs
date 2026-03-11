@@ -24,6 +24,10 @@ public partial class FullScreenMusicPlayer : IDisposable
     private double CurrentPercent => Audio.Duration > 0 ? (Audio.CurrentTime / Audio.Duration) * 100 : 0;
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
 
+    private string? DominantColorStyle => Audio.CurrentTrack?.CoverDominantColor is { } color
+        ? $"--dominant-color: {color};"
+        : null;
+
     private string PlayPauseIcon => Audio.PlaybackState == PlaybackState.Playing
         ? Icons.Material.Filled.Pause
         : Icons.Material.Filled.PlayArrow;

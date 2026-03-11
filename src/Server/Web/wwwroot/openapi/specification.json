@@ -4414,6 +4414,12 @@
             ],
             "format": "uri"
           },
+          "dominantColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "availableSizes": {
             "type": "array",
             "items": {
