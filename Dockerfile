@@ -19,7 +19,12 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get install -y gosu ffmpeg && \
+    apt-get install -y gosu ffmpeg software-properties-common && \
+    add-apt-repository -y ppa:mtg/essentia && \
+    apt-get update && \
+    apt-get install -y essentia-extractors && \
+    apt-get purge -y software-properties-common && \
+    apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
 # Add default user
