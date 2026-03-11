@@ -15,6 +15,8 @@ public partial class AudioPlayer : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!System.OperatingSystem.IsBrowser()) return;
+
         if (AudioPlayerService.IsVisible && !_isInitialized)
         {
             _dotNetRef ??= DotNetObjectReference.Create(this);
@@ -32,6 +34,8 @@ public partial class AudioPlayer : IAsyncDisposable
 
     protected override void OnInitialized()
     {
+        if (!System.OperatingSystem.IsBrowser()) return;
+
         AudioPlayerService.PlayRequested += PlayAsync;
         AudioPlayerService.PauseRequested += PauseAsync;
         AudioPlayerService.StopRequested += StopAsync;
@@ -46,6 +50,8 @@ public partial class AudioPlayer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (!System.OperatingSystem.IsBrowser()) return;
+
         AudioPlayerService.PlayRequested -= PlayAsync;
         AudioPlayerService.PauseRequested -= PauseAsync;
         AudioPlayerService.StopRequested -= StopAsync;

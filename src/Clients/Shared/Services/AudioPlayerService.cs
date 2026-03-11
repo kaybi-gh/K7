@@ -3,7 +3,7 @@ using K7.Clients.Shared.Domain.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 
-namespace K7.Clients.Web.Services;
+namespace K7.Clients.Shared.Services;
 
 public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStorageService deviceStorageService) : IAudioPlayerService
 {

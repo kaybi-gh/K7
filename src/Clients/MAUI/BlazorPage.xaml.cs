@@ -8,12 +8,15 @@ namespace K7.Clients.MAUI;
 public partial class BlazorPage : ContentPage
 {
     private readonly IPlayerService _playerService;
+    private readonly IAudioPlayerService _audioPlayerService;
 
-    public BlazorPage(IPlayerService playerService)
+    public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService)
     {
         _playerService = playerService;
+        _audioPlayerService = audioPlayerService;
         InitializeComponent();
         InitializePlayer();
+        InitializeAudioPlayer();
     }
 
     private void InitializePlayer()
@@ -145,5 +148,71 @@ public partial class BlazorPage : ContentPage
     {
         base.OnDisappearing();
         NativePlayer.Stop();
+        NativeAudioPlayer.Stop();
+    }
+
+    private void InitializeAudioPlayer()
+    {
+        NativeAudioPlayer.Volume = _audioPlayerService.Volume;
+        NativeAudioPlayer.ShouldMute = _audioPlayerService.IsMuted;
+
+        NativeAudioPlayer.PositionChanged += AudioPlayer_PositionChanged;
+        NativeAudioPlayer.MediaEnded += AudioPlayer_MediaEnded;
+        NativeAudioPlayer.MediaFailed += AudioPlayer_MediaFailed;
+
+        _audioPlayerService.SourceChanged += OnAudioSourceChanged;
+        _audioPlayerService.PlayRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Play); return Task.CompletedTask; };
+        _audioPlayerService.PauseRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Pause); return Task.CompletedTask; };
+        _audioPlayerService.StopRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Stop); return Task.CompletedTask; };
+        _audioPlayerService.SeekRequested += (position) => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.SeekTo(TimeSpan.FromSeconds(position))); return Task.CompletedTask; };
+        _audioPlayerService.MuteRequested += () => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = true); return Task.CompletedTask; };
+        _audioPlayerService.UnmuteRequested += () => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.ShouldMute = false); return Task.CompletedTask; };
+        _audioPlayerService.VolumeChangeRequested += (volume) => { MainThread.BeginInvokeOnMainThread(() => NativeAudioPlayer.Volume = volume); return Task.CompletedTask; };
+
+        NativeAudioPlayer.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(MediaElement.Duration))
+            {
+                var duration = NativeAudioPlayer.Duration.TotalSeconds;
+                if (duration > 0 && duration != _audioPlayerService.Duration)
+                    _audioPlayerService.Duration = duration;
+            }
+            if (e.PropertyName == nameof(MediaElement.CurrentState))
+            {
+                _audioPlayerService.PlaybackState = NativeAudioPlayer.CurrentState switch
+                {
+                    MediaElementState.Buffering => Server.Domain.Enums.PlaybackState.Buffering,
+                    MediaElementState.Playing => Server.Domain.Enums.PlaybackState.Playing,
+                    MediaElementState.Paused => Server.Domain.Enums.PlaybackState.Paused,
+                    MediaElementState.Opening => Server.Domain.Enums.PlaybackState.Idle,
+                    MediaElementState.Stopped => Server.Domain.Enums.PlaybackState.Idle,
+                    _ => Server.Domain.Enums.PlaybackState.Unknown,
+                };
+            }
+        };
+    }
+
+    private void OnAudioSourceChanged(PlayerSource source)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!string.IsNullOrEmpty(source.Url))
+                NativeAudioPlayer.Source = MediaSource.FromUri(source.Url);
+        });
+    }
+
+    private void AudioPlayer_PositionChanged(object? sender, MediaPositionChangedEventArgs e)
+    {
+        _audioPlayerService.CurrentTime = e.Position.TotalSeconds;
+    }
+
+    private async void AudioPlayer_MediaEnded(object? sender, EventArgs e)
+    {
+        await _audioPlayerService.OnTrackEndedAsync();
+    }
+
+    private void AudioPlayer_MediaFailed(object? sender, MediaFailedEventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine($"[K7-Audio] Playback failed: {e.ErrorMessage}");
     }
 }
