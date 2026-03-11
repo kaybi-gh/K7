@@ -134,6 +134,12 @@ public class K7ServerService : IK7ServerService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task RateMediaAsync(Guid mediaId, int value, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/medias/{mediaId}/rating", new { Value = value }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"query={Uri.EscapeDataString(query)}" };

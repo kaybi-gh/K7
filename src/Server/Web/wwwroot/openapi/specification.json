@@ -902,6 +902,40 @@
         }
       }
     },
+    "/api/medias/{mediaId}/rating": {
+      "put": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "RateMedia",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RateMediaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{id}/reidentify": {
       "post": {
         "tags": [
@@ -4834,6 +4868,22 @@
             "items": {
               "$ref": "#/components/schemas/MetadataPictureDto"
             }
+          }
+        }
+      },
+      "RateMediaRequest": {
+        "required": [
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
