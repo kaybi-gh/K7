@@ -18,5 +18,7 @@ public class AudioAnalysisConfiguration : IEntityTypeConfiguration<AudioAnalysis
 
         // Fingerprint can be long, but we don't need to index it — lookups go through AcoustId
         builder.Property(e => e.ChromaprintFingerprint).HasColumnType("text");
+
+        builder.Property(e => e.WaveformPeaks).HasColumnType("jsonb");
     }
 }

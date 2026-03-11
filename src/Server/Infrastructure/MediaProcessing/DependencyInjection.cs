@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
         services.AddSingleton<IAudioTagReader, TagLibAudioTagReader>();
         services.AddSingleton<IAudioAnalyzer, EssentiaAudioAnalyzer>();
+        services.AddSingleton<IWaveformGenerator, FfmpegWaveformGenerator>();
         services.AddHostedService<TranscodeJobCleanupService>();
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());

@@ -13,4 +13,5 @@ public sealed record MusicTrackDto : MediaDto
     public double? Energy { get; init; }
     public double? Danceability { get; init; }
     public double? Valence { get; init; }
+    public float[]? WaveformPeaks { get; init; }
 }
