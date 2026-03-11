@@ -1,8 +1,8 @@
-using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -82,7 +82,10 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         if (completed)
         {
             if (session.CompletedAt is null)
+            {
                 session.CompletedAt = timeNow;
+                session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
+            }
 
             if (!state.IsCompleted)
             {
