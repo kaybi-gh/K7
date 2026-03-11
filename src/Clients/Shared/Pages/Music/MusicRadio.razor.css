@@ -1,0 +1,19 @@
+::deep .radio-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+::deep .radio-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+::deep .radio-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px 16px;
+    min-height: 180px;
+    justify-content: center;
+}

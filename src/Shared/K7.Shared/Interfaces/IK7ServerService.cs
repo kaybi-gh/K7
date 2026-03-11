@@ -55,4 +55,7 @@ public interface IK7ServerService
 
     // Stats
     Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default);
+
+    // Music Radio
+    Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default);
 }

@@ -145,6 +145,17 @@ public class K7ServerService : IK7ServerService
         return await HttpClient.GetFromJsonAsync<MusicStatsDto>("api/music/stats", _serializerOptions, cancellationToken);
     }
 
+    public async Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string> { $"type={Uri.EscapeDataString(type)}" };
+        if (seedTrackId.HasValue) queryParams.Add($"seedTrackId={seedTrackId.Value}");
+        if (seedArtistId.HasValue) queryParams.Add($"seedArtistId={seedArtistId.Value}");
+        if (moodPreset is not null) queryParams.Add($"moodPreset={Uri.EscapeDataString(moodPreset)}");
+        if (limit != 50) queryParams.Add($"limit={limit}");
+        var url = $"api/music/radio?{string.Join("&", queryParams)}";
+        return await HttpClient.GetFromJsonAsync<List<MediaDto>>(url, _serializerOptions, cancellationToken);
+    }
+
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"query={Uri.EscapeDataString(query)}" };
