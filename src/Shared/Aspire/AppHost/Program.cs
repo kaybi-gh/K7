@@ -2,8 +2,24 @@ using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+var postgres = builder.AddPostgres("postgres")
+    .WithDataVolume()
+    .WithPgAdmin(pgAdmin => pgAdmin.WithHostPort(5050));
+
+var database = postgres.AddDatabase("k7");
 
 var server = builder.AddProject<K7_Server_Web>("k7-server")
+    .WithReference(database)
+    .WaitFor(database)
+    .WithEnvironment(context =>
+    {
+        context.EnvironmentVariables["Database__Provider"] = "Postgres";
+        context.EnvironmentVariables["Database__UserID"] = postgres.Resource.UserNameParameter!;
+        context.EnvironmentVariables["Database__Password"] = postgres.Resource.PasswordParameter!;
+        context.EnvironmentVariables["Database__Server"] = postgres.Resource.PrimaryEndpoint.Property(EndpointProperty.Host)!;
+        context.EnvironmentVariables["Database__Port"] = postgres.Resource.PrimaryEndpoint.Property(EndpointProperty.Port)!;
+        context.EnvironmentVariables["Database__Name"] = database.Resource.DatabaseName!;
+    })
     .WithArgs("--init-db");
     
 builder.Build().Run();

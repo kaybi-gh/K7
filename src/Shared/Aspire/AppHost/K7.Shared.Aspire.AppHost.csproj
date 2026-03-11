@@ -12,4 +12,8 @@
     <ProjectReference Include="..\..\..\Server\Web\K7.Server.Web.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+  </ItemGroup>
+
 </Project>
