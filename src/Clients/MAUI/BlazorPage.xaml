@@ -9,7 +9,7 @@
              BackgroundColor="{DynamicResource PageBackgroundColor}">
 
     <Grid x:Name="RootGrid">
-        <!-- Native MediaElement -->
+        <!-- Native MediaElement (video) -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
                               IsVisible="False"
@@ -18,6 +18,14 @@
                               VerticalOptions="Fill"
                               ShouldShowPlaybackControls="False"
                               InputTransparent="True" ZIndex="1"/>
+
+        <!-- Native MediaElement (audio — hidden, background-capable) -->
+        <toolkit:MediaElement x:Name="NativeAudioPlayer"
+                              IsVisible="False"
+                              ShouldAutoPlay="False"
+                              ShouldShowPlaybackControls="False"
+                              InputTransparent="True"
+                              WidthRequest="0" HeightRequest="0" />
         
         <!-- Blazor overlay -->
         <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html"

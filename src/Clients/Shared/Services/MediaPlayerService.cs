@@ -1,7 +1,7 @@
 using K7.Clients.Shared.Domain.Interfaces;
 using K7.Clients.Shared.Domain.Models;
 
-namespace K7.Clients.Web.Services;
+namespace K7.Clients.Shared.Services;
 
 public class MediaPlayerService : IMediaPlayerService
 {

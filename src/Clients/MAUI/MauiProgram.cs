@@ -63,10 +63,13 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
         builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
         builder.Services.AddSingleton<IPlayerService, PlayerService>();
+        builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
+        builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
         builder.Services.AddSingleton<IMediaStreamSession, MediaSessionService>();
         builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
         builder.Services.AddSingleton<K7HubClient>();
         builder.Services.AddSingleton<PlaybackProgressTracker>();
+        builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 
         builder.Services.AddAuthorizationCore();
         builder.Services.AddSingleton<IMsalClientService, MsalClientService>();
@@ -74,6 +77,8 @@ public static partial class MauiProgram
         builder.Services.AddSingleton(sp => (AuthenticationStateProvider)sp.GetRequiredService<ICustomAuthenticationStateProvider>());
 
         var app = builder.Build();
+
+        app.Services.GetRequiredService<AudioPlaybackProgressTracker>();
 
         var k7ServerManagerService = app.Services.GetRequiredService<K7ServerManagerService>();
         k7ServerManagerService.BaseAddressUpdated += (sender, baseAddress) => K7ServerManagerService_BaseAddressUpdated(sender, baseAddress, app.Services);

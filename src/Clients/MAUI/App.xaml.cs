@@ -11,14 +11,16 @@ public partial class App : Application
     private readonly K7ServerManagerService _k7ServerManagerService;
     private readonly IMsalClientService _msalClientService;
     private readonly IPlayerService _playerService;
+    private readonly IAudioPlayerService _audioPlayerService;
 
     // TODO - Use IMsalClientService in K7ServerManagerService?
 
-    public App(K7ServerManagerService k7ServerManagerService, IMsalClientService msalClientService, IPlayerService playerService)
+    public App(K7ServerManagerService k7ServerManagerService, IMsalClientService msalClientService, IPlayerService playerService, IAudioPlayerService audioPlayerService)
     {
         _k7ServerManagerService = k7ServerManagerService;
         _msalClientService = msalClientService;
         _playerService = playerService;
+        _audioPlayerService = audioPlayerService;
         InitializeComponent();
     }
 
@@ -38,13 +40,13 @@ public partial class App : Application
         ContentPage? page;
         if (string.IsNullOrEmpty(k7ServerUrl))
         {
-            page = new SetupPage(_k7ServerManagerService, _msalClientService, _playerService);
+            page = new SetupPage(_k7ServerManagerService, _msalClientService, _playerService, _audioPlayerService);
         }
         else
         {
             _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
             _msalClientService.Initialize(k7ServerUrl);
-            page = new BlazorPage(_playerService);
+            page = new BlazorPage(_playerService, _audioPlayerService);
         }
 
         return new NavigationPage(page);
