@@ -14,4 +14,6 @@ public class AudioQueueItem
     public required string? AlbumTitle { get; init; }
     public string? CoverUrl { get; init; }
     public double? Duration { get; init; }
+    public Guid? ArtistPersonId { get; init; }
+    public string? Genre { get; init; }
 }

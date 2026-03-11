@@ -41,6 +41,16 @@ public static class GetMediasWithPaginationQueryUriBuilder
             queryParams.Add(nameof(query.ContinueWatching), $"{query.ContinueWatching.Value}");
         }
 
+        if (query.PersonIds?.Length > 0)
+        {
+            queryParams.Add(nameof(query.PersonIds), string.Join(",", query.PersonIds));
+        }
+
+        if (query.Genres?.Length > 0)
+        {
+            queryParams.Add(nameof(query.Genres), string.Join(",", query.Genres));
+        }
+
         return QueryBuilderHelper.AddQueryParameters(Route, queryParams);
     }
 }

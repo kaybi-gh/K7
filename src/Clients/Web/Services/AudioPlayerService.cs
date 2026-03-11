@@ -387,19 +387,51 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     private void RebuildShuffleOrder()
     {
         _shuffleOrder.Clear();
+        var indices = new List<int>();
         for (var i = 0; i < _queue.Count; i++)
         {
             if (i != _currentIndex)
-                _shuffleOrder.Add(i);
+                indices.Add(i);
         }
 
         // Fisher-Yates shuffle
-        for (var i = _shuffleOrder.Count - 1; i > 0; i--)
+        for (var i = indices.Count - 1; i > 0; i--)
         {
             var j = Rng.Next(i + 1);
-            (_shuffleOrder[i], _shuffleOrder[j]) = (_shuffleOrder[j], _shuffleOrder[i]);
+            (indices[i], indices[j]) = (indices[j], indices[i]);
         }
 
+        // Anti-repetition: reorder to avoid same artist back-to-back
+        var result = new List<int>(indices.Count);
+        var remaining = new List<int>(indices);
+
+        string? lastArtist = _currentIndex >= 0 && _currentIndex < _queue.Count
+            ? _queue[_currentIndex].Artist
+            : null;
+
+        while (remaining.Count > 0)
+        {
+            var picked = -1;
+            for (var i = 0; i < remaining.Count; i++)
+            {
+                var candidate = _queue[remaining[i]];
+                if (candidate.Artist != lastArtist || string.IsNullOrEmpty(lastArtist))
+                {
+                    picked = i;
+                    break;
+                }
+            }
+
+            if (picked < 0)
+                picked = 0;
+
+            var idx = remaining[picked];
+            result.Add(idx);
+            lastArtist = _queue[idx].Artist;
+            remaining.RemoveAt(picked);
+        }
+
+        _shuffleOrder.AddRange(result);
         _shufflePosition = -1;
     }
 }

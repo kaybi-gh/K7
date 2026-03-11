@@ -96,6 +96,7 @@
                         <MudTh>Artiste</MudTh>
                         <MudTh>Album</MudTh>
                         <MudTh Style="width: 80px;"><MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" /></MudTh>
+                        <MudTh Style="width: 50px;"></MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>
@@ -123,6 +124,9 @@
                         <MudTd><MudText Typo="Typo.body2" Color="Color.Secondary">@context.ArtistName</MudText></MudTd>
                         <MudTd><MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText></MudTd>
                         <MudTd><MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText></MudTd>
+                        <MudTd>
+                            <K7.Clients.Shared.Components.TrackContextMenu Track="BuildQueueItem(context)" />
+                        </MudTd>
                     </RowTemplate>
                 </MudTable>
             </div>

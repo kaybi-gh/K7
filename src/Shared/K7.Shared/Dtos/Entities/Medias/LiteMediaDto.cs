@@ -50,6 +50,8 @@ public abstract record LiteMediaDto
             Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
             AlbumTitle = track.Album?.Title,
             ArtistName = track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
+            ArtistPersonId = track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId,
+            Genre = track.Album?.Genres.FirstOrDefault() ?? domain.Genres.FirstOrDefault(),
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null
