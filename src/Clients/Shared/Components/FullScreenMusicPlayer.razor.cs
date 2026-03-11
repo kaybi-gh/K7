@@ -1,6 +1,8 @@
 using K7.Clients.Shared.Domain.Interfaces;
 using K7.Clients.Shared.Domain.Models;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
@@ -8,11 +10,16 @@ using MudBlazor.Services;
 
 namespace K7.Clients.Shared.Components;
 
+public enum FullScreenView { Player, Lyrics, Queue }
+
 public partial class FullScreenMusicPlayer : IDisposable
 {
     private ElementReference _seekBarRef;
     private bool _isDragging;
-    private bool _showQueue;
+    private FullScreenView _view;
+    private string? _lyricsLrc;
+    private string? _lyrics;
+    private Guid? _lyricsLoadedForMediaId;
 
     private double CurrentPercent => Audio.Duration > 0 ? (Audio.CurrentTime / Audio.Duration) * 100 : 0;
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
@@ -69,7 +76,38 @@ public partial class FullScreenMusicPlayer : IDisposable
 
     private void OnBackdropClick() => Audio.ToggleFullScreen();
 
-    private void ToggleQueue() => _showQueue = !_showQueue;
+    private void ToggleQueue() => _view = _view == FullScreenView.Queue ? FullScreenView.Player : FullScreenView.Queue;
+
+    private async Task ToggleLyrics()
+    {
+        if (_view == FullScreenView.Lyrics)
+        {
+            _view = FullScreenView.Player;
+            return;
+        }
+
+        _view = FullScreenView.Lyrics;
+        await LoadLyricsIfNeeded();
+    }
+
+    private async Task LoadLyricsIfNeeded()
+    {
+        var mediaId = Audio.CurrentTrack?.MediaId;
+        if (mediaId is null || mediaId == _lyricsLoadedForMediaId) return;
+
+        _lyricsLoadedForMediaId = mediaId;
+        _lyricsLrc = null;
+        _lyrics = null;
+
+        var media = await Server.GetMediaAsync(mediaId.Value);
+        if (media is MusicTrackDto track)
+        {
+            _lyricsLrc = track.LyricsLrc;
+            _lyrics = track.Lyrics;
+        }
+    }
+
+    private void OnLyricsSeek(double seconds) => Audio.Seek(seconds);
 
     private void TogglePlayPause()
     {
@@ -132,7 +170,13 @@ public partial class FullScreenMusicPlayer : IDisposable
     private void OnStateChanged(PlaybackState _) => InvokeAsync(StateHasChanged);
     private void OnDurationChanged(double _) => InvokeAsync(StateHasChanged);
     private void OnTimeChanged(double _) => InvokeAsync(StateHasChanged);
-    private void OnTrackChanged(AudioQueueItem? _) => InvokeAsync(StateHasChanged);
+    private void OnTrackChanged(AudioQueueItem? _) => InvokeAsync(async () =>
+    {
+        _lyricsLoadedForMediaId = null;
+        if (_view == FullScreenView.Lyrics)
+            await LoadLyricsIfNeeded();
+        StateHasChanged();
+    });
     private void OnQueueChanged() => InvokeAsync(StateHasChanged);
     private void OnShuffleChanged(bool _) => InvokeAsync(StateHasChanged);
     private void OnRepeatChanged(RepeatMode _) => InvokeAsync(StateHasChanged);

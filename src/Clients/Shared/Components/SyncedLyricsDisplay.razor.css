@@ -1,0 +1,70 @@
+.synced-lyrics {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    padding: 40% 16px;
+    scroll-behavior: smooth;
+    mask-image: linear-gradient(transparent, black 15%, black 85%, transparent);
+    -webkit-mask-image: linear-gradient(transparent, black 15%, black 85%, transparent);
+}
+
+.lyrics-line {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    opacity: 0.3;
+    transition: opacity 0.3s, transform 0.3s, color 0.3s;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1.5;
+}
+
+.lyrics-line:hover {
+    opacity: 0.6;
+}
+
+.lyrics-line-active {
+    opacity: 1;
+    font-size: 1.35rem;
+    color: var(--mud-palette-primary);
+    transform: scale(1.05);
+}
+
+.lyrics-line-past {
+    opacity: 0.45;
+}
+
+.lyrics-interlude {
+    font-size: 1rem;
+    opacity: 0.4;
+}
+
+.plain-lyrics {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    font-size: 1rem;
+    line-height: 1.8;
+    opacity: 0.8;
+    white-space: pre-wrap;
+    text-align: center;
+    mask-image: linear-gradient(transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(transparent, black 5%, black 95%, transparent);
+}
+
+.no-lyrics {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 16px;
+    opacity: 0.5;
+    font-size: 0.9rem;
+}

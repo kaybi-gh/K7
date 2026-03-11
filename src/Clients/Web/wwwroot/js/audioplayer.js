@@ -7,6 +7,11 @@ let audioState = {
     crossfadePending: false
 };
 
+window.K7 = window.K7 || {};
+window.K7.scrollIntoViewSmooth = function (el) {
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
 window.initAudioPlayer = function (dotNetRef) {
     if (audioState.element) {
         disposeAudioPlayer();
