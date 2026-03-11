@@ -16,10 +16,13 @@ public class GetSmartPlaylistsWithPaginationQueryHandler(IApplicationDbContext c
 {
     public async Task<PaginatedList<SmartPlaylist>> Handle(GetSmartPlaylistsWithPaginationQuery request, CancellationToken cancellationToken)
     {
+        if (currentUser.Id is not { } userId)
+            return new PaginatedList<SmartPlaylist>([], 0, request.PageNumber, request.PageSize);
+
         var query = context.Playlists.OfType<SmartPlaylist>()
             .Include(p => p.CoverPicture)
                 .ThenInclude(c => c!.Variants)
-            .Where(p => p.UserId == currentUser.Id!.Value)
+            .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.LastModified)
             .AsNoTracking();
 

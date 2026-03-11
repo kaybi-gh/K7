@@ -16,11 +16,14 @@ public class GetPlaylistsWithPaginationQueryHandler(IApplicationDbContext contex
 {
     public async Task<PaginatedList<Playlist>> Handle(GetPlaylistsWithPaginationQuery request, CancellationToken cancellationToken)
     {
+        if (currentUser.Id is not { } userId)
+            return new PaginatedList<Playlist>([], 0, request.PageNumber, request.PageSize);
+
         var query = context.Playlists
             .Include(p => p.CoverPicture)
                 .ThenInclude(c => c!.Variants)
             .Include(p => p.Items)
-            .Where(p => p.UserId == currentUser.Id!.Value)
+            .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.LastModified)
             .AsNoTracking();
 
