@@ -673,6 +673,75 @@
         }
       }
     },
+    "/api/music/radio": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "operationId": "GetMusicRadio",
+        "parameters": [
+          {
+            "name": "Type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MusicRadioType"
+            }
+          },
+          {
+            "name": "SeedTrackId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "SeedArtistId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "MoodPreset",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/music/stats": {
       "get": {
         "tags": [
@@ -4295,6 +4364,9 @@
         "type": "integer"
       },
       "MetadataPictureType": {
+        "type": "integer"
+      },
+      "MusicRadioType": {
         "type": "integer"
       },
       "MusicStatsDto": {
