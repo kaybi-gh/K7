@@ -2,6 +2,7 @@
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 
@@ -135,8 +136,28 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                         .Where(s => !userId.HasValue || s.UserId == userId.Value)
                         .Select(s => s.LastInteractedAt)
                         .FirstOrDefault()),
-                MediaOrderingOption.LocalRatingAsc => throw new NotImplementedException(),
-                MediaOrderingOption.LocalRatingDesc => throw new NotImplementedException(),
+                MediaOrderingOption.LocalRatingAsc => orderedQueryable == null ?
+                    queryable.OrderBy(x => x.Ratings
+                        .OfType<UserRating>()
+                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                        .Select(r => (double?)r.Value)
+                        .FirstOrDefault())
+                    : orderedQueryable.ThenBy(x => x.Ratings
+                        .OfType<UserRating>()
+                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                        .Select(r => (double?)r.Value)
+                        .FirstOrDefault()),
+                MediaOrderingOption.LocalRatingDesc => orderedQueryable == null ?
+                    queryable.OrderByDescending(x => x.Ratings
+                        .OfType<UserRating>()
+                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                        .Select(r => (double?)r.Value)
+                        .FirstOrDefault())
+                    : orderedQueryable.ThenByDescending(x => x.Ratings
+                        .OfType<UserRating>()
+                        .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                        .Select(r => (double?)r.Value)
+                        .FirstOrDefault()),
                 MediaOrderingOption.OriginalTitleAsc => orderedQueryable == null ?
                     queryable.OrderBy(x => x.OriginalTitle)
                     : orderedQueryable.ThenBy(x => x.OriginalTitle),

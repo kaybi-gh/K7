@@ -49,4 +49,7 @@ public interface IK7ServerService
     Task UpdateSmartPlaylistAsync(Guid id, UpdateSmartPlaylistRequest request, CancellationToken cancellationToken = default);
     Task DeleteSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
     Task EvaluateSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
+
+    // Ratings
+    Task RateMediaAsync(Guid mediaId, int value, CancellationToken cancellationToken = default);
 }
