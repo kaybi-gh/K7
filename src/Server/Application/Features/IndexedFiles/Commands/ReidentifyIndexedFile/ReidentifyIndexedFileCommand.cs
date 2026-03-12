@@ -42,7 +42,7 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
         var existingExternalId = await context.ExternalIds
             .Include(x => x!.Media)
                 .ThenInclude(x => x!.IndexedFiles)
-            .FirstOrDefaultAsync(x => x.Value == request.SelectedExternalId && x.Platform == request.SelectedProvider, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Value == request.SelectedExternalId && x.ProviderName == request.SelectedProvider, cancellationToken);
 
         if (existingExternalId != null && existingExternalId.Media != null)
         {

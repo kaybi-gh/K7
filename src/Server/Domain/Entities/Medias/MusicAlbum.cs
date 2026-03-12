@@ -25,16 +25,20 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
         {
             foreach (var externalId in metadata.ExternalIds)
             {
-                if (!ExternalIds.Any(e => e.Platform == externalId.Platform && e.Value == externalId.Value))
+                if (!ExternalIds.Any(e => e.ProviderName == externalId.ProviderName && e.Value == externalId.Value))
                 {
                     ExternalIds.Add(externalId);
                 }
             }
         }
 
-        if (metadata.Pictures is { Count: > 0 } && Pictures.Count == 0)
+        if (metadata.Pictures is { Count: > 0 })
         {
-            foreach (var pic in metadata.Pictures) Pictures.Add(pic);
+            foreach (var pic in metadata.Pictures)
+            {
+                if (pic.OriginalRemoteUri != null && !Pictures.Any(p => p.OriginalRemoteUri == pic.OriginalRemoteUri))
+                    Pictures.Add(pic);
+            }
         }
     }
 }

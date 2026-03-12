@@ -22,18 +22,18 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private readonly IApplicationDbContext _context;
     private readonly IMetadataProvider<ExternalMovieMetadata> _movieMetadataProvider;
     private readonly IMetadataProvider<ExternalMusicAlbumMetadata> _musicMetadataProvider;
-    private readonly IMusicArtistMetadataProvider _artistMetadataProvider;
+    private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
         IMetadataProvider<ExternalMovieMetadata> movieMetadataProvider,
         IMetadataProvider<ExternalMusicAlbumMetadata> musicMetadataProvider,
-        IMusicArtistMetadataProvider artistMetadataProvider)
+        IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders)
     {
         _context = context;
         _movieMetadataProvider = movieMetadataProvider;
         _musicMetadataProvider = musicMetadataProvider;
-        _artistMetadataProvider = artistMetadataProvider;
+        _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
     }
 
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
@@ -83,7 +83,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     {
                         existingPerson = await _context.Persons
                             .Include(p => p.Roles)
-                            .FirstOrDefaultAsync(p => p.ExternalIds.Any(x => x.Platform == externalId.Platform
+                            .FirstOrDefaultAsync(p => p.ExternalIds.Any(x => x.ProviderName == externalId.ProviderName
                                 && x.Value == externalId.Value), cancellationToken);
 
                         if (existingPerson != null)
@@ -126,36 +126,57 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .Where(p => personIds.Contains(p.Id))
             .ToListAsync(cancellationToken);
 
-        foreach (var artistMeta in metadata.Artists)
+        foreach (var artistMetadata in metadata.Artists)
         {
             var person = persons.FirstOrDefault(p =>
-                string.Equals(p.Name, artistMeta.Name, StringComparison.OrdinalIgnoreCase));
+                string.Equals(p.Name, artistMetadata.Name, StringComparison.OrdinalIgnoreCase));
 
             if (person == null) continue;
 
-            var hasMbId = person.ExternalIds.Any(e => e.Platform == "musicbrainz-artist");
-            if (!hasMbId)
+            var mbExternalId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
+            if (mbExternalId == null && !string.IsNullOrEmpty(artistMetadata.MusicBrainzArtistId))
             {
-                person.ExternalIds.Add(new ExternalId
+                mbExternalId = new ExternalId
                 {
-                    Platform = "musicbrainz-artist",
-                    Value = artistMeta.MusicBrainzArtistId,
+                    ProviderName = "musicbrainz",
+                    Value = artistMetadata.MusicBrainzArtistId,
                     PersonId = person.Id
-                });
+                };
+                person.ExternalIds.Add(mbExternalId);
             }
 
-            if (person.PortraitPicture == null || string.IsNullOrEmpty(person.Biography))
-            {
-                var details = await _artistMetadataProvider.FetchArtistDetailsAsync(
-                    artistMeta.MusicBrainzArtistId, language, cancellationToken);
+            if (person.PortraitPicture != null && !string.IsNullOrEmpty(person.Biography)) continue;
 
+            var wikidataId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
+
+            if (wikidataId == null && _artistProviders.TryGetValue("musicbrainz", out var mbProvider))
+            {
+                var mbId = mbExternalId?.Value;
+                var mbDetails = !string.IsNullOrEmpty(mbId)
+                    ? await mbProvider.FetchByProviderIdAsync(mbId, language, cancellationToken)
+                    : await mbProvider.SearchByNameAsync(person.Name, language, cancellationToken);
+
+                if (mbDetails != null)
+                {
+                    if (!string.IsNullOrEmpty(mbDetails.MusicBrainzArtistId) && !person.ExternalIds.Any(e => e.ProviderName == "musicbrainz"))
+                        person.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = mbDetails.MusicBrainzArtistId, PersonId = person.Id });
+
+                    if (!string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(person.BirthPlace))
+                        person.BirthPlace = mbDetails.Country;
+
+                    wikidataId = mbDetails.WikidataId;
+                    if (!string.IsNullOrEmpty(wikidataId))
+                        person.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = wikidataId, PersonId = person.Id });
+                }
+            }
+
+            if (!string.IsNullOrEmpty(wikidataId) && _artistProviders.TryGetValue("wikidata", out var wdProvider))
+            {
+                var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
                 if (details != null)
                 {
                     if (string.IsNullOrEmpty(person.Biography) && !string.IsNullOrEmpty(details.Biography))
                         person.Biography = details.Biography;
-
-                    if (!string.IsNullOrEmpty(details.Country) && string.IsNullOrEmpty(person.BirthPlace))
-                        person.BirthPlace = details.Country;
 
                     if (person.PortraitPicture == null && !string.IsNullOrEmpty(details.ImageUrl))
                     {
