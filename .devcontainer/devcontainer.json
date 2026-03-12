@@ -1,0 +1,12 @@
+{
+  "name": "K7",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [8080, 5050],
+  "postCreateCommand": "dotnet restore"
+}

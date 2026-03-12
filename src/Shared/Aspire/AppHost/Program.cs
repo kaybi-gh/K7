@@ -19,6 +19,7 @@ var server = builder.AddProject<K7_Server_Web>("k7-server")
         context.EnvironmentVariables["Database__Server"] = postgres.Resource.PrimaryEndpoint.Property(EndpointProperty.Host)!;
         context.EnvironmentVariables["Database__Port"] = postgres.Resource.PrimaryEndpoint.Property(EndpointProperty.Port)!;
         context.EnvironmentVariables["Database__Name"] = database.Resource.DatabaseName!;
+        context.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = builder.Environment.EnvironmentName;
     })
     .WithArgs("--init-db");
     

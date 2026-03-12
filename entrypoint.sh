@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# Définir des valeurs par défaut
+# Dï¿½finir des valeurs par dï¿½faut
 PUID=${PUID:-911}
 PGID=${PGID:-911}
 echo "Starting with UID: $PUID, GID: $PGID"
 
-# Modifier l’utilisateur et le groupe s’ils existent déjà
+# Modifier lï¿½utilisateur et le groupe sï¿½ils existent dï¿½jï¿½
 if [ "$(id -u appuser)" != "$PUID" ]; then
     usermod -o -u "$PUID" appuser
 fi
@@ -16,5 +16,5 @@ fi
 # Changer les permissions sur le dossier de travail
 chown -R appuser:appgroup /k7
 
-# Exécuter l’application sous appuser
-exec gosu appuser dotnet K7.Server.Web.dll --init-db
+# Exï¿½cuter lï¿½application sous appuser
+exec gosu appuser dotnet K7.Server.Web.dll "$@"
