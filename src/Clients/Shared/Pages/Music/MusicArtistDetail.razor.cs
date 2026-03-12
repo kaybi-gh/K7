@@ -63,7 +63,7 @@ public partial class MusicArtistDetail
                     AlbumTitle = _albums.FirstOrDefault(a => a.Id == track.AlbumId.ToString())?.Title,
                     CoverUrl = k7ServerService.GetAbsoluteUri(
                         track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
-                            .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+                            .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
                     Duration = track.Duration ?? 0,
                     IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
                 })

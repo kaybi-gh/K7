@@ -63,12 +63,6 @@ else
                         {
                             <MudIcon Icon="@Icons.Material.Filled.Equalizer" Size="Size.Small" Color="Color.Primary" />
                         }
-                        @if (context.CoverUrl is not null)
-                        {
-                            <MudImage Src="@context.CoverUrl" Width="36" Height="36"
-                                      ObjectFit="ObjectFit.Cover"
-                                      Class="rounded" />
-                        }
                         <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">@context.Title</MudText>
                     </MudStack>
                 </MudTd>
