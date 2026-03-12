@@ -178,7 +178,21 @@ public partial class AudioPlayer : IAsyncDisposable
 
     private async void OnSourceChanged(PlayerSource source)
     {
-        if (!_isInitialized || string.IsNullOrEmpty(source.Url)) return;
+        if (string.IsNullOrEmpty(source.Url)) return;
+
+        if (!_isInitialized)
+        {
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("initAudioPlayer", _dotNetRef);
+            await JSRuntime.InvokeVoidAsync("K7.setupMediaSessionActions", _dotNetRef);
+            await JSRuntime.InvokeVoidAsync("K7.initKeyboardShortcuts", _dotNetRef);
+            _isInitialized = true;
+
+            await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
+            await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
+            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeDuration);
+        }
+
         await JSRuntime.InvokeVoidAsync("audioChangeSource", source.Url, source.MimeType);
         await InvokeAsync(StateHasChanged);
     }
