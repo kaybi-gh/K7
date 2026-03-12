@@ -51,7 +51,7 @@ public abstract record LiteMediaDto
             Id = domain.Id,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
+            Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(MetadataPictureDto.FromDomain),
             AlbumId = track.AlbumId,
             TrackNumber = track.TrackNumber,
             IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,

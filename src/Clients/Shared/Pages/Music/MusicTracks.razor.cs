@@ -99,7 +99,7 @@ public partial class MusicTracks
         Genre = track.Genre,
         CoverUrl = k7ServerService.GetAbsoluteUri(
             track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
-                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
         CoverDominantColor = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
         Duration = track.Duration ?? 0,
         UserRating = track.UserRating,
