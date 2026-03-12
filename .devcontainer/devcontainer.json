@@ -7,6 +7,21 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "forwardPorts": [8080, 5050],
-  "postCreateCommand": "dotnet restore"
+  "forwardPorts": [8080, 5050, 5432],
+  "postCreateCommand": "dotnet restore && dotnet tool restore || true",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "ms-azuretools.vscode-docker",
+        "GitHub.copilot",
+        "EditorConfig.EditorConfig",
+        "adrianwilczynski.libman"
+      ],
+      "settings": {
+        "dotnet.defaultSolution": "K7.slnx"
+      }
+    }
+  }
 }

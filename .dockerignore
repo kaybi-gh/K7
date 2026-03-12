@@ -16,6 +16,7 @@ experiments/
 .aspire/
 .github/
 .scripts/
+.devcontainer/
 *.user
 *.sln
 *.slnx
@@ -27,3 +28,4 @@ src/Clients/MAUI/
 # Docker files (avoid recursive copies)
 Dockerfile
 docker-compose.yaml
+.env

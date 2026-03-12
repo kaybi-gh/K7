@@ -7,6 +7,7 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
     <DockerfileFile>..\..\..\Dockerfile</DockerfileFile>
+    <DockerfileFastModeStage>dev</DockerfileFastModeStage>
     <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
     <OpenApiDocumentsDirectory>wwwroot/openapi</OpenApiDocumentsDirectory>
     <OpenApiGenerateDocumentsOptions>--file-name specification</OpenApiGenerateDocumentsOptions>
