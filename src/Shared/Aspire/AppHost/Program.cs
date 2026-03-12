@@ -16,7 +16,7 @@ var postgres = builder.AddPostgres("postgres", password: pgPassword)
         .WithHostPort(5050)
         .WithLifetime(ContainerLifetime.Persistent));
 
-var database = postgres.AddDatabase("k7");
+var database = postgres.AddDatabase("K7");
 
 var server = builder.AddProject<K7_Server_Web>("k7-server")
     .WithReference(database)
