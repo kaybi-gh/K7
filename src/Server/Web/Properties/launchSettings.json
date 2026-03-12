@@ -44,7 +44,10 @@
         "Database__Password": "postgres",
         "Database__Server": "host.docker.internal",
         "Database__Port": "5432",
-        "Database__Name": "K7"
+        "Database__Name": "K7",
+        "Paths__Metadatas": "/k7/metadatas",
+        "Paths__Logs": "/k7/logs",
+        "Paths__Transcoding": "/k7/transcoding"
       },
       "publishAllPorts": true,
       "useSSL": true
