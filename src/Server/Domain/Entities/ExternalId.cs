@@ -6,7 +6,7 @@ namespace K7.Server.Domain.Entities;
 
 public class ExternalId : BaseAuditableEntity
 {
-    public required string Platform { get; set; }
+    public required string ProviderName { get; set; }
     public required string Value { get; set; }
 
     public Guid? MediaId { get; set; }

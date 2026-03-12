@@ -29,7 +29,7 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
         Guard.Against.NotFound(request.MediaId, media);
 
         // Update or add external Id
-        var existingExternalId = media.ExternalIds?.FirstOrDefault(x => x.Platform == request.SelectedProvider);
+        var existingExternalId = media.ExternalIds?.FirstOrDefault(x => x.ProviderName == request.SelectedProvider);
         if (existingExternalId != null)
         {
             existingExternalId.Value = request.SelectedExternalId;
@@ -37,7 +37,7 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
         else
         {
             media.ExternalIds ??= new List<ExternalId>();
-            media.ExternalIds.Add(new ExternalId { Platform = request.SelectedProvider, Value = request.SelectedExternalId });
+            media.ExternalIds.Add(new ExternalId { ProviderName = request.SelectedProvider, Value = request.SelectedExternalId });
         }
 
         await context.SaveChangesAsync(cancellationToken);

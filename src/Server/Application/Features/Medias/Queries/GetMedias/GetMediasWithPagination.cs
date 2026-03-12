@@ -44,6 +44,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 .Include(x => ((MusicTrack)x).Album)
                     .ThenInclude(a => a.PersonRoles)
                         .ThenInclude(r => r.Person)
+                .Include(x => ((MusicTrack)x).Album)
+                    .ThenInclude(a => a.Pictures)
+                        .ThenInclude(p => p.Variants)
                 .Include(x => ((MusicTrack)x).AudioAnalysis);
         }
 

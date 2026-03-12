@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 
-public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>
+public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider
 {
     private const string BaseUrl = "https://musicbrainz.org/ws/2";
     private const string CoverArtBaseUrl = "https://coverartarchive.org";
@@ -38,6 +38,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         _httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/json");
         _logger = logger;
     }
+
+    public string ProviderName => "musicbrainz";
 
     private async Task WaitRateLimitAsync(CancellationToken cancellationToken)
     {
@@ -108,17 +110,12 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             Genres = ExtractGenres(releaseGroup?.Genres),
             ExternalIds =
             [
-                new ExternalId { Platform = "musicbrainz-release-group", Value = releaseGroupId }
+                new ExternalId { ProviderName = "musicbrainz", Value = releaseGroupId }
             ],
             Tracks = ExtractTracks(release),
             Artists = ExtractArtists(release),
             Pictures = await FetchCoverArtAsync(releaseGroupId, releaseId, cancellationToken)
         };
-
-        if (releaseId != null)
-        {
-            metadata.ExternalIds.Add(new ExternalId { Platform = "musicbrainz-release", Value = releaseId });
-        }
 
         return metadata;
     }
@@ -300,6 +297,68 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         return null;
     }
 
+    public async Task<ExternalMusicArtistDetails?> FetchByProviderIdAsync(
+        string providerId, string language, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var artist = await FetchArtistAsync(providerId, cancellationToken);
+            if (artist == null) return null;
+
+            var country = artist.Area?.Name;
+            var wikidataUrl = artist.Relations?
+                .FirstOrDefault(r => r.Type == "wikidata")?.Url?.Resource;
+            var wikidataId = !string.IsNullOrEmpty(wikidataUrl) ? ExtractQid(wikidataUrl) : null;
+
+            return new ExternalMusicArtistDetails
+            {
+                Country = country,
+                MusicBrainzArtistId = providerId,
+                WikidataId = wikidataId
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MusicBrainz artist fetch failed for {Id}", providerId);
+            return null;
+        }
+    }
+
+    public async Task<ExternalMusicArtistDetails?> SearchByNameAsync(
+        string artistName, string language, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await WaitRateLimitAsync(cancellationToken);
+            var url = $"{BaseUrl}/artist/?query=artist:\"{Uri.EscapeDataString(artistName)}\"&limit=1&fmt=json";
+            var result = await _httpClient.GetFromJsonAsync<MbArtistSearchResult>(url, JsonOptions, cancellationToken);
+            var best = result?.Artists?.FirstOrDefault();
+            if (best is not { Score: >= 90 }) return null;
+
+            return await FetchByProviderIdAsync(best.Id, language, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MusicBrainz artist search failed for {Name}", artistName);
+            return null;
+        }
+    }
+
+    private async Task<MbArtistDetail?> FetchArtistAsync(string mbid, CancellationToken ct)
+    {
+        await WaitRateLimitAsync(ct);
+        var url = $"{BaseUrl}/artist/{Uri.EscapeDataString(mbid)}?inc=url-rels&fmt=json";
+        return await _httpClient.GetFromJsonAsync<MbArtistDetail>(url, JsonOptions, ct);
+    }
+
+    private static string? ExtractQid(string wikidataUrl)
+    {
+        var idx = wikidataUrl.LastIndexOf('/');
+        if (idx < 0 || idx == wikidataUrl.Length - 1) return null;
+        var qid = wikidataUrl[(idx + 1)..];
+        return qid.StartsWith('Q') ? qid : null;
+    }
+
     #region MusicBrainz API DTOs
 
     private record MbReleaseSearchResult
@@ -391,6 +450,39 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         public string Id { get; init; } = "";
         public string? Title { get; init; }
+    }
+
+    private record MbArtistSearchResult
+    {
+        public List<MbArtistSearchEntry>? Artists { get; init; }
+    }
+
+    private record MbArtistSearchEntry
+    {
+        public string Id { get; init; } = "";
+        public int Score { get; init; }
+    }
+
+    private record MbArtistDetail
+    {
+        public MbArea? Area { get; init; }
+        public List<MbRelation>? Relations { get; init; }
+    }
+
+    private record MbArea
+    {
+        public string? Name { get; init; }
+    }
+
+    private record MbRelation
+    {
+        public string? Type { get; init; }
+        public MbUrl? Url { get; init; }
+    }
+
+    private record MbUrl
+    {
+        public string? Resource { get; init; }
     }
 
     #endregion

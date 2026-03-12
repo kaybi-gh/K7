@@ -2885,7 +2885,7 @@
       },
       "ExternalIdDto": {
         "required": [
-          "platform",
+          "providerName",
           "value"
         ],
         "type": "object",
@@ -2894,7 +2894,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "platform": {
+          "providerName": {
             "type": "string"
           },
           "value": {

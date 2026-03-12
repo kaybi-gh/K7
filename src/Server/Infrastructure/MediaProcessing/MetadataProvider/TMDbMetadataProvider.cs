@@ -122,7 +122,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 [
                     new ExternalId()
                     {
-                        Platform = "tmdb",
+                        ProviderName = "tmdb",
                         Value = metadataProviderExternalId
                     }
                 ],
@@ -133,7 +133,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             {
                 movie.ExternalIds.Add(new ExternalId()
                 {
-                    Platform = "imdb",
+                    ProviderName = "imdb",
                     Value = tmdbMovie.ImdbId
                 });
             }
@@ -220,7 +220,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 [
                     new ExternalId()
                     {
-                        Platform = "tmdb",
+                        ProviderName = "tmdb",
                         Value = role.CastId.ToString()
                     }
                 ],
@@ -254,7 +254,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 [
                     new ExternalId()
                     {
-                        Platform = "tmdb",
+                        ProviderName = "tmdb",
                         Value = role.CreditId
                     }
                 ],
@@ -280,7 +280,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         var groupedRoles = roles.GroupBy(x => new { x.Person.Name, x.Person.Birthday });
         foreach (var group in groupedRoles.Where(x => x.Count() > 1))
         {
-            var duplicateRoles = group.OrderBy(x => x.ExternalIds.First(x => x.Platform == "tmdb").Value).Skip(1);
+            var duplicateRoles = group.OrderBy(x => x.ExternalIds.First(x => x.ProviderName == "tmdb").Value).Skip(1);
             roles.RemoveAll(duplicateRoles.Contains);
         }
         return roles;
@@ -306,7 +306,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             [
                 new ExternalId()
                 {
-                    Platform = "tmdb",
+                    ProviderName = "tmdb",
                     Value = tmdbPerson.Id.ToString()
                 }
             ]
@@ -316,7 +316,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         {
             person.ExternalIds.Add(new ExternalId()
             {
-                Platform = "imdb",
+                ProviderName = "imdb",
                 Value = tmdbPerson.ImdbId
             });
         }
