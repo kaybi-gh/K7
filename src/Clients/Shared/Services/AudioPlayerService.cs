@@ -391,7 +391,6 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         PlaybackState = PlaybackState.Idle;
 
         await ShowAsync();
-        Play();
 
         var session = await streamUriService.GetOrCreateSessionAsync(track.IndexedFileId, cancellationToken: cancellationToken);
 
