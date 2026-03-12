@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Ardalis.GuardClauses" Version="4.2.0" />
+    <PackageVersion Include="Aspire.Hosting.Docker" Version="13.1.2-preview.1.26125.13" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
     <PackageVersion Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="7.0.0" />
@@ -52,6 +53,7 @@
     <PackageVersion Include="Microsoft.Maui.Essentials" Version="10.0.20" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageVersion Include="Microsoft.TestPlatform.TestHost" Version="17.8.0" />
+    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageVersion Include="Microsoft.Web.LibraryManager.Build" Version="3.0.71" />
     <PackageVersion Include="MudBlazor" Version="9.0.0-preview.1" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />

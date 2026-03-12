@@ -3,6 +3,10 @@
   <PropertyGroup>
     <RootNamespace>K7.Server.Web</RootNamespace>
     <AssemblyName>K7.Server.Web</AssemblyName>
+    <UserSecretsId>59816c2e-8aa1-4bae-bb1a-31cd2e98d51b</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+    <DockerfileFile>..\..\..\Dockerfile</DockerfileFile>
     <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
     <OpenApiDocumentsDirectory>wwwroot/openapi</OpenApiDocumentsDirectory>
     <OpenApiGenerateDocumentsOptions>--file-name specification</OpenApiGenerateDocumentsOptions>
@@ -40,6 +44,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="FluentValidation.AspNetCore" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
     <PackageReference Include="OpenIddict.AspNetCore" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" />
     <PackageReference Include="Scalar.AspNetCore.Microsoft" />
