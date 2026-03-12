@@ -111,6 +111,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                 new ExternalId { Platform = "musicbrainz-release-group", Value = releaseGroupId }
             ],
             Tracks = ExtractTracks(release),
+            Artists = ExtractArtists(release),
             Pictures = await FetchCoverArtAsync(releaseGroupId, releaseId, cancellationToken)
         };
 
@@ -271,6 +272,21 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         return tracks;
     }
 
+    private static IList<ExternalMusicArtistMetadata> ExtractArtists(MbRelease? release)
+    {
+        if (release?.ArtistCredit == null) return [];
+
+        return release.ArtistCredit
+            .Where(ac => ac.Artist != null && !string.IsNullOrEmpty(ac.Artist.Id))
+            .Select(ac => new ExternalMusicArtistMetadata
+            {
+                Name = ac.Artist!.Name ?? ac.Name ?? "Unknown",
+                MusicBrainzArtistId = ac.Artist.Id
+            })
+            .DistinctBy(a => a.MusicBrainzArtistId)
+            .ToList();
+    }
+
     private static DateOnly? ParseDate(string? date)
     {
         if (string.IsNullOrEmpty(date)) return null;
@@ -338,6 +354,21 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public string? Title { get; init; }
         public string? Date { get; init; }
         public List<MbMedium>? Media { get; init; }
+        [JsonPropertyName("artist-credit")]
+        public List<MbArtistCredit>? ArtistCredit { get; init; }
+    }
+
+    private record MbArtistCredit
+    {
+        public string? Name { get; init; }
+        public MbArtist? Artist { get; init; }
+    }
+
+    private record MbArtist
+    {
+        public string Id { get; init; } = "";
+        public string? Name { get; init; }
+        public string? Type { get; init; }
     }
 
     private record MbMedium

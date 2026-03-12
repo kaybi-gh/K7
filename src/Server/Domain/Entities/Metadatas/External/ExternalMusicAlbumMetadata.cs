@@ -12,6 +12,7 @@ public class ExternalMusicAlbumMetadata : IExternalMetadata
     public IList<ExternalId> ExternalIds { get; init; } = [];
     public IList<MetadataPicture> Pictures { get; init; } = [];
     public IList<ExternalMusicTrackMetadata> Tracks { get; init; } = [];
+    public IList<ExternalMusicArtistMetadata> Artists { get; init; } = [];
 }
 
 public class ExternalMusicTrackMetadata
@@ -21,4 +22,10 @@ public class ExternalMusicTrackMetadata
     public int? DiscNumber { get; init; }
     public TimeSpan? Duration { get; init; }
     public string? MusicBrainzRecordingId { get; init; }
+}
+
+public class ExternalMusicArtistMetadata
+{
+    public required string Name { get; init; }
+    public required string MusicBrainzArtistId { get; init; }
 }
