@@ -61,7 +61,7 @@ window.getSupportedAudioCodecsAsync = async function () {
 window.getSupportedContainersAsync = async function () {
     const videoElement = document.createElement('video');
 
-    const containersToTest = {
+    const videoContainersToTest = {
         mp4: 'video/mp4',
         webm: 'video/webm',
         ogg: 'video/ogg',
@@ -70,9 +70,25 @@ window.getSupportedContainersAsync = async function () {
         avi: 'video/x-msvideo'
     };
 
-    return Object.entries(containersToTest)
+    const audioElement = document.createElement('audio');
+
+    const audioContainersToTest = {
+        mp3: 'audio/mpeg',
+        flac: 'audio/flac',
+        aac: 'audio/aac',
+        ogg_audio: 'audio/ogg',
+        wav: 'audio/wav'
+    };
+
+    const supported = Object.entries(videoContainersToTest)
         .filter(([_, mimeType]) => videoElement.canPlayType(mimeType) !== '')
         .map(([container]) => container);
+
+    Object.entries(audioContainersToTest)
+        .filter(([_, mimeType]) => audioElement.canPlayType(mimeType) !== '')
+        .forEach(([container]) => supported.push(container));
+
+    return supported;
 };
 
 window.getSupportedVideoCodecsAsync = async function () {
