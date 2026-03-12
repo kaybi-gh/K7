@@ -32,12 +32,19 @@
     },
     "Docker": {
       "commandName": "Docker",
+      "commandLineArgs": "--init-db",
       "launchBrowser": true,
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
+        "ASPNETCORE_HTTP_PORTS": "8080",
+        "Database__Provider": "Postgres",
+        "Database__UserID": "postgres",
+        "Database__Password": "postgres",
+        "Database__Server": "host.docker.internal",
+        "Database__Port": "5432",
+        "Database__Name": "K7"
       },
       "publishAllPorts": true,
       "useSSL": true

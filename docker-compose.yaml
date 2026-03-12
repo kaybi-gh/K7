@@ -1,32 +1,51 @@
-version: '3.9'
-
 x-default-restart-security: &default-restart-security
   restart: unless-stopped
   security_opt:
     - no-new-privileges:true
-    
+
 volumes:
+  k7-postgres-data:
   movies:
     external: true
-    
+
 services:
+  postgres:
+    <<: *default-restart-security
+    image: postgres:17-alpine
+    container_name: k7-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-K7}
+    volumes:
+      - k7-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   k7-server:
     <<: *default-restart-security
     container_name: k7-server
     image: k7-server:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
-      - 8080:8080/tcp
+      - "8080:8080/tcp"
     volumes:
       - movies:/k7/media/movies:ro
-      - /c/k7/logs:/k7/logs:rw
-      - /c/k7/metadatas:/k7/metadatas:rw
     environment:
-      Database__Provider: postgres
-      Database__UserID: postgres
-      Database__Passwodd: '7319'
-      Database__Server: host.docker.internal
-      Database__Port: 5432
-      Database__Name: MediaServer
+      Database__Provider: Postgres
+      Database__UserID: ${POSTGRES_USER:-postgres}
+      Database__Password: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      Database__Server: postgres
+      Database__Port: "5432"
+      Database__Name: ${POSTGRES_DB:-K7}
       Paths__Metadatas: metadatas
       Paths__Logs: logs
       Paths__Transcoding: transcoding
+    command: ["--init-db"]

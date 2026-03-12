@@ -2,9 +2,15 @@ using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgres = builder.AddPostgres("postgres")
+var pgPassword = builder.AddParameter("pg-password", secret: true);
+
+var postgres = builder.AddPostgres("postgres", password: pgPassword)
     .WithDataVolume()
-    .WithPgAdmin(pgAdmin => pgAdmin.WithHostPort(5050));
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithHostPort(5432)
+    .WithPgAdmin(pgAdmin => pgAdmin
+        .WithHostPort(5050)
+        .WithLifetime(ContainerLifetime.Persistent));
 
 var database = postgres.AddDatabase("k7");
 
