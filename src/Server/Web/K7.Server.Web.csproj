@@ -8,6 +8,7 @@
     <DockerfileContext>.</DockerfileContext>
     <DockerfileFile>..\..\..\Dockerfile</DockerfileFile>
     <DockerfileFastModeStage>dev</DockerfileFastModeStage>
+    <DockerfileRunArguments>--add-host host.docker.internal:host-gateway -v "C:\k7:/k7"</DockerfileRunArguments>
     <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
     <OpenApiDocumentsDirectory>wwwroot/openapi</OpenApiDocumentsDirectory>
     <OpenApiGenerateDocumentsOptions>--file-name specification</OpenApiGenerateDocumentsOptions>

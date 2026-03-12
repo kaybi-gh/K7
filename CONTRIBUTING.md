@@ -9,7 +9,7 @@
 
 ## Developer setup
 
-K7.Server.Web targets Linux at runtime (Essentia is distributed as a native Ubuntu binary via `ppa:mtg/essentia`).
+K7.Server.Web targets Linux at runtime (Essentia is a precompiled static binary downloaded from [essentia.upf.edu](https://essentia.upf.edu/extractors/)).
 
 ### DevContainer (recommended on Windows)
 
@@ -34,9 +34,11 @@ The `dev` Dockerfile stage provides the SDK + ffmpeg + Essentia. Postgres is rea
 ### Linux / WSL2
 
 ```bash
-sudo apt-get update && sudo apt-get install -y ffmpeg software-properties-common
-sudo add-apt-repository -y ppa:mtg/essentia && sudo apt-get update
-sudo apt-get install -y essentia-extractors
+sudo apt-get update && sudo apt-get install -y ffmpeg curl
+curl -fsSL https://essentia.upf.edu/extractors/essentia-extractors-v2.1_beta2-linux-x86_64.tar.gz \
+  | tar xz --strip-components=1 --wildcards '*/streaming_extractor_music' -C /usr/local/bin/
+sudo mv /usr/local/bin/streaming_extractor_music /usr/local/bin/essentia_streaming_extractor_music
+sudo chmod +x /usr/local/bin/essentia_streaming_extractor_music
 ```
 
 Install .NET 10 SDK: https://learn.microsoft.com/dotnet/core/install/linux-ubuntu
