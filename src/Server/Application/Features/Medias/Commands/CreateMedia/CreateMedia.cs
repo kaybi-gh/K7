@@ -231,10 +231,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         var existingAlbum = await _context.Medias
             .OfType<MusicAlbum>()
-            .Include(a => a.IndexedFiles)
             .FirstOrDefaultAsync(a =>
                 a.Title == resolvedAlbumName &&
-                a.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId) &&
+                a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId)) &&
                 (releaseYear == null || a.ReleaseDate == null || a.ReleaseDate == releaseYear),
                 cancellationToken);
 
