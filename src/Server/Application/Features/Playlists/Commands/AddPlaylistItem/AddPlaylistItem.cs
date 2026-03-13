@@ -16,22 +16,23 @@ public class AddPlaylistItemCommandHandler(IApplicationDbContext context, IUser 
     public async Task<Guid> Handle(AddPlaylistItemCommand request, CancellationToken cancellationToken)
     {
         var playlist = await context.Playlists
-            .Include(p => p.Items)
             .FirstOrDefaultAsync(p => p.Id == request.PlaylistId && p.UserId == currentUser.Id!.Value, cancellationToken);
 
         Guard.Against.NotFound(request.PlaylistId, playlist);
 
-        var maxOrder = playlist.Items.Count > 0 ? playlist.Items.Max(i => i.Order) : -1;
+        var maxOrder = await context.PlaylistItems
+            .Where(i => i.PlaylistId == request.PlaylistId)
+            .Select(i => (int?)i.Order)
+            .MaxAsync(cancellationToken) ?? -1;
 
         var item = new PlaylistItem
         {
-            Id = Guid.NewGuid(),
             PlaylistId = playlist.Id,
             MediaId = request.MediaId,
             Order = maxOrder + 1
         };
 
-        playlist.Items.Add(item);
+        context.PlaylistItems.Add(item);
         playlist.AddDomainEvent(new PlaylistItemAddedEvent(playlist, item));
         await context.SaveChangesAsync(cancellationToken);
 
