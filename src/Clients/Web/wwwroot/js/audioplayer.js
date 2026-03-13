@@ -4,8 +4,28 @@ let audioState = {
     crossfadeElement: null,
     crossfadeDuration: 0,
     crossfadeTimer: null,
-    crossfadePending: false
+    crossfadePending: false,
+    stateDebounceTimer: null
 };
+
+function notifyPlaybackState(dotNetRef, state) {
+    if (audioState.stateDebounceTimer) {
+        clearTimeout(audioState.stateDebounceTimer);
+        audioState.stateDebounceTimer = null;
+    }
+
+    if (state === 'playing') {
+        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', 'playing')
+            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+        return;
+    }
+
+    audioState.stateDebounceTimer = setTimeout(() => {
+        audioState.stateDebounceTimer = null;
+        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', state)
+            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+    }, 150);
+}
 
 window.K7 = window.K7 || {};
 window.K7.scrollIntoViewSmooth = function (el) {
@@ -134,18 +154,19 @@ window.initAudioPlayer = function (dotNetRef) {
     });
 
     el.addEventListener('play', () => {
-        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', 'playing')
-            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+        notifyPlaybackState(dotNetRef, 'playing');
+    });
+
+    el.addEventListener('playing', () => {
+        notifyPlaybackState(dotNetRef, 'playing');
     });
 
     el.addEventListener('pause', () => {
-        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', 'paused')
-            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+        notifyPlaybackState(dotNetRef, 'paused');
     });
 
     el.addEventListener('waiting', () => {
-        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', 'buffering')
-            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+        notifyPlaybackState(dotNetRef, 'buffering');
     });
 
     el.addEventListener('ended', () => {
@@ -281,6 +302,11 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
 
             // Re-attach events to new element
             attachEventsToElement(nextEl, audioState.dotNetRef);
+
+            // New element is already playing — notify .NET
+            if (!nextEl.paused && audioState.dotNetRef) {
+                notifyPlaybackState(audioState.dotNetRef, 'playing');
+            }
         }
     }, stepMs);
 };
@@ -330,18 +356,19 @@ function attachEventsToElement(el, dotNetRef) {
     });
 
     el.addEventListener('play', () => {
-        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', 'playing')
-            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+        notifyPlaybackState(dotNetRef, 'playing');
+    });
+
+    el.addEventListener('playing', () => {
+        notifyPlaybackState(dotNetRef, 'playing');
     });
 
     el.addEventListener('pause', () => {
-        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', 'paused')
-            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+        notifyPlaybackState(dotNetRef, 'paused');
     });
 
     el.addEventListener('waiting', () => {
-        dotNetRef.invokeMethodAsync('OnPlaybackStateChanged', 'buffering')
-            .catch(e => console.error('OnPlaybackStateChanged failed', e));
+        notifyPlaybackState(dotNetRef, 'buffering');
     });
 
     el.addEventListener('ended', () => {

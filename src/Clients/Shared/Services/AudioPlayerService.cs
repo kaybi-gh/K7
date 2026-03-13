@@ -327,9 +327,6 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         var nextIndex = GetNextIndex();
         if (nextIndex is null) return;
 
-        // Peek without advancing — GetNextIndex already advanced _shufflePosition, undo it
-        if (_shuffle && _shufflePosition >= 0) _shufflePosition--;
-
         var nextTrack = _queue[nextIndex.Value];
 
         var session = await streamUriService.GetOrCreateSessionAsync(nextTrack.IndexedFileId, cancellationToken: cancellationToken);
@@ -346,6 +343,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             duration = HarmonicMixHelper.ComputeCrossfadeDuration(CurrentTrack, nextTrack, _crossfadeDuration);
 
         _crossfadeTriggered = true;
+        _currentIndex = nextIndex.Value;
+        CurrentTrackChanged?.Invoke(CurrentTrack);
         CrossfadeRequested?.Invoke(source, duration);
     }
 
@@ -361,13 +360,6 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         if (_crossfadeTriggered)
         {
-            // Crossfade already started the next track — just advance the index
-            var nextIndex = GetNextIndex();
-            if (nextIndex is not null)
-            {
-                _currentIndex = nextIndex.Value;
-                CurrentTrackChanged?.Invoke(CurrentTrack);
-            }
             _crossfadeTriggered = false;
             return;
         }
@@ -388,7 +380,6 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         CurrentTime = 0;
         Duration = 0;
         BufferedTime = 0;
-        PlaybackState = PlaybackState.Idle;
 
         await ShowAsync();
 
