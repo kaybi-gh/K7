@@ -129,23 +129,58 @@ public partial class FullScreenMusicPlayer : IDisposable
 
         var peaks = _waveformPeaks;
         var count = peaks.Length;
-        var sb = new StringBuilder(count * 60);
+        const float w = 1000f;
+        const float h = 100f;
+        const float mid = h / 2;
+        var step = w / Math.Max(count - 1, 1);
 
-        sb.Append("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ");
-        sb.Append(count);
-        sb.Append(" 100' preserveAspectRatio='none'>");
+        var sb = new StringBuilder(count * 80);
+        sb.Append("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'>");
+        sb.Append("<path d='");
 
+        // Top half: left to right with smooth cubic Béziers
         for (var i = 0; i < count; i++)
         {
-            var h = Math.Max(peaks[i], 0.03f) * 100;
-            var y = (100 - h) / 2;
-            sb.Append("<rect x='").Append(i).Append("' y='");
-            sb.Append(y.ToString("F1", CultureInfo.InvariantCulture));
-            sb.Append("' width='0.65' height='");
-            sb.Append(h.ToString("F1", CultureInfo.InvariantCulture));
-            sb.Append("' fill='white'/>");
+            var x = i * step;
+            var amplitude = Math.Max(peaks[i], 0.02f) * mid;
+            var y = mid - amplitude;
+
+            if (i == 0)
+            {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "M{0:F1},{1:F1}", x, y);
+            }
+            else
+            {
+                var prevX = (i - 1) * step;
+                var cpX = (prevX + x) / 2;
+                var prevY = mid - Math.Max(peaks[i - 1], 0.02f) * mid;
+                sb.AppendFormat(CultureInfo.InvariantCulture, " C{0:F1},{1:F1} {2:F1},{3:F1} {4:F1},{5:F1}",
+                    cpX, prevY, cpX, y, x, y);
+            }
         }
 
+        // Bottom half: right to left (mirror) with smooth cubic Béziers
+        for (var i = count - 1; i >= 0; i--)
+        {
+            var x = i * step;
+            var amplitude = Math.Max(peaks[i], 0.02f) * mid;
+            var y = mid + amplitude;
+
+            if (i == count - 1)
+            {
+                sb.AppendFormat(CultureInfo.InvariantCulture, " L{0:F1},{1:F1}", x, y);
+            }
+            else
+            {
+                var nextX = (i + 1) * step;
+                var cpX = (nextX + x) / 2;
+                var nextY = mid + Math.Max(peaks[i + 1], 0.02f) * mid;
+                sb.AppendFormat(CultureInfo.InvariantCulture, " C{0:F1},{1:F1} {2:F1},{3:F1} {4:F1},{5:F1}",
+                    cpX, nextY, cpX, y, x, y);
+            }
+        }
+
+        sb.Append(" Z' fill='white'/>");
         sb.Append("</svg>");
 
         var encoded = Uri.EscapeDataString(sb.ToString());

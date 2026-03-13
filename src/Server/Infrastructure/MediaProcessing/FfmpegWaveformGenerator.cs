@@ -67,15 +67,13 @@ public class FfmpegWaveformGenerator(
             var start = (int)(i * samplesPerPeak);
             var end = Math.Min((int)((i + 1) * samplesPerPeak), samples.Length);
 
-            float max = 0;
+            // RMS (Root Mean Square) — represents perceived loudness, not transient spikes
+            double sumSquares = 0;
+            var count = end - start;
             for (var j = start; j < end; j++)
-            {
-                var abs = MathF.Abs(samples[j]);
-                if (abs > max)
-                    max = abs;
-            }
+                sumSquares += samples[j] * samples[j];
 
-            peaks[i] = max;
+            peaks[i] = count > 0 ? MathF.Sqrt((float)(sumSquares / count)) : 0;
         }
 
         // Normalize to 0.0–1.0
@@ -83,7 +81,11 @@ public class FfmpegWaveformGenerator(
         if (globalMax > 0)
         {
             for (var i = 0; i < peaks.Length; i++)
+            {
                 peaks[i] /= globalMax;
+                // Power curve (sqrt) compresses dynamic range — quiet sections more visible
+                peaks[i] = MathF.Sqrt(peaks[i]);
+            }
         }
 
         return peaks;
