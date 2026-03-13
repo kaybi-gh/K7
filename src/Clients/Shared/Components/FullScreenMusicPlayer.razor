@@ -70,7 +70,7 @@
                              @onpointermove="OnSeekPointerMove"
                              @onpointerup="OnSeekPointerUp">
                             <div class="waveform-bg"></div>
-                            <div class="waveform-progress" style="width: @(CurrentPercent)%"></div>
+                            <div class="waveform-progress" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
                         </div>
                     }
                     else
@@ -80,9 +80,9 @@
                              @onpointerdown="OnSeekPointerDown"
                              @onpointermove="OnSeekPointerMove"
                              @onpointerup="OnSeekPointerUp">
-                            <div class="seek-buffered" style="width: @BufferedPercent%"></div>
-                            <div class="seek-current" style="width: @CurrentPercent%"></div>
-                            <div class="seek-thumb" style="left: @CurrentPercent%"></div>
+                            <div class="seek-buffered" style="width: @(BufferedPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="seek-current" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="seek-thumb" style="left: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
                         </div>
                     }
                     <div class="seek-times">
@@ -102,7 +102,7 @@
                                    Color="Color.Inherit"
                                    OnClick="OnPrevious" />
 
-                    <MudFab icon="@PlayPauseIcon"
+                    <MudFab StartIcon="@PlayPauseIcon"
                             Size="Size.Large"
                             Color="Color.Primary"
                             OnClick="TogglePlayPause" />

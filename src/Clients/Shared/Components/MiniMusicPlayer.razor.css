@@ -1,13 +1,14 @@
 .music-mini-player {
     position: fixed;
     bottom: 0;
-    left: 0;
+    left: 56px;
     right: 0;
     z-index: 1100;
     background: var(--mud-palette-surface);
     border-top: 1px solid var(--mud-palette-lines-default);
     display: flex;
     flex-direction: column;
+    transition: left 225ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 .mini-player-progress {
@@ -144,5 +145,11 @@
 
     .mini-player-content {
         padding: 6px 8px;
+    }
+}
+
+@media (max-width: 599.98px) {
+    .music-mini-player {
+        left: 0;
     }
 }

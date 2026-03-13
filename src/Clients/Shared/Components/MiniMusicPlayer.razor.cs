@@ -47,6 +47,7 @@ public partial class MiniMusicPlayer : IDisposable
         Audio.VolumeChanged += OnVolumeStateChanged;
         Audio.IsMutedChanged += OnMutedStateChanged;
         Audio.IsVisibleChanged += OnVisibilityChanged;
+        SidebarService.IsOpenOnChange += OnSidebarChanged;
     }
 
     public void Dispose()
@@ -62,6 +63,7 @@ public partial class MiniMusicPlayer : IDisposable
         Audio.VolumeChanged -= OnVolumeStateChanged;
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsVisibleChanged -= OnVisibilityChanged;
+        SidebarService.IsOpenOnChange -= OnSidebarChanged;
     }
 
     private void TogglePlayPause()
@@ -132,6 +134,7 @@ public partial class MiniMusicPlayer : IDisposable
     private void OnVolumeStateChanged(double _) => InvokeAsync(StateHasChanged);
     private void OnMutedStateChanged(bool _) => InvokeAsync(StateHasChanged);
     private void OnVisibilityChanged() => InvokeAsync(StateHasChanged);
+    private void OnSidebarChanged() => InvokeAsync(StateHasChanged);
 
     private static string FormatTime(double seconds)
     {
