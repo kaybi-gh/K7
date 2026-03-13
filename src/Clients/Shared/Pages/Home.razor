@@ -32,7 +32,14 @@ else
             @foreach (var item in continueWatchingMedias)
             {
                 <HorizontalScrollableStackItem>
-                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                    @if (item.Kind == MediaPosterKind.Album)
+                    {
+                        <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
+                    }
+                    else
+                    {
+                        <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                    }
                 </HorizontalScrollableStackItem>
             }
         </HorizontalScrollableStack>
@@ -42,7 +49,14 @@ else
         @foreach (var item in recentlyAddedMedias)
         {
             <HorizontalScrollableStackItem>
-                <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                @if (item.Kind == MediaPosterKind.Album)
+                {
+                    <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
+                }
+                else
+                {
+                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                }
             </HorizontalScrollableStackItem>
         }
     </HorizontalScrollableStack>
@@ -51,7 +65,14 @@ else
         @foreach (var item in recentlyReleasedMedias)
         {
             <HorizontalScrollableStackItem>
-                <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                @if (item.Kind == MediaPosterKind.Album)
+                {
+                    <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
+                }
+                else
+                {
+                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                }
             </HorizontalScrollableStackItem>
         }
     </HorizontalScrollableStack>
@@ -60,7 +81,14 @@ else
         @foreach (var item in lastPlayedMedias)
         {
             <HorizontalScrollableStackItem>
-                <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                @if (item.Kind == MediaPosterKind.Album)
+                {
+                    <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
+                }
+                else
+                {
+                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                }
             </HorizontalScrollableStackItem>
         }
     </HorizontalScrollableStack>
@@ -144,7 +172,8 @@ else
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    continueWatchingMedias.Add(MapToViewModel(item));
+                    if (MapToViewModel(item) is { } vm)
+                        continueWatchingMedias.Add(vm);
                 }
             }
         }
@@ -166,7 +195,8 @@ else
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    recentlyAddedMedias.Add(MapToViewModel(item));
+                    if (MapToViewModel(item) is { } vm)
+                        recentlyAddedMedias.Add(vm);
                 }
             }
         }
@@ -188,7 +218,8 @@ else
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    recentlyReleasedMedias.Add(MapToViewModel(item));
+                    if (MapToViewModel(item) is { } vm)
+                        recentlyReleasedMedias.Add(vm);
                 }
             }
         }
@@ -210,20 +241,31 @@ else
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    lastPlayedMedias.Add(MapToViewModel(item));
+                    if (MapToViewModel(item) is { } vm)
+                        lastPlayedMedias.Add(vm);
                 }
             }
         }
         catch { }
     }
 
-    private MediaPosterViewModel MapToViewModel(K7.Shared.Dtos.Entities.Medias.LiteMediaDto item)
+    private MediaPosterViewModel? MapToViewModel(K7.Shared.Dtos.Entities.Medias.LiteMediaDto item)
     {
+        var kind = item switch
+        {
+            K7.Shared.Dtos.Entities.Medias.LiteMusicAlbumDto => MediaPosterKind.Album,
+            K7.Shared.Dtos.Entities.Medias.LiteMovieDto => MediaPosterKind.Movie,
+            _ => (MediaPosterKind?)null
+        };
+
+        if (kind is null) return null;
+
         var userState = item.UserState;
 
         return new MediaPosterViewModel
         {
             Id = item.Id.ToString(),
+            Kind = kind.Value,
             Title = item.Title,
             AdditionalInformations = item.ReleaseDate,
             PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
