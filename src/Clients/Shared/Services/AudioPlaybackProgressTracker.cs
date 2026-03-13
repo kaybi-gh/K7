@@ -13,6 +13,7 @@ public class AudioPlaybackProgressTracker : IDisposable
     private Guid? _currentMediaId;
     private Guid _sessionId;
     private bool _disposed;
+    private bool _transitioning;
 
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(30);
 
@@ -43,6 +44,7 @@ public class AudioPlaybackProgressTracker : IDisposable
         if (newTrack is not null)
         {
             _sessionId = Guid.NewGuid();
+            _transitioning = true;
             StartTimer();
         }
     }
@@ -52,13 +54,15 @@ public class AudioPlaybackProgressTracker : IDisposable
         switch (state)
         {
             case PlaybackState.Playing:
+                _transitioning = false;
                 StartTimer();
                 break;
             case PlaybackState.Paused:
             case PlaybackState.Idle:
             case PlaybackState.Ended:
                 StopTimer();
-                _ = ReportCurrentAsync();
+                if (!_transitioning)
+                    _ = ReportCurrentAsync();
                 break;
         }
     }
