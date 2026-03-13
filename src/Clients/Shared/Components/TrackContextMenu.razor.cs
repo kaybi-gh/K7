@@ -25,6 +25,16 @@ public partial class TrackContextMenu
         Snackbar.Add($"« {Track.Title} » ajouté à la queue", Severity.Info);
     }
 
+    private async Task AddToPlaylist()
+    {
+        var parameters = new DialogParameters<Dialogs.AddToPlaylistDialog>
+        {
+            { x => x.MediaId, Track.MediaId }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<Dialogs.AddToPlaylistDialog>("Ajouter à une playlist", parameters, options);
+    }
+
     private async Task RadioArtist()
     {
         if (Track.ArtistPersonId is null) return;

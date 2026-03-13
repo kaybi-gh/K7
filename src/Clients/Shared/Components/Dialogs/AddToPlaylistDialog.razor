@@ -68,7 +68,7 @@
     {
         _loading = true;
         var result = await K7ServerService.GetPlaylistsAsync(1, 100);
-        _playlists = result?.Items?.ToList() ?? [];
+        _playlists = result?.Items?.Where(p => !p.IsSmartPlaylist).ToList() ?? [];
         _loading = false;
     }
 
