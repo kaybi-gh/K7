@@ -1,15 +1,16 @@
 @inject IAudioPlayerService Audio
+@inject SidebarService SidebarService
 
 @if (Audio.IsVisible && Audio.CurrentTrack is not null)
 {
-    <div class="music-mini-player">
+    <div class="music-mini-player" style="left: @(SidebarService.IsOpen ? "240px" : "56px")">
         <div class="mini-player-progress" @ref="_progressBarRef"
              @onclick="OnProgressClick"
              @onpointerdown="OnProgressPointerDown"
              @onpointermove="OnProgressPointerMove"
              @onpointerup="OnProgressPointerUp">
-            <div class="progress-buffered" style="width: @BufferedPercent%"></div>
-            <div class="progress-current" style="width: @CurrentPercent%"></div>
+            <div class="progress-buffered" style="width: @(BufferedPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+            <div class="progress-current" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
         </div>
 
         <div class="mini-player-content">

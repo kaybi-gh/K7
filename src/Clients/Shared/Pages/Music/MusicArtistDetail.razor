@@ -57,7 +57,7 @@
                         @foreach (var album in _albums)
                         {
                             <HorizontalScrollableStackItem>
-                                <MediaPoster Model="album" FooterVisible="true" />
+                                <MediaCover Model="album" Href="@($"/music/albums/{album.Id}")" FooterVisible="true" />
                             </HorizontalScrollableStackItem>
                         }
                     </HorizontalScrollableStack>
