@@ -1,5 +1,7 @@
 @page "/music/stats"
 @inject IK7ServerService K7ServerService
+@inject K7.Clients.Shared.Services.K7HubClient K7HubClient
+@implements IDisposable
 <PageTitle>Statistiques</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
