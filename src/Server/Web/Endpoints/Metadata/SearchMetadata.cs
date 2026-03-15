@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Metadata.Queries.SearchMetadata;
+using K7.Server.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,6 +23,7 @@ public class SearchMetadata : IEndpoint
             
             return Results.Ok(result);
         })
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

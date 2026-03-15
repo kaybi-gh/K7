@@ -817,6 +817,47 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Settings.ServerSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ServerSettings");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Settings.UserSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserSettings");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -953,6 +994,28 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserCapabilityOverride", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Capability")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserCapabilityOverrides");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaState", b =>
@@ -2143,6 +2206,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserCapabilityOverride", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", null)
+                        .WithMany("CapabilityOverrides")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaState", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -2402,6 +2474,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
                 {
+                    b.Navigation("CapabilityOverrides");
+
                     b.Navigation("Ratings");
                 });
 

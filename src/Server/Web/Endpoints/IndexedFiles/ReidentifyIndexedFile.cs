@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.IndexedFiles.Commands.ReidentifyIndexedFile;
+using K7.Server.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using K7.Shared.Dtos.Requests;
@@ -27,6 +28,7 @@ public class ReidentifyIndexedFile : IEndpoint
             
             return Results.NoContent();
         })
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

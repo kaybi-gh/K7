@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Medias.Queries.GetMedia;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public class GetMedia : IEndpoint
             var media = await sender.Send(new GetMediaQuery(id));
             return MediaDto.FromDomain(media);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

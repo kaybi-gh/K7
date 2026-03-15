@@ -1,3 +1,4 @@
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
@@ -61,7 +62,7 @@ public class GetDirectories : IEndpoint
                 return Results.Forbid();
             }
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

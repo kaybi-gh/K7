@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Libraries.Commands.DeleteLibrary;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Libraries;
@@ -15,7 +16,7 @@ public class DeleteLibrary : IEndpoint
             await sender.Send(new DeleteLibraryCommand(id), cancellationToken);
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

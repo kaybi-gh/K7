@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Devices.Commands.UpdateDevice;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Devices;
@@ -20,6 +21,7 @@ public class UpdateDevice : IEndpoint
             await sender.Send(command, cancellationToken);
             return Results.NoContent();
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

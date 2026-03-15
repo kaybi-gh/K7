@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Playlists.Commands.DeletePlaylist;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Playlists;
@@ -15,7 +16,7 @@ public class DeletePlaylist : IEndpoint
             await sender.Send(new DeletePlaylistCommand(id), cancellationToken);
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

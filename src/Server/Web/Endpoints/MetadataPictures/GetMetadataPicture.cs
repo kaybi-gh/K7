@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.MetadataPictures.Queries.GetMetadataPicture;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public class GetMetadataPicture : IEndpoint
         {
             return await sender.Send(new GetMetadataPictureQuery(id, size));
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

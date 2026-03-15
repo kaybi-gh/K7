@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.BackgroundTasks.Queries.GetBackgroundTasksWithPagination;
+using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,7 @@ public class GetBackgroundTasks : IEndpoint
             var backgroundTasksPage = await sender.Send(query, cancellationToken);
             return backgroundTasksPage.ToDto(BackgroundTaskDto.FromDomain);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

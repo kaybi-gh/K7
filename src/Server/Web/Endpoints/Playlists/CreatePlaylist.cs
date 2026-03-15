@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Playlists.Commands.CreatePlaylist;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Playlists;
@@ -14,7 +15,7 @@ public class CreatePlaylist : IEndpoint
         {
             return await sender.Send(command, cancellationToken);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

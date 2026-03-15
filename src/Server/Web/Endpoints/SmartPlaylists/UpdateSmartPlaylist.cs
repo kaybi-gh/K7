@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.SmartPlaylists.Commands.UpdateSmartPlaylist;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,6 +34,7 @@ public class UpdateSmartPlaylist : IEndpoint
 
             return Results.NoContent();
         })
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

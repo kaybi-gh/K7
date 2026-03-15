@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.SmartPlaylists.Commands.EvaluateSmartPlaylist;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.SmartPlaylists;
@@ -19,6 +20,7 @@ public class EvaluateSmartPlaylist : IEndpoint
 
             return Results.Ok(new { Id = result });
         })
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

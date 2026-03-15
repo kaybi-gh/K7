@@ -1,10 +1,13 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.SmartPlaylists.Commands.CreateSmartPlaylist;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record CreateSmartPlaylistCommand : IRequest<Guid>
 {
     public required string Title { get; init; }

@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.IndexedFiles;
@@ -21,7 +22,7 @@ public class GetHlsSubtitleStreamIndex : IEndpoint
                 subtitleTrackIndex,
                 streamSessionId));
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

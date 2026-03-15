@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Medias;
@@ -15,7 +16,7 @@ public class ReportPlaybackProgress : IEndpoint
             await sender.Send(command);
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

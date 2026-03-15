@@ -1,4 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
@@ -9,6 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record UpdatePlaybackProgressCommand(Guid MediaId, Guid SessionId, double Position, double Duration) : IRequest;
 
 public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>

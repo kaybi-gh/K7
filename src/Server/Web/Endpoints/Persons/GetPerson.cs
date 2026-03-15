@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Persons.Queries.GetPerson;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public class GetPerson : IEndpoint
             var person = await sender.Send(new GetPersonQuery(id));
             return PersonDto.FromDomain(person);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

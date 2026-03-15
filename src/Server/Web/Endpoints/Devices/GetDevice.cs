@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Devices.Queries.GetDevice;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,7 @@ public class GetDevice : IEndpoint
             var device = await sender.Send(new GetDeviceQuery(id), cancellationToken);
             return DeviceDto.FromDomain(device);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

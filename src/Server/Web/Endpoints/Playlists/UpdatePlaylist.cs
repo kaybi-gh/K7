@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Playlists.Commands.UpdatePlaylist;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Playlists;
@@ -16,7 +17,7 @@ public class UpdatePlaylist : IEndpoint
             await sender.Send(command, cancellationToken);
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

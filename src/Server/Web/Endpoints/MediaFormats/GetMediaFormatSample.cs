@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.MediaFormatSample.Queries.GetMediaFormatSample;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public class GetMediaFormatSample : IEndpoint
         {
             return await sender.Send(new GetMediaFormatSampleQuery(id), cancellationToken);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

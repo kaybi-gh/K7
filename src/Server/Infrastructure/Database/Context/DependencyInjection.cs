@@ -4,6 +4,7 @@ using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Data.Interceptors;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using K7.Server.Infrastructure.FileSystem;
+using K7.Server.Infrastructure.Database.Context.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -163,6 +164,7 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
         services.AddTransient<IIdentityService, IdentityService>();
+        services.AddScoped<IServerSettingsService, ServerSettingsService>();
 
         return services;
     }

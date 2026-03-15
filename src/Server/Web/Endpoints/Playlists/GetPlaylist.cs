@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Playlists.Queries.GetPlaylist;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public class GetPlaylist : IEndpoint
             var playlist = await sender.Send(new GetPlaylistQuery(id), cancellationToken);
             return PlaylistDto.FromDomain(playlist);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

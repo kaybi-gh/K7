@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Libraries.Queries.GetLibraries;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public class GetLibraries : IEndpoint
             var libraries = await sender.Send(new GetLibrariesQuery(), cancellationToken);
             return libraries.Select(LibraryDto.FromDomain);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

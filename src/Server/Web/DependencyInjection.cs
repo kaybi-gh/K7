@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using K7.Server.Domain.Constants;
 using K7.Clients.Shared.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Web.Services;
@@ -49,7 +50,17 @@ public static class DependencyInjection
             options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(Policies.GuestOrAbove, policy =>
+                policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator));
+
+            options.AddPolicy(Policies.UserOrAbove, policy =>
+                policy.RequireRole(Roles.User, Roles.Administrator));
+
+            options.AddPolicy(Policies.AdminOnly, policy =>
+                policy.RequireRole(Roles.Administrator));
+        });
 
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();

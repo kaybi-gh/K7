@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Libraries;
@@ -14,7 +15,7 @@ public class CreateLibrary : IEndpoint
         {
             return await sender.Send(command, cancellationToken);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }
