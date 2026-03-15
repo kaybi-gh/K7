@@ -10,6 +10,7 @@ using K7.Server.Web;
 using K7.Server.Web.Components;
 using K7.Server.Web.Components.Account;
 using K7.Server.Web.Endpoints.Hubs;
+using K7.Server.Web.Middleware;
 using K7.Server.Web.Services;
 using Scalar.AspNetCore;
 using Serilog;
@@ -65,6 +66,8 @@ try
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
     app.MapStaticAssets();
+
+    app.UseSetupRequired();
 
     app.UseCors();
     app.UseAuthentication();

@@ -1,5 +1,6 @@
-﻿using K7.Server.Domain.Constants;
-using K7.Server.Domain.Entities.Users;
+﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
+using K7.Server.Domain.Settings;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
@@ -20,30 +21,23 @@ public static class DatabaseInitializerExtensions
     }
 }
 
-public class ApplicationDbContextInitializer
+public class ApplicationDbContextInitializer(
+    ILogger<ApplicationDbContextInitializer> logger,
+    ApplicationDbContext context,
+    RoleManager<IdentityRole> roleManager,
+    UserManager<ApplicationUser> userManager,
+    IServerSettingsService settingsService,
+    ISetupService setupService)
 {
-    private readonly ILogger<ApplicationDbContextInitializer> _logger;
-    private readonly ApplicationDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
-
-    public ApplicationDbContextInitializer(ILogger<ApplicationDbContextInitializer> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
-    {
-        _logger = logger;
-        _context = context;
-        _userManager = userManager;
-        _roleManager = roleManager;
-    }
-
     public async Task InitializeAsync()
     {
         try
         {
-            await _context.Database.MigrateAsync();
+            await context.Database.MigrateAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while initializing the database.");
+            logger.LogError(ex, "An error occurred while initializing the database.");
             throw;
         }
     }
@@ -52,61 +46,78 @@ public class ApplicationDbContextInitializer
     {
         try
         {
-            await TrySeedAsync();
+            await SeedRolesAsync();
+            await SeedGuestUserAsync();
+            await MigrateExistingAdminAsync();
+            await AutoSetupFromEnvAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while seeding the database.");
+            logger.LogError(ex, "An error occurred while seeding the database.");
             throw;
         }
     }
 
-    public async Task TrySeedAsync()
+    private async Task SeedRolesAsync()
     {
-        // Default roles
-        var administratorRole = new IdentityRole(Roles.Administrator);
+        string[] roles = [Roles.Administrator, Roles.User, Roles.Guest];
 
-        if (await _roleManager.Roles.AllAsync(r => r.Name != administratorRole.Name))
+        foreach (var role in roles)
         {
-            await _roleManager.CreateAsync(administratorRole);
+            if (!await roleManager.RoleExistsAsync(role))
+                await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+
+    private async Task SeedGuestUserAsync()
+    {
+        var existingGuest = await userManager.FindByNameAsync(Roles.Guest);
+        if (existingGuest is not null)
+            return;
+
+        var guestIdentity = new ApplicationUser { UserName = Roles.Guest, Email = "guest@k7.local" };
+        var result = await userManager.CreateAsync(guestIdentity);
+
+        if (!result.Succeeded)
+        {
+            logger.LogError("Failed to seed guest user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+            return;
         }
 
-        // Default users
-        var administrator = new ApplicationUser { UserName = "administrator@localhost", Email = "administrator@localhost" };
+        await userManager.AddToRoleAsync(guestIdentity, Roles.Guest);
+        context.Users.Add(new K7.Server.Domain.Entities.Users.User { IdentityUserId = guestIdentity.Id });
+        await context.SaveChangesAsync();
+        logger.LogInformation("Guest user seeded.");
+    }
 
-        if (await _userManager.Users.AllAsync(u => u.UserName != administrator.UserName))
+    private async Task MigrateExistingAdminAsync()
+    {
+        if (await settingsService.GetAsync(ServerSettingKeys.SetupCompleted) == true)
+            return;
+
+        var admins = await userManager.GetUsersInRoleAsync(Roles.Administrator);
+        if (admins.Count > 0)
         {
-            // Create identity
-            var result = await _userManager.CreateAsync(administrator, "Administrator1!");
-            
-            if (result.Succeeded)
-            {
-                if (!string.IsNullOrWhiteSpace(administratorRole.Name))
-                {
-                    await _userManager.AddToRolesAsync(administrator, [administratorRole.Name]);
-                }
+            logger.LogInformation("Existing administrator found — marking setup as completed.");
+            await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true);
+        }
+    }
 
-                // Create domain user
-                var adminIdentityUser = await _userManager.FindByNameAsync("administrator@localhost");
-                if (adminIdentityUser is not null)
-                {
-                    var existingDomainAdmin = await _context.Users
-                        .SingleOrDefaultAsync(u => u.IdentityUserId == adminIdentityUser.Id);
+    private async Task AutoSetupFromEnvAsync()
+    {
+        if (await setupService.IsSetupCompletedAsync())
+            return;
 
-                    if (existingDomainAdmin is null)
-                    {
-                        var displayName = adminIdentityUser.Email ?? adminIdentityUser.UserName ?? adminIdentityUser.Id;
+        var email = Environment.GetEnvironmentVariable("K7_ADMIN_EMAIL");
+        var password = Environment.GetEnvironmentVariable("K7_ADMIN_PASSWORD");
 
-                        var domainAdmin = new User
-                        {
-                            IdentityUserId = adminIdentityUser.Id
-                        };
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            return;
 
-                        _context.Users.Add(domainAdmin);
-                        await _context.SaveChangesAsync();
-                    }
-                }
-            }            
-        }        
+        logger.LogInformation("K7_ADMIN_EMAIL and K7_ADMIN_PASSWORD detected — completing setup automatically.");
+        var result = await setupService.CompleteSetupAsync(email, password);
+
+        if (!result.Succeeded)
+            logger.LogError("Auto-setup failed: {Errors}", string.Join(", ", result.Errors));
     }
 }
