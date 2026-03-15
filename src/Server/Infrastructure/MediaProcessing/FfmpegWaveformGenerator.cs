@@ -81,11 +81,7 @@ public class FfmpegWaveformGenerator(
         if (globalMax > 0)
         {
             for (var i = 0; i < peaks.Length; i++)
-            {
                 peaks[i] /= globalMax;
-                // Power curve (sqrt) compresses dynamic range — quiet sections more visible
-                peaks[i] = MathF.Sqrt(peaks[i]);
-            }
         }
 
         return peaks;
