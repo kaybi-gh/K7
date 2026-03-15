@@ -127,7 +127,7 @@ public partial class FullScreenMusicPlayer : IDisposable
             return;
         }
 
-        var peaks = _waveformPeaks;
+        var peaks = SmoothPeaks(_waveformPeaks);
         var count = peaks.Length;
         const float w = 1000f;
         const float h = 100f;
@@ -142,7 +142,7 @@ public partial class FullScreenMusicPlayer : IDisposable
         for (var i = 0; i < count; i++)
         {
             var x = i * step;
-            var amplitude = Math.Max(peaks[i], 0.02f) * mid;
+            var amplitude = Math.Max(peaks[i], 0.005f) * mid;
             var y = mid - amplitude;
 
             if (i == 0)
@@ -153,7 +153,7 @@ public partial class FullScreenMusicPlayer : IDisposable
             {
                 var prevX = (i - 1) * step;
                 var cpX = (prevX + x) / 2;
-                var prevY = mid - Math.Max(peaks[i - 1], 0.02f) * mid;
+                var prevY = mid - Math.Max(peaks[i - 1], 0.005f) * mid;
                 sb.AppendFormat(CultureInfo.InvariantCulture, " C{0:F1},{1:F1} {2:F1},{3:F1} {4:F1},{5:F1}",
                     cpX, prevY, cpX, y, x, y);
             }
@@ -163,7 +163,7 @@ public partial class FullScreenMusicPlayer : IDisposable
         for (var i = count - 1; i >= 0; i--)
         {
             var x = i * step;
-            var amplitude = Math.Max(peaks[i], 0.02f) * mid;
+            var amplitude = Math.Max(peaks[i], 0.005f) * mid;
             var y = mid + amplitude;
 
             if (i == count - 1)
@@ -174,7 +174,7 @@ public partial class FullScreenMusicPlayer : IDisposable
             {
                 var nextX = (i + 1) * step;
                 var cpX = (nextX + x) / 2;
-                var nextY = mid + Math.Max(peaks[i + 1], 0.02f) * mid;
+                var nextY = mid + Math.Max(peaks[i + 1], 0.005f) * mid;
                 sb.AppendFormat(CultureInfo.InvariantCulture, " C{0:F1},{1:F1} {2:F1},{3:F1} {4:F1},{5:F1}",
                     cpX, nextY, cpX, y, x, y);
             }
@@ -185,6 +185,18 @@ public partial class FullScreenMusicPlayer : IDisposable
 
         var encoded = Uri.EscapeDataString(sb.ToString());
         _waveformMaskStyle = $"-webkit-mask-image: url(\"data:image/svg+xml,{encoded}\"); mask-image: url(\"data:image/svg+xml,{encoded}\"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%;";
+    }
+
+    private static float[] SmoothPeaks(float[] raw)
+    {
+        var smoothed = new float[raw.Length];
+        for (var i = 0; i < raw.Length; i++)
+        {
+            var prev = i > 0 ? raw[i - 1] : raw[i];
+            var next = i < raw.Length - 1 ? raw[i + 1] : raw[i];
+            smoothed[i] = (prev + raw[i] * 4 + next) / 6f;
+        }
+        return smoothed;
     }
 
     private void OnLyricsSeek(double seconds) => Audio.Seek(seconds);
