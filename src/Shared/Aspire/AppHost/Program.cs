@@ -6,7 +6,7 @@ var pgPassword = builder.AddParameter("pg-password", secret: true);
 
 var postgres = builder.AddPostgres("postgres", password: pgPassword)
     .WithDataVolume()
-    .WithLifetime(ContainerLifetime.Persistent)
+    //.WithLifetime(ContainerLifetime.Persistent)
     .WithEndpoint("tcp", e =>
     {
         e.Port = 5432;

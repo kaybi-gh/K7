@@ -45,7 +45,9 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
-    private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/login") || HttpContext.Request.Path.StartsWithSegments("/Account")
+    private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/login")
+        || HttpContext.Request.Path.StartsWithSegments("/Account")
+        || HttpContext.Request.Path.StartsWithSegments("/setup")
         ? null
         : new InteractiveWebAssemblyRenderMode(false);
 }

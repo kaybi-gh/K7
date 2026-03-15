@@ -165,6 +165,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddTransient<IIdentityService, IdentityService>();
         services.AddScoped<IServerSettingsService, ServerSettingsService>();
+        services.AddScoped<ISetupService, SetupService>();
 
         return services;
     }

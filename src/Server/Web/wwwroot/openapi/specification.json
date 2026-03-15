@@ -238,6 +238,42 @@
         }
       }
     },
+    "/api/setup/complete": {
+      "post": {
+        "tags": [
+          "Setup"
+        ],
+        "operationId": "CompleteSetup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteSetupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/setup/status": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "operationId": "GetSetupStatus",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/playlists/{playlistId}/items": {
       "post": {
         "tags": [
@@ -2550,6 +2586,21 @@
       },
       "ClientType": {
         "type": "integer"
+      },
+      "CompleteSetupRequest": {
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
       },
       "CreateDeviceRequest": {
         "required": [
@@ -5829,6 +5880,9 @@
     },
     {
       "name": "SmartPlaylists"
+    },
+    {
+      "name": "Setup"
     },
     {
       "name": "Playlists"

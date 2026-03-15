@@ -1,0 +1,83 @@
+@page "/setup"
+@layout SetupLayout
+@using K7.Server.Application.Common.Interfaces
+@using K7.Server.Infrastructure.Database.Context.Identity
+@using Microsoft.AspNetCore.Identity
+@inject ISetupService SetupService
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject K7.Server.Web.Components.Account.IdentityRedirectManager RedirectManager
+
+<PageTitle>Setup - K7</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
+    <MudPaper Class="pa-8" Elevation="4">
+        <MudStack Spacing="4">
+            <MudText Typo="Typo.h4" Align="Align.Center">Welcome to K7</MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                Create your administrator account to get started.
+            </MudText>
+
+            <MudDivider Class="my-2" />
+
+            @if (!string.IsNullOrEmpty(_statusMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_statusMessage</MudAlert>
+            }
+
+            <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="mud-alert mud-alert-text-error" role="alert" />
+                <MudStack Spacing="3">
+                    <MudStaticTextField For="@(() => Input!.Email)"
+                                        @bind-Value="Input!.Email"
+                                        Label="Email"
+                                        Placeholder="admin@example.com"
+                                        InputType="InputType.Email"
+                                        UserAttributes="@(new() { { "autocomplete", "email" }, { "aria-required", "true" } })" />
+
+                    <MudStaticTextField For="@(() => Input!.Password)"
+                                        @bind-Value="Input!.Password"
+                                        Label="Password"
+                                        Placeholder="password"
+                                        InputType="InputType.Password"
+                                        Adornment="Adornment.End"
+                                        AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
+                                        AdornmentClickFunction="togglePasswordVisibility"
+                                        AdornmentAriaLabel="Show Password"
+                                        UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } })" />
+
+                    <MudStaticTextField For="@(() => Input!.ConfirmPassword)"
+                                        @bind-Value="Input!.ConfirmPassword"
+                                        Label="Confirm password"
+                                        Placeholder="password"
+                                        InputType="InputType.Password"
+                                        Adornment="Adornment.End"
+                                        AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
+                                        AdornmentClickFunction="togglePasswordVisibility"
+                                        AdornmentAriaLabel="Show Password"
+                                        UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } })" />
+
+                    <MudStaticButton Variant="Variant.Filled"
+                                     Color="Color.Primary"
+                                     Size="Size.Large"
+                                     FullWidth="true"
+                                     FormAction="FormAction.Submit">
+                        Complete setup
+                    </MudStaticButton>
+                </MudStack>
+            </EditForm>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+<script>
+    function togglePasswordVisibility(inputElement, button) {
+        if (inputElement.type === 'password') {
+            inputElement.type = 'text';
+        } else {
+            inputElement.type = 'password';
+        }
+    }
+</script>
