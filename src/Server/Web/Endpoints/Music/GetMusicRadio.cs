@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.MusicRadio.Queries.GetMusicRadio;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +20,7 @@ public class GetMusicRadio : IEndpoint
             var tracks = await sender.Send(query, cancellationToken);
             return tracks.Select(MediaDto.FromDomain);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

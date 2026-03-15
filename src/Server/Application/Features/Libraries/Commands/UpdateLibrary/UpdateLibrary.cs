@@ -1,7 +1,10 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 
 namespace K7.Server.Application.Features.Libraries.Commands.UpdateLibrary;
 
+[Authorize(Roles = Roles.Administrator)]
 public record UpdateLibraryCommand : IRequest
 {
     public Guid Id { get; init; }

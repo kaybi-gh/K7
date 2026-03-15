@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Medias.Commands.ReidentifyMedia;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Requests;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,7 @@ public class ReidentifyMedia : IEndpoint
 
             return Results.NoContent();
         })
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

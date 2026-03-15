@@ -1,9 +1,12 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Ratings;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Medias.Commands.RateMedia;
 
+[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record RateMediaCommand(Guid MediaId, int Value) : IRequest;
 
 public class RateMediaCommandHandler(IApplicationDbContext context, IUser currentUser)

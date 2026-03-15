@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Devices.Commands.AttachDeviceToCurrentUser;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Devices;
@@ -17,6 +18,7 @@ public class AttachDeviceToCurrentUser : IEndpoint
                 DeviceId = id
             }, cancellationToken);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.IndexedFiles.Commands.RefreshIndexedFile;
+using K7.Server.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +17,7 @@ public class RefreshIndexedFile : IEndpoint
             await sender.Send(new RefreshIndexedFileCommand(id), cancellationToken);
             return Results.NoContent();
         })
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

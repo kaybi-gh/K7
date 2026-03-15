@@ -20,6 +20,7 @@ public class GetDevices : IEndpoint
             var devicesPage = await sender.Send(query, cancellationToken);
             return devicesPage.ToDto(DeviceDto.FromDomain);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

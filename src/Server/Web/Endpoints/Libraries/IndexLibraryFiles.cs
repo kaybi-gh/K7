@@ -1,5 +1,6 @@
 ﻿using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,7 +24,7 @@ public class IndexLibraryFiles : IEndpoint
             }, cancellationToken);
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

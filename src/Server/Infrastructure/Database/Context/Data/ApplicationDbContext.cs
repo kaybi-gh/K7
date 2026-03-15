@@ -9,6 +9,7 @@ using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -42,6 +43,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<PlaylistItem> PlaylistItems => Set<PlaylistItem>();
     public DbSet<AudioAnalysis> AudioAnalysis => Set<AudioAnalysis>();
+    public DbSet<ServerSetting> ServerSettings => Set<ServerSetting>();
+    public DbSet<UserSetting> UserSettings => Set<UserSetting>();
+    public DbSet<UserCapabilityOverride> UserCapabilityOverrides => Set<UserCapabilityOverride>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

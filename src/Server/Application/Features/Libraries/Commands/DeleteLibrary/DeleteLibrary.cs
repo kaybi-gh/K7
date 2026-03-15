@@ -1,8 +1,11 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Security;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Libraries.Commands.DeleteLibrary;
 
+[Authorize(Roles = Roles.Administrator)]
 public record DeleteLibraryCommand(Guid Id) : IRequest;
 
 public class DeleteLibraryCommandHandler : IRequestHandler<DeleteLibraryCommand>

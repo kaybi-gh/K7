@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Playlists.Commands.AddPlaylistItem;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Playlists;
@@ -20,7 +21,7 @@ public class AddPlaylistItem : IEndpoint
 
             return Results.Created($"/api/playlists/{playlistId}", itemId);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(type.Namespace!.Split('.').Last());
     }

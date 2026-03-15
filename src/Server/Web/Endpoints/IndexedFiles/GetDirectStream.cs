@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.IndexedFiles.Queries.GetDirectStream;
+using K7.Server.Domain.Constants;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,7 +16,7 @@ public class GetDirectStream : IEndpoint
         {
             return await sender.Send(new GetDirectStreamQuery(id));
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

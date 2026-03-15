@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.BackgroundTasks.Queries.GetBackgroundTask;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ public class GetBackgroundTask : IEndpoint
             var backgroundTask = await sender.Send(new GetBackgroundTaskQuery(id), cancellationToken);
             return BackgroundTaskDto.FromDomain(backgroundTask);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

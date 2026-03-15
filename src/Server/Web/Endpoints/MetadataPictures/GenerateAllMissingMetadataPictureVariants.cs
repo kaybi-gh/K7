@@ -1,5 +1,6 @@
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateAllMissingMetadataPictureVariants;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,7 +22,7 @@ public class GenerateAllMissingMetadataPictureVariants : IEndpoint
             }, cancellationToken);
             return Results.Accepted();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Playlists.Queries.GetPlaylistItems;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,7 +29,7 @@ public class GetPlaylistItems : IEndpoint
                 Items = result.Items.Select(PlaylistItemDto.FromDomain)
             };
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

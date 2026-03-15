@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Medias.Queries.GetMedias;
+using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.QueryBuilders;
@@ -18,7 +19,7 @@ public class GetMedias : IEndpoint
             var mediasPage = await sender.Send(query);
             return mediasPage.ToDto(LiteMediaDto.FromDomain);
         })
-        //.RequireAuthorization() // TODO - Allow guest users?
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

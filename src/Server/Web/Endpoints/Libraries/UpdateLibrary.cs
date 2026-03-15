@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Libraries.Commands.UpdateLibrary;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Libraries;
@@ -20,7 +21,7 @@ public class UpdateLibrary : IEndpoint
             await sender.Send(command, cancellationToken);
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

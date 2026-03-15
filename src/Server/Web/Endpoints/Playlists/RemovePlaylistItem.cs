@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Playlists.Commands.RemovePlaylistItem;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Playlists;
@@ -20,7 +21,7 @@ public class RemovePlaylistItem : IEndpoint
 
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

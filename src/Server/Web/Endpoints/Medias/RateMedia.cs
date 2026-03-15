@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Medias.Commands.RateMedia;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Medias;
@@ -18,7 +19,7 @@ public class RateMedia : IEndpoint
             await sender.Send(new RateMediaCommand(mediaId, request.Value));
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

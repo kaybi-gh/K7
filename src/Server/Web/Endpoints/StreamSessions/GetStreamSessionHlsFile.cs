@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.StreamSessions.Queries.GetStreamSession;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.StreamSessions;
@@ -57,7 +58,7 @@ public sealed class GetStreamSessionHlsFile : IEndpoint
 
             return Results.File(stream, contentType: contentType);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

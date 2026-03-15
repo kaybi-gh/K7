@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.SmartPlaylists.Commands.CreateSmartPlaylist;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,6 +33,7 @@ public class CreateSmartPlaylist : IEndpoint
 
             return Results.Created($"/api/smart-playlists/{id}", id);
         })
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

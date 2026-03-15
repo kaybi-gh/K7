@@ -1,5 +1,6 @@
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Features.StreamSessions.Commands.CreateStreamSession;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.StreamSessions;
@@ -30,7 +31,7 @@ public class CreateStreamSession : IEndpoint
             session.Source = streamUri;
             return Results.Created($"/api/stream-sessions/{session.Id}", session);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

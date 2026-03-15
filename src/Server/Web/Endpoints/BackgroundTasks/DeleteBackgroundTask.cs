@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.BackgroundTasks.Commands.DeleteBackgroundTask;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.BackgroundTasks;
@@ -15,7 +16,7 @@ public class DeleteBackgroundTask : IEndpoint
             await sender.Send(new DeleteBackgroundTaskCommand(id), cancellationToken);
             return Results.NoContent();
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
         .WithTags(groupName);
     }

@@ -8,4 +8,5 @@ public class User : BaseAuditableEntity
     public ICollection<Guid> AccessibleLibraryIds { get; set; } = [];
     public ICollection<UserRating> Ratings { get; set; } = [];
     public ICollection<Device> Devices { get; set; } = [];
+    public ICollection<UserCapabilityOverride> CapabilityOverrides { get; set; } = [];
 }

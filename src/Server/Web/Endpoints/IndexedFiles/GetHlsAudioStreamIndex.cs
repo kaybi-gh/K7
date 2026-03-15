@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.IndexedFiles;
@@ -23,7 +24,7 @@ public class GetHlsAudioStreamIndex : IEndpoint
                 streamSessionId,
                 TranscodingAudioCodec));
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

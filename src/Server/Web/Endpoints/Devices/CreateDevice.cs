@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.Devices.Commands.CreateDevice;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ public class CreateDevice : IEndpoint
                 CreateDeviceRequest = request
             }, cancellationToken);
         })
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

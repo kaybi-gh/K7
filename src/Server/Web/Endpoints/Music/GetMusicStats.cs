@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Music.Queries.GetMusicStats;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Music;
@@ -14,7 +15,7 @@ public class GetMusicStats : IEndpoint
         {
             return await sender.Send(new GetMusicStatsQuery(), cancellationToken);
         })
-        //.RequireAuthorization()
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

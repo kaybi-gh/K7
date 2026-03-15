@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.SmartPlaylists.Queries.GetSmartPlaylists;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,6 +23,7 @@ public class GetSmartPlaylists : IEndpoint
                 Items = result.Items.Select(LiteSmartPlaylistDto.FromDomain)
             };
         })
+        .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
