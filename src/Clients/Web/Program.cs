@@ -44,8 +44,6 @@ builder.Services.AddHttpClient("BackendAPI", client =>
 
 var wasmHost = builder.Build();
 
-await DeviceInitializer.InitializeDeviceAsync(wasmHost.Services);
-
 // Eagerly resolve so it starts listening to audio player events
 wasmHost.Services.GetRequiredService<AudioPlaybackProgressTracker>();
 

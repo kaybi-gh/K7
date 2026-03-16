@@ -2312,6 +2312,29 @@
           }
         }
       }
+    },
+    "/api/admin/settings/guest": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "ToggleGuestMode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToggleGuestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5539,6 +5562,17 @@
           }
         }
       },
+      "ToggleGuestRequest": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "TopItemDto": {
         "required": [
           "name"
@@ -5922,6 +5956,9 @@
     },
     {
       "name": "Authentication"
+    },
+    {
+      "name": "Admin"
     }
   ]
 }

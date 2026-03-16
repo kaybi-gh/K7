@@ -18,6 +18,8 @@ public partial class MainLayout
 
             if (isAuth && !string.IsNullOrEmpty(userId))
             {
+                await DeviceInitializer.InitializeDeviceAsync(Services);
+
                 var baseUri = NavigationManager.ToAbsoluteUri("/");
                 await K7HubClient.EnsureStartedAsync(baseUri, userId);
             }

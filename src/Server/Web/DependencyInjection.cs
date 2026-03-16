@@ -43,7 +43,7 @@ public static class DependencyInjection
 
         services.ConfigureApplicationCookie(options =>
         {
-            options.LoginPath = "/Account/Login";
+            options.LoginPath = "/welcome";
             options.LogoutPath = "/Account/Logout";
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
