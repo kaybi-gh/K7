@@ -5,6 +5,7 @@
 @using System.Text
 @using System.Text.Encodings.Web
 @using K7.Server.Infrastructure.Database.Context.Identity
+@using K7.Server.Domain.Constants
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 
@@ -152,6 +153,8 @@
             if (result.Succeeded)
             {
                 Logger.LogInformation("User created an account using {Name} provider.", externalLoginInfo.LoginProvider);
+
+                await UserManager.AddToRoleAsync(user, Roles.User);
 
                 var userId = await UserManager.GetUserIdAsync(user);
                 var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
