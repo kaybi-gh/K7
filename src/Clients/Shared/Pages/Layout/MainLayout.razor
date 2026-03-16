@@ -4,6 +4,8 @@
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IFeatureAccessService FeatureAccess
+@inject AudioPlaybackProgressTracker AudioProgressTracker
 @inject IServiceProvider Services
 
 <MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled />

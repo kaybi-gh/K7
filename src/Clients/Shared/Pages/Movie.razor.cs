@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Domain.Models;
 using K7.Clients.Shared.Services;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
@@ -78,21 +79,15 @@ public partial class Movie
         var videoResolution = videoMetadata.VideoResolution;
         var thumbnailsUrl = videoMetadata.Thumbnails?.Uri?.ToString();
 
-        PlaybackProgressTracker.StartTracking(_movie.Id, await IsAuthenticatedAsync());
+        PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress));
 
         await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex, videoResolution, thumbnailsUrl);
 
-        // If there's a saved position, seek to it
-        if (_movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+            && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
         {
             PlayerService.Seek(_movie.UserState.LastPlaybackPosition);
         }
-    }
-
-    private async Task<bool> IsAuthenticatedAsync()
-    {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        return authState.User.Identity?.IsAuthenticated == true;
     }
 
 private async Task OpenMediaReIdentifyDialogAsync()

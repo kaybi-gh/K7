@@ -1,12 +1,16 @@
 @inject IK7ServerService K7ServerService
+@inject IFeatureAccessService FeatureAccess
 
-<span class="rating-stars" @onclick:stopPropagation="true">
-    @for (int i = 1; i <= 5; i++)
-    {
-        var star = i;
-        <MudIconButton Icon="@GetStarIcon(star)"
-                       Color="@GetStarColor(star)"
-                       Size="@Size"
-                       OnClick="() => OnStarClick(star)" />
-    }
-</span>
+@if (_canRate)
+{
+    <span class="rating-stars" @onclick:stopPropagation="true">
+        @for (int i = 1; i <= 5; i++)
+        {
+            var star = i;
+            <MudIconButton Icon="@GetStarIcon(star)"
+                           Color="@GetStarColor(star)"
+                           Size="@Size"
+                           OnClick="() => OnStarClick(star)" />
+        }
+    </span>
+}

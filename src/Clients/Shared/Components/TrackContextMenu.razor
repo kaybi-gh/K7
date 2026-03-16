@@ -1,5 +1,6 @@
 @inject IAudioPlayerService Audio
 @inject IK7ServerService K7ServerService
+@inject IFeatureAccessService FeatureAccess
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
@@ -7,8 +8,11 @@
     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
         <MudMenuItem Icon="@Icons.Material.Filled.PlaylistPlay" OnClick="PlayNext">Jouer ensuite</MudMenuItem>
         <MudMenuItem Icon="@Icons.Material.Filled.QueueMusic" OnClick="AddToQueue">Ajouter à la queue</MudMenuItem>
-        <MudDivider />
-        <MudMenuItem Icon="@Icons.Material.Filled.PlaylistAdd" OnClick="AddToPlaylist">Ajouter à une playlist</MudMenuItem>
+        @if (_canCreatePlaylist)
+        {
+            <MudDivider />
+            <MudMenuItem Icon="@Icons.Material.Filled.PlaylistAdd" OnClick="AddToPlaylist">Ajouter à une playlist</MudMenuItem>
+        }
         @if (!string.IsNullOrEmpty(Track.Artist))
         {
             <MudDivider />

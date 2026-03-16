@@ -13,6 +13,13 @@ public partial class TrackContextMenu
     [Parameter, EditorRequired]
     public required AudioQueueItem Track { get; set; }
 
+    private bool _canCreatePlaylist;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _canCreatePlaylist = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
+    }
+
     private void PlayNext()
     {
         Audio.AddToQueueNext(Track);

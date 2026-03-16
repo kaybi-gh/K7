@@ -27,6 +27,7 @@ builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<IDeviceService, DeviceService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
+builder.Services.AddScoped<IFeatureAccessService, FeatureAccessService>();
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
 builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();

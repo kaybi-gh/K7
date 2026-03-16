@@ -14,6 +14,7 @@ public class AudioPlaybackProgressTracker : IDisposable
     private Guid _sessionId;
     private bool _disposed;
     private bool _transitioning;
+    private bool _canReport;
 
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(30);
 
@@ -25,6 +26,8 @@ public class AudioPlaybackProgressTracker : IDisposable
         _audio.CurrentTrackChanged += OnTrackChanged;
         _audio.PlaybackStateChanged += OnPlaybackStateChanged;
     }
+
+    public void SetCanReport(bool value) => _canReport = value;
 
     private void OnTrackChanged(AudioQueueItem? newTrack)
     {
@@ -80,6 +83,8 @@ public class AudioPlaybackProgressTracker : IDisposable
 
     private async Task SendReportAsync(Guid mediaId, Guid sessionId, double position, double duration)
     {
+        if (!_canReport) return;
+
         try
         {
             await _serverService.ReportPlaybackProgressAsync(mediaId, sessionId, position, duration);

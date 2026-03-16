@@ -1,15 +1,29 @@
 @page "/admin"
 
-<PageTitle>Administration</PageTitle>
+<AuthorizeView Roles="Administrator">
+    <Authorized>
+        <PageTitle>Administration</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Administration</MudText>
+        <MudText Typo="Typo.h4" Class="mb-4">Administration</MudText>
 
-<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true">
-    <MudTabPanel Text="Librairies" Icon="@Icons.Material.Filled.VideoLibrary">
-        <AdminLibrariesPanel />
-    </MudTabPanel>
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true">
+            <MudTabPanel Text="Librairies" Icon="@Icons.Material.Filled.VideoLibrary">
+                <AdminLibrariesPanel />
+            </MudTabPanel>
 
-    <MudTabPanel Text="Appareils" Icon="@Icons.Material.Filled.Devices">
-        <AdminDevicesPanel />
-    </MudTabPanel>
-</MudTabs>
+            <MudTabPanel Text="Appareils" Icon="@Icons.Material.Filled.Devices">
+                <AdminDevicesPanel />
+            </MudTabPanel>
+        </MudTabs>
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-16">
+            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" />
+                <MudText Typo="Typo.h5">Access denied</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">You don't have permission to access this page.</MudText>
+                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Go to Home</MudButton>
+            </MudStack>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
