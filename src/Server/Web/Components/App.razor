@@ -48,6 +48,7 @@
     private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/login")
         || HttpContext.Request.Path.StartsWithSegments("/Account")
         || HttpContext.Request.Path.StartsWithSegments("/setup")
+        || HttpContext.Request.Path.StartsWithSegments("/welcome")
         ? null
         : new InteractiveWebAssemblyRenderMode(false);
 }

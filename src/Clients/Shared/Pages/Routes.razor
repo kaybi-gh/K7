@@ -2,10 +2,9 @@
     <Found Context="routeData">
         <CascadingAuthenticationState>
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
-                @* Add guest page or redirect instantly to login page *@
-                @* <NotAuthorized>
-                <RedirectToLogin />
-            </NotAuthorized> *@
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
             </AuthorizeRouteView>
         </CascadingAuthenticationState>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />

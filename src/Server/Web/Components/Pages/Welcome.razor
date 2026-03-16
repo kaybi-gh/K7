@@ -1,0 +1,95 @@
+@page "/welcome"
+@layout K7.Server.Web.Components.Pages.Setup.SetupLayout
+@using K7.Server.Application.Common.Interfaces
+@using K7.Server.Infrastructure.Database.Context.Identity
+@using Microsoft.AspNetCore.Identity
+@inject ISetupService SetupService
+@inject IServerSettingsService SettingsService
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject K7.Server.Web.Components.Account.IdentityRedirectManager RedirectManager
+
+<PageTitle>Welcome - K7</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
+    <MudPaper Class="pa-8" Elevation="4">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">K7</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Choose how you want to continue
+            </MudText>
+
+            <MudDivider Class="my-2" Style="width:100%;" />
+
+            <MudStack Spacing="2" Style="width:100%;">
+                <MudLink Href="@_loginUrl" Style="text-decoration:none;">
+                    <MudStaticButton Variant="Variant.Filled"
+                                     Color="Color.Primary"
+                                     Size="Size.Large"
+                                     FullWidth="true">
+                        Sign in
+                    </MudStaticButton>
+                </MudLink>
+
+                @if (_guestEnabled)
+                {
+                    <EditForm Model="_guestModel" method="post" OnValidSubmit="ContinueAsGuest" FormName="guest">
+                        <MudStaticButton Variant="Variant.Outlined"
+                                         Color="Color.Default"
+                                         Size="Size.Large"
+                                         FullWidth="true"
+                                         FormAction="FormAction.Submit">
+                            Continue as guest
+                        </MudStaticButton>
+                    </EditForm>
+                }
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _guestEnabled;
+    private string _loginUrl = "/Account/Login";
+    private object _guestModel = new();
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            var user = HttpContext.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                RedirectManager.RedirectTo(ReturnUrl ?? "/");
+                return;
+            }
+        }
+
+        _guestEnabled = await SettingsService.GetAsync(K7.Server.Domain.Settings.ServerSettingKeys.GuestEnabled) == true;
+
+        _loginUrl = !string.IsNullOrEmpty(ReturnUrl)
+            ? Navigation.GetUriWithQueryParameters("/Account/Login",
+                new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl })
+            : "/Account/Login";
+
+        if (!_guestEnabled)
+        {
+            RedirectManager.RedirectTo(_loginUrl);
+            return;
+        }
+    }
+
+    private async Task ContinueAsGuest()
+    {
+        var guestUser = await UserManager.FindByNameAsync(K7.Server.Domain.Constants.Roles.Guest);
+        await SignInManager.SignInAsync(guestUser!, isPersistent: false);
+        RedirectManager.RedirectTo(ReturnUrl ?? "/");
+    }
+}
