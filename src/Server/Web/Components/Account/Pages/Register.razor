@@ -3,6 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Text
 @using System.Text.Encodings.Web
+@using K7.Server.Domain.Constants
 @using K7.Server.Domain.Entities.Users
 @using K7.Server.Infrastructure.Database.Context.Identity
 @using Microsoft.EntityFrameworkCore
@@ -90,6 +91,8 @@
         }
 
         Logger.LogInformation("User created a new account with password.");
+
+        await UserManager.AddToRoleAsync(user, Roles.User);
 
         var userId = await UserManager.GetUserIdAsync(user);
         // Ensure corresponding domain user exists

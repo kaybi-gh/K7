@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Authentication;
@@ -85,6 +86,8 @@ public class LogInCallback : IEndpoint
                     throw new InvalidOperationException($"Failed to create user: {string.Join(", ", creationResult.Errors.Select(e => e.Description))}");
                 }
 
+                await userManager.AddToRoleAsync(user, Roles.User);
+
                 // Associate the external LogIn (provider) with the new local user
                 var LogInInfo = new UserLoginInfo(provider, providerKey, provider);
                 var addLogInResult = await userManager.AddLoginAsync(user, LogInInfo);
@@ -92,6 +95,13 @@ public class LogInCallback : IEndpoint
                 {
                     throw new InvalidOperationException($"Failed to associate LogIn: {string.Join(", ", addLogInResult.Errors.Select(e => e.Description))}");
                 }
+            }
+
+            // Ensure SSO user has at least the User role
+            var roles = await userManager.GetRolesAsync(user);
+            if (roles.Count == 0)
+            {
+                await userManager.AddToRoleAsync(user, Roles.User);
             }
 
             // Ensure a corresponding domain user exists for this identity user
