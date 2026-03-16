@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Domain.Interfaces;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -18,7 +19,14 @@ public partial class RatingStars
     [Parameter]
     public Size Size { get; set; } = Size.Small;
 
+    private bool _canRate;
+
     private int StarCount => Value.HasValue ? (int)Math.Ceiling(Value.Value / 2.0) : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+    }
 
     private string GetStarIcon(int star) =>
         star <= StarCount ? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder;

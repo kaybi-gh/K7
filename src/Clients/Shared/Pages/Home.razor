@@ -7,6 +7,7 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
+@inject IFeatureAccessService FeatureAccess
 @inject IJSRuntime JSRuntime
 <PageTitle>Home</PageTitle>
 
@@ -26,7 +27,7 @@
 }
 else
 {
-    @if (isAuthenticated && continueWatchingMedias.Count > 0)
+    @if (_canTrackProgress && continueWatchingMedias.Count > 0)
     {
         <HorizontalScrollableStack Title="Continue watching">
             @foreach (var item in continueWatchingMedias)
@@ -55,7 +56,7 @@ else
                 }
                 else
                 {
-                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="_canTrackProgress" WatchedStatusEnabled="_canTrackProgress" FooterVisible="true"/>
                 }
             </HorizontalScrollableStackItem>
         }
@@ -71,32 +72,36 @@ else
                 }
                 else
                 {
-                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="_canTrackProgress" WatchedStatusEnabled="_canTrackProgress" FooterVisible="true"/>
                 }
             </HorizontalScrollableStackItem>
         }
     </HorizontalScrollableStack>
 
-    <HorizontalScrollableStack Title="Last played">
-        @foreach (var item in lastPlayedMedias)
-        {
-            <HorizontalScrollableStackItem>
-                @if (item.Kind == MediaPosterKind.Album)
-                {
-                    <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
-                }
-                else
-                {
-                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
-                }
-            </HorizontalScrollableStackItem>
-        }
-    </HorizontalScrollableStack>
+    @if (_canTrackProgress)
+    {
+        <HorizontalScrollableStack Title="Last played">
+            @foreach (var item in lastPlayedMedias)
+            {
+                <HorizontalScrollableStackItem>
+                    @if (item.Kind == MediaPosterKind.Album)
+                    {
+                        <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
+                    }
+                    else
+                    {
+                        <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
+                    }
+                </HorizontalScrollableStackItem>
+            }
+        </HorizontalScrollableStack>
+    }
 }
 
 @code {
     private bool isLoading { get; set; } = true;
     private bool isAuthenticated;
+    private bool _canTrackProgress;
     List<MediaPosterViewModel> continueWatchingMedias = [];
     List<MediaPosterViewModel> recentlyAddedMedias = [];
     List<MediaPosterViewModel> recentlyReleasedMedias = [];
@@ -106,8 +111,9 @@ else
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        _canTrackProgress = await FeatureAccess.HasCapabilityAsync(K7.Server.Domain.Enums.Capability.CanResumePlayback);
 
-        if (isAuthenticated)
+        if (_canTrackProgress)
         {
             K7HubClient.ProgressUpdated += OnProgressUpdated;
 
@@ -116,7 +122,12 @@ else
 
         await InitializeRecentlyAddedMedias();
         await InitializeRecentlyReleasedMedias();
-        await InitializeLastPlayedMedias();
+
+        if (_canTrackProgress)
+        {
+            await InitializeLastPlayedMedias();
+        }
+
         isLoading = false;
     }
 
