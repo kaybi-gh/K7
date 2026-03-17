@@ -18,6 +18,7 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject K7.Server.Application.Common.Interfaces.IApplicationDbContext ApplicationDbContext
+@inject K7.Server.Application.Common.Interfaces.IServerSettingsService SettingsService
 
 <PageTitle>Register</PageTitle>
 
@@ -70,13 +71,29 @@
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
-    protected override void OnInitialized()
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
     {
         Input ??= new();
+
+        var registrationEnabled = await SettingsService.GetAsync(K7.Server.Domain.Settings.ServerSettingKeys.LocalRegistrationEnabled);
+        if (registrationEnabled != true)
+        {
+            RedirectManager.RedirectToWithStatus("Account/Login", "Registration is currently disabled.", HttpContext);
+        }
     }
 
     public async Task RegisterUser(EditContext editContext)
     {
+        var registrationEnabled = await SettingsService.GetAsync(K7.Server.Domain.Settings.ServerSettingKeys.LocalRegistrationEnabled);
+        if (registrationEnabled != true)
+        {
+            RedirectManager.RedirectToWithStatus("Account/Login", "Registration is currently disabled.", HttpContext);
+            return;
+        }
+
         var user = CreateUser();
 
         await UserStore.SetUserNameAsync(user, Input!.Email, CancellationToken.None);
