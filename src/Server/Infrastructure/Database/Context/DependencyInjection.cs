@@ -63,10 +63,13 @@ public static class DependencyInjection
                 options.SetAuthorizationEndpointUris("connect/authorize")
                        .SetTokenEndpointUris("connect/token")
                        .SetUserInfoEndpointUris("connect/userinfo")
-                       .SetEndSessionEndpointUris("connect/logout");
+                       .SetEndSessionEndpointUris("connect/logout")
+                       .SetDeviceAuthorizationEndpointUris("connect/device")
+                       .SetEndUserVerificationEndpointUris("connect/verify");
 
                 options.AllowAuthorizationCodeFlow()
                        .AllowRefreshTokenFlow()
+                       .AllowDeviceAuthorizationFlow()
                        .RequireProofKeyForCodeExchange();
 
                 options.RegisterScopes("api", Scopes.OpenId, Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess);
@@ -79,6 +82,7 @@ public static class DependencyInjection
                        .EnableEndSessionEndpointPassthrough()
                        .EnableTokenEndpointPassthrough()
                        .EnableUserInfoEndpointPassthrough()
+                       .EnableEndUserVerificationEndpointPassthrough()
                        .EnableStatusCodePagesIntegration();
 
                 options.AddEventHandler<ExtractTokenRequestContext>(builder =>
