@@ -1,0 +1,85 @@
+@page "/link"
+@layout K7.Server.Web.Components.Pages.Setup.SetupLayout
+@using Microsoft.AspNetCore.Identity
+@using K7.Server.Infrastructure.Database.Context.Identity
+@attribute [Authorize]
+@inject NavigationManager Navigation
+
+<PageTitle>Link Device - K7</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
+    <MudPaper Class="pa-8" Elevation="4">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Outlined.Devices" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.h5">Link a Device</MudText>
+
+            @if (_approved)
+            {
+                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                    Device authorized successfully. You can close this page.
+                </MudAlert>
+            }
+            else if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                    @_errorMessage
+                </MudAlert>
+            }
+
+            @if (!_approved)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                    Enter the code displayed on your device to authorize it.
+                </MudText>
+
+                <MudDivider Class="my-2" Style="width:100%;" />
+
+                <form method="post" action="/connect/verify" style="width:100%;">
+                    <AntiforgeryToken />
+                    <MudStack Spacing="3">
+                        <MudStaticTextField @bind-Value="_userCode"
+                                            Label="Device code"
+                                            Placeholder="ABCD-EFGH"
+                                            Variant="Variant.Outlined"
+                                            Style="text-align:center; font-size:1.5rem; letter-spacing:0.3em;"
+                                            UserAttributes="@(new() { { "name", "user_code" }, { "autocomplete", "off" }, { "autofocus", "true" } })" />
+
+                        <MudStaticButton Variant="Variant.Filled"
+                                         Color="Color.Primary"
+                                         Size="Size.Large"
+                                         FullWidth="true"
+                                         FormAction="FormAction.Submit">
+                            Authorize Device
+                        </MudStaticButton>
+                    </MudStack>
+                </form>
+            }
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string? _userCode;
+    private string? _error;
+    private string _errorMessage = "The code is invalid or has expired. Please try again.";
+    private bool _approved;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "user_code")]
+    private string? UserCodeFromQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    private string? ErrorFromQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "approved")]
+    private string? ApprovedFromQuery { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _userCode = UserCodeFromQuery;
+        _error = ErrorFromQuery;
+        _approved = ApprovedFromQuery == "true";
+    }
+}

@@ -49,6 +49,7 @@
         || HttpContext.Request.Path.StartsWithSegments("/Account")
         || HttpContext.Request.Path.StartsWithSegments("/setup")
         || HttpContext.Request.Path.StartsWithSegments("/welcome")
+        || HttpContext.Request.Path.StartsWithSegments("/link")
         ? null
         : new InteractiveWebAssemblyRenderMode(false);
 }
