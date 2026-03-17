@@ -2313,17 +2313,40 @@
         }
       }
     },
-    "/api/admin/settings/guest": {
+    "/api/admin/settings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/settings/{key}": {
       "put": {
         "tags": [
           "Admin"
         ],
-        "operationId": "ToggleGuestMode",
+        "operationId": "UpdateSetting",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ToggleGuestRequest"
+                "$ref": "#/components/schemas/JsonElement"
               }
             }
           },
@@ -3184,6 +3207,7 @@
           }
         }
       },
+      "JsonElement": { },
       "LibraryDto": {
         "required": [
           "id",

@@ -24,6 +24,7 @@ public class LogInCallback : IEndpoint
             async (HttpContext context,
                    [FromServices] UserManager<ApplicationUser> userManager,
                    [FromServices] IApplicationDbContext applicationDbContext,
+                   [FromServices] IServerSettingsService settingsService,
                    [FromRoute] string provider,
                    CancellationToken cancellationToken) =>
         {
@@ -76,8 +77,13 @@ public class LogInCallback : IEndpoint
             var user = await userManager.FindByLoginAsync(provider, providerKey);
             if (user == null)
             {
-                // Move to a new command
-                // Create a new local user if none exists
+                var autoProvisioningEnabled = await settingsService.GetAsync(
+                    K7.Server.Domain.Settings.ServerSettingKeys.OidcAutoProvisioningEnabled, cancellationToken);
+                if (autoProvisioningEnabled != true)
+                {
+                    return Results.Redirect("/Account/Login?error=auto_provisioning_disabled");
+                }
+
                 user = new ApplicationUser { UserName = name, Email = email };
 
                 var creationResult = await userManager.CreateAsync(user);
