@@ -2120,6 +2120,30 @@
         }
       }
     },
+    "/connect/verify": {
+      "get": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "Verify",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connect"
+        ],
+        "operationId": "Verify",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/background-tasks/{id}": {
       "delete": {
         "tags": [
@@ -5582,17 +5606,6 @@
             "format": "int32"
           },
           "isDefault": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ToggleGuestRequest": {
-        "required": [
-          "enabled"
-        ],
-        "type": "object",
-        "properties": {
-          "enabled": {
             "type": "boolean"
           }
         }
