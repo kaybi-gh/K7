@@ -14,7 +14,7 @@ public class MsalClientService : IMsalClientService
             throw new NullReferenceException(oidcAuthorityUrl);
         }
 
-        _msalClient = PublicClientApplicationBuilder.Create("k7-maui")
+        _msalClient = PublicClientApplicationBuilder.Create("k7-native")
             .WithExperimentalFeatures()
             .WithOidcAuthority(oidcAuthorityUrl)
             .WithRedirectUri("http://localhost:59451")

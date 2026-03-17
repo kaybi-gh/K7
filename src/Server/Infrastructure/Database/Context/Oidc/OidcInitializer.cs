@@ -19,53 +19,24 @@ public static class OidcInitializer
         {
             var manager = serviceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
-            if (await manager.FindByClientIdAsync("k7-web") == null)
+            if (await manager.FindByClientIdAsync("k7-native") == null)
             {
                 await manager.CreateAsync(new OpenIddictApplicationDescriptor
                 {
-                    DisplayName = "K7 Web client",
-                    ClientId = "k7-web",
-                    ClientSecret = "k7-web-secret",
-                    ConsentType = ConsentTypes.Explicit,
-                    ClientType = ClientTypes.Confidential,
-                    RedirectUris = { new Uri("https://localhost:7123/callback/login") }, // TODO - Env
-                    PostLogoutRedirectUris = { new Uri("https://localhost:7123/callback/logout") },
-                    Permissions =
-                    {
-                        Permissions.Endpoints.Authorization,
-                        Permissions.Endpoints.EndSession,
-                        Permissions.Endpoints.Token,
-                        Permissions.GrantTypes.AuthorizationCode,
-                        Permissions.GrantTypes.RefreshToken,
-                        Permissions.ResponseTypes.Code,
-                        Permissions.Scopes.Email,
-                        Permissions.Scopes.Profile,
-                        Permissions.Scopes.Roles,
-                        Permissions.Prefixes.Scope + "api"
-                    },
-                    Requirements =
-                    {
-                        Requirements.Features.ProofKeyForCodeExchange
-                    }
-                });
-            }
-
-            if (await manager.FindByClientIdAsync("k7-maui") == null)
-            {
-                await manager.CreateAsync(new OpenIddictApplicationDescriptor
-                {
-                    DisplayName = "K7 MAUI client",
-                    ClientId = "k7-maui",
-                    ConsentType = ConsentTypes.Explicit,
+                    DisplayName = "K7 native client",
+                    ClientId = "k7-native",
+                    ConsentType = ConsentTypes.Implicit,
                     ClientType = ClientTypes.Public,
                     RedirectUris = { new Uri("http://localhost"), new Uri("http://localhost:59451"), new Uri("k7://login-callback") },
-                    PostLogoutRedirectUris = { new Uri("http://localhost")/*, new Uri("k7://logout-callback")*/ },
+                    PostLogoutRedirectUris = { new Uri("http://localhost") },
                     Permissions =
                     {
                         Permissions.Endpoints.Authorization,
+                        Permissions.Endpoints.DeviceAuthorization,
                         Permissions.Endpoints.EndSession,
                         Permissions.Endpoints.Token,
                         Permissions.GrantTypes.AuthorizationCode,
+                        Permissions.GrantTypes.DeviceCode,
                         Permissions.GrantTypes.RefreshToken,
                         Permissions.ResponseTypes.Code,
                         Permissions.Scopes.Email,
