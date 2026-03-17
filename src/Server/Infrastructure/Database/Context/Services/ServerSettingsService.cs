@@ -14,7 +14,7 @@ public class ServerSettingsService(IApplicationDbContext context) : IServerSetti
             .FirstOrDefaultAsync(s => s.Key == key.Name, cancellationToken);
 
         if (setting is null)
-            return default;
+            return key.DefaultValue;
 
         return JsonSerializer.Deserialize<T>(setting.Value);
     }
@@ -22,12 +22,34 @@ public class ServerSettingsService(IApplicationDbContext context) : IServerSetti
     public async Task SetAsync<T>(SettingKey<T> key, T value, CancellationToken cancellationToken = default)
     {
         var serialized = JsonSerializer.Serialize(value);
+        await SetRawAsync(key.Name, serialized, cancellationToken);
+    }
+
+    public async Task<object?> GetAsync(ISettingKey key, CancellationToken cancellationToken = default)
+    {
         var setting = await context.ServerSettings
             .FirstOrDefaultAsync(s => s.Key == key.Name, cancellationToken);
 
         if (setting is null)
+            return key.BoxedDefaultValue;
+
+        return JsonSerializer.Deserialize(setting.Value, key.ValueType);
+    }
+
+    public async Task SetAsync(ISettingKey key, object value, CancellationToken cancellationToken = default)
+    {
+        var serialized = JsonSerializer.Serialize(value, key.ValueType);
+        await SetRawAsync(key.Name, serialized, cancellationToken);
+    }
+
+    private async Task SetRawAsync(string keyName, string serialized, CancellationToken cancellationToken)
+    {
+        var setting = await context.ServerSettings
+            .FirstOrDefaultAsync(s => s.Key == keyName, cancellationToken);
+
+        if (setting is null)
         {
-            context.ServerSettings.Add(new ServerSetting { Key = key.Name, Value = serialized });
+            context.ServerSettings.Add(new ServerSetting { Key = keyName, Value = serialized });
         }
         else
         {
