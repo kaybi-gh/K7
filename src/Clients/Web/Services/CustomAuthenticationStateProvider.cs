@@ -27,4 +27,9 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
         _navigationManager.NavigateTo($"{_navigationManager.BaseUri}Account/Logout?returnUrl={redirectUri}", forceLoad: true);
         return Task.CompletedTask;
     }
+
+    public Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException("Device code flow is not supported in the web client.");
+    }
 }
