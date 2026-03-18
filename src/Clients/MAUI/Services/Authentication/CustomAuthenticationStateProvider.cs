@@ -61,22 +61,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             }
         }
 
-        /*var tata = await _app.AcquireTokenWithDeviceCode(["openid", "profile", "email", "api"], deviceCodeResult =>
-        {
-            // This will print the message on the console which tells the user where to go sign-in using 
-            // a separate browser and the code to enter once they sign in.
-            // The AcquireTokenWithDeviceCode() method will poll the server after firing this
-            // device code callback to look for the successful login of the user via that browser.
-            // This background polling (whose interval and timeout data is also provided as fields in the 
-            // deviceCodeCallback class) will occur until:
-            // * The user has successfully logged in via browser and entered the proper code
-            // * The timeout specified by the server for the lifetime of this code (typically ~15 minutes) has been reached
-            // * The developing application calls the Cancel() method on a CancellationToken sent into the method.
-            //   If this occurs, an OperationCanceledException will be thrown (see catch below for more details).
-            Console.WriteLine(deviceCodeResult.Message);
-            return Task.FromResult(0);
-        }).ExecuteAsync();*/
-
         if (result != null)
         {
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.ClaimsPrincipal.Claims, "AuthenticationTypes.Federation"));
@@ -87,6 +71,33 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         }
         
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
+    public async Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default)
+    {
+        var msalClient = _msalClientService.GetClient();
+        string[] scopes = ["openid", "profile", "email", "api"];
+
+        var result = await msalClient.AcquireTokenWithDeviceCode(scopes, async deviceCodeResult =>
+        {
+            await onDeviceCodeReceived(new DeviceCodeInfo(
+                deviceCodeResult.UserCode,
+                deviceCodeResult.VerificationUrl,
+                deviceCodeResult.VerificationUrl + "?user_code=" + Uri.EscapeDataString(deviceCodeResult.UserCode),
+                deviceCodeResult.ExpiresOn));
+        }).ExecuteAsync(cancellationToken);
+
+        if (result != null)
+        {
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.ClaimsPrincipal.Claims, "AuthenticationTypes.Federation"));
+            await TryAttachCurrentUserToDeviceAsync(cancellationToken);
+        }
+        else
+        {
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        }
+
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 

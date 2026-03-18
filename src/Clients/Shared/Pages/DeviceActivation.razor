@@ -1,0 +1,146 @@
+@page "/linkdevice"
+@inject ICustomAuthenticationStateProvider AuthService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>Device Activation - K7</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height:80vh;">
+    <MudPaper Class="pa-8" Elevation="4" Style="width:100%; max-width:700px;">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Outlined.Tv" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.h4" Align="Align.Center">Sign in to K7</MudText>
+
+            @if (_loading)
+            {
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Requesting device code...</MudText>
+                </MudStack>
+            }
+            else if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                    @_error
+                </MudAlert>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartDeviceCodeFlowAsync">
+                    Try Again
+                </MudButton>
+            }
+            else if (_authorized)
+            {
+                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                    Device authorized! You are now signed in.
+                </MudAlert>
+            }
+            else if (_deviceCode is not null)
+            {
+                <MudDivider Class="my-2" Style="width:100%;" />
+
+                <MudGrid Justify="Justify.Center" Spacing="4">
+                    <MudItem xs="12" sm="6">
+                        <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                                1. Using a browser on another device, visit:
+                            </MudText>
+                            <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center">
+                                @_displayUri
+                            </MudText>
+
+                            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center" Class="mt-4">
+                                2. And enter the code:
+                            </MudText>
+                            <MudPaper Class="pa-4" Elevation="0" Style="background: var(--mud-palette-surface); border-radius: 8px; width:100%;">
+                                <MudText Typo="Typo.h3" Align="Align.Center"
+                                         Style="letter-spacing:0.3em; font-weight:bold;">
+                                    @_deviceCode.UserCode
+                                </MudText>
+                            </MudPaper>
+                        </MudStack>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="1" Class="d-flex align-center justify-center">
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">OR</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="5">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                                Scan the QR code below
+                            </MudText>
+                            <div id="device-qr" style="background:white; padding:12px; border-radius:8px; display:inline-block;"></div>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="my-2" Style="width:100%;" />
+
+                <MudStack AlignItems="AlignItems.Center" Spacing="2" Style="width:100%;">
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Style="width:100%;" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Waiting for authorization...</MudText>
+                </MudStack>
+            }
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private DeviceCodeInfo? _deviceCode;
+    private string? _displayUri;
+    private bool _authorized;
+
+    private CancellationTokenSource? _cts;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = StartDeviceCodeFlowAsync();
+        }
+    }
+
+    private async Task StartDeviceCodeFlowAsync()
+    {
+        _loading = true;
+        _error = null;
+        _deviceCode = null;
+        _authorized = false;
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        StateHasChanged();
+
+        try
+        {
+            await AuthService.LoginWithDeviceCodeAsync(async info =>
+            {
+                _deviceCode = info;
+                _displayUri = info.VerificationUri.Replace("/connect/verify", "/link");
+                _loading = false;
+                await InvokeAsync(StateHasChanged);
+
+                await Task.Delay(100);
+                await JSRuntime.InvokeVoidAsync("k7QrCode.generate", "device-qr", info.VerificationUriComplete);
+            }, _cts.Token);
+
+            _authorized = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}
+    }
+}

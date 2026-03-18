@@ -29,20 +29,21 @@
             @if (!_approved)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
-                    Enter the code displayed on your device to authorize it.
+                    Enter the code displayed on your device.
                 </MudText>
 
                 <MudDivider Class="my-2" Style="width:100%;" />
 
-                <form method="post" action="/connect/verify" style="width:100%;">
-                    <AntiforgeryToken />
-                    <MudStack Spacing="3">
-                        <MudStaticTextField @bind-Value="_userCode"
-                                            Label="Device code"
-                                            Placeholder="ABCD-EFGH"
-                                            Variant="Variant.Outlined"
-                                            Style="text-align:center; font-size:1.5rem; letter-spacing:0.3em;"
-                                            UserAttributes="@(new() { { "name", "user_code" }, { "autocomplete", "off" }, { "autofocus", "true" } })" />
+                <form method="post" action="/connect/verify" id="link-form" style="width:100%;" data-enhance="false">
+                    <input type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
+                    <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                        <div style="display:flex; align-items:center; gap:6px; justify-content:center; width:100%;">
+                            <input type="text" class="code-segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" />
+                            <span style="font-size:1rem; color:var(--mud-palette-text-secondary);">—</span>
+                            <input type="text" class="code-segment" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" />
+                            <span style="font-size:1rem; color:var(--mud-palette-text-secondary);">—</span>
+                            <input type="text" class="code-segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" />
+                        </div>
 
                         <MudStaticButton Variant="Variant.Filled"
                                          Color="Color.Primary"
@@ -53,6 +54,78 @@
                         </MudStaticButton>
                     </MudStack>
                 </form>
+
+                <style>
+                    .code-segment {
+                        flex: 1;
+                        min-width: 0;
+                        text-align: center;
+                        font-size: 1.4rem;
+                        font-weight: bold;
+                        letter-spacing: 0.15em;
+                        padding: 12px 4px;
+                        border: 2px solid var(--mud-palette-lines-default);
+                        border-radius: 8px;
+                        background: var(--mud-palette-surface);
+                        color: var(--mud-palette-text-primary);
+                        outline: none;
+                        transition: border-color 0.2s;
+                    }
+                    .code-segment:focus {
+                        border-color: var(--mud-palette-primary);
+                    }
+                </style>
+
+                <script>
+                    (function () {
+                        var segments = document.querySelectorAll('.code-segment');
+                        var hidden = document.getElementById('user-code-hidden');
+
+                        var initial = hidden.value || '';
+                        if (initial) {
+                            var parts = initial.replace(/[^0-9]/g, '');
+                            for (var i = 0; i < segments.length; i++) {
+                                segments[i].value = parts.substring(i * 4, (i + 1) * 4);
+                            }
+                        }
+
+                        function syncHidden() {
+                            var vals = [];
+                            segments.forEach(function (s) { vals.push(s.value); });
+                            hidden.value = vals.join('-');
+                        }
+
+                        segments.forEach(function (seg, idx) {
+                            seg.addEventListener('input', function () {
+                                this.value = this.value.replace(/[^0-9]/g, '');
+                                syncHidden();
+                                if (this.value.length >= 4 && idx < segments.length - 1) {
+                                    segments[idx + 1].focus();
+                                }
+                            });
+
+                            seg.addEventListener('keydown', function (e) {
+                                if (e.key === 'Backspace' && this.value.length === 0 && idx > 0) {
+                                    segments[idx - 1].focus();
+                                }
+                            });
+
+                            seg.addEventListener('paste', function (e) {
+                                e.preventDefault();
+                                var pasted = (e.clipboardData || window.clipboardData).getData('text');
+                                var digits = pasted.replace(/[^0-9]/g, '');
+                                for (var i = 0; i < segments.length; i++) {
+                                    segments[i].value = digits.substring(i * 4, (i + 1) * 4);
+                                }
+                                syncHidden();
+                                var lastFilled = Math.min(Math.floor(digits.length / 4), segments.length - 1);
+                                segments[lastFilled].focus();
+                            });
+                        });
+
+                        if (segments[0]) segments[0].focus();
+                    })();
+                </script>
             }
         </MudStack>
     </MudPaper>

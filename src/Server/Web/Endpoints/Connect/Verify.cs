@@ -26,15 +26,12 @@ public class Verify : IEndpoint
             var request = context.GetOpenIddictServerRequest() ??
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-            if (string.IsNullOrEmpty(request.UserCode))
-            {
-                return Results.Redirect("/link");
-            }
-
             // On GET: redirect to /link with user_code pre-filled (verification_uri_complete flow).
             if (HttpMethods.IsGet(context.Request.Method))
             {
-                return Results.Redirect($"/link?user_code={Uri.EscapeDataString(request.UserCode)}");
+                return string.IsNullOrEmpty(request.UserCode)
+                    ? Results.Redirect("/link")
+                    : Results.Redirect($"/link?user_code={Uri.EscapeDataString(request.UserCode)}");
             }
 
             // On POST: approve the device authorization.
@@ -43,13 +40,16 @@ public class Verify : IEndpoint
             {
                 return Results.Challenge(new AuthenticationProperties
                 {
-                    RedirectUri = $"/link?user_code={Uri.EscapeDataString(request.UserCode)}"
+                    RedirectUri = !string.IsNullOrEmpty(request.UserCode)
+                        ? $"/link?user_code={Uri.EscapeDataString(request.UserCode)}"
+                        : "/link"
                 });
             }
 
             // Validate the user_code with OpenIddict.
             var oidcResult = await context.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            if (oidcResult is null || !oidcResult.Succeeded || oidcResult.Principal is null)
+            if (oidcResult is not { Succeeded: true }
+                || string.IsNullOrEmpty(oidcResult.Principal?.GetClaim(Claims.ClientId)))
             {
                 return Results.Redirect("/link?error=invalid_code");
             }
@@ -78,7 +78,8 @@ public class Verify : IEndpoint
             identity.SetDestinations(GetDestinations);
 
             return Results.SignIn(new ClaimsPrincipal(identity),
-                authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                new AuthenticationProperties { RedirectUri = "/link?approved=true" },
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         })
         .DisableAntiforgery()
         .WithName(type.Name)
