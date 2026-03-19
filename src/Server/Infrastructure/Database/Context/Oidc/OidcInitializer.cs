@@ -19,36 +19,43 @@ public static class OidcInitializer
         {
             var manager = serviceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
-            if (await manager.FindByClientIdAsync("k7-native") == null)
+            var descriptor = new OpenIddictApplicationDescriptor
             {
-                await manager.CreateAsync(new OpenIddictApplicationDescriptor
+                DisplayName = "K7 native client",
+                ClientId = "k7-native",
+                ConsentType = ConsentTypes.Implicit,
+                ClientType = ClientTypes.Public,
+                RedirectUris = { new Uri("http://localhost"), new Uri("k7://login-callback") },
+                PostLogoutRedirectUris = { new Uri("http://localhost") },
+                Permissions =
                 {
-                    DisplayName = "K7 native client",
-                    ClientId = "k7-native",
-                    ConsentType = ConsentTypes.Implicit,
-                    ClientType = ClientTypes.Public,
-                    RedirectUris = { new Uri("http://localhost"), new Uri("http://localhost:59451"), new Uri("k7://login-callback") },
-                    PostLogoutRedirectUris = { new Uri("http://localhost") },
-                    Permissions =
-                    {
-                        Permissions.Endpoints.Authorization,
-                        Permissions.Endpoints.DeviceAuthorization,
-                        Permissions.Endpoints.EndSession,
-                        Permissions.Endpoints.Token,
-                        Permissions.GrantTypes.AuthorizationCode,
-                        Permissions.GrantTypes.DeviceCode,
-                        Permissions.GrantTypes.RefreshToken,
-                        Permissions.ResponseTypes.Code,
-                        Permissions.Scopes.Email,
-                        Permissions.Scopes.Profile,
-                        Permissions.Scopes.Roles,
-                        Permissions.Prefixes.Scope + "api"
-                    },
-                    Requirements =
-                    {
-                        Requirements.Features.ProofKeyForCodeExchange
-                    }
-                });
+                    Permissions.Endpoints.Authorization,
+                    Permissions.Endpoints.DeviceAuthorization,
+                    Permissions.Endpoints.EndSession,
+                    Permissions.Endpoints.Token,
+                    Permissions.GrantTypes.AuthorizationCode,
+                    Permissions.GrantTypes.DeviceCode,
+                    Permissions.GrantTypes.RefreshToken,
+                    Permissions.ResponseTypes.Code,
+                    Permissions.Scopes.Email,
+                    Permissions.Scopes.Profile,
+                    Permissions.Scopes.Roles,
+                    Permissions.Prefixes.Scope + "api"
+                },
+                Requirements =
+                {
+                    Requirements.Features.ProofKeyForCodeExchange
+                }
+            };
+
+            var existing = await manager.FindByClientIdAsync("k7-native");
+            if (existing == null)
+            {
+                await manager.CreateAsync(descriptor);
+            }
+            else
+            {
+                await manager.UpdateAsync(existing, descriptor);
             }
         }
 

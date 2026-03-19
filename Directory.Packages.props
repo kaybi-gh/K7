@@ -46,7 +46,7 @@
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.1" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.1.0" />
-    <PackageVersion Include="Microsoft.Identity.Client" Version="4.79.2" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.4.0" />
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.20" />
     <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.20" />
@@ -70,6 +70,9 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
     <PackageVersion Include="OpenIddict" Version="7.2.0" />
     <PackageVersion Include="OpenIddict.AspNetCore" Version="7.2.0" />
+    <PackageVersion Include="OpenIddict.Client" Version="7.2.0" />
+    <PackageVersion Include="OpenIddict.Client.SystemIntegration" Version="7.2.0" />
+    <PackageVersion Include="OpenIddict.Client.SystemNetHttp" Version="7.2.0" />
     <PackageVersion Include="OpenIddict.EntityFrameworkCore" Version="7.2.0" />
     <PackageVersion Include="OpenIddict.Server" Version="7.2.0" />
     <PackageVersion Include="OpenIddict.Server.AspNetCore" Version="7.2.0" />
@@ -78,7 +81,7 @@
     <PackageVersion Include="Serilog" Version="4.3.0" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+
     <PackageVersion Include="System.Text.Json" Version="10.0.0" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
     <PackageVersion Include="Testcontainers.MsSql" Version="3.6.0" />

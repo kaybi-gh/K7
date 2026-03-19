@@ -8,28 +8,30 @@ public static class DeviceInitializer
 {
     public static async Task InitializeDeviceAsync(IServiceProvider services)
     {
-        var deviceStorageService = services.GetRequiredService<IDeviceStorageService>();
-        var existingDeviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
-
-        if (string.IsNullOrEmpty(existingDeviceId))
+        try
         {
-            var deviceService = services.GetRequiredService<IDeviceService>();
-            var k7ServerService = services.GetRequiredService<IK7ServerService>();
-            var request = await deviceService.GenerateCreateDeviceRequestAsync();
-            var deviceId = await k7ServerService.CreateDeviceAsync(request);
-            deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceId.ToString());
-            existingDeviceId = deviceId.ToString();
-        }
+            var deviceStorageService = services.GetRequiredService<IDeviceStorageService>();
+            var existingDeviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
 
-        // Try to attach current user to this device if authenticated
-        if (Guid.TryParse(existingDeviceId, out var parsedId))
-        {
-            var k7ServerService = services.GetRequiredService<IK7ServerService>();
-            try
+            if (string.IsNullOrEmpty(existingDeviceId))
             {
+                var deviceService = services.GetRequiredService<IDeviceService>();
+                var k7ServerService = services.GetRequiredService<IK7ServerService>();
+                var request = await deviceService.GenerateCreateDeviceRequestAsync();
+                var deviceId = await k7ServerService.CreateDeviceAsync(request);
+                deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceId.ToString());
+                existingDeviceId = deviceId.ToString();
+            }
+
+            if (Guid.TryParse(existingDeviceId, out var parsedId))
+            {
+                var k7ServerService = services.GetRequiredService<IK7ServerService>();
                 await k7ServerService.AttachCurrentUserToDeviceAsync(parsedId);
             }
-            catch { }
+        }
+        catch (HttpRequestException)
+        {
+            // Not authenticated yet — device will be initialized after login
         }
     }
 }

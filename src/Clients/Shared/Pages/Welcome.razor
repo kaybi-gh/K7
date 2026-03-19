@@ -1,0 +1,79 @@
+@page "/welcome"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject ICustomAuthenticationStateProvider AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Welcome - K7</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height:80vh;">
+    <MudPaper Class="pa-8" Elevation="4" Style="width:100%; max-width:480px;">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">K7</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                Sign in to continue
+            </MudText>
+
+            <MudDivider Class="my-2" Style="width:100%;" />
+
+            @if (_loading)
+            {
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Signing in...</MudText>
+            }
+            else if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                    @_error
+                </MudAlert>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           FullWidth="true" OnClick="SignInAsync">
+                    Try Again
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           FullWidth="true" OnClick="SignInAsync">
+                    Sign in
+                </MudButton>
+            }
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _loading;
+    private string? _error;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private async Task SignInAsync()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            await AuthService.LoginAsync();
+            var authState = await ((Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                Navigation.NavigateTo(ReturnUrl ?? "/");
+            }
+            else
+            {
+                _error = "Sign in was cancelled or failed.";
+                _loading = false;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+}
