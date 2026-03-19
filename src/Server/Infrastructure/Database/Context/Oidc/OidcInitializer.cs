@@ -49,14 +49,11 @@ public static class OidcInitializer
             };
 
             var existing = await manager.FindByClientIdAsync("k7-native");
-            if (existing == null)
+            if (existing != null)
             {
-                await manager.CreateAsync(descriptor);
+                await manager.DeleteAsync(existing);
             }
-            else
-            {
-                await manager.UpdateAsync(existing, descriptor);
-            }
+            await manager.CreateAsync(descriptor);
         }
 
         static async Task RegisterScopesAsync(IServiceProvider serviceProvider)

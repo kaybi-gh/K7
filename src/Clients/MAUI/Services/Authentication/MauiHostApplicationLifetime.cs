@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 
 namespace K7.Clients.MAUI.Services.Authentication;
@@ -12,6 +13,7 @@ public class MauiHostApplicationLifetime : IHostApplicationLifetime
 
     public void StopApplication()
     {
+        Debug.WriteLine($"K7 MAUI - StopApplication() CALLED! Stack trace:\n{Environment.StackTrace}");
         _source.Cancel(throwOnFirstException: false);
         Environment.Exit(0);
     }

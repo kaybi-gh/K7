@@ -82,13 +82,13 @@ public static partial class MauiProgram
         builder.Services.AddSingleton(sp => (AuthenticationStateProvider)sp.GetRequiredService<ICustomAuthenticationStateProvider>());
         builder.Services.AddSingleton<IFeatureAccessService, FeatureAccessService>();
 
+        System.Diagnostics.Debug.WriteLine("K7 MAUI - Calling builder.Build()");
         var app = builder.Build();
+        System.Diagnostics.Debug.WriteLine("K7 MAUI - builder.Build() completed");
 
         app.Services.GetRequiredService<AudioPlaybackProgressTracker>();
 
-        var k7ServerManagerService = app.Services.GetRequiredService<K7ServerManagerService>();
-        k7ServerManagerService.BaseAddressUpdated += (sender, baseAddress) => K7ServerManagerService_BaseAddressUpdated(sender, baseAddress, app.Services);
-
+        System.Diagnostics.Debug.WriteLine("K7 MAUI - CreateMauiApp returning");
         return app;
     }
 
@@ -107,8 +107,11 @@ public static partial class MauiProgram
             System.Diagnostics.Debug.WriteLine($"K7 MAUI - Fallback DB path: {dbPath}");
         }
 
+        System.Diagnostics.Debug.WriteLine("K7 MAUI - Initializing SQLitePCL");
+        SQLitePCL.Batteries_V2.Init();
+
         System.Diagnostics.Debug.WriteLine("K7 MAUI - Registering DbContext");
-        services.AddDbContext<DbContext>(options =>
+        services.AddDbContext<OpenIddictDbContext>(options =>
         {
             options.UseSqlite($"Filename={dbPath}");
             options.UseOpenIddict();
@@ -119,7 +122,7 @@ public static partial class MauiProgram
             .AddCore(options =>
             {
                 options.UseEntityFrameworkCore()
-                       .UseDbContext<DbContext>();
+                       .UseDbContext<OpenIddictDbContext>();
             })
             .AddClient(options =>
             {
@@ -179,11 +182,6 @@ public static partial class MauiProgram
 #endif
 
         services.AddScoped<IMauiInitializeScopedService, MauiDatabaseInitializer>();
-    }
-
-    private static async void K7ServerManagerService_BaseAddressUpdated(object? sender, string baseAddress, IServiceProvider services)
-    {
-        await DeviceInitializer.InitializeDeviceAsync(services);
     }
 
     static partial void ConfigurePlatformServices(this IServiceCollection services);
