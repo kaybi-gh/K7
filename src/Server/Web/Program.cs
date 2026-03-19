@@ -31,7 +31,7 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices();
     builder.Services.AddMediaProcessingServices(); // TODO - Group all infrastructure DI in one method?
-    builder.Services.AddWebServices();
+    builder.Services.AddWebServices(builder.Configuration);
     builder.Services.AddEndpoints();
     builder.Services.ConfigureCors();
     builder.Host.UseSerilog();

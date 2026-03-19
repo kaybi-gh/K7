@@ -3,6 +3,7 @@ using K7.Server.Domain.Constants;
 using K7.Clients.Shared.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Web.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using MudBlazor.Services;
 using Serilog;
@@ -16,8 +17,14 @@ namespace K7.Server.Web;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddWebServices(this IServiceCollection services)
+    public static IServiceCollection AddWebServices(this IServiceCollection services, IConfiguration configuration)
     {
+        var metadataPath = configuration.GetValue<string>("Paths:Metadatas") ?? "metadatas";
+        var keysPath = Path.Combine(metadataPath, "dataprotection-keys");
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+            .SetApplicationName("K7");
+
         services.AddAntiforgery(options =>
         {
             options.HeaderName = "X-XSRF-TOKEN";

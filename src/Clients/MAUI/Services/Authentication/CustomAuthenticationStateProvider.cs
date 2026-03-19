@@ -1,23 +1,28 @@
-﻿using K7.Clients.MAUI.Interfaces;
-using K7.Clients.Shared.Domain.Interfaces;
+﻿using K7.Clients.Shared.Domain.Interfaces;
 using K7.Shared;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.Identity.Client;
+using OpenIddict.Client;
+using System.Net.Http.Headers;
 using System.Security.Claims;
+using static OpenIddict.Abstractions.OpenIddictConstants;
+using static OpenIddict.Abstractions.OpenIddictExceptions;
 
 namespace K7.Clients.MAUI.Services.Authentication;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider, ICustomAuthenticationStateProvider
 {
-    private readonly IMsalClientService _msalClientService;
+    private readonly OpenIddictClientService _openIddictClientService;
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
 
-    public CustomAuthenticationStateProvider(IMsalClientService msalClientService, IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService)
+    public CustomAuthenticationStateProvider(
+        OpenIddictClientService openIddictClientService,
+        IK7ServerService k7ServerService,
+        IDeviceStorageService deviceStorageService)
     {
-        _msalClientService = msalClientService;
+        _openIddictClientService = openIddictClientService;
         _k7ServerService = k7ServerService;
         _deviceStorageService = deviceStorageService;
     }
@@ -29,89 +34,105 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     public async Task LoginAsync(CancellationToken cancellationToken = default)
     {
-        var msalClient = _msalClientService.GetClient();
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromMinutes(3));
 
-        string[] scopes = ["openid", "profile", "email", "api"];
-
-        AuthenticationResult? result;
         try
         {
-            var accounts = await msalClient.GetAccountsAsync();
-            result = await msalClient.AcquireTokenSilent(scopes, accounts.FirstOrDefault())
-                .ExecuteAsync();
-        }
-        catch (MsalUiRequiredException)
-        {
-            var options = new SystemWebViewOptions()
+            var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
             {
-                HtmlMessageError = "<p> An error occurred: {0}. Details {1}</p>",
-                BrowserRedirectSuccess = new Uri("https://www.microsoft.com")
-            };
+                CancellationToken = timeout.Token,
+                ProviderName = "K7"
+            });
 
-            try
+            var result = await _openIddictClientService.AuthenticateInteractivelyAsync(new()
             {
-                result = await msalClient.AcquireTokenInteractive(scopes)
-                        .WithUseEmbeddedWebView(false)
-                        .WithSystemWebViewOptions(new SystemWebViewOptions())
-                        .ExecuteAsync(cancellationToken);
-            }
-            catch
-            {
-                result = null;
-            }
-        }
+                CancellationToken = timeout.Token,
+                Nonce = challenge.Nonce
+            });
 
-        if (result != null)
-        {
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.ClaimsPrincipal.Claims, "AuthenticationTypes.Federation"));
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict"));
+
+            if (!string.IsNullOrEmpty(result.BackchannelAccessToken))
+            {
+                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", result.BackchannelAccessToken);
+            }
+
             await TryAttachCurrentUserToDeviceAsync(cancellationToken);
         }
-        else
+        catch (OperationCanceledException)
         {
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         }
-        
+        catch (ProtocolException exception) when (exception.Error is Errors.AccessDenied)
+        {
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        }
+
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
     public async Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default)
     {
-        var msalClient = _msalClientService.GetClient();
-        string[] scopes = ["openid", "profile", "email", "api"];
+        var challenge = await _openIddictClientService.ChallengeUsingDeviceAsync(new()
+        {
+            CancellationToken = cancellationToken,
+            ProviderName = "K7"
+        });
 
-        var result = await msalClient.AcquireTokenWithDeviceCode(scopes, async deviceCodeResult =>
-        {
-            await onDeviceCodeReceived(new DeviceCodeInfo(
-                deviceCodeResult.UserCode,
-                deviceCodeResult.VerificationUrl,
-                deviceCodeResult.VerificationUrl + "?user_code=" + Uri.EscapeDataString(deviceCodeResult.UserCode),
-                deviceCodeResult.ExpiresOn));
-        }).ExecuteAsync(cancellationToken);
+        await onDeviceCodeReceived(new DeviceCodeInfo(
+            challenge.UserCode,
+            challenge.VerificationUri.ToString(),
+            challenge.VerificationUriComplete?.ToString() ?? challenge.VerificationUri + "?user_code=" + Uri.EscapeDataString(challenge.UserCode),
+            DateTimeOffset.UtcNow.Add(challenge.ExpiresIn)));
 
-        if (result != null)
+        var result = await _openIddictClientService.AuthenticateWithDeviceAsync(new()
         {
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.ClaimsPrincipal.Claims, "AuthenticationTypes.Federation"));
-            await TryAttachCurrentUserToDeviceAsync(cancellationToken);
-        }
-        else
+            CancellationToken = cancellationToken,
+            DeviceCode = challenge.DeviceCode,
+            Interval = challenge.Interval,
+            Timeout = challenge.ExpiresIn,
+            ProviderName = "K7"
+        });
+
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict"));
+
+        if (!string.IsNullOrEmpty(result.AccessToken))
         {
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+            _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", result.AccessToken);
         }
+
+        await TryAttachCurrentUserToDeviceAsync(cancellationToken);
 
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
-        var msalClient = _msalClientService.GetClient();
-
-        var accounts = await msalClient.GetAccountsAsync();
-        foreach (var account in accounts)
-        {
-            await msalClient.RemoveAsync(account);
-        }
-
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
+
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+
+            var result = await _openIddictClientService.SignOutInteractivelyAsync(new()
+            {
+                CancellationToken = timeout.Token,
+                ProviderName = "K7"
+            });
+
+            await _openIddictClientService.AuthenticateInteractivelyAsync(new()
+            {
+                CancellationToken = timeout.Token,
+                Nonce = result.Nonce
+            });
+        }
+        catch { }
+
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
     }
 
