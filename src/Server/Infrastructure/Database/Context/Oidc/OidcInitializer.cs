@@ -23,10 +23,11 @@ public static class OidcInitializer
             {
                 DisplayName = "K7 native client",
                 ClientId = "k7-native",
+                ApplicationType = ApplicationTypes.Native,
                 ConsentType = ConsentTypes.Implicit,
                 ClientType = ClientTypes.Public,
-                RedirectUris = { new Uri("http://localhost"), new Uri("k7://login-callback") },
-                PostLogoutRedirectUris = { new Uri("http://localhost") },
+                RedirectUris = { new Uri("http://localhost/"), new Uri("k7://login-callback/") },
+                PostLogoutRedirectUris = { new Uri("http://localhost/") },
                 Permissions =
                 {
                     Permissions.Endpoints.Authorization,

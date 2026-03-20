@@ -31,7 +31,8 @@ public class Authorize : IEndpoint
             var result = await httpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
             if (result is null || !result.Succeeded || request.HasPromptValue(PromptValues.Login))
             {
-                return Results.Challenge(new AuthenticationProperties { RedirectUri = request.RedirectUri ?? "/" });
+                var currentUrl = httpContext.Request.PathBase + httpContext.Request.Path + httpContext.Request.QueryString;
+                return Results.Challenge(new AuthenticationProperties { RedirectUri = currentUrl });
             }
 
             var user = await userManager.GetUserAsync(result.Principal) ??
@@ -56,6 +57,19 @@ public class Authorize : IEndpoint
 
             identity.SetScopes(request.GetScopes());
             identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
+
+            identity.SetDestinations(claim => claim.Type switch
+            {
+                Claims.Name or Claims.PreferredUsername or Claims.Email
+                    => [Destinations.AccessToken, Destinations.IdentityToken],
+
+                Claims.Role
+                    => [Destinations.AccessToken, Destinations.IdentityToken],
+
+                "AspNet.Identity.SecurityStamp" => [],
+
+                _ => [Destinations.AccessToken]
+            });
 
             // Automatically create a permanent authorization to avoid requiring explicit consent
             // for future authorization or token requests containing the same scopes.
