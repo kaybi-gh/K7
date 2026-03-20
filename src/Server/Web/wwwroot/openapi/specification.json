@@ -2270,6 +2270,32 @@
         }
       }
     },
+    "/api/server-info": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "GetServerInfo",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/authentication/guest-login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "GuestLogin",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/authentication/login": {
       "get": {
         "tags": [
