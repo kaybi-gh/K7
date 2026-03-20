@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.HttpOverrides;
 using K7.Server.Infrastructure.Database.Context.Data;
+using OpenIddict.Validation.AspNetCore;
 
 namespace K7.Server.Web;
 
@@ -46,7 +47,6 @@ public static class DependencyInjection
             options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
         });
         authenticationBuilder.AddIdentityCookies();
-        authenticationBuilder.AddJwtBearer();
 
         services.ConfigureApplicationCookie(options =>
         {
@@ -60,13 +60,25 @@ public static class DependencyInjection
         services.AddAuthorization(options =>
         {
             options.AddPolicy(Policies.GuestOrAbove, policy =>
-                policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator));
+            {
+                policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
+                policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator);
+            });
 
             options.AddPolicy(Policies.UserOrAbove, policy =>
-                policy.RequireRole(Roles.User, Roles.Administrator));
+            {
+                policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
+                policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.RequireRole(Roles.User, Roles.Administrator);
+            });
 
             options.AddPolicy(Policies.AdminOnly, policy =>
-                policy.RequireRole(Roles.Administrator));
+            {
+                policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
+                policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.RequireRole(Roles.Administrator);
+            });
         });
 
         services.AddDatabaseDeveloperPageExceptionFilter();

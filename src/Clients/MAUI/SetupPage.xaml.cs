@@ -26,7 +26,16 @@ public partial class SetupPage : ContentPage
         {
             Preferences.Set(PreferenceKeys.K7_SERVER_URL, k7ServerUrl);
             _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
-            await Navigation.PushAsync(new BlazorPage(_playerService, _audioPlayerService));
+
+            InfoLabel.Text = "Server saved. Restarting...";
+            InfoLabel.IsVisible = true;
+            await Task.Delay(500);
+
+#if ANDROID
+            Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
+#else
+            Application.Current!.Quit();
+#endif
         }
         else
         {
