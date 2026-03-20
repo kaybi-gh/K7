@@ -3,11 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="K7.Clients.MAUI.SetupPage">
 
-    <VerticalStackLayout Padding="20">
-        <Label Text="Entrez l'URL de votre backend :" />
-        <Entry x:Name="BackendUrlEntry" Placeholder="https://k7.local" />
-        <Button Text="Valider" Clicked="OnValidateClicked" />
-        <Label x:Name="InfoLabel" Text="" IsVisible="False" />
+    <VerticalStackLayout Padding="20" VerticalOptions="Center" Spacing="12">
+        <Label Text="K7" FontSize="32" HorizontalOptions="Center" FontAttributes="Bold" />
+        <Label Text="Enter your K7 server URL:" />
+        <Entry x:Name="BackendUrlEntry" Placeholder="https://k7.example.com" Keyboard="Url" />
+        <Button Text="Connect" Clicked="OnValidateClicked" />
+        <Label x:Name="InfoLabel" Text="" IsVisible="False" TextColor="Gray" />
     </VerticalStackLayout>
 
 </ContentPage>

@@ -1,7 +1,11 @@
 @page "/sign-in"
 @layout Layout.EmptyLayout
+@using K7.Shared
+@using K7.Shared.Dtos
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @inject ICustomAuthenticationStateProvider AuthService
+@inject IK7ServerService K7ServerService
+@inject IDeviceStorageService DeviceStorage
 @inject NavigationManager Navigation
 
 <PageTitle>Welcome - K7</PageTitle>
@@ -11,7 +15,7 @@
         <MudStack Spacing="4" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">K7</MudText>
             <MudText Typo="Typo.body1" Color="Color.Secondary">
-                Sign in to continue
+                Choose how you want to continue
             </MudText>
 
             <MudDivider Class="my-2" Style="width:100%;" />
@@ -33,10 +37,25 @@
             }
             else
             {
+                @if (_serverInfoError is not null)
+                {
+                    <MudAlert Severity="Severity.Warning" Variant="Variant.Text" Dense="true" Class="mt-2" Style="width:100%;">
+                        @_serverInfoError
+                    </MudAlert>
+                }
+
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
                            FullWidth="true" OnClick="SignInAsync">
                     Sign in
                 </MudButton>
+
+                @if (_guestEnabled)
+                {
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Large"
+                               FullWidth="true" OnClick="ContinueAsGuestAsync">
+                        Continue as guest
+                    </MudButton>
+                }
             }
         </MudStack>
     </MudPaper>
@@ -44,10 +63,41 @@
 
 @code {
     private bool _loading;
+    private bool _guestEnabled;
     private string? _error;
+    private string? _serverInfoError;
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var storedJson = DeviceStorage.Get(PreferenceKeys.SERVER_INFO);
+        if (!string.IsNullOrEmpty(storedJson))
+        {
+            try
+            {
+                var cached = System.Text.Json.JsonSerializer.Deserialize<ServerInfoDto>(storedJson,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                _guestEnabled = cached?.GuestEnabled == true;
+            }
+            catch { }
+        }
+
+        try
+        {
+            var serverInfo = await K7ServerService.GetServerInfoAsync();
+            _guestEnabled = serverInfo?.GuestEnabled == true;
+
+            var freshJson = System.Text.Json.JsonSerializer.Serialize(serverInfo);
+            DeviceStorage.Set(PreferenceKeys.SERVER_INFO, freshJson);
+        }
+        catch (Exception ex)
+        {
+            if (!_guestEnabled)
+                _serverInfoError = $"Could not reach server: {ex.Message}";
+        }
+    }
 
     private async Task SignInAsync()
     {
@@ -58,21 +108,45 @@
         try
         {
             await AuthService.LoginAsync();
-            var authState = await ((Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
-            if (authState.User.Identity?.IsAuthenticated == true)
-            {
-                Navigation.NavigateTo(ReturnUrl ?? "/");
-            }
-            else
-            {
-                _error = "Sign in was cancelled or failed.";
-                _loading = false;
-                StateHasChanged();
-            }
+            await CheckAuthAndNavigate();
         }
         catch (Exception ex)
         {
             _error = ex.Message;
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ContinueAsGuestAsync()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            await AuthService.LoginAsGuestAsync();
+            await CheckAuthAndNavigate();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CheckAuthAndNavigate()
+    {
+        var authState = await ((Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(ReturnUrl ?? "/");
+        }
+        else
+        {
+            _error = "Sign in was cancelled or failed.";
             _loading = false;
             StateHasChanged();
         }
