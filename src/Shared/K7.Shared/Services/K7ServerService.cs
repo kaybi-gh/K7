@@ -292,4 +292,9 @@ public class K7ServerService : IK7ServerService
         var response = await HttpClient.PostAsync($"api/smart-playlists/{id}/evaluate", null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<ServerInfoDto>("api/server-info", _serializerOptions, cancellationToken);
+    }
 }
