@@ -21,6 +21,13 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
         return Task.CompletedTask;
     }
 
+    public Task LoginAsGuestAsync(CancellationToken cancellationToken = default)
+    {
+        var redirectUri = Uri.EscapeDataString(_navigationManager.Uri);
+        _navigationManager.NavigateTo($"{_navigationManager.BaseUri}api/authentication/login?returnUrl={redirectUri}", forceLoad: true);
+        return Task.CompletedTask;
+    }
+
     public Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         var redirectUri = Uri.EscapeDataString(_navigationManager.ToBaseRelativePath(_navigationManager.Uri));
