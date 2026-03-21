@@ -1,26 +1,72 @@
-﻿<div class="mobile-footer">
+﻿@using K7.Shared.Dtos.Entities
+@using K7.Server.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IK7ServerService K7ServerService
+@inject NavigationManager NavigationManager
+@inject ICustomAuthenticationStateProvider CustomAuthenticationStateProvider
+
+<div class="mobile-footer">
     <MudAppBar Style="z-index:10;" Bottom="true" Fixed="true" Dense="false" Elevation="1">
         <MudStack Row="true" Style="width:100%;" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-            <div class="mobile-footer-button"><MudAvatar Size="Size.Small" Color="Color.Primary">K</MudAvatar></div>
-            <div class="mobile-footer-button"><MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" /></div>
-            @* <MudSpacer /> *@
+            <div class="mobile-footer-button">
+                <MudIconButton Href="/" Size="Size.Medium" Icon="@Icons.Material.Filled.Home" Color="Color.Inherit" />
+            </div>
+            <div class="mobile-footer-button">
+                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.VideoLibrary" OnClick="ToggleLibraryDrawer" Color="Color.Inherit" />
+            </div>
             <div class="application-logo">
                 <MudIconButton Href="/" Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.Rounded.Cyclone" />
             </div>
-            @* <MudSpacer /> *@
-            <div class="mobile-footer-button"><MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.VideoLibrary" OnClick="ToggleMobileLibraryDrawer" Color="Color.Inherit" /></div>
-            <div class="mobile-footer-button"><MudIconButton Href="/settings" Size="Size.Medium" Icon="@Icons.Material.Outlined.Settings" Color="Color.Inherit" /></div>
+            <div class="mobile-footer-button">
+                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Filled.MusicNote" OnClick="ToggleMusicDrawer" Color="Color.Inherit" />
+            </div>
+            <div class="mobile-footer-button">
+                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.Menu" OnClick="ToggleMenuDrawer" Color="Color.Inherit" />
+            </div>
         </MudStack>
     </MudAppBar>
-    <MudDrawer @bind-Open="_mobileLibraryDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
+
+    <MudDrawer @bind-Open="_libraryDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
         <MudDrawerHeader>
-            <MudText Typo="Typo.h6">My libraries</MudText>
+            <MudText Typo="Typo.h6">Libraries</MudText>
         </MudDrawerHeader>
         <MudNavMenu>
-            <MudNavLink Href="/library/movies-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Theaters">Movies</MudNavLink>
-            <MudNavLink Href="/library/series-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Tv">Series</MudNavLink>
-            <MudNavLink Href="/library/music-library-id" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.MusicNote">Music</MudNavLink>
+            @foreach (var library in _libraries)
+            {
+                <MudNavLink Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)" OnClick="CloseDrawers">@library.Title</MudNavLink>
+            }
         </MudNavMenu>
     </MudDrawer>
 
+    <MudDrawer @bind-Open="_musicDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Music</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            <MudNavLink Href="/music/artists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person" OnClick="CloseDrawers">Artists</MudNavLink>
+            <MudNavLink Href="/music/albums" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Album" OnClick="CloseDrawers">Albums</MudNavLink>
+            <MudNavLink Href="/music/tracks" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AudioFile" OnClick="CloseDrawers">Tracks</MudNavLink>
+            <AuthorizeView Roles="User,Administrator">
+                <MudNavLink Href="/playlists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.QueueMusic" OnClick="CloseDrawers">Playlists</MudNavLink>
+            </AuthorizeView>
+            <MudNavLink Href="/music/radio" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Radio" OnClick="CloseDrawers">Radio</MudNavLink>
+            <AuthorizeView Roles="User,Administrator">
+                <MudNavLink Href="/music/stats" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.BarChart" OnClick="CloseDrawers">Stats</MudNavLink>
+            </AuthorizeView>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudDrawer @bind-Open="_menuDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Menu</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            <AuthorizeView Roles="User,Administrator">
+                <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings" OnClick="CloseDrawers">Settings</MudNavLink>
+            </AuthorizeView>
+            <AuthorizeView Roles="Administrator">
+                <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AdminPanelSettings" OnClick="CloseDrawers">Admin</MudNavLink>
+            </AuthorizeView>
+        </MudNavMenu>
+    </MudDrawer>
 </div>

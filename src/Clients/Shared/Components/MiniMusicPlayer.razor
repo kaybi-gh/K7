@@ -3,7 +3,7 @@
 
 @if (Audio.IsVisible && Audio.CurrentTrack is not null)
 {
-    <div class="music-mini-player" style="left: @(SidebarService.IsOpen ? "240px" : "56px")">
+    <div class="music-mini-player @(SidebarService.IsOpen ? "sidebar-open" : "sidebar-collapsed")">
         <div class="mini-player-progress" @ref="_progressBarRef"
              @onclick="OnProgressClick"
              @onpointerdown="OnProgressPointerDown"
@@ -73,17 +73,19 @@
                                Color="@(Audio.Repeat != RepeatMode.Off ? Color.Primary : Color.Inherit)"
                                OnClick="Audio.CycleRepeatMode" />
 
-                <MudIconButton Icon="@VolumeIcon"
-                               Size="Size.Small"
-                               Color="Color.Inherit"
-                               OnClick="ToggleMute" />
+                <div class="mini-player-volume">
+                    <MudIconButton Icon="@VolumeIcon"
+                                   Size="Size.Small"
+                                   Color="Color.Inherit"
+                                   OnClick="ToggleMute" />
 
-                <MudSlider T="double"
-                           Value="Audio.Volume"
-                           ValueChanged="OnVolumeChanged"
-                           Min="0" Max="1" Step="0.01"
-                           Immediate="true"
-                           Class="mini-player-volume-slider" />
+                    <MudSlider T="double"
+                               Value="Audio.Volume"
+                               ValueChanged="OnVolumeChanged"
+                               Min="0" Max="1" Step="0.01"
+                               Immediate="true"
+                               Class="mini-player-volume-slider" />
+                </div>
             </div>
         </div>
     </div>
