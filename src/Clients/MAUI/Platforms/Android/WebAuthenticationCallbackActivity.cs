@@ -18,6 +18,7 @@ public class CallbackActivity : Activity
 
         if (Intent is not Intent intent)
         {
+            Finish();
             return;
         }
 
@@ -31,6 +32,9 @@ public class CallbackActivity : Activity
         }
         finally
         {
+            var mainIntent = new Intent(this, typeof(MainActivity));
+            mainIntent.SetFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop);
+            StartActivity(mainIntent);
             Finish();
         }
     }
