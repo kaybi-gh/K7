@@ -2,11 +2,13 @@
 @layout Layout.EmptyLayout
 @using K7.Shared
 @using K7.Shared.Dtos
+@using Microsoft.AspNetCore.Components.Authorization
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @inject ICustomAuthenticationStateProvider AuthService
 @inject IK7ServerService K7ServerService
 @inject IDeviceStorageService DeviceStorage
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>Welcome - K7</PageTitle>
 
@@ -72,6 +74,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authProvider = (AuthenticationStateProvider)AuthService;
+        authProvider.AuthenticationStateChanged += OnAuthStateChanged;
+
+        var authState = await authProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(ReturnUrl ?? "/");
+            return;
+        }
+
         var storedJson = DeviceStorage.Get(PreferenceKeys.SERVER_INFO);
         if (!string.IsNullOrEmpty(storedJson))
         {
@@ -139,7 +151,7 @@
 
     private async Task CheckAuthAndNavigate()
     {
-        var authState = await ((Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
+        var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
         {
             Navigation.NavigateTo(ReturnUrl ?? "/");
@@ -150,5 +162,20 @@
             _loading = false;
             StateHasChanged();
         }
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        var authState = await task;
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            await InvokeAsync(() => Navigation.NavigateTo(ReturnUrl ?? "/"));
+        }
+    }
+
+    public void Dispose()
+    {
+        var authProvider = (AuthenticationStateProvider)AuthService;
+        authProvider.AuthenticationStateChanged -= OnAuthStateChanged;
     }
 }
