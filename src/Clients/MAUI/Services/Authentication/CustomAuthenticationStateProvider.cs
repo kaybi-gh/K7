@@ -30,14 +30,14 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _deviceStorageService = deviceStorageService;
     }
 
-    public override async Task<AuthenticationState> GetAuthenticationStateAsync()
+    public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         if (!_initialized)
         {
             _initialized = true;
-            await TryRestoreSessionAsync();
+            TryRestoreSessionSync();
         }
-        return new AuthenticationState(_currentUser);
+        return Task.FromResult(new AuthenticationState(_currentUser));
     }
 
     public async Task LoginAsync(CancellationToken cancellationToken = default)
@@ -215,7 +215,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
     }
 
-    private async Task TryRestoreSessionAsync()
+    private void TryRestoreSessionSync()
     {
         try
         {
@@ -231,14 +231,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             }
 
             var expClaim = claims.FirstOrDefault(c => c.Type == "exp");
-            if (expClaim is not null
+            bool isExpired = expClaim is not null
                 && long.TryParse(expClaim.Value, out var expUnix)
-                && DateTimeOffset.FromUnixTimeSeconds(expUnix) < DateTimeOffset.UtcNow)
-            {
-                if (await TryRefreshTokenAsync())
-                    return;
+                && DateTimeOffset.FromUnixTimeSeconds(expUnix) < DateTimeOffset.UtcNow;
 
-                ClearStoredTokens();
+            if (isExpired)
+            {
+                _ = RefreshInBackgroundAsync();
                 return;
             }
 
@@ -252,6 +251,19 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
+    private async Task RefreshInBackgroundAsync()
+    {
+        if (await TryRefreshTokenAsync())
+        {
+            NotifyAuthenticationStateChanged(
+                Task.FromResult(new AuthenticationState(_currentUser)));
+        }
+        else
+        {
+            ClearStoredTokens();
+        }
+    }
+
     private async Task<bool> TryRefreshTokenAsync()
     {
         var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
@@ -260,6 +272,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
             using var request = new HttpRequestMessage(HttpMethod.Post, "connect/token")
             {
                 Content = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -273,7 +287,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             var savedAuth = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
             _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
 
-            var response = await _k7ServerService.HttpClient.SendAsync(request);
+            var response = await _k7ServerService.HttpClient.SendAsync(request, cts.Token);
 
             if (!response.IsSuccessStatusCode)
             {
