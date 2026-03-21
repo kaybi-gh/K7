@@ -65,7 +65,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         set { if (_bufferedTime != value) { _bufferedTime = value; BufferedTimeChanged?.Invoke(value); } }
     }
 
-    private double _volume = deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
+    private double _volume = System.OperatingSystem.IsAndroid() || System.OperatingSystem.IsIOS()
+        ? 1.0
+        : deviceStorageService.Get(PreferenceKeys.PLAYER_VOLUME, 1);
     public double Volume
     {
         get => _volume;
@@ -74,7 +76,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
             if (_volume != value)
             {
                 _volume = value;
-                deviceStorageService.Set(PreferenceKeys.PLAYER_VOLUME, value);
+                if (!System.OperatingSystem.IsAndroid() && !System.OperatingSystem.IsIOS())
+                    deviceStorageService.Set(PreferenceKeys.PLAYER_VOLUME, value);
                 VolumeChanged?.Invoke(value);
             }
         }
