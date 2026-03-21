@@ -14,11 +14,11 @@ public class K7ServerManagerService
 
     public void UpdateBaseAddress(string baseAddress)
     {
-        // TODO - Add test to validate K7server reachability
-        if (_k7ServerService != null)
-        {
-            _k7ServerService.HttpClient.BaseAddress = new Uri(baseAddress);
-        }
+        var newUri = new Uri(baseAddress);
+        if (_k7ServerService.HttpClient.BaseAddress?.OriginalString == newUri.OriginalString)
+            return;
+
+        _k7ServerService.HttpClient.BaseAddress = newUri;
 
         BaseAddressUpdated?.Invoke(this, baseAddress);
     }
