@@ -23,6 +23,7 @@ builder.Services.AddHttpClient<IK7ServerService, K7ServerService>(httpClient =>
 });
 
 builder.Services.AddSingleton<SidebarService>();
+builder.Services.AddSingleton<BackButtonService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<IDeviceService, DeviceService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();

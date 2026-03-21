@@ -57,6 +57,7 @@ public static partial class MauiProgram
         builder.Services.ConfigurePlatformServices();
 
         builder.Services.AddSingleton<SidebarService>();
+        builder.Services.AddSingleton<BackButtonService>();
         builder.Services.AddSingleton<ThemeService>();
 
         builder.Services.AddHttpClient(nameof(K7ServerService));

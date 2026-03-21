@@ -2,6 +2,7 @@
 using CommunityToolkit.Maui.Views;
 using K7.Clients.Shared.Domain.Interfaces;
 using K7.Clients.Shared.Domain.Models;
+using K7.Clients.Shared.Services;
 
 namespace K7.Clients.MAUI;
 
@@ -9,14 +10,24 @@ public partial class BlazorPage : ContentPage
 {
     private readonly IPlayerService _playerService;
     private readonly IAudioPlayerService _audioPlayerService;
+    private readonly BackButtonService _backButtonService;
 
-    public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService)
+    public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService)
     {
         _playerService = playerService;
         _audioPlayerService = audioPlayerService;
+        _backButtonService = backButtonService;
         InitializeComponent();
         InitializePlayer();
         InitializeAudioPlayer();
+    }
+
+    protected override bool OnBackButtonPressed()
+    {
+        if (_backButtonService.HandleBackButton())
+            return true;
+
+        return base.OnBackButtonPressed();
     }
 
     private void InitializePlayer()
