@@ -26,8 +26,17 @@ public partial class AudioPlayer : IAsyncDisposable
             _isInitialized = true;
 
             // Apply persisted volume state
-            await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
-            await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
+            var deviceType = await DeviceService.GetDeviceTypeAsync();
+            if (deviceType is DeviceType.Phone or DeviceType.Tablet)
+            {
+                await JSRuntime.InvokeVoidAsync("audioSetVolume", 1.0);
+                await JSRuntime.InvokeVoidAsync("audioSetMuted", false);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
+                await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
+            }
             await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeDuration);
         }
     }
