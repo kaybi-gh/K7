@@ -1,15 +1,18 @@
 @page "/linkdevice"
+@layout Layout.EmptyLayout
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @inject ICustomAuthenticationStateProvider AuthService
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 @implements IDisposable
 
 <PageTitle>Device Activation - K7</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height:80vh;">
-    <MudPaper Class="pa-8" Elevation="4" Style="width:100%; max-width:700px;">
+    <MudPaper Class="pa-4 pa-sm-8" Elevation="4" Style="width:100%; max-width:600px;">
         <MudStack Spacing="4" AlignItems="AlignItems.Center">
             <MudIcon Icon="@Icons.Material.Outlined.Tv" Size="Size.Large" Color="Color.Primary" />
-            <MudText Typo="Typo.h4" Align="Align.Center">Sign in to K7</MudText>
+            <MudText Typo="Typo.h5" Align="Align.Center">Sign in to K7</MudText>
 
             @if (_loading)
             {
@@ -50,9 +53,9 @@
                             <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center" Class="mt-4">
                                 2. And enter the code:
                             </MudText>
-                            <MudPaper Class="pa-4" Elevation="0" Style="background: var(--mud-palette-surface); border-radius: 8px; width:100%;">
-                                <MudText Typo="Typo.h3" Align="Align.Center"
-                                         Style="letter-spacing:0.3em; font-weight:bold;">
+                            <MudPaper Class="pa-3" Elevation="0" Style="background: var(--mud-palette-surface); border-radius: 8px; width:100%;">
+                                <MudText Typo="Typo.h4" Align="Align.Center"
+                                         Style="letter-spacing:0.2em; font-weight:bold;">
                                     @_deviceCode.UserCode
                                 </MudText>
                             </MudPaper>
@@ -126,6 +129,9 @@
 
             _authorized = true;
             await InvokeAsync(StateHasChanged);
+
+            await Task.Delay(1500);
+            await InvokeAsync(() => Navigation.NavigateTo("/"));
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -140,7 +146,5 @@
     {
         _cts?.Cancel();
         _cts?.Dispose();
-    }
-}
     }
 }

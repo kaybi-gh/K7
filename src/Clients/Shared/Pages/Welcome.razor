@@ -2,12 +2,15 @@
 @layout Layout.EmptyLayout
 @using K7.Shared
 @using K7.Shared.Dtos
+@using K7.Server.Domain.Enums
 @using Microsoft.AspNetCore.Components.Authorization
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @inject ICustomAuthenticationStateProvider AuthService
 @inject IK7ServerService K7ServerService
 @inject IDeviceStorageService DeviceStorage
+@inject IDeviceService DeviceService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <PageTitle>Welcome - K7</PageTitle>
@@ -46,7 +49,7 @@
                     </MudAlert>
                 }
 
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                <MudButton @ref="_signInButton" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
                            FullWidth="true" OnClick="SignInAsync">
                     Sign in
                 </MudButton>
@@ -64,8 +67,10 @@
 </MudContainer>
 
 @code {
+    private MudButton? _signInButton;
     private bool _loading;
     private bool _guestEnabled;
+    private bool _isTv;
     private string? _error;
     private string? _serverInfoError;
 
@@ -83,6 +88,8 @@
             Navigation.NavigateTo(ReturnUrl ?? "/");
             return;
         }
+
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         var storedJson = DeviceStorage.Get(PreferenceKeys.SERVER_INFO);
         if (!string.IsNullOrEmpty(storedJson))
@@ -111,8 +118,22 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _signInButton is not null)
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "document.querySelector('.mud-button-filled')?.focus()");
+        }
+    }
+
     private async Task SignInAsync()
     {
+        if (_isTv)
+        {
+            Navigation.NavigateTo("/linkdevice");
+            return;
+        }
+
         _loading = true;
         _error = null;
         StateHasChanged();
