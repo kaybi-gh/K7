@@ -219,31 +219,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     {
         try
         {
-            var storedToken = _deviceStorageService.Get(PreferenceKeys.ACCESS_TOKEN);
-            if (string.IsNullOrEmpty(storedToken))
-                return;
-
-            var claims = DecodeJwtClaims(storedToken);
-            if (claims is null)
+            var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+            if (string.IsNullOrEmpty(refreshToken))
             {
-                ClearStoredTokens();
                 return;
             }
 
-            var expClaim = claims.FirstOrDefault(c => c.Type == "exp");
-            bool isExpired = expClaim is not null
-                && long.TryParse(expClaim.Value, out var expUnix)
-                && DateTimeOffset.FromUnixTimeSeconds(expUnix) < DateTimeOffset.UtcNow;
-
-            if (isExpired)
-            {
-                _ = RefreshInBackgroundAsync();
-                return;
-            }
-
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict"));
-            _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", storedToken);
+            _ = RefreshInBackgroundAsync();
         }
         catch
         {
@@ -268,58 +250,33 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     {
         var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
         if (string.IsNullOrEmpty(refreshToken))
+        {
             return false;
+        }
 
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, "connect/token")
+            var result = await _openIddictClientService.AuthenticateWithRefreshTokenAsync(new()
             {
-                Content = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    ["grant_type"] = "refresh_token",
-                    ["refresh_token"] = refreshToken,
-                    ["client_id"] = "k7-native"
-                })
-            };
+                CancellationToken = cts.Token,
+                RefreshToken = refreshToken,
+                ProviderName = "K7"
+            });
 
-            var savedAuth = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
-            _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict"));
 
-            var response = await _k7ServerService.HttpClient.SendAsync(request, cts.Token);
-
-            if (!response.IsSuccessStatusCode)
+            if (!string.IsNullOrEmpty(result.AccessToken))
             {
-                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = savedAuth;
-                return false;
+                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", result.AccessToken);
+                _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, result.AccessToken);
             }
 
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (!root.TryGetProperty("access_token", out var accessTokenProp))
-                return false;
-
-            var newAccessToken = accessTokenProp.GetString();
-            if (string.IsNullOrEmpty(newAccessToken))
-                return false;
-
-            var claims = DecodeJwtClaims(newAccessToken);
-            if (claims is null)
-                return false;
-
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict"));
-            _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", newAccessToken);
-            _deviceStorageService.Set(PreferenceKeys.ACCESS_TOKEN, newAccessToken);
-
-            if (root.TryGetProperty("refresh_token", out var refreshTokenProp))
+            if (!string.IsNullOrEmpty(result.RefreshToken))
             {
-                var newRefreshToken = refreshTokenProp.GetString();
-                if (!string.IsNullOrEmpty(newRefreshToken))
-                    _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, newRefreshToken);
+                _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
             }
 
             return true;
@@ -330,43 +287,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
-    private static List<Claim>? DecodeJwtClaims(string token)
-    {
-        var parts = token.Split('.');
-        if (parts.Length != 3)
-            return null;
-
-        var payload = parts[1].Replace('-', '+').Replace('_', '/');
-        switch (payload.Length % 4)
-        {
-            case 2: payload += "=="; break;
-            case 3: payload += "="; break;
-        }
-
-        var json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        var claims = new List<Claim>();
-        foreach (var prop in root.EnumerateObject())
-        {
-            if (prop.Value.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in prop.Value.EnumerateArray())
-                    claims.Add(new Claim(prop.Name, item.GetString() ?? ""));
-            }
-            else if (prop.Value.ValueKind == JsonValueKind.String)
-            {
-                claims.Add(new Claim(prop.Name, prop.Value.GetString()!));
-            }
-            else if (prop.Value.ValueKind == JsonValueKind.Number)
-            {
-                claims.Add(new Claim(prop.Name, prop.Value.GetRawText()));
-            }
-        }
-
-        return claims;
-    }
 
     private void ClearStoredTokens()
     {
