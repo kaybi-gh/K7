@@ -1,9 +1,11 @@
 ﻿using System.Security.Claims;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
@@ -23,7 +25,8 @@ public class Authorize : IEndpoint
             [FromServices] IOpenIddictAuthorizationManager authorizationManager,
             [FromServices] IOpenIddictScopeManager scopeManager,
             [FromServices] SignInManager<ApplicationUser> signInManager,
-            [FromServices] UserManager<ApplicationUser> userManager) =>
+            [FromServices] UserManager<ApplicationUser> userManager,
+            [FromServices] IApplicationDbContext dbContext) =>
         {
             var request = httpContext.GetOpenIddictServerRequest() ??
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
@@ -37,6 +40,19 @@ public class Authorize : IEndpoint
 
             var user = await userManager.GetUserAsync(result.Principal) ??
                 throw new InvalidOperationException("The user details cannot be retrieved.");
+
+            var domainUser = await dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IdentityUserId == user.Id, httpContext.RequestAborted);
+
+            if (domainUser is not null && !domainUser.IsActive)
+            {
+                return Results.Forbid(new AuthenticationProperties(new Dictionary<string, string?>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user account has been deactivated."
+                }), [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
+            }
 
             var application = await applicationManager.FindByClientIdAsync(request.ClientId!) ??
                 throw new InvalidOperationException("Application not found.");

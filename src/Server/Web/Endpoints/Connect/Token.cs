@@ -1,9 +1,11 @@
 ﻿using System.Security.Claims;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
@@ -20,7 +22,8 @@ public class Token : IEndpoint
 
         endpointRouteBuilder.MapPost("/connect/token", async (HttpContext context,
             [FromServices] UserManager<ApplicationUser> userManager,
-            [FromServices] SignInManager<ApplicationUser> signInManager) =>
+            [FromServices] SignInManager<ApplicationUser> signInManager,
+            [FromServices] IApplicationDbContext dbContext) =>
         {
             var request = context.GetOpenIddictServerRequest() ??
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
@@ -56,6 +59,19 @@ public class Token : IEndpoint
                     {
                         [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
                         [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user is no longer allowed to sign in."
+                    }), [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
+                }
+
+                var domainUser = await dbContext.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.IdentityUserId == user.Id, context.RequestAborted);
+
+                if (domainUser is not null && !domainUser.IsActive)
+                {
+                    return Results.Forbid(new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user account has been deactivated."
                     }), [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
                 }
 
