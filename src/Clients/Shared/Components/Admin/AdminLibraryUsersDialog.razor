@@ -1,0 +1,120 @@
+@using K7.Shared.Dtos.Users
+@using K7.Shared.Dtos.Requests
+@inject IK7ServerService K7ServerService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (_users.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Aucun utilisateur.</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                Activez ou désactivez l'accès à cette librairie pour chaque utilisateur.
+            </MudText>
+            <MudStack Spacing="1">
+                @foreach (var user in _users)
+                {
+                    var hasAccess = !_excludedUserIds.Contains(user.Id);
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body2">@(user.UserName ?? user.Email ?? "—")</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@user.Role</MudText>
+                        </MudStack>
+                        <MudSwitch T="bool" Value="@hasAccess" ValueChanged="@(v => ToggleAccess(user.Id, v))"
+                                   Color="Color.Primary" />
+                    </MudStack>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="_saving">
+            @if (_saving) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            Enregistrer
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Guid LibraryId { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private List<UserDto> _users = [];
+    private HashSet<Guid> _excludedUserIds = [];
+    private Dictionary<Guid, List<Guid>> _originalExclusions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _users = await K7ServerService.GetUsersAsync();
+            _originalExclusions = _users.ToDictionary(u => u.Id, u => new List<Guid>(u.ExcludedLibraryIds));
+            _excludedUserIds = _users
+                .Where(u => u.ExcludedLibraryIds.Contains(LibraryId))
+                .Select(u => u.Id)
+                .ToHashSet();
+        }
+        catch
+        {
+            _users = [];
+        }
+        _loading = false;
+    }
+
+    private void ToggleAccess(Guid userId, bool hasAccess)
+    {
+        if (hasAccess)
+            _excludedUserIds.Remove(userId);
+        else
+            _excludedUserIds.Add(userId);
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            foreach (var user in _users)
+            {
+                var wasExcluded = _originalExclusions[user.Id].Contains(LibraryId);
+                var isExcluded = _excludedUserIds.Contains(user.Id);
+
+                if (wasExcluded == isExcluded)
+                    continue;
+
+                var newExclusions = new List<Guid>(_originalExclusions[user.Id]);
+                if (isExcluded)
+                    newExclusions.Add(LibraryId);
+                else
+                    newExclusions.Remove(LibraryId);
+
+                await K7ServerService.UpdateUserLibraryExclusionsAsync(user.Id, new UpdateUserLibraryExclusionsRequest
+                {
+                    ExcludedLibraryIds = newExclusions
+                });
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

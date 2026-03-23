@@ -45,6 +45,10 @@ else
                             @library.RootPath
                         </MudText>
                     </MudCardContent>
+                    <MudCardActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Default"
+                                       OnClick="@(() => OpenUsersDialog(library))" aria-label="Accès utilisateurs" />
+                    </MudCardActions>
                 </MudCard>
             </MudItem>
         }
@@ -110,4 +114,15 @@ else
         LibraryMediaType.Music => "Musique",
         _ => type.ToString()
     };
+
+    private async Task OpenUsersDialog(LibraryDto library)
+    {
+        var parameters = new DialogParameters<AdminLibraryUsersDialog>
+        {
+            { x => x.LibraryId, library.Id }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<AdminLibraryUsersDialog>($"Accès — {library.Title}", parameters, options);
+    }
 }
