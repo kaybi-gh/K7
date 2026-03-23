@@ -1,4 +1,5 @@
 ﻿using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Domain.Models;
 using K7.Shared;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -17,17 +18,20 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly OpenIddictClientService _openIddictClientService;
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
+    private readonly ILocalUserService _localUserService;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private bool _initialized;
 
     public CustomAuthenticationStateProvider(
         OpenIddictClientService openIddictClientService,
         IK7ServerService k7ServerService,
-        IDeviceStorageService deviceStorageService)
+        IDeviceStorageService deviceStorageService,
+        ILocalUserService localUserService)
     {
         _openIddictClientService = openIddictClientService;
         _k7ServerService = k7ServerService;
         _deviceStorageService = deviceStorageService;
+        _localUserService = localUserService;
     }
 
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -73,6 +77,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                 _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
             }
 
+            await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", cancellationToken);
             await TryAttachCurrentUserToDeviceAsync(cancellationToken);
         }
         catch (OperationCanceledException)
@@ -181,6 +186,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
         }
 
+        await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", cancellationToken);
         await TryAttachCurrentUserToDeviceAsync(cancellationToken);
 
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
@@ -190,8 +196,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     {
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
-        _deviceStorageService.Remove(PreferenceKeys.ACCESS_TOKEN);
-        _deviceStorageService.Remove(PreferenceKeys.REFRESH_TOKEN);
+        ClearStoredTokens();
 
         try
         {
@@ -217,15 +222,16 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     private void TryRestoreSessionSync()
     {
+        if (!_localUserService.IsSingleUserMode)
+            return;
+
+        var lastUser = _localUserService.GetLastActive();
+        if (lastUser is null)
+            return;
+
         try
         {
-            var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
-            if (string.IsNullOrEmpty(refreshToken))
-            {
-                return;
-            }
-
-            _ = RefreshInBackgroundAsync();
+            _ = RestoreUserInBackgroundAsync(lastUser);
         }
         catch
         {
@@ -233,26 +239,25 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
-    private async Task RefreshInBackgroundAsync()
+    private async Task RestoreUserInBackgroundAsync(LocalUser localUser)
     {
-        if (await TryRefreshTokenAsync())
+        if (await TryRefreshTokenAsync(localUser.RefreshToken))
         {
+            await SaveLocalUserFromCurrentUserAsync(localUser.RefreshToken);
             NotifyAuthenticationStateChanged(
                 Task.FromResult(new AuthenticationState(_currentUser)));
         }
         else
         {
+            _localUserService.Remove(localUser.IdentityUserId);
             ClearStoredTokens();
         }
     }
 
-    private async Task<bool> TryRefreshTokenAsync()
+    private async Task<bool> TryRefreshTokenAsync(string refreshToken)
     {
-        var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
         if (string.IsNullOrEmpty(refreshToken))
-        {
             return false;
-        }
 
         try
         {
@@ -287,6 +292,54 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
+
+    public async Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        if (!await TryRefreshTokenAsync(refreshToken))
+            return false;
+
+        await SaveLocalUserFromCurrentUserAsync(refreshToken, cancellationToken);
+        await TryAttachCurrentUserToDeviceAsync(cancellationToken);
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        return true;
+    }
+
+    private async Task SaveLocalUserFromCurrentUserAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        var identityUserId = _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(identityUserId))
+            return;
+
+        var currentRefreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+
+        var localUser = new LocalUser
+        {
+            IdentityUserId = identityUserId,
+            UserName = _currentUser.FindFirst(ClaimTypes.Name)?.Value
+                       ?? _currentUser.FindFirst("preferred_username")?.Value
+                       ?? _currentUser.FindFirst("name")?.Value
+                       ?? "User",
+            Email = _currentUser.FindFirst(ClaimTypes.Email)?.Value
+                    ?? _currentUser.FindFirst("email")?.Value,
+            RefreshToken = currentRefreshToken ?? refreshToken
+        };
+
+        try
+        {
+            var serverUser = await _k7ServerService.GetCurrentUserAsync(cancellationToken);
+            if (serverUser is not null)
+            {
+                localUser.PinHash = serverUser.PinHash;
+                if (serverUser.UserName is not null)
+                    localUser.UserName = serverUser.UserName;
+                if (serverUser.Email is not null)
+                    localUser.Email = serverUser.Email;
+            }
+        }
+        catch { }
+
+        _localUserService.SaveOrUpdate(localUser);
+    }
 
     private void ClearStoredTokens()
     {
