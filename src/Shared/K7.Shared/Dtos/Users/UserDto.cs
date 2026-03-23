@@ -14,10 +14,12 @@ public sealed record UserDto
     public required DateTimeOffset Created { get; init; }
     public required bool IsActive { get; init; }
     public required bool IsGuest { get; init; }
+    public required bool HasPin { get; init; }
+    public string? PinHash { get; init; }
     public required List<CapabilityOverrideDto> CapabilityOverrides { get; init; }
     public required List<Guid> ExcludedLibraryIds { get; init; }
 
-    public static UserDto FromDomain(User domain) => new()
+    public static UserDto FromDomain(User domain, bool includePinHash = false) => new()
     {
         Id = domain.Id,
         IdentityUserId = domain.IdentityUserId,
@@ -27,6 +29,8 @@ public sealed record UserDto
         Created = domain.Created,
         IsActive = domain.IsActive,
         IsGuest = domain.Role == Roles.Guest,
+        HasPin = domain.PinHash is not null,
+        PinHash = includePinHash ? domain.PinHash : null,
         CapabilityOverrides = domain.CapabilityOverrides
             .Select(o => new CapabilityOverrideDto
             {

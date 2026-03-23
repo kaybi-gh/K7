@@ -23,7 +23,7 @@ public class GetUsers : IEndpoint
                 Role = role,
                 IsActive = isActive
             }, cancellationToken);
-            return Results.Ok(users.Select(UserDto.FromDomain));
+            return Results.Ok(users.Select(u => UserDto.FromDomain(u)));
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
