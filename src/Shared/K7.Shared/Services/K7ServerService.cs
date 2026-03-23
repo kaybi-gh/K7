@@ -305,6 +305,18 @@ public class K7ServerService : IK7ServerService
         return users ?? [];
     }
 
+    public async Task<UserDto?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await HttpClient.GetFromJsonAsync<UserDto>("api/users/me", _serializerOptions, cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public async Task UpdateUserRoleAsync(Guid userId, UpdateUserRoleRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/role", request, _serializerOptions, cancellationToken);
@@ -332,6 +344,12 @@ public class K7ServerService : IK7ServerService
     public async Task UpdateUserLibraryExclusionsAsync(Guid userId, UpdateUserLibraryExclusionsRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/library-exclusions", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/pin", new { Pin = pin }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 }
