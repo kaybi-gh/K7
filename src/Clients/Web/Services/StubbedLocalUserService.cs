@@ -3,7 +3,7 @@ using K7.Clients.Shared.Domain.Models;
 
 namespace K7.Clients.Web.Services;
 
-public class NullLocalUserService : ILocalUserService
+public class StubbedLocalUserService : ILocalUserService
 {
     public List<LocalUser> GetAll() => [];
     public LocalUser? GetLastActive() => null;

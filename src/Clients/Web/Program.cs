@@ -37,7 +37,7 @@ builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 builder.Services.AddSingleton<K7HubClient>();
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
-builder.Services.AddSingleton<ILocalUserService, NullLocalUserService>();
+builder.Services.AddSingleton<ILocalUserService, StubbedLocalUserService>();
 
 builder.Services.AddHttpClient("BackendAPI", client =>
 {
