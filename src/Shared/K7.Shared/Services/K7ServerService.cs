@@ -2,6 +2,7 @@
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Users;
 using K7.Shared.Interfaces;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Entities.Medias;
@@ -296,5 +297,35 @@ public class K7ServerService : IK7ServerService
     public async Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<ServerInfoDto>("api/server-info", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default)
+    {
+        var users = await HttpClient.GetFromJsonAsync<List<UserDto>>("api/users", _serializerOptions, cancellationToken);
+        return users ?? [];
+    }
+
+    public async Task UpdateUserRoleAsync(Guid userId, UpdateUserRoleRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/role", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateUserCapabilitiesAsync(Guid userId, UpdateUserCapabilitiesRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/capabilities", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/users/{userId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ToggleUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/active", new { IsActive = isActive }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }

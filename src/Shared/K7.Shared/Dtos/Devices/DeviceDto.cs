@@ -1,5 +1,6 @@
 ﻿using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Users;
 using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Shared.Dtos.Devices;

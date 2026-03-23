@@ -13,4 +13,10 @@ public interface IIdentityService // How to put this into domain?
     Task<(Result Result, string UserId)> CreateUserAsync(string userName, string password);
 
     Task<Result> DeleteUserAsync(string userId);
+
+    Task<string?> GetEmailAsync(string userId);
+
+    Task<IList<string>> GetRolesAsync(string userId);
+
+    Task SetRoleAsync(string userId, string role);
 }

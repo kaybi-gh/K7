@@ -1,6 +1,6 @@
 using K7.Server.Domain.Entities.Users;
 
-namespace K7.Shared.Dtos;
+namespace K7.Shared.Dtos.Users;
 
 public sealed record LiteUserDto
 {
