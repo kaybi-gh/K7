@@ -1,0 +1,45 @@
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="mt-2">
+            <MudText Typo="Typo.body1">Enter PIN for <b>@UserName</b></MudText>
+            <MudTextField @bind-Value="_pin"
+                          Label="PIN"
+                          InputType="InputType.Password"
+                          Variant="Variant.Outlined"
+                          MaxLength="10"
+                          Immediate="true"
+                          AutoFocus="true"
+                          OnKeyUp="OnKeyUp" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Submit"
+                   Disabled="@string.IsNullOrEmpty(_pin)">
+            OK
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public string UserName { get; set; } = "";
+
+    private string _pin = "";
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_pin));
+    private void Cancel() => MudDialog.Cancel();
+
+    private void OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrEmpty(_pin))
+            Submit();
+    }
+}
