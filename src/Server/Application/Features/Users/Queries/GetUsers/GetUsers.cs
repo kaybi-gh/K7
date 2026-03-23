@@ -27,6 +27,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, List<User>>
     {
         var query = _context.Users
             .Include(u => u.CapabilityOverrides)
+            .Include(u => u.LibraryExclusions)
             .AsNoTracking()
             .AsQueryable();
 

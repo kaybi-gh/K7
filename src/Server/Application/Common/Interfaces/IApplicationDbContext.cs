@@ -39,6 +39,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<ServerSetting> ServerSettings { get; }
     DbSet<UserSetting> UserSettings { get; }
     DbSet<UserCapabilityOverride> UserCapabilityOverrides { get; }
+    DbSet<UserLibraryExclusion> UserLibraryExclusions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

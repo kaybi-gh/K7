@@ -972,10 +972,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<Guid[]>("AccessibleLibraryIds")
-                        .IsRequired()
-                        .HasColumnType("uuid[]");
-
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
@@ -1019,6 +1015,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserCapabilityOverrides");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserLibraryExclusion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserLibraryExclusions");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaState", b =>
@@ -2218,6 +2233,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserLibraryExclusion", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", null)
+                        .WithMany("LibraryExclusions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaState", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -2478,6 +2502,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
                 {
                     b.Navigation("CapabilityOverrides");
+
+                    b.Navigation("LibraryExclusions");
 
                     b.Navigation("Ratings");
                 });

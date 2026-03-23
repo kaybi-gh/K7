@@ -328,4 +328,10 @@ public class K7ServerService : IK7ServerService
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/active", new { IsActive = isActive }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task UpdateUserLibraryExclusionsAsync(Guid userId, UpdateUserLibraryExclusionsRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/library-exclusions", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }

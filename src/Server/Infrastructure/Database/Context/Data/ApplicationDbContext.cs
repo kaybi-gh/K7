@@ -46,6 +46,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<ServerSetting> ServerSettings => Set<ServerSetting>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
     public DbSet<UserCapabilityOverride> UserCapabilityOverrides => Set<UserCapabilityOverride>();
+    public DbSet<UserLibraryExclusion> UserLibraryExclusions => Set<UserLibraryExclusion>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -15,6 +15,7 @@ public sealed record UserDto
     public required bool IsActive { get; init; }
     public required bool IsGuest { get; init; }
     public required List<CapabilityOverrideDto> CapabilityOverrides { get; init; }
+    public required List<Guid> ExcludedLibraryIds { get; init; }
 
     public static UserDto FromDomain(User domain) => new()
     {
@@ -31,7 +32,9 @@ public sealed record UserDto
             {
                 Capability = o.Capability,
                 Enabled = o.Enabled
-            }).ToList()
+            }).ToList(),
+        ExcludedLibraryIds = domain.LibraryExclusions
+            .Select(e => e.LibraryId).ToList()
     };
 }
 
