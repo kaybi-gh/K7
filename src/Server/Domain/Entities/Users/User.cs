@@ -7,6 +7,7 @@ public class User : BaseAuditableEntity
 {
     public string? IdentityUserId { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? PinHash { get; set; }
     public ICollection<UserRating> Ratings { get; set; } = [];
     public ICollection<Device> Devices { get; set; } = [];
     public ICollection<UserCapabilityOverride> CapabilityOverrides { get; set; } = [];

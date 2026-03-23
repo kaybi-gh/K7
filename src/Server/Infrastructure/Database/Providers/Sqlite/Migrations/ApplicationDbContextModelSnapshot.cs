@@ -985,6 +985,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PinHash")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.ToTable("Users");
