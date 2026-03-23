@@ -65,9 +65,11 @@ public interface IK7ServerService
 
     // Admin Users
     Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);
+    Task<UserDto?> GetCurrentUserAsync(CancellationToken cancellationToken = default);
     Task UpdateUserRoleAsync(Guid userId, UpdateUserRoleRequest request, CancellationToken cancellationToken = default);
     Task UpdateUserCapabilitiesAsync(Guid userId, UpdateUserCapabilitiesRequest request, CancellationToken cancellationToken = default);
     Task ToggleUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default);
     Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);
     Task UpdateUserLibraryExclusionsAsync(Guid userId, UpdateUserLibraryExclusionsRequest request, CancellationToken cancellationToken = default);
+    Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default);
 }
