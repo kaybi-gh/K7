@@ -25,6 +25,30 @@ else
 <MudText>FormFactor: @_deviceType</MudText>
 <MudText>HDR: @_hdrSupport</MudText>
 
+<MudDivider Class="my-4" />
+<MudText Typo="Typo.h6" Class="mb-2">PIN</MudText>
+@if (_hasPin)
+{
+    <MudText Typo="Typo.body2" Class="mb-2">A PIN is set on your account.</MudText>
+    <MudStack Row="true" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ChangePin">Change PIN</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="RemovePin">Remove PIN</MudButton>
+    </MudStack>
+}
+else
+{
+    <MudText Typo="Typo.body2" Class="mb-2">No PIN is set. A PIN protects your account access on shared devices.</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SetPin">Set a PIN</MudButton>
+}
+@if (_pinError is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-2">@_pinError</MudAlert>
+}
+@if (_pinSuccess is not null)
+{
+    <MudAlert Severity="Severity.Success" Class="mt-2">@_pinSuccess</MudAlert>
+}
+
 <MudExpansionPanels>
     <MudExpansionPanel Text="Supported Codecs" MaxHeight="1000">
         <ul>
