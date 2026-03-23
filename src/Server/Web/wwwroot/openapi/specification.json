@@ -126,6 +126,40 @@
         }
       }
     },
+    "/api/users/{id}/library-exclusions": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserLibraryExclusions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserLibraryExclusionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{id}/role": {
       "put": {
         "tags": [
@@ -5991,6 +6025,21 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CapabilityOverrideDto"
+            }
+          }
+        }
+      },
+      "UpdateUserLibraryExclusionsRequest": {
+        "required": [
+          "excludedLibraryIds"
+        ],
+        "type": "object",
+        "properties": {
+          "excludedLibraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         }
