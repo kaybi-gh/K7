@@ -5,6 +5,161 @@
     "version": "v1"
   },
   "paths": {
+    "/api/users/{id}": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUsers",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/active": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "ToggleUserActive",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToggleUserActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/capabilities": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserCapabilities",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserCapabilitiesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/role": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserRole",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/stream-sessions": {
       "post": {
         "tags": [
@@ -2679,6 +2834,24 @@
       },
       "Browser": {
         "type": "integer"
+      },
+      "Capability": {
+        "type": "integer"
+      },
+      "CapabilityOverrideDto": {
+        "required": [
+          "capability",
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "capability": {
+            "$ref": "#/components/schemas/Capability"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
       },
       "ClientType": {
         "type": "integer"
@@ -5636,6 +5809,17 @@
           }
         }
       },
+      "ToggleUserActiveRequest": {
+        "required": [
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "TopItemDto": {
         "required": [
           "name"
@@ -5794,6 +5978,31 @@
           },
           "orderDescending": {
             "type": "boolean"
+          }
+        }
+      },
+      "UpdateUserCapabilitiesRequest": {
+        "required": [
+          "overrides"
+        ],
+        "type": "object",
+        "properties": {
+          "overrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityOverrideDto"
+            }
+          }
+        }
+      },
+      "UpdateUserRoleRequest": {
+        "required": [
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
           }
         }
       },
@@ -5972,6 +6181,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Users"
+    },
     {
       "name": "StreamSessions"
     },
