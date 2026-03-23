@@ -4,6 +4,7 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Entities.Persons;
+using K7.Shared.Dtos.Users;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 
@@ -61,4 +62,11 @@ public interface IK7ServerService
 
     // Server Info
     Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default);
+
+    // Admin Users
+    Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);
+    Task UpdateUserRoleAsync(Guid userId, UpdateUserRoleRequest request, CancellationToken cancellationToken = default);
+    Task UpdateUserCapabilitiesAsync(Guid userId, UpdateUserCapabilitiesRequest request, CancellationToken cancellationToken = default);
+    Task ToggleUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default);
+    Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);
 }
