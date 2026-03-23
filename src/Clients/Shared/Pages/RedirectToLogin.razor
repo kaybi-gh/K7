@@ -1,8 +1,11 @@
 @inject NavigationManager Navigation
+@inject ILocalUserService LocalUserService
 
 @code {
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo($"sign-in?returnUrl={Uri.EscapeDataString(Navigation.Uri)}");
+        var users = LocalUserService.GetAll();
+        var target = users.Count > 0 ? "select-user" : "sign-in";
+        Navigation.NavigateTo($"{target}?returnUrl={Uri.EscapeDataString(Navigation.Uri)}");
     }
 }

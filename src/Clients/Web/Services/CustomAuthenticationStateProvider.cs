@@ -39,4 +39,9 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
     {
         throw new NotSupportedException("Device code flow is not supported in the web client.");
     }
+
+    public Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException("User switching is not supported in the web client.");
+    }
 }
