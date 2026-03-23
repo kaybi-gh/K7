@@ -17,4 +17,7 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<string> ACCESS_TOKEN = new("AccessToken");
     public static readonly PreferenceKey<string> REFRESH_TOKEN = new("RefreshToken");
     public static readonly PreferenceKey<string> SERVER_INFO = new("ServerInfo");
+    public static readonly PreferenceKey<string> LOCAL_USERS = new("LocalUsers");
+    public static readonly PreferenceKey<bool> SINGLE_USER_MODE = new("SingleUserMode");
+    public static readonly PreferenceKey<string> LAST_ACTIVE_USER_ID = new("LastActiveUserId");
 }
