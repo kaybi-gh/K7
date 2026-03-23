@@ -17,23 +17,23 @@ public class UpdateUserLibraryExclusionsCommandHandler(IApplicationDbContext con
 {
     public async Task Handle(UpdateUserLibraryExclusionsCommand request, CancellationToken cancellationToken)
     {
-        var domainUser = await context.Users
-            .Include(u => u.LibraryExclusions)
+        var existing = await context.UserLibraryExclusions
+            .Where(e => e.UserId == request.Id)
+            .ToListAsync(cancellationToken);
+
+        var user = await context.Users
             .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
 
-        Guard.Against.NotFound(request.Id, domainUser);
+        Guard.Against.NotFound(request.Id, user);
 
-        domainUser.LibraryExclusions.Clear();
+        context.UserLibraryExclusions.RemoveRange(existing);
 
-        foreach (var libraryId in request.ExcludedLibraryIds)
+        context.UserLibraryExclusions.AddRange(request.ExcludedLibraryIds.Select(libraryId => new UserLibraryExclusion
         {
-            domainUser.LibraryExclusions.Add(new UserLibraryExclusion
-            {
-                Id = Guid.NewGuid(),
-                UserId = domainUser.Id,
-                LibraryId = libraryId
-            });
-        }
+            Id = Guid.NewGuid(),
+            UserId = request.Id,
+            LibraryId = libraryId
+        }));
 
         await context.SaveChangesAsync(cancellationToken);
     }

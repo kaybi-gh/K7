@@ -13,36 +13,30 @@ public record UpdateUserCapabilitiesCommand : IRequest
     public required List<CapabilityOverrideDto> Overrides { get; init; }
 }
 
-public class UpdateUserCapabilitiesCommandHandler : IRequestHandler<UpdateUserCapabilitiesCommand>
+public class UpdateUserCapabilitiesCommandHandler(IApplicationDbContext context)
+    : IRequestHandler<UpdateUserCapabilitiesCommand>
 {
-    private readonly IApplicationDbContext _context;
-
-    public UpdateUserCapabilitiesCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task Handle(UpdateUserCapabilitiesCommand request, CancellationToken cancellationToken)
     {
-        var domainUser = await _context.Users
-            .Include(u => u.CapabilityOverrides)
+        var existing = await context.UserCapabilityOverrides
+            .Where(o => o.UserId == request.Id)
+            .ToListAsync(cancellationToken);
+
+        var user = await context.Users
             .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
 
-        Guard.Against.NotFound(request.Id, domainUser);
+        Guard.Against.NotFound(request.Id, user);
 
-        domainUser.CapabilityOverrides.Clear();
+        context.UserCapabilityOverrides.RemoveRange(existing);
 
-        foreach (var dto in request.Overrides)
+        context.UserCapabilityOverrides.AddRange(request.Overrides.Select(dto => new UserCapabilityOverride
         {
-            domainUser.CapabilityOverrides.Add(new UserCapabilityOverride
-            {
-                Id = Guid.NewGuid(),
-                UserId = domainUser.Id,
-                Capability = dto.Capability,
-                Enabled = dto.Enabled
-            });
-        }
+            Id = Guid.NewGuid(),
+            UserId = request.Id,
+            Capability = dto.Capability,
+            Enabled = dto.Enabled
+        }));
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }
