@@ -1,0 +1,204 @@
+@using K7.Shared.Dtos
+@using K7.Shared.Dtos.Users
+@using K7.Shared.Dtos.Requests
+@using K7.Server.Domain.Constants
+@using K7.Server.Domain.Enums
+@inject IK7ServerService K7ServerService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <MudText Typo="Typo.h6">Utilisateurs</MudText>
+</MudStack>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_users.Count == 0)
+{
+    <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
+        <MudIcon Icon="@Icons.Material.Outlined.People" Size="Size.Large" Color="Color.Secondary" />
+        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">Aucun utilisateur</MudText>
+    </MudPaper>
+}
+else
+{
+    <MudSimpleTable Dense="true" Bordered="true" Hover="true">
+        <thead>
+            <tr>
+                <th>Utilisateur</th>
+                <th>Rôle</th>
+                <th>Actif</th>
+                <th>Créé le</th>
+                <th style="width: 100px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in _users)
+            {
+                <tr style="@(!user.IsActive ? "opacity: 0.5;" : "")">
+                    <td>
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body1">@(user.UserName ?? "—")</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@(user.Email ?? "—")</MudText>
+                        </MudStack>
+                    </td>
+                    <td>
+                        @if (user.IsGuest)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default">Invité</MudChip>
+                        }
+                        else
+                        {
+                            <MudSelect T="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
+                                       Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
+                                <MudSelectItem Value="@Roles.Administrator">Administrateur</MudSelectItem>
+                                <MudSelectItem Value="@Roles.User">Utilisateur</MudSelectItem>
+                            </MudSelect>
+                        }
+                    </td>
+                    <td>
+                        <MudSwitch T="bool" Value="@user.IsActive"
+                                   ValueChanged="@(v => OnToggleActive(user, v))"
+                                   Color="Color.Success" />
+                    </td>
+                    <td>@user.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        <MudStack Row="true" Spacing="1">
+                            @if (!user.IsGuest)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Default"
+                                               OnClick="@(() => OpenCapabilitiesDialog(user))" aria-label="Capacités" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                               OnClick="@(() => ConfirmDelete(user))" aria-label="Supprimer" />
+                            }
+                        </MudStack>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+
+@code {
+    private bool _isLoading = true;
+    private List<UserDto> _users = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        try
+        {
+            _users = await K7ServerService.GetUsersAsync();
+        }
+        catch
+        {
+            _users = [];
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnRoleChanged(UserDto user, string newRole)
+    {
+        try
+        {
+            await K7ServerService.UpdateUserRoleAsync(user.Id, new UpdateUserRoleRequest { Role = newRole });
+            Snackbar.Add($"Rôle de {user.UserName} mis à jour.", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnToggleActive(UserDto user, bool isActive)
+    {
+        try
+        {
+            await K7ServerService.ToggleUserActiveAsync(user.Id, isActive);
+            var label = user.UserName ?? user.Email ?? "Utilisateur";
+            Snackbar.Add(isActive ? $"{label} activé." : $"{label} désactivé.", Severity.Success);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OpenCapabilitiesDialog(UserDto user)
+    {
+        var allCapabilities = Enum.GetValues<Capability>();
+        var defaultCaps = DefaultCapabilities.ForRole(user.Role);
+
+        var overrides = user.CapabilityOverrides
+            .ToDictionary(o => o.Capability, o => o.Enabled);
+
+        var parameters = new DialogParameters<AdminUserCapabilitiesDialog>
+        {
+            { x => x.UserName, user.UserName ?? user.Email ?? "Utilisateur" },
+            { x => x.Role, user.Role },
+            { x => x.Overrides, overrides }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<AdminUserCapabilitiesDialog>("Capacités", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: Dictionary<Capability, bool> newOverrides })
+        {
+            var request = new UpdateUserCapabilitiesRequest
+            {
+                Overrides = newOverrides
+                    .Select(kv => new CapabilityOverrideDto { Capability = kv.Key, Enabled = kv.Value })
+                    .ToList()
+            };
+
+            try
+            {
+                await K7ServerService.UpdateUserCapabilitiesAsync(user.Id, request);
+                Snackbar.Add("Capacités mises à jour.", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task ConfirmDelete(UserDto user)
+    {
+        var parameters = new DialogParameters<ConfirmDeleteUserDialog>
+        {
+            { x => x.DisplayName, user.UserName ?? user.Email ?? "cet utilisateur" }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>("Supprimer l'utilisateur", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await K7ServerService.DeleteUserAsync(user.Id);
+                Snackbar.Add("Utilisateur supprimé.", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

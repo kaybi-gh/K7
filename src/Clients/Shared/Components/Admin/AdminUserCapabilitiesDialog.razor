@@ -1,0 +1,90 @@
+@using K7.Server.Domain.Constants
+@using K7.Server.Domain.Enums
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            Rôle actuel : <strong>@GetRoleLabel(Role)</strong>. Les cases cochées par défaut sont héritées du rôle.
+        </MudText>
+        <MudStack Spacing="1">
+            @foreach (var capability in Enum.GetValues<Capability>())
+            {
+                var defaultEnabled = _defaultCaps.Contains(capability);
+                var hasOverride = Overrides.ContainsKey(capability);
+                var effectiveValue = hasOverride ? Overrides[capability] : defaultEnabled;
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudText Typo="Typo.body2">@GetCapabilityLabel(capability)</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        @if (hasOverride)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Undo" Size="Size.Small" Color="Color.Secondary"
+                                           OnClick="@(() => RemoveOverride(capability))" aria-label="Réinitialiser" />
+                        }
+                        <MudSwitch T="bool" Value="@effectiveValue" ValueChanged="@(v => SetOverride(capability, v, defaultEnabled))"
+                                   Color="@(hasOverride ? Color.Warning : Color.Primary)" />
+                    </MudStack>
+                </MudStack>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Enregistrer</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public string UserName { get; set; } = "";
+    [Parameter] public string Role { get; set; } = Roles.User;
+    [Parameter] public Dictionary<Capability, bool> Overrides { get; set; } = new();
+
+    private IReadOnlySet<Capability> _defaultCaps = DefaultCapabilities.ForRole(Roles.User);
+
+    protected override void OnParametersSet()
+    {
+        _defaultCaps = DefaultCapabilities.ForRole(Role);
+        Overrides = new Dictionary<Capability, bool>(Overrides);
+    }
+
+    private void SetOverride(Capability capability, bool value, bool defaultEnabled)
+    {
+        if (value == defaultEnabled)
+            Overrides.Remove(capability);
+        else
+            Overrides[capability] = value;
+    }
+
+    private void RemoveOverride(Capability capability)
+    {
+        Overrides.Remove(capability);
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Overrides));
+
+    private static string GetRoleLabel(string role) => role switch
+    {
+        Roles.Administrator => "Administrateur",
+        Roles.User => "Utilisateur",
+        Roles.Guest => "Invité",
+        _ => role
+    };
+
+    private static string GetCapabilityLabel(Capability cap) => cap switch
+    {
+        Capability.CanRate => "Noter les médias",
+        Capability.CanCreatePlaylist => "Créer des playlists",
+        Capability.CanViewStats => "Voir les statistiques",
+        Capability.CanResumePlayback => "Reprendre la lecture",
+        Capability.CanViewHistory => "Voir l'historique",
+        Capability.CanManageDevices => "Gérer les appareils",
+        Capability.CanModifySettings => "Modifier les paramètres",
+        Capability.CanAccessAdmin => "Accéder à l'admin",
+        Capability.CanManageLibraries => "Gérer les librairies",
+        Capability.CanManageUsers => "Gérer les utilisateurs",
+        Capability.CanReportPlaybackProgress => "Reporter la progression",
+        _ => cap.ToString()
+    };
+}
