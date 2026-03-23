@@ -1,10 +1,12 @@
 @page "/welcome"
 @layout K7.Server.Web.Components.Pages.Setup.SetupLayout
 @using K7.Server.Application.Common.Interfaces
+@using K7.Server.Domain.Constants
 @using K7.Server.Infrastructure.Database.Context.Identity
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject IApplicationDbContext DbContext
 @inject ISetupService SetupService
-@inject IServerSettingsService SettingsService
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
@@ -72,7 +74,7 @@
             }
         }
 
-        _guestEnabled = await SettingsService.GetAsync(K7.Server.Domain.Settings.ServerSettingKeys.GuestEnabled) == true;
+        _guestEnabled = await IsGuestActiveAsync();
 
         _loginUrl = !string.IsNullOrEmpty(ReturnUrl)
             ? Navigation.GetUriWithQueryParameters("/Account/Login",
@@ -88,8 +90,20 @@
 
     private async Task ContinueAsGuest()
     {
-        var guestUser = await UserManager.FindByNameAsync(K7.Server.Domain.Constants.Roles.Guest);
+        var guestUser = await UserManager.FindByNameAsync(Roles.Guest);
         await SignInManager.SignInAsync(guestUser!, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl ?? "/");
+    }
+
+    private async Task<bool> IsGuestActiveAsync()
+    {
+        var guestIdentity = await UserManager.FindByNameAsync(Roles.Guest);
+        if (guestIdentity is null) return false;
+
+        var guestDomainUser = await DbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.IdentityUserId == guestIdentity.Id);
+
+        return guestDomainUser?.IsActive == true;
     }
 }

@@ -1,9 +1,9 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Settings;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
@@ -21,20 +21,23 @@ public class GuestLogin : IEndpoint
 
         endpointRouteBuilder.MapPost("/api/authentication/guest-login", async (
             HttpContext httpContext,
-            [FromServices] IServerSettingsService settingsService,
+            [FromServices] IApplicationDbContext dbContext,
             [FromServices] UserManager<ApplicationUser> userManager,
             [FromServices] IOpenIddictApplicationManager applicationManager,
             [FromServices] IOpenIddictAuthorizationManager authorizationManager,
             [FromServices] IOpenIddictScopeManager scopeManager,
             CancellationToken cancellationToken) =>
         {
-            var guestEnabled = await settingsService.GetAsync(ServerSettingKeys.GuestEnabled, cancellationToken) == true;
-            if (!guestEnabled)
-                return Results.Forbid();
-
             var guestUser = await userManager.FindByNameAsync(Roles.Guest);
             if (guestUser is null)
                 return Results.NotFound("Guest user not found.");
+
+            var guestDomainUser = await dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IdentityUserId == guestUser.Id, cancellationToken);
+
+            if (guestDomainUser is null || !guestDomainUser.IsActive)
+                return Results.Forbid();
 
             var roles = await userManager.GetRolesAsync(guestUser);
 
