@@ -7,10 +7,10 @@ public class User : BaseAuditableEntity
 {
     public string? IdentityUserId { get; set; }
     public bool IsActive { get; set; } = true;
-    public ICollection<Guid> AccessibleLibraryIds { get; set; } = [];
     public ICollection<UserRating> Ratings { get; set; } = [];
     public ICollection<Device> Devices { get; set; } = [];
     public ICollection<UserCapabilityOverride> CapabilityOverrides { get; set; } = [];
+    public ICollection<UserLibraryExclusion> LibraryExclusions { get; set; } = [];
 
     [NotMapped] public string? Email { get; set; }
     [NotMapped] public string? UserName { get; set; }

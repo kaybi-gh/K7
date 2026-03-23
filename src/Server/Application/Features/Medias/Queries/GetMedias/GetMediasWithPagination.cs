@@ -56,6 +56,16 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         }
 
         query = ApplyFilters(request, query, userId);
+
+        if (userId.HasValue)
+        {
+            var excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == userId.Value)
+                .Select(e => e.LibraryId);
+
+            query = query.Where(x => x is MusicAlbum || !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
+        }
+
         var orderedQuery = ApplyOrdering(request.OrderBy, query, userId);
         return await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
     }

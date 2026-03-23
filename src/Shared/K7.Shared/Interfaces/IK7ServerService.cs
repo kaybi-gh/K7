@@ -69,4 +69,5 @@ public interface IK7ServerService
     Task UpdateUserCapabilitiesAsync(Guid userId, UpdateUserCapabilitiesRequest request, CancellationToken cancellationToken = default);
     Task ToggleUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default);
     Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task UpdateUserLibraryExclusionsAsync(Guid userId, UpdateUserLibraryExclusionsRequest request, CancellationToken cancellationToken = default);
 }

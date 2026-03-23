@@ -7,22 +7,25 @@ namespace K7.Server.Application.Features.Libraries.Queries.GetLibrary;
 [Authorize]
 public record GetLibraryQuery(Guid Id) : IRequest<Library>;
 
-public class GetLibraryQueryHandler : IRequestHandler<GetLibraryQuery, Library>
+public class GetLibraryQueryHandler(IApplicationDbContext context, IUser currentUser)
+    : IRequestHandler<GetLibraryQuery, Library>
 {
-    private readonly IApplicationDbContext _context;
-
-    public GetLibraryQueryHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<Library> Handle(GetLibraryQuery request, CancellationToken cancellationToken)
     {
-        var entity = await _context.Libraries
+        var query = context.Libraries
             .AsNoTracking()
-            .Where(x => x.Id == request.Id)
-            .SingleOrDefaultAsync(cancellationToken);
+            .Where(x => x.Id == request.Id);
 
+        if (currentUser.Id is { } userId)
+        {
+            var excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == userId)
+                .Select(e => e.LibraryId);
+
+            query = query.Where(x => !excludedLibraryIds.Contains(x.Id));
+        }
+
+        var entity = await query.SingleOrDefaultAsync(cancellationToken);
         Guard.Against.NotFound(request.Id, entity);
         return entity;
     }

@@ -6,20 +6,24 @@ namespace K7.Server.Application.Features.Libraries.Queries.GetLibraries;
 //[Authorize]
 public record GetLibrariesQuery : IRequest<IEnumerable<Library>>;
 
-public class GetLibrariesQueryHandler : IRequestHandler<GetLibrariesQuery, IEnumerable<Library>>
+public class GetLibrariesQueryHandler(IApplicationDbContext context, IUser currentUser)
+    : IRequestHandler<GetLibrariesQuery, IEnumerable<Library>>
 {
-    private readonly IApplicationDbContext _context;
-
-    public GetLibrariesQueryHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<IEnumerable<Library>> Handle(GetLibrariesQuery request, CancellationToken cancellationToken)
     {
-        return await _context.Libraries
+        var query = context.Libraries
             .AsNoTracking()
-            .OrderBy(t => t.Title)
-            .ToListAsync(cancellationToken);
+            .AsQueryable();
+
+        if (currentUser.Id is { } userId)
+        {
+            var excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == userId)
+                .Select(e => e.LibraryId);
+
+            query = query.Where(l => !excludedLibraryIds.Contains(l.Id));
+        }
+
+        return await query.OrderBy(t => t.Title).ToListAsync(cancellationToken);
     }
 }
