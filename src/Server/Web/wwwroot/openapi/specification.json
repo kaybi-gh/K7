@@ -29,6 +29,19 @@
         }
       }
     },
+    "/api/users/me": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetCurrentUser",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users": {
       "get": {
         "tags": [
@@ -148,6 +161,40 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateUserLibraryExclusionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/pin": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserPin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPinRequest"
               }
             }
           },
@@ -6041,6 +6088,20 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "UpdateUserPinRequest": {
+        "required": [
+          "pin"
+        ],
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
