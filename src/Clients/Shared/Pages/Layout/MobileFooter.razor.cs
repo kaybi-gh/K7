@@ -108,5 +108,6 @@ public partial class MobileFooter : IDisposable
     {
         CloseDrawers();
         await CustomAuthenticationStateProvider.LogoutAsync();
+        NavigationManager.NavigateTo("/select-user");
     }
 }

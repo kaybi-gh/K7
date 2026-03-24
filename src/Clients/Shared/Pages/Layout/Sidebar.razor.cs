@@ -72,9 +72,10 @@ public partial class Sidebar
         await CustomAuthenticationStateProvider.LoginAsync();
     }
 
-    private async void Logout()
+    private async Task Logout()
     {
         await CustomAuthenticationStateProvider.LogoutAsync();
+        NavigationManager.NavigateTo("/select-user");
     }
 
     private void SwitchUser()

@@ -114,7 +114,11 @@ public partial class Settings
 
     private async Task SavePin(string? pin)
     {
-        if (_currentUserId is null) return;
+        if (_currentUserId is null)
+        {
+            _pinError = "Unable to identify current user.";
+            return;
+        }
 
         try
         {
@@ -122,9 +126,9 @@ public partial class Settings
             _hasPin = pin is not null;
             _pinSuccess = pin is not null ? "PIN set successfully." : "PIN removed.";
         }
-        catch
+        catch (Exception ex)
         {
-            _pinError = "Failed to update PIN.";
+            _pinError = $"Failed to update PIN: {ex.Message}";
         }
     }
 
