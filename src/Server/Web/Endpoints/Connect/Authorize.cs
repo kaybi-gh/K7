@@ -36,8 +36,14 @@ public class Authorize : IEndpoint
             if (result?.Succeeded == true && request.HasPromptValue(PromptValues.Login))
             {
                 await httpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-                var currentUrl = httpContext.Request.PathBase + httpContext.Request.Path + httpContext.Request.QueryString;
-                return Results.Challenge(new AuthenticationProperties { RedirectUri = currentUrl.ToString() });
+
+                // Strip "prompt" from the query string so the next pass doesn't sign out again
+                var filtered = httpContext.Request.Query
+                    .Where(q => !string.Equals(q.Key, "prompt", StringComparison.OrdinalIgnoreCase))
+                    .Select(q => new KeyValuePair<string, string?>(q.Key, q.Value.ToString()));
+                var redirectUrl = httpContext.Request.PathBase + httpContext.Request.Path + QueryString.Create(filtered);
+
+                return Results.Challenge(new AuthenticationProperties { RedirectUri = redirectUrl.ToString() });
             }
 
             if (result is null || !result.Succeeded)
