@@ -52,7 +52,7 @@
     </MudNavMenu>
     <MudSpacer />
     <MudNavMenu Bordered="true" Style="width: 100%;">
-        <AuthorizeView Roles="User,Administrator">
+        <AuthorizeView>
             <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
         </AuthorizeView>
         <AuthorizeView Roles="Administrator">
@@ -75,8 +75,10 @@
                         <MudAvatar Color="Color.Primary">K</MudAvatar>
                         <MudStack Justify="Justify.Center" Spacing="0">
                             <MudText Typo="Typo.body1">@context.User.Identity?.Name</MudText>
-                            <MudText Typo="Typo.body2">@context.User.Identity?.Name</MudText>
-                            <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Logout" OnClick="Logout" />
+                            <MudStack Row="true" Spacing="1">
+                                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser" title="Switch User" />
+                                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Logout" OnClick="Logout" title="Logout" />
+                            </MudStack>
                         </MudStack>
                     </MudStack>
                 </MudPaper>
