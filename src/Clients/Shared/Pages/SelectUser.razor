@@ -81,6 +81,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (DeviceService.GetClientType() == ClientType.Web)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
         _users = LocalUserService.GetAll();
         _singleUserMode = LocalUserService.IsSingleUserMode;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;

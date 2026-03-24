@@ -4,6 +4,7 @@
 @inject IK7ServerService K7ServerService
 @inject NavigationManager NavigationManager
 @inject ICustomAuthenticationStateProvider CustomAuthenticationStateProvider
+@inject IDeviceService DeviceService
 
 <div class="mobile-footer">
     <MudAppBar Style="z-index:10;" Bottom="true" Fixed="true" Dense="false" Elevation="1">
@@ -79,7 +80,10 @@
             </AuthorizeView>
             <AuthorizeView>
                 <Authorized>
-                    <MudNavLink Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser">Switch User</MudNavLink>
+                    @if (DeviceService.GetClientType() != ClientType.Web)
+                    {
+                        <MudNavLink Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser">Switch User</MudNavLink>
+                    }
                     <MudNavLink Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudNavLink>
                 </Authorized>
                 <NotAuthorized>
