@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using K7.Clients.Shared.Components.Dialogs;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
@@ -14,6 +15,7 @@ public partial class Settings
     private string? _backendUrl;
     private bool _hasPin;
     private Guid? _currentUserId;
+    private string? _identityUserId;
     private string? _pinError;
     private string? _pinSuccess;
 
@@ -36,6 +38,10 @@ public partial class Settings
             _currentUserId = me.Id;
             _hasPin = me.HasPin;
         }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _identityUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? authState.User.FindFirst("sub")?.Value;
     }
 
     public void Dispose()
@@ -123,6 +129,10 @@ public partial class Settings
         try
         {
             await K7ServerService.UpdateUserPinAsync(_currentUserId.Value, pin);
+
+            if (_identityUserId is not null)
+                LocalUserService.SetPin(_identityUserId, pin);
+
             _hasPin = pin is not null;
             _pinSuccess = pin is not null ? "PIN set successfully." : "PIN removed.";
         }
