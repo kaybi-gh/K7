@@ -220,6 +220,8 @@ public static class DependencyInjection
         if (File.Exists(path))
             return X509CertificateLoader.LoadPkcs12FromFile(path, null);
 
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
         using var rsa = RSA.Create(2048);
         var request = new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         request.CertificateExtensions.Add(new X509KeyUsageExtension(
