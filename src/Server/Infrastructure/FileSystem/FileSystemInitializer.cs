@@ -11,14 +11,25 @@ public static class FileSystemInitializerExtensions
     {
         var paths = services.BuildServiceProvider().GetRequiredService<IOptions<PathsConfiguration>>().Value;
 
-        var pathsAreAccessible = PathAccessibilityHelper.IsDirectoryAccessible(paths.Config)
-            && PathAccessibilityHelper.IsDirectoryAccessible(paths.Logs)
-            && PathAccessibilityHelper.IsDirectoryAccessible(paths.Metadatas)
-            && PathAccessibilityHelper.IsDirectoryAccessible(paths.Transcoding)
-            && PathAccessibilityHelper.IsDirectoryAccessible(Path.Combine(paths.Config, "openiddict-keys"));
+        var requiredPaths = new Dictionary<string, string>
+        {
+            ["Config"] = paths.Config,
+            ["Logs"] = paths.Logs,
+            ["Metadatas"] = paths.Metadatas,
+            ["Transcoding"] = paths.Transcoding,
+            ["Config/openiddict-keys"] = Path.Combine(paths.Config, "openiddict-keys")
+        };
 
-        if (!pathsAreAccessible)
-            throw new UnauthorizedAccessException("One or more configured paths are not accessible.");
+        var errors = new List<string>();
+        foreach (var (name, path) in requiredPaths)
+        {
+            if (!PathAccessibilityHelper.IsDirectoryAccessible(path, out var error))
+                errors.Add(error ?? $"{name} ('{path}'): unknown error");
+        }
+
+        if (errors.Count > 0)
+            throw new UnauthorizedAccessException(
+                $"The following paths are not accessible:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
 
         return services;
     }
