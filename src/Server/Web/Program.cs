@@ -39,7 +39,6 @@ try
     builder.Configuration.ConfigureSerilog();
 
     var app = builder.Build();
-    app.InitializeFileSystem();
     app.InitializeMediaProcessing();
     app.UseSerilogRequestLogging();
     app.MapDefaultEndpoints(); // TODO - Well placed?
