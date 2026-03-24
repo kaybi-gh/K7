@@ -174,7 +174,6 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<ApplicationDbContextInitializer>();
-        services.AddScoped<ApplicationFileSystemInitializer>();
 
 
         services.AddSingleton(TimeProvider.System);
