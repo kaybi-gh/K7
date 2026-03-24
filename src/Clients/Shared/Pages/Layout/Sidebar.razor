@@ -5,6 +5,7 @@
 @inject SidebarService SidebarService
 @inject ICustomAuthenticationStateProvider CustomAuthenticationStateProvider
 @inject IK7ServerService K7ServerService
+@inject IDeviceService DeviceService
 @inject IJSRuntime JSRuntime
 
 <MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini" data-nav-column="sidebar">
@@ -76,7 +77,10 @@
                         <MudStack Justify="Justify.Center" Spacing="0">
                             <MudText Typo="Typo.body1">@context.User.Identity?.Name</MudText>
                             <MudStack Row="true" Spacing="1">
-                                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser" title="Switch User" />
+                                @if (DeviceService.GetClientType() != ClientType.Web)
+                                {
+                                    <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser" title="Switch User" />
+                                }
                                 <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Logout" OnClick="Logout" title="Logout" />
                             </MudStack>
                         </MudStack>

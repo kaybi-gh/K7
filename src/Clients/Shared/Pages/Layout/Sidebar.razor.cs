@@ -75,7 +75,7 @@ public partial class Sidebar
     private async Task Logout()
     {
         await CustomAuthenticationStateProvider.LogoutAsync();
-        NavigationManager.NavigateTo("/select-user");
+        NavigationManager.NavigateTo("/");
     }
 
     private void SwitchUser()
