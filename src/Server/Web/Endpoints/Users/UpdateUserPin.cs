@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Users.Commands.UpdateUserPin;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Users;
@@ -23,7 +24,7 @@ public class UpdateUserPin : IEndpoint
             }, cancellationToken);
             return Results.NoContent();
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
