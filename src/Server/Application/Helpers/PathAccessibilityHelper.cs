@@ -6,8 +6,11 @@ namespace K7.Server.Application.Helpers;
 
 public static class PathAccessibilityHelper
 {
-    public static bool IsDirectoryAccessible(string path)
+    public static bool IsDirectoryAccessible(string path) => IsDirectoryAccessible(path, out _);
+
+    public static bool IsDirectoryAccessible(string path, out string? error)
     {
+        error = null;
         try
         {
             DirectoryInfo directoryInfo = new(path);
@@ -26,10 +29,17 @@ public static class PathAccessibilityHelper
                 }
             }
 
-            return directoryInfo.IsWritable();
+            if (!directoryInfo.IsWritable())
+            {
+                error = $"Directory '{path}' exists but is not writable.";
+                return false;
+            }
+
+            return true;
         }
-        catch
+        catch (Exception ex)
         {
+            error = $"Directory '{path}': {ex.Message}";
             return false;
         }
     }
