@@ -84,12 +84,6 @@
         _users = LocalUserService.GetAll();
         _singleUserMode = LocalUserService.IsSingleUserMode;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
-
-        var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true)
-        {
-            Navigation.NavigateTo("/");
-        }
     }
 
     private async Task SelectUserAsync(LocalUser user)

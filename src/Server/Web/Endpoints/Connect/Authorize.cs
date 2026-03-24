@@ -32,7 +32,15 @@ public class Authorize : IEndpoint
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
             
             var result = await httpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
-            if (result is null || !result.Succeeded || request.HasPromptValue(PromptValues.Login))
+
+            if (result?.Succeeded == true && request.HasPromptValue(PromptValues.Login))
+            {
+                await httpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                var currentUrl = httpContext.Request.PathBase + httpContext.Request.Path + httpContext.Request.QueryString;
+                return Results.Challenge(new AuthenticationProperties { RedirectUri = currentUrl.ToString() });
+            }
+
+            if (result is null || !result.Succeeded)
             {
                 var currentUrl = httpContext.Request.PathBase + httpContext.Request.Path + httpContext.Request.QueryString;
                 return Results.Challenge(new AuthenticationProperties { RedirectUri = currentUrl });
