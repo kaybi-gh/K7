@@ -1,8 +1,11 @@
 @page "/settings"
+@using System.Security.Claims
 @inject ThemeService ThemeService
 @inject IDeviceService DeviceService
 @inject IK7ServerService K7ServerService
 @inject IDialogService DialogService
+@inject ILocalUserService LocalUserService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 <PageTitle>Settings</PageTitle>
 
 <MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="Dark mode" />
