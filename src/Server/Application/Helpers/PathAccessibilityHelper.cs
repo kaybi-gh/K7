@@ -19,7 +19,9 @@ public static class PathAccessibilityHelper
                 directoryInfo.Create();
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-                    directoryInfo.UnixFileMode = UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.SetUser | UnixFileMode.SetGroup;
+                    directoryInfo.UnixFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+                        | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute
+                        | UnixFileMode.SetUser | UnixFileMode.SetGroup;
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
