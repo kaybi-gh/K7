@@ -2,6 +2,7 @@
 
 public class PathsConfiguration
 {
+    public string Config { get; set; } = "";
     public string Metadatas { get; set; } = "";
     public string Logs { get; set; } = "";
     public string Transcoding { get; set; } = "";

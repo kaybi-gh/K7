@@ -1,4 +1,6 @@
-﻿using K7.Server.Application.Common.Interfaces;
+﻿using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Infrastructure.Configuration;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Data.Interceptors;
@@ -52,6 +54,9 @@ public static class DependencyInjection
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
         var oidcConfiguration = services.BuildServiceProvider().GetRequiredService<IOptions<OidcConfiguration>>().Value;
+        var pathsConfiguration = services.BuildServiceProvider().GetRequiredService<IOptions<PathsConfiguration>>().Value;
+        var oidcKeysPath = Path.Combine(pathsConfiguration.Config, "openiddict-keys");
+
         services.AddOpenIddict()
             .AddCore(options =>
             {
@@ -73,9 +78,13 @@ public static class DependencyInjection
                        .RequireProofKeyForCodeExchange();
 
                 options.RegisterScopes("api", Scopes.OpenId, Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess);
-                
-                options.AddDevelopmentEncryptionCertificate()
-                       .AddDevelopmentSigningCertificate();
+
+                options.AddEncryptionCertificate(LoadOrCreateCertificate(
+                           Path.Combine(oidcKeysPath, "encryption-certificate.pfx"),
+                           "CN=K7 OpenIddict Server Encryption Certificate"))
+                       .AddSigningCertificate(LoadOrCreateCertificate(
+                           Path.Combine(oidcKeysPath, "signing-certificate.pfx"),
+                           "CN=K7 OpenIddict Server Signing Certificate"));
 
                 options.UseAspNetCore()
                        .EnableAuthorizationEndpointPassthrough()
@@ -108,10 +117,12 @@ public static class DependencyInjection
                 options.AllowAuthorizationCodeFlow()
                        .AllowRefreshTokenFlow();
 
-                // Register the signing and encryption credentials used to protect
-                // sensitive data like the state tokens produced by OpenIddict.
-                options.AddDevelopmentEncryptionCertificate()
-                       .AddDevelopmentSigningCertificate();
+                options.AddEncryptionCertificate(LoadOrCreateCertificate(
+                           Path.Combine(oidcKeysPath, "client-encryption-certificate.pfx"),
+                           "CN=K7 OpenIddict Client Encryption Certificate"))
+                       .AddSigningCertificate(LoadOrCreateCertificate(
+                           Path.Combine(oidcKeysPath, "client-signing-certificate.pfx"),
+                           "CN=K7 OpenIddict Client Signing Certificate"));
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core-specific options.
                 options.UseAspNetCore()
@@ -202,5 +213,20 @@ public static class DependencyInjection
             "sqlite" => $"Data Source={databaseConfiguration.Name}.db",
             _ => throw new Exception($"Unsupported database provider: {databaseConfiguration.Provider}")
         };
+    }
+
+    private static X509Certificate2 LoadOrCreateCertificate(string path, string subject)
+    {
+        if (File.Exists(path))
+            return X509CertificateLoader.LoadPkcs12FromFile(path, null);
+
+        using var rsa = RSA.Create(2048);
+        var request = new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        request.CertificateExtensions.Add(new X509KeyUsageExtension(
+            X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, critical: true));
+        var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(2));
+        var pfxBytes = certificate.Export(X509ContentType.Pfx);
+        File.WriteAllBytes(path, pfxBytes);
+        return X509CertificateLoader.LoadPkcs12(pfxBytes, null);
     }
 }

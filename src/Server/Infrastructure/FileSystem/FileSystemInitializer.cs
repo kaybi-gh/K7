@@ -30,7 +30,8 @@ public class ApplicationFileSystemInitializer
 
     public void Initialize()
     {
-        var pathsAreAccessible = PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Logs)
+        var pathsAreAccessible = PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Config)
+        && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Logs)
         && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Metadatas)
         && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Transcoding);
 
@@ -39,5 +40,7 @@ public class ApplicationFileSystemInitializer
             _logger.LogError("An error occurred while initializing the file system.");
             throw new UnauthorizedAccessException();
         }
+
+        PathAccessibilityHelper.IsDirectoryAccessible(Path.Combine(_pathsConfiguration.Config, "openiddict-keys"));
     }
 }
