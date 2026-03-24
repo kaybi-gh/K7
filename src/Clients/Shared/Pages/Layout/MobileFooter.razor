@@ -58,7 +58,17 @@
 
     <MudDrawer @bind-Open="_menuDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
         <MudDrawerHeader>
-            <MudText Typo="Typo.h6">Menu</MudText>
+            <AuthorizeView>
+                <Authorized>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                        <MudAvatar Color="Color.Primary">@context.User.Identity?.Name?[0]</MudAvatar>
+                        <MudText Typo="Typo.h6">@context.User.Identity?.Name</MudText>
+                    </MudStack>
+                </Authorized>
+                <NotAuthorized>
+                    <MudText Typo="Typo.h6">Menu</MudText>
+                </NotAuthorized>
+            </AuthorizeView>
         </MudDrawerHeader>
         <MudNavMenu>
             <AuthorizeView>
