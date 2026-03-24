@@ -54,7 +54,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
             {
                 CancellationToken = timeout.Token,
-                ProviderName = "K7"
+                ProviderName = "K7",
+                AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
+                {
+                    ["prompt"] = "login"
+                }
             });
 
             var result = await _openIddictClientService.AuthenticateInteractivelyAsync(new()

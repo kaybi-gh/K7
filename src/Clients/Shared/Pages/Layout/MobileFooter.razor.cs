@@ -91,4 +91,22 @@ public partial class MobileFooter : IDisposable
         LibraryMediaType.Music => Icons.Material.Filled.MusicNote,
         _ => Icons.Material.Filled.Folder
     };
+
+    private void SwitchUser()
+    {
+        CloseDrawers();
+        NavigationManager.NavigateTo("/select-user");
+    }
+
+    private async Task Login()
+    {
+        CloseDrawers();
+        await CustomAuthenticationStateProvider.LoginAsync();
+    }
+
+    private async Task Logout()
+    {
+        CloseDrawers();
+        await CustomAuthenticationStateProvider.LogoutAsync();
+    }
 }

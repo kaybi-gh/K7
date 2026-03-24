@@ -61,11 +61,20 @@
             <MudText Typo="Typo.h6">Menu</MudText>
         </MudDrawerHeader>
         <MudNavMenu>
-            <AuthorizeView Roles="User,Administrator">
+            <AuthorizeView>
                 <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings" OnClick="CloseDrawers">Settings</MudNavLink>
             </AuthorizeView>
             <AuthorizeView Roles="Administrator">
                 <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AdminPanelSettings" OnClick="CloseDrawers">Admin</MudNavLink>
+            </AuthorizeView>
+            <AuthorizeView>
+                <Authorized>
+                    <MudNavLink Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser">Switch User</MudNavLink>
+                    <MudNavLink Icon="@Icons.Material.Filled.Logout" OnClick="Logout">Logout</MudNavLink>
+                </Authorized>
+                <NotAuthorized>
+                    <MudNavLink Icon="@Icons.Material.Filled.Login" OnClick="Login">Login</MudNavLink>
+                </NotAuthorized>
             </AuthorizeView>
         </MudNavMenu>
     </MudDrawer>
