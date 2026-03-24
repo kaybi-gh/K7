@@ -9,6 +9,22 @@ namespace K7.Server.Infrastructure.FileSystem;
 
 public static class FileSystemInitializerExtensions
 {
+    public static IServiceCollection EnsurePathsExist(this IServiceCollection services)
+    {
+        var paths = services.BuildServiceProvider().GetRequiredService<IOptions<PathsConfiguration>>().Value;
+
+        var pathsAreAccessible = PathAccessibilityHelper.IsDirectoryAccessible(paths.Config)
+            && PathAccessibilityHelper.IsDirectoryAccessible(paths.Logs)
+            && PathAccessibilityHelper.IsDirectoryAccessible(paths.Metadatas)
+            && PathAccessibilityHelper.IsDirectoryAccessible(paths.Transcoding)
+            && PathAccessibilityHelper.IsDirectoryAccessible(Path.Combine(paths.Config, "openiddict-keys"));
+
+        if (!pathsAreAccessible)
+            throw new UnauthorizedAccessException("One or more configured paths are not accessible.");
+
+        return services;
+    }
+
     public static void InitializeFileSystem(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
@@ -30,17 +46,6 @@ public class ApplicationFileSystemInitializer
 
     public void Initialize()
     {
-        var pathsAreAccessible = PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Config)
-        && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Logs)
-        && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Metadatas)
-        && PathAccessibilityHelper.IsDirectoryAccessible(_pathsConfiguration.Transcoding);
-
-        if (!pathsAreAccessible)
-        {
-            _logger.LogError("An error occurred while initializing the file system.");
-            throw new UnauthorizedAccessException();
-        }
-
-        PathAccessibilityHelper.IsDirectoryAccessible(Path.Combine(_pathsConfiguration.Config, "openiddict-keys"));
+        _logger.LogInformation("File system paths validated.");
     }
 }

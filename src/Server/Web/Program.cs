@@ -28,6 +28,7 @@ try
     builder.AddServiceDefaults();
 
     builder.Services.AddConfigurations(builder.Configuration);
+    builder.Services.EnsurePathsExist();
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices();
     builder.Services.AddMediaProcessingServices(); // TODO - Group all infrastructure DI in one method?
