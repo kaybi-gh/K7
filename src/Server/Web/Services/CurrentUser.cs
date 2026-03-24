@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using K7.Server.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 
 namespace K7.Server.Web.Services;
 
@@ -17,7 +18,9 @@ public class CurrentUser : IUser
         _serviceProvider = serviceProvider;
     }
 
-    public string? IdentityId => _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+    public string? IdentityId =>
+        _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(OpenIddictConstants.Claims.Subject);
 
     public Guid? Id
     {

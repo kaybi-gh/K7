@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.Users.Queries.GetCurrentUser;
+using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public class GetCurrentUser : IEndpoint
             var user = await sender.Send(new GetCurrentUserQuery(), cancellationToken);
             return Results.Ok(UserDto.FromDomain(user, includePinHash: true));
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
