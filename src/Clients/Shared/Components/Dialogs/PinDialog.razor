@@ -1,17 +1,19 @@
 @using MudBlazor
+@inject IJSRuntime JS
 
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="mt-2">
             <MudText Typo="Typo.body1">Enter PIN for <b>@UserName</b></MudText>
-            <MudTextField @bind-Value="_pin"
+            <MudTextField @ref="_pinField"
+                          @bind-Value="_pin"
                           Label="PIN"
                           InputType="InputType.Password"
                           Variant="Variant.Outlined"
                           MaxLength="10"
                           Immediate="true"
-                          AutoFocus="true"
-                          OnKeyUp="OnKeyUp" />
+                          OnKeyUp="OnKeyUp"
+                          UserAttributes="@(new Dictionary<string, object> { ["inputmode"] = "numeric", ["pattern"] = "[0-9]*" })" />
         </MudStack>
     </DialogContent>
     <DialogActions>
@@ -33,6 +35,17 @@
     public string UserName { get; set; } = "";
 
     private string _pin = "";
+    private MudTextField<string>? _pinField;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(300);
+            if (_pinField is not null)
+                await _pinField.FocusAsync();
+        }
+    }
 
     private void Submit() => MudDialog.Close(DialogResult.Ok(_pin));
     private void Cancel() => MudDialog.Cancel();
