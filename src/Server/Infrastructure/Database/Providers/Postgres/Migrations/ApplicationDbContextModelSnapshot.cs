@@ -1039,6 +1039,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("UserLibraryExclusions");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaExclusion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserMediaExclusions");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaState", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2254,6 +2273,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaExclusion", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", null)
+                        .WithMany("MediaExclusions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserMediaState", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -2516,6 +2544,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("CapabilityOverrides");
 
                     b.Navigation("LibraryExclusions");
+
+                    b.Navigation("MediaExclusions");
 
                     b.Navigation("Ratings");
                 });
