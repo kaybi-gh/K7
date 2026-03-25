@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
 
@@ -15,18 +16,12 @@ public record GetPersonsWithPaginationQuery : IRequest<PaginatedList<Person>>
     public required int PageSize { get; init; } = 10;
 }
 
-public class GetPersonsQueryHandler : IRequestHandler<GetPersonsWithPaginationQuery, PaginatedList<Person>>
+public class GetPersonsQueryHandler(IApplicationDbContext context, IUser currentUser)
+    : IRequestHandler<GetPersonsWithPaginationQuery, PaginatedList<Person>>
 {
-    private readonly IApplicationDbContext _context;
-
-    public GetPersonsQueryHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<PaginatedList<Person>> Handle(GetPersonsWithPaginationQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Persons
+        var query = context.Persons
             .Include(x => x.PortraitPicture)
             .Include(x => x.ExternalIds)
             .Include(x => x.Roles)
@@ -34,6 +29,20 @@ public class GetPersonsQueryHandler : IRequestHandler<GetPersonsWithPaginationQu
             .AsQueryable();
 
         query = ApplyFilters(request, query);
+
+        if (currentUser.Id is { } userId)
+        {
+            var excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == userId)
+                .Select(e => e.LibraryId);
+
+            query = query.Where(p => p.Roles.Any(r =>
+                r.Media is MusicAlbum
+                    ? ((MusicAlbum)r.Media).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                    : r.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+            ));
+        }
+
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 
