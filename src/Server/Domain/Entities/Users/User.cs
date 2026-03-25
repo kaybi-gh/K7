@@ -12,6 +12,7 @@ public class User : BaseAuditableEntity
     public ICollection<Device> Devices { get; set; } = [];
     public ICollection<UserCapabilityOverride> CapabilityOverrides { get; set; } = [];
     public ICollection<UserLibraryExclusion> LibraryExclusions { get; set; } = [];
+    public ICollection<UserMediaExclusion> MediaExclusions { get; set; } = [];
 
     [NotMapped] public string? Email { get; set; }
     [NotMapped] public string? UserName { get; set; }
