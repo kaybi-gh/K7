@@ -63,7 +63,16 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 .Where(e => e.UserId == userId.Value)
                 .Select(e => e.LibraryId);
 
-            query = query.Where(x => x is MusicAlbum || !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
+            query = query.Where(x =>
+                x is MusicAlbum
+                    ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                    : !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
+
+            var excludedMediaIds = context.UserMediaExclusions
+                .Where(e => e.UserId == userId.Value)
+                .Select(e => e.MediaId);
+
+            query = query.Where(x => !excludedMediaIds.Contains(x.Id));
         }
 
         var orderedQuery = ApplyOrdering(request.OrderBy, query, userId);
