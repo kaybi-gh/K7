@@ -25,13 +25,15 @@
             </MudAlert>
         }
 
-        <MudGrid Justify="Justify.Center" Spacing="4">
+        <MudGrid Justify="Justify.Center" Spacing="4" data-nav-grid="true">
             @foreach (var user in _users)
             {
                 <MudItem>
                     <MudStack AlignItems="AlignItems.Center" Spacing="2"
+                              tabindex="0"
                               @onclick="() => SelectUserAsync(user)"
-                              Class="cursor-pointer pa-4 rounded-lg"
+                              @onkeydown="(e) => OnUserKeyDown(e, user)"
+                              Class="cursor-pointer pa-4 rounded-lg select-user-card"
                               Style="transition: background 0.15s; min-width: 120px;">
                         <MudAvatar Size="Size.Large" Color="Color.Primary"
                                    Style="width:80px; height:80px; font-size:2rem;">
@@ -50,8 +52,10 @@
 
             <MudItem>
                 <MudStack AlignItems="AlignItems.Center" Spacing="2"
+                          tabindex="0"
                           @onclick="AddUserAsync"
-                          Class="cursor-pointer pa-4 rounded-lg"
+                          @onkeydown="OnAddUserKeyDown"
+                          Class="cursor-pointer pa-4 rounded-lg select-user-card"
                           Style="transition: background 0.15s; min-width: 120px;">
                     <MudAvatar Size="Size.Large" Color="Color.Default"
                                Style="width:80px; height:80px; font-size:2rem;">
@@ -194,6 +198,18 @@
     {
         _singleUserMode = value;
         LocalUserService.IsSingleUserMode = value;
+    }
+
+    private async Task OnUserKeyDown(KeyboardEventArgs e, LocalUser user)
+    {
+        if (e.Key is "Enter" or " ")
+            await SelectUserAsync(user);
+    }
+
+    private async Task OnAddUserKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " ")
+            await AddUserAsync();
     }
 
     private static string GetInitials(string name)

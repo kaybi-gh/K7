@@ -189,6 +189,9 @@ var SpatialNavigation = (function () {
         var tag = (document.activeElement && document.activeElement.tagName || '').toLowerCase();
         if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
+        // Don't navigate behind open dialogs
+        if (document.querySelector('.mud-overlay-dialog')) return;
+
         var active = document.activeElement;
         if (!active || active === document.body) {
             // Nothing focused — focus first content element (not sidebar)
