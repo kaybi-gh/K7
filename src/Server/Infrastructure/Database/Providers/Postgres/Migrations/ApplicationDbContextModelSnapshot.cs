@@ -1495,11 +1495,20 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<long?>("Budget")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ContentRating")
+                        .HasColumnType("text");
+
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("text");
 
                     b.Property<string>("Overview")
                         .HasColumnType("text");
+
+                    b.Property<long?>("Revenue")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Tagline")
                         .HasColumnType("text");

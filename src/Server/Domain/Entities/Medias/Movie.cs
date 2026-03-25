@@ -6,6 +6,9 @@ public class Movie() : BaseMedia(MediaType.Movie)
     public string? Tagline { get; set; }
     public string? Overview { get; set; }
     public string? OriginalLanguage { get; set; }
+    public string? ContentRating { get; set; }
+    public long? Budget { get; set; }
+    public long? Revenue { get; set; }
 
     public override string GetSlugSource() => $"{Title}-{ReleaseDate?.Year}";
 
@@ -17,6 +20,9 @@ public class Movie() : BaseMedia(MediaType.Movie)
         Overview = metadata.Overview ?? Overview;
         Tagline = metadata.Tagline ?? Tagline;
         OriginalLanguage = metadata.OriginalLanguage ?? OriginalLanguage;
+        ContentRating = metadata.ContentRating ?? ContentRating;
+        Budget = metadata.Budget ?? Budget;
+        Revenue = metadata.Revenue ?? Revenue;
 
         if (metadata.Genres?.Count > 0)
         {

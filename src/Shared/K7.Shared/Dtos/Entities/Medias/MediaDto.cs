@@ -36,6 +36,9 @@ public abstract record MediaDto
             Overview = movie.Overview,
             OriginalLanguage = movie.OriginalLanguage,
             TagLine = movie.Tagline,
+            ContentRating = movie.ContentRating,
+            Budget = movie.Budget,
+            Revenue = movie.Revenue,
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null
