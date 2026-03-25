@@ -5,6 +5,7 @@ using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
@@ -106,7 +107,9 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
     {
         try
         {
-            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: "fr,en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images, cancellationToken: cancellationToken);
+            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: "fr,en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates, cancellationToken: cancellationToken);
+
+            var contentRating = ExtractContentRating(tmdbMovie.ReleaseDates, language);
 
             var movie = new ExternalMovieMetadata
             {
@@ -117,6 +120,9 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 OriginalLanguage = tmdbMovie.OriginalLanguage,
                 Overview = tmdbMovie.Overview,
                 Tagline = tmdbMovie.Tagline,
+                ContentRating = contentRating,
+                Budget = tmdbMovie.Budget > 0 ? tmdbMovie.Budget : null,
+                Revenue = tmdbMovie.Revenue > 0 ? tmdbMovie.Revenue : null,
                 PersonRoles = await ConvertToPersonRolesAsync(tmdbMovie.Credits),
                 ExternalIds =
                 [
@@ -126,7 +132,10 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                         Value = metadataProviderExternalId
                     }
                 ],
-                Pictures = FetchMetadataPictures(tmdbMovie.Images, language)
+                Pictures = FetchMetadataPictures(tmdbMovie.Images, language),
+                Ratings = tmdbMovie.VoteCount > 0
+                    ? [new MetadataProviderRating { MetadataProvider = Domain.Enums.MetadataProvider.TMDb, Value = tmdbMovie.VoteAverage, MinimumValue = 0, MaximumValue = 10, RatingCount = tmdbMovie.VoteCount }]
+                    : []
             };
 
             if (!string.IsNullOrEmpty(tmdbMovie.ImdbId))
@@ -336,5 +345,30 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         }
 
         return person;
+    }
+
+    private static string? ExtractContentRating(TMDbLib.Objects.General.ResultContainer<TMDbLib.Objects.Movies.ReleaseDatesContainer>? releaseDates, string language)
+    {
+        if (releaseDates?.Results is null) return null;
+
+        var langUpper = language.Length >= 2 ? language[..2].ToUpperInvariant() : language.ToUpperInvariant();
+
+        // Try requested language country first, then US as fallback
+        var countries = new[] { langUpper, "US" };
+        foreach (var iso in countries)
+        {
+            var country = releaseDates.Results.FirstOrDefault(r =>
+                string.Equals(r.Iso_3166_1, iso, StringComparison.OrdinalIgnoreCase));
+            var cert = country?.ReleaseDates?
+                .Select(r => r.Certification)
+                .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));
+            if (cert is not null) return cert;
+        }
+
+        // Fallback: any certification from any country
+        return releaseDates.Results
+            .SelectMany(r => r.ReleaseDates ?? [])
+            .Select(r => r.Certification)
+            .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));
     }
 }

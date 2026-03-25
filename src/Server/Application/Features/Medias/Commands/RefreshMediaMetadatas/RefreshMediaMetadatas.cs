@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Enums;
@@ -100,6 +101,21 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
 
             movie.ApplyMetadata(metadata);
+
+            foreach (var rating in metadata.Ratings)
+            {
+                var existing = movie.Ratings.OfType<MetadataProviderRating>()
+                    .FirstOrDefault(r => r.MetadataProvider == rating.MetadataProvider);
+                if (existing is not null)
+                {
+                    existing.Value = rating.Value;
+                    existing.RatingCount = rating.RatingCount;
+                }
+                else
+                {
+                    movie.Ratings.Add(rating);
+                }
+            }
         }
     }
 
