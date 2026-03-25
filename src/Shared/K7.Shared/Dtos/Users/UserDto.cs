@@ -18,6 +18,7 @@ public sealed record UserDto
     public string? PinHash { get; init; }
     public required List<CapabilityOverrideDto> CapabilityOverrides { get; init; }
     public required List<Guid> ExcludedLibraryIds { get; init; }
+    public required List<Guid> ExcludedMediaIds { get; init; }
 
     public static UserDto FromDomain(User domain, bool includePinHash = false) => new()
     {
@@ -38,7 +39,9 @@ public sealed record UserDto
                 Enabled = o.Enabled
             }).ToList(),
         ExcludedLibraryIds = domain.LibraryExclusions
-            .Select(e => e.LibraryId).ToList()
+            .Select(e => e.LibraryId).ToList(),
+        ExcludedMediaIds = domain.MediaExclusions
+            .Select(e => e.MediaId).ToList()
     };
 }
 

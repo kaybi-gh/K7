@@ -71,6 +71,30 @@
         }
       }
     },
+    "/api/users/me/media-exclusions/{mediaId}": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "ToggleMediaExclusion",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{id}/active": {
       "put": {
         "tags": [
@@ -161,6 +185,40 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateUserLibraryExclusionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/media-exclusions": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserMediaExclusions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserMediaExclusionsRequest"
               }
             }
           },
@@ -6107,6 +6165,21 @@
         "type": "object",
         "properties": {
           "excludedLibraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "UpdateUserMediaExclusionsRequest": {
+        "required": [
+          "excludedMediaIds"
+        ],
+        "type": "object",
+        "properties": {
+          "excludedMediaIds": {
             "type": "array",
             "items": {
               "type": "string",

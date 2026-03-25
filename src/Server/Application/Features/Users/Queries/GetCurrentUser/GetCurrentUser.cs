@@ -18,6 +18,7 @@ public class GetCurrentUserQueryHandler(
         var user = await context.Users
             .Include(u => u.CapabilityOverrides)
             .Include(u => u.LibraryExclusions)
+            .Include(u => u.MediaExclusions)
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
