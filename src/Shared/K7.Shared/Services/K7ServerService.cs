@@ -347,6 +347,22 @@ public class K7ServerService : IK7ServerService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateUserMediaExclusionsAsync(Guid userId, UpdateUserMediaExclusionsRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/media-exclusions", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> ToggleMediaExclusionAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/users/me/media-exclusions/{mediaId}", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ToggleExclusionResponse>(_serializerOptions, cancellationToken);
+        return result?.Excluded ?? false;
+    }
+
+    private sealed record ToggleExclusionResponse(bool Excluded);
+
     public async Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/pin", new { Pin = pin }, _serializerOptions, cancellationToken);
