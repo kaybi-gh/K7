@@ -73,7 +73,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error processing task {task.Id}: {ex.Message}");
+            _logger.LogError(ex, "Error processing task {TaskId}", task.Id);
 
             task.RetryCount++;
             task.Status = BackgroundTaskStatus.Pending;
@@ -85,7 +85,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             }
             else
             {
-                _logger.LogWarning($"Task failed with error: {ex.Message}. Retrying...");
+                _logger.LogWarning(ex, "Task {TaskId} failed, retrying ({RetryCount}/{MaxRetryCount})", task.Id, task.RetryCount, task.MaxRetryCount);
             }
         }
 
