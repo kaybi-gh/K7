@@ -10,6 +10,7 @@ using K7.Server.Infrastructure.Database.Context.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -22,7 +23,7 @@ namespace K7.Server.Infrastructure.Database.Context;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
         services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
@@ -31,7 +32,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-            options.ConfigureDbContext(services.BuildServiceProvider().GetRequiredService<IOptions<DatabaseConfiguration>>().Value);
+            options.ConfigureDbContext(sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value);
             options.UseOpenIddict();
         });
 
@@ -53,8 +54,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-        var authConfiguration = services.BuildServiceProvider().GetRequiredService<IOptions<AuthenticationConfiguration>>().Value;
-        var pathsConfiguration = services.BuildServiceProvider().GetRequiredService<IOptions<PathsConfiguration>>().Value;
+        var authConfiguration = configuration.GetSection("Authentication").Get<AuthenticationConfiguration>()!;
+        var pathsConfiguration = configuration.GetSection("Paths").Get<PathsConfiguration>()!;
         var oidcKeysPath = Path.Combine(pathsConfiguration.Config, "openiddict-keys");
 
         services.AddOpenIddict()

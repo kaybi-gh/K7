@@ -30,11 +30,11 @@ try
     builder.Services.AddConfigurations(builder.Configuration);
     builder.Services.EnsurePathsExist();
     builder.Services.AddApplicationServices();
-    builder.Services.AddInfrastructureServices();
+    builder.Services.AddInfrastructureServices(builder.Configuration);
     builder.Services.AddMediaProcessingServices(); // TODO - Group all infrastructure DI in one method?
     builder.Services.AddWebServices(builder.Configuration);
     builder.Services.AddEndpoints();
-    builder.Services.ConfigureCors();
+    builder.Services.ConfigureCors(builder.Configuration);
     builder.Host.UseSerilog();
     builder.Configuration.ConfigureSerilog();
 
