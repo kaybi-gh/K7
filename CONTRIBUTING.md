@@ -1,5 +1,17 @@
 ﻿# Contributing guide
 
+## Architecture at a glance
+
+K7 follows **Clean Architecture** with strict dependency direction: Domain → Application → Infrastructure → Web.
+
+- **Domain** — Entities, value objects, enums, events, interfaces. Zero dependencies.
+- **Application** — Use cases via CQRS (MediatR), FluentValidation, domain event handlers.
+- **Infrastructure** — EF Core (Postgres + Sqlite), file system, media processing.
+- **Web** — ASP.NET Core host, Minimal API endpoints, SignalR hub.
+- **Clients** — Blazor WebAssembly + MAUI Blazor Hybrid, sharing components/pages/services.
+
+For the full breakdown, see [`docs/SolutionArchitecture.md`](docs/SolutionArchitecture.md).
+
 ## Prerequisites
 
 - **.NET SDK 10.0+** — `dotnet --version`
@@ -65,17 +77,6 @@ docker build -t k7-server:latest .
 docker compose up -d
 ```
 
-## Build & test
-
-```bash
-dotnet build -tl
-dotnet test
-```
-
-## Code style
-
-Enforced via [`.editorconfig`](.editorconfig) at the repository root.
-
 ## Migrations
 
 ```bash
@@ -90,4 +91,66 @@ dotnet ef migrations add <Name> \
   --project ./src/Server/Infrastructure/Database/Providers/Sqlite \
   --startup-project ./src/Server/Web \
   -- --Database:Provider Sqlite
+```
+
+## Build & test
+
+```bash
+dotnet build -tl
+dotnet test
+```
+
+## Code style
+
+Enforced via [`.editorconfig`](.editorconfig) at the repository root. Key rules:
+
+- Use `var` everywhere.
+- File-scoped namespaces (enforced as warning).
+- Private fields: `_camelCase`. No `s_` prefix.
+- Explicit accessibility modifiers on all members.
+- Always forward `CancellationToken` — last parameter, `= default` on public methods.
+- Structured logging only: `_logger.LogX("message {Param}", param)`. Never use `$""` interpolation.
+
+Run `dotnet format` to auto-fix formatting issues. Full conventions: [`docs/CodingConventions.md`](docs/CodingConventions.md).
+
+## Adding a new feature
+
+A typical server feature requires three files and an endpoint:
+
+1. **Command + Handler** — `src/Server/Application/Features/{Feature}/Commands/{Name}/{Name}.cs`
+   - `record {Name}Command : IRequest<TResponse>` + `{Name}CommandHandler : IRequestHandler<...>` in the **same file**.
+2. **Validator** — `{Name}CommandValidator.cs` alongside the command. Uses FluentValidation `AbstractValidator<T>`.
+3. **Endpoint** — `src/Server/Web/Endpoints/{Feature}/{Name}.cs`. Thin — delegate to `ISender`.
+4. *(Optional)* **Domain event handler** — `Features/{Feature}/EventHandlers/{EventName}EventHandler.cs`.
+
+Error handling is exception-based: throw `NotFoundException`, `ValidationException`, or `ForbiddenAccessException`. The `CustomExceptionHandler` middleware maps them to `ProblemDetails`.
+
+## Common commands
+
+### Run with Aspire
+
+```bash
+dotnet run --project src/Shared/Aspire/AppHost
+```
+
+### Style enforcement
+
+```bash
+dotnet format                      # Auto-fix formatting
+dotnet format --verify-no-changes  # CI check
+```
+
+### Docker
+
+```bash
+docker build -t k7-server:latest .
+docker compose up -d
+```
+
+### MAUI APK (Android release)
+
+```bash
+dotnet publish src/Clients/MAUI/K7.Clients.MAUI.csproj \
+  -f net10.0-android \
+  -c Release
 ```
