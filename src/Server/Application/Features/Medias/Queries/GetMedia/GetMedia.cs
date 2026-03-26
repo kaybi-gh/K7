@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 
@@ -6,11 +7,13 @@ namespace K7.Server.Application.Features.Medias.Queries.GetMedia;
 
 public record GetMediaQuery(Guid Id) : IRequest<BaseMedia>;
 
-public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUser)
+public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUser, IMediaAccessGuard accessGuard)
     : IRequestHandler<GetMediaQuery, BaseMedia>
 {
     public async Task<BaseMedia> Handle(GetMediaQuery request, CancellationToken cancellationToken)
     {
+        await accessGuard.EnsureAccessAsync(request.Id, cancellationToken);
+
         Guid? userId = currentUser.Id;
 
         var query = context.Medias

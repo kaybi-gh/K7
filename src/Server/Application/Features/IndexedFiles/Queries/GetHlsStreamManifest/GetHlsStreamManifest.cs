@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -81,14 +82,18 @@ public record GetHlsStreamManifestQuery : IRequest<IResult>
 public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamManifestQuery, IResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediaAccessGuard _accessGuard;
 
-    public GetHlsStreamManifestQueryHandler(IApplicationDbContext context)
+    public GetHlsStreamManifestQueryHandler(IApplicationDbContext context, IMediaAccessGuard accessGuard)
     {
         _context = context;
+        _accessGuard = accessGuard;
     }
 
     public async Task<IResult> Handle(GetHlsStreamManifestQuery query, CancellationToken cancellationToken)
     {
+        await _accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
+
         var indexedFile = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);

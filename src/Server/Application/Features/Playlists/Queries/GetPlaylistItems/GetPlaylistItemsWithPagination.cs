@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Playlists;
 
@@ -42,6 +43,34 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
             .Where(i => i.PlaylistId == request.PlaylistId)
             .OrderBy(i => i.Order)
             .AsNoTracking();
+
+        if (currentUser.Id is { } userId)
+        {
+            var excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == userId)
+                .Select(e => e.LibraryId);
+
+            var excludedMediaIds = context.UserMediaExclusions
+                .Where(e => e.UserId == userId)
+                .Select(e => e.MediaId);
+
+            query = query
+                .Where(i => !excludedMediaIds.Contains(i.MediaId))
+                .Where(i => !i.Media.IndexedFiles.All(f => excludedLibraryIds.Contains(f.LibraryId)));
+
+            var restrictionProfile = await context.ContentRestrictionProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
+
+            if (restrictionProfile is not null)
+            {
+                var restrictedMediaIds = ContentRestrictionEvaluator.GetRestricted(
+                    context.Medias.AsNoTracking(), restrictionProfile)
+                    .Select(m => m.Id);
+
+                query = query.Where(i => !restrictedMediaIds.Contains(i.MediaId));
+            }
+        }
 
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);
     }

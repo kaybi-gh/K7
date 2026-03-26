@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
@@ -14,17 +15,20 @@ namespace K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
 public record UpdatePlaybackProgressCommand(Guid MediaId, Guid SessionId, double Position, double Duration) : IRequest;
 
-public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
+public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, IMediaAccessGuard accessGuard, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly IApplicationDbContext _context = context;
     private readonly IUser _currentUser = currentUserService;
     private readonly IPlaybackProgressNotifier _progressNotifier = progressNotifier;
+    private readonly IMediaAccessGuard _accessGuard = accessGuard;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.Id is not { } userId)
             return;
+
+        await _accessGuard.EnsureAccessAsync(request.MediaId, cancellationToken);
 
         var media = await _context.Medias
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
