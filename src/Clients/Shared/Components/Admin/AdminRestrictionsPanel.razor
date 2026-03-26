@@ -218,8 +218,12 @@ else
             RestrictionOperator.LessThan => "<",
             RestrictionOperator.GreaterThanOrEqual => "≥",
             RestrictionOperator.LessThanOrEqual => "≤",
+            RestrictionOperator.IsEmpty => "est vide",
+            RestrictionOperator.IsNotEmpty => "n'est pas vide",
             _ => rule.Operator.ToString()
         };
+        if (rule.Operator is RestrictionOperator.IsEmpty or RestrictionOperator.IsNotEmpty)
+            return $"{field} {op}";
         return $"{field} {op} {rule.Value}";
     }
 
@@ -229,9 +233,10 @@ else
     {
         public static readonly TemplateDefinition ChildFriendly = new(
             "Tout public (enfants)",
-            "Bloque les contenus classifiés 12+ / PG-13+ et les genres Horreur/Horror/Thriller",
+            "Bloque les contenus classifiés 12+ / PG-13+, sans classification, et les genres Horreur/Horror/Thriller",
             RestrictionMatchCondition.Any,
             [
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.IsEmpty },
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "12" },
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "16" },
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },

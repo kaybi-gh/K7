@@ -10,4 +10,6 @@ public enum RestrictionOperator
     LessThan = 5,
     GreaterThanOrEqual = 6,
     LessThanOrEqual = 7,
+    IsEmpty = 8,
+    IsNotEmpty = 9,
 }
