@@ -75,6 +75,8 @@ public static class ContentRestrictionEvaluator
             RestrictionOperator.NotEquals => m => !m.Genres.Any(g => g == value),
             RestrictionOperator.Contains => m => m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
             RestrictionOperator.NotContains => m => !m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
+            RestrictionOperator.IsEmpty => m => !m.Genres.Any(),
+            RestrictionOperator.IsNotEmpty => m => m.Genres.Any(),
             _ => _ => true
         };
     }
@@ -88,12 +90,19 @@ public static class ContentRestrictionEvaluator
             RestrictionOperator.NotEquals => m => !(m is Movie) || ((Movie)m).ContentRating != value,
             RestrictionOperator.Contains => m => m is Movie && ((Movie)m).ContentRating != null && EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"),
             RestrictionOperator.NotContains => m => !(m is Movie) || ((Movie)m).ContentRating == null || !EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"),
+            RestrictionOperator.IsEmpty => m => !(m is Movie) || ((Movie)m).ContentRating == null || ((Movie)m).ContentRating == "",
+            RestrictionOperator.IsNotEmpty => m => m is Movie && ((Movie)m).ContentRating != null && ((Movie)m).ContentRating != "",
             _ => _ => true
         };
     }
 
     private static Expression<Func<BaseMedia, bool>> BuildReleaseYearPredicate(ContentRestrictionRule rule)
     {
+        if (rule.Operator == RestrictionOperator.IsEmpty)
+            return m => m.ReleaseDate == null;
+        if (rule.Operator == RestrictionOperator.IsNotEmpty)
+            return m => m.ReleaseDate != null;
+
         if (!int.TryParse(rule.Value, out var year)) return _ => true;
         return rule.Operator switch
         {
@@ -103,6 +112,8 @@ public static class ContentRestrictionEvaluator
             RestrictionOperator.LessThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year < year,
             RestrictionOperator.GreaterThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year >= year,
             RestrictionOperator.LessThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year <= year,
+            RestrictionOperator.IsEmpty => m => m.ReleaseDate == null,
+            RestrictionOperator.IsNotEmpty => m => m.ReleaseDate != null,
             _ => _ => true
         };
     }

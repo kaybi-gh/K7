@@ -37,8 +37,11 @@
                         }
                     </MudSelect>
 
-                    <MudTextField @bind-Value="Rules[index].Value" Label="Valeur"
-                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    @if (Rules[index].Operator is not RestrictionOperator.IsEmpty and not RestrictionOperator.IsNotEmpty)
+                    {
+                        <MudTextField @bind-Value="Rules[index].Value" Label="Valeur"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    }
 
                     <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error"
                                    OnClick="@(() => Rules.RemoveAt(index))" />
@@ -94,6 +97,8 @@
             RestrictionOperator.NotEquals,
             RestrictionOperator.Contains,
             RestrictionOperator.NotContains,
+            RestrictionOperator.IsEmpty,
+            RestrictionOperator.IsNotEmpty,
         ],
         RestrictionField.ReleaseYear =>
         [
@@ -103,6 +108,8 @@
             RestrictionOperator.LessThan,
             RestrictionOperator.GreaterThanOrEqual,
             RestrictionOperator.LessThanOrEqual,
+            RestrictionOperator.IsEmpty,
+            RestrictionOperator.IsNotEmpty,
         ],
         _ => [RestrictionOperator.Equals]
     };
@@ -117,6 +124,8 @@
         RestrictionOperator.LessThan => "inférieur à",
         RestrictionOperator.GreaterThanOrEqual => "supérieur ou égal à",
         RestrictionOperator.LessThanOrEqual => "inférieur ou égal à",
+        RestrictionOperator.IsEmpty => "est vide",
+        RestrictionOperator.IsNotEmpty => "n'est pas vide",
         _ => op.ToString()
     };
 
