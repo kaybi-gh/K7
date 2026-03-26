@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using K7.Server.Infrastructure.Configuration;
 using K7.Server.Web.Components.Account.Pages;
 using K7.Server.Web.Components.Account.Pages.Manage;
 using Microsoft.AspNetCore.Authentication;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using K7.Server.Infrastructure.Database.Context.Identity;
 
@@ -38,6 +40,30 @@ namespace K7.Server.Web.Components.Account
 
                 var properties = signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
                 return TypedResults.Challenge(properties, [provider]);
+            });
+
+            accountGroup.MapGet("/AutoLogin", (
+                HttpContext context,
+                [FromServices] SignInManager<ApplicationUser> signInManager,
+                [FromServices] IOptions<AuthenticationConfiguration> authConfig) =>
+            {
+                var auth = authConfig.Value;
+                if (auth.Local.SignInEnabled || !auth.Oidc.Enabled)
+                {
+                    return Results.Redirect("/Account/Login");
+                }
+
+                IEnumerable<KeyValuePair<string, StringValues>> query = [
+                    new("ReturnUrl", "/"),
+                    new("Action", ExternalLogin.LoginCallbackAction)];
+
+                var redirectUrl = UriHelper.BuildRelative(
+                    context.Request.PathBase,
+                    "/Account/ExternalLogin",
+                    QueryString.Create(query));
+
+                var properties = signInManager.ConfigureExternalAuthenticationProperties("oidc", redirectUrl);
+                return TypedResults.Challenge(properties, ["oidc"]);
             });
 
             accountGroup.MapMethods("/Logout", [HttpMethods.Get, HttpMethods.Post], async (

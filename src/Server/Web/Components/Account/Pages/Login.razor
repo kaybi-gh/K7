@@ -1,14 +1,17 @@
 ﻿@page "/Account/Login"
 
 @using System.ComponentModel.DataAnnotations
+@using K7.Server.Infrastructure.Configuration
 @using K7.Server.Infrastructure.Database.Context.Identity
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IOptions<AuthenticationConfiguration> AuthConfig
 
 <PageTitle>Log in</PageTitle>
 
@@ -24,72 +27,85 @@
         </MudCardHeader>
         <MudCardContent>
             <MudStack>
-                <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
-                    <DataAnnotationsValidator />
-                    <MudStack>
-                        <MudStaticTextField InputType="InputType.Email"
-                                            For="@(() => Input!.Email)"
-                                            @bind-Value="Input!.Email"
-                                            Label="Email"
-                                            Placeholder="name@example.com"
-                                            UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } })" />
+                @if (AuthConfig.Value.Local.SignInEnabled)
+                {
+                    <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                        <DataAnnotationsValidator />
+                        <MudStack>
+                            <MudStaticTextField InputType="InputType.Email"
+                                                For="@(() => Input!.Email)"
+                                                @bind-Value="Input!.Email"
+                                                Label="Email"
+                                                Placeholder="name@example.com"
+                                                UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } })" />
 
-                        <MudStaticTextField InputType="InputType.Password"
-                                            For="@(() => Input.Password)"
-                                            @bind-Value="Input.Password"
-                                            Label="Password"
-                                            Placeholder="password"
-                                            UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } })"
-                                            Adornment="Adornment.End"
-                                            AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
-                                            AdornmentClickFunction="togglePasswordVisibility"
-                                            AdornmentAriaLabel="Show Password" />
+                            <MudStaticTextField InputType="InputType.Password"
+                                                For="@(() => Input.Password)"
+                                                @bind-Value="Input.Password"
+                                                Label="Password"
+                                                Placeholder="password"
+                                                UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } })"
+                                                Adornment="Adornment.End"
+                                                AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
+                                                AdornmentClickFunction="togglePasswordVisibility"
+                                                AdornmentAriaLabel="Show Password" />
 
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                            <MudStaticSwitch For="@(() => Input.RememberMe)"
-                                             @bind-Value="Input.RememberMe"
-                                             Size="Size.Small"
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudStaticSwitch For="@(() => Input.RememberMe)"
+                                                 @bind-Value="Input.RememberMe"
+                                                 Size="Size.Small"
+                                                 Color="Color.Primary"
+                                                 Typo="Typo.caption"
+                                                 Label="Remember me"/>
+
+                                <MudLink Href="Account/ForgotPassword"
+                                         Typo="Typo.caption">
+                                    Forgot your password?
+                                </MudLink>
+                            </MudStack>
+
+                            <MudStaticButton Variant="Variant.Filled"
                                              Color="Color.Primary"
-                                             Typo="Typo.caption"
-                                             Label="Remember me"/>
-
-                            <MudLink Href="Account/ForgotPassword"
-                                     Typo="Typo.caption">
-                                Forgot your password?
-                            </MudLink>
+                                             Size="Size.Small"
+                                             FullWidth="true"
+                                             FormAction="FormAction.Submit">
+                                Sign in
+                            </MudStaticButton>
                         </MudStack>
-
-                        <MudStaticButton Variant="Variant.Filled"
-                                         Color="Color.Primary"
-                                         Size="Size.Small"
-                                         FullWidth="true"
-                                         FormAction="FormAction.Submit">
-                            Sign in
-                        </MudStaticButton>
+                    </EditForm>
+                    <MudStack AlignItems="AlignItems.Center">
+                        <MudText Class="continue-with" Typo="Typo.caption">OR CONTINUE WITH</MudText>
+                        <ExternalLoginPicker />
                     </MudStack>
-                </EditForm>
-                <MudStack AlignItems="AlignItems.Center">
-                    <MudText Class="continue-with" Typo="Typo.caption">OR CONTINUE WITH</MudText>
+                }
+                else
+                {
                     <ExternalLoginPicker />
-                </MudStack>
+                }
                 <MudDivider Class="mt-3" />
             </MudStack>
         </MudCardContent>
-        <MudCardActions>
-            <MudStack Spacing="2" Style="width: 100%" AlignItems="AlignItems.Center">
-                <MudStack Row="true" Spacing="1">
-                    <MudText Typo="Typo.caption">Don't have an account?</MudText>
-                    <MudLink Href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"
+        @if (AuthConfig.Value.Local.SignInEnabled)
+        {
+            <MudCardActions>
+                <MudStack Spacing="2" Style="width: 100%" AlignItems="AlignItems.Center">
+                    @if (AuthConfig.Value.Local.RegistrationEnabled)
+                    {
+                        <MudStack Row="true" Spacing="1">
+                            <MudText Typo="Typo.caption">Don't have an account?</MudText>
+                            <MudLink Href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"
+                                     Typo="Typo.caption">
+                                Sign up
+                            </MudLink>
+                        </MudStack>
+                    }
+                    <MudLink Href="Account/ResendEmailConfirmation"
                              Typo="Typo.caption">
-                        Sign up
+                        Resend email confirmation
                     </MudLink>
                 </MudStack>
-                <MudLink Href="Account/ResendEmailConfirmation"
-                         Typo="Typo.caption">
-                    Resend email confirmation
-                </MudLink>
-            </MudStack>
-        </MudCardActions>
+            </MudCardActions>
+        }
     </MudCard>
 </MudStack>
 
@@ -152,6 +168,14 @@
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
+
+        var auth = AuthConfig.Value;
+        if (!auth.Local.SignInEnabled && auth.Oidc.Enabled)
+        {
+            RedirectManager.RedirectTo("Account/AutoLogin");
+            return;
+        }
+
         Input ??= new();
     }
 

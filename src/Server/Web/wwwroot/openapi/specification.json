@@ -692,6 +692,30 @@
         }
       }
     },
+    "/api/restriction-profiles/{id}/restricted-medias": {
+      "get": {
+        "tags": [
+          "Restrictions"
+        ],
+        "operationId": "PreviewRestrictedMedias",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/playlists/{playlistId}/items": {
       "post": {
         "tags": [
@@ -2781,45 +2805,12 @@
         }
       }
     },
-    "/api/admin/settings": {
+    "/api/admin/authentication-info": {
       "get": {
         "tags": [
           "Admin"
         ],
-        "operationId": "GetSettings",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/admin/settings/{key}": {
-      "put": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "UpdateSetting",
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/JsonElement"
-              }
-            }
-          },
-          "required": true
-        },
+        "operationId": "GetAuthenticationInfo",
         "responses": {
           "200": {
             "description": "OK"
@@ -3749,7 +3740,6 @@
           }
         }
       },
-      "JsonElement": { },
       "LibraryDto": {
         "required": [
           "id",

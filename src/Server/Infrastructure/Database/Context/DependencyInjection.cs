@@ -53,7 +53,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-        var oidcConfiguration = services.BuildServiceProvider().GetRequiredService<IOptions<OidcConfiguration>>().Value;
+        var authConfiguration = services.BuildServiceProvider().GetRequiredService<IOptions<AuthenticationConfiguration>>().Value;
         var pathsConfiguration = services.BuildServiceProvider().GetRequiredService<IOptions<PathsConfiguration>>().Value;
         var oidcKeysPath = Path.Combine(pathsConfiguration.Config, "openiddict-keys");
 
@@ -142,22 +142,22 @@ public static class DependencyInjection
                 // parameter containing their URL as part of authorization responses. For more information,
                 // see https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#section-4.4.
 
-                if (oidcConfiguration.Enabled)
+                if (authConfiguration.Oidc.Enabled)
                 {
                     var oidcRegistration = new OpenIddictClientRegistration()
                     {
                         ProviderName = "oidc",
-                        ProviderDisplayName = oidcConfiguration.DisplayName,
-                        Issuer = new Uri(oidcConfiguration.Authority),
-                        ClientId = oidcConfiguration.ClientId,
-                        ClientSecret = oidcConfiguration.ClientSecret,
+                        ProviderDisplayName = authConfiguration.Oidc.DisplayName,
+                        Issuer = new Uri(authConfiguration.Oidc.Authority),
+                        ClientId = authConfiguration.Oidc.ClientId,
+                        ClientSecret = authConfiguration.Oidc.ClientSecret,
                         RedirectUri = new Uri("api/authentication/callback/login/oidc", UriKind.Relative),
                         PostLogoutRedirectUri = new Uri("api/authentication/callback/logout/oidc", UriKind.Relative),
                         ResponseTypes = { OpenIdConnectResponseType.Code },
                         Scopes = { /*Scopes.OfflineAccess, */Scopes.OpenId, Scopes.Email, Scopes.Profile/*, "api1"*/ }
                     };
 
-                    foreach (var scope in oidcConfiguration.Scopes.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                    foreach (var scope in authConfiguration.Oidc.Scopes.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
                     {
                         oidcRegistration.Scopes.Add(scope);
                     }

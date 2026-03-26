@@ -2,10 +2,12 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Infrastructure.Configuration;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Client.AspNetCore;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +26,7 @@ public class LogInCallback : IEndpoint
             async (HttpContext context,
                    [FromServices] UserManager<ApplicationUser> userManager,
                    [FromServices] IApplicationDbContext applicationDbContext,
-                   [FromServices] IServerSettingsService settingsService,
+                   [FromServices] IOptions<AuthenticationConfiguration> authConfig,
                    [FromRoute] string provider,
                    CancellationToken cancellationToken) =>
         {
@@ -77,9 +79,7 @@ public class LogInCallback : IEndpoint
             var user = await userManager.FindByLoginAsync(provider, providerKey);
             if (user == null)
             {
-                var autoProvisioningEnabled = await settingsService.GetAsync(
-                    K7.Server.Domain.Settings.ServerSettingKeys.OidcAutoProvisioningEnabled, cancellationToken);
-                if (autoProvisioningEnabled != true)
+                if (!authConfig.Value.Oidc.AutomaticAccountCreation)
                 {
                     return Results.Redirect("/Account/Login?error=auto_provisioning_disabled");
                 }
