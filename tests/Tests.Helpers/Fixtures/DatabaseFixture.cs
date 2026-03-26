@@ -1,13 +1,12 @@
-﻿using MediaServer.Domain.Constants;
-using MediaServer.Infrastructure.Context.Data;
-using MediaServer.Infrastructure.Context.Identity;
-using MediaServer.Tests.Helpers.Databases;
-using MediatR;
+﻿using K7.Server.Domain.Constants;
+using K7.Server.Infrastructure.Database.Context.Data;
+using K7.Server.Infrastructure.Database.Context.Identity;
+using K7.Tests.Helpers.Databases;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MediaServer.Tests.Helpers.Fixtures;
+namespace K7.Tests.Helpers.Fixtures;
 
 [TestFixture]
 public class DatabaseFixture

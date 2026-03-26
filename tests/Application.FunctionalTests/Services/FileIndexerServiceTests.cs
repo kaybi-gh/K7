@@ -1,12 +1,12 @@
-﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
-using MediaServer.Domain.Entities;
-using MediaServer.Domain.Enums;
-using MediaServer.Domain.Interfaces;
-using MediaServer.Tests.Helpers.Fixtures;
-using MediaServer.Tests.Helpers.Helpers;
+using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Interfaces;
+using K7.Tests.Helpers.Fixtures;
+using K7.Tests.Helpers.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MediaServer.Application.FunctionalTests.Services;
+namespace K7.Server.Application.FunctionalTests.Services;
 
 public class FileIndexerServiceTests : FileAndDatabaseFixture
 {
@@ -14,7 +14,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
     public async Task ShouldAddOneIndexedFile()
     {
         // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexerService>();
+        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
         var libraryId = await SendAsync(new CreateLibraryCommand
         {
             Title = "New Library",
@@ -39,7 +39,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
     public async Task ShouldRemoveOneIndexedFile()
     {
         // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexerService>();
+        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
         FileHelper.CreateTestFile("test.mp3", "content");
         FileHelper.CreateTestFile("noise.mp3", "content");
         var libraryId = await SendAsync(new CreateLibraryCommand
@@ -65,7 +65,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
     public async Task ShouldUpdateIndexedFile()
     {
         // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexerService>();
+        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
         FileHelper.CreateTestFile("test.mp3", "content");
         var libraryId = await SendAsync(new CreateLibraryCommand
         {
@@ -93,7 +93,7 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
     public async Task ShouldNotUpdateIndexedFile()
     {
         // Arrange
-        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexerService>();
+        var fileIndexerService = Scope.ServiceProvider.GetRequiredService<IFileIndexer>();
         FileHelper.CreateTestFile("test.mp3", "content");
         var libraryId = await SendAsync(new CreateLibraryCommand
         {

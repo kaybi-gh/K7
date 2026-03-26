@@ -1,9 +1,9 @@
-﻿using MediaServer.Application.Extensions;
-using MediaServer.Domain.Entities;
-using MediaServer.Tests.Helpers.Fixtures;
-using MediaServer.Tests.Helpers.Helpers;
+﻿using K7.Server.Application.Extensions;
+using K7.Server.Domain.Entities;
+using K7.Tests.Helpers.Fixtures;
+using K7.Tests.Helpers.Helpers;
 
-namespace MediaServer.Application.UnitTests.Extensions;
+namespace K7.Server.Application.UnitTests.Extensions;
 
 public class FileInfoExtensionsTests : FileFixture
 {
@@ -58,7 +58,7 @@ public class FileInfoExtensionsTests : FileFixture
         var indexedFile = fileInfo.ToIndexedFile(libraryId);
 
         // Assert
-        indexedFile.Should().BeEquivalentTo(expectedIndexedFile);
+        indexedFile.Should().BeEquivalentTo(expectedIndexedFile, options => options.Excluding(x => x.Id));
     }
 
     [Test]

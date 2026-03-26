@@ -1,10 +1,10 @@
-﻿using MediaServer.Application.Common.Behaviours;
-using MediaServer.Application.Common.Interfaces;
-using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
-using MediaServer.Domain.Enums;
+﻿using K7.Server.Application.Common.Behaviours;
+using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
+using K7.Server.Domain.Enums;
 using Microsoft.Extensions.Logging;
 
-namespace MediaServer.Application.UnitTests.Common.Behaviours;
+namespace K7.Server.Application.UnitTests.Common.Behaviours;
 
 public class RequestLoggerTests
 {

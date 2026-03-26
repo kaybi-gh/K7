@@ -1,6 +1,6 @@
-﻿using MediaServer.Tests.Helpers.Helpers;
+﻿using K7.Tests.Helpers.Helpers;
 
-namespace MediaServer.Tests.Helpers.Fixtures;
+namespace K7.Tests.Helpers.Fixtures;
 
 [TestFixture]
 public class FileFixture

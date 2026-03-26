@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
-using MediaServer.Domain.Entities;
+using K7.Server.Domain.Entities;
 
-namespace MediaServer.Tests.Helpers.Samples;
+namespace K7.Tests.Helpers.Samples;
 
 public static class IndexedFilesSamples
 {

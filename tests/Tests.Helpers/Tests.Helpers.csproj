@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <RootNamespace>MediaServer.Tests.Helpers</RootNamespace>
-        <AssemblyName>MediaServer.Tests.Helpers</AssemblyName>
+        <RootNamespace>K7.Tests.Helpers</RootNamespace>
+        <AssemblyName>K7.Tests.Helpers</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -26,9 +26,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Application\Application.csproj" />
-      <ProjectReference Include="..\..\src\Infrastructure\Context\Context.csproj" />
-      <ProjectReference Include="..\..\src\Web\Web.csproj" />
+      <ProjectReference Include="..\..\src\Server\Application\K7.Server.Application.csproj" />
+      <ProjectReference Include="..\..\src\Server\Infrastructure\Database\Context\K7.Server.Infrastructure.Database.Context.csproj" />
+      <ProjectReference Include="..\..\src\Server\Web\K7.Server.Web.csproj" />
     </ItemGroup>
 
 </Project>

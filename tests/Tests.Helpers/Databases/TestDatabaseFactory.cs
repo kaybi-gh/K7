@@ -1,4 +1,4 @@
-﻿namespace MediaServer.Tests.Helpers.Databases;
+﻿namespace K7.Tests.Helpers.Databases;
 
 public static class TestDatabaseFactory
 {

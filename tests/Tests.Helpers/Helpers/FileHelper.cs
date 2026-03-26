@@ -1,4 +1,4 @@
-﻿namespace MediaServer.Tests.Helpers.Helpers;
+﻿namespace K7.Tests.Helpers.Helpers;
 
 public static class FileHelper
 {

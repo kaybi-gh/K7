@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <RootNamespace>MediaServer.Domain.UnitTests</RootNamespace>
-        <AssemblyName>MediaServer.Domain.UnitTests</AssemblyName>
+        <RootNamespace>K7.Server.Domain.UnitTests</RootNamespace>
+        <AssemblyName>K7.Server.Domain.UnitTests</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Domain\Domain.csproj" />
+        <ProjectReference Include="..\..\src\Server\Domain\K7.Server.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>
