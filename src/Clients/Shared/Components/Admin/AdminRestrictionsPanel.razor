@@ -229,39 +229,50 @@ else
     {
         public static readonly TemplateDefinition ChildFriendly = new(
             "Tout public (enfants)",
-            "Bloque les contenus classifiés 12, 16, 18 et les genres Horreur/Thriller",
+            "Bloque les contenus classifiés 12+ / PG-13+ et les genres Horreur/Horror/Thriller",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "12" },
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "16" },
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "PG-13" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "R" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-14" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-MA" },
                 new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horreur" },
+                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horror" },
                 new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Thriller" },
             ]);
 
         public static readonly TemplateDefinition Family12 = new(
             "Famille (+12)",
-            "Bloque les contenus classifiés 16 et 18",
+            "Bloque les contenus classifiés 16+ / R+",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "16" },
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "R" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-MA" },
             ]);
 
         public static readonly TemplateDefinition Teen16 = new(
             "Adolescent (+16)",
-            "Bloque uniquement les contenus classifiés 18",
+            "Bloque uniquement les contenus classifiés 18 / NC-17",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
             ]);
 
         public static readonly TemplateDefinition NoHorror = new(
             "Sans horreur",
-            "Bloque les genres Horreur et Thriller",
+            "Bloque les genres Horreur/Horror et Thriller",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horreur" },
+                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horror" },
                 new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Thriller" },
             ]);
     }
