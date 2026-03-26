@@ -8,6 +8,7 @@
     <PackageVersion Include="Aspire.Hosting.Docker" Version="13.1.2-preview.1.26125.13" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
     <PackageVersion Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageVersion Include="bunit" Version="2.6.2" />
     <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="7.0.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="Extensions.MudBlazor.StaticInput" Version="3.2.1" />
@@ -29,7 +30,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />

@@ -47,5 +47,12 @@
     <Project Path="src/Shared/Aspire/AppHost/K7.Shared.Aspire.AppHost.csproj" />
     <Project Path="src/Shared/Aspire/ServiceDefaults/K7.Shared.Aspire.ServiceDefaults.csproj" />
   </Folder>
-  <Folder Name="/Tests/" />
+  <Folder Name="/Tests/">
+    <Project Path="tests/Application.FunctionalTests/Application.FunctionalTests.csproj" />
+    <Project Path="tests/Application.UnitTests/Application.UnitTests.csproj" />
+    <Project Path="tests/Clients.ComponentTests/Clients.ComponentTests.csproj" />
+    <Project Path="tests/Domain.UnitTests/Domain.UnitTests.csproj" />
+    <Project Path="tests/Infrastructure.IntegrationTests/Infrastructure.IntegrationTests.csproj" />
+    <Project Path="tests/Tests.Helpers/Tests.Helpers.csproj" />
+  </Folder>
 </Solution>
