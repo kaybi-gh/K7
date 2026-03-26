@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
@@ -73,6 +74,13 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 .Select(e => e.MediaId);
 
             query = query.Where(x => !excludedMediaIds.Contains(x.Id));
+
+            var restrictionProfile = await context.ContentRestrictionProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId.Value), cancellationToken);
+
+            if (restrictionProfile is not null)
+                query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
         }
 
         var orderedQuery = ApplyOrdering(request.OrderBy, query, userId);
