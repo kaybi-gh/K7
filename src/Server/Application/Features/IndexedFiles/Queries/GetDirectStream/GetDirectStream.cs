@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Http;
 
@@ -9,14 +10,17 @@ public record GetDirectStreamQuery(Guid Id) : IRequest<IResult>;
 public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery, IResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediaAccessGuard _accessGuard;
 
-    public GetDirectStreamQueryHandler(IApplicationDbContext context)
+    public GetDirectStreamQueryHandler(IApplicationDbContext context, IMediaAccessGuard accessGuard)
     {
         _context = context;
+        _accessGuard = accessGuard;
     }
 
     public async Task<IResult> Handle(GetDirectStreamQuery query, CancellationToken cancellationToken)
     {
+        await _accessGuard.EnsureAccessByIndexedFileAsync(query.Id, cancellationToken);
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);

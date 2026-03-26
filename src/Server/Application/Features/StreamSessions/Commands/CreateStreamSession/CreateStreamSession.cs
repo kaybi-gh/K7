@@ -1,5 +1,6 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Shared.Dtos;
 
@@ -16,15 +17,18 @@ public class CreateStreamSessionCommandHandler : IRequestHandler<CreateStreamSes
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly IMediaAccessGuard _accessGuard;
 
-    public CreateStreamSessionCommandHandler(IApplicationDbContext context, IUser user)
+    public CreateStreamSessionCommandHandler(IApplicationDbContext context, IUser user, IMediaAccessGuard accessGuard)
     {
         _context = context;
         _user = user;
+        _accessGuard = accessGuard;
     }
 
     public async Task<StreamingSessionDto> Handle(CreateStreamSessionCommand command, CancellationToken cancellationToken)
     {
+        await _accessGuard.EnsureAccessByIndexedFileAsync(command.IndexedFileId, cancellationToken);
         var indexedFile = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == command.IndexedFileId, cancellationToken);

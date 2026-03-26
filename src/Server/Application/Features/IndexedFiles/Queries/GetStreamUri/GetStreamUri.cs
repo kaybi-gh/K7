@@ -1,5 +1,6 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
@@ -23,15 +24,19 @@ public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
 public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IMediaAccessGuard _accessGuard;
 
-    public GetStreamUriQueryHandler(IApplicationDbContext context)
+    public GetStreamUriQueryHandler(IApplicationDbContext context, IMediaAccessGuard accessGuard)
     {
         _context = context;
+        _accessGuard = accessGuard;
     }
 
     public async Task<IndexedFileStreamUri> Handle(GetStreamUriQuery request, CancellationToken cancellationToken)
     {
         Guard.Against.NullOrEmpty(request.DeviceId);
+
+        await _accessGuard.EnsureAccessByIndexedFileAsync(request.Id, cancellationToken);
 
         var indexedFile = await _context.IndexedFiles
             .Include(x => x.FileMetadata)

@@ -29,6 +29,7 @@ public static class DependencyInjection
 
         services.AddHostedService<BackgroundTasksProcessingService>();
         services.AddScoped<IFileIndexer, FileIndexer>();
+        services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
 
         return services;
     }
