@@ -2,6 +2,7 @@ using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
 using MudBlazor;
 
@@ -21,6 +22,7 @@ public partial class MobileFooter : IDisposable
     {
         Nav.LocationChanged += OnLocationChanged;
         BackButton.Register(HandleBackButton);
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
 
         try
         {
@@ -81,7 +83,22 @@ public partial class MobileFooter : IDisposable
     public void Dispose()
     {
         Nav.LocationChanged -= OnLocationChanged;
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         BackButton.Unregister();
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        try
+        {
+            await task;
+            _libraries = await K7ServerService.GetLibrariesAsync();
+        }
+        catch
+        {
+            _libraries = [];
+        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private static string GetLibraryIcon(LibraryMediaType mediaType) => mediaType switch

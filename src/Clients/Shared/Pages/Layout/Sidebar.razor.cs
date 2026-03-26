@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 using MudBlazor;
 
@@ -15,6 +16,7 @@ public partial class Sidebar
     protected override void OnInitialized()
     {
         SidebarService.IsOpenOnChange += StateHasChanged;
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
     }
 
     protected override async Task OnInitializedAsync()
@@ -27,6 +29,20 @@ public partial class Sidebar
         {
             _libraries = [];
         }
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        try
+        {
+            await task;
+            _libraries = await K7ServerService.GetLibrariesAsync();
+        }
+        catch
+        {
+            _libraries = [];
+        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private static string GetLibraryIcon(LibraryMediaType mediaType) => mediaType switch
@@ -59,6 +75,7 @@ public partial class Sidebar
     public void Dispose()
     {
         SidebarService.IsOpenOnChange -= StateHasChanged;
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         _dotNetRef?.Dispose();
     }
 
