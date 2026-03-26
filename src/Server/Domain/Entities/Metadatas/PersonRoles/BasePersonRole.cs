@@ -8,8 +8,8 @@ public abstract class BasePersonRole(PersonRoleType type) : BaseAuditableEntity
 
     public IList<ExternalId> ExternalIds { get; set; } = [];
     public Guid PersonId { get; set; }
-    public virtual Person Person { get; set; } = null!;
+    public Person Person { get; set; } = null!;
     public Guid MediaId { get; set; }
-    public virtual BaseMedia Media { get; set; } = null!;
-    public virtual MetadataPicture? PortraitPicture { get; set; }
+    public BaseMedia Media { get; set; } = null!;
+    public MetadataPicture? PortraitPicture { get; set; }
 }

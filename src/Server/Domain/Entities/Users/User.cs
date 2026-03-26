@@ -11,11 +11,11 @@ public class User : BaseAuditableEntity
     public string? PinHash { get; set; }
     public Guid? ContentRestrictionProfileId { get; set; }
     public ContentRestrictionProfile? ContentRestrictionProfile { get; set; }
-    public ICollection<UserRating> Ratings { get; set; } = [];
-    public ICollection<Device> Devices { get; set; } = [];
-    public ICollection<UserCapabilityOverride> CapabilityOverrides { get; set; } = [];
-    public ICollection<UserLibraryExclusion> LibraryExclusions { get; set; } = [];
-    public ICollection<UserMediaExclusion> MediaExclusions { get; set; } = [];
+    public IList<UserRating> Ratings { get; set; } = [];
+    public IList<Device> Devices { get; set; } = [];
+    public IList<UserCapabilityOverride> CapabilityOverrides { get; set; } = [];
+    public IList<UserLibraryExclusion> LibraryExclusions { get; set; } = [];
+    public IList<UserMediaExclusion> MediaExclusions { get; set; } = [];
 
     [NotMapped] public string? Email { get; set; }
     [NotMapped] public string? UserName { get; set; }

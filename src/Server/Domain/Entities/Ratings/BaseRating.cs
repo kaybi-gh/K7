@@ -14,5 +14,5 @@ public abstract class BaseRating : BaseAuditableEntity
     public double MaximumValue { get; set; }
 
     public Guid MediaId { get; set; }
-    public virtual BaseMedia Media { get; set; } = null!;
+    public BaseMedia Media { get; set; } = null!;
 }
