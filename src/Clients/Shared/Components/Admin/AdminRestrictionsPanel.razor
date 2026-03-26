@@ -1,0 +1,258 @@
+@using K7.Shared.Dtos.Restrictions
+@using K7.Shared.Dtos.Requests
+@using K7.Server.Domain.Enums
+@inject IK7ServerService K7ServerService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <MudText Typo="Typo.h6">Profils de restriction</MudText>
+    <MudStack Row="true" Spacing="2">
+        <MudMenu Label="Créer depuis un modèle" Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Secondary"
+                 Variant="Variant.Outlined" EndIcon="@Icons.Material.Filled.KeyboardArrowDown">
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">Tout public (enfants)</MudMenuItem>
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">Famille (+12)</MudMenuItem>
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">Adolescent (+16)</MudMenuItem>
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">Sans horreur</MudMenuItem>
+        </MudMenu>
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="OpenCreateDialog">Créer un profil</MudButton>
+    </MudStack>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_profiles.Count == 0)
+{
+    <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
+        <MudIcon Icon="@Icons.Material.Outlined.Shield" Size="Size.Large" Color="Color.Secondary" />
+        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">Aucun profil de restriction</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+            Créez des profils pour restreindre l'accès au contenu par genre, classification d'âge, ou année de sortie.
+        </MudText>
+    </MudPaper>
+}
+else
+{
+    <MudGrid>
+        @foreach (var profile in _profiles)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@profile.Name</MudText>
+                            @if (!string.IsNullOrEmpty(profile.Description))
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@profile.Description</MudText>
+                            }
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                           OnClick="@(() => OpenEditDialog(profile))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                           OnClick="@(() => ConfirmDelete(profile))" />
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Condition : @(profile.MatchCondition == RestrictionMatchCondition.Any ? "Au moins une règle" : "Toutes les règles")
+                            </MudText>
+                            @foreach (var rule in profile.Rules)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default">
+                                    @FormatRule(rule)
+                                </MudChip>
+                            }
+                            <MudText Typo="Typo.caption" Class="mt-2">
+                                <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Class="mr-1" />
+                                @profile.UserCount utilisateur(s) rattaché(s)
+                            </MudText>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private bool _loading = true;
+    private List<ContentRestrictionProfileDto> _profiles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _profiles = await K7ServerService.GetContentRestrictionProfilesAsync();
+        }
+        catch
+        {
+            _profiles = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<AdminRestrictionProfileDialog>
+        {
+            { x => x.IsNew, true }
+        };
+        await ShowDialog(parameters);
+    }
+
+    private async Task OpenEditDialog(ContentRestrictionProfileDto profile)
+    {
+        var parameters = new DialogParameters<AdminRestrictionProfileDialog>
+        {
+            { x => x.IsNew, false },
+            { x => x.ProfileId, profile.Id },
+            { x => x.Name, profile.Name },
+            { x => x.Description, profile.Description },
+            { x => x.MatchCondition, profile.MatchCondition },
+            { x => x.Rules, profile.Rules.Select(r => new AdminRestrictionProfileDialog.RuleEntry
+            {
+                Field = r.Field,
+                Operator = r.Operator,
+                Value = r.Value
+            }).ToList() }
+        };
+        await ShowDialog(parameters);
+    }
+
+    private async Task CreateFromTemplate(TemplateDefinition template)
+    {
+        var parameters = new DialogParameters<AdminRestrictionProfileDialog>
+        {
+            { x => x.IsNew, true },
+            { x => x.Name, template.Name },
+            { x => x.Description, template.Description },
+            { x => x.MatchCondition, template.MatchCondition },
+            { x => x.Rules, template.Rules.Select(r => new AdminRestrictionProfileDialog.RuleEntry
+            {
+                Field = r.Field,
+                Operator = r.Operator,
+                Value = r.Value
+            }).ToList() }
+        };
+        await ShowDialog(parameters);
+    }
+
+    private async Task ShowDialog(DialogParameters<AdminRestrictionProfileDialog> parameters)
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<AdminRestrictionProfileDialog>("Profil de restriction", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+            await LoadData();
+    }
+
+    private async Task ConfirmDelete(ContentRestrictionProfileDto profile)
+    {
+        var parameters = new DialogParameters<ConfirmDeleteUserDialog>
+        {
+            { x => x.DisplayName, profile.Name }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>("Supprimer le profil", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await K7ServerService.DeleteContentRestrictionProfileAsync(profile.Id);
+                Snackbar.Add("Profil supprimé.", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private static string FormatRule(ContentRestrictionRuleDto rule)
+    {
+        var field = rule.Field switch
+        {
+            RestrictionField.Genre => "Genre",
+            RestrictionField.ContentRating => "Classification",
+            RestrictionField.ReleaseYear => "Année",
+            _ => rule.Field.ToString()
+        };
+        var op = rule.Operator switch
+        {
+            RestrictionOperator.Equals => "=",
+            RestrictionOperator.NotEquals => "≠",
+            RestrictionOperator.Contains => "contient",
+            RestrictionOperator.NotContains => "ne contient pas",
+            RestrictionOperator.GreaterThan => ">",
+            RestrictionOperator.LessThan => "<",
+            RestrictionOperator.GreaterThanOrEqual => "≥",
+            RestrictionOperator.LessThanOrEqual => "≤",
+            _ => rule.Operator.ToString()
+        };
+        return $"{field} {op} {rule.Value}";
+    }
+
+    public sealed record TemplateDefinition(string Name, string Description, RestrictionMatchCondition MatchCondition, List<ContentRestrictionRuleDto> Rules);
+
+    public static class Templates
+    {
+        public static readonly TemplateDefinition ChildFriendly = new(
+            "Tout public (enfants)",
+            "Bloque les contenus classifiés PG-13, R, NC-17, TV-14, TV-MA et les genres Horror/Thriller",
+            RestrictionMatchCondition.Any,
+            [
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "R" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "PG-13" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-MA" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-14" },
+                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horror" },
+                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Thriller" },
+            ]);
+
+        public static readonly TemplateDefinition Family12 = new(
+            "Famille (+12)",
+            "Bloque les contenus classifiés R, NC-17, TV-MA",
+            RestrictionMatchCondition.Any,
+            [
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "R" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-MA" },
+            ]);
+
+        public static readonly TemplateDefinition Teen16 = new(
+            "Adolescent (+16)",
+            "Bloque uniquement les contenus classifiés NC-17",
+            RestrictionMatchCondition.Any,
+            [
+                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
+            ]);
+
+        public static readonly TemplateDefinition NoHorror = new(
+            "Sans horreur",
+            "Bloque les genres Horror et Thriller",
+            RestrictionMatchCondition.Any,
+            [
+                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horror" },
+                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Thriller" },
+            ]);
+    }
+}
