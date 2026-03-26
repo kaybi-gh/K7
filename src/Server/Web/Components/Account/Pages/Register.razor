@@ -5,10 +5,12 @@
 @using System.Text.Encodings.Web
 @using K7.Server.Domain.Constants
 @using K7.Server.Domain.Entities.Users
+@using K7.Server.Infrastructure.Configuration
 @using K7.Server.Infrastructure.Database.Context.Identity
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.Extensions.Options
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -18,7 +20,7 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject K7.Server.Application.Common.Interfaces.IApplicationDbContext ApplicationDbContext
-@inject K7.Server.Application.Common.Interfaces.IServerSettingsService SettingsService
+@inject IOptions<AuthenticationConfiguration> AuthConfig
 
 <PageTitle>Register</PageTitle>
 
@@ -78,8 +80,7 @@
     {
         Input ??= new();
 
-        var registrationEnabled = await SettingsService.GetAsync(K7.Server.Domain.Settings.ServerSettingKeys.LocalRegistrationEnabled);
-        if (registrationEnabled != true)
+        if (!AuthConfig.Value.Local.RegistrationEnabled)
         {
             RedirectManager.RedirectToWithStatus("Account/Login", "Registration is currently disabled.", HttpContext);
         }
@@ -87,8 +88,7 @@
 
     public async Task RegisterUser(EditContext editContext)
     {
-        var registrationEnabled = await SettingsService.GetAsync(K7.Server.Domain.Settings.ServerSettingKeys.LocalRegistrationEnabled);
-        if (registrationEnabled != true)
+        if (!AuthConfig.Value.Local.RegistrationEnabled)
         {
             RedirectManager.RedirectToWithStatus("Account/Login", "Registration is currently disabled.", HttpContext);
             return;

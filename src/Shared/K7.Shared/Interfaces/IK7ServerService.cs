@@ -64,6 +64,7 @@ public interface IK7ServerService
 
     // Server Info
     Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default);
+    Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default);
 
     // Admin Users
     Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);

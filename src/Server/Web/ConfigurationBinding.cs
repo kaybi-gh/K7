@@ -8,7 +8,7 @@ public static class ConfigurationBinding
     {
         services.Configure<PathsConfiguration>(configuration.GetSection("Paths"));
         services.Configure<DatabaseConfiguration>(configuration.GetSection("Database"));
-        services.Configure<OidcConfiguration>(configuration.GetSection("Oidc"));
+        services.Configure<AuthenticationConfiguration>(configuration.GetSection("Authentication"));
         return services;
     }
 }

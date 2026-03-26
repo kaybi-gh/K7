@@ -306,6 +306,11 @@ public class K7ServerService : IK7ServerService
         return await HttpClient.GetFromJsonAsync<ServerInfoDto>("api/server-info", _serializerOptions, cancellationToken);
     }
 
+    public async Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<AuthenticationInfoDto>("api/admin/authentication-info", _serializerOptions, cancellationToken);
+    }
+
     public async Task<List<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
         var users = await HttpClient.GetFromJsonAsync<List<UserDto>>("api/users", _serializerOptions, cancellationToken);
