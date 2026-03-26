@@ -31,6 +31,30 @@ public static class ContentRestrictionEvaluator
         return query.Where(Negate(restricted));
     }
 
+    public static IQueryable<BaseMedia> GetRestricted(
+        IQueryable<BaseMedia> query,
+        ContentRestrictionProfile profile)
+    {
+        if (profile.Rules.Count == 0)
+            return query.Where(_ => false);
+
+        var predicates = profile.Rules
+            .Select(BuildPredicate)
+            .ToList();
+
+        Expression<Func<BaseMedia, bool>> restricted;
+        if (profile.MatchCondition == RestrictionMatchCondition.All)
+        {
+            restricted = predicates.Aggregate(CombineAnd);
+        }
+        else
+        {
+            restricted = predicates.Aggregate(CombineOr);
+        }
+
+        return query.Where(restricted);
+    }
+
     private static Expression<Func<BaseMedia, bool>> BuildPredicate(ContentRestrictionRule rule)
     {
         return rule.Field switch

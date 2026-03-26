@@ -407,4 +407,9 @@ public class K7ServerService : IK7ServerService
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/restriction-profile", new { ProfileId = profileId }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<RestrictedMediaPreviewDto>>($"api/restriction-profiles/{profileId}/restricted-medias", _serializerOptions, cancellationToken) ?? [];
+    }
 }

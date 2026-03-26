@@ -50,6 +50,8 @@ else
                             }
                         </CardHeaderContent>
                         <CardHeaderActions>
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Primary"
+                                           OnClick="@(() => PreviewRestrictedMedias(profile))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
                                            OnClick="@(() => OpenEditDialog(profile))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
@@ -159,6 +161,17 @@ else
 
         if (result is { Canceled: false })
             await LoadData();
+    }
+
+    private async Task PreviewRestrictedMedias(ContentRestrictionProfileDto profile)
+    {
+        var parameters = new DialogParameters<AdminRestrictedMediasDialog>
+        {
+            { x => x.ProfileId, profile.Id },
+            { x => x.ProfileName, profile.Name }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<AdminRestrictedMediasDialog>("Médias restreints", parameters, options);
     }
 
     private async Task ConfirmDelete(ContentRestrictionProfileDto profile)
