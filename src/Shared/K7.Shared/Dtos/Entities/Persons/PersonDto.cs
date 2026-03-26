@@ -15,8 +15,8 @@ public sealed record PersonDto
     public DateOnly? Deathday { get; init; }
     public string? BirthPlace { get; init; }
 
-    public IEnumerable<PersonRoleDto> Roles { get; init; } = [];
-    public IEnumerable<ExternalIdDto> ExternalIds { get; init; } = [];
+    public IReadOnlyList<PersonRoleDto> Roles { get; init; } = [];
+    public IReadOnlyList<ExternalIdDto> ExternalIds { get; init; } = [];
     public MetadataPictureDto? PortraitPicture { get; init; }
 
     public static PersonDto FromDomain(Person domain) => new()
@@ -29,8 +29,8 @@ public sealed record PersonDto
         Birthday = domain.Birthday,
         Deathday = domain.Deathday,
         BirthPlace = domain.BirthPlace,
-        Roles = domain.Roles.Select(PersonRoleDto.FromDomain),
-        ExternalIds = domain.ExternalIds.Select(ExternalIdDto.FromDomain),
+        Roles = domain.Roles.Select(PersonRoleDto.FromDomain).ToList(),
+        ExternalIds = domain.ExternalIds.Select(ExternalIdDto.FromDomain).ToList(),
         PortraitPicture = domain.PortraitPicture != null ? MetadataPictureDto.FromDomain(domain.PortraitPicture) : null
     };
 }

@@ -20,7 +20,7 @@ public sealed record CreateDeviceRequest
 
 public sealed record CreateDeviceRequestPlaybackCapibilities
 {
-    public IEnumerable<string>? SupportedMediaFormatIds { get; init; }
-    public IEnumerable<string>? SupportedSubtitlesCodecs { get; init; }
+    public IReadOnlyList<string>? SupportedMediaFormatIds { get; init; }
+    public IReadOnlyList<string>? SupportedSubtitlesCodecs { get; init; }
     public bool SupportsHDR { get; init; }
 }

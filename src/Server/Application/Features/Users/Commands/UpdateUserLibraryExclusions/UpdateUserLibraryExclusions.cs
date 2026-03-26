@@ -9,7 +9,7 @@ namespace K7.Server.Application.Features.Users.Commands.UpdateUserLibraryExclusi
 public record UpdateUserLibraryExclusionsCommand : IRequest
 {
     public required Guid Id { get; init; }
-    public required List<Guid> ExcludedLibraryIds { get; init; }
+    public required IReadOnlyList<Guid> ExcludedLibraryIds { get; init; }
 }
 
 public class UpdateUserLibraryExclusionsCommandHandler(IApplicationDbContext context)

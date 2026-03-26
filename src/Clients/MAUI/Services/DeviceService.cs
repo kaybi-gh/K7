@@ -33,7 +33,7 @@ namespace K7.Clients.MAUI.Services
                 WebDeviceDetails = null,
                 PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
                 {
-                    SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id),
+                    SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id).ToList(),
                     SupportedSubtitlesCodecs = ["webvtt"], // TODO - For now we limit to webvtt
                     SupportsHDR = await GetHdrSupportAsync()
                 }

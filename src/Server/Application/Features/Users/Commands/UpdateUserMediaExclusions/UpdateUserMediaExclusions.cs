@@ -9,7 +9,7 @@ namespace K7.Server.Application.Features.Users.Commands.UpdateUserMediaExclusion
 public record UpdateUserMediaExclusionsCommand : IRequest
 {
     public required Guid Id { get; init; }
-    public required List<Guid> ExcludedMediaIds { get; init; }
+    public required IReadOnlyList<Guid> ExcludedMediaIds { get; init; }
 }
 
 public class UpdateUserMediaExclusionsCommandHandler(IApplicationDbContext context)

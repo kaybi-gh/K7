@@ -15,7 +15,7 @@ public abstract record LiteMediaDto
     public Guid Id { get; init; }
     public string? Title { get; init; }
     public string? ReleaseDate { get; init; }
-    public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
+    public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }
     public UserMediaStateDto? UserState { get; init; }
     public int? UserRating { get; init; }
 
@@ -29,7 +29,7 @@ public abstract record LiteMediaDto
             Id = domain.Id,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain).ToList(),
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null,
@@ -40,7 +40,7 @@ public abstract record LiteMediaDto
             Id = domain.Id,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain).ToList(),
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null,
@@ -51,7 +51,7 @@ public abstract record LiteMediaDto
             Id = domain.Id,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(MetadataPictureDto.FromDomain),
+            Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(MetadataPictureDto.FromDomain).ToList(),
             AlbumId = track.AlbumId,
             TrackNumber = track.TrackNumber,
             IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,

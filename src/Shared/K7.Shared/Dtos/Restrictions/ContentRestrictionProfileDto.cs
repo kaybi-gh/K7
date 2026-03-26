@@ -9,7 +9,7 @@ public sealed record ContentRestrictionProfileDto
     public required string Name { get; init; }
     public string? Description { get; init; }
     public required RestrictionMatchCondition MatchCondition { get; init; }
-    public required List<ContentRestrictionRuleDto> Rules { get; init; }
+    public required IReadOnlyList<ContentRestrictionRuleDto> Rules { get; init; }
     public required int UserCount { get; init; }
 
     public static ContentRestrictionProfileDto FromDomain(ContentRestrictionProfile profile) => new()

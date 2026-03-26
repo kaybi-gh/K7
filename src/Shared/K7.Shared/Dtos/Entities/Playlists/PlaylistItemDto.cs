@@ -23,7 +23,7 @@ public sealed record PlaylistItemDto
     public double? Bpm { get; init; }
     public string? MusicalKey { get; init; }
     public double? Energy { get; init; }
-    public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
+    public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }
 
     public static PlaylistItemDto FromDomain(PlaylistItem domain)
     {
@@ -54,7 +54,7 @@ public sealed record PlaylistItemDto
             Bpm = media is MusicTrack mt ? mt.AudioAnalysis?.Bpm : null,
             MusicalKey = media is MusicTrack mk ? mk.AudioAnalysis?.MusicalKey : null,
             Energy = media is MusicTrack me ? me.AudioAnalysis?.Energy : null,
-            Pictures = media?.Pictures.Select(MetadataPictureDto.FromDomain)
+            Pictures = media?.Pictures.Select(MetadataPictureDto.FromDomain).ToList()
         };
     }
 }

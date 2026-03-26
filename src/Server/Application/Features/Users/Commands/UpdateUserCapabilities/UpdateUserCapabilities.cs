@@ -10,7 +10,7 @@ namespace K7.Server.Application.Features.Users.Commands.UpdateUserCapabilities;
 public record UpdateUserCapabilitiesCommand : IRequest
 {
     public required Guid Id { get; init; }
-    public required List<CapabilityOverrideDto> Overrides { get; init; }
+    public required IReadOnlyList<CapabilityOverrideDto> Overrides { get; init; }
 }
 
 public class UpdateUserCapabilitiesCommandHandler(IApplicationDbContext context)
