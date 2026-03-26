@@ -118,18 +118,25 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection ConfigureCors(this IServiceCollection services)
+    public static IServiceCollection ConfigureCors(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
             {
-                // policy.WithOrigins("http://fqdn"); // TODO
-                //policy.SetIsOriginAllowed(origin => new Uri(origin).IsLoopback);
-                policy.AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .WithExposedHeaders("*");
+                var origins = configuration.GetSection("Cors:Origins").Get<string[]>();
+
+                if (origins is { Length: > 0 })
+                {
+                    policy.WithOrigins(origins);
+                }
+                else
+                {
+                    policy.SetIsOriginAllowed(origin => new Uri(origin).IsLoopback);
+                }
+
+                policy.AllowAnyMethod()
+                      .AllowAnyHeader();
             });
         });
 
