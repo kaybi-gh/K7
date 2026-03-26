@@ -1,4 +1,9 @@
-﻿@if (Skeleton)
+﻿@inject IK7ServerService K7ServerService
+@inject IFeatureAccessService FeatureAccess
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+@if (Skeleton)
 {
     <MudPaper Style="background-color:transparent;" Elevation="0">
         <div class="media-item-container">
@@ -19,8 +24,8 @@
 else
 {
     <MudPaper Style="background-color:transparent;" Elevation="0">
-        <a class="media-item-link" href="@("/movies/" + Model.Id)">
-            <div class="media-item-container">
+        <div class="media-item-container">
+            <a class="media-item-link" href="@("/movies/" + Model.Id)">
                 <MudImage Src="@Model.PosterPictureHref" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
 
                 @if (WatchedStatusEnabled && Model.Watched)
@@ -41,31 +46,23 @@ else
                 {
                     <div class="media-item-overlay">
                         <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" tabindex="-1" />
-                        @* <MudMenu Icon="@Icons.Material.Filled.MoreVert" PositionAtCursor="true">
-                        <MudMenuItem>Profile</MudMenuItem>
-                        <MudMenuItem>My account</MudMenuItem>
-                        <MudMenuItem>Logout</MudMenuItem>
-                        </MudMenu> *@
-                                    @* <MudMenu Dense="true">
-                        <ActivatorContent>
-                        <div class="media-item-overlay-more">
-                        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" />
-                        </div>
-                        </ActivatorContent>
-                        <ChildContent>
-                        <MudMenuItem>Mark as shown</MudMenuItem>
-                        <MudMenuItem>Add to...</MudMenuItem>
-                        <MudMenuItem>Remove from this section</MudMenuItem>
-                        <MudMenuItem>Download</MudMenuItem>
-                        <MudMenuItem>Edit metadata</MudMenuItem>
-                        <MudMenuItem>Refresh metadata</MudMenuItem>
-                        <MudMenuItem>File(s) informations</MudMenuItem>
-                        </ChildContent>
-                        </MudMenu> *@
                     </div>
                 }
-            </div>
-        </a>
+            </a>
+
+            @if (_canExclude)
+            {
+                <div class="media-item-overlay-more">
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="OnExcludeForSelf">Masquer pour moi</MudMenuItem>
+                        @if (_isAdmin)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.PeopleAlt" OnClick="OnExcludeForOthers">Masquer pour un utilisateur</MudMenuItem>
+                        }
+                    </MudMenu>
+                </div>
+            }
+        </div>
 
         @if (FooterVisible)
         {
@@ -87,6 +84,55 @@ else
     [Parameter] public bool ProgressEnabled { get; set; } = false;
     [Parameter] public bool WatchedStatusEnabled { get; set; } = false;
     [Parameter] public bool FooterVisible { get; set; } = false;
+    [Parameter] public EventCallback OnExcluded { get; set; }
+
+    private bool _canExclude;
+    private bool _isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var role = await FeatureAccess.GetRoleAsync();
+        _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
+        _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
+    }
 
     private bool ProgressBarIsHidden() => Model.Progress == 0 || Model.Progress == 100;
+
+    private async Task OnExcludeForSelf()
+    {
+        try
+        {
+            var excluded = await K7ServerService.ToggleMediaExclusionAsync(Guid.Parse(Model.Id));
+            if (excluded)
+            {
+                Snackbar.Add($"« {Model.Title} » masqué", Severity.Success);
+                await OnExcluded.InvokeAsync();
+            }
+            else
+            {
+                Snackbar.Add($"« {Model.Title} » affiché à nouveau", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnExcludeForOthers()
+    {
+        var parameters = new DialogParameters<Dialogs.ExcludeMediaForUsersDialog>
+        {
+            { x => x.MediaId, Guid.Parse(Model.Id) },
+            { x => x.MediaTitle, Model.Title }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<Dialogs.ExcludeMediaForUsersDialog>("Masquer pour un utilisateur", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add("Exclusions mises à jour.", Severity.Success);
+        }
+    }
 }

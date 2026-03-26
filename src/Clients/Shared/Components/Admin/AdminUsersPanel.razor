@@ -70,8 +70,13 @@ else
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Default"
                                                OnClick="@(() => OpenCapabilitiesDialog(user))" aria-label="Capacités" />
-                                <MudIconButton Icon="@Icons.Material.Filled.VideoLibrary" Size="Size.Small" Color="Color.Default"
-                                               OnClick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="Librairies" />
+                            }
+                            <MudIconButton Icon="@Icons.Material.Filled.VideoLibrary" Size="Size.Small" Color="Color.Default"
+                                           OnClick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="Librairies" />
+                            <MudIconButton Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" Color="Color.Default"
+                                           OnClick="@(() => OpenMediaExclusionsDialog(user))" aria-label="Médias masqués" />
+                            @if (!user.IsGuest)
+                            {
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
                                                OnClick="@(() => ConfirmDelete(user))" aria-label="Supprimer" />
                             }
@@ -226,6 +231,37 @@ else
             {
                 await K7ServerService.UpdateUserLibraryExclusionsAsync(user.Id, request);
                 Snackbar.Add("Accès aux librairies mis à jour.", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenMediaExclusionsDialog(UserDto user)
+    {
+        var parameters = new DialogParameters<AdminUserMediaExclusionsDialog>
+        {
+            { x => x.ExcludedMediaIds, user.ExcludedMediaIds }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<AdminUserMediaExclusionsDialog>("Médias masqués", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: List<Guid> newExclusions })
+        {
+            var request = new UpdateUserMediaExclusionsRequest
+            {
+                ExcludedMediaIds = newExclusions
+            };
+
+            try
+            {
+                await K7ServerService.UpdateUserMediaExclusionsAsync(user.Id, request);
+                Snackbar.Add("Médias masqués mis à jour.", Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)

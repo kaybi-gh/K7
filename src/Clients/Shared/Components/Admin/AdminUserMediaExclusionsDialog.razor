@@ -1,0 +1,107 @@
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Requests
+@using K7.Server.Domain.Enums
+@inject IK7ServerService K7ServerService
+
+<MudDialog>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (_excludedMedias.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Aucun média masqué pour cet utilisateur.</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                @_excludedMedias.Count média(s) masqué(s). Cliquez sur la croix pour rétablir l'accès.
+            </MudText>
+            <MudList T="ExcludedMediaItem" Dense="true">
+                @foreach (var media in _excludedMedias)
+                {
+                    <MudListItem T="ExcludedMediaItem">
+                        <ChildContent>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    @if (!string.IsNullOrEmpty(media.PosterUrl))
+                                    {
+                                        <MudAvatar Rounded="true" Size="Size.Medium">
+                                            <MudImage Src="@media.PosterUrl" />
+                                        </MudAvatar>
+                                    }
+                                    else
+                                    {
+                                        <MudAvatar Rounded="true" Size="Size.Medium" Color="Color.Dark">
+                                            <MudIcon Icon="@Icons.Material.Filled.Movie" />
+                                        </MudAvatar>
+                                    }
+                                    <MudText Typo="Typo.body2">@(media.Title ?? media.Id.ToString())</MudText>
+                                </MudStack>
+                                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error"
+                                               OnClick="@(() => RemoveExclusion(media))" />
+                            </MudStack>
+                        </ChildContent>
+                    </MudListItem>
+                }
+            </MudList>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Enregistrer</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public List<Guid> ExcludedMediaIds { get; set; } = [];
+
+    private bool _loading = true;
+    private List<ExcludedMediaItem> _excludedMedias = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ExcludedMediaIds.Count > 0)
+        {
+            try
+            {
+                var result = await K7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+                {
+                    Ids = ExcludedMediaIds.ToArray(),
+                    PageNumber = 1,
+                    PageSize = ExcludedMediaIds.Count
+                });
+
+                var fetchedById = result?.Items?.ToDictionary(m => m.Id) ?? [];
+
+                _excludedMedias = ExcludedMediaIds.Select(id =>
+                {
+                    fetchedById.TryGetValue(id, out var dto);
+                    var posterUrl = dto?.Pictures?
+                        .FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+                        .GetUri(MetadataPictureSize.Small)?.OriginalString;
+                    return new ExcludedMediaItem(id, dto?.Title, posterUrl != null ? K7ServerService.GetAbsoluteUri(posterUrl)?.AbsoluteUri : null);
+                }).ToList();
+            }
+            catch
+            {
+                _excludedMedias = ExcludedMediaIds.Select(id => new ExcludedMediaItem(id, null, null)).ToList();
+            }
+        }
+
+        _loading = false;
+    }
+
+    private void RemoveExclusion(ExcludedMediaItem media)
+    {
+        _excludedMedias.Remove(media);
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(_excludedMedias.Select(m => m.Id).ToList()));
+
+    private sealed record ExcludedMediaItem(Guid Id, string? Title, string? PosterUrl);
+}
