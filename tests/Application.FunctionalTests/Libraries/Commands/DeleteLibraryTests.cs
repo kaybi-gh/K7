@@ -1,10 +1,10 @@
-﻿using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Features.Libraries.Commands.DeleteLibrary;
-using MediaServer.Domain.Entities;
-using MediaServer.Domain.Enums;
-using MediaServer.Tests.Helpers.Fixtures;
+﻿using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
+using K7.Server.Application.Features.Libraries.Commands.DeleteLibrary;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
+using K7.Tests.Helpers.Fixtures;
 
-namespace MediaServer.Application.FunctionalTests.Libraries.Commands;
+namespace K7.Server.Application.FunctionalTests.Libraries.Commands;
 
 public class DeleteLibraryTests : DatabaseFixture
 {

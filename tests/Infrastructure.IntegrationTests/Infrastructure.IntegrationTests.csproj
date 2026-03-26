@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <RootNamespace>MediaServer.Infrastructure.IntegrationTests</RootNamespace>
-        <AssemblyName>MediaServer.Infrastructure.IntegrationTests</AssemblyName>
+        <RootNamespace>K7.Server.Infrastructure.IntegrationTests</RootNamespace>
+        <AssemblyName>K7.Server.Infrastructure.IntegrationTests</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>

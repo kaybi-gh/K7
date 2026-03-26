@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <RootNamespace>MediaServer.Application.UnitTests</RootNamespace>
-        <AssemblyName>MediaServer.Application.UnitTests</AssemblyName>
+        <RootNamespace>K7.Server.Application.UnitTests</RootNamespace>
+        <AssemblyName>K7.Server.Application.UnitTests</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,8 +23,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Application\Application.csproj" />
-        <ProjectReference Include="..\..\src\Infrastructure\Context\Context.csproj" />
+        <ProjectReference Include="..\..\src\Server\Application\K7.Server.Application.csproj" />
+        <ProjectReference Include="..\..\src\Server\Infrastructure\Database\Context\K7.Server.Infrastructure.Database.Context.csproj" />
         <ProjectReference Include="..\Tests.Helpers\Tests.Helpers.csproj" />
     </ItemGroup>
 

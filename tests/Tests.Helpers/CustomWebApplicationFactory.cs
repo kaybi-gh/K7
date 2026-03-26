@@ -1,7 +1,7 @@
 ﻿using System.Data.Common;
-using MediaServer.Application.Common.Interfaces;
-using MediaServer.Infrastructure.Context.Data;
-using MediaServer.Tests.Helpers.Fixtures;
+using K7.Server.Application.Common.Interfaces;
+using K7.Server.Infrastructure.Database.Context.Data;
+using K7.Tests.Helpers.Fixtures;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MediaServer.Tests.Helpers;
+namespace K7.Tests.Helpers;
 
 using static DatabaseFixture;
 
@@ -28,7 +28,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             var userSubstitute = Substitute.For<IUser>();
-            userSubstitute.Id.Returns(x => GetUserId());
+            userSubstitute.IdentityId.Returns(x => GetUserId());
 
             services
                 .RemoveAll<IUser>()

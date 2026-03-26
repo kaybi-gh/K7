@@ -1,13 +1,11 @@
-﻿using System.Drawing;
-using FFMpegCore;
-using MediaServer.Application.Extensions;
-using MediaServer.Domain.Entities;
-using MediaServer.Domain.Enums;
-using MediaServer.Domain.ValueObjects;
-using MediaServer.Tests.Helpers.Fixtures;
-using MediaServer.Tests.Helpers.Helpers;
+﻿using K7.Server.Application.Extensions;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.ValueObjects;
+using K7.Tests.Helpers.Fixtures;
+using K7.Tests.Helpers.Helpers;
 
-namespace MediaServer.Application.UnitTests.Extensions;
+namespace K7.Server.Application.UnitTests.Extensions;
 
 public class IndexedFileExtensionsTests : FileFixture
 {

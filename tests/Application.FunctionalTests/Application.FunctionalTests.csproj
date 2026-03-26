@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <RootNamespace>MediaServer.Application.FunctionalTests</RootNamespace>
-        <AssemblyName>MediaServer.Application.FunctionalTests</AssemblyName>
+        <RootNamespace>K7.Server.Application.FunctionalTests</RootNamespace>
+        <AssemblyName>K7.Server.Application.FunctionalTests</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,7 +19,7 @@
     </ItemGroup>
     
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Web\Web.csproj" />
+        <ProjectReference Include="..\..\src\Server\Web\K7.Server.Web.csproj" />
         <ProjectReference Include="..\Tests.Helpers\Tests.Helpers.csproj" />
     </ItemGroup>
 

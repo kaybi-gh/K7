@@ -1,6 +1,6 @@
 ﻿using System.Data.Common;
 
-namespace MediaServer.Tests.Helpers.Databases;
+namespace K7.Tests.Helpers.Databases;
 
 public interface ITestDatabase
 {

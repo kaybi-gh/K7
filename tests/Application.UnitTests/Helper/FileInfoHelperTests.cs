@@ -1,8 +1,8 @@
-﻿using MediaServer.Application.Helpers;
-using MediaServer.Tests.Helpers.Fixtures;
-using MediaServer.Tests.Helpers.Helpers;
+﻿using K7.Server.Application.Helpers;
+using K7.Tests.Helpers.Fixtures;
+using K7.Tests.Helpers.Helpers;
 
-namespace MediaServer.Application.UnitTests.Helper;
+namespace K7.Server.Application.UnitTests.Helper;
 
 public class FileInfoHelperTests : FileFixture
 {

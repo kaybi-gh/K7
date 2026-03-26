@@ -1,7 +1,7 @@
 ﻿using FluentValidation.Results;
-using MediaServer.Application.Common.Exceptions;
+using K7.Server.Application.Common.Exceptions;
 
-namespace MediaServer.Application.UnitTests.Common.Exceptions;
+namespace K7.Server.Application.UnitTests.Common.Exceptions;
 
 public class ValidationExceptionTests
 {

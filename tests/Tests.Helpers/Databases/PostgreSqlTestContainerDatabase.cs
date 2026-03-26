@@ -1,12 +1,12 @@
 ﻿using System.Data.Common;
-using MediaServer.Infrastructure.Context;
-using MediaServer.Infrastructure.Context.Data;
+using K7.Server.Infrastructure.Database.Context;
+using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Respawn;
 using Testcontainers.PostgreSql;
 
-namespace MediaServer.Tests.Helpers.Databases;
+namespace K7.Tests.Helpers.Databases;
 
 public class PostgreSqlTestContainerDatabase : ITestDatabase
 {

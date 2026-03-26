@@ -1,11 +1,11 @@
-﻿using MediaServer.Application.Common.Exceptions;
-using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Features.Libraries.Commands.UpdateLibrary;
-using MediaServer.Domain.Entities;
-using MediaServer.Domain.Enums;
-using MediaServer.Tests.Helpers.Fixtures;
+﻿using K7.Server.Application.Common.Exceptions;
+using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
+using K7.Server.Application.Features.Libraries.Commands.UpdateLibrary;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Enums;
+using K7.Tests.Helpers.Fixtures;
 
-namespace MediaServer.Application.FunctionalTests.Libraries.Commands;
+namespace K7.Server.Application.FunctionalTests.Libraries.Commands;
 
 public class UpdateLibraryListTests : DatabaseFixture
 {

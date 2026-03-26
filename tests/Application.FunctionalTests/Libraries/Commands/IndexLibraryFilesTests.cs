@@ -1,11 +1,11 @@
-﻿using MediaServer.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
-using MediaServer.Application.Features.Libraries.Commands.CreateLibrary;
-using MediaServer.Application.Features.Libraries.Commands.IndexLibraryFiles;
-using MediaServer.Domain.Enums;
-using MediaServer.Tests.Helpers.Fixtures;
-using MediaServer.Tests.Helpers.Helpers;
+﻿using K7.Server.Application.Features.IndexedFiles.Queries.GetIndexedFiles;
+using K7.Server.Application.Features.Libraries.Commands.CreateLibrary;
+using K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
+using K7.Server.Domain.Enums;
+using K7.Tests.Helpers.Fixtures;
+using K7.Tests.Helpers.Helpers;
 
-namespace MediaServer.Application.FunctionalTests.Libraries.Commands;
+namespace K7.Server.Application.FunctionalTests.Libraries.Commands;
 
 public class IndexLibraryFilesTests : FileAndDatabaseFixture
 {
