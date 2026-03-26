@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Entities.Playlists;
+using K7.Shared.Dtos.Restrictions;
 using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
@@ -366,6 +367,38 @@ public class K7ServerService : IK7ServerService
     public async Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/pin", new { Pin = pin }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<ContentRestrictionProfileDto>> GetContentRestrictionProfilesAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync("api/restriction-profiles", cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<ContentRestrictionProfileDto>>(_serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<Guid> CreateContentRestrictionProfileAsync(CreateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/restriction-profiles", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateContentRestrictionProfileAsync(Guid id, UpdateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/restriction-profiles/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteContentRestrictionProfileAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/restriction-profiles/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task AssignContentRestrictionProfileAsync(Guid userId, Guid? profileId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/restriction-profile", new { ProfileId = profileId }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 }

@@ -4,6 +4,7 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Entities.Persons;
+using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
@@ -74,4 +75,11 @@ public interface IK7ServerService
     Task UpdateUserMediaExclusionsAsync(Guid userId, UpdateUserMediaExclusionsRequest request, CancellationToken cancellationToken = default);
     Task<bool> ToggleMediaExclusionAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default);
+
+    // Content Restriction Profiles
+    Task<List<ContentRestrictionProfileDto>> GetContentRestrictionProfilesAsync(CancellationToken cancellationToken = default);
+    Task<Guid> CreateContentRestrictionProfileAsync(CreateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default);
+    Task UpdateContentRestrictionProfileAsync(Guid id, UpdateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default);
+    Task DeleteContentRestrictionProfileAsync(Guid id, CancellationToken cancellationToken = default);
+    Task AssignContentRestrictionProfileAsync(Guid userId, Guid? profileId, CancellationToken cancellationToken = default);
 }

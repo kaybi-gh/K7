@@ -19,6 +19,7 @@ public sealed record UserDto
     public required List<CapabilityOverrideDto> CapabilityOverrides { get; init; }
     public required List<Guid> ExcludedLibraryIds { get; init; }
     public required List<Guid> ExcludedMediaIds { get; init; }
+    public Guid? ContentRestrictionProfileId { get; init; }
 
     public static UserDto FromDomain(User domain, bool includePinHash = false) => new()
     {
@@ -41,7 +42,8 @@ public sealed record UserDto
         ExcludedLibraryIds = domain.LibraryExclusions
             .Select(e => e.LibraryId).ToList(),
         ExcludedMediaIds = domain.MediaExclusions
-            .Select(e => e.MediaId).ToList()
+            .Select(e => e.MediaId).ToList(),
+        ContentRestrictionProfileId = domain.ContentRestrictionProfileId
     };
 }
 

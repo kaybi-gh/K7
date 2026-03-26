@@ -568,6 +568,130 @@
         }
       }
     },
+    "/api/users/{userId}/restriction-profile": {
+      "put": {
+        "tags": [
+          "Restrictions"
+        ],
+        "operationId": "AssignContentRestrictionProfile",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignContentRestrictionProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/restriction-profiles": {
+      "post": {
+        "tags": [
+          "Restrictions"
+        ],
+        "operationId": "CreateContentRestrictionProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContentRestrictionProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Restrictions"
+        ],
+        "operationId": "GetContentRestrictionProfiles",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/restriction-profiles/{id}": {
+      "delete": {
+        "tags": [
+          "Restrictions"
+        ],
+        "operationId": "DeleteContentRestrictionProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Restrictions"
+        ],
+        "operationId": "UpdateContentRestrictionProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContentRestrictionProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/playlists/{playlistId}/items": {
       "post": {
         "tags": [
@@ -2850,6 +2974,18 @@
           }
         }
       },
+      "AssignContentRestrictionProfileRequest": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "AudioFileTrackDto": {
         "required": [
           "codec",
@@ -3007,6 +3143,50 @@
           },
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "ContentRestrictionRuleRequest": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/RestrictionField"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/RestrictionOperator"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateContentRestrictionProfileRequest": {
+        "required": [
+          "name",
+          "rules"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matchCondition": {
+            "$ref": "#/components/schemas/RestrictionMatchCondition"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentRestrictionRuleRequest"
+            }
           }
         }
       },
@@ -5794,6 +5974,15 @@
           }
         }
       },
+      "RestrictionField": {
+        "type": "integer"
+      },
+      "RestrictionMatchCondition": {
+        "type": "integer"
+      },
+      "RestrictionOperator": {
+        "type": "integer"
+      },
       "SmartPlaylistDto": {
         "required": [
           "title"
@@ -6009,6 +6198,33 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateContentRestrictionProfileRequest": {
+        "required": [
+          "name",
+          "rules"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matchCondition": {
+            "$ref": "#/components/schemas/RestrictionMatchCondition"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentRestrictionRuleRequest"
+            }
           }
         }
       },
@@ -6399,6 +6615,9 @@
     },
     {
       "name": "Setup"
+    },
+    {
+      "name": "Restrictions"
     },
     {
       "name": "Playlists"
