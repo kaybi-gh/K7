@@ -57,12 +57,18 @@
     border-radius: 5px;
     justify-content: center;
     align-items: center;
+    pointer-events: none;
+}
+
+::deep .media-item-overlay .mud-fab {
+    pointer-events: auto;
 }
 
 .media-item-overlay-more {
     position: absolute;
     top: 0;
     right: 0;
+    z-index: 2;
 }
 
 .media-item-text {

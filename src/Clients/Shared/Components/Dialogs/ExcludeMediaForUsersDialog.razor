@@ -1,0 +1,111 @@
+@using K7.Shared.Dtos.Users
+@using K7.Shared.Dtos.Requests
+@inject IK7ServerService K7ServerService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                Sélectionnez les utilisateurs pour lesquels « @MediaTitle » doit être masqué.
+            </MudText>
+            <MudStack Spacing="1">
+                @foreach (var entry in _userStates)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body2">@(entry.User.UserName ?? entry.User.Email ?? "—")</MudText>
+                            @if (entry.User.IsGuest)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Invité</MudText>
+                            }
+                        </MudStack>
+                        <MudSwitch T="bool" Value="@entry.Excluded" ValueChanged="@(v => entry.Excluded = v)"
+                                   Color="Color.Error" />
+                    </MudStack>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="_saving">
+            @if (_saving) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            Enregistrer
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Guid MediaId { get; set; }
+    [Parameter] public string? MediaTitle { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private List<UserExclusionState> _userStates = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var users = await K7ServerService.GetUsersAsync();
+            _userStates = users.Select(u => new UserExclusionState
+            {
+                User = u,
+                Excluded = u.ExcludedMediaIds.Contains(MediaId),
+                OriginalExcluded = u.ExcludedMediaIds.Contains(MediaId)
+            }).ToList();
+        }
+        catch
+        {
+            _userStates = [];
+        }
+        _loading = false;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            var modified = _userStates.Where(s => s.Excluded != s.OriginalExcluded).ToList();
+            foreach (var entry in modified)
+            {
+                var newExclusions = entry.User.ExcludedMediaIds.ToList();
+                if (entry.Excluded)
+                    newExclusions.Add(MediaId);
+                else
+                    newExclusions.Remove(MediaId);
+
+                await K7ServerService.UpdateUserMediaExclusionsAsync(entry.User.Id, new UpdateUserMediaExclusionsRequest
+                {
+                    ExcludedMediaIds = newExclusions
+                });
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed class UserExclusionState
+    {
+        public required UserDto User { get; init; }
+        public bool Excluded { get; set; }
+        public bool OriginalExcluded { get; init; }
+    }
+}
