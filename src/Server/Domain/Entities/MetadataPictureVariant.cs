@@ -8,5 +8,5 @@ public class MetadataPictureVariant : BaseAuditableEntity
     public int Height { get; set; }
 
     public Guid MetadataPictureId { get; set; }
-    public virtual MetadataPicture MetadataPicture { get; set; } = null!;
+    public MetadataPicture MetadataPicture { get; set; } = null!;
 }

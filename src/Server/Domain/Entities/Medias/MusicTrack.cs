@@ -2,7 +2,7 @@
 public class MusicTrack() : BaseMedia(MediaType.MusicTrack)
 {
     public Guid AlbumId { get; set; }
-    public virtual MusicAlbum Album { get; set; } = null!;
+    public MusicAlbum Album { get; set; } = null!;
 
     public int? TrackNumber { get; set; }
     public int? DiscNumber { get; set; }
@@ -10,7 +10,7 @@ public class MusicTrack() : BaseMedia(MediaType.MusicTrack)
     public string? Lyrics { get; set; }
     public string? LyricsLrc { get; set; }
 
-    public virtual AudioAnalysis? AudioAnalysis { get; set; }
+    public AudioAnalysis? AudioAnalysis { get; set; }
 
     public override string GetSlugSource() => $"{Album.Slug}-{Title}";
 }

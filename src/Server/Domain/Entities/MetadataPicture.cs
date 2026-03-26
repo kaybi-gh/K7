@@ -13,15 +13,15 @@ public class MetadataPicture : BaseAuditableEntity
     public string? DominantColor { get; set; }
 
     public Guid? MediaId { get; set; }
-    public virtual BaseMedia? Media { get; set; }
+    public BaseMedia? Media { get; set; }
     public Guid? VideoFileMetadataId { get; set; }
-    public virtual VideoFileMetadata? VideoFileMetadata { get; set; }
+    public VideoFileMetadata? VideoFileMetadata { get; set; }
     public Guid? PersonId { get; set; }
-    public virtual Person? Person { get; set; }
+    public Person? Person { get; set; }
     public Guid? PersonRoleId { get; set; }
-    public virtual BasePersonRole? PersonRole { get; set; }
+    public BasePersonRole? PersonRole { get; set; }
     public Guid? PlaylistId { get; set; }
-    public virtual Playlist? Playlist { get; set; }
+    public Playlist? Playlist { get; set; }
 
-    public virtual ICollection<MetadataPictureVariant> Variants { get; set; } = [];
+    public IList<MetadataPictureVariant> Variants { get; set; } = [];
 }

@@ -15,6 +15,6 @@ public class Device : BaseAuditableEntity
     public NativeDeviceDetails? NativeDeviceDetails { get; set; }
     public WebDeviceDetails? WebDeviceDetails { get; set; }
     public DevicePlaybackCapabilities PlaybackCapabilities { get; set; } = new();
-    public ICollection<User> Users { get; set; } = [];
+    public IList<User> Users { get; set; } = [];
     public DateTimeOffset LastSeen { get; set; }
 }

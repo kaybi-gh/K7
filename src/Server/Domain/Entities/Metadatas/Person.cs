@@ -10,11 +10,11 @@ public class Person : BaseSlugEntity
     public DateOnly? Deathday { get; set; }
     public string? BirthPlace { get; set; }
 
-    public virtual IList<BasePersonRole> Roles { get; set; } = [];
-    public virtual IList<ExternalId> ExternalIds { get; set; } = [];
-    public virtual MetadataPicture? PortraitPicture { get; set; }
+    public IList<BasePersonRole> Roles { get; set; } = [];
+    public IList<ExternalId> ExternalIds { get; set; } = [];
+    public MetadataPicture? PortraitPicture { get; set; }
     // TODO - Rating is only associated to Medias right now, do we want to able able to rate persons?
-    // public virtual ICollection<BaseRating>? Ratings { get; set; }
+    // public ICollection<BaseRating>? Ratings { get; set; }
 
     public override string GetSlugSource() => $"{Name}-{Birthday?.Year}";
 }

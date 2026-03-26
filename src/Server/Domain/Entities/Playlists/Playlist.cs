@@ -11,7 +11,7 @@ public class Playlist : BaseAuditableEntity
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
 
-    public virtual MetadataPicture? CoverPicture { get; set; }
+    public MetadataPicture? CoverPicture { get; set; }
 
-    public virtual IList<PlaylistItem> Items { get; set; } = [];
+    public IList<PlaylistItem> Items { get; set; } = [];
 }

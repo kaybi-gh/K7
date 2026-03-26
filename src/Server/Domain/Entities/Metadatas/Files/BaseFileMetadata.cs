@@ -5,7 +5,7 @@ public abstract class BaseFileMetadata(FileType type) : BaseAuditableEntity
     public required string Container { get; set; }
 
     public Guid IndexedFileId { get; set; }
-    public virtual IndexedFile IndexedFile { get; set; } = null!;
+    public IndexedFile IndexedFile { get; set; } = null!;
     // TODO - Move HlsSegments to concretes since some media types like ebooks won't have any
-    public ICollection<HlsSegment> HlsSegments { get; set; } = [];
+    public IList<HlsSegment> HlsSegments { get; set; } = [];
 }

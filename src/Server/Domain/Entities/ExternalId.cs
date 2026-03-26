@@ -10,9 +10,9 @@ public class ExternalId : BaseAuditableEntity
     public required string Value { get; set; }
 
     public Guid? MediaId { get; set; }
-    public virtual BaseMedia? Media { get; set; }
+    public BaseMedia? Media { get; set; }
     public Guid? PersonId { get; set; }
-    public virtual Person? Person { get; set; }
+    public Person? Person { get; set; }
     public Guid? PersonRoleId { get; set; }
-    public virtual BasePersonRole? PersonRole { get; set; }
+    public BasePersonRole? PersonRole { get; set; }
 }
