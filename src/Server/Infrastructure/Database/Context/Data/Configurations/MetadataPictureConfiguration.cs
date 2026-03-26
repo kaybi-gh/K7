@@ -1,4 +1,5 @@
 ﻿using K7.Server.Domain.Entities;
+using K7.Server.Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -6,6 +7,14 @@ namespace K7.Server.Infrastructure.Database.Context.Data.Configurations;
 
 public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPicture>
 {
+    private readonly PathsConfiguration? _pathsConfiguration;
+
+    public MetadataPictureConfiguration() { }
+    public MetadataPictureConfiguration(PathsConfiguration? pathsConfiguration)
+    {
+        _pathsConfiguration = pathsConfiguration;
+    }
+
     public void Configure(EntityTypeBuilder<MetadataPicture> builder)
     {
         builder
@@ -45,5 +54,14 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
                 v => v != null ? v.ToString() : null,
                 v => v != null ? new Uri(v) : null
             );
+
+        if (_pathsConfiguration is not null)
+        {
+            builder.Property(p => p.LocalPath)
+                .HasConversion(
+                    v => v != null ? _pathsConfiguration.ToRelativeMetadataPath(v) : null,
+                    v => v != null ? _pathsConfiguration.ResolveMetadataPath(v) : null
+                );
+        }
     }
 }

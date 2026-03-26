@@ -12,16 +12,25 @@ using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Infrastructure.Configuration;
+using K7.Server.Infrastructure.Database.Context.Data.Configurations;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Infrastructure.Database.Context.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
+    private readonly PathsConfiguration? _pathsConfiguration;
+
     public ApplicationDbContext() { }
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IOptions<PathsConfiguration> pathsConfiguration) : base(options)
+    {
+        _pathsConfiguration = pathsConfiguration.Value;
+    }
 
     public DbSet<IndexedFile> IndexedFiles => Set<IndexedFile>();
     public DbSet<Library> Libraries => Set<Library>();
@@ -54,6 +63,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        builder.ApplyConfigurationsFromAssembly(
+            Assembly.GetExecutingAssembly(),
+            type => type != typeof(MetadataPictureConfiguration)
+                 && type != typeof(MetadataPictureVariantConfiguration));
+
+        new MetadataPictureConfiguration(_pathsConfiguration).Configure(builder.Entity<MetadataPicture>());
+        new MetadataPictureVariantConfiguration(_pathsConfiguration).Configure(builder.Entity<MetadataPictureVariant>());
     }
 }
