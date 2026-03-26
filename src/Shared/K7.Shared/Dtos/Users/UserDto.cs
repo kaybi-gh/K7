@@ -16,9 +16,9 @@ public sealed record UserDto
     public required bool IsGuest { get; init; }
     public required bool HasPin { get; init; }
     public string? PinHash { get; init; }
-    public required List<CapabilityOverrideDto> CapabilityOverrides { get; init; }
-    public required List<Guid> ExcludedLibraryIds { get; init; }
-    public required List<Guid> ExcludedMediaIds { get; init; }
+    public required IReadOnlyList<CapabilityOverrideDto> CapabilityOverrides { get; init; }
+    public required IReadOnlyList<Guid> ExcludedLibraryIds { get; init; }
+    public required IReadOnlyList<Guid> ExcludedMediaIds { get; init; }
     public Guid? ContentRestrictionProfileId { get; init; }
 
     public static UserDto FromDomain(User domain, bool includePinHash = false) => new()

@@ -8,8 +8,8 @@ public sealed record VideoFileMetadataDto : FileMetadataDto
     public TimeSpan Duration { get; init; }
     public required VideoResolutionIdentifier VideoResolution { get; init; }
 
-    public IEnumerable<AudioFileTrackDto> AudioTracks { get; init; } = [];
-    public IEnumerable<VideoFileTrackDto> VideoTracks { get; init; } = [];
-    public IEnumerable<SubtitleFileTrackDto> SubtitleTracks { get; init; } = [];
+    public IReadOnlyList<AudioFileTrackDto> AudioTracks { get; init; } = [];
+    public IReadOnlyList<VideoFileTrackDto> VideoTracks { get; init; } = [];
+    public IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks { get; init; } = [];
     public MetadataPictureDto? Thumbnails { get; init; }
 }

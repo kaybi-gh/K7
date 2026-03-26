@@ -4,5 +4,5 @@ namespace K7.Shared.Dtos.Requests;
 
 public sealed record UpdateUserCapabilitiesRequest
 {
-    public required List<CapabilityOverrideDto> Overrides { get; init; }
+    public required IReadOnlyList<CapabilityOverrideDto> Overrides { get; init; }
 }

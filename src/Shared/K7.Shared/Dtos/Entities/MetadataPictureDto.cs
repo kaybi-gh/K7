@@ -9,7 +9,7 @@ public sealed record MetadataPictureDto
     public MetadataPictureType Type { get; init; }
     public Uri? Uri { get; init; }
     public string? DominantColor { get; init; }
-    public IEnumerable<MetadataPictureSize> AvailableSizes { get; init; } = [];
+    public IReadOnlyList<MetadataPictureSize> AvailableSizes { get; init; } = [];
 
     /// <summary>
     /// Returns the URI for a specific size variant. Falls back to the original if size is null.
@@ -27,6 +27,6 @@ public sealed record MetadataPictureDto
         Type = domain.Type,
         Uri = new Uri($"/api/metadata-pictures/{domain.Id}", UriKind.Relative),
         DominantColor = domain.DominantColor,
-        AvailableSizes = domain.Variants.Select(v => v.Size)
+        AvailableSizes = domain.Variants.Select(v => v.Size).ToList()
     };
 }

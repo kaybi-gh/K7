@@ -14,7 +14,7 @@ public abstract record LitePersonRoleDto
     public int? Order { get; init; }
     public MetadataPictureDto? PortraitPicture { get; init; }
     public LitePersonDto? Person { get; init; }
-    public IList<ExternalIdDto> ExternalIds { get; init; } = [];
+    public IReadOnlyList<ExternalIdDto> ExternalIds { get; init; } = [];
 
     public static LitePersonRoleDto FromDomain(BasePersonRole domain) => domain switch
     {

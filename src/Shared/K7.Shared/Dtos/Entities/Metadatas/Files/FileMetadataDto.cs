@@ -26,9 +26,9 @@ public abstract record FileMetadataDto
             Id = domain.Id,
             Container = domain.Container,
             Duration = videoFileMetadata.Duration,
-            AudioTracks = videoFileMetadata.AudioTracks.Select(AudioFileTrackDto.FromDomain),
-            VideoTracks = videoFileMetadata.VideoTracks.Select(VideoFileTrackDto.FromDomain),
-            SubtitleTracks = videoFileMetadata.SubtitleTracks.Select(SubtitleFileTrackDto.FromDomain),
+            AudioTracks = videoFileMetadata.AudioTracks.Select(AudioFileTrackDto.FromDomain).ToList(),
+            VideoTracks = videoFileMetadata.VideoTracks.Select(VideoFileTrackDto.FromDomain).ToList(),
+            SubtitleTracks = videoFileMetadata.SubtitleTracks.Select(SubtitleFileTrackDto.FromDomain).ToList(),
             VideoBitrate = videoFileMetadata.VideoBitrate,
             VideoResolution = videoFileMetadata.VideoResolution,
             Thumbnails = videoFileMetadata.Thumbnails != null ? MetadataPictureDto.FromDomain(videoFileMetadata.Thumbnails) : null

@@ -13,11 +13,11 @@ public abstract record MediaDto
     public string Slug { get; init; } = null!;
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
-    public IEnumerable<MetadataPictureDto>? Pictures { get; init; }
-    public IEnumerable<LitePersonRoleDto>? PersonRoles { get; init; }
-    public IEnumerable<RatingDto>? Ratings { get; init; }
-    public IEnumerable<IndexedFileDto>? IndexedFiles { get; init; }
-    public IEnumerable<string>? Genres { get; init; }
+    public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }
+    public IReadOnlyList<LitePersonRoleDto>? PersonRoles { get; init; }
+    public IReadOnlyList<RatingDto>? Ratings { get; init; }
+    public IReadOnlyList<IndexedFileDto>? IndexedFiles { get; init; }
+    public IReadOnlyList<string>? Genres { get; init; }
     public UserMediaStateDto? UserState { get; init; }
 
     public static MediaDto FromDomain(BaseMedia domain) => domain switch
@@ -28,11 +28,11 @@ public abstract record MediaDto
             Slug = domain.Slug,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate,
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
-            PersonRoles = domain.PersonRoles.Select(LitePersonRoleDto.FromDomain),
-            Ratings = domain.Ratings.Select(RatingDto.FromDomain),
-            IndexedFiles = domain.IndexedFiles.Select(IndexedFileDto.FromDomain),
-            Genres = domain.Genres,
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain).ToList(),
+            PersonRoles = domain.PersonRoles.Select(LitePersonRoleDto.FromDomain).ToList(),
+            Ratings = domain.Ratings.Select(RatingDto.FromDomain).ToList(),
+            IndexedFiles = domain.IndexedFiles.Select(IndexedFileDto.FromDomain).ToList(),
+            Genres = domain.Genres.ToList(),
             Overview = movie.Overview,
             OriginalLanguage = movie.OriginalLanguage,
             TagLine = movie.Tagline,
@@ -49,13 +49,13 @@ public abstract record MediaDto
             Slug = domain.Slug,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate,
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
-            PersonRoles = domain.PersonRoles.Select(LitePersonRoleDto.FromDomain),
-            Ratings = domain.Ratings.Select(RatingDto.FromDomain),
-            IndexedFiles = domain.IndexedFiles.Select(IndexedFileDto.FromDomain),
-            Genres = domain.Genres,
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain).ToList(),
+            PersonRoles = domain.PersonRoles.Select(LitePersonRoleDto.FromDomain).ToList(),
+            Ratings = domain.Ratings.Select(RatingDto.FromDomain).ToList(),
+            IndexedFiles = domain.IndexedFiles.Select(IndexedFileDto.FromDomain).ToList(),
+            Genres = domain.Genres.ToList(),
             Overview = album.Overview,
-            Tracks = album.Tracks.Select(t => (LiteMusicTrackDto)LiteMediaDto.FromDomain(t)),
+            Tracks = album.Tracks.Select(t => (LiteMusicTrackDto)LiteMediaDto.FromDomain(t)).ToList(),
             UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                 ? UserMediaStateDto.FromDomain(state)
                 : null
@@ -66,11 +66,11 @@ public abstract record MediaDto
             Slug = domain.Slug,
             Title = domain.Title,
             ReleaseDate = domain.ReleaseDate,
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain),
-            PersonRoles = domain.PersonRoles.Select(LitePersonRoleDto.FromDomain),
-            Ratings = domain.Ratings.Select(RatingDto.FromDomain),
-            IndexedFiles = domain.IndexedFiles.Select(IndexedFileDto.FromDomain),
-            Genres = domain.Genres,
+            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain).ToList(),
+            PersonRoles = domain.PersonRoles.Select(LitePersonRoleDto.FromDomain).ToList(),
+            Ratings = domain.Ratings.Select(RatingDto.FromDomain).ToList(),
+            IndexedFiles = domain.IndexedFiles.Select(IndexedFileDto.FromDomain).ToList(),
+            Genres = domain.Genres.ToList(),
             AlbumId = track.AlbumId,
             TrackNumber = track.TrackNumber,
             DiscNumber = track.DiscNumber,
