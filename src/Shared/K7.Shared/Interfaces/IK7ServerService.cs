@@ -32,6 +32,7 @@ public interface IK7ServerService
     Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default);
     Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default);
     Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default);
+    Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default);
     Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default);
 
     // Playlists

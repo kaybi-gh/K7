@@ -202,6 +202,12 @@ public class K7ServerService : IK7ServerService
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
+    public async Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/index-files", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default)
     {
         var requestUri = string.IsNullOrWhiteSpace(path)
