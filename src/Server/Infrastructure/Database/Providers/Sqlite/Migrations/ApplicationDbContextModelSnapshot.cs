@@ -812,6 +812,41 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MatchCondition")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ContentRestrictionProfiles");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Settings.ServerSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -967,6 +1002,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ContentRestrictionProfileId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
@@ -989,6 +1027,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ContentRestrictionProfileId");
 
                     b.ToTable("Users");
                 });
@@ -2201,6 +2241,34 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Media");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>
+                {
+                    b.OwnsMany("K7.Server.Domain.Entities.Restrictions.ContentRestrictionRule", "Rules", b1 =>
+                        {
+                            b1.Property<Guid>("ContentRestrictionProfileId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<int>("Field");
+
+                            b1.Property<int>("Operator");
+
+                            b1.Property<string>("Value");
+
+                            b1.HasKey("ContentRestrictionProfileId", "__synthesizedOrdinal");
+
+                            b1.ToTable("ContentRestrictionProfiles");
+
+                            b1.ToJson("Rules");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ContentRestrictionProfileId");
+                        });
+
+                    b.Navigation("Rules");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
@@ -2244,6 +2312,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Media");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", "ContentRestrictionProfile")
+                        .WithMany("Users")
+                        .HasForeignKey("ContentRestrictionProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ContentRestrictionProfile");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserCapabilityOverride", b =>
@@ -2528,6 +2606,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("CoverPicture");
 
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>

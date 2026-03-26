@@ -9,6 +9,7 @@ using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Infrastructure.Database.Context.Identity;
@@ -48,6 +49,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<UserCapabilityOverride> UserCapabilityOverrides => Set<UserCapabilityOverride>();
     public DbSet<UserLibraryExclusion> UserLibraryExclusions => Set<UserLibraryExclusion>();
     public DbSet<UserMediaExclusion> UserMediaExclusions => Set<UserMediaExclusion>();
+    public DbSet<ContentRestrictionProfile> ContentRestrictionProfiles => Set<ContentRestrictionProfile>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
