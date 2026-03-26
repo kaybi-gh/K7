@@ -3,6 +3,8 @@ root = true
 # All files
 [*]
 indent_style = space
+charset = utf-8
+trim_trailing_whitespace = true
 
 # Xml files
 [*.{xml,csproj,props,targets,ruleset,nuspec,resx}]
@@ -50,7 +52,7 @@ dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
 dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:silent
 
 # Modifier preferences
-dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
 
 # Expression-level preferences
 dotnet_style_coalesce_expression = true:suggestion
@@ -82,9 +84,9 @@ dotnet_remove_unnecessary_suppression_exclusions = none
 [*.cs]
 
 # var preferences
-csharp_style_var_elsewhere = false:silent
-csharp_style_var_for_built_in_types = false:silent
-csharp_style_var_when_type_is_apparent = false:silent
+csharp_style_var_elsewhere = true:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
 
 # Expression-bodied members
 csharp_style_expression_bodied_accessors = true:silent
@@ -174,7 +176,7 @@ csharp_space_between_square_brackets = false
 # Wrapping preferences
 csharp_preserve_single_line_blocks = true
 csharp_preserve_single_line_statements = true
-csharp_style_namespace_declarations = file_scoped:silent
+csharp_style_namespace_declarations = file_scoped:warning
 csharp_style_prefer_method_group_conversion = true:silent
 csharp_style_prefer_top_level_statements = true:silent
 csharp_style_prefer_primary_constructors = true:suggestion
@@ -236,9 +238,9 @@ dotnet_naming_rule.private_fields_should_be__camelcase.severity = suggestion
 dotnet_naming_rule.private_fields_should_be__camelcase.symbols = private_fields
 dotnet_naming_rule.private_fields_should_be__camelcase.style = _camelcase
 
-dotnet_naming_rule.private_static_fields_should_be_s_camelcase.severity = suggestion
-dotnet_naming_rule.private_static_fields_should_be_s_camelcase.symbols = private_static_fields
-dotnet_naming_rule.private_static_fields_should_be_s_camelcase.style = s_camelcase
+dotnet_naming_rule.private_static_fields_should_be__camelcase.severity = suggestion
+dotnet_naming_rule.private_static_fields_should_be__camelcase.symbols = private_static_fields
+dotnet_naming_rule.private_static_fields_should_be__camelcase.style = _camelcase
 
 dotnet_naming_rule.public_constant_fields_should_be_pascalcase.severity = suggestion
 dotnet_naming_rule.public_constant_fields_should_be_pascalcase.symbols = public_constant_fields
@@ -373,11 +375,37 @@ dotnet_naming_style.camelcase.required_suffix =
 dotnet_naming_style.camelcase.word_separator = 
 dotnet_naming_style.camelcase.capitalization = camel_case
 
-dotnet_naming_style.s_camelcase.required_prefix = s_
-dotnet_naming_style.s_camelcase.required_suffix = 
-dotnet_naming_style.s_camelcase.word_separator = 
-dotnet_naming_style.s_camelcase.capitalization = camel_case
-
 dotnet_style_namespace_match_folder = true:suggestion
 tab_width = 4
 indent_size = 4
+
+#### Roslyn Diagnostics ####
+[*.cs]
+
+# Warning (build error with TreatWarningsAsErrors)
+dotnet_diagnostic.CS4014.severity = warning  # Async call not awaited
+dotnet_diagnostic.CS1998.severity = warning  # Async method without await
+dotnet_diagnostic.CS2012.severity = warning  # ValueTask misuse
+
+# Suggestion (IDE hints)
+dotnet_diagnostic.CA1001.severity = suggestion  # Type owns IDisposable field
+dotnet_diagnostic.CA2016.severity = suggestion  # Forward CancellationToken
+dotnet_diagnostic.CA1068.severity = suggestion  # CancellationToken should be last
+dotnet_diagnostic.CA1063.severity = suggestion  # IDisposable pattern
+dotnet_diagnostic.CA2208.severity = suggestion  # ArgumentException parameter name
+dotnet_diagnostic.CA2264.severity = suggestion  # ThrowIfNull on non-nullable
+
+#### File-type overrides ####
+
+[*.razor]
+indent_size = 4
+
+[*.{css,js}]
+indent_size = 2
+
+[*.md]
+max_line_length = off
+trim_trailing_whitespace = false
+
+[*.sh]
+end_of_line = lf
