@@ -2,6 +2,7 @@
 @using K7.Server.Domain.Enums
 @inject IK7ServerService K7ServerService
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
     <MudText Typo="Typo.h6">Librairies</MudText>
@@ -46,6 +47,8 @@ else
                         </MudText>
                     </MudCardContent>
                     <MudCardActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Primary"
+                                       OnClick="@(() => IndexLibrary(library))" aria-label="Indexer" />
                         <MudIconButton Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Default"
                                        OnClick="@(() => OpenUsersDialog(library))" aria-label="Accès utilisateurs" />
                     </MudCardActions>
@@ -114,6 +117,19 @@ else
         LibraryMediaType.Music => "Musique",
         _ => type.ToString()
     };
+
+    private async Task IndexLibrary(LibraryDto library)
+    {
+        try
+        {
+            await K7ServerService.IndexLibraryFilesAsync(library.Id);
+            Snackbar.Add($"Indexation de « {library.Title} » lancée.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+    }
 
     private async Task OpenUsersDialog(LibraryDto library)
     {
