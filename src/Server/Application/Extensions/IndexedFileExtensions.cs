@@ -78,7 +78,7 @@ public static class IndexedFileExtensions
 
         // Album name = parent directory, Artist name = grandparent directory
         // Structure: Artist/Album/01 - Track.flac  OR  Album/01 - Track.flac
-        var albumName = indexedFile.ParentDirectory;
+        var albumName = GetAlbumDirectory(indexedFile, library);
 
         // Extract year from album directory name if present
         DateOnly? releaseYear = null;
@@ -97,10 +97,25 @@ public static class IndexedFileExtensions
             ReleaseYear = releaseYear,
             TrackNumber = trackNumber,
             AlbumName = albumName,
-            ArtistName = GetGrandparentDirectory(indexedFile, library)
+            ArtistName = albumName is not null ? GetGrandparentDirectory(indexedFile, library) : null
         };
 
         return true;
+    }
+
+    private static string? GetAlbumDirectory(IndexedFile indexedFile, Library library)
+    {
+        var directory = Path.GetDirectoryName(indexedFile.Path);
+        if (string.IsNullOrEmpty(directory)) return null;
+
+        var normalizedDir = Path.GetFullPath(directory);
+        var normalizedRoot = Path.GetFullPath(library.RootPath);
+        if (string.Equals(normalizedDir, normalizedRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return indexedFile.ParentDirectory;
     }
 
     private static string? GetGrandparentDirectory(IndexedFile indexedFile, Library library)
