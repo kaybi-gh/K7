@@ -1,6 +1,7 @@
 @using K7.Shared.Dtos
 @using K7.Shared.Dtos.Users
 @using K7.Shared.Dtos.Requests
+@using K7.Shared.Dtos.Restrictions
 @using K7.Server.Domain.Constants
 @using K7.Server.Domain.Enums
 @inject IK7ServerService K7ServerService
@@ -75,6 +76,9 @@ else
                                            OnClick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="Librairies" />
                             <MudIconButton Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" Color="Color.Default"
                                            OnClick="@(() => OpenMediaExclusionsDialog(user))" aria-label="Médias masqués" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Shield" Size="Size.Small"
+                                           Color="@(user.ContentRestrictionProfileId.HasValue ? Color.Warning : Color.Default)"
+                                           OnClick="@(() => OpenRestrictionProfileDialog(user))" aria-label="Profil de restriction" />
                             @if (!user.IsGuest)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
@@ -262,6 +266,33 @@ else
             {
                 await K7ServerService.UpdateUserMediaExclusionsAsync(user.Id, request);
                 Snackbar.Add("Médias masqués mis à jour.", Severity.Success);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenRestrictionProfileDialog(UserDto user)
+    {
+        var parameters = new DialogParameters<AdminUserRestrictionProfileDialog>
+        {
+            { x => x.CurrentProfileId, user.ContentRestrictionProfileId }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<AdminUserRestrictionProfileDialog>("Profil de restriction", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            var profileId = result.Data as Guid?;
+            try
+            {
+                await K7ServerService.AssignContentRestrictionProfileAsync(user.Id, profileId);
+                Snackbar.Add("Profil de restriction mis à jour.", Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)

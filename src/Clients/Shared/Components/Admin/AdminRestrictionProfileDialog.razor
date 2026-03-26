@@ -1,0 +1,177 @@
+@using K7.Shared.Dtos.Requests
+@using K7.Server.Domain.Enums
+@inject IK7ServerService K7ServerService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="Name" Label="Nom" Required="true" Variant="Variant.Outlined" />
+            <MudTextField @bind-Value="Description" Label="Description" Variant="Variant.Outlined" Lines="2" />
+
+            <MudSelect T="RestrictionMatchCondition" @bind-Value="MatchCondition" Label="Condition"
+                       Variant="Variant.Outlined" Dense="true">
+                <MudSelectItem Value="RestrictionMatchCondition.Any">Au moins une règle (OU)</MudSelectItem>
+                <MudSelectItem Value="RestrictionMatchCondition.All">Toutes les règles (ET)</MudSelectItem>
+            </MudSelect>
+
+            <MudText Typo="Typo.subtitle2" Class="mt-2">Règles (contenu correspondant sera masqué)</MudText>
+
+            @for (var i = 0; i < Rules.Count; i++)
+            {
+                var index = i;
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudSelect T="RestrictionField" Value="Rules[index].Field"
+                               ValueChanged="@(v => OnFieldChanged(index, v))"
+                               Label="Champ" Variant="Variant.Outlined" Dense="true" Style="min-width: 140px;">
+                        <MudSelectItem Value="RestrictionField.Genre">Genre</MudSelectItem>
+                        <MudSelectItem Value="RestrictionField.ContentRating">Classification</MudSelectItem>
+                        <MudSelectItem Value="RestrictionField.ReleaseYear">Année de sortie</MudSelectItem>
+                    </MudSelect>
+
+                    <MudSelect T="RestrictionOperator" @bind-Value="Rules[index].Operator"
+                               Label="Opérateur" Variant="Variant.Outlined" Dense="true" Style="min-width: 160px;">
+                        @foreach (var op in GetOperatorsForField(Rules[index].Field))
+                        {
+                            <MudSelectItem Value="op">@FormatOperator(op)</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudTextField @bind-Value="Rules[index].Value" Label="Valeur"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error"
+                                   OnClick="@(() => Rules.RemoveAt(index))" />
+                </MudStack>
+            }
+
+            <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Text" Color="Color.Primary"
+                       OnClick="AddRule" Class="align-self-start">
+                Ajouter une règle
+            </MudButton>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+                   Disabled="@(string.IsNullOrWhiteSpace(Name) || Rules.Count == 0 || _saving)">
+            @if (_saving) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            Enregistrer
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public bool IsNew { get; set; } = true;
+    [Parameter] public Guid? ProfileId { get; set; }
+    [Parameter] public string Name { get; set; } = "";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RestrictionMatchCondition MatchCondition { get; set; } = RestrictionMatchCondition.Any;
+    [Parameter] public List<RuleEntry> Rules { get; set; } = [];
+
+    private bool _saving;
+
+    private void AddRule()
+    {
+        Rules.Add(new RuleEntry { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals });
+    }
+
+    private void OnFieldChanged(int index, RestrictionField newField)
+    {
+        Rules[index].Field = newField;
+        var validOps = GetOperatorsForField(newField);
+        if (!validOps.Contains(Rules[index].Operator))
+            Rules[index].Operator = validOps[0];
+    }
+
+    private static List<RestrictionOperator> GetOperatorsForField(RestrictionField field) => field switch
+    {
+        RestrictionField.Genre or RestrictionField.ContentRating =>
+        [
+            RestrictionOperator.Equals,
+            RestrictionOperator.NotEquals,
+            RestrictionOperator.Contains,
+            RestrictionOperator.NotContains,
+        ],
+        RestrictionField.ReleaseYear =>
+        [
+            RestrictionOperator.Equals,
+            RestrictionOperator.NotEquals,
+            RestrictionOperator.GreaterThan,
+            RestrictionOperator.LessThan,
+            RestrictionOperator.GreaterThanOrEqual,
+            RestrictionOperator.LessThanOrEqual,
+        ],
+        _ => [RestrictionOperator.Equals]
+    };
+
+    private static string FormatOperator(RestrictionOperator op) => op switch
+    {
+        RestrictionOperator.Equals => "est égal à",
+        RestrictionOperator.NotEquals => "n'est pas égal à",
+        RestrictionOperator.Contains => "contient",
+        RestrictionOperator.NotContains => "ne contient pas",
+        RestrictionOperator.GreaterThan => "supérieur à",
+        RestrictionOperator.LessThan => "inférieur à",
+        RestrictionOperator.GreaterThanOrEqual => "supérieur ou égal à",
+        RestrictionOperator.LessThanOrEqual => "inférieur ou égal à",
+        _ => op.ToString()
+    };
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            var rules = Rules.Select(r => new ContentRestrictionRuleRequest
+            {
+                Field = r.Field,
+                Operator = r.Operator,
+                Value = r.Value
+            }).ToList();
+
+            if (IsNew)
+            {
+                await K7ServerService.CreateContentRestrictionProfileAsync(new CreateContentRestrictionProfileRequest
+                {
+                    Name = Name,
+                    Description = Description,
+                    MatchCondition = MatchCondition,
+                    Rules = rules
+                });
+                Snackbar.Add("Profil créé.", Severity.Success);
+            }
+            else
+            {
+                await K7ServerService.UpdateContentRestrictionProfileAsync(ProfileId!.Value, new UpdateContentRestrictionProfileRequest
+                {
+                    Name = Name,
+                    Description = Description,
+                    MatchCondition = MatchCondition,
+                    Rules = rules
+                });
+                Snackbar.Add("Profil mis à jour.", Severity.Success);
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    public class RuleEntry
+    {
+        public RestrictionField Field { get; set; }
+        public RestrictionOperator Operator { get; set; }
+        public string? Value { get; set; }
+    }
+}
