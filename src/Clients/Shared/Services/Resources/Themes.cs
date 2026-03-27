@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Domain.Models;
+using K7.Clients.Shared.Models;
 using MudBlazor;
 using System.Collections.Frozen;
 

@@ -1,0 +1,93 @@
+using K7.Clients.Shared.Models;
+using K7.Server.Domain.Enums;
+
+namespace K7.Clients.Shared.Interfaces;
+
+public interface IAudioPlayerService
+{
+    // Transport events
+    event Func<Task>? PlayRequested;
+    event Func<Task>? PauseRequested;
+    event Func<Task>? StopRequested;
+    event Func<double, Task>? SeekRequested;
+    event Func<Task>? MuteRequested;
+    event Func<Task>? UnmuteRequested;
+    event Func<double, Task>? VolumeChangeRequested;
+
+    // State change events
+    event Action<PlayerSource>? SourceChanged;
+    event Action? IsVisibleChanged;
+    event Action<PlaybackState>? PlaybackStateChanged;
+    event Action<double>? DurationChanged;
+    event Action<double>? CurrentTimeChanged;
+    event Action<double>? BufferedTimeChanged;
+    event Action<double>? VolumeChanged;
+    event Action<bool>? IsMutedChanged;
+
+    // Queue events
+    event Action? QueueChanged;
+    event Action<AudioQueueItem?>? CurrentTrackChanged;
+    event Action<RepeatMode>? RepeatModeChanged;
+    event Action<bool>? ShuffleChanged;
+
+    // Playback state
+    PlaybackState PlaybackState { get; set; }
+    double Duration { get; set; }
+    double CurrentTime { get; set; }
+    double BufferedTime { get; set; }
+    double Volume { get; set; }
+    bool IsMuted { get; set; }
+    bool IsVisible { get; }
+
+    // Queue state
+    IReadOnlyList<AudioQueueItem> Queue { get; }
+    AudioQueueItem? CurrentTrack { get; }
+    int CurrentIndex { get; }
+    RepeatMode Repeat { get; }
+    bool Shuffle { get; }
+
+    // Transport controls
+    void Play();
+    void Pause();
+    void Stop();
+    void Seek(double time);
+    void Mute();
+    void Unmute();
+    void SetVolume(double volume);
+
+    // Queue management
+    Task PlayTrackAsync(AudioQueueItem track, CancellationToken cancellationToken = default);
+    Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, CancellationToken cancellationToken = default);
+    void AddToQueue(AudioQueueItem track);
+    void AddToQueueNext(AudioQueueItem track);
+    void RemoveFromQueue(int index);
+    void ClearQueue();
+
+    // Navigation
+    Task NextAsync(CancellationToken cancellationToken = default);
+    Task PreviousAsync(CancellationToken cancellationToken = default);
+
+    // Modes
+    void ToggleShuffle();
+    void CycleRepeatMode();
+
+    // Crossfade
+    bool AdaptiveCrossfade { get; }
+    double CrossfadeDuration { get; }
+    event Func<PlayerSource, double, Task>? CrossfadeRequested;
+    void ToggleAdaptiveCrossfade();
+    void SetCrossfadeDuration(double seconds);
+    Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default);
+
+    // Full screen
+    bool IsFullScreenVisible { get; }
+    event Action? IsFullScreenVisibleChanged;
+    void ToggleFullScreen();
+
+    // Visibility
+    Task ShowAsync();
+    Task HideAsync();
+
+    // Called by the component when the current track finishes playing
+    Task OnTrackEndedAsync(CancellationToken cancellationToken = default);
+}
