@@ -48,7 +48,7 @@ else
         <MudGrid Spacing="4">
             @foreach (var playlist in _playlists)
             {
-                <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudItem @key="playlist.Id" xs="12" sm="6" md="4" lg="3">
                     <MudCard Outlined="true" Class="playlist-card" @onclick="() => GoToPlaylist(playlist)" Style="cursor: pointer;">
                         <MudCardContent>
                             <MudStack AlignItems="AlignItems.Center" Spacing="2">
@@ -57,7 +57,8 @@ else
                                     <MudImage Src="@GetCoverUrl(playlist)"
                                               Width="120" Height="120"
                                               ObjectFit="ObjectFit.Cover"
-                                              Class="rounded" />
+                                              Class="rounded"
+                                              loading="lazy" />
                                 }
                                 else
                                 {

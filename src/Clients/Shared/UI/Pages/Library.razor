@@ -22,7 +22,7 @@
 <MudGrid Style="max-width:100%;" Spacing="@_spacing" Justify="Justify.FlexStart" data-nav-grid="true">
     @foreach (var item in MediaCards)
     {
-        <MudItem>
+        <MudItem @key="item.Id">
             <MediaCard Model="item" Href="@($"/movies/{item.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
         </MudItem>
     }

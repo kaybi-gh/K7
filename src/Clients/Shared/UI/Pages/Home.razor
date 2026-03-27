@@ -38,7 +38,7 @@ else
     return @<Carousel Title="@title">
         @foreach (var item in items)
         {
-            <CarouselItem>
+            <CarouselItem @key="item.Id">
                 <MediaCard Model="@item"
                            Variant="GetVariant(item)"
                            Href="@GetHref(item)"

@@ -40,7 +40,7 @@
                     <Carousel Title="Movies">
                         @foreach (var movie in _movies)
                         {
-                            <CarouselItem>
+                            <CarouselItem @key="movie.Id">
                                 <MediaCard Model="movie" Href="@($"/movies/{movie.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
                             </CarouselItem>
                         }

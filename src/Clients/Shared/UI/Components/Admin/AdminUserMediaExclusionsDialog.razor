@@ -24,7 +24,7 @@
                                     @if (!string.IsNullOrEmpty(media.PosterUrl))
                                     {
                                         <MudAvatar Rounded="true" Size="Size.Medium">
-                                            <MudImage Src="@media.PosterUrl" />
+                                            <MudImage Src="@media.PosterUrl" loading="lazy" />
                                         </MudAvatar>
                                     }
                                     else

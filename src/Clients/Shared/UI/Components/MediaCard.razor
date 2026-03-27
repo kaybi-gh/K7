@@ -25,7 +25,7 @@ else
             <a class="media-card-link" href="@Href">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
-                    <MudImage Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                    <MudImage Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" loading="lazy" />
                 }
                 else if (Variant == MediaCardVariant.Cover)
                 {

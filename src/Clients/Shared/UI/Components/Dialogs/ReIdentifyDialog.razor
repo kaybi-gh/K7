@@ -39,7 +39,7 @@
                                     <MudItem xs="3">
                                         @if (!string.IsNullOrEmpty(result.PosterUrl))
                                         {
-                                            <MudImage Src="@result.PosterUrl" ObjectFit="ObjectFit.Cover" Height="100" Width="70" Elevation="25" Class="rounded-lg" />
+                                            <MudImage Src="@result.PosterUrl" ObjectFit="ObjectFit.Cover" Height="100" Width="70" Elevation="25" Class="rounded-lg" loading="lazy" />
                                         }
                                         else
                                         {

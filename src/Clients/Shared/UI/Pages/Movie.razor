@@ -144,7 +144,7 @@ else
                     <Carousel Title="@L["CastingAndCrew"]">
                         @foreach (var cast in (_movie.PersonRoles ?? []).Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
                         {
-                            <CarouselItem>
+                            <CarouselItem @key="cast.Id">
                                 <PersonRole LitePersonRoleDto="@cast" />
                             </CarouselItem>
                         }
@@ -158,7 +158,7 @@ else
                     @foreach (var file in _movie.IndexedFiles ?? [])
                     {
                         var vMeta = file.FileMetadata as VideoFileMetadataDto;
-                        <MudItem xs="12" sm="6">
+                        <MudItem @key="file.Id" xs="12" sm="6">
                             <MudPaper Class="pa-4" Outlined="true">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                     <MudStack Spacing="0" Style="overflow: hidden;">

@@ -83,7 +83,7 @@
                     <MudTd>
                         @if (context.CoverUrl is not null)
                         {
-                            <MudImage Src="@context.CoverUrl" Width="36" Height="36" ObjectFit="ObjectFit.Cover" Class="rounded" />
+                            <MudImage Src="@context.CoverUrl" Width="36" Height="36" ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
                         }
                         else
                         {
