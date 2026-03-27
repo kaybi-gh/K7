@@ -115,9 +115,6 @@ public static class DependencyInjection
             })
             .AddClient(options =>
             {
-                options.AllowAuthorizationCodeFlow()
-                       .AllowRefreshTokenFlow();
-
                 options.AddEncryptionCertificate(LoadOrCreateCertificate(
                            Path.Combine(oidcKeysPath, "client-encryption-certificate.pfx"),
                            "CN=K7 OpenIddict Client Encryption Certificate"))
@@ -125,26 +122,17 @@ public static class DependencyInjection
                            Path.Combine(oidcKeysPath, "client-signing-certificate.pfx"),
                            "CN=K7 OpenIddict Client Signing Certificate"));
 
-                // Register the ASP.NET Core host and configure the ASP.NET Core-specific options.
-                options.UseAspNetCore()
-                       .EnableStatusCodePagesIntegration()
-                       .EnableRedirectionEndpointPassthrough();
-
-                // Register the System.Net.Http integration and use the identity of the current
-                // assembly as a more specific user agent, which can be useful when dealing with
-                // providers that use the user agent as a way to throttle requests (e.g Reddit).
                 options.UseSystemNetHttp();
-                //.SetProductInformation(typeof(Program).Assembly);
-
-                // Register the Web providers integrations.
-                //
-                // Note: to mitigate mix-up attacks, it's recommended to use a unique redirection endpoint
-                // URI per provider, unless all the registered providers support returning a special "iss"
-                // parameter containing their URL as part of authorization responses. For more information,
-                // see https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#section-4.4.
 
                 if (authConfiguration.Oidc.Enabled)
                 {
+                    options.AllowAuthorizationCodeFlow()
+                           .AllowRefreshTokenFlow();
+
+                    options.UseAspNetCore()
+                           .EnableStatusCodePagesIntegration()
+                           .EnableRedirectionEndpointPassthrough();
+
                     var oidcRegistration = new OpenIddictClientRegistration()
                     {
                         ProviderName = "oidc",
@@ -155,7 +143,7 @@ public static class DependencyInjection
                         RedirectUri = new Uri("api/authentication/callback/login/oidc", UriKind.Relative),
                         PostLogoutRedirectUri = new Uri("api/authentication/callback/logout/oidc", UriKind.Relative),
                         ResponseTypes = { OpenIdConnectResponseType.Code },
-                        Scopes = { /*Scopes.OfflineAccess, */Scopes.OpenId, Scopes.Email, Scopes.Profile/*, "api1"*/ }
+                        Scopes = { Scopes.OpenId, Scopes.Email, Scopes.Profile }
                     };
 
                     foreach (var scope in authConfiguration.Oidc.Scopes.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
