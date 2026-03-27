@@ -3,7 +3,8 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
 @implements IDisposable
-@inject IK7ServerService k7ServerService
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
@@ -15,24 +16,24 @@
 {
     @for (int i = 0; i < 3; i++)
     {
-        <HorizontalScrollableStack Skeleton="true">
+        <Carousel Skeleton="true">
             @for (int i = 0; i < 10; i++)
             {
-                <HorizontalScrollableStackItem>
+                <CarouselItem>
                     <MediaPoster Skeleton="true" FooterVisible="true" />
-                </HorizontalScrollableStackItem>
+                </CarouselItem>
             }
-        </HorizontalScrollableStack>
+        </Carousel>
     }
 }
 else
 {
     @if (_canTrackProgress && continueWatchingMedias.Count > 0)
     {
-        <HorizontalScrollableStack Title="Continue watching">
+        <Carousel Title="Continue watching">
             @foreach (var item in continueWatchingMedias)
             {
-                <HorizontalScrollableStackItem>
+                <CarouselItem>
                     @if (item.Kind == MediaPosterKind.Album)
                     {
                         <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
@@ -41,15 +42,15 @@ else
                     {
                         <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
                     }
-                </HorizontalScrollableStackItem>
+                </CarouselItem>
             }
-        </HorizontalScrollableStack>
+        </Carousel>
     }
 
-    <HorizontalScrollableStack Title="Recently added">
+    <Carousel Title="Recently added">
         @foreach (var item in recentlyAddedMedias)
         {
-            <HorizontalScrollableStackItem>
+            <CarouselItem>
                 @if (item.Kind == MediaPosterKind.Album)
                 {
                     <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
@@ -58,14 +59,14 @@ else
                 {
                     <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="_canTrackProgress" WatchedStatusEnabled="_canTrackProgress" FooterVisible="true"/>
                 }
-            </HorizontalScrollableStackItem>
+            </CarouselItem>
         }
-    </HorizontalScrollableStack>
+    </Carousel>
 
-    <HorizontalScrollableStack Title="Recently released">
+    <Carousel Title="Recently released">
         @foreach (var item in recentlyReleasedMedias)
         {
-            <HorizontalScrollableStackItem>
+            <CarouselItem>
                 @if (item.Kind == MediaPosterKind.Album)
                 {
                     <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
@@ -74,16 +75,16 @@ else
                 {
                     <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="_canTrackProgress" WatchedStatusEnabled="_canTrackProgress" FooterVisible="true"/>
                 }
-            </HorizontalScrollableStackItem>
+            </CarouselItem>
         }
-    </HorizontalScrollableStack>
+    </Carousel>
 
     @if (_canTrackProgress)
     {
-        <HorizontalScrollableStack Title="Last played">
+        <Carousel Title="Last played">
             @foreach (var item in lastPlayedMedias)
             {
-                <HorizontalScrollableStackItem>
+                <CarouselItem>
                     @if (item.Kind == MediaPosterKind.Album)
                     {
                         <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
@@ -92,9 +93,9 @@ else
                     {
                         <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
                     }
-                </HorizontalScrollableStackItem>
+                </CarouselItem>
             }
-        </HorizontalScrollableStack>
+        </Carousel>
     }
 }
 
@@ -279,7 +280,7 @@ else
             Kind = kind.Value,
             Title = item.Title,
             AdditionalInformations = item.ReleaseDate,
-            PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+            PosterPictureHref = apiClient.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0
         };

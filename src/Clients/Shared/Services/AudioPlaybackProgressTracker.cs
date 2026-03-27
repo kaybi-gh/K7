@@ -8,7 +8,7 @@ namespace K7.Clients.Shared.Services;
 public class AudioPlaybackProgressTracker : IDisposable
 {
     private readonly IAudioPlayerService _audio;
-    private readonly IK7ServerService _serverService;
+    private readonly IStreamingService _serverService;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid _sessionId;
@@ -18,7 +18,7 @@ public class AudioPlaybackProgressTracker : IDisposable
 
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(30);
 
-    public AudioPlaybackProgressTracker(IAudioPlayerService audio, IK7ServerService serverService)
+    public AudioPlaybackProgressTracker(IAudioPlayerService audio, IStreamingService serverService)
     {
         _audio = audio;
         _serverService = serverService;

@@ -1,18 +1,19 @@
 @page "/persons/{id}"
-@inject IK7ServerService k7ServerService
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
 <PageTitle>@_person?.Name</PageTitle>
 <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
 @if (_person != null)
 {
-    <div class="background" style="--background-picture: url(@k7ServerService.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)" />
+    <div class="background" style="--background-picture: url(@apiClient.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)" />
     <div>
         <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
             <MudItem xs="12" sm="4" lg="1">
                 <MudStack AlignItems="AlignItems.Center">
                     @if (_person.PortraitPicture is not null)
                     {
-                        <MudImage Src="@k7ServerService.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri" Alt="@_person.Name" Class="rounded-lg" Style="max-width: 220px;" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                        <MudImage Src="@apiClient.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri" Alt="@_person.Name" Class="rounded-lg" Style="max-width: 220px;" Fluid="true" ObjectFit="ObjectFit.Cover" />
                     }
                     else
                     {
@@ -36,14 +37,14 @@
             <MudItem xs="12" sm="12" lg="12">
                 @if (_movies != null)
                 {
-                    <HorizontalScrollableStack Title="Movies">
+                    <Carousel Title="Movies">
                         @foreach (var movie in _movies)
                         {
-                            <HorizontalScrollableStackItem>
+                            <CarouselItem>
                                 <MediaPoster Model="movie" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
-                            </HorizontalScrollableStackItem>
+                            </CarouselItem>
                         }
-                    </HorizontalScrollableStack>
+                    </Carousel>
                 }
             </MudItem>
         </MudGrid>

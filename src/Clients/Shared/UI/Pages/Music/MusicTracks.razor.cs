@@ -97,7 +97,7 @@ public partial class MusicTracks
         AlbumId = track.AlbumId,
         AlbumTitle = track.AlbumTitle,
         Genre = track.Genre,
-        CoverUrl = k7ServerService.GetAbsoluteUri(
+        CoverUrl = apiClient.GetAbsoluteUri(
             track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
         CoverDominantColor = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,

@@ -16,22 +16,22 @@ public static class DeviceInitializer
             if (string.IsNullOrEmpty(existingDeviceId))
             {
                 var deviceService = services.GetRequiredService<IDeviceService>();
-                var k7ServerService = services.GetRequiredService<IK7ServerService>();
+                var deviceApiService = services.GetRequiredService<IDeviceApiService>();
                 var request = await deviceService.GenerateCreateDeviceRequestAsync();
-                var deviceId = await k7ServerService.CreateDeviceAsync(request);
+                var deviceId = await deviceApiService.CreateDeviceAsync(request);
                 deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceId.ToString());
                 existingDeviceId = deviceId.ToString();
             }
 
             if (Guid.TryParse(existingDeviceId, out var parsedId))
             {
-                var k7ServerService = services.GetRequiredService<IK7ServerService>();
-                await k7ServerService.AttachCurrentUserToDeviceAsync(parsedId);
+                var deviceApiService = services.GetRequiredService<IDeviceApiService>();
+                await deviceApiService.AttachCurrentUserToDeviceAsync(parsedId);
             }
         }
         catch (HttpRequestException)
         {
-            // Not authenticated yet — device will be initialized after login
+            // Not authenticated yet ï¿½ device will be initialized after login
         }
     }
 }

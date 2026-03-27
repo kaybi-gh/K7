@@ -36,7 +36,7 @@ public partial class MusicAlbumDetail
             _album = album;
 
             var coverPicture = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
-            _coverUrl = k7ServerService.GetAbsoluteUri(
+            _coverUrl = apiClient.GetAbsoluteUri(
                 coverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
             _coverDominantColor = coverPicture?.DominantColor;
 

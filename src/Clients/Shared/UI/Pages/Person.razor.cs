@@ -30,7 +30,7 @@ public partial class Person
                         Id = item.Id.ToString(),
                         Title = item.Title,
                         AdditionalInformations = item.ReleaseDate,
-                        PosterPictureHref = k7ServerService.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                        PosterPictureHref = apiClient.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
                     }).ToList();
             }
         }

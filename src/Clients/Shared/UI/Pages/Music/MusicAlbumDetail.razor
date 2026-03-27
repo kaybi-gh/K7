@@ -1,7 +1,8 @@
 @page "/music/albums/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
-@inject IK7ServerService k7ServerService
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
 <PageTitle>@_album?.Title</PageTitle>
 
 @if (_album is not null)

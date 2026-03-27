@@ -12,7 +12,7 @@ namespace K7.Clients.Shared.Services;
 public class PlaybackProgressTracker : IDisposable
 {
     private readonly IPlayerService _playerService;
-    private readonly IK7ServerService _serverService;
+    private readonly IStreamingService _serverService;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid _sessionId;
@@ -25,7 +25,7 @@ public class PlaybackProgressTracker : IDisposable
     private const double MinPositionDeltaToReport = 2.0;
     private const double SeekDetectionThreshold = 3.0;
 
-    public PlaybackProgressTracker(IPlayerService playerService, IK7ServerService serverService)
+    public PlaybackProgressTracker(IPlayerService playerService, IStreamingService serverService)
     {
         _playerService = playerService;
         _serverService = serverService;

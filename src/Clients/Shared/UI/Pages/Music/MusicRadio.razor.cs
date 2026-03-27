@@ -92,7 +92,7 @@ public partial class MusicRadio
             ArtistPersonId = artist?.Person?.Id,
             AlbumTitle = null,
             Genre = track.Genres?.FirstOrDefault(),
-            CoverUrl = K7ServerService.GetAbsoluteUri(
+            CoverUrl = ApiClient.GetAbsoluteUri(
                 track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             CoverDominantColor = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
