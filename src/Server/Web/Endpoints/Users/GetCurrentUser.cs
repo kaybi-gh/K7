@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Users.Queries.GetCurrentUser;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Users;
@@ -17,7 +18,7 @@ public class GetCurrentUser : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var user = await sender.Send(new GetCurrentUserQuery(), cancellationToken);
-            return Results.Ok(UserDto.FromDomain(user, includePinHash: true));
+            return Results.Ok(user.ToUserDto(includePinHash: true));
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

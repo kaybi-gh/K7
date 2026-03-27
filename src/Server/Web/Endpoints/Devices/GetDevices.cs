@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Common.Models;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Devices.Queries.GetDevices;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
@@ -18,7 +19,7 @@ public class GetDevices : IEndpoint
         endpointRouteBuilder.MapGet(GetDevicesQueryUriBuilder.Route, async ([FromServices] ISender sender, [AsParameters] GetDevicesQuery query, CancellationToken cancellationToken) =>
         {
             var devicesPage = await sender.Send(query, cancellationToken);
-            return devicesPage.ToDto(DeviceDto.FromDomain);
+            return devicesPage.ToDto(d => d.ToDeviceDto());
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

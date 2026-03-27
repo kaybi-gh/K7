@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Restrictions.Queries.GetContentRestrictionProfiles;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Restrictions;
@@ -17,7 +18,7 @@ public class GetContentRestrictionProfiles : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var profiles = await sender.Send(new GetContentRestrictionProfilesQuery(), cancellationToken);
-            return Results.Ok(profiles.Select(ContentRestrictionProfileDto.FromDomain));
+            return Results.Ok(profiles.Select(p => p.ToContentRestrictionProfileDto()));
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)

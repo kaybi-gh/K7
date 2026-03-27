@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Features.Libraries.Queries.GetLibrary;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Features.Libraries.Queries.GetLibrary;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ public class GetLibrary : IEndpoint
         endpointRouteBuilder.MapGet("/api/libraries/{id}", async ([FromServices] ISender sender, Guid id, CancellationToken cancellationToken) =>
         {
             var library = await sender.Send(new GetLibraryQuery(id), cancellationToken);
-            return LibraryDto.FromDomain(library);
+            return library.ToLibraryDto();
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

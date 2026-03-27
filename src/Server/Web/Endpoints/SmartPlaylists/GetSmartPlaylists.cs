@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.SmartPlaylists.Queries.GetSmartPlaylists;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -20,7 +21,7 @@ public class GetSmartPlaylists : IEndpoint
                 result.PageNumber,
                 result.TotalPages,
                 result.TotalCount,
-                Items = result.Items.Select(LiteSmartPlaylistDto.FromDomain)
+                Items = result.Items.Select(p => p.ToLiteSmartPlaylistDto())
             };
         })
         .RequireAuthorization(Policies.UserOrAbove)

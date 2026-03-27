@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Features.BackgroundTasks.Queries.GetBackgroundTasksWithPagination;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Features.BackgroundTasks.Queries.GetBackgroundTasksWithPagination;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
 using K7.Shared.Dtos.Entities;
@@ -16,7 +17,7 @@ public class GetBackgroundTasks : IEndpoint
         endpointRouteBuilder.MapGet("/api/background-tasks", async ([FromServices] ISender sender, [AsParameters] GetBackgroundTasksWithPaginationQuery query, CancellationToken cancellationToken) =>
         {
             var backgroundTasksPage = await sender.Send(query, cancellationToken);
-            return backgroundTasksPage.ToDto(BackgroundTaskDto.FromDomain);
+            return backgroundTasksPage.ToDto(t => t.ToBackgroundTaskDto());
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)
