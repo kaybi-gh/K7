@@ -6,6 +6,8 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class Library
 {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
     [Parameter]
     public required string Id { get; set; }
 
@@ -40,5 +42,10 @@ public partial class Library
         }
 
         _loading = false;
+    }
+
+    private void NavigateToItem(MediaCardViewModel item)
+    {
+        Navigation.NavigateTo($"/movies/{item.Id}");
     }
 }

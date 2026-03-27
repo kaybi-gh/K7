@@ -129,7 +129,7 @@ public partial class Home : IDisposable
                 await RefreshRecentlyAddedAsync();
                 StateHasChanged();
             });
-        }, null, 3000, Timeout.Infinite);
+        }, null, 10000, Timeout.Infinite);
     }
 
     private async Task RefreshRecentlyAddedAsync()

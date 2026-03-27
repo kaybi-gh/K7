@@ -4,7 +4,7 @@
 @inject IStringLocalizer<MusicArtists> L
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MediaBrowser TItem="ArtistViewModel"
+<BrowseView TItem="ArtistViewModel"
               Items="_artists"
               Loading="_loading"
               PersistenceKey="music-artists"
@@ -68,4 +68,4 @@
             </MudPaper>
         </a>
     </GridTemplate>
-</MediaBrowser>
+</BrowseView>
