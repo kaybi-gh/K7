@@ -1,4 +1,6 @@
-﻿
+﻿@inject IStringLocalizer<AdminAuthenticationPanel> L
+@inject IStringLocalizer<SharedResource> S
+
 @if (_isLoading)
 {
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
@@ -7,53 +9,53 @@ else if (_authInfo is not null)
 {
     <MudStack Spacing="4" Class="pa-4">
         <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true" NoIcon="true">
-            La configuration de l'authentification est définie dans <code>appsettings.json</code> et nécessite un redémarrage pour être modifiée.
+            @L["ConfigInfo"]
         </MudAlert>
 
-        <MudText Typo="Typo.h6">Authentification locale</MudText>
+        <MudText Typo="Typo.h6">@L["LocalAuthTitle"]</MudText>
         <MudSimpleTable Elevation="0" Dense="true" Outlined="true">
             <tbody>
                 <tr>
-                    <td style="width: 300px;"><MudText Typo="Typo.body2">Connexion locale</MudText></td>
+                    <td style="width: 300px;"><MudText Typo="Typo.body2">@L["LocalSignin"]</MudText></td>
                     <td>
                         <MudChip T="string" Size="Size.Small" Color="@(_authInfo.LocalSignInEnabled ? Color.Success : Color.Default)">
-                            @(_authInfo.LocalSignInEnabled ? "Activée" : "Désactivée")
+                            @(_authInfo.LocalSignInEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
                         </MudChip>
                     </td>
                 </tr>
                 <tr>
-                    <td><MudText Typo="Typo.body2">Inscription locale</MudText></td>
+                    <td><MudText Typo="Typo.body2">@L["LocalRegistration"]</MudText></td>
                     <td>
                         <MudChip T="string" Size="Size.Small" Color="@(_authInfo.LocalRegistrationEnabled ? Color.Success : Color.Default)">
-                            @(_authInfo.LocalRegistrationEnabled ? "Activée" : "Désactivée")
+                            @(_authInfo.LocalRegistrationEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
                         </MudChip>
                     </td>
                 </tr>
             </tbody>
         </MudSimpleTable>
 
-        <MudText Typo="Typo.h6">Authentification OIDC</MudText>
+        <MudText Typo="Typo.h6">@L["OidcTitle"]</MudText>
         <MudSimpleTable Elevation="0" Dense="true" Outlined="true">
             <tbody>
                 <tr>
-                    <td style="width: 300px;"><MudText Typo="Typo.body2">OIDC</MudText></td>
+                    <td style="width: 300px;"><MudText Typo="Typo.body2">@L["Oidc"]</MudText></td>
                     <td>
                         <MudChip T="string" Size="Size.Small" Color="@(_authInfo.OidcEnabled ? Color.Success : Color.Default)">
-                            @(_authInfo.OidcEnabled ? "Activé" : "Désactivé")
+                            @(_authInfo.OidcEnabled ? S["Enabled"] : S["Disabled"])
                         </MudChip>
                     </td>
                 </tr>
                 @if (_authInfo.OidcEnabled)
                 {
                     <tr>
-                        <td><MudText Typo="Typo.body2">Fournisseur</MudText></td>
+                        <td><MudText Typo="Typo.body2">@L["Provider"]</MudText></td>
                         <td><MudText Typo="Typo.body2">@_authInfo.OidcDisplayName</MudText></td>
                     </tr>
                     <tr>
-                        <td><MudText Typo="Typo.body2">Création automatique de compte</MudText></td>
+                        <td><MudText Typo="Typo.body2">@L["AutoAccountCreation"]</MudText></td>
                         <td>
                             <MudChip T="string" Size="Size.Small" Color="@(_authInfo.OidcAutomaticAccountCreation ? Color.Success : Color.Default)">
-                                @(_authInfo.OidcAutomaticAccountCreation ? "Activée" : "Désactivée")
+                                @(_authInfo.OidcAutomaticAccountCreation ? S["EnabledFeminine"] : S["DisabledFeminine"])
                             </MudChip>
                         </td>
                     </tr>
@@ -64,7 +66,7 @@ else if (_authInfo is not null)
         @if (!_authInfo.LocalSignInEnabled && _authInfo.OidcEnabled)
         {
             <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="true">
-                La connexion locale est désactivée. Les utilisateurs seront automatiquement redirigés vers le fournisseur OIDC.
+                @L["LocalSigninDisabledWarning"]
             </MudAlert>
         }
     </MudStack>

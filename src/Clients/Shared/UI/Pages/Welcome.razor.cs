@@ -63,7 +63,7 @@ public partial class Welcome : IDisposable
         catch (Exception ex)
         {
             if (!_guestEnabled)
-                _serverInfoError = $"Could not reach server: {ex.Message}";
+                _serverInfoError = string.Format(S["ErrorWithDetails"], ex.Message);
         }
     }
 
@@ -128,7 +128,7 @@ public partial class Welcome : IDisposable
         }
         else
         {
-            _error = "Sign in was cancelled or failed.";
+            _error = L["SignInFailed"];
             _loading = false;
             StateHasChanged();
         }

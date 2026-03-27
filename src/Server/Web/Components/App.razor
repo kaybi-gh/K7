@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,6 +38,12 @@
     <script src="@Assets["js/videoplayer.js"]"></script>
     <script src="@Assets["js/audioplayer.js"]"></script>
     <script src="@Assets["js/deviceUtils.js"]"></script>
+    <script>
+        window.blazorCulture = {
+            get: () => window.localStorage.getItem('BlazorCulture'),
+            set: (value) => window.localStorage.setItem('BlazorCulture', value)
+        };
+    </script>
 </body>
 
 </html>

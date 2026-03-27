@@ -62,7 +62,7 @@ public partial class ExcludeMediaForUsersDialog
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
         }
         finally
         {

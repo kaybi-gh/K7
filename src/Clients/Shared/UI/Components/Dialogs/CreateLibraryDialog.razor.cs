@@ -42,11 +42,11 @@ public partial class CreateLibraryDialog
             : Color.Default;
     }
 
-    private static string GetMediaTypeLabel(LibraryMediaType type) => type switch
+    private string GetMediaTypeLabel(LibraryMediaType type) => type switch
     {
-        LibraryMediaType.Movie => "Films",
-        LibraryMediaType.Serie => "Séries",
-        LibraryMediaType.Music => "Musique",
+        LibraryMediaType.Movie => S["MediaTypeMovies"],
+        LibraryMediaType.Serie => S["MediaTypeSeries"],
+        LibraryMediaType.Music => S["MediaTypeMusic"],
         _ => type.ToString()
     };
 
@@ -83,7 +83,7 @@ public partial class CreateLibraryDialog
             CloseOnEscapeKey = true
         };
 
-        var dialog = await DialogService.ShowAsync<FolderBrowserDialog>("Sélectionner un dossier", parameters, options);
+        var dialog = await DialogService.ShowAsync<FolderBrowserDialog>(L["SelectFolderTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: string selectedPath })
@@ -108,12 +108,12 @@ public partial class CreateLibraryDialog
             };
 
             await K7ServerService.CreateLibraryAsync(request);
-            Snackbar.Add($"Librairie « {_title} » créée avec succès !", Severity.Success);
+            Snackbar.Add(string.Format(L["Success"], _title), Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur lors de la création : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(L["Error"], ex.Message), Severity.Error);
             _isSubmitting = false;
             StateHasChanged();
         }

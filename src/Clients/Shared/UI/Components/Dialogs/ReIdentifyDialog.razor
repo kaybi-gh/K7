@@ -1,22 +1,25 @@
+@inject IStringLocalizer<ReIdentifyDialog> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="4">
-            <MudTextField @bind-Value="_searchQuery" Label="Titre" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" OnAdornmentClick="SearchAsync" OnKeyDown="HandleKeyDown" />
+            <MudTextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" OnAdornmentClick="SearchAsync" OnKeyDown="HandleKeyDown" />
             
             <MudStack Row="true" Spacing="4">
-                <MudNumericField @bind-Value="_searchYear" Label="Année (Optionnel)" Variant="Variant.Outlined" Clearable="true" />
-                <MudTextField @bind-Value="_searchProviderId" Label="ID Provider (Ex: TMDB ID)" Variant="Variant.Outlined" Clearable="true" />
+                <MudNumericField @bind-Value="_searchYear" Label="@L["YearOptionalLabel"]" Variant="Variant.Outlined" Clearable="true" />
+                <MudTextField @bind-Value="_searchProviderId" Label="@L["ProviderIdLabel"]" Variant="Variant.Outlined" Clearable="true" />
             </MudStack>
             
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SearchAsync" Disabled="_isSearching">
                 @if (_isSearching)
                 {
                     <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                    <MudText Class="ms-2">Recherche...</MudText>
+                    <MudText Class="ms-2">@L["Searching"]</MudText>
                 }
                 else
                 {
-                    <MudText>Chercher</MudText>
+                    <MudText>@L["SearchButton"]</MudText>
                 }
             </MudButton>
 
@@ -24,7 +27,7 @@
             {
                 if (!_results.Any())
                 {
-                    <MudText Color="Color.Warning">Aucun résultat trouvé.</MudText>
+                    <MudText Color="Color.Warning">@L["NoResults"]</MudText>
                 }
                 else
                 {
@@ -48,7 +51,7 @@
                                     <MudItem xs="9">
                                         <MudStack Spacing="0">
                                             <MudText Typo="Typo.subtitle1"><b>@result.Title</b> @(result.Year.HasValue ? $"({result.Year})" : "")</MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Provider: @result.Provider | ID: @result.ExternalId</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@string.Format(L["ProviderAndId"], result.Provider, result.ExternalId)</MudText>
                                             <MudText Typo="Typo.body2" Style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">@result.Overview</MudText>
                                         </MudStack>
                                     </MudItem>
@@ -61,7 +64,7 @@
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="@(_selectedResult == null || _isSubmitting)">
             @if (_isSubmitting)
             {
@@ -69,7 +72,7 @@
             }
             else
             {
-                <MudText>Valider</MudText>
+                <MudText>@S["Confirm"]</MudText>
             }
         </MudButton>
     </DialogActions>

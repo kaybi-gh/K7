@@ -1,16 +1,18 @@
-﻿
+﻿@inject IStringLocalizer<AdminRestrictionsPanel> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
-    <MudText Typo="Typo.h6">Profils de restriction</MudText>
+    <MudText Typo="Typo.h6">@L["Title"]</MudText>
     <MudStack Row="true" Spacing="2">
-        <MudMenu Label="Créer depuis un modèle" Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Secondary"
+        <MudMenu Label="@L["CreateFromTemplate"]" Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Secondary"
                  Variant="Variant.Outlined" EndIcon="@Icons.Material.Filled.KeyboardArrowDown">
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">Tout public (enfants)</MudMenuItem>
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">Famille (+12)</MudMenuItem>
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">Adolescent (+16)</MudMenuItem>
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">Sans horreur</MudMenuItem>
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">@L["TemplateChildFriendly"]</MudMenuItem>
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">@L["TemplateFamily12"]</MudMenuItem>
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">@L["TemplateTeen16"]</MudMenuItem>
+            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">@L["TemplateNoHorror"]</MudMenuItem>
         </MudMenu>
         <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary"
-                   OnClick="OpenCreateDialog">Créer un profil</MudButton>
+                   OnClick="OpenCreateDialog">@L["CreateProfile"]</MudButton>
     </MudStack>
 </MudStack>
 
@@ -22,9 +24,9 @@ else if (_profiles.Count == 0)
 {
     <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
         <MudIcon Icon="@Icons.Material.Outlined.Shield" Size="Size.Large" Color="Color.Secondary" />
-        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">Aucun profil de restriction</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">@L["Empty"]</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
-            Créez des profils pour restreindre l'accès au contenu par genre, classification d'âge, ou année de sortie.
+            @L["EmptyDescription"]
         </MudText>
     </MudPaper>
 }
@@ -55,7 +57,7 @@ else
                     <MudCardContent>
                         <MudStack Spacing="1">
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                Condition : @(profile.MatchCondition == RestrictionMatchCondition.Any ? "Au moins une règle" : "Toutes les règles")
+                                @L["ConditionPrefix"] @(profile.MatchCondition == RestrictionMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
                             </MudText>
                             @foreach (var rule in profile.Rules)
                             {
@@ -65,7 +67,7 @@ else
                             }
                             <MudText Typo="Typo.caption" Class="mt-2">
                                 <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Class="mr-1" />
-                                @profile.UserCount utilisateur(s) rattaché(s)
+                                @string.Format(L["AttachedUsers"], profile.UserCount)
                             </MudText>
                         </MudStack>
                     </MudCardContent>

@@ -91,7 +91,7 @@ public partial class MusicTracks
     {
         Id = track.Id,
         IndexedFileId = track.IndexedFileId,
-        Title = track.Title ?? "Sans titre",
+        Title = track.Title ?? S["Untitled"],
         ArtistName = track.ArtistName,
         ArtistPersonId = track.ArtistPersonId,
         AlbumId = track.AlbumId,

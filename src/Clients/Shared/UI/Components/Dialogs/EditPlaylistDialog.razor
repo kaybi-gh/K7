@@ -1,22 +1,25 @@
+@inject IStringLocalizer<EditPlaylistDialog> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="4" Class="mt-2">
             <MudTextField @bind-Value="Title"
-                          Label="Nom de la playlist"
+                          Label="@L["NameLabel"]"
                           Variant="Variant.Outlined"
                           Required="true"
-                          RequiredError="Le nom est requis"
+                          RequiredError="@L["NameRequired"]"
                           MaxLength="200"
                           Immediate="true" />
             <MudTextField @bind-Value="Description"
-                          Label="Description (optionnelle)"
+                          Label="@L["DescriptionOptional"]"
                           Variant="Variant.Outlined"
                           Lines="3"
                           MaxLength="2000" />
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
         <MudButton Color="Color.Primary"
                    Variant="Variant.Filled"
                    OnClick="SubmitAsync"
@@ -24,11 +27,11 @@
             @if (_isSubmitting)
             {
                 <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                <MudText Class="ms-2">Enregistrement...</MudText>
+                <MudText Class="ms-2">@L["Saving"]</MudText>
             }
             else
             {
-                <MudText>Enregistrer</MudText>
+                <MudText>@S["Save"]</MudText>
             }
         </MudButton>
     </DialogActions>

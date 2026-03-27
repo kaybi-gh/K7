@@ -1,29 +1,31 @@
 @page "/admin"
+@inject IStringLocalizer<Admin> L
+@inject IStringLocalizer<SharedResource> S
 
 <AuthorizeView Roles="Administrator">
     <Authorized>
-        <PageTitle>Administration</PageTitle>
+        <PageTitle>@L["PageTitle"]</PageTitle>
 
-        <MudText Typo="Typo.h4" Class="mb-4">Administration</MudText>
+        <MudText Typo="Typo.h4" Class="mb-4">@L["PageTitle"]</MudText>
 
         <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true">
-            <MudTabPanel Text="Librairies" Icon="@Icons.Material.Filled.VideoLibrary">
+            <MudTabPanel Text="@L["TabLibraries"]" Icon="@Icons.Material.Filled.VideoLibrary">
                 <AdminLibrariesPanel />
             </MudTabPanel>
 
-            <MudTabPanel Text="Utilisateurs" Icon="@Icons.Material.Filled.People">
+            <MudTabPanel Text="@L["TabUsers"]" Icon="@Icons.Material.Filled.People">
                 <AdminUsersPanel />
             </MudTabPanel>
 
-            <MudTabPanel Text="Appareils" Icon="@Icons.Material.Filled.Devices">
+            <MudTabPanel Text="@L["TabDevices"]" Icon="@Icons.Material.Filled.Devices">
                 <AdminDevicesPanel />
             </MudTabPanel>
 
-            <MudTabPanel Text="Restrictions" Icon="@Icons.Material.Filled.Shield">
+            <MudTabPanel Text="@L["TabRestrictions"]" Icon="@Icons.Material.Filled.Shield">
                 <AdminRestrictionsPanel />
             </MudTabPanel>
 
-            <MudTabPanel Text="Authentification" Icon="@Icons.Material.Filled.Security">
+            <MudTabPanel Text="@L["TabAuthentication"]" Icon="@Icons.Material.Filled.Security">
                 <AdminAuthenticationPanel />
             </MudTabPanel>
         </MudTabs>
@@ -32,9 +34,9 @@
         <MudContainer MaxWidth="MaxWidth.Small" Class="pa-16">
             <MudStack AlignItems="AlignItems.Center" Spacing="4">
                 <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" />
-                <MudText Typo="Typo.h5">Access denied</MudText>
-                <MudText Typo="Typo.body1" Color="Color.Secondary">You don't have permission to access this page.</MudText>
-                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Go to Home</MudButton>
+                <MudText Typo="Typo.h5">@S["AccessDenied"]</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">@S["NoPermission"]</MudText>
+                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">@S["GoToHome"]</MudButton>
             </MudStack>
         </MudContainer>
     </NotAuthorized>

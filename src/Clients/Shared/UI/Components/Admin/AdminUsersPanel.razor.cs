@@ -45,12 +45,12 @@ public partial class AdminUsersPanel
         try
         {
             await K7ServerService.UpdateUserRoleAsync(user.Id, new UpdateUserRoleRequest { Role = newRole });
-            Snackbar.Add($"Rôle de {user.UserName} mis à jour.", Severity.Success);
+            Snackbar.Add(string.Format(L["RoleUpdated"], user.UserName), Severity.Success);
             await LoadData();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
         }
     }
 
@@ -59,13 +59,13 @@ public partial class AdminUsersPanel
         try
         {
             await K7ServerService.ToggleUserActiveAsync(user.Id, isActive);
-            var label = user.UserName ?? user.Email ?? "Utilisateur";
-            Snackbar.Add(isActive ? $"{label} activé." : $"{label} désactivé.", Severity.Success);
+            var label = user.UserName ?? user.Email;
+            Snackbar.Add(isActive ? string.Format(L["UserActivated"], label) : string.Format(L["UserDeactivated"], label), Severity.Success);
             await LoadData();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
         }
     }
 
@@ -79,13 +79,13 @@ public partial class AdminUsersPanel
 
         var parameters = new DialogParameters<AdminUserCapabilitiesDialog>
         {
-            { x => x.UserName, user.UserName ?? user.Email ?? "Utilisateur" },
+            { x => x.UserName, user.UserName ?? user.Email ?? "" },
             { x => x.Role, user.Role },
             { x => x.Overrides, overrides }
         };
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<AdminUserCapabilitiesDialog>("Capacités", parameters, options);
+        var dialog = await DialogService.ShowAsync<AdminUserCapabilitiesDialog>(L["CapabilitiesTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: Dictionary<Capability, bool> newOverrides })
@@ -100,12 +100,12 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.UpdateUserCapabilitiesAsync(user.Id, request);
-                Snackbar.Add("Capacités mises à jour.", Severity.Success);
+                Snackbar.Add(L["CapabilitiesUpdated"], Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
         }
     }
@@ -114,10 +114,10 @@ public partial class AdminUsersPanel
     {
         var parameters = new DialogParameters<ConfirmDeleteUserDialog>
         {
-            { x => x.DisplayName, user.UserName ?? user.Email ?? "cet utilisateur" }
+            { x => x.DisplayName, user.UserName ?? user.Email ?? L["DeleteFallbackName"] }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>("Supprimer l'utilisateur", parameters, options);
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>(L["DeleteUserTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -125,12 +125,12 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.DeleteUserAsync(user.Id);
-                Snackbar.Add("Utilisateur supprimé.", Severity.Success);
+                Snackbar.Add(L["UserDeleted"], Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
         }
     }
@@ -143,7 +143,7 @@ public partial class AdminUsersPanel
         };
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<AdminUserLibraryExclusionsDialog>("Accès aux librairies", parameters, options);
+        var dialog = await DialogService.ShowAsync<AdminUserLibraryExclusionsDialog>(L["LibraryAccessTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: List<Guid> newExclusions })
@@ -156,12 +156,12 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.UpdateUserLibraryExclusionsAsync(user.Id, request);
-                Snackbar.Add("Accès aux librairies mis à jour.", Severity.Success);
+                Snackbar.Add(L["LibraryAccessUpdated"], Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
         }
     }
@@ -174,7 +174,7 @@ public partial class AdminUsersPanel
         };
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<AdminUserMediaExclusionsDialog>("Médias masqués", parameters, options);
+        var dialog = await DialogService.ShowAsync<AdminUserMediaExclusionsDialog>(L["HiddenMediaTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: List<Guid> newExclusions })
@@ -187,12 +187,12 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.UpdateUserMediaExclusionsAsync(user.Id, request);
-                Snackbar.Add("Médias masqués mis à jour.", Severity.Success);
+                Snackbar.Add(L["HiddenMediaUpdated"], Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
         }
     }
@@ -205,7 +205,7 @@ public partial class AdminUsersPanel
         };
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<AdminUserRestrictionProfileDialog>("Profil de restriction", parameters, options);
+        var dialog = await DialogService.ShowAsync<AdminUserRestrictionProfileDialog>(L["RestrictionProfileTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -214,12 +214,12 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.AssignContentRestrictionProfileAsync(user.Id, profileId);
-                Snackbar.Add("Profil de restriction mis à jour.", Severity.Success);
+                Snackbar.Add(L["RestrictionProfileUpdated"], Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
         }
     }

@@ -1,3 +1,6 @@
+@inject IStringLocalizer<AddToPlaylistDialog> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudDialog>
     <DialogContent>
         @if (_loading)
@@ -7,9 +10,9 @@
         else if (_playlists.Count == 0)
         {
             <MudStack AlignItems="AlignItems.Center" Class="pa-4">
-                <MudText Typo="Typo.body1" Color="Color.Secondary">Aucune playlist</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">@L["Empty"]</MudText>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateNewPlaylist">
-                    Créer une playlist
+                    @L["CreatePlaylist"]
                 </MudButton>
             </MudStack>
         }
@@ -23,7 +26,7 @@
                             <MudIcon Icon="@Icons.Material.Filled.QueueMusic" Color="Color.Primary" />
                             <MudStack Spacing="0">
                                 <MudText>@playlist.Title</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount morceaux</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@string.Format(L["TrackCount"], playlist.ItemCount)</MudText>
                             </MudStack>
                         </MudStack>
                     </MudListItem>
@@ -35,11 +38,11 @@
                        StartIcon="@Icons.Material.Filled.Add"
                        OnClick="CreateNewPlaylist"
                        FullWidth="true">
-                Nouvelle playlist
+                @L["NewPlaylist"]
             </MudButton>
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
     </DialogActions>
 </MudDialog>

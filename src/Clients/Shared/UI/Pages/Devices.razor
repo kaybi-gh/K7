@@ -1,12 +1,14 @@
 @page "/admin/devices"
+@inject IStringLocalizer<Devices> L
+@inject IStringLocalizer<SharedResource> S
 
 <AuthorizeView Roles="Administrator">
     <Authorized>
-        <h3>All Devices</h3>
+        <h3>@L["PageTitle"]</h3>
 
 @if (isLoading)
 {
-    <p>Loading...</p>
+    <p>@S["Loading"]</p>
 }
 else
 {
@@ -14,7 +16,7 @@ else
     {
         if (devices.TotalCount == 0)
         {
-            <p>No devices found.</p>
+            <p>@L["NoDevices"]</p>
         }
         else
         {
@@ -51,8 +53,8 @@ else
         <MudContainer MaxWidth="MaxWidth.Small" Class="pa-16">
             <MudStack AlignItems="AlignItems.Center" Spacing="4">
                 <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" />
-                <MudText Typo="Typo.h5">Access denied</MudText>
-                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Go to Home</MudButton>
+                <MudText Typo="Typo.h5">@S["AccessDenied"]</MudText>
+                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">@S["GoToHome"]</MudButton>
             </MudStack>
         </MudContainer>
     </NotAuthorized>

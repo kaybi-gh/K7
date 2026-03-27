@@ -3,6 +3,8 @@
 @using K7.Shared.Dtos.Entities.PersonRoles
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
+@inject IStringLocalizer<MusicAlbumDetail> L
+@inject IStringLocalizer<SharedResource> S
 <PageTitle>@_album?.Title</PageTitle>
 
 @if (_album is not null)
@@ -32,7 +34,7 @@
             </div>
 
             <div class="album-header-info">
-                <MudText Typo="Typo.overline">Album</MudText>
+                <MudText Typo="Typo.overline">@L["AlbumType"]</MudText>
                 <MudText Typo="Typo.h4" Class="album-detail-title">@_album.Title</MudText>
 
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
@@ -51,7 +53,7 @@
                     }
                     @if (_trackCount > 0)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">· @_trackCount morceaux</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@string.Format(L["TrackCount"], _trackCount)</MudText>
                     }
                     @if (_totalDuration > 0)
                     {
@@ -74,13 +76,13 @@
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.PlayArrow"
                                OnClick="PlayAll">
-                        Tout lire
+                        @S["PlayAll"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Shuffle"
                                OnClick="ShuffleAll">
-                        Aléatoire
+                        @S["Shuffle"]
                     </MudButton>
                 </MudStack>
             </div>
@@ -91,7 +93,7 @@
             {
                 @if (_tracksByDisc.Count > 1)
                 {
-                    <MudText Typo="Typo.subtitle1" Class="disc-header">Disque @discGroup.Key</MudText>
+                    <MudText Typo="Typo.subtitle1" Class="disc-header">@string.Format(L["DiscHeader"], discGroup.Key)</MudText>
                 }
 
                 <MudTable Items="discGroup.Value"
@@ -151,7 +153,7 @@
         @if (!string.IsNullOrEmpty(_album.Overview))
         {
             <div class="album-overview">
-                <MudText Typo="Typo.subtitle1" Class="mb-2">À propos</MudText>
+                <MudText Typo="Typo.subtitle1" Class="mb-2">@S["About"]</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary">@_album.Overview</MudText>
             </div>
         }

@@ -1,15 +1,17 @@
 ﻿@page "/sign-in"
 @layout Layout.EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject IStringLocalizer<Welcome> L
+@inject IStringLocalizer<SharedResource> S
 
-<PageTitle>Welcome - K7</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height:80vh;">
     <MudPaper Class="pa-8" Elevation="4" Style="width:100%; max-width:480px;">
         <MudStack Spacing="4" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">K7</MudText>
             <MudText Typo="Typo.body1" Color="Color.Secondary">
-                Choose how you want to continue
+                @L["WelcomeHeading"]
             </MudText>
 
             <MudDivider Class="my-2" Style="width:100%;" />
@@ -17,7 +19,7 @@
             @if (_loading)
             {
                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Signing in...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["SignInPrompt"]</MudText>
             }
             else if (_error is not null)
             {
@@ -26,7 +28,7 @@
                 </MudAlert>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
                            FullWidth="true" OnClick="SignInAsync">
-                    Try Again
+                    @S["TryAgain"]
                 </MudButton>
             }
             else
@@ -40,14 +42,14 @@
 
                 <MudButton @ref="_signInButton" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
                            FullWidth="true" OnClick="SignInAsync">
-                    Sign in
+                    @S["SignIn"]
                 </MudButton>
 
                 @if (_guestEnabled)
                 {
                     <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Large"
                                FullWidth="true" OnClick="ContinueAsGuestAsync">
-                        Continue as guest
+                        @S["Guest"]
                     </MudButton>
                 }
             }

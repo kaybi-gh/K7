@@ -8,6 +8,7 @@
 @implements IAsyncDisposable
 @inject IPlayerService PlayerService
 @inject IDeviceService DeviceService
+@inject IStringLocalizer<VideoPlayerControlsOverlay> L
 
 <div class="video-controls-overlay" @onmousemove="OnOverlayMouseMove" style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
     <div class="controls-bar top" @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
@@ -56,7 +57,7 @@
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudMenu Icon="@Icons.Material.Outlined.Settings" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomRight"
                 @bind-Open="_isMenuOpen" Color="Color.Inherit">
-                    <MudMenu Label="Audio" StartIcon="@Icons.Material.Outlined.Audiotrack">
+                    <MudMenu Label="@L["Audio"]" StartIcon="@Icons.Material.Outlined.Audiotrack">
                         @foreach (var track in PlayerService.AudioTracks)
                         {
                             <MudMenuItem OnClick="@(() => OnAudioTrackSelected(track))"
@@ -66,20 +67,20 @@
                         }
                     </MudMenu>
 
-                    <MudMenu Label="Subtitles" StartIcon="@Icons.Material.Outlined.Subtitles">
+                    <MudMenu Label="@L["Subtitles"]" StartIcon="@Icons.Material.Outlined.Subtitles">
                         <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
                                      Icon="@(PlayerService.SelectedSubtitleTrack is null ? Icons.Material.Filled.CheckCircle : null)">
-                            Off
+                            @L["SubtitlesOff"]
                         </MudMenuItem> @* TODO - Maybe change the way disabling titles is done *@
                         @foreach (var track in PlayerService.SubtitleTracks)
                         {
                             <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
                                          Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? Icons.Material.Filled.CheckCircle : null)">
-                                @($"{track.Language} - {track.Name}{(track.IsForced ? " (Forced)" : "")} ({track.Codec})")
+                                @($"{track.Language} - {track.Name}{(track.IsForced ? L["ForcedSuffix"] : "")} ({track.Codec})")
                             </MudMenuItem> // TODO - Maybe use only the track name
                         }
                     </MudMenu>
-                    <MudMenu Label="Quality" StartIcon="@Icons.Material.Outlined.Tune">
+                    <MudMenu Label="@L["Quality"]" StartIcon="@Icons.Material.Outlined.Tune">
                         @foreach (var quality in PlayerService.AvailableQualities)
                         {
                             <MudMenuItem OnClick="@(() => OnQualitySelected(quality))"
@@ -89,17 +90,17 @@
                         }
                     </MudMenu>
 
-                    <MudMenu Label="Speed" StartIcon="@Icons.Material.Outlined.Speed">
+                    <MudMenu Label="@L["Speed"]" StartIcon="@Icons.Material.Outlined.Speed">
                         @foreach (var speed in _playbackSpeedOptions)
                         {
                             <MudMenuItem OnClick="@(() => OnSpeedSelected(speed))"
                                          Icon="@(IsCurrentSpeed(speed) ? Icons.Material.Filled.CheckCircle : null)">
-                                @(speed == 1.0 ? "Normal" : $"{speed}x")
+                                @(speed == 1.0 ? L["SpeedNormal"] : $"{speed}x")
                             </MudMenuItem>
                         }
                     </MudMenu>
 
-                    <MudMenu Label="Aspect Ratio" StartIcon="@Icons.Material.Outlined.AspectRatio">
+                    <MudMenu Label="@L["AspectRatio"]" StartIcon="@Icons.Material.Outlined.AspectRatio">
                         @foreach (var mode in _aspectRatioOptions)
                         {
                             <MudMenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
@@ -268,11 +269,11 @@
 
     private void OnAspectRatioSelected(AspectRatioMode mode) => PlayerService.SetAspectRatioMode(mode);
 
-    private static string GetAspectRatioLabel(AspectRatioMode mode) => mode switch
+    private string GetAspectRatioLabel(AspectRatioMode mode) => mode switch
     {
-        AspectRatioMode.Fit => "Fit",
-        AspectRatioMode.Fill => "Fill (crop)",
-        AspectRatioMode.Stretch => "Stretch",
+        AspectRatioMode.Fit => L["AspectRatioFit"],
+        AspectRatioMode.Fill => L["AspectRatioFillCrop"],
+        AspectRatioMode.Stretch => L["AspectRatioStretch"],
         _ => mode.ToString()
     };
 

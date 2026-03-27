@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Profils de restriction</value></data>
+  <data name="CreateFromTemplate" xml:space="preserve"><value>Créer depuis un modèle</value></data>
+  <data name="TemplateChildFriendly" xml:space="preserve"><value>Tout public (enfants)</value></data>
+  <data name="TemplateFamily12" xml:space="preserve"><value>Famille (+12)</value></data>
+  <data name="TemplateTeen16" xml:space="preserve"><value>Adolescent (+16)</value></data>
+  <data name="TemplateNoHorror" xml:space="preserve"><value>Sans horreur</value></data>
+  <data name="CreateProfile" xml:space="preserve"><value>Créer un profil</value></data>
+  <data name="Empty" xml:space="preserve"><value>Aucun profil de restriction</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>Créez des profils pour restreindre l'accès au contenu par genre, classification d'âge, ou année de sortie.</value></data>
+  <data name="ConditionPrefix" xml:space="preserve"><value>Condition : </value></data>
+  <data name="MatchAny" xml:space="preserve"><value>Au moins une règle</value></data>
+  <data name="MatchAll" xml:space="preserve"><value>Toutes les règles</value></data>
+  <data name="AttachedUsers" xml:space="preserve"><value>{0} utilisateur(s) rattaché(s)</value></data>
+  <data name="ProfileTitle" xml:space="preserve"><value>Profil de restriction</value></data>
+  <data name="RestrictedMediaTitle" xml:space="preserve"><value>Médias restreints</value></data>
+  <data name="DeleteProfileTitle" xml:space="preserve"><value>Supprimer le profil</value></data>
+  <data name="ProfileDeleted" xml:space="preserve"><value>Profil supprimé.</value></data>
+  <data name="FieldGenre" xml:space="preserve"><value>Genre</value></data>
+  <data name="FieldContentRating" xml:space="preserve"><value>Classification</value></data>
+  <data name="FieldReleaseYear" xml:space="preserve"><value>Année</value></data>
+  <data name="OperatorContains" xml:space="preserve"><value>contient</value></data>
+  <data name="OperatorNotContains" xml:space="preserve"><value>ne contient pas</value></data>
+  <data name="OperatorIsEmpty" xml:space="preserve"><value>est vide</value></data>
+  <data name="OperatorIsNotEmpty" xml:space="preserve"><value>n'est pas vide</value></data>
+  <data name="TemplateChildFriendlyDesc" xml:space="preserve"><value>Bloque les contenus classifiés 12+ / PG-13+, sans classification, et les genres Horreur/Horror/Thriller</value></data>
+  <data name="TemplateFamily12Desc" xml:space="preserve"><value>Bloque les contenus classifiés 16+ / R+</value></data>
+  <data name="TemplateTeen16Desc" xml:space="preserve"><value>Bloque uniquement les contenus classifiés 18 / NC-17</value></data>
+  <data name="TemplateNoHorrorDesc" xml:space="preserve"><value>Bloque les genres Horreur/Horror et Thriller</value></data>
+</root>
+

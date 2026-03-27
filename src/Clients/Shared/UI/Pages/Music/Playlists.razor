@@ -5,23 +5,25 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
-<PageTitle>Playlists</PageTitle>
+@inject IStringLocalizer<Playlists> L
+@inject IStringLocalizer<SharedResource> S
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">Playlists</MudText>
+    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
     <MudStack Row="true" Spacing="2">
-        <MudMenu Label="Presets" Variant="Variant.Outlined" Color="Color.Primary"
+        <MudMenu Label="@L["Presets"]" Variant="Variant.Outlined" Color="Color.Primary"
                  StartIcon="@Icons.Material.Filled.Lightbulb" Dense="true">
-            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">Ajouts récents</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.MostPlayed)">Les plus écoutés</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.NeverPlayed)">Jamais écoutés</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.HighlyRated)">Mieux notés</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">Écoutés récemment</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.MostPlayed)">@L["PresetMostPlayed"]</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.NeverPlayed)">@L["PresetNeverPlayed"]</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.HighlyRated)">@L["PresetHighlyRated"]</MudMenuItem>
+            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">@L["PresetRecentlyPlayed"]</MudMenuItem>
         </MudMenu>
-        <MudMenu Label="Nouvelle playlist" Variant="Variant.Filled" Color="Color.Primary"
+        <MudMenu Label="@L["NewMenu"]" Variant="Variant.Filled" Color="Color.Primary"
                  StartIcon="@Icons.Material.Filled.Add" Dense="true">
             <MudMenuItem Icon="@Icons.Material.Filled.QueueMusic" OnClick="OpenCreatePlaylistDialog">Playlist</MudMenuItem>
-            <MudMenuItem Icon="@Icons.Material.Filled.AutoAwesome" OnClick="OpenCreateSmartPlaylistDialog">Smart Playlist</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.AutoAwesome" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</MudMenuItem>
         </MudMenu>
     </MudStack>
 </MudStack>
@@ -36,8 +38,8 @@ else if (_playlists.Count == 0)
 {
     <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
         <MudIcon Icon="@Icons.Material.Outlined.QueueMusic" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">Aucune playlist</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary">Créez votre première playlist pour organiser vos morceaux.</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@L["EmptyHint"]</MudText>
     </MudStack>
 }
 else
@@ -71,7 +73,7 @@ else
                                         <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Color="Color.Secondary" />
                                     }
                                 </MudStack>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount morceaux</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount @S["Tracks"]</MudText>
                             </MudStack>
                         </MudCardContent>
                     </MudCard>

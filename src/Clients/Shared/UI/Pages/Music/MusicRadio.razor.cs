@@ -87,7 +87,7 @@ public partial class MusicRadio
         {
             Id = track.Id,
             IndexedFileId = track.IndexedFiles?.FirstOrDefault()?.Id,
-            Title = track.Title ?? "Sans titre",
+            Title = track.Title ?? S["Untitled"],
             ArtistName = artist?.Person?.Name,
             ArtistPersonId = artist?.Person?.Id,
             AlbumTitle = null,

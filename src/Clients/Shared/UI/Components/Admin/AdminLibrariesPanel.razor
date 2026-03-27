@@ -1,8 +1,10 @@
-﻿
+﻿@inject IStringLocalizer<AdminLibrariesPanel> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
-    <MudText Typo="Typo.h6">Librairies</MudText>
+    <MudText Typo="Typo.h6">@L["Title"]</MudText>
     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
-        Nouvelle librairie
+        @L["NewLibrary"]
     </MudButton>
 </MudStack>
 
@@ -14,10 +16,10 @@ else if (_libraries == null || _libraries.Count == 0)
 {
     <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
         <MudIcon Icon="@Icons.Material.Outlined.VideoLibrary" Size="Size.Large" Color="Color.Secondary" />
-        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">Aucune librairie</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Créez votre première librairie pour commencer à organiser vos médias.</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">@L["Empty"]</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">@L["EmptyDescription"]</MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
-            Créer une librairie
+            @L["CreateLibrary"]
         </MudButton>
     </MudPaper>
 }
@@ -43,9 +45,9 @@ else
                     </MudCardContent>
                     <MudCardActions>
                         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Primary"
-                                       OnClick="@(() => IndexLibrary(library))" aria-label="Indexer" />
+                                       OnClick="@(() => IndexLibrary(library))" aria-label="@L["AriaIndex"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Default"
-                                       OnClick="@(() => OpenUsersDialog(library))" aria-label="Accès utilisateurs" />
+                                       OnClick="@(() => OpenUsersDialog(library))" aria-label="@L["AriaUserAccess"]" />
                     </MudCardActions>
                 </MudCard>
             </MudItem>

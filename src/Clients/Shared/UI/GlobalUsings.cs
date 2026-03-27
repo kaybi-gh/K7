@@ -4,6 +4,7 @@ global using K7.Clients.Shared.Models;
 global using K7.Clients.Shared.Services;
 global using K7.Server.Domain.Constants;
 global using K7.Server.Domain.Enums;
+global using Microsoft.Extensions.Localization;
 global using K7.Shared.Dtos;
 global using K7.Shared.Dtos.Entities;
 global using K7.Shared.Dtos.Entities.Metadatas;

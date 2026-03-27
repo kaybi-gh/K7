@@ -58,7 +58,7 @@ public partial class MusicArtistDetail
                 {
                     Id = track.Id,
                     IndexedFileId = track.IndexedFileId,
-                    Title = track.Title ?? "Sans titre",
+                    Title = track.Title ?? S["Untitled"],
                     TrackNumber = track.TrackNumber,
                     AlbumTitle = _albums.FirstOrDefault(a => a.Id == track.AlbumId.ToString())?.Title,
                     CoverUrl = apiClient.GetAbsoluteUri(

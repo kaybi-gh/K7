@@ -1,14 +1,15 @@
 @page "/music/albums"
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
-<PageTitle>Albums</PageTitle>
+@inject IStringLocalizer<MusicAlbums> L
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">Albums</MudText>
+    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
         <MudTextField T="string"
                       @bind-Value="_searchText"
-                      Placeholder="Rechercher un album..."
+                      Placeholder="@L["SearchPlaceholder"]"
                       Variant="Variant.Outlined"
                       Adornment="Adornment.Start"
                       AdornmentIcon="@Icons.Material.Filled.Search"
@@ -39,7 +40,7 @@ else if (_albums.Count == 0)
 {
     <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
         <MudIcon Icon="@Icons.Material.Outlined.Album" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">Aucun album trouvé</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
     </MudStack>
 }
 else

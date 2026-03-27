@@ -101,12 +101,12 @@ private async Task OpenMediaReIdentifyDialogAsync()
         };
 
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>("Re-identify media", parameters, options);
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyMediaDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Ré-identification du média envoyée et en cours de traitement par le serveur en tâche de fond.", Severity.Success);
+            Snackbar.Add(L["ReIdentifyMediaSent"], Severity.Success);
             NavigationManager.NavigateTo("/");
         }
     }
@@ -120,12 +120,12 @@ private async Task OpenMediaReIdentifyDialogAsync()
         };
 
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>("Re-identify file", parameters, options);
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyFileDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Ré-identification du fichier envoyée et en cours de traitement par le serveur en tâche de fond.", Severity.Success);
+            Snackbar.Add(L["ReIdentifyFileSent"], Severity.Success);
             NavigationManager.NavigateTo("/");
         }
     }

@@ -1,6 +1,8 @@
-﻿
+﻿@inject IStringLocalizer<AdminUsersPanel> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
-    <MudText Typo="Typo.h6">Utilisateurs</MudText>
+    <MudText Typo="Typo.h6">@L["Title"]</MudText>
 </MudStack>
 
 @if (_isLoading)
@@ -11,7 +13,7 @@ else if (_users.Count == 0)
 {
     <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
         <MudIcon Icon="@Icons.Material.Outlined.People" Size="Size.Large" Color="Color.Secondary" />
-        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">Aucun utilisateur</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">@L["Empty"]</MudText>
     </MudPaper>
 }
 else
@@ -19,11 +21,11 @@ else
     <MudSimpleTable Dense="true" Bordered="true" Hover="true">
         <thead>
             <tr>
-                <th>Utilisateur</th>
-                <th>Rôle</th>
-                <th>Actif</th>
-                <th>Créé le</th>
-                <th style="width: 100px;">Actions</th>
+                <th>@L["HeaderUser"]</th>
+                <th>@L["HeaderRole"]</th>
+                <th>@L["HeaderActive"]</th>
+                <th>@L["HeaderCreatedAt"]</th>
+                <th style="width: 100px;">@L["HeaderActions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -39,14 +41,14 @@ else
                     <td>
                         @if (user.IsGuest)
                         {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Default">Invité</MudChip>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default">@S["Guest"]</MudChip>
                         }
                         else
                         {
                             <MudSelect T="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
                                        Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
-                                <MudSelectItem Value="@Roles.Administrator">Administrateur</MudSelectItem>
-                                <MudSelectItem Value="@Roles.User">Utilisateur</MudSelectItem>
+                                <MudSelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</MudSelectItem>
+                                <MudSelectItem Value="@Roles.User">@L["RoleUser"]</MudSelectItem>
                             </MudSelect>
                         }
                     </td>
@@ -61,19 +63,19 @@ else
                             @if (!user.IsGuest)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Default"
-                                               OnClick="@(() => OpenCapabilitiesDialog(user))" aria-label="Capacités" />
+                                               OnClick="@(() => OpenCapabilitiesDialog(user))" aria-label="@L["AriaCapabilities"]" />
                             }
                             <MudIconButton Icon="@Icons.Material.Filled.VideoLibrary" Size="Size.Small" Color="Color.Default"
-                                           OnClick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="Librairies" />
+                                           OnClick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="@L["AriaLibraries"]" />
                             <MudIconButton Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" Color="Color.Default"
-                                           OnClick="@(() => OpenMediaExclusionsDialog(user))" aria-label="Médias masqués" />
+                                           OnClick="@(() => OpenMediaExclusionsDialog(user))" aria-label="@L["AriaHiddenMedia"]" />
                             <MudIconButton Icon="@Icons.Material.Filled.Shield" Size="Size.Small"
                                            Color="@(user.ContentRestrictionProfileId.HasValue ? Color.Warning : Color.Default)"
-                                           OnClick="@(() => OpenRestrictionProfileDialog(user))" aria-label="Profil de restriction" />
+                                           OnClick="@(() => OpenRestrictionProfileDialog(user))" aria-label="@L["AriaRestrictionProfile"]" />
                             @if (!user.IsGuest)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                               OnClick="@(() => ConfirmDelete(user))" aria-label="Supprimer" />
+                                               OnClick="@(() => ConfirmDelete(user))" aria-label="@L["AriaDelete"]" />
                             }
                         </MudStack>
                     </td>

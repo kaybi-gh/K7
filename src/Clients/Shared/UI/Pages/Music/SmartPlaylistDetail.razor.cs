@@ -50,7 +50,7 @@ public partial class SmartPlaylistDetail
         Id = item.Id,
         MediaId = item.MediaId,
         Order = item.Order,
-        Title = item.MediaTitle ?? "Sans titre",
+        Title = item.MediaTitle ?? S["Untitled"],
         ArtistName = item.ArtistName,
         ArtistPersonId = item.ArtistPersonId,
         AlbumTitle = item.AlbumTitle,
@@ -120,9 +120,9 @@ public partial class SmartPlaylistDetail
             await K7ServerService.EvaluateSmartPlaylistAsync(Guid.Parse(Id));
             _smartPlaylist = await K7ServerService.GetSmartPlaylistAsync(Guid.Parse(Id));
             await LoadItemsAsync();
-            Snackbar.Add("Smart playlist réévaluée", Severity.Success);
+            Snackbar.Add(L["ReevaluateSuccess"], Severity.Success);
         }
-        catch { Snackbar.Add("Erreur lors de l'évaluation", Severity.Error); }
+        catch { Snackbar.Add(L["ReevaluateError"], Severity.Error); }
         finally
         {
             _evaluating = false;
@@ -146,7 +146,7 @@ public partial class SmartPlaylistDetail
             { x => x.InitialOrderDescending, _smartPlaylist.OrderDescending }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>("Modifier la smart playlist", parameters, options);
+        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>(L["EditDialogTitle"], parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false })
         {
@@ -157,24 +157,24 @@ public partial class SmartPlaylistDetail
     private async Task ConfirmDelete()
     {
         var result = await DialogService.ShowMessageBoxAsync(
-            "Supprimer la smart playlist",
-            $"Supprimer « {_smartPlaylist?.Title} » ? Cette action est irréversible.",
-            yesText: "Supprimer", cancelText: "Annuler");
+            L["DeleteDialogTitle"],
+            $"{S["Delete"]} \u00ab {_smartPlaylist?.Title} \u00bb ?",
+            yesText: S["Delete"], cancelText: S["Cancel"]);
         if (result == true)
         {
             try
             {
                 await K7ServerService.DeleteSmartPlaylistAsync(Guid.Parse(Id));
-                Snackbar.Add("Smart playlist supprimée", Severity.Success);
+                Snackbar.Add(L["DeleteSuccess"], Severity.Success);
                 NavigationManager.NavigateTo("/playlists");
             }
-            catch { Snackbar.Add("Erreur lors de la suppression", Severity.Error); }
+            catch { Snackbar.Add(L["DeleteError"], Severity.Error); }
         }
     }
 
-    private static string BuildRulesDescription(SmartPlaylistDto sp)
+    private string BuildRulesDescription(SmartPlaylistDto sp)
     {
-        if (sp.Rules.Count == 0) return "Aucune règle définie";
+        if (sp.Rules.Count == 0) return L["NoRules"];
 
         var condition = sp.MatchCondition == SmartPlaylistMatchCondition.All ? " ET " : " OU ";
         var rules = sp.Rules.Select(r =>
