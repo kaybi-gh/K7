@@ -12,7 +12,7 @@ Clean Architecture with strict dependency direction: **Domain → Application �
 | `Server/Application` | `K7.Server.Application` | Use cases (CQRS), MediatR handlers, FluentValidation | Domain |
 | `Server/Infrastructure/*` | `K7.Server.Infrastructure.*` | EF Core (Postgres + Sqlite), file system, media processing | Domain, Application |
 | `Server/Web` | `K7.Server.Web` | ASP.NET Core host, Minimal API endpoints, SignalR hub | All server layers |
-| `Shared/K7.Shared` | `K7.Shared` | DTOs, constants shared across client and server | Nothing |
+| `Shared/K7.Shared` | `K7.Shared` | DTOs, constants shared across client and server | Domain (enums + `nameof` only) |
 | `Clients/Shared/*` | `K7.Clients.Shared.*` | Blazor components, pages, services, models (shared between Web & MAUI) | K7.Shared |
 | `Clients/Web` | `K7.Clients.Web` | Blazor WebAssembly host | Clients.Shared.* |
 | `Clients/MAUI` | `K7.Clients.MAUI` | .NET MAUI Blazor Hybrid host | Clients.Shared.* |
@@ -37,7 +37,7 @@ No `Result<T>` wrapper pattern.
 ## Key Patterns
 
 - **DI**: Each layer has a `DependencyInjection.cs` with `AddXxxServices()` extension methods.
-- **DTO mapping**: Manual `static FromDomain()` methods in `K7.Shared` DTOs. No AutoMapper.
+- **DTO mapping**: Extension methods in `Application/Common/Mappings/` (e.g., `entity.ToLibraryDto()`). No AutoMapper.
 - **Endpoints**: Minimal API in `Server/Web/Endpoints/`, grouped by feature, thin — delegate to `ISender`.
 - **Logging**: Always structured (`_logger.LogX("message {Param}", param)`). Never use string interpolation (`$""`).
 - **Database**: EF Core multi-provider (Postgres + Sqlite). Never call `BuildServiceProvider()` during DI registration.
