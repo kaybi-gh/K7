@@ -9,9 +9,16 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
-    <MudStack Row="true" Spacing="2">
+<MediaBrowser TItem="LitePlaylistDto"
+              Items="_playlists"
+              Loading="_loading"
+              PersistenceKey="playlists"
+              DefaultItemWidth="200"
+              DefaultSpacing="8"
+              GridItemAspectRatio="1.3f">
+    <ToolbarContent>
+        <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
+        <MudSpacer />
         <MudMenu Label="@L["Presets"]" Variant="Variant.Outlined" Color="Color.Primary"
                  StartIcon="@Icons.Material.Filled.Lightbulb" Dense="true">
             <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</MudMenuItem>
@@ -25,61 +32,43 @@
             <MudMenuItem Icon="@Icons.Material.Filled.QueueMusic" OnClick="OpenCreatePlaylistDialog">Playlist</MudMenuItem>
             <MudMenuItem Icon="@Icons.Material.Filled.AutoAwesome" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</MudMenuItem>
         </MudMenu>
-    </MudStack>
-</MudStack>
-
-@if (_loading)
-{
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudProgressCircular Indeterminate="true" />
-    </MudStack>
-}
-else if (_playlists.Count == 0)
-{
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudIcon Icon="@Icons.Material.Outlined.QueueMusic" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary">@L["EmptyHint"]</MudText>
-    </MudStack>
-}
-else
-{
-    <div class="pa-4">
-        <MudGrid Spacing="4">
-            @foreach (var playlist in _playlists)
-            {
-                <MudItem @key="playlist.Id" xs="12" sm="6" md="4" lg="3">
-                    <MudCard Outlined="true" Class="playlist-card" @onclick="() => GoToPlaylist(playlist)" Style="cursor: pointer;">
-                        <MudCardContent>
-                            <MudStack AlignItems="AlignItems.Center" Spacing="2">
-                                @if (playlist.CoverPicture is not null)
-                                {
-                                    <MudImage Src="@GetCoverUrl(playlist)"
-                                              Width="120" Height="120"
-                                              ObjectFit="ObjectFit.Cover"
-                                              Class="rounded"
-                                              loading="lazy" />
-                                }
-                                else
-                                {
-                                    <div class="playlist-cover-placeholder">
-                                        <MudIcon Icon="@(playlist.IsSmartPlaylist ? Icons.Material.Filled.AutoAwesome : Icons.Material.Filled.QueueMusic)"
-                                                 Style="font-size: 48px; opacity: 0.3;" />
-                                    </div>
-                                }
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="playlist-title">@playlist.Title</MudText>
-                                    @if (playlist.IsSmartPlaylist)
-                                    {
-                                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Color="Color.Secondary" />
-                                    }
-                                </MudStack>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount @S["Tracks"]</MudText>
-                            </MudStack>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            }
-        </MudGrid>
-    </div>
-}
+    </ToolbarContent>
+    <EmptyContent>
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+            <MudIcon Icon="@Icons.Material.Outlined.QueueMusic" Style="font-size: 64px; opacity: 0.3;" />
+            <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["EmptyHint"]</MudText>
+        </MudStack>
+    </EmptyContent>
+    <GridTemplate Context="playlist">
+        <MudCard Outlined="true" Class="playlist-card" @onclick="() => GoToPlaylist(playlist)" Style="cursor: pointer;">
+            <MudCardContent>
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    @if (playlist.CoverPicture is not null)
+                    {
+                        <MudImage Src="@GetCoverUrl(playlist)"
+                                  Width="120" Height="120"
+                                  ObjectFit="ObjectFit.Cover"
+                                  Class="rounded"
+                                  loading="lazy" />
+                    }
+                    else
+                    {
+                        <div class="playlist-cover-placeholder">
+                            <MudIcon Icon="@(playlist.IsSmartPlaylist ? Icons.Material.Filled.AutoAwesome : Icons.Material.Filled.QueueMusic)"
+                                     Style="font-size: 48px; opacity: 0.3;" />
+                        </div>
+                    }
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="playlist-title">@playlist.Title</MudText>
+                        @if (playlist.IsSmartPlaylist)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Color="Color.Secondary" />
+                        }
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount @S["Tracks"]</MudText>
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+    </GridTemplate>
+</MediaBrowser>

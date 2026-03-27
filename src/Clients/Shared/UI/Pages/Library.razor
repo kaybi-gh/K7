@@ -5,27 +5,20 @@
 
 <PageTitle>@string.Format(L["PageTitle"].Value, Id)</PageTitle>
 
-<MudDrawer @bind-Open="@_gridDrawerOpen" Fixed="false" Anchor="Anchor.End" Elevation="1" Variant="@DrawerVariant.Responsive">
-    <MudDrawerHeader>
-        <MudText Typo="Typo.h6">@L["GridSettings"]</MudText>
-    </MudDrawerHeader>
-    <MudSlider @bind-Value="_spacing" Min="0" Max="20" Color="Color.Info" Class="mb-6">@L["Spacing"]: @_spacing.ToString()</MudSlider>
-</MudDrawer>
-
-<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.Center" data-nav-row="true">
-    <span>@MediaCards.Count items</span>
-    <MudIconButton Icon="@Icons.Material.Outlined.SortByAlpha"></MudIconButton>
-    <MudIconButton Icon="@Icons.Material.Outlined.FilterList"></MudIconButton>
-    <MudIconButton Icon="@Icons.Material.Outlined.GridView" OnClick="() => _gridDrawerOpen = true"></MudIconButton>
-</MudStack>
-
-<MudGrid Style="max-width:100%;" Spacing="@_spacing" Justify="Justify.FlexStart" data-nav-grid="true">
-    @foreach (var item in MediaCards)
-    {
-        <MudItem @key="item.Id">
-            <MediaCard Model="item" Href="@($"/movies/{item.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
-        </MudItem>
-    }
-</MudGrid>
-
+<MediaBrowser TItem="MediaCardViewModel"
+              Items="MediaCards"
+              Loading="_loading"
+              PersistenceKey="@($"library-{Id}")"
+              DefaultItemWidth="160"
+              DefaultSpacing="6"
+              GridItemAspectRatio="1.8f">
+    <ToolbarContent>
+        <span>@MediaCards.Count items</span>
+        <MudIconButton Icon="@Icons.Material.Outlined.SortByAlpha" />
+        <MudIconButton Icon="@Icons.Material.Outlined.FilterList" />
+    </ToolbarContent>
+    <GridTemplate Context="item">
+        <MediaCard Model="item" Href="@($"/movies/{item.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+    </GridTemplate>
+</MediaBrowser>
 

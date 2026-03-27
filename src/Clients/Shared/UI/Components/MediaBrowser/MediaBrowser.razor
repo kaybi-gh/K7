@@ -1,0 +1,116 @@
+@using K7.Clients.Shared.Enums
+@typeparam TItem
+@inject IStringLocalizer<SharedResource> S
+
+<div class="media-browser">
+    <div class="media-browser-toolbar">
+        <div class="media-browser-toolbar-start">
+            @ToolbarContent
+        </div>
+        <div class="media-browser-toolbar-end">
+            @if (_availableModes.Count > 1)
+            {
+                @foreach (var mode in _availableModes)
+                {
+                    var m = mode;
+                    <MudIconButton Icon="@GetModeIcon(m)"
+                                   Color="@(m == _currentMode ? Color.Primary : Color.Default)"
+                                   Size="Size.Small"
+                                   OnClick="() => SetViewModeAsync(m)" />
+                }
+            }
+            @if (_currentMode is MediaBrowserViewMode.Grid)
+            {
+                <MudIconButton Icon="@Icons.Material.Outlined.Tune"
+                               Size="Size.Small"
+                               OnClick="() => _settingsOpen = !_settingsOpen" />
+            }
+        </div>
+    </div>
+
+    @if (_settingsOpen && _currentMode is MediaBrowserViewMode.Grid)
+    {
+        <div class="media-browser-settings">
+            <MudSlider T="int" Value="_itemWidth" ValueChanged="OnItemWidthChanged"
+                       Min="100" Max="300" Step="10" Color="Color.Primary" Class="mx-4">
+                @S["ItemSize"]: @_itemWidth px
+            </MudSlider>
+            <MudSlider T="int" Value="_spacing" ValueChanged="OnSpacingChanged"
+                       Min="0" Max="24" Step="2" Color="Color.Primary" Class="mx-4">
+                @S["Spacing"]: @_spacing px
+            </MudSlider>
+        </div>
+    }
+
+    @if (Loading)
+    {
+        @if (LoadingContent is not null)
+        {
+            @LoadingContent
+        }
+        else
+        {
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+                <MudProgressCircular Indeterminate="true" />
+            </MudStack>
+        }
+    }
+    else if (Items is null || Items.Count == 0)
+    {
+        @if (EmptyContent is not null)
+        {
+            @EmptyContent
+        }
+        else
+        {
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+                <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Style="font-size: 64px; opacity: 0.3;" />
+            </MudStack>
+        }
+    }
+    else
+    {
+        @switch (_currentMode)
+        {
+            case MediaBrowserViewMode.Grid when GridTemplate is not null:
+                <div class="media-browser-grid"
+                     style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;"
+                     @ref="_gridRef">
+                    <Virtualize Items="_rows" Context="row" ItemSize="_estimatedRowHeight" OverscanCount="2">
+                        <div class="media-browser-grid-row">
+                            @foreach (var item in row)
+                            {
+                                @GridTemplate(item)
+                            }
+                        </div>
+                    </Virtualize>
+                </div>
+                break;
+
+            case MediaBrowserViewMode.Table when TableHeaderContent is not null && TableRowTemplate is not null:
+                <div class="media-browser-table">
+                    <table class="media-browser-table-el">
+                        <thead>
+                            <tr>
+                                @TableHeaderContent
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <Virtualize Items="Items" Context="item" ItemSize="48" OverscanCount="10">
+                                @TableRowTemplate(item)
+                            </Virtualize>
+                        </tbody>
+                    </table>
+                </div>
+                break;
+
+            case MediaBrowserViewMode.List when ListTemplate is not null:
+                <div class="media-browser-list">
+                    <Virtualize Items="Items" Context="item" ItemSize="ListItemHeight" OverscanCount="5">
+                        @ListTemplate(item)
+                    </Virtualize>
+                </div>
+                break;
+        }
+    }
+</div>
