@@ -12,16 +12,10 @@ public sealed class K7HubClient : IAsyncDisposable
     private bool _started;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
-    /// <summary>
-    /// Raised when the server pushes a playback progress update.
-    /// </summary>
     public event Action<Guid, double, bool>? ProgressUpdated;
+    public event Action<Guid, string?, string>? MediaAdded;
+    public event Action<Guid, int>? LibraryScanCompleted;
 
-    /// <summary>
-    /// Ensures the hub connection is started. Safe to call multiple times.
-    /// </summary>
-    /// <param name="baseUri">The base URI of the application (used to build the hub URL).</param>
-    /// <param name="userId">The identity user ID to associate with this connection.</param>
     public async Task EnsureStartedAsync(Uri baseUri, string userId)
     {
         if (string.IsNullOrEmpty(userId)) return;
@@ -35,7 +29,6 @@ public sealed class K7HubClient : IAsyncDisposable
             if (_started && _hubConnection?.State == HubConnectionState.Connected)
                 return;
 
-            // Dispose any previous connection
             if (_hubConnection is not null)
             {
                 await _hubConnection.DisposeAsync();
@@ -51,6 +44,16 @@ public sealed class K7HubClient : IAsyncDisposable
             _hubConnection.On<Guid, double, bool>("ReceivePlaybackProgress", (mediaId, progress, isCompleted) =>
             {
                 ProgressUpdated?.Invoke(mediaId, progress, isCompleted);
+            });
+
+            _hubConnection.On<Guid, string?, string>("ReceiveMediaAdded", (mediaId, title, mediaType) =>
+            {
+                MediaAdded?.Invoke(mediaId, title, mediaType);
+            });
+
+            _hubConnection.On<Guid, int>("ReceiveLibraryScanCompleted", (libraryId, addedCount) =>
+            {
+                LibraryScanCompleted?.Invoke(libraryId, addedCount);
             });
 
             await _hubConnection.StartAsync();

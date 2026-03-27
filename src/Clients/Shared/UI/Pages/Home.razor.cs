@@ -30,6 +30,7 @@ public partial class Home : IDisposable
     private List<MediaCardViewModel> recentlyAddedMedias = [];
     private List<MediaCardViewModel> recentlyReleasedMedias = [];
     private List<MediaCardViewModel> lastPlayedMedias = [];
+    private Timer? _mediaAddedDebounce;
 
     protected override async Task OnInitializedAsync()
     {
@@ -38,6 +39,8 @@ public partial class Home : IDisposable
         _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
         _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
         _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
+
+        K7HubClient.MediaAdded += OnMediaAdded;
 
         if (_canTrackProgress)
         {
@@ -112,6 +115,33 @@ public partial class Home : IDisposable
     public void Dispose()
     {
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
+        K7HubClient.MediaAdded -= OnMediaAdded;
+        _mediaAddedDebounce?.Dispose();
+    }
+
+    private void OnMediaAdded(Guid mediaId, string? title, string mediaType)
+    {
+        _mediaAddedDebounce?.Dispose();
+        _mediaAddedDebounce = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await RefreshRecentlyAddedAsync();
+                StateHasChanged();
+            });
+        }, null, 3000, Timeout.Infinite);
+    }
+
+    private async Task RefreshRecentlyAddedAsync()
+    {
+        var fresh = new List<MediaCardViewModel>();
+        await LoadCarouselAsync(new GetMediasWithPaginationQuery
+        {
+            OrderBy = [MediaOrderingOption.CreatedDesc],
+            PageNumber = 1,
+            PageSize = 40
+        }, fresh);
+        recentlyAddedMedias = fresh;
     }
 
     private async Task LoadCarouselAsync(GetMediasWithPaginationQuery query, List<MediaCardViewModel> target)
