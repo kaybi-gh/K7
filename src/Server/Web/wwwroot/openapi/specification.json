@@ -42,6 +42,40 @@
         }
       }
     },
+    "/api/users/me/language": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUserLanguage",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserLanguage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserLanguageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users": {
       "get": {
         "tags": [
@@ -2811,6 +2845,29 @@
           "Admin"
         ],
         "operationId": "GetAuthenticationInfo",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/settings/default-language": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateDefaultLanguage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDefaultLanguageRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -6218,6 +6275,17 @@
           }
         }
       },
+      "UpdateDefaultLanguageRequest": {
+        "required": [
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateDeviceCommand": {
         "type": "object",
         "properties": {
@@ -6361,6 +6429,17 @@
             "items": {
               "$ref": "#/components/schemas/CapabilityOverrideDto"
             }
+          }
+        }
+      },
+      "UpdateUserLanguageRequest": {
+        "required": [
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string"
           }
         }
       },

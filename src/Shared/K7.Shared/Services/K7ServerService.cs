@@ -306,6 +306,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<ServerInfoDto>("api/server-info", _serializerOptions, cancellationToken);
     }
 
+    public async Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/settings/default-language", new { Language = language }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<AuthenticationInfoDto>("api/admin/authentication-info", _serializerOptions, cancellationToken);
@@ -380,6 +386,27 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/pin", new { Pin = pin }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<string?> GetUserLanguageAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await HttpClient.GetFromJsonAsync<UserLanguageResponse>("api/users/me/language", _serializerOptions, cancellationToken);
+            return result?.Language;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task UpdateUserLanguageAsync(string language, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/language", new { Language = language }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private sealed record UserLanguageResponse(string? Language);
 
     public async Task<List<ContentRestrictionProfileDto>> GetContentRestrictionProfilesAsync(CancellationToken cancellationToken = default)
     {

@@ -25,5 +25,6 @@
   <data name="TabDevices" xml:space="preserve"><value>Appareils</value></data>
   <data name="TabRestrictions" xml:space="preserve"><value>Restrictions</value></data>
   <data name="TabAuthentication" xml:space="preserve"><value>Authentification</value></data>
+  <data name="TabGeneral" xml:space="preserve"><value>Général</value></data>
 </root>
 

@@ -1,6 +1,8 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Settings;
 using K7.Server.Infrastructure.Database.Context.Identity;
+using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +18,7 @@ public class GetServerInfo : IEndpoint
 
         endpointRouteBuilder.MapGet("/api/server-info", async (
             [FromServices] IApplicationDbContext dbContext,
+            [FromServices] IServerSettingsService serverSettings,
             [FromServices] UserManager<ApplicationUser> userManager,
             CancellationToken cancellationToken) =>
         {
@@ -31,7 +34,13 @@ public class GetServerInfo : IEndpoint
                 guestEnabled = guestDomainUser?.IsActive == true;
             }
 
-            return Results.Ok(new { guestEnabled });
+            var defaultLanguage = await serverSettings.GetAsync(ServerSettingKeys.DefaultLanguage, cancellationToken) ?? "en";
+
+            return Results.Ok(new ServerInfoDto
+            {
+                GuestEnabled = guestEnabled,
+                DefaultLanguage = defaultLanguage
+            });
         })
         .AllowAnonymous()
         .WithName(type.Name)
