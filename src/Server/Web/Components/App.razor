@@ -41,7 +41,10 @@
     <script>
         window.blazorCulture = {
             get: () => window.localStorage.getItem('BlazorCulture'),
-            set: (value) => window.localStorage.setItem('BlazorCulture', value)
+            set: (value) => {
+                window.localStorage.setItem('BlazorCulture', value);
+                document.cookie = `.AspNetCore.Culture=c=${value}|uic=${value};path=/;max-age=31536000;samesite=lax`;
+            }
         };
     </script>
 </body>
