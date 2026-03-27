@@ -1,0 +1,162 @@
+using K7.Server.Domain.Enums;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
+using MudBlazor;
+
+namespace K7.Clients.Shared.UI.Pages;
+
+public partial class SelectUser
+{
+    [Inject] private ILocalUserService LocalUserService { get; set; } = default!;
+    [Inject] private ICustomAuthenticationStateProvider AuthService { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+
+    private List<LocalUser> _users = [];
+    private bool _singleUserMode;
+    private bool _loading;
+    private bool _isTv;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DeviceService.GetClientType() == ClientType.Web)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        _users = LocalUserService.GetAll();
+        _singleUserMode = LocalUserService.IsSingleUserMode;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+    }
+
+    private async Task SelectUserAsync(LocalUser user)
+    {
+        if (user.PinHash is not null)
+        {
+            var pinValid = await PromptPinAsync(user);
+            if (!pinValid)
+                return;
+        }
+
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var success = await AuthService.SwitchToUserAsync(user.RefreshToken);
+            if (success)
+            {
+                LocalUserService.SetLastActiveId(user.IdentityUserId);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                LocalUserService.Remove(user.IdentityUserId);
+                _users = LocalUserService.GetAll();
+                _error = $"Session for {user.UserName} has expired. Please sign in again.";
+                _loading = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _loading = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<bool> PromptPinAsync(LocalUser user)
+    {
+        var parameters = new DialogParameters<K7.Clients.Shared.UI.Components.Dialogs.PinDialog>
+        {
+            { x => x.UserName, user.UserName }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.PinDialog>("Enter PIN", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not string pin)
+            return false;
+
+        if (!LocalUserService.VerifyPin(user.IdentityUserId, pin))
+        {
+            _error = "Incorrect PIN.";
+            StateHasChanged();
+            return false;
+        }
+
+        _error = null;
+        return true;
+    }
+
+    private async Task AddUserAsync()
+    {
+        if (_isTv)
+        {
+            Navigation.NavigateTo("/linkdevice");
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            await AuthService.LoginAsync();
+
+            var authState = await ((AuthenticationStateProvider)AuthService).GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                _loading = false;
+                _users = LocalUserService.GetAll();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnSingleUserModeChanged(bool value)
+    {
+        _singleUserMode = value;
+        LocalUserService.IsSingleUserMode = value;
+    }
+
+    private async Task OnUserKeyDown(KeyboardEventArgs e, LocalUser user)
+    {
+        if (e.Key is "Enter" or " ")
+            await SelectUserAsync(user);
+    }
+
+    private async Task OnAddUserKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " ")
+            await AddUserAsync();
+    }
+
+    private static string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..1].ToUpperInvariant(),
+            _ => $"{parts[0][..1]}{parts[^1][..1]}".ToUpperInvariant()
+        };
+    }
+}

@@ -1,6 +1,4 @@
 @page "/devices"
-@using K7.Shared.Dtos.Devices
-@inject IDeviceApiService K7ServerService
 
 <h3>My Devices</h3>
 
@@ -43,27 +41,6 @@ else
                     }
                 </tbody>
             </table>
-        }
-    }
-}
-
-@code {
-    private bool isLoading = true;
-    private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? devices;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            devices = await K7ServerService.GetDevicesAsync();
-        }
-        catch
-        {
-            
-        }
-        finally
-        {
-            isLoading = false;
         }
     }
 }

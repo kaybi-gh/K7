@@ -1,6 +1,4 @@
 @page "/admin/devices"
-@using K7.Shared.Dtos.Devices
-@inject IDeviceApiService K7ServerService
 
 <AuthorizeView Roles="Administrator">
     <Authorized>
@@ -59,24 +57,3 @@ else
         </MudContainer>
     </NotAuthorized>
 </AuthorizeView>
-
-@code {
-    private bool isLoading = true;
-    private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? devices;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            devices = await K7ServerService.GetDevicesAsync(); // TODO - Filter on current user
-        }
-        catch
-        {
-            
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-}

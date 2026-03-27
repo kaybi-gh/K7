@@ -1,6 +1,4 @@
-@using K7.Shared.Dtos.Devices
-@inject IDeviceApiService K7ServerService
-
+﻿
 @if (_isLoading)
 {
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
@@ -34,23 +32,4 @@ else
             }
         </tbody>
     </MudSimpleTable>
-}
-
-@code {
-    private bool _isLoading = true;
-    private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? _devices;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _isLoading = true;
-        try
-        {
-            _devices = await K7ServerService.GetDevicesAsync();
-        }
-        catch { }
-        finally
-        {
-            _isLoading = false;
-        }
-    }
 }

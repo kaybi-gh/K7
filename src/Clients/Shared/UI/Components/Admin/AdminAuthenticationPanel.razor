@@ -1,6 +1,4 @@
-@using K7.Shared.Dtos
-@inject IServerInfoService K7ServerService
-
+﻿
 @if (_isLoading)
 {
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
@@ -70,21 +68,4 @@ else if (_authInfo is not null)
             </MudAlert>
         }
     </MudStack>
-}
-
-@code {
-    private AuthenticationInfoDto? _authInfo;
-    private bool _isLoading = true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            _authInfo = await K7ServerService.GetAuthenticationInfoAsync();
-        }
-        finally
-        {
-            _isLoading = false;
-        }
-    }
 }

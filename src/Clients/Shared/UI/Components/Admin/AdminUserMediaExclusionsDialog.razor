@@ -1,9 +1,4 @@
-@using K7.Shared.Dtos.Entities.Medias
-@using K7.Shared.Dtos.Requests
-@using K7.Server.Domain.Enums
-@inject IMediaService K7ServerService
-@inject IK7ServerService ApiClient
-
+﻿
 <MudDialog>
     <DialogContent>
         @if (_loading)
@@ -54,55 +49,3 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Enregistrer</MudButton>
     </DialogActions>
 </MudDialog>
-
-@code {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public List<Guid> ExcludedMediaIds { get; set; } = [];
-
-    private bool _loading = true;
-    private List<ExcludedMediaItem> _excludedMedias = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (ExcludedMediaIds.Count > 0)
-        {
-            try
-            {
-                var result = await K7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
-                {
-                    Ids = ExcludedMediaIds.ToArray(),
-                    PageNumber = 1,
-                    PageSize = ExcludedMediaIds.Count
-                });
-
-                var fetchedById = result?.Items?.ToDictionary(m => m.Id) ?? [];
-
-                _excludedMedias = ExcludedMediaIds.Select(id =>
-                {
-                    fetchedById.TryGetValue(id, out var dto);
-                    var posterUrl = dto?.Pictures?
-                        .FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
-                        .GetUri(MetadataPictureSize.Small)?.OriginalString;
-                    return new ExcludedMediaItem(id, dto?.Title, posterUrl != null ? ApiClient.GetAbsoluteUri(posterUrl)?.AbsoluteUri : null);
-                }).ToList();
-            }
-            catch
-            {
-                _excludedMedias = ExcludedMediaIds.Select(id => new ExcludedMediaItem(id, null, null)).ToList();
-            }
-        }
-
-        _loading = false;
-    }
-
-    private void RemoveExclusion(ExcludedMediaItem media)
-    {
-        _excludedMedias.Remove(media);
-    }
-
-    private void Cancel() => MudDialog.Cancel();
-
-    private void Submit() => MudDialog.Close(DialogResult.Ok(_excludedMedias.Select(m => m.Id).ToList()));
-
-    private sealed record ExcludedMediaItem(Guid Id, string? Title, string? PosterUrl);
-}

@@ -1,4 +1,4 @@
-<MudDialog>
+﻿<MudDialog>
     <DialogContent>
         <MudText>
             Voulez-vous vraiment supprimer <strong>@DisplayName</strong> ? Cette action est irréversible.
@@ -9,11 +9,3 @@
         <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="Confirm">Supprimer</MudButton>
     </DialogActions>
 </MudDialog>
-
-@code {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public string DisplayName { get; set; } = "";
-
-    private void Cancel() => MudDialog.Cancel();
-    private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
-}
