@@ -1,0 +1,92 @@
+@inject IAudioPlayerService Audio
+@inject SidebarService SidebarService
+
+@if (Audio.IsVisible && Audio.CurrentTrack is not null)
+{
+    <div class="music-mini-player @(SidebarService.IsOpen ? "sidebar-open" : "sidebar-collapsed")">
+        <div class="mini-player-progress" @ref="_progressBarRef"
+             @onclick="OnProgressClick"
+             @onpointerdown="OnProgressPointerDown"
+             @onpointermove="OnProgressPointerMove"
+             @onpointerup="OnProgressPointerUp">
+            <div class="progress-buffered" style="width: @(BufferedPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+            <div class="progress-current" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+        </div>
+
+        <div class="mini-player-content">
+            <div class="mini-player-track-info" @onclick="Audio.ToggleFullScreen" style="cursor: pointer;">
+                @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+                {
+                    <MudImage Src="@Audio.CurrentTrack.CoverUrl"
+                              Alt="Cover"
+                              Width="48" Height="48"
+                              ObjectFit="ObjectFit.Cover"
+                              Class="mini-player-cover" />
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Outlined.MusicNote"
+                             Class="mini-player-cover-placeholder" />
+                }
+                <div class="mini-player-text">
+                    <span class="mini-player-title">@Audio.CurrentTrack.Title</span>
+                    <span class="mini-player-artist">@Audio.CurrentTrack.Artist</span>
+                </div>
+            </div>
+
+            <K7.Clients.Shared.UI.Components.RatingStars
+                MediaId="Audio.CurrentTrack.MediaId"
+                Value="Audio.CurrentTrack.UserRating"
+                ValueChanged="OnRatingChanged" />
+
+            <div class="mini-player-controls">
+                <MudIconButton Icon="@Icons.Material.Filled.SkipPrevious"
+                               Size="Size.Small"
+                               Color="Color.Inherit"
+                               OnClick="OnPrevious" />
+
+                <MudIconButton Icon="@PlayPauseIcon"
+                               Size="Size.Medium"
+                               Color="Color.Inherit"
+                               OnClick="TogglePlayPause" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.SkipNext"
+                               Size="Size.Small"
+                               Color="Color.Inherit"
+                               OnClick="OnNext" />
+            </div>
+
+            <div class="mini-player-time">
+                <span>@FormatTime(Audio.CurrentTime)</span>
+                <span class="time-separator">/</span>
+                <span>@FormatTime(Audio.Duration)</span>
+            </div>
+
+            <div class="mini-player-secondary-controls">
+                <MudIconButton Icon="@ShuffleIcon"
+                               Size="Size.Small"
+                               Color="@(Audio.Shuffle ? Color.Primary : Color.Inherit)"
+                               OnClick="Audio.ToggleShuffle" />
+
+                <MudIconButton Icon="@RepeatIcon"
+                               Size="Size.Small"
+                               Color="@(Audio.Repeat != RepeatMode.Off ? Color.Primary : Color.Inherit)"
+                               OnClick="Audio.CycleRepeatMode" />
+
+                <div class="mini-player-volume">
+                    <MudIconButton Icon="@VolumeIcon"
+                                   Size="Size.Small"
+                                   Color="Color.Inherit"
+                                   OnClick="ToggleMute" />
+
+                    <MudSlider T="double"
+                               Value="Audio.Volume"
+                               ValueChanged="OnVolumeChanged"
+                               Min="0" Max="1" Step="0.01"
+                               Immediate="true"
+                               Class="mini-player-volume-slider" />
+                </div>
+            </div>
+        </div>
+    </div>
+}

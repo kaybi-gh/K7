@@ -1,0 +1,409 @@
+@using K7.Clients.Shared.Models
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
+@using Microsoft.JSInterop
+@using System.Timers
+@using System.Globalization
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+@inject IPlayerService PlayerService
+@inject IDeviceService DeviceService
+
+<div class="video-controls-overlay" @onmousemove="OnOverlayMouseMove" style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
+    <div class="controls-bar top" @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+        <MudIconButton Icon="@Icons.Material.Outlined.Close" Color="Color.Inherit" OnClick="OnCloseButtonClick" />
+    </div>
+
+    <div class="controls-bar bottom" @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+        <MudStack Row="true" StretchItems="StretchItems.Middle" AlignItems="AlignItems.Center" Style="width:100%">
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudToggleIconButton Icon="@Icons.Material.Outlined.Pause"
+                ToggledIcon="@Icons.Material.Outlined.PlayArrow" Color="Color.Inherit"
+                Toggled="PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing"
+                ToggledChanged="TogglePlayPause" />
+
+                @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
+                {
+                    <MudItem>
+                        <MudIconButton Icon="@GetVolumeIcon()" Color="Color.Inherit" OnClick="ToggleIsMuted" @onmouseover="OnVolumeButtonMouseOver" @onmouseout="OnVolumeButtonMouseOut" />
+                        <MudPopover Class="volume-slider-popover"
+                        Open="@_isVolumeSliderVisible"
+                        @onmouseover="OnVolumeSliderMouseOver"
+                        @onmouseout="OnVolumeSliderMouseOut"
+                        AnchorOrigin="Origin.TopLeft"
+                        TransformOrigin="Origin.BottomLeft"
+                        Paper="false"
+                        Style="z-index: 100005">
+                            <div Class="volume-slider-container">
+                                <MudSlider T="double"
+                                Min="0"
+                                Max="1"
+                                Step="0.01"
+                                Value="@PlayerService.Volume"
+                                ValueChanged="PlayerService.SetVolume"
+                                Immediate="true"
+                                Class="volume-slider" />
+                            </div>
+                        </MudPopover>
+                    </MudItem>
+                }
+
+                <span>@FormatTime(PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
+            </MudStack>
+
+            <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />
+
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudMenu Icon="@Icons.Material.Outlined.Settings" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomRight"
+                @bind-Open="_isMenuOpen" Color="Color.Inherit">
+                    <MudMenu Label="Audio" StartIcon="@Icons.Material.Outlined.Audiotrack">
+                        @foreach (var track in PlayerService.AudioTracks)
+                        {
+                            <MudMenuItem OnClick="@(() => OnAudioTrackSelected(track))"
+                                         Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? Icons.Material.Filled.CheckCircle : null)">
+                                @($"{track.Language} - {track.Name} ({track.Codec} {track.ChannelLayout})")
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
+
+                    <MudMenu Label="Subtitles" StartIcon="@Icons.Material.Outlined.Subtitles">
+                        <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
+                                     Icon="@(PlayerService.SelectedSubtitleTrack is null ? Icons.Material.Filled.CheckCircle : null)">
+                            Off
+                        </MudMenuItem> @* TODO - Maybe change the way disabling titles is done *@
+                        @foreach (var track in PlayerService.SubtitleTracks)
+                        {
+                            <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
+                                         Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? Icons.Material.Filled.CheckCircle : null)">
+                                @($"{track.Language} - {track.Name}{(track.IsForced ? " (Forced)" : "")} ({track.Codec})")
+                            </MudMenuItem> // TODO - Maybe use only the track name
+                        }
+                    </MudMenu>
+                    <MudMenu Label="Quality" StartIcon="@Icons.Material.Outlined.Tune">
+                        @foreach (var quality in PlayerService.AvailableQualities)
+                        {
+                            <MudMenuItem OnClick="@(() => OnQualitySelected(quality))"
+                                         Icon="@(PlayerService.SelectedQuality == quality ? Icons.Material.Filled.CheckCircle : null)">
+                                @quality.Label
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
+
+                    <MudMenu Label="Speed" StartIcon="@Icons.Material.Outlined.Speed">
+                        @foreach (var speed in _playbackSpeedOptions)
+                        {
+                            <MudMenuItem OnClick="@(() => OnSpeedSelected(speed))"
+                                         Icon="@(IsCurrentSpeed(speed) ? Icons.Material.Filled.CheckCircle : null)">
+                                @(speed == 1.0 ? "Normal" : $"{speed}x")
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
+
+                    <MudMenu Label="Aspect Ratio" StartIcon="@Icons.Material.Outlined.AspectRatio">
+                        @foreach (var mode in _aspectRatioOptions)
+                        {
+                            <MudMenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
+                                         Icon="@(PlayerService.AspectRatio == mode ? Icons.Material.Filled.CheckCircle : null)">
+                                @GetAspectRatioLabel(mode)
+                            </MudMenuItem>
+                        }
+                    </MudMenu>
+                </MudMenu>
+
+                @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
+                {
+                    <MudToggleIconButton Icon="@Icons.Material.Filled.Fullscreen" ToggledIcon="@Icons.Material.Filled.FullscreenExit" Color="Color.Inherit" Toggled="PlayerService.IsFullScreen" ToggledChanged="ToggleFullscreen" />
+                }
+            </MudStack>
+        </MudStack>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? PosterImage { get; set; }
+    [Parameter] public string? ThumbnailsSource { get; set; }
+    [Parameter] public int ThumbnailsRows { get; set; } = 5;
+    [Parameter] public int ThumbnailsCols { get; set; } = 5;
+    [Parameter] public EventCallback<PlayerState> OnStateChange { get; set; }
+
+    private DeviceType _deviceType;
+    private bool _showOverlay = true;
+    private bool _isMenuOpen = false;
+    private bool _isMouseOverControlsBar = false;
+    private bool _isMouseOverVolumeButton = false;
+    private bool _isMouseOverVolumeSlider = false;
+    private bool _isVolumeSliderVisible = false;
+    private Timer? _overlayVisibleTimer;
+    private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
+    private CancellationTokenSource? _volumePopoverHideDelayCts;
+
+    private static readonly double[] _playbackSpeedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+    private static readonly AspectRatioMode[] _aspectRatioOptions = [AspectRatioMode.Fit, AspectRatioMode.Fill, AspectRatioMode.Stretch];
+
+    private void OnPlaybackStateChanged(PlaybackState state) => InvokeAsync(StateHasChanged);
+    private void OnIsMutedChanged(bool isMuted) => InvokeAsync(StateHasChanged);
+    private void OnVolumeChanged(double volume) => InvokeAsync(StateHasChanged);
+    private void OnCurrentTimeChanged(double time) => InvokeAsync(StateHasChanged);
+    private void OnPlaybackRateChanged(double rate) => InvokeAsync(StateHasChanged);
+    private void OnIsFullScreenChanged(bool isFullScreen) => InvokeAsync(StateHasChanged);
+    private void OnAudioTrackChanged(AudioFileTrackDto? track) => InvokeAsync(StateHasChanged);
+    private void OnSubtitleTrackChanged(SubtitleFileTrackDto? track) => InvokeAsync(StateHasChanged);
+    private void OnQualityChanged(VideoQualityOption? quality) => InvokeAsync(StateHasChanged);
+    private void OnAspectRatioModeChanged(AspectRatioMode mode) => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _deviceType = await DeviceService.GetDeviceTypeAsync();
+        _overlayVisibleTimer = new Timer(_overlayTimeout);
+        _overlayVisibleTimer.Elapsed += async (_, e) =>
+        {
+            _showOverlay = false;
+            await InvokeAsync(StateHasChanged);
+        };
+        _overlayVisibleTimer.Start();
+        PlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
+        PlayerService.IsMutedChanged += OnIsMutedChanged;
+        PlayerService.VolumeChanged += OnVolumeChanged;
+        PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
+        PlayerService.PlaybackRateChanged += OnPlaybackRateChanged;
+        PlayerService.IsFullScreenChanged += OnIsFullScreenChanged;
+        PlayerService.AudioTrackChanged += OnAudioTrackChanged;
+        PlayerService.SubtitleTrackChanged += OnSubtitleTrackChanged;
+        PlayerService.QualityChanged += OnQualityChanged;
+        PlayerService.AspectRatioModeChanged += OnAspectRatioModeChanged;
+        if (DeviceService.GetClientType() == ClientType.Web)
+        {
+            await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
+        }
+    }
+
+    public void ResetOverlayTimeout()
+    {
+        _showOverlay = true;
+        _overlayVisibleTimer?.Stop();
+        _overlayVisibleTimer?.Start();
+    }
+
+    private void OnCloseButtonClick()
+    {
+        PlayerService.Stop();
+        PlayerService.HideAsync();
+    }
+
+    private void OnOverlayMouseMove(MouseEventArgs args)
+    {
+        if (_isMouseOverControlsBar || _isMenuOpen)
+        {
+            return;
+        }
+
+        _showOverlay = true;
+        ResetOverlayTimeout();
+    }
+
+    private void OnSeekBarDragChanged(bool draging)
+    {
+        if (draging)
+        {
+            ResetOverlayTimeout();
+        }
+    }
+
+    private void OnControlsBarMouseEnter(MouseEventArgs args)
+    {
+        _overlayVisibleTimer?.Stop();
+        _isMouseOverControlsBar = true;
+        _showOverlay = true;
+    }
+
+    private void OnControlsBarMouseOut(MouseEventArgs args)
+    {
+        _isMouseOverControlsBar = false;
+        _showOverlay = true;
+        _overlayVisibleTimer?.Start();
+    }
+
+    private void OnVolumeButtonMouseOver(MouseEventArgs args)
+    {
+        _isMouseOverVolumeButton = true;
+        _isVolumeSliderVisible = true;
+    }
+
+    private void OnVolumeButtonMouseOut(MouseEventArgs args)
+    {
+        _isMouseOverVolumeButton = false;
+        HidePopover();
+    }
+
+    private void OnVolumeSliderMouseOver(MouseEventArgs args)
+    {
+        _isMouseOverVolumeSlider = true;
+        _isVolumeSliderVisible = true;
+    }
+
+    private void OnVolumeSliderMouseOut(MouseEventArgs args)
+    {
+        _isMouseOverVolumeSlider = false;
+        HidePopover();
+    }
+
+    private async void HidePopover()
+    {
+        _volumePopoverHideDelayCts?.Cancel();
+        _volumePopoverHideDelayCts = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(500, _volumePopoverHideDelayCts.Token);
+            if (!_isMouseOverVolumeButton && !_isMouseOverVolumeSlider)
+            {
+                _isVolumeSliderVisible = false;
+                StateHasChanged();
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void OnSpeedSelected(double speed) => PlayerService.SetPlaybackRate(speed);
+    private bool IsCurrentSpeed(double speed) => Math.Abs(PlayerService.PlaybackRate - speed) < 0.01;
+
+    private void OnAspectRatioSelected(AspectRatioMode mode) => PlayerService.SetAspectRatioMode(mode);
+
+    private static string GetAspectRatioLabel(AspectRatioMode mode) => mode switch
+    {
+        AspectRatioMode.Fit => "Fit",
+        AspectRatioMode.Fill => "Fill (crop)",
+        AspectRatioMode.Stretch => "Stretch",
+        _ => mode.ToString()
+    };
+
+    private async Task OnAudioTrackSelected(AudioFileTrackDto track)
+    {
+        if (PlayerService.SelectedAudioTrack?.Index == track.Index)
+        {
+            return;
+        }
+
+        await PlayerService.ChangeAudioTrackAsync(track);
+    }
+
+    private async Task OnSubtitleTrackSelected(SubtitleFileTrackDto? track)
+    {
+        if (PlayerService.SelectedSubtitleTrack?.Index == track?.Index)
+        {
+            return;
+        }
+
+        await PlayerService.ChangeSubtitleTrackAsync(track);
+    }
+
+    private async Task OnQualitySelected(VideoQualityOption quality)
+    {
+        if (PlayerService.SelectedQuality == quality)
+        {
+            return;
+        }
+
+        await PlayerService.ChangeQualityAsync(quality);
+    }
+
+    private void TogglePlayPause()
+    {
+        if (PlayerService.PlaybackState != PlaybackState.Playing)
+        {
+            PlayerService.Play();
+        }
+        else
+        {
+            PlayerService.Pause();
+        }
+    }
+
+    private void ToggleIsMuted()
+    {
+        if (PlayerService.IsMuted)
+        {
+            PlayerService.IsMuted = false;
+            PlayerService.Unmute();
+        }
+        else
+        {
+            PlayerService.IsMuted = true;
+            PlayerService.Mute();
+        }
+    }
+
+    private void ToggleFullscreen()
+    {
+        if (!PlayerService.IsFullScreen)
+        {
+            PlayerService.IsFullScreen = true;
+            PlayerService.EnterFullScreen();
+        }
+        else
+        {
+            PlayerService.IsFullScreen = false;
+            PlayerService.ExitFullScreen();
+        }
+    }
+
+    private string FormatTime(double seconds)
+    {
+        var timeSpan = TimeSpan.FromSeconds(seconds);
+        return timeSpan.Hours > 0
+        ? $"{timeSpan.Hours:0}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}"
+        : $"{timeSpan.Minutes:0}:{timeSpan.Seconds:00}";
+    }
+
+    private void HandleVolumeInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var volume))
+        {
+            PlayerService.SetVolume(volume);
+        }
+    }
+
+    private string GetVolumeIcon()
+    {
+        if (PlayerService.IsMuted)
+        {
+            return Icons.Material.Filled.VolumeOff;
+        }
+
+        return PlayerService.Volume switch
+        {
+            0 => Icons.Material.Filled.VolumeMute,
+            < 0.5d => Icons.Material.Filled.VolumeDown,
+            >= 0.5d => Icons.Material.Filled.VolumeUp,
+            _ => Icons.Material.Filled.VolumeMute
+        };
+    }
+
+    public class PlayerState
+    {
+        public double CurrentTime { get; set; }
+        public double Duration { get; set; }
+        public bool IsPlaying { get; set; }
+        public bool IsMuted { get; set; }
+        public int Volume { get; set; }
+        public bool IsFullscreen { get; set; }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _overlayVisibleTimer?.Dispose();
+        PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
+        PlayerService.IsMutedChanged -= OnIsMutedChanged;
+        PlayerService.VolumeChanged -= OnVolumeChanged;
+        PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
+        PlayerService.PlaybackRateChanged -= OnPlaybackRateChanged;
+        PlayerService.IsFullScreenChanged -= OnIsFullScreenChanged;
+        PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
+        PlayerService.SubtitleTrackChanged -= OnSubtitleTrackChanged;
+        PlayerService.QualityChanged -= OnQualityChanged;
+        PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
+        if (DeviceService.GetClientType() == ClientType.Web)
+        {
+            await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);
+        }
+    }
+}

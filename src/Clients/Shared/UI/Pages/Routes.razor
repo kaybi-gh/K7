@@ -1,0 +1,33 @@
+﻿<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly">
+    <Found Context="routeData">
+        <CascadingAuthenticationState>
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated == true)
+                    {
+                        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-16">
+                            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" />
+                                <MudText Typo="Typo.h5">Access denied</MudText>
+                                <MudText Typo="Typo.body1" Color="Color.Secondary">You don't have permission to access this page.</MudText>
+                                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Go to Home</MudButton>
+                            </MudStack>
+                        </MudContainer>
+                    }
+                    else
+                    {
+                        <RedirectToLogin />
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+        </CascadingAuthenticationState>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
+
+@* TODO - Put in seperated file and rename class *@
+<style>
+    #preload {
+        display: none;
+    }
+</style>

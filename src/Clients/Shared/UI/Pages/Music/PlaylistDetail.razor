@@ -1,0 +1,159 @@
+@page "/playlists/{Id}"
+@using K7.Shared.Dtos.Entities.Playlists
+@inject IK7ServerService K7ServerService
+<PageTitle>@(_playlist?.Title ?? "Playlist")</PageTitle>
+
+@if (_playlist is not null)
+{
+    <div class="playlist-detail-page">
+        <div class="playlist-header">
+            <div class="playlist-header-cover">
+                @if (_coverUrl is not null)
+                {
+                    <MudImage Src="@_coverUrl"
+                              Alt="@_playlist.Title"
+                              Width="180" Height="180"
+                              ObjectFit="ObjectFit.Cover"
+                              Class="rounded" />
+                }
+                else
+                {
+                    <div class="playlist-cover-placeholder-large">
+                        <MudIcon Icon="@Icons.Material.Filled.QueueMusic" Style="font-size: 64px; opacity: 0.3;" />
+                    </div>
+                }
+            </div>
+
+            <div class="playlist-header-info">
+                <MudText Typo="Typo.overline">Playlist</MudText>
+                <MudText Typo="Typo.h4">@_playlist.Title</MudText>
+
+                @if (!string.IsNullOrEmpty(_playlist.Description))
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">@_playlist.Description</MudText>
+                }
+
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">
+                    @_playlist.ItemCount morceaux
+                    @if (_totalDuration > 0)
+                    {
+                        <text> · @FormatTotalDuration(_totalDuration)</text>
+                    }
+                </MudText>
+
+                <MudStack Row="true" Spacing="2" Class="mt-3">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.PlayArrow"
+                               OnClick="PlayAll"
+                               Disabled="@(_items.Count == 0)">
+                        Tout lire
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Shuffle"
+                               OnClick="ShuffleAll"
+                               Disabled="@(_items.Count == 0)">
+                        Aléatoire
+                    </MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Default"
+                                   OnClick="OpenEditDialog" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error"
+                                   OnClick="ConfirmDelete" />
+                </MudStack>
+            </div>
+        </div>
+
+        @if (_loadingItems)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-4" />
+        }
+        else if (_items.Count == 0)
+        {
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+                <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
+                <MudText Typo="Typo.body1" Color="Color.Secondary">Cette playlist est vide</MudText>
+            </MudStack>
+        }
+        else
+        {
+            <div class="playlist-tracklist">
+                <MudTable Items="_items"
+                          Dense="true"
+                          Hover="true"
+                          Elevation="0"
+                          T="PlaylistItemViewModel"
+                          OnRowClick="OnTrackClick"
+                          RowClass="cursor-pointer">
+                    <HeaderContent>
+                        <MudTh Style="width: 50px;">#</MudTh>
+                        <MudTh>Titre</MudTh>
+                        <MudTh>Artiste</MudTh>
+                        <MudTh>Album</MudTh>
+                        <MudTh Style="width: 80px;">
+                            <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
+                        </MudTh>
+                        <MudTh Style="width: 130px;"></MudTh>
+                        <MudTh Style="width: 50px;"></MudTh>
+                        <MudTh Style="width: 50px;"></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @if (context.IsPlaying)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Equalizer" Size="Size.Small" Color="Color.Primary" />
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@(context.Order + 1)</MudText>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                @if (context.CoverUrl is not null)
+                                {
+                                    <MudImage Src="@context.CoverUrl" Width="36" Height="36"
+                                              ObjectFit="ObjectFit.Cover" Class="rounded" />
+                                }
+                                <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">
+                                    @context.Title
+                                </MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.ArtistName</MudText>
+                        </MudTd>
+                        <MudTd>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText>
+                        </MudTd>
+                        <MudTd>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
+                        </MudTd>
+                        <MudTd>
+                            <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="Size.Small" />
+                        </MudTd>
+                        <MudTd>
+                            <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
+                        </MudTd>
+                        <MudTd>
+                            <span @onclick:stopPropagation="true">
+                                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="() => RemoveItem(context)" />
+                            </span>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+        }
+    </div>
+}
+else if (_loading)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudProgressCircular Indeterminate="true" />
+    </MudStack>
+}

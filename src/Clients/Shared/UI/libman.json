@@ -1,0 +1,21 @@
+{
+  "version": "3.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "splidejs@4.1.4",
+      "destination": "wwwroot/dist/splidejs/",
+      "files": [
+        "js/splide.min.js",
+        "css/splide-core.min.css"
+      ]
+    },
+    {
+      "library": "qrcodejs@1.0.0",
+      "destination": "wwwroot/dist/qrcodejs/",
+      "files": [
+        "qrcode.min.js"
+      ]
+    }
+  ]
+}
