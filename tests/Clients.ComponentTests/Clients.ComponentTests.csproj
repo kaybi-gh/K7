@@ -19,8 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Clients\Shared\Components\K7.Clients.Shared.Components.csproj" />
-        <ProjectReference Include="..\..\src\Clients\Shared\Pages\K7.Clients.Shared.Pages.csproj" />
+        <ProjectReference Include="..\..\src\Clients\Shared\UI\K7.Clients.Shared.UI.csproj" />
     </ItemGroup>
 
 </Project>

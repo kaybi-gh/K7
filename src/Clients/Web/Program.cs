@@ -1,5 +1,5 @@
 using Blazored.LocalStorage;
-using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Services.K7Server;
 using K7.Clients.Web.Services;

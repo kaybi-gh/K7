@@ -1,7 +1,7 @@
-﻿using K7.Clients.MAUI.Constants;
+using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Services;
 using K7.Clients.MAUI.Services.Authentication;
-using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;

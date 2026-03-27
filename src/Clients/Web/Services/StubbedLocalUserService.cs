@@ -1,5 +1,5 @@
-using K7.Clients.Shared.Domain.Interfaces;
-using K7.Clients.Shared.Domain.Models;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 
 namespace K7.Clients.Web.Services;
 
