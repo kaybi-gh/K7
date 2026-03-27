@@ -1,6 +1,6 @@
 namespace K7.Clients.Shared.Enums;
 
-public enum MediaBrowserViewMode
+public enum BrowseViewMode
 {
     Grid,
     Table,

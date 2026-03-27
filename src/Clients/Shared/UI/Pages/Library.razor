@@ -5,7 +5,7 @@
 
 <PageTitle>@string.Format(L["PageTitle"].Value, Id)</PageTitle>
 
-<MediaBrowser TItem="MediaCardViewModel"
+<BrowseView TItem="MediaCardViewModel"
               Items="MediaCards"
               Loading="_loading"
               PersistenceKey="@($"library-{Id}")"
@@ -20,5 +20,47 @@
     <GridTemplate Context="item">
         <MediaCard Model="item" Href="@($"/movies/{item.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
     </GridTemplate>
-</MediaBrowser>
+    <TableHeaderContent>
+        <th>@L["Title"]</th>
+        <th>@L["Status"]</th>
+    </TableHeaderContent>
+    <TableRowTemplate Context="item">
+        <tr @onclick="() => NavigateToItem(item)">
+            <td>
+                <div class="library-table-title">
+                    @if (!string.IsNullOrEmpty(item.PictureUrl))
+                    {
+                        <MudImage Src="@item.PictureUrl" Alt="@item.Title" Width="40" Height="60" ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
+                    }
+                    <MudText Typo="Typo.body2">@item.Title</MudText>
+                </div>
+            </td>
+            <td>
+                @if (item.Watched)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                }
+            </td>
+        </tr>
+    </TableRowTemplate>
+    <ListTemplate Context="item">
+        <a href="@($"/movies/{item.Id}")" class="library-list-item">
+            @if (!string.IsNullOrEmpty(item.PictureUrl))
+            {
+                <MudImage Src="@item.PictureUrl" Alt="@item.Title" Width="40" Height="60" ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
+            }
+            <div class="library-list-info">
+                <MudText Typo="Typo.body1">@item.Title</MudText>
+                @if (!string.IsNullOrEmpty(item.AdditionalInformations))
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.AdditionalInformations</MudText>
+                }
+            </div>
+            @if (item.Watched)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+            }
+        </a>
+    </ListTemplate>
+</BrowseView>
 

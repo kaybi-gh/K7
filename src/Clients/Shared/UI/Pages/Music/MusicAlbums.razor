@@ -4,7 +4,7 @@
 @inject IStringLocalizer<MusicAlbums> L
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MediaBrowser TItem="AlbumViewModel"
+<BrowseView TItem="AlbumViewModel"
               Items="_albums"
               Loading="_loading"
               PersistenceKey="music-albums"
@@ -73,4 +73,4 @@
             </MudPaper>
         </a>
     </GridTemplate>
-</MediaBrowser>
+</BrowseView>

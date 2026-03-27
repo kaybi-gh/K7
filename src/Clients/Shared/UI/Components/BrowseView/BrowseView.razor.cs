@@ -2,9 +2,9 @@ using K7.Clients.Shared.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
-namespace K7.Clients.Shared.UI.Components.MediaBrowser;
+namespace K7.Clients.Shared.UI.Components.BrowseView;
 
-public partial class MediaBrowser<TItem> : IAsyncDisposable
+public partial class BrowseView<TItem> : IAsyncDisposable
 {
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
@@ -20,7 +20,7 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
     [Parameter] public RenderFragment? EmptyContent { get; set; }
 
     [Parameter] public string PersistenceKey { get; set; } = "default";
-    [Parameter] public MediaBrowserViewMode DefaultMode { get; set; } = MediaBrowserViewMode.Grid;
+    [Parameter] public BrowseViewMode DefaultMode { get; set; } = BrowseViewMode.Grid;
     [Parameter] public int DefaultItemWidth { get; set; } = 160;
     [Parameter] public int DefaultSpacing { get; set; } = 6;
     [Parameter] public float ListItemHeight { get; set; } = 64;
@@ -28,10 +28,10 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
 
     private ElementReference _gridRef;
     private IJSObjectReference? _module;
-    private DotNetObjectReference<MediaBrowser<TItem>>? _dotnetRef;
+    private DotNetObjectReference<BrowseView<TItem>>? _dotnetRef;
 
-    private MediaBrowserViewMode _currentMode;
-    private List<MediaBrowserViewMode> _availableModes = [];
+    private BrowseViewMode _currentMode;
+    private List<BrowseViewMode> _availableModes = [];
     private bool _settingsOpen;
     private int _itemWidth;
     private int _spacing;
@@ -39,6 +39,7 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
     private float _estimatedRowHeight = 300;
 
     private List<List<TItem>> _rows = [];
+    private bool _observingGrid;
 
     protected override void OnInitialized()
     {
@@ -50,26 +51,29 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
-
-        _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/K7.Clients.Shared.UI/js/mediaBrowser.js");
-
-        var saved = await _module.InvokeAsync<MediaBrowserSettings?>("getSettings", PersistenceKey);
-        if (saved is not null)
+        if (firstRender)
         {
-            _currentMode = saved.Mode;
-            _itemWidth = saved.ItemWidth;
-            _spacing = saved.Spacing;
+            _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
+
+            var saved = await _module.InvokeAsync<BrowseViewSettings?>("getSettings", PersistenceKey);
+            if (saved is not null)
+            {
+                _currentMode = saved.Mode;
+                _itemWidth = saved.ItemWidth;
+                _spacing = saved.Spacing;
+            }
+
+            RebuildRows();
+            StateHasChanged();
+            return;
         }
 
-        if (_currentMode is MediaBrowserViewMode.Grid)
+        if (!_observingGrid && _currentMode is BrowseViewMode.Grid && !Loading && Items is { Count: > 0 })
         {
+            _observingGrid = true;
             await StartObservingGridWidth();
         }
-
-        RebuildRows();
-        StateHasChanged();
     }
 
     protected override void OnParametersSet()
@@ -81,6 +85,7 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
             _currentMode = _availableModes[0];
         }
 
+        _observingGrid = false;
         RebuildRows();
     }
 
@@ -93,16 +98,14 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
         StateHasChanged();
     }
 
-    private async Task SetViewModeAsync(MediaBrowserViewMode mode)
+    private async Task SetViewModeAsync(BrowseViewMode mode)
     {
         if (mode == _currentMode) return;
         _currentMode = mode;
 
-        if (mode is MediaBrowserViewMode.Grid)
+        if (mode is not BrowseViewMode.Grid)
         {
-            StateHasChanged();
-            await Task.Yield();
-            await StartObservingGridWidth();
+            _observingGrid = false;
         }
 
         RebuildRows();
@@ -126,7 +129,7 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
 
     private void RebuildRows()
     {
-        if (Items is null || Items.Count == 0 || _currentMode is not MediaBrowserViewMode.Grid)
+        if (Items is null || Items.Count == 0 || _currentMode is not BrowseViewMode.Grid)
         {
             _rows = [];
             return;
@@ -158,14 +161,13 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
         if (_module is null) return;
         _dotnetRef ??= DotNetObjectReference.Create(this);
 
-        await Task.Yield();
         await _module.InvokeVoidAsync("observeContainerWidth", _gridRef, _dotnetRef);
     }
 
     private async Task SaveSettingsAsync()
     {
         if (_module is null) return;
-        var settings = new MediaBrowserSettings
+        var settings = new BrowseViewSettings
         {
             Mode = _currentMode,
             ItemWidth = _itemWidth,
@@ -174,20 +176,20 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
         await _module.InvokeVoidAsync("saveSettings", PersistenceKey, settings);
     }
 
-    private List<MediaBrowserViewMode> BuildAvailableModes()
+    private List<BrowseViewMode> BuildAvailableModes()
     {
-        var modes = new List<MediaBrowserViewMode>();
-        if (GridTemplate is not null) modes.Add(MediaBrowserViewMode.Grid);
-        if (TableHeaderContent is not null && TableRowTemplate is not null) modes.Add(MediaBrowserViewMode.Table);
-        if (ListTemplate is not null) modes.Add(MediaBrowserViewMode.List);
+        var modes = new List<BrowseViewMode>();
+        if (GridTemplate is not null) modes.Add(BrowseViewMode.Grid);
+        if (TableHeaderContent is not null && TableRowTemplate is not null) modes.Add(BrowseViewMode.Table);
+        if (ListTemplate is not null) modes.Add(BrowseViewMode.List);
         return modes;
     }
 
-    private static string GetModeIcon(MediaBrowserViewMode mode) => mode switch
+    private static string GetModeIcon(BrowseViewMode mode) => mode switch
     {
-        MediaBrowserViewMode.Grid => Icons.Material.Outlined.GridView,
-        MediaBrowserViewMode.Table => Icons.Material.Outlined.TableRows,
-        MediaBrowserViewMode.List => Icons.Material.Outlined.ViewList,
+        BrowseViewMode.Grid => Icons.Material.Outlined.GridView,
+        BrowseViewMode.Table => Icons.Material.Outlined.TableRows,
+        BrowseViewMode.List => Icons.Material.Outlined.ViewList,
         _ => Icons.Material.Outlined.GridView
     };
 
@@ -197,7 +199,7 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
         {
             try
             {
-                if (_currentMode is MediaBrowserViewMode.Grid)
+                if (_observingGrid)
                 {
                     await _module.InvokeVoidAsync("dispose", _gridRef);
                 }
@@ -210,9 +212,9 @@ public partial class MediaBrowser<TItem> : IAsyncDisposable
         _dotnetRef?.Dispose();
     }
 
-    private sealed class MediaBrowserSettings
+    private sealed class BrowseViewSettings
     {
-        public MediaBrowserViewMode Mode { get; set; }
+        public BrowseViewMode Mode { get; set; }
         public int ItemWidth { get; set; }
         public int Spacing { get; set; }
     }

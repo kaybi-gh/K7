@@ -2,7 +2,7 @@ let _observers = new Map();
 
 export function getSettings(key) {
     try {
-        const raw = localStorage.getItem("mediaBrowser." + key);
+        const raw = localStorage.getItem("browseView." + key);
         return raw ? JSON.parse(raw) : null;
     } catch {
         return null;
@@ -11,13 +11,13 @@ export function getSettings(key) {
 
 export function saveSettings(key, settings) {
     try {
-        localStorage.setItem("mediaBrowser." + key, JSON.stringify(settings));
+        localStorage.setItem("browseView." + key, JSON.stringify(settings));
     } catch {
     }
 }
 
 export function observeContainerWidth(element, dotnetRef) {
-    if (!element || _observers.has(element)) return;
+    if (!(element instanceof Element) || _observers.has(element)) return;
 
     const observer = new ResizeObserver(entries => {
         for (const entry of entries) {

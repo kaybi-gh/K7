@@ -2,12 +2,12 @@
 @typeparam TItem
 @inject IStringLocalizer<SharedResource> S
 
-<div class="media-browser">
-    <div class="media-browser-toolbar">
-        <div class="media-browser-toolbar-start">
+<div class="browse-view">
+    <div class="browse-view-toolbar">
+        <div class="browse-view-toolbar-start">
             @ToolbarContent
         </div>
-        <div class="media-browser-toolbar-end">
+        <div class="browse-view-toolbar-end">
             @if (_availableModes.Count > 1)
             {
                 @foreach (var mode in _availableModes)
@@ -19,7 +19,7 @@
                                    OnClick="() => SetViewModeAsync(m)" />
                 }
             }
-            @if (_currentMode is MediaBrowserViewMode.Grid)
+            @if (_currentMode is BrowseViewMode.Grid)
             {
                 <MudIconButton Icon="@Icons.Material.Outlined.Tune"
                                Size="Size.Small"
@@ -28,9 +28,9 @@
         </div>
     </div>
 
-    @if (_settingsOpen && _currentMode is MediaBrowserViewMode.Grid)
+    @if (_settingsOpen && _currentMode is BrowseViewMode.Grid)
     {
-        <div class="media-browser-settings">
+        <div class="browse-view-settings">
             <MudSlider T="int" Value="_itemWidth" ValueChanged="OnItemWidthChanged"
                        Min="100" Max="300" Step="10" Color="Color.Primary" Class="mx-4">
                 @S["ItemSize"]: @_itemWidth px
@@ -72,12 +72,12 @@
     {
         @switch (_currentMode)
         {
-            case MediaBrowserViewMode.Grid when GridTemplate is not null:
-                <div class="media-browser-grid"
+            case BrowseViewMode.Grid when GridTemplate is not null:
+                <div class="browse-view-grid"
                      style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;"
                      @ref="_gridRef">
                     <Virtualize Items="_rows" Context="row" ItemSize="_estimatedRowHeight" OverscanCount="2">
-                        <div class="media-browser-grid-row">
+                        <div class="browse-view-grid-row" style="grid-template-columns: repeat(@(CalculateColumnCount()), @(_itemWidth)px);">
                             @foreach (var item in row)
                             {
                                 @GridTemplate(item)
@@ -87,9 +87,9 @@
                 </div>
                 break;
 
-            case MediaBrowserViewMode.Table when TableHeaderContent is not null && TableRowTemplate is not null:
-                <div class="media-browser-table">
-                    <table class="media-browser-table-el">
+            case BrowseViewMode.Table when TableHeaderContent is not null && TableRowTemplate is not null:
+                <div class="browse-view-table">
+                    <table class="browse-view-table-el">
                         <thead>
                             <tr>
                                 @TableHeaderContent
@@ -104,8 +104,8 @@
                 </div>
                 break;
 
-            case MediaBrowserViewMode.List when ListTemplate is not null:
-                <div class="media-browser-list">
+            case BrowseViewMode.List when ListTemplate is not null:
+                <div class="browse-view-list">
                     <Virtualize Items="Items" Context="item" ItemSize="ListItemHeight" OverscanCount="5">
                         @ListTemplate(item)
                     </Virtualize>

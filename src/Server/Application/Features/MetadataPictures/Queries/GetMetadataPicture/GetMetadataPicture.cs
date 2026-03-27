@@ -31,6 +31,7 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         string? localPath = entity.LocalPath;
         DateTimeOffset lastModified = entity.LastModified;
         Guid entityId = entity.Id;
+        var isFallback = false;
 
         if (query.Size is { } requestedSize)
         {
@@ -41,7 +42,10 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
                 lastModified = variant.LastModified;
                 entityId = variant.Id;
             }
-            // If variant not found, fall back to the original
+            else
+            {
+                isFallback = true;
+            }
         }
 
         if (localPath is null)
@@ -69,12 +73,24 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
         var responseHeaders = httpContext.Response.GetTypedHeaders();
         responseHeaders.LastModified = lastModified;
         responseHeaders.ETag = eTag;
-        responseHeaders.CacheControl = new CacheControlHeaderValue
+
+        if (isFallback)
         {
-            Public = true,
-            MaxAge = TimeSpan.FromDays(30),
-            Extensions = { new NameValueHeaderValue("immutable") }
-        };
+            responseHeaders.CacheControl = new CacheControlHeaderValue
+            {
+                NoCache = true,
+                NoStore = true
+            };
+        }
+        else
+        {
+            responseHeaders.CacheControl = new CacheControlHeaderValue
+            {
+                Public = true,
+                MaxAge = TimeSpan.FromDays(30),
+                Extensions = { new NameValueHeaderValue("immutable") }
+            };
+        }
 
         var requestHeaders = httpContext.Request.GetTypedHeaders();
 
