@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Application\K7.Server.Application.csproj" />
-    <ProjectReference Include="..\..\FileSystem\K7.Server.Infrastructure.FileSystem.csproj" />
+    <ProjectReference Include="..\..\Configuration\K7.Server.Infrastructure.Configuration.csproj" />
   </ItemGroup>
 
 </Project>

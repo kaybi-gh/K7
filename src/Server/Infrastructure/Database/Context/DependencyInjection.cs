@@ -1,11 +1,11 @@
 ﻿using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Infrastructure.Configuration;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Data.Interceptors;
 using K7.Server.Infrastructure.Database.Context.Identity;
-using K7.Server.Infrastructure.FileSystem;
 using K7.Server.Infrastructure.Database.Context.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

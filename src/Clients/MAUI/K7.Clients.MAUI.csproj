@@ -102,7 +102,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Shared\K7.Shared\K7.Shared.csproj" />
     <ProjectReference Include="..\Shared\Components\K7.Clients.Shared.Components.csproj" />
     <ProjectReference Include="..\Shared\Models\K7.Clients.Shared.Domain.csproj" />
     <ProjectReference Include="..\Shared\Pages\K7.Clients.Shared.Pages.csproj" />
