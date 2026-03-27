@@ -333,7 +333,7 @@ var SpatialNavigation = (function () {
             return;
         }
 
-        // Non-Splide row or no row: array-based navigation
+        // Non-carousel row or no row: array-based navigation
         var contentFocusables = row
             ? getRowFocusables(row)
             : getAllFocusables().filter(function (el) { return !isInColumn(el); });
