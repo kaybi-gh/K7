@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Users.Queries.GetUsers;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Users;
@@ -23,7 +24,7 @@ public class GetUsers : IEndpoint
                 Role = role,
                 IsActive = isActive
             }, cancellationToken);
-            return Results.Ok(users.Select(u => UserDto.FromDomain(u)));
+            return Results.Ok(users.Select(u => u.ToUserDto()));
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)

@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Features.Medias.Queries.GetMedias;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
 using K7.Shared.Dtos.Entities.Medias;
@@ -17,7 +18,7 @@ public class GetMedias : IEndpoint
         endpointRouteBuilder.MapGet(GetMediasWithPaginationQueryUriBuilder.Route, async ([FromServices] ISender sender, [AsParameters] GetMediasWithPaginationQuery query) =>
         {
             var mediasPage = await sender.Send(query);
-            return mediasPage.ToDto(LiteMediaDto.FromDomain);
+            return mediasPage.ToDto(m => m.ToLiteMediaDto());
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

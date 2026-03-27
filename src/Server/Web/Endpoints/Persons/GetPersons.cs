@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Features.Medias.Queries.GetPersons;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Features.Medias.Queries.GetPersons;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
 using K7.Shared.Dtos.Entities.Persons;
@@ -16,7 +17,7 @@ public class GetPersons : IEndpoint
         endpointRouteBuilder.MapGet("/api/persons", async ([FromServices] ISender sender, [AsParameters] GetPersonsWithPaginationQuery query, CancellationToken cancellationToken) =>
         {
             var personsPage = await sender.Send(query, cancellationToken);
-            return personsPage.ToDto(PersonDto.FromDomain);
+            return personsPage.ToDto(p => p.ToPersonDto());
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

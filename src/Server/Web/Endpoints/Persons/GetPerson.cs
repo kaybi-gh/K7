@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Features.Persons.Queries.GetPerson;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Features.Persons.Queries.GetPerson;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ public class GetPerson : IEndpoint
         endpointRouteBuilder.MapGet("/api/persons/{id}", async ([FromServices] ISender sender, Guid id) =>
         {
             var person = await sender.Send(new GetPersonQuery(id));
-            return PersonDto.FromDomain(person);
+            return person.ToPersonDto();
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Features.Medias.Queries.GetMedia;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Features.Medias.Queries.GetMedia;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ public class GetMedia : IEndpoint
         endpointRouteBuilder.MapGet("/api/medias/{id}", async ([FromServices] ISender sender, Guid id) =>
         {
             var media = await sender.Send(new GetMediaQuery(id));
-            return MediaDto.FromDomain(media);
+            return media.ToMediaDto();
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

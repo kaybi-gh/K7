@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.SmartPlaylists.Queries.GetSmartPlaylist;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -15,7 +16,7 @@ public class GetSmartPlaylist : IEndpoint
         endpointRouteBuilder.MapGet("/api/smart-playlists/{id}", async ([FromServices] ISender sender, Guid id, CancellationToken cancellationToken) =>
         {
             var smartPlaylist = await sender.Send(new GetSmartPlaylistQuery(id), cancellationToken);
-            return SmartPlaylistDto.FromDomain(smartPlaylist);
+            return smartPlaylist.ToSmartPlaylistDto();
         })
         .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)

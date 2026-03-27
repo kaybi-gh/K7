@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Playlists.Queries.GetPlaylists;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -20,7 +21,7 @@ public class GetPlaylists : IEndpoint
                 result.PageNumber,
                 result.TotalPages,
                 result.TotalCount,
-                Items = result.Items.Select(LitePlaylistDto.FromDomain)
+                Items = result.Items.Select(p => p.ToLitePlaylistDto())
             };
         })
         .RequireAuthorization(Policies.UserOrAbove)

@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Features.MediaFormats.Queries.GetMediaFormats;
+﻿using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Features.MediaFormats.Queries.GetMediaFormats;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ public class GetMediaFormats : IEndpoint
         endpointRouteBuilder.MapGet("/api/media-formats", async ([FromServices] ISender sender, CancellationToken cancellationToken) =>
         {
             var mediaFormats = await sender.Send(new GetMediaFormatsQuery(), cancellationToken);
-            return mediaFormats.Select(MediaFormatDto.FromDomain);
+            return mediaFormats.Select(f => f.ToMediaFormatDto());
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

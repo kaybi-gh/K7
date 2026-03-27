@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Playlists.Queries.GetPlaylist;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -15,7 +16,7 @@ public class GetPlaylist : IEndpoint
         endpointRouteBuilder.MapGet("/api/playlists/{id}", async ([FromServices] ISender sender, Guid id, CancellationToken cancellationToken) =>
         {
             var playlist = await sender.Send(new GetPlaylistQuery(id), cancellationToken);
-            return PlaylistDto.FromDomain(playlist);
+            return playlist.ToPlaylistDto();
         })
         .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)

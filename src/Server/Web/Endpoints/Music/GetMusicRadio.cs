@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.MusicRadio.Queries.GetMusicRadio;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Entities.Medias;
@@ -18,7 +19,7 @@ public class GetMusicRadio : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var tracks = await sender.Send(query, cancellationToken);
-            return tracks.Select(MediaDto.FromDomain);
+            return tracks.Select(t => t.ToMediaDto());
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
