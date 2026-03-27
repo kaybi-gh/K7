@@ -25,10 +25,8 @@ COPY src/Server/Infrastructure/FileSystem/*.csproj                           src
 COPY src/Server/Infrastructure/MediaProcessing/*.csproj                      src/Server/Infrastructure/MediaProcessing/
 COPY src/Shared/Aspire/ServiceDefaults/*.csproj                              src/Shared/Aspire/ServiceDefaults/
 COPY src/Shared/K7.Shared/*.csproj                                           src/Shared/K7.Shared/
-COPY src/Clients/Shared/Models/*.csproj                                      src/Clients/Shared/Models/
-COPY src/Clients/Shared/Components/*.csproj                                  src/Clients/Shared/Components/
-COPY src/Clients/Shared/Pages/*.csproj                                       src/Clients/Shared/Pages/
-COPY src/Clients/Shared/Services/*.csproj                                    src/Clients/Shared/Services/
+COPY src/Clients/Shared/K7.Clients.Shared.csproj                             src/Clients/Shared/
+COPY src/Clients/Shared/UI/K7.Clients.Shared.UI.csproj                       src/Clients/Shared/UI/
 COPY src/Clients/Web/*.csproj                                                src/Clients/Web/
 RUN dotnet restore "src/Server/Web/K7.Server.Web.csproj"
 
