@@ -3,11 +3,11 @@
   "defaultProvider": "cdnjs",
   "libraries": [
     {
-      "library": "splidejs@4.1.4",
-      "destination": "wwwroot/dist/splidejs/",
+      "provider": "jsdelivr",
+      "library": "embla-carousel@8.6.0",
+      "destination": "wwwroot/dist/embla-carousel/",
       "files": [
-        "js/splide.min.js",
-        "css/splide-core.min.css"
+        "embla-carousel.umd.js"
       ]
     },
     {
