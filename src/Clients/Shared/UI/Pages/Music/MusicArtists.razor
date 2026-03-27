@@ -4,9 +4,16 @@
 @inject IStringLocalizer<MusicArtists> L
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
-    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+<MediaBrowser TItem="ArtistViewModel"
+              Items="_artists"
+              Loading="_loading"
+              PersistenceKey="music-artists"
+              DefaultItemWidth="160"
+              DefaultSpacing="6"
+              GridItemAspectRatio="1.4f">
+    <ToolbarContent>
+        <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
+        <MudSpacer />
         <MudTextField T="string"
                       @bind-Value="_searchText"
                       Placeholder="@L["SearchPlaceholder"]"
@@ -18,58 +25,47 @@
                       OnDebounceIntervalElapsed="OnSearchChanged"
                       Margin="Margin.Dense"
                       Style="max-width: 300px;" />
-    </MudStack>
-</MudStack>
-
-@if (_loading)
-{
-    <MudGrid Style="max-width:100%;" Spacing="6" Justify="Justify.FlexStart" Class="pa-4">
-        @for (var i = 0; i < 12; i++)
-        {
-            <MudItem>
-                <MudPaper Style="width: 160px;" Elevation="0">
-                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="160px" Height="160px" />
-                    <MudSkeleton Width="80%" Class="mt-2 mx-auto" />
-                </MudPaper>
-            </MudItem>
-        }
-    </MudGrid>
-}
-else if (_artists.Count == 0)
-{
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudIcon Icon="@Icons.Material.Outlined.PersonSearch" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
-    </MudStack>
-}
-else
-{
-    <MudGrid Style="max-width:100%;" Spacing="6" Justify="Justify.FlexStart" Class="pa-4">
-        @foreach (var artist in _artists)
-        {
-            <MudItem @key="artist.Id">
-                <a href="@($"/music/artists/{artist.Id}")" class="artist-card-link">
-                    <MudPaper Class="artist-card" Elevation="0">
-                        @if (artist.PortraitUrl is not null)
-                        {
-                            <MudImage Src="@artist.PortraitUrl"
-                                      Alt="@artist.Name"
-                                      Width="160" Height="160"
-                                      ObjectFit="ObjectFit.Cover"
-                                      Class="artist-avatar"
-                                      loading="lazy" />
-                        }
-                        else
-                        {
-                            <MudAvatar Style="width: 160px; height: 160px; font-size: 48px;"
-                                       Color="Color.Dark">
-                                @(artist.Name?[..1].ToUpperInvariant())
-                            </MudAvatar>
-                        }
-                        <MudText Typo="Typo.subtitle2" Align="Align.Center" Class="mt-2 artist-name">@artist.Name</MudText>
+    </ToolbarContent>
+    <LoadingContent>
+        <MudGrid Style="max-width:100%;" Spacing="6" Justify="Justify.FlexStart" Class="pa-4">
+            @for (var i = 0; i < 12; i++)
+            {
+                <MudItem>
+                    <MudPaper Style="width: 160px;" Elevation="0">
+                        <MudSkeleton SkeletonType="SkeletonType.Circle" Width="160px" Height="160px" />
+                        <MudSkeleton Width="80%" Class="mt-2 mx-auto" />
                     </MudPaper>
-                </a>
-            </MudItem>
-        }
-    </MudGrid>
-}
+                </MudItem>
+            }
+        </MudGrid>
+    </LoadingContent>
+    <EmptyContent>
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+            <MudIcon Icon="@Icons.Material.Outlined.PersonSearch" Style="font-size: 64px; opacity: 0.3;" />
+            <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
+        </MudStack>
+    </EmptyContent>
+    <GridTemplate Context="artist">
+        <a href="@($"/music/artists/{artist.Id}")" class="artist-card-link">
+            <MudPaper Class="artist-card" Elevation="0">
+                @if (artist.PortraitUrl is not null)
+                {
+                    <MudImage Src="@artist.PortraitUrl"
+                              Alt="@artist.Name"
+                              Width="160" Height="160"
+                              ObjectFit="ObjectFit.Cover"
+                              Class="artist-avatar"
+                              loading="lazy" />
+                }
+                else
+                {
+                    <MudAvatar Style="width: 160px; height: 160px; font-size: 48px;"
+                               Color="Color.Dark">
+                        @(artist.Name?[..1].ToUpperInvariant())
+                    </MudAvatar>
+                }
+                <MudText Typo="Typo.subtitle2" Align="Align.Center" Class="mt-2 artist-name">@artist.Name</MudText>
+            </MudPaper>
+        </a>
+    </GridTemplate>
+</MediaBrowser>

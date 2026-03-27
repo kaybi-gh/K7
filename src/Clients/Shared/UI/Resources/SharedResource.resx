@@ -73,4 +73,6 @@
   <data name="MediaTypeMovies" xml:space="preserve"><value>Films</value></data>
   <data name="MediaTypeSeries" xml:space="preserve"><value>Séries</value></data>
   <data name="MediaTypeMusic" xml:space="preserve"><value>Musique</value></data>
+  <data name="ItemSize" xml:space="preserve"><value>Taille</value></data>
+  <data name="Spacing" xml:space="preserve"><value>Espacement</value></data>
 </root>

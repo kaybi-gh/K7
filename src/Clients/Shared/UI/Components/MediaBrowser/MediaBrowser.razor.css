@@ -1,0 +1,82 @@
+.media-browser {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.media-browser-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    gap: 8px;
+}
+
+.media-browser-toolbar-start {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.media-browser-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.media-browser-settings {
+    display: flex;
+    align-items: center;
+    padding: 4px 16px 8px;
+    gap: 16px;
+}
+
+.media-browser-grid {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0 16px 16px;
+}
+
+.media-browser-grid-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, var(--item-width));
+    gap: var(--grid-gap);
+}
+
+.media-browser-table {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0 16px 16px;
+}
+
+.media-browser-table-el {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.media-browser-table-el thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--mud-palette-surface);
+}
+
+.media-browser-table-el th,
+.media-browser-table-el td {
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.media-browser-table-el tbody tr:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.media-browser-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0 16px 16px;
+}
