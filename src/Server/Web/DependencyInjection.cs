@@ -84,6 +84,7 @@ public static class DependencyInjection
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
+        services.AddSingleton<ILibraryNotifier, LibraryNotifier>();
         services.AddSignalR();
         //services.AddHttpForwarderWithServiceDiscovery(); // TODO - To keep or not?
         services.AddHttpContextAccessor();
