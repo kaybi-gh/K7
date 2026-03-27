@@ -1,5 +1,4 @@
-﻿using K7.Server.Domain.Entities;
-using K7.Shared.Dtos.Entities.Metadatas.Files;
+﻿using K7.Shared.Dtos.Entities.Metadatas.Files;
 
 namespace K7.Shared.Dtos.Entities;
 
@@ -17,19 +16,4 @@ public sealed record IndexedFileDto
     public bool IsComposite { get; init; }
 
     public FileMetadataDto? FileMetadata { get; set; }
-
-    public static IndexedFileDto FromDomain(IndexedFile domain) => new()
-    {
-        Id = domain.Id,
-        Name = domain.Name,
-        LibraryId = domain.LibraryId,
-        Extension = domain.Extension,
-        Path = domain.Path,
-        ParentDirectory = domain.ParentDirectory,
-        Hash = domain.Hash,
-        Size = domain.Size,
-        IsSplitPart = domain.IsSplitPart,
-        IsComposite = domain.IsComposite,
-        FileMetadata = domain.FileMetadata != null ? FileMetadataDto.FromDomain(domain.FileMetadata) : null
-    };
 }

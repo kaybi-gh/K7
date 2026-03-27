@@ -1,4 +1,3 @@
-using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 
@@ -22,27 +21,4 @@ public sealed record SmartPlaylistDto
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
 
-    public static SmartPlaylistDto FromDomain(SmartPlaylist domain) => new()
-    {
-        Id = domain.Id,
-        Title = domain.Title,
-        Description = domain.Description,
-        UserId = domain.UserId,
-        MediaType = domain.MediaType,
-        MatchCondition = domain.MatchCondition,
-        Rules = domain.Rules.Select(r => new SmartPlaylistRuleDto
-        {
-            Field = r.Field,
-            Operator = r.Operator,
-            Value = r.Value
-        }).ToList(),
-        Limit = domain.Limit,
-        OrderBy = domain.OrderBy,
-        OrderDescending = domain.OrderDescending,
-        CoverPicture = domain.CoverPicture != null ? MetadataPictureDto.FromDomain(domain.CoverPicture) : null,
-        ItemCount = domain.Items.Count,
-        LastEvaluatedAt = domain.LastEvaluatedAt,
-        Created = domain.Created,
-        LastModified = domain.LastModified
-    };
 }

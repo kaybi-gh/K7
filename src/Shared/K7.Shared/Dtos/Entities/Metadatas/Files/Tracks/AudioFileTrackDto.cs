@@ -1,5 +1,3 @@
-﻿using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
-
 namespace K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 public sealed record AudioFileTrackDto : FileTrackDto
@@ -12,16 +10,4 @@ public sealed record AudioFileTrackDto : FileTrackDto
     public int? SampleRateHz { get; init; }
     public string? Profile { get; init; }
 
-    public static AudioFileTrackDto FromDomain(AudioFileTrack domain) => new()
-    {
-        Index = domain.Index,
-        IsDefault = domain.IsDefault,
-        Name = domain.Name,
-        Language = domain.Language,
-        Codec = domain.Codec,
-        Channels = domain.Channels,
-        ChannelLayout = domain.ChannelLayout,
-        SampleRateHz = domain.SampleRateHz,
-        Profile = domain.Profile
-    };
 }
