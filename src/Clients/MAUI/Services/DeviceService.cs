@@ -11,7 +11,7 @@ using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Clients.MAUI.Services
 {
-    public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdService, IDeviceStorageService deviceStorageService, IK7ServerService k7ServerService) : IDeviceService
+    public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdService, IDeviceStorageService deviceStorageService, IMediaService mediaService) : IDeviceService
     {
         public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
         {
@@ -67,7 +67,7 @@ namespace K7.Clients.MAUI.Services
 
         public async Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
         {
-            var allFormats = await k7ServerService.GetMediaFormatsAsync();
+            var allFormats = await mediaService.GetMediaFormatsAsync();
 
             var supportedContainers = await codecHelper.GetSupportedContainersAsync();
             var supportedAudioCodecs = await codecHelper.GetSupportedAudioCodecsAsync();

@@ -1,7 +1,8 @@
 @page "/music/radio"
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
-@inject IK7ServerService K7ServerService
+@inject IServerInfoService K7ServerService
+@inject IK7ServerService ApiClient
 <PageTitle>Radio</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">

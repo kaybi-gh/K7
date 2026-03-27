@@ -17,6 +17,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 {
     private readonly OpenIddictClientService _openIddictClientService;
     private readonly IK7ServerService _k7ServerService;
+    private readonly IUserAdminService _userAdminService;
+    private readonly IDeviceApiService _deviceApiService;
     private readonly IDeviceStorageService _deviceStorageService;
     private readonly ILocalUserService _localUserService;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
@@ -25,11 +27,15 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     public CustomAuthenticationStateProvider(
         OpenIddictClientService openIddictClientService,
         IK7ServerService k7ServerService,
+        IUserAdminService userAdminService,
+        IDeviceApiService deviceApiService,
         IDeviceStorageService deviceStorageService,
         ILocalUserService localUserService)
     {
         _openIddictClientService = openIddictClientService;
         _k7ServerService = k7ServerService;
+        _userAdminService = userAdminService;
+        _deviceApiService = deviceApiService;
         _deviceStorageService = deviceStorageService;
         _localUserService = localUserService;
     }
@@ -330,7 +336,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
-            var serverUser = await _k7ServerService.GetCurrentUserAsync(cancellationToken);
+            var serverUser = await _userAdminService.GetCurrentUserAsync(cancellationToken);
             if (serverUser is not null)
             {
                 localUser.PinHash = serverUser.PinHash;
@@ -358,7 +364,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             var storedDeviceId = _deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
             if (Guid.TryParse(storedDeviceId, out var parsedId))
             {
-                await _k7ServerService.AttachCurrentUserToDeviceAsync(parsedId, cancellationToken);
+                await _deviceApiService.AttachCurrentUserToDeviceAsync(parsedId, cancellationToken);
             }
         }
         catch { }

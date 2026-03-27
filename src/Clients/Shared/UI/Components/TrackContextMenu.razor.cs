@@ -101,7 +101,7 @@ public partial class TrackContextMenu
         AlbumTitle = t.AlbumTitle,
         ArtistPersonId = t.ArtistPersonId,
         Genre = t.Genre,
-        CoverUrl = K7ServerService.GetAbsoluteUri(
+        CoverUrl = ApiClient.GetAbsoluteUri(
             t.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         Duration = t.Duration

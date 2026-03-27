@@ -1,6 +1,7 @@
 @page "/music/artists/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
-@inject IK7ServerService k7ServerService
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
 <PageTitle>@_person?.Name</PageTitle>
 <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
@@ -53,14 +54,14 @@
             @if (_albums.Count > 0)
             {
                 <MudItem xs="12">
-                    <HorizontalScrollableStack Title="Albums">
+                    <Carousel Title="Albums">
                         @foreach (var album in _albums)
                         {
-                            <HorizontalScrollableStackItem>
+                            <CarouselItem>
                                 <MediaCover Model="album" Href="@($"/music/albums/{album.Id}")" FooterVisible="true" />
-                            </HorizontalScrollableStackItem>
+                            </CarouselItem>
                         }
-                    </HorizontalScrollableStack>
+                    </Carousel>
                 </MudItem>
             }
 

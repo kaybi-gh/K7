@@ -49,7 +49,7 @@ public partial class MusicArtists
     {
         Id = person.Id,
         Name = person.Name,
-        PortraitUrl = k7ServerService.GetAbsoluteUri(
+        PortraitUrl = apiClient.GetAbsoluteUri(
             person.PortraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri
     };
 

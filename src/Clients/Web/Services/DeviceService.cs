@@ -10,7 +10,7 @@ using OperatingSystem = K7.Server.Domain.Enums.OperatingSystem;
 
 namespace K7.Clients.Web.Services;
 
-public class DeviceService(IJSRuntime jsRuntime, IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService) : IDeviceService
+public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDeviceStorageService deviceStorageService) : IDeviceService
 {
     public async Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync()
     {
@@ -75,7 +75,7 @@ public class DeviceService(IJSRuntime jsRuntime, IK7ServerService k7ServerServic
 
     public async Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
     {
-        var allFormats = await k7ServerService.GetMediaFormatsAsync();
+        var allFormats = await mediaService.GetMediaFormatsAsync();
 
         var supportedContainers = await jsRuntime.InvokeAsync<string[]>("getSupportedContainersAsync");
         var supportedAudioCodecs = await jsRuntime.InvokeAsync<string[]>("getSupportedAudioCodecsAsync");

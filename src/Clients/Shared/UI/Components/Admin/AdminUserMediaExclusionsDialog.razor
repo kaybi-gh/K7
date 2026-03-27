@@ -1,7 +1,8 @@
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Requests
 @using K7.Server.Domain.Enums
-@inject IK7ServerService K7ServerService
+@inject IMediaService K7ServerService
+@inject IK7ServerService ApiClient
 
 <MudDialog>
     <DialogContent>
@@ -82,7 +83,7 @@
                     var posterUrl = dto?.Pictures?
                         .FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                         .GetUri(MetadataPictureSize.Small)?.OriginalString;
-                    return new ExcludedMediaItem(id, dto?.Title, posterUrl != null ? K7ServerService.GetAbsoluteUri(posterUrl)?.AbsoluteUri : null);
+                    return new ExcludedMediaItem(id, dto?.Title, posterUrl != null ? ApiClient.GetAbsoluteUri(posterUrl)?.AbsoluteUri : null);
                 }).ToList();
             }
             catch

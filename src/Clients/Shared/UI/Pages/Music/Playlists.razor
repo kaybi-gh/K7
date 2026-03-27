@@ -1,6 +1,7 @@
 @page "/playlists"
 @using K7.Shared.Dtos.Entities.Playlists
-@inject IK7ServerService K7ServerService
+@inject IPlaylistService K7ServerService
+@inject IK7ServerService ApiClient
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager

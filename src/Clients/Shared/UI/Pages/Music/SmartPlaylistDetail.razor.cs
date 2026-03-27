@@ -56,7 +56,7 @@ public partial class SmartPlaylistDetail
         AlbumTitle = item.AlbumTitle,
         Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
-        CoverUrl = K7ServerService.GetAbsoluteUri(
+        CoverUrl = ApiClient.GetAbsoluteUri(
             item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         CoverDominantColor = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,

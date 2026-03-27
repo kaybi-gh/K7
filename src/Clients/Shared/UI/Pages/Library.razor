@@ -1,5 +1,6 @@
 @page "/library/{id}"
-@inject IK7ServerService k7ServerService
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
 <PageTitle>Library @Id</PageTitle>
 
 <MudDrawer @bind-Open="@_gridDrawerOpen" Fixed="false" Anchor="Anchor.End" Elevation="1" Variant="@DrawerVariant.Responsive">

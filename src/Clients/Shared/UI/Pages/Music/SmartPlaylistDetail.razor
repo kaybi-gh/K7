@@ -1,6 +1,7 @@
 @page "/smart-playlists/{Id}"
 @using K7.Shared.Dtos.Entities.Playlists
-@inject IK7ServerService K7ServerService
+@inject IPlaylistService K7ServerService
+@inject IK7ServerService ApiClient
 <PageTitle>@(_smartPlaylist?.Title ?? "Smart Playlist")</PageTitle>
 
 @if (_smartPlaylist is not null)

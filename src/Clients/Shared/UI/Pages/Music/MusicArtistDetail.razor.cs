@@ -31,7 +31,7 @@ public partial class MusicArtistDetail
 
         if (_person is not null)
         {
-            _portraitUrl = k7ServerService.GetAbsoluteUri(
+            _portraitUrl = apiClient.GetAbsoluteUri(
                 _person.PortraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
             var roleMedias = _person.Roles.Select(r => r.Media).Where(m => m is not null);
@@ -44,7 +44,7 @@ public partial class MusicArtistDetail
                     Id = album.Id.ToString(),
                     Title = album.Title,
                     AdditionalInformations = album.ReleaseDate,
-                    PosterPictureHref = k7ServerService.GetAbsoluteUri(
+                    PosterPictureHref = apiClient.GetAbsoluteUri(
                         album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                             .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
                 })
@@ -61,7 +61,7 @@ public partial class MusicArtistDetail
                     Title = track.Title ?? "Sans titre",
                     TrackNumber = track.TrackNumber,
                     AlbumTitle = _albums.FirstOrDefault(a => a.Id == track.AlbumId.ToString())?.Title,
-                    CoverUrl = k7ServerService.GetAbsoluteUri(
+                    CoverUrl = apiClient.GetAbsoluteUri(
                         track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                             .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
                     Duration = track.Duration ?? 0,

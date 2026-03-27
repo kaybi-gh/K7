@@ -8,11 +8,13 @@ namespace K7.Clients.Shared.Services;
 
 public class StreamUriService : IStreamUriService
 {
+    private readonly IStreamingService _streamingService;
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
 
-    public StreamUriService(IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService)
+    public StreamUriService(IStreamingService streamingService, IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService)
     {
+        _streamingService = streamingService;
         _k7ServerService = k7ServerService;
         _deviceStorageService = deviceStorageService;
     }
@@ -30,7 +32,7 @@ public class StreamUriService : IStreamUriService
                 AudioTrackIndex = audioTrackIndex
             };
 
-            var session = await _k7ServerService.CreateStreamSessionAsync(request, cancellationToken)
+            var session = await _streamingService.CreateStreamSessionAsync(request, cancellationToken)
                          ?? throw new Exception($"No streaming session created for IndexedFile with id '{indexedFileId}'.");
 
             if (session.Source is not null)

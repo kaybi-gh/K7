@@ -74,7 +74,7 @@ public partial class Playlists
 
     private string? GetCoverUrl(LitePlaylistDto playlist)
     {
-        return K7ServerService.GetAbsoluteUri(
+        return ApiClient.GetAbsoluteUri(
             playlist.CoverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
     }
 

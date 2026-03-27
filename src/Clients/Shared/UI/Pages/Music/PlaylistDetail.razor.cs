@@ -41,7 +41,7 @@ public partial class PlaylistDetail
 
         if (_playlist is not null)
         {
-            _coverUrl = K7ServerService.GetAbsoluteUri(
+            _coverUrl = ApiClient.GetAbsoluteUri(
                 _playlist.CoverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
             await LoadItemsAsync();
@@ -74,7 +74,7 @@ public partial class PlaylistDetail
         AlbumTitle = item.AlbumTitle,
         Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
-        CoverUrl = K7ServerService.GetAbsoluteUri(
+        CoverUrl = ApiClient.GetAbsoluteUri(
             item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         CoverDominantColor = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
