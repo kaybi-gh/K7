@@ -17,10 +17,20 @@ builder.Services.AddAuthenticationStateDeserialization();
 
 builder.Services.AddMudServices();
 
-builder.Services.AddHttpClient<IK7ServerService, K7ServerService>(httpClient =>
+builder.Services.AddHttpClient<K7ServerService>(httpClient =>
 {
     httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
 });
+
+builder.Services.AddTransient<IK7ServerService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IMediaService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<ILibraryService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IPlaylistService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IStreamingService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IDeviceApiService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IUserAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IRatingService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IServerInfoService>(sp => sp.GetRequiredService<K7ServerService>());
 
 builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();

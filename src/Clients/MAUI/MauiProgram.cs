@@ -61,7 +61,16 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<ThemeService>();
 
         builder.Services.AddHttpClient(nameof(K7ServerService));
-        builder.Services.AddSingleton<IK7ServerService, K7ServerService>();
+        builder.Services.AddSingleton<K7ServerService>();
+        builder.Services.AddSingleton<IK7ServerService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IMediaService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<ILibraryService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IPlaylistService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IStreamingService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IDeviceApiService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IUserAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IRatingService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IServerInfoService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<K7ServerManagerService>();
 
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
