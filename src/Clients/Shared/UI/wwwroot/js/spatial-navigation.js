@@ -5,17 +5,17 @@
  *  - Left/Right: within the same row, or cross from sidebar to content
  *  - Up/Down: within sidebar column, or between content rows
  *
- * Rows: [data-nav-row] or .splide
+ * Rows: [data-nav-row] or [data-carousel]
  * Columns: [data-nav-column] (sidebar)
  */
 var SpatialNavigation = (function () {
 
     var _initialized = false;
 
-    var FOCUSABLE = 'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]):not(.splide__arrow), [tabindex="0"]';
+    var FOCUSABLE = 'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]):not([data-carousel-prev]):not([data-carousel-next]), [tabindex="0"]';
 
     function getRows() {
-        return Array.from(document.querySelectorAll('[data-nav-row], .splide, [data-nav-grid]'));
+        return Array.from(document.querySelectorAll('[data-nav-row], [data-carousel], [data-nav-grid]'));
     }
 
     function getColumn() {
@@ -26,18 +26,18 @@ var SpatialNavigation = (function () {
         return !!el.closest('[data-nav-column]');
     }
 
-    function getContentFocusables(container, includeSplideHidden) {
+    function getContentFocusables(container, includeCarouselItems) {
         var all = Array.from(container.querySelectorAll(FOCUSABLE));
         return all.filter(function (el) {
-            if (el.closest('.splide__arrows')) return false;
-            if (includeSplideHidden && el.closest('.splide__slide')) return true;
-            return el.offsetParent !== null && !el.closest('[aria-hidden="true"]');
+            if (el.closest('[data-carousel-prev], [data-carousel-next]')) return false;
+            if (includeCarouselItems && el.closest('[data-carousel-item]')) return true;
+            return el.offsetParent !== null;
         });
     }
 
     function getRowFocusables(row) {
-        var isSplide = row && row.classList.contains('splide');
-        return getContentFocusables(row, isSplide);
+        var isCarousel = row && row.hasAttribute('data-carousel');
+        return getContentFocusables(row, isCarousel);
     }
 
     function getColumnFocusables() {
@@ -55,7 +55,7 @@ var SpatialNavigation = (function () {
     }
 
     function findContainingRow(el) {
-        return el.closest('[data-nav-row], .splide, [data-nav-grid]');
+        return el.closest('[data-nav-row], [data-carousel], [data-nav-grid]');
     }
 
     function resolveFocusable(el) {
@@ -67,24 +67,24 @@ var SpatialNavigation = (function () {
         return el;
     }
 
-    function scrollSplideToElement(el) {
-        var splideRoot = el.closest('.splide');
-        if (!splideRoot || !splideRoot.__splide) return;
-        var slide = el.closest('.splide__slide');
-        if (!slide) return;
-        var slides = Array.from(splideRoot.querySelectorAll('.splide__slide'));
-        var index = slides.indexOf(slide);
+    function scrollCarouselToElement(el) {
+        var carouselRoot = el.closest('[data-carousel]');
+        if (!carouselRoot || !carouselRoot.__embla) return;
+        var item = el.closest('[data-carousel-item]');
+        if (!item) return;
+        var items = Array.from(carouselRoot.querySelectorAll('[data-carousel-item]'));
+        var index = items.indexOf(item);
         if (index >= 0) {
-            splideRoot.__splide.go(index);
+            carouselRoot.__embla.scrollTo(index);
         }
     }
 
     function focusAndScroll(el) {
         el.focus({ preventScroll: true });
-        scrollSplideToElement(el);
+        scrollCarouselToElement(el);
 
         var container = findContainingRow(el);
-        var allContainers = Array.from(document.querySelectorAll('[data-nav-row], .splide, [data-nav-grid]'));
+        var allContainers = Array.from(document.querySelectorAll('[data-nav-row], [data-carousel], [data-nav-grid]'));
         
         if (allContainers.length > 0 && container === allContainers[0]) {
             // Remonter tout en haut de la page
@@ -298,16 +298,15 @@ var SpatialNavigation = (function () {
     }
 
     function handleHorizontal(active, row, forward) {
-        var isSplide = row && row.classList.contains('splide');
+        var isCarousel = row && row.hasAttribute('data-carousel');
         var isGrid = row && row.hasAttribute('data-nav-grid');
 
-        if (isSplide) {
-            var currentSlide = active.closest('.splide__slide');
-            if (!currentSlide) return;
+        if (isCarousel) {
+            var currentItem = active.closest('[data-carousel-item]');
+            if (!currentItem) return;
 
-            // Get all real slides (not clones) as ordered array
-            var allSlides = Array.from(row.querySelectorAll('.splide__slide:not(.splide__slide--clone)'));
-            var currentIdx = allSlides.indexOf(currentSlide);
+            var allItems = Array.from(row.querySelectorAll('[data-carousel-item]'));
+            var currentIdx = allItems.indexOf(currentItem);
             if (currentIdx === -1) return;
 
             var targetIdx = forward ? currentIdx + 1 : currentIdx - 1;
@@ -316,31 +315,18 @@ var SpatialNavigation = (function () {
                 jumpToSidebar(active);
                 return;
             }
-            if (targetIdx >= allSlides.length) {
+            if (targetIdx >= allItems.length) {
                 return;
             }
 
-            var targetSlide = allSlides[targetIdx];
-            // Splide might have set tabindex="-1", so we use a broader selector for the target inside a slide
-            var target = targetSlide.querySelector('a[href], button:not([disabled]), [tabindex]');
+            var targetItem = allItems[targetIdx];
+            var target = targetItem.querySelector('a[href], button:not([disabled]), [tabindex]');
             if (!target) return;
 
-            // Remove aria-hidden so browser allows focus
-            targetSlide.removeAttribute('aria-hidden');
-            targetSlide.classList.add('is-visible', 'is-active');
-
-            // Fix tabindex if Splide set it to -1
-            if (target.getAttribute('tabindex') === '-1') {
-                target.setAttribute('tabindex', '0');
+            if (row.__embla) {
+                row.__embla.scrollTo(targetIdx);
             }
 
-            // Tell Splide to scroll the target slide into view
-            if (row.__splide) {
-                row.__splide.go(targetIdx);
-            }
-
-            // Focus immediately. If Splide prevents it because of visibility, 
-            // the aria-hidden removal above helps bypass that constraint.
             setTimeout(function() {
                 target.focus({ preventScroll: true });
             }, 10);
@@ -556,7 +542,7 @@ var SpatialNavigation = (function () {
                 setTimeout(function () {
                     // If no element currently has focus, or we lost focus completely
                     if (!document.activeElement || document.activeElement === document.body) {
-                        focusFirst('[data-nav-row] ' + FOCUSABLE + ', .splide ' + FOCUSABLE + ', [data-nav-grid] ' + FOCUSABLE);
+                        focusFirst('[data-nav-row] ' + FOCUSABLE + ', [data-carousel] ' + FOCUSABLE + ', [data-nav-grid] ' + FOCUSABLE);
                     }
                 }, 100);
             }
