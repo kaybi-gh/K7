@@ -1,4 +1,4 @@
-using K7.Clients.Shared.Components;
+using K7.Clients.Shared.UI.Components;
 using MudBlazor;
 using MudBlazor.Services;
 
