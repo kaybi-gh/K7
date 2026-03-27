@@ -61,7 +61,7 @@ dotnet_style_explicit_tuple_names = true:suggestion
 dotnet_style_null_propagation = true:suggestion
 dotnet_style_object_initializer = true:suggestion
 dotnet_style_operator_placement_when_wrapping = beginning_of_line
-dotnet_style_prefer_auto_properties = true:suggestion
+dotnet_style_prefer_auto_properties = true:warning
 dotnet_style_prefer_compound_assignment = true:suggestion
 dotnet_style_prefer_conditional_expression_over_assignment = true:suggestion
 dotnet_style_prefer_conditional_expression_over_return = true:suggestion
@@ -188,6 +188,7 @@ csharp_style_prefer_utf8_string_literals = true:suggestion
 csharp_style_prefer_extended_property_pattern = true:suggestion
 csharp_style_prefer_readonly_struct = true:suggestion
 csharp_style_prefer_readonly_struct_member = true:suggestion
+csharp_style_prefer_simple_property_accessors = true:warning
 
 #### Naming styles ####
 [*.{cs,vb}]
@@ -386,6 +387,9 @@ indent_size = 4
 dotnet_diagnostic.CS4014.severity = warning  # Async call not awaited
 dotnet_diagnostic.CS1998.severity = warning  # Async method without await
 dotnet_diagnostic.CS2012.severity = warning  # ValueTask misuse
+
+dotnet_diagnostic.IDE0032.severity = warning   # Use auto-implemented property / field keyword
+dotnet_diagnostic.IDE0360.severity = warning   # Simplify property accessor (field keyword)
 
 # Suggestion (IDE hints)
 dotnet_diagnostic.CA1001.severity = suggestion  # Type owns IDisposable field

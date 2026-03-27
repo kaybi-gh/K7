@@ -52,6 +52,7 @@ No `Result<T>` wrapper pattern.
 - Element ordering: fields → constructors → delegates → events → properties → methods.
 - Always forward `CancellationToken`. Last parameter. Public methods: `CancellationToken cancellationToken = default`.
 - Prefer pattern matching (`is null`, `is not null`) over `== null`.
+- Prefer `field` keyword (C# 14) over manual backing fields in properties.
 
 ## References
 
