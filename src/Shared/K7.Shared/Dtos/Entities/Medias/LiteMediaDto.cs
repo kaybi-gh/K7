@@ -1,9 +1,5 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using K7.Server.Domain.Entities.Medias;
-using K7.Server.Domain.Entities.Metadatas.Files;
-using K7.Server.Domain.Entities.Metadatas.PersonRoles;
-using K7.Server.Domain.Entities.Ratings;
-using K7.Server.Domain.Enums;
 
 namespace K7.Shared.Dtos.Entities.Medias;
 
@@ -18,58 +14,4 @@ public abstract record LiteMediaDto
     public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }
     public UserMediaStateDto? UserState { get; init; }
     public int? UserRating { get; init; }
-
-    private static int? GetUserRating(BaseMedia domain) =>
-        domain.Ratings.OfType<UserRating>().FirstOrDefault()?.Value is double v ? (int)v : null;
-
-    public static LiteMediaDto FromDomain(BaseMedia domain) => domain switch
-    {
-        Movie movie => new LiteMovieDto()
-        {
-            Id = domain.Id,
-            Title = domain.Title,
-            ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain).ToList(),
-            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                ? UserMediaStateDto.FromDomain(state)
-                : null,
-            UserRating = GetUserRating(domain)
-        },
-        MusicAlbum album => new LiteMusicAlbumDto()
-        {
-            Id = domain.Id,
-            Title = domain.Title,
-            ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = domain.Pictures.Select(MetadataPictureDto.FromDomain).ToList(),
-            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                ? UserMediaStateDto.FromDomain(state)
-                : null,
-            UserRating = GetUserRating(domain)
-        },
-        MusicTrack track => new LiteMusicTrackDto()
-        {
-            Id = domain.Id,
-            Title = domain.Title,
-            ReleaseDate = domain.ReleaseDate?.ToString(),
-            Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(MetadataPictureDto.FromDomain).ToList(),
-            AlbumId = track.AlbumId,
-            TrackNumber = track.TrackNumber,
-            IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
-            Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
-            AlbumTitle = track.Album?.Title,
-            ArtistName = track.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name
-                       ?? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
-            ArtistPersonId = track.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId
-                           ?? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId,
-            Genre = track.Album?.Genres.FirstOrDefault() ?? domain.Genres.FirstOrDefault(),
-            Bpm = track.AudioAnalysis?.Bpm,
-            MusicalKey = track.AudioAnalysis?.MusicalKey,
-            Energy = track.AudioAnalysis?.Energy,
-            UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                ? UserMediaStateDto.FromDomain(state)
-                : null,
-            UserRating = GetUserRating(domain)
-        },
-        _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
-    };
 }

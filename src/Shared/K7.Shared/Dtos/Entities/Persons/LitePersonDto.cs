@@ -1,4 +1,3 @@
-﻿using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.PersonRoles;
 
@@ -15,16 +14,4 @@ public sealed record LitePersonDto
     public string? BirthPlace { get; init; }
     public MetadataPictureDto? PortraitPicture { get; init; }
 
-    public static LitePersonDto FromDomain(Person domain) => new()
-    {
-        Id = domain.Id,
-        Slug = domain.Slug,
-        Name = domain.Name,
-        Gender = domain.Gender,
-        Birthday = domain.Birthday,
-        Deathday = domain.Deathday,
-        BirthPlace = domain.BirthPlace,
-        PortraitPicture = domain.PortraitPicture != null ? MetadataPictureDto.FromDomain(domain.PortraitPicture) : null
-    };
 }
-
