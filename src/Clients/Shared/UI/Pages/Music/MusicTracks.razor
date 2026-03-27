@@ -1,14 +1,16 @@
 @page "/music/tracks"
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
-<PageTitle>Morceaux</PageTitle>
+@inject IStringLocalizer<MusicTracks> L
+@inject IStringLocalizer<SharedResource> S
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">Morceaux</MudText>
+    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
         <MudTextField T="string"
                       @bind-Value="_searchText"
-                      Placeholder="Rechercher un morceau..."
+                      Placeholder="@L["SearchPlaceholder"]"
                       Variant="Variant.Outlined"
                       Adornment="Adornment.Start"
                       AdornmentIcon="@Icons.Material.Filled.Search"
@@ -30,7 +32,7 @@ else if (_tracks.Count == 0)
 {
     <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
         <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">Aucun morceau trouvé</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
     </MudStack>
 }
 else
@@ -46,9 +48,9 @@ else
                   FixedHeader="true"
                   Height="calc(100vh - 220px)">
             <HeaderContent>
-                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.Title)">Titre</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.ArtistName ?? string.Empty)">Artiste</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.AlbumTitle ?? string.Empty)">Album</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.Title)">@S["Title"]</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.ArtistName ?? string.Empty)">@S["Artist"]</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.AlbumTitle ?? string.Empty)">@S["Album"]</MudTableSortLabel></MudTh>
                 <MudTh Style="width: 80px;">
                     <MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.Duration)">
                         <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />

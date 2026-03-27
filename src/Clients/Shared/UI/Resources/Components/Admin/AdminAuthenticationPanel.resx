@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="ConfigInfo" xml:space="preserve"><value>La configuration de l'authentification est définie dans appsettings.json et nécessite un redémarrage pour être modifiée.</value></data>
+  <data name="LocalAuthTitle" xml:space="preserve"><value>Authentification locale</value></data>
+  <data name="LocalSignin" xml:space="preserve"><value>Connexion locale</value></data>
+  <data name="LocalRegistration" xml:space="preserve"><value>Inscription locale</value></data>
+  <data name="OidcTitle" xml:space="preserve"><value>Authentification OIDC</value></data>
+  <data name="Oidc" xml:space="preserve"><value>OIDC</value></data>
+  <data name="Provider" xml:space="preserve"><value>Fournisseur</value></data>
+  <data name="AutoAccountCreation" xml:space="preserve"><value>Création automatique de compte</value></data>
+  <data name="LocalSigninDisabledWarning" xml:space="preserve"><value>La connexion locale est désactivée. Les utilisateurs seront automatiquement redirigés vers le fournisseur OIDC.</value></data>
+</root>
+

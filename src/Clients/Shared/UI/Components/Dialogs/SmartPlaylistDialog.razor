@@ -3,33 +3,35 @@
 @using K7.Shared.Dtos.Requests
 @inject IPlaylistService K7ServerService
 @inject ISnackbar Snackbar
+@inject IStringLocalizer<SmartPlaylistDialog> L
+@inject IStringLocalizer<SharedResource> S
 
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="4" Class="mt-2">
-            <MudTextField @bind-Value="_title" Label="Nom" Variant="Variant.Outlined"
-                          Required="true" RequiredError="Le nom est requis" MaxLength="200" Immediate="true" />
-            <MudTextField @bind-Value="_description" Label="Description (optionnelle)"
+            <MudTextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="Variant.Outlined"
+                          Required="true" RequiredError="@L["NameRequired"]" MaxLength="200" Immediate="true" />
+            <MudTextField @bind-Value="_description" Label="@L["DescriptionOptional"]"
                           Variant="Variant.Outlined" Lines="2" MaxLength="2000" />
 
             <MudDivider />
 
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <MudText Typo="Typo.subtitle2">Correspondre à</MudText>
+                    <MudText Typo="Typo.subtitle2">@L["MatchLabel"]</MudText>
                     <MudSelect T="SmartPlaylistMatchCondition" @bind-Value="_matchCondition"
                                Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" Style="width: 120px;">
-                        <MudSelectItem Value="SmartPlaylistMatchCondition.All">Toutes</MudSelectItem>
-                        <MudSelectItem Value="SmartPlaylistMatchCondition.Any">Au moins une</MudSelectItem>
+                        <MudSelectItem Value="SmartPlaylistMatchCondition.All">@L["MatchAll"]</MudSelectItem>
+                        <MudSelectItem Value="SmartPlaylistMatchCondition.Any">@L["MatchAny"]</MudSelectItem>
                     </MudSelect>
-                    <MudText Typo="Typo.subtitle2">les règles</MudText>
+                    <MudText Typo="Typo.subtitle2">@L["RulesSuffix"]</MudText>
                 </MudStack>
-                <MudSelect T="MediaType?" @bind-Value="_mediaType" Label="Type de média"
+                <MudSelect T="MediaType?" @bind-Value="_mediaType" Label="@L["MediaType"]"
                            Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense"
                            Clearable="true" Style="width: 180px;">
-                    <MudSelectItem T="MediaType?" Value="@((MediaType?)null)">Tous</MudSelectItem>
-                    <MudSelectItem T="MediaType?" Value="MediaType.MusicTrack">Musique</MudSelectItem>
-                    <MudSelectItem T="MediaType?" Value="MediaType.Movie">Films</MudSelectItem>
+                    <MudSelectItem T="MediaType?" Value="@((MediaType?)null)">@S["All"]</MudSelectItem>
+                    <MudSelectItem T="MediaType?" Value="MediaType.MusicTrack">@S["MediaTypeMusic"]</MudSelectItem>
+                    <MudSelectItem T="MediaType?" Value="MediaType.Movie">@S["MediaTypeMovies"]</MudSelectItem>
                 </MudSelect>
             </MudStack>
 
@@ -70,37 +72,37 @@
                 }
                 <MudButton Variant="Variant.Text" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Add" OnClick="AddRule">
-                    Ajouter une règle
+                    @L["AddRule"]
                 </MudButton>
             </MudStack>
 
             <MudDivider />
 
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                <MudSelect T="SmartPlaylistOrderBy" @bind-Value="_orderBy" Label="Trier par"
+                <MudSelect T="SmartPlaylistOrderBy" @bind-Value="_orderBy" Label="@L["SortBy"]"
                            Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" Style="flex: 1;">
                     @foreach (var order in GetAvailableOrderBy())
                     {
                         <MudSelectItem Value="order">@GetOrderByLabel(order)</MudSelectItem>
                     }
                 </MudSelect>
-                <MudCheckBox T="bool" @bind-Value="_orderDescending" Label="Décroissant" Dense="true" />
-                <MudNumericField T="int?" @bind-Value="_limit" Label="Limite"
+                <MudCheckBox T="bool" @bind-Value="_orderDescending" Label="@L["Descending"]" Dense="true" />
+                <MudNumericField T="int?" @bind-Value="_limit" Label="@L["Limit"]"
                                  Variant="Variant.Outlined" dense="true" Margin="Margin.Dense"
                                  Min="1" Max="10000" Style="width: 120px;" Clearable="true" />
             </MudStack>
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync"
                    Disabled="@(string.IsNullOrWhiteSpace(_title) || _isSubmitting)">
             @if (_isSubmitting)
             {
                 <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                <MudText Class="ms-2">@(_isEdit ? "Enregistrement..." : "Création...")</MudText>
+                <MudText Class="ms-2">@(_isEdit ? L["Saving"] : L["Creating"])</MudText>
             }
-            else { <MudText>@(_isEdit ? "Enregistrer" : "Créer")</MudText> }
+            else { <MudText>@(_isEdit ? S["Save"] : S["Create"])</MudText> }
         </MudButton>
     </DialogActions>
 </MudDialog>

@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="TitleLabel" xml:space="preserve"><value>Titre</value></data>
+  <data name="YearOptionalLabel" xml:space="preserve"><value>Année (Optionnel)</value></data>
+  <data name="ProviderIdLabel" xml:space="preserve"><value>ID Provider (Ex: TMDB ID)</value></data>
+  <data name="Searching" xml:space="preserve"><value>Recherche...</value></data>
+  <data name="SearchButton" xml:space="preserve"><value>Chercher</value></data>
+  <data name="NoResults" xml:space="preserve"><value>Aucun résultat trouvé.</value></data>
+  <data name="ProviderAndId" xml:space="preserve"><value>Provider: {0} | ID: {1}</value></data>
+  <data name="EnterTitleOrId" xml:space="preserve"><value>Veuillez entrer un titre ou un ID.</value></data>
+  <data name="SearchError" xml:space="preserve"><value>Erreur lors de la recherche : {0}</value></data>
+  <data name="ReidentifyError" xml:space="preserve"><value>Erreur lors de la ré-identification : {0}</value></data>
+</root>
+

@@ -9,6 +9,7 @@
 @inject ILibraryService K7ServerService
 @inject IDeviceService DeviceService
 @inject IJSRuntime JSRuntime
+@inject IStringLocalizer<Sidebar> L
 
 <MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini" data-nav-column="sidebar">
     <MudStack AlignItems="AlignItems.Center">
@@ -25,7 +26,7 @@
         <MudStack Row="true" AlignItems="AlignItems.Center">
             @if (SidebarService.IsOpen)
             {
-                <MudTextField Class="sidebar-search-bar mx-4" UnderLine="false" Label="Search" DebounceInterval="500" OnDebounceIntervalElapsed="Search" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
+                <MudTextField Class="sidebar-search-bar mx-4" UnderLine="false" Label="@L["Search"]" DebounceInterval="500" OnDebounceIntervalElapsed="Search" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
             }
             else
             {
@@ -34,21 +35,21 @@
         </MudStack>
     </MudStack>
     <MudNavMenu Bordered="true" Style="width: 100%;">
-        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">@L["Home"]</MudNavLink>
         @foreach (var library in _libraries)
         {
             <MudNavLink Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)">@library.Title</MudNavLink>
         }
-        <MudNavGroup Title="Musique" Icon="@Icons.Material.Filled.MusicNote" Expanded="false">
-            <MudNavLink Href="/music/artists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person">Artistes</MudNavLink>
-            <MudNavLink Href="/music/albums" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Album">Albums</MudNavLink>
-            <MudNavLink Href="/music/tracks" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AudioFile">Morceaux</MudNavLink>
+        <MudNavGroup Title="@L["Music"]" Icon="@Icons.Material.Filled.MusicNote" Expanded="false">
+            <MudNavLink Href="/music/artists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person">@L["Artists"]</MudNavLink>
+            <MudNavLink Href="/music/albums" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Album">@L["Albums"]</MudNavLink>
+            <MudNavLink Href="/music/tracks" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AudioFile">@L["Tracks"]</MudNavLink>
             <AuthorizeView Roles="User,Administrator">
-                <MudNavLink Href="/playlists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.QueueMusic">Playlists</MudNavLink>
+                <MudNavLink Href="/playlists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.QueueMusic">@L["Playlists"]</MudNavLink>
             </AuthorizeView>
-            <MudNavLink Href="/music/radio" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Radio">Radio</MudNavLink>
+            <MudNavLink Href="/music/radio" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Radio">@L["Radio"]</MudNavLink>
             <AuthorizeView Roles="User,Administrator">
-                <MudNavLink Href="/music/stats" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.BarChart">Statistiques</MudNavLink>
+                <MudNavLink Href="/music/stats" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.BarChart">@L["Stats"]</MudNavLink>
             </AuthorizeView>
 
         </MudNavGroup>
@@ -56,10 +57,10 @@
     <MudSpacer />
     <MudNavMenu Bordered="true" Style="width: 100%;">
         <AuthorizeView>
-            <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
+            <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">@L["Settings"]</MudNavLink>
         </AuthorizeView>
         <AuthorizeView Roles="Administrator">
-            <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AdminPanelSettings">Admin</MudNavLink>
+            <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AdminPanelSettings">@L["Admin"]</MudNavLink>
         </AuthorizeView>
     </MudNavMenu>
 
@@ -81,9 +82,9 @@
                             <MudStack Row="true" Spacing="1">
                                 @if (DeviceService.GetClientType() != ClientType.Web)
                                 {
-                                    <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser" title="Switch User" />
+                                    <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser" title="@L["SwitchUser"]" />
                                 }
-                                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Logout" OnClick="Logout" title="Logout" />
+                                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Logout" OnClick="Logout" title="@L["Logout"]" />
                             </MudStack>
                         </MudStack>
                     </MudStack>

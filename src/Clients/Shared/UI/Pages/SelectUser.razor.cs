@@ -58,7 +58,7 @@ public partial class SelectUser
             {
                 LocalUserService.Remove(user.IdentityUserId);
                 _users = LocalUserService.GetAll();
-                _error = $"Session for {user.UserName} has expired. Please sign in again.";
+                _error = string.Format(L["SessionExpired"], user.UserName);
                 _loading = false;
             }
         }
@@ -78,7 +78,7 @@ public partial class SelectUser
             { x => x.UserName, user.UserName }
         };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.PinDialog>("Enter PIN", parameters, options);
+        var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.PinDialog>(L["EnterPin"], parameters, options);
         var result = await dialog.Result;
 
         if (result is null || result.Canceled || result.Data is not string pin)
@@ -86,7 +86,7 @@ public partial class SelectUser
 
         if (!LocalUserService.VerifyPin(user.IdentityUserId, pin))
         {
-            _error = "Incorrect PIN.";
+            _error = L["IncorrectPin"];
             StateHasChanged();
             return false;
         }

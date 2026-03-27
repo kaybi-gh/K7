@@ -1,25 +1,28 @@
+@inject IStringLocalizer<CreateLibraryDialog> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudDialog>
     <DialogContent>
         @* Step indicators *@
         <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center" Class="mb-6">
-            <MudChip T="string" Color="@(_activeStep >= 0 ? Color.Primary : Color.Default)" Size="Size.Small">1. Type</MudChip>
+            <MudChip T="string" Color="@(_activeStep >= 0 ? Color.Primary : Color.Default)" Size="Size.Small">@L["Step1"]</MudChip>
             <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
-            <MudChip T="string" Color="@(_activeStep >= 1 ? Color.Primary : Color.Default)" Size="Size.Small">2. Configuration</MudChip>
+            <MudChip T="string" Color="@(_activeStep >= 1 ? Color.Primary : Color.Default)" Size="Size.Small">@L["Step2"]</MudChip>
             <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
-            <MudChip T="string" Color="@(_activeStep >= 2 ? Color.Primary : Color.Default)" Size="Size.Small">3. Confirmation</MudChip>
+            <MudChip T="string" Color="@(_activeStep >= 2 ? Color.Primary : Color.Default)" Size="Size.Small">@L["Step3"]</MudChip>
         </MudStack>
 
         @* Step 1: Choose media type *@
         @if (_activeStep == 0)
         {
-            <MudText Typo="Typo.h6" Class="mb-4">Quel type de contenu contiendra cette librairie ?</MudText>
+            <MudText Typo="Typo.h6" Class="mb-4">@L["SelectContentType"]</MudText>
             <MudGrid Spacing="4" Justify="Justify.Center">
                 <MudItem xs="12" sm="4">
                     <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Movie)">
                         <MudCardContent Class="d-flex flex-column align-center pa-6">
                             <MudIcon Icon="@Icons.Material.Filled.Theaters" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
-                            <MudText Typo="Typo.h6" Class="mt-2">Films</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Films et documentaires</MudText>
+                            <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeMovies"]</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["MovieDescription"]</MudText>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
@@ -27,8 +30,8 @@
                     <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Serie)">
                         <MudCardContent Class="d-flex flex-column align-center pa-6">
                             <MudIcon Icon="@Icons.Material.Filled.Tv" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
-                            <MudText Typo="Typo.h6" Class="mt-2">Séries</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Séries TV et animes</MudText>
+                            <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeSeries"]</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["SeriesDescription"]</MudText>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
@@ -36,8 +39,8 @@
                     <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Music)">
                         <MudCardContent Class="d-flex flex-column align-center pa-6">
                             <MudIcon Icon="@Icons.Material.Filled.MusicNote" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
-                            <MudText Typo="Typo.h6" Class="mt-2">Musique</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">Albums et morceaux</MudText>
+                            <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeMusic"]</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["MusicDescription"]</MudText>
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
@@ -48,48 +51,48 @@
         @if (_activeStep == 1)
         {
             <MudStack Spacing="4" Class="mt-2">
-                <MudTextField @bind-Value="_title" Label="Nom de la librairie" Variant="Variant.Outlined"
-                              Required="true" RequiredError="Le nom est requis"
-                              Placeholder="Ex: Mes Films, Séries TV..." />
+                <MudTextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="Variant.Outlined"
+                              Required="true" RequiredError="@L["NameRequired"]"
+                              Placeholder="@L["NamePlaceholder"]" />
 
                 <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
-                    <MudTextField @bind-Value="_rootPath" Label="Chemin du dossier" Variant="Variant.Outlined"
-                                  Required="true" RequiredError="Le chemin est requis"
-                                  Placeholder="Ex: /media/movies, D:\Films..."
-                                  HelperText="Chemin absolu vers le dossier contenant les fichiers média"
+                    <MudTextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="Variant.Outlined"
+                                  Required="true" RequiredError="@L["PathRequired"]"
+                                  Placeholder="@L["PathPlaceholder"]"
+                                  HelperText="@L["PathHelper"]"
                                   Style="flex: 1;" />
                     <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="BrowseFolderAsync" Class="mb-6">
-                        Parcourir
+                        @L["Browse"]
                     </MudButton>
                 </MudStack>
 
-                <MudCheckBox @bind-Value="_triggerIndexing" Label="Indexer les fichiers automatiquement après la création" Color="Color.Primary" />
+                <MudCheckBox @bind-Value="_triggerIndexing" Label="@L["AutoIndex"]" Color="Color.Primary" />
             </MudStack>
         }
 
         @* Step 3: Summary *@
         @if (_activeStep == 2)
         {
-            <MudText Typo="Typo.h6" Class="mb-4">Résumé de la librairie</MudText>
+            <MudText Typo="Typo.h6" Class="mb-4">@L["SummaryTitle"]</MudText>
             <MudSimpleTable Dense="true" Bordered="true" Class="mb-4">
                 <tbody>
                     <tr>
-                        <td><strong>Nom</strong></td>
+                        <td><strong>@S["Name"]</strong></td>
                         <td>@_title</td>
                     </tr>
                     <tr>
-                        <td><strong>Type</strong></td>
+                        <td><strong>@S["Type"]</strong></td>
                         <td>
                             <MudChip T="string" Color="Color.Primary" Size="Size.Small">@GetMediaTypeLabel(_selectedMediaType)</MudChip>
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Chemin</strong></td>
+                        <td><strong>@S["Path"]</strong></td>
                         <td><code>@_rootPath</code></td>
                     </tr>
                     <tr>
-                        <td><strong>Indexation automatique</strong></td>
-                        <td>@(_triggerIndexing ? "Oui" : "Non")</td>
+                        <td><strong>@L["AutoIndexSummary"]</strong></td>
+                        <td>@(_triggerIndexing ? S["Yes"] : S["No"])</td>
                     </tr>
                 </tbody>
             </MudSimpleTable>
@@ -101,14 +104,14 @@
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
         @if (_activeStep > 0)
         {
-            <MudButton OnClick="PreviousStep" Variant="Variant.Outlined">Précédent</MudButton>
+            <MudButton OnClick="PreviousStep" Variant="Variant.Outlined">@S["Previous"]</MudButton>
         }
         @if (_activeStep < 2)
         {
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="NextStep" Disabled="!CanAdvance()">Suivant</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="NextStep" Disabled="!CanAdvance()">@S["Next"]</MudButton>
         }
         else
         {
@@ -116,11 +119,11 @@
                 @if (_isSubmitting)
                 {
                     <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                    <MudText Class="ms-2">Création...</MudText>
+                    <MudText Class="ms-2">@L["Creating"]</MudText>
                 }
                 else
                 {
-                    <MudText>Créer la librairie</MudText>
+                    <MudText>@L["Submit"]</MudText>
                 }
             </MudButton>
         }

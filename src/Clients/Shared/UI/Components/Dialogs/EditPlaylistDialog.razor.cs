@@ -38,12 +38,12 @@ public partial class EditPlaylistDialog
                 Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim()
             });
 
-            Snackbar.Add("Playlist modifiée", Severity.Success);
+            Snackbar.Add(L["Updated"], Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch
         {
-            Snackbar.Add("Erreur lors de la modification", Severity.Error);
+            Snackbar.Add(L["Error"], Severity.Error);
         }
         finally
         {

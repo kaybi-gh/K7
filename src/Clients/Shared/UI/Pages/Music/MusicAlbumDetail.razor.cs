@@ -43,7 +43,7 @@ public partial class MusicAlbumDetail
             _artists = album.PersonRoles?
                 .OfType<LiteMusicArtistRoleDto>()
                 .Where(r => r.Person is not null)
-                .Select(r => new ArtistInfo(r.Person!.Id, r.Person.Name ?? "Artiste inconnu"))
+                .Select(r => new ArtistInfo(r.Person!.Id, r.Person.Name ?? S["UnknownArtist"]))
                 .DistinctBy(a => a.PersonId)
                 .ToList() ?? [];
 
@@ -57,7 +57,7 @@ public partial class MusicAlbumDetail
                 {
                     Id = t.Id,
                     IndexedFileId = t.IndexedFileId,
-                    Title = t.Title ?? "Sans titre",
+                    Title = t.Title ?? S["Untitled"],
                     TrackNumber = t.TrackNumber,
                     ArtistName = artistName,
                     ArtistPersonId = _artists.FirstOrDefault()?.PersonId,

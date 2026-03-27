@@ -2,6 +2,8 @@
 @using K7.Shared.Dtos.Entities.Playlists
 @inject IPlaylistService K7ServerService
 @inject IK7ServerService ApiClient
+@inject IStringLocalizer<PlaylistDetail> L
+@inject IStringLocalizer<SharedResource> S
 <PageTitle>@(_playlist?.Title ?? "Playlist")</PageTitle>
 
 @if (_playlist is not null)
@@ -26,7 +28,7 @@
             </div>
 
             <div class="playlist-header-info">
-                <MudText Typo="Typo.overline">Playlist</MudText>
+                <MudText Typo="Typo.overline">@L["Header"]</MudText>
                 <MudText Typo="Typo.h4">@_playlist.Title</MudText>
 
                 @if (!string.IsNullOrEmpty(_playlist.Description))
@@ -35,7 +37,7 @@
                 }
 
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">
-                    @_playlist.ItemCount morceaux
+                    @_playlist.ItemCount @S["Tracks"]
                     @if (_totalDuration > 0)
                     {
                         <text> · @FormatTotalDuration(_totalDuration)</text>
@@ -48,14 +50,14 @@
                                StartIcon="@Icons.Material.Filled.PlayArrow"
                                OnClick="PlayAll"
                                Disabled="@(_items.Count == 0)">
-                        Tout lire
+                        @S["PlayAll"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Shuffle"
                                OnClick="ShuffleAll"
                                Disabled="@(_items.Count == 0)">
-                        Aléatoire
+                        @S["Shuffle"]
                     </MudButton>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                    Color="Color.Default"
@@ -75,7 +77,7 @@
         {
             <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
                 <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
-                <MudText Typo="Typo.body1" Color="Color.Secondary">Cette playlist est vide</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">@L["Empty"]</MudText>
             </MudStack>
         }
         else
@@ -90,9 +92,9 @@
                           RowClass="cursor-pointer">
                     <HeaderContent>
                         <MudTh Style="width: 50px;">#</MudTh>
-                        <MudTh>Titre</MudTh>
-                        <MudTh>Artiste</MudTh>
-                        <MudTh>Album</MudTh>
+                        <MudTh>@S["Title"]</MudTh>
+                        <MudTh>@S["Artist"]</MudTh>
+                        <MudTh>@S["Album"]</MudTh>
                         <MudTh Style="width: 80px;">
                             <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
                         </MudTh>

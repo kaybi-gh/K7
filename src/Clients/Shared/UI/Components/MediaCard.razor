@@ -1,3 +1,5 @@
+@inject IStringLocalizer<MediaCard> L
+
 @if (Skeleton)
 {
     <div class="media-card @VariantClass">
@@ -58,10 +60,10 @@ else
             {
                 <div class="media-card-menu">
                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                        <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="OnExcludeForSelf">Masquer pour moi</MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="OnExcludeForSelf">@L["HideForMe"]</MudMenuItem>
                         @if (IsAdmin)
                         {
-                            <MudMenuItem Icon="@Icons.Material.Filled.PeopleAlt" OnClick="OnExcludeForOthers">Masquer pour un utilisateur</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.PeopleAlt" OnClick="OnExcludeForOthers">@L["HideForUser"]</MudMenuItem>
                         }
                     </MudMenu>
                 </div>

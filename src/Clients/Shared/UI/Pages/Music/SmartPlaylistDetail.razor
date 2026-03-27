@@ -2,6 +2,8 @@
 @using K7.Shared.Dtos.Entities.Playlists
 @inject IPlaylistService K7ServerService
 @inject IK7ServerService ApiClient
+@inject IStringLocalizer<SmartPlaylistDetail> L
+@inject IStringLocalizer<SharedResource> S
 <PageTitle>@(_smartPlaylist?.Title ?? "Smart Playlist")</PageTitle>
 
 @if (_smartPlaylist is not null)
@@ -14,7 +16,7 @@
                 </div>
             </div>
             <div class="playlist-header-info">
-                <MudText Typo="Typo.overline">Smart Playlist</MudText>
+                <MudText Typo="Typo.overline">@L["Header"]</MudText>
                 <MudText Typo="Typo.h4">@_smartPlaylist.Title</MudText>
 
                 @if (!string.IsNullOrEmpty(_smartPlaylist.Description))
@@ -25,7 +27,7 @@
                 <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mt-1">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
                         @_smartPlaylist.Rules.Count règle@(_smartPlaylist.Rules.Count > 1 ? "s" : "")
-                        · @_smartPlaylist.ItemCount morceaux
+                        · @_smartPlaylist.ItemCount @S["Tracks"]
                     </MudText>
                     @if (_smartPlaylist.LastEvaluatedAt.HasValue)
                     {
@@ -39,12 +41,12 @@
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.PlayArrow"
                                OnClick="PlayAll" Disabled="@(_items.Count == 0)">
-                        Tout lire
+                        @S["PlayAll"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Shuffle"
                                OnClick="ShuffleAll" Disabled="@(_items.Count == 0)">
-                        Aléatoire
+                        @S["Shuffle"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
                                StartIcon="@Icons.Material.Filled.Refresh"
@@ -52,11 +54,11 @@
                         @if (_evaluating)
                         {
                             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-1" />
-                            <text>Évaluation...</text>
+                            <text>@L["Evaluating"]</text>
                         }
                         else
                         {
-                            <text>Réévaluer</text>
+                            <text>@L["Reevaluate"]</text>
                         }
                     </MudButton>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" OnClick="OpenEditDialog" />
@@ -83,7 +85,7 @@
         {
             <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
                 <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
-                <MudText Typo="Typo.body1" Color="Color.Secondary">Aucun résultat — modifiez les règles ou réévaluez</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">@L["NoResults"]</MudText>
             </MudStack>
         }
         else
@@ -93,9 +95,9 @@
                           T="SmartPlaylistItemViewModel" OnRowClick="OnTrackClick" RowClass="cursor-pointer">
                     <HeaderContent>
                         <MudTh Style="width: 50px;">#</MudTh>
-                        <MudTh>Titre</MudTh>
-                        <MudTh>Artiste</MudTh>
-                        <MudTh>Album</MudTh>
+                        <MudTh>@S["Title"]</MudTh>
+                        <MudTh>@S["Artist"]</MudTh>
+                        <MudTh>@S["Album"]</MudTh>
                         <MudTh Style="width: 80px;"><MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" /></MudTh>
                         <MudTh Style="width: 130px;"></MudTh>
                         <MudTh Style="width: 50px;"></MudTh>

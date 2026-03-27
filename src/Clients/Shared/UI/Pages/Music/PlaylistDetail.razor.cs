@@ -68,7 +68,7 @@ public partial class PlaylistDetail
         Id = item.Id,
         MediaId = item.MediaId,
         Order = item.Order,
-        Title = item.MediaTitle ?? "Sans titre",
+        Title = item.MediaTitle ?? S["Untitled"],
         ArtistName = item.ArtistName,
         ArtistPersonId = item.ArtistPersonId,
         AlbumTitle = item.AlbumTitle,
@@ -152,7 +152,7 @@ public partial class PlaylistDetail
         }
         catch
         {
-            Snackbar.Add("Erreur lors de la suppression", Severity.Error);
+            Snackbar.Add(L["DeleteError"], Severity.Error);
         }
     }
 
@@ -168,7 +168,7 @@ public partial class PlaylistDetail
         };
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.EditPlaylistDialog>("Modifier la playlist", parameters, options);
+        var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.EditPlaylistDialog>(L["EditDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -181,21 +181,21 @@ public partial class PlaylistDetail
     private async Task ConfirmDelete()
     {
         var result = await DialogService.ShowMessageBoxAsync(
-            "Supprimer la playlist",
-            $"Supprimer « {_playlist?.Title} » ? Cette action est irréversible.",
-            yesText: "Supprimer", cancelText: "Annuler");
+            L["DeleteDialogTitle"],
+            $"{S["Delete"]} \u00ab {_playlist?.Title} \u00bb ?",
+            yesText: S["Delete"], cancelText: S["Cancel"]);
 
         if (result == true)
         {
             try
             {
                 await K7ServerService.DeletePlaylistAsync(Guid.Parse(Id));
-                Snackbar.Add("Playlist supprimée", Severity.Success);
+                Snackbar.Add(L["DeleteSuccess"], Severity.Success);
                 NavigationManager.NavigateTo("/playlists");
             }
             catch
             {
-                Snackbar.Add("Erreur lors de la suppression", Severity.Error);
+                Snackbar.Add(L["DeleteError"], Severity.Error);
             }
         }
     }

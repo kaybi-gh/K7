@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Search" xml:space="preserve"><value>Rechercher</value></data>
+  <data name="Home" xml:space="preserve"><value>Accueil</value></data>
+  <data name="Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="Artists" xml:space="preserve"><value>Artistes</value></data>
+  <data name="Albums" xml:space="preserve"><value>Albums</value></data>
+  <data name="Tracks" xml:space="preserve"><value>Morceaux</value></data>
+  <data name="Playlists" xml:space="preserve"><value>Playlists</value></data>
+  <data name="Radio" xml:space="preserve"><value>Radio</value></data>
+  <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
+  <data name="Settings" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="Admin" xml:space="preserve"><value>Administration</value></data>
+  <data name="SwitchUser" xml:space="preserve"><value>Changer d'utilisateur</value></data>
+  <data name="Logout" xml:space="preserve"><value>Déconnexion</value></data>
+</root>
+

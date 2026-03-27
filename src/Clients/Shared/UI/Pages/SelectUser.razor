@@ -1,12 +1,13 @@
 @page "/select-user"
 @layout Layout.EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject IStringLocalizer<SelectUser> L
 
-<PageTitle>Who's watching? - K7</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height:80vh;">
     <MudStack Spacing="6" AlignItems="AlignItems.Center" Style="width:100%; max-width:700px;">
-        <MudText Typo="Typo.h4">Who's watching?</MudText>
+        <MudText Typo="Typo.h4">@L["PageTitle"]</MudText>
 
         @if (_loading)
         {
@@ -55,7 +56,7 @@
                                Style="width:80px; height:80px; font-size:2rem;">
                         <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Large" />
                     </MudAvatar>
-                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">Add user</MudText>
+                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">@L["AddServer"]</MudText>
                 </MudStack>
             </MudItem>
         </MudGrid>
@@ -64,7 +65,7 @@
         {
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-4">
                 <MudSwitch T="bool" Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
-                           Color="Color.Primary" Label="I'm the only user on this device" />
+                           Color="Color.Primary" Label="@L["SingleUserMode"]" />
             </MudStack>
         }
     </MudStack>

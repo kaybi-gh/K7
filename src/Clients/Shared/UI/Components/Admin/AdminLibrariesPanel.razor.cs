@@ -45,7 +45,7 @@ public partial class AdminLibrariesPanel
             CloseOnEscapeKey = true
         };
 
-        var dialog = await DialogService.ShowAsync<Dialogs.CreateLibraryDialog>("Nouvelle librairie", options);
+        var dialog = await DialogService.ShowAsync<Dialogs.CreateLibraryDialog>(L["NewLibraryTitle"], options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -62,11 +62,11 @@ public partial class AdminLibrariesPanel
         _ => Icons.Material.Filled.Folder
     };
 
-    private static string GetMediaTypeLabel(LibraryMediaType type) => type switch
+    private string GetMediaTypeLabel(LibraryMediaType type) => type switch
     {
-        LibraryMediaType.Movie => "Films",
-        LibraryMediaType.Serie => "Séries",
-        LibraryMediaType.Music => "Musique",
+        LibraryMediaType.Movie => S["MediaTypeMovies"],
+        LibraryMediaType.Serie => S["MediaTypeSeries"],
+        LibraryMediaType.Music => S["MediaTypeMusic"],
         _ => type.ToString()
     };
 
@@ -75,11 +75,11 @@ public partial class AdminLibrariesPanel
         try
         {
             await K7ServerService.IndexLibraryFilesAsync(library.Id);
-            Snackbar.Add($"Indexation de « {library.Title} » lancée.", Severity.Success);
+            Snackbar.Add(string.Format(L["IndexStarted"], library.Title), Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
         }
     }
 
@@ -91,6 +91,6 @@ public partial class AdminLibrariesPanel
         };
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        await DialogService.ShowAsync<AdminLibraryUsersDialog>($"Accès — {library.Title}", parameters, options);
+        await DialogService.ShowAsync<AdminLibraryUsersDialog>(string.Format(L["AccessTitle"], library.Title), parameters, options);
     }
 }

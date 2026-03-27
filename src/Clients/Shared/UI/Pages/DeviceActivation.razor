@@ -1,20 +1,21 @@
 @page "/linkdevice"
 @layout Layout.EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject IStringLocalizer<DeviceActivation> L
 
-<PageTitle>Device Activation - K7</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height:80vh;">
     <MudPaper Class="pa-4 pa-sm-8" Elevation="4" Style="width:100%; max-width:600px;">
         <MudStack Spacing="4" AlignItems="AlignItems.Center">
             <MudIcon Icon="@Icons.Material.Outlined.Tv" Size="Size.Large" Color="Color.Primary" />
-            <MudText Typo="Typo.h5" Align="Align.Center">Sign in to K7</MudText>
+            <MudText Typo="Typo.h5" Align="Align.Center">@L["Title"]</MudText>
 
             @if (_loading)
             {
                 <MudStack AlignItems="AlignItems.Center" Spacing="2">
                     <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Requesting device code...</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Activating"]</MudText>
                 </MudStack>
             }
             else if (_error is not null)
@@ -23,13 +24,13 @@
                     @_error
                 </MudAlert>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartDeviceCodeFlowAsync">
-                    Try Again
+                    @L["Activate"]
                 </MudButton>
             }
             else if (_authorized)
             {
                 <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
-                    Device authorized! You are now signed in.
+                    @L["ActivationSuccess"]
                 </MudAlert>
             }
             else if (_deviceCode is not null)
@@ -40,14 +41,14 @@
                     <MudItem xs="12" sm="6">
                         <MudStack Spacing="2" AlignItems="AlignItems.Center">
                             <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
-                                1. Using a browser on another device, visit:
+                                @L["Instructions"]
                             </MudText>
                             <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center">
                                 @_displayUri
                             </MudText>
 
                             <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center" Class="mt-4">
-                                2. And enter the code:
+                                @L["CodeLabel"]
                             </MudText>
                             <MudPaper Class="pa-3" Elevation="0" Style="background: var(--mud-palette-surface); border-radius: 8px; width:100%;">
                                 <MudText Typo="Typo.h4" Align="Align.Center"
@@ -65,7 +66,7 @@
                     <MudItem xs="12" sm="5">
                         <MudStack AlignItems="AlignItems.Center" Spacing="2">
                             <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
-                                Scan the QR code below
+                                @L["ScanQrCode"]
                             </MudText>
                             <div id="device-qr" style="background:white; padding:12px; border-radius:8px; display:inline-block;"></div>
                         </MudStack>
@@ -76,7 +77,7 @@
 
                 <MudStack AlignItems="AlignItems.Center" Spacing="2" Style="width:100%;">
                     <MudProgressLinear Color="Color.Primary" Indeterminate="true" Style="width:100%;" />
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Waiting for authorization...</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Activating"]</MudText>
                 </MudStack>
             }
         </MudStack>

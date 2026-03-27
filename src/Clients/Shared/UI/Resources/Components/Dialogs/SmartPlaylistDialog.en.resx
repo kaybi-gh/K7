@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="NameLabel" xml:space="preserve"><value>Name</value></data>
+  <data name="NameRequired" xml:space="preserve"><value>Name is required</value></data>
+  <data name="DescriptionOptional" xml:space="preserve"><value>Description (optional)</value></data>
+  <data name="MatchLabel" xml:space="preserve"><value>Match</value></data>
+  <data name="MatchAll" xml:space="preserve"><value>All</value></data>
+  <data name="MatchAny" xml:space="preserve"><value>At least one</value></data>
+  <data name="RulesSuffix" xml:space="preserve"><value>rules</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Media type</value></data>
+  <data name="AddRule" xml:space="preserve"><value>Add a rule</value></data>
+  <data name="SortBy" xml:space="preserve"><value>Sort by</value></data>
+  <data name="Descending" xml:space="preserve"><value>Descending</value></data>
+  <data name="Limit" xml:space="preserve"><value>Limit</value></data>
+  <data name="Saving" xml:space="preserve"><value>Saving...</value></data>
+  <data name="Creating" xml:space="preserve"><value>Creating...</value></data>
+  <data name="Updated" xml:space="preserve"><value>Smart playlist updated</value></data>
+  <data name="Created" xml:space="preserve"><value>Smart playlist created</value></data>
+  <data name="SaveError" xml:space="preserve"><value>Error while saving</value></data>
+  <data name="FieldTitle" xml:space="preserve"><value>Title</value></data>
+  <data name="FieldGenre" xml:space="preserve"><value>Genre</value></data>
+  <data name="FieldYear" xml:space="preserve"><value>Year</value></data>
+  <data name="FieldRating" xml:space="preserve"><value>Rating</value></data>
+  <data name="FieldPlayCount" xml:space="preserve"><value>Play count</value></data>
+  <data name="FieldDateAdded" xml:space="preserve"><value>Date added</value></data>
+  <data name="FieldLastPlayed" xml:space="preserve"><value>Last played</value></data>
+  <data name="FieldIsWatched" xml:space="preserve"><value>Watched</value></data>
+  <data name="FieldArtist" xml:space="preserve"><value>Artist</value></data>
+  <data name="FieldAlbum" xml:space="preserve"><value>Album</value></data>
+  <data name="FieldTrackNumber" xml:space="preserve"><value>Track #</value></data>
+  <data name="FieldDiscNumber" xml:space="preserve"><value>Disc #</value></data>
+  <data name="FieldBpm" xml:space="preserve"><value>BPM</value></data>
+  <data name="FieldDuration" xml:space="preserve"><value>Duration (s)</value></data>
+  <data name="FieldOriginalLanguage" xml:space="preserve"><value>Original language</value></data>
+  <data name="OperatorIs" xml:space="preserve"><value>is</value></data>
+  <data name="OperatorIsNot" xml:space="preserve"><value>is not</value></data>
+  <data name="OperatorContains" xml:space="preserve"><value>contains</value></data>
+  <data name="OperatorInLastDays" xml:space="preserve"><value>in the last (days)</value></data>
+  <data name="OperatorIsEmpty" xml:space="preserve"><value>is empty</value></data>
+  <data name="OperatorIsNotEmpty" xml:space="preserve"><value>is not empty</value></data>
+  <data name="PlaceholderYear" xml:space="preserve"><value>e.g.: 2024</value></data>
+  <data name="PlaceholderRating" xml:space="preserve"><value>0-10</value></data>
+  <data name="PlaceholderCount" xml:space="preserve"><value>e.g.: 5</value></data>
+  <data name="PlaceholderDays" xml:space="preserve"><value>days</value></data>
+  <data name="PlaceholderBoolean" xml:space="preserve"><value>true / false</value></data>
+  <data name="PlaceholderDuration" xml:space="preserve"><value>e.g.: 120</value></data>
+  <data name="PlaceholderSeconds" xml:space="preserve"><value>seconds</value></data>
+  <data name="PlaceholderTrackDisc" xml:space="preserve"><value>e.g.: 1</value></data>
+  <data name="PlaceholderDefault" xml:space="preserve"><value>value</value></data>
+  <data name="OrderByTitle" xml:space="preserve"><value>Title</value></data>
+  <data name="OrderByDateAdded" xml:space="preserve"><value>Date added</value></data>
+  <data name="OrderByLastPlayed" xml:space="preserve"><value>Last played</value></data>
+  <data name="OrderByPlayCount" xml:space="preserve"><value>Play count</value></data>
+  <data name="OrderByRating" xml:space="preserve"><value>Rating</value></data>
+  <data name="OrderByYear" xml:space="preserve"><value>Year</value></data>
+  <data name="OrderByRandom" xml:space="preserve"><value>Random</value></data>
+  <data name="OrderByArtist" xml:space="preserve"><value>Artist</value></data>
+  <data name="OrderByAlbum" xml:space="preserve"><value>Album</value></data>
+  <data name="OrderByTrackNumber" xml:space="preserve"><value>Track #</value></data>
+  <data name="OrderByBpm" xml:space="preserve"><value>BPM</value></data>
+  <data name="OrderByDuration" xml:space="preserve"><value>Duration</value></data>
+</root>
+

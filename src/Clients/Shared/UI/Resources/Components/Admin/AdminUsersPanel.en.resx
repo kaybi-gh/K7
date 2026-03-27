@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Users</value></data>
+  <data name="Empty" xml:space="preserve"><value>No users</value></data>
+  <data name="HeaderUser" xml:space="preserve"><value>User</value></data>
+  <data name="HeaderRole" xml:space="preserve"><value>Role</value></data>
+  <data name="HeaderActive" xml:space="preserve"><value>Active</value></data>
+  <data name="HeaderCreatedAt" xml:space="preserve"><value>Created at</value></data>
+  <data name="HeaderActions" xml:space="preserve"><value>Actions</value></data>
+  <data name="RoleAdministrator" xml:space="preserve"><value>Administrator</value></data>
+  <data name="RoleUser" xml:space="preserve"><value>User</value></data>
+  <data name="AriaCapabilities" xml:space="preserve"><value>Capabilities</value></data>
+  <data name="AriaLibraries" xml:space="preserve"><value>Libraries</value></data>
+  <data name="AriaHiddenMedia" xml:space="preserve"><value>Hidden media</value></data>
+  <data name="AriaRestrictionProfile" xml:space="preserve"><value>Restriction profile</value></data>
+  <data name="AriaDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="RoleUpdated" xml:space="preserve"><value>{0}'s role updated.</value></data>
+  <data name="UserActivated" xml:space="preserve"><value>{0} activated.</value></data>
+  <data name="UserDeactivated" xml:space="preserve"><value>{0} deactivated.</value></data>
+  <data name="CapabilitiesTitle" xml:space="preserve"><value>Capabilities</value></data>
+  <data name="CapabilitiesUpdated" xml:space="preserve"><value>Capabilities updated.</value></data>
+  <data name="DeleteFallbackName" xml:space="preserve"><value>this user</value></data>
+  <data name="DeleteUserTitle" xml:space="preserve"><value>Delete user</value></data>
+  <data name="UserDeleted" xml:space="preserve"><value>User deleted.</value></data>
+  <data name="LibraryAccessTitle" xml:space="preserve"><value>Library access</value></data>
+  <data name="LibraryAccessUpdated" xml:space="preserve"><value>Library access updated.</value></data>
+  <data name="HiddenMediaTitle" xml:space="preserve"><value>Hidden media</value></data>
+  <data name="HiddenMediaUpdated" xml:space="preserve"><value>Hidden media updated.</value></data>
+  <data name="RestrictionProfileTitle" xml:space="preserve"><value>Restriction profile</value></data>
+  <data name="RestrictionProfileUpdated" xml:space="preserve"><value>Restriction profile updated.</value></data>
+</root>
+

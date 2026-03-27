@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Step1" xml:space="preserve"><value>1. Type</value></data>
+  <data name="Step2" xml:space="preserve"><value>2. Configuration</value></data>
+  <data name="Step3" xml:space="preserve"><value>3. Confirmation</value></data>
+  <data name="SelectContentType" xml:space="preserve"><value>What type of content will this library contain?</value></data>
+  <data name="MovieDescription" xml:space="preserve"><value>Movies and documentaries</value></data>
+  <data name="SeriesDescription" xml:space="preserve"><value>TV series and anime</value></data>
+  <data name="MusicDescription" xml:space="preserve"><value>Albums and tracks</value></data>
+  <data name="NameLabel" xml:space="preserve"><value>Library name</value></data>
+  <data name="NameRequired" xml:space="preserve"><value>Name is required</value></data>
+  <data name="NamePlaceholder" xml:space="preserve"><value>E.g.: My Movies, TV Series...</value></data>
+  <data name="PathLabel" xml:space="preserve"><value>Folder path</value></data>
+  <data name="PathRequired" xml:space="preserve"><value>Path is required</value></data>
+  <data name="PathPlaceholder" xml:space="preserve"><value>E.g.: /media/movies, D:\Movies...</value></data>
+  <data name="PathHelper" xml:space="preserve"><value>Absolute path to the folder containing media files</value></data>
+  <data name="Browse" xml:space="preserve"><value>Browse</value></data>
+  <data name="AutoIndex" xml:space="preserve"><value>Automatically index files after creation</value></data>
+  <data name="SummaryTitle" xml:space="preserve"><value>Library summary</value></data>
+  <data name="AutoIndexSummary" xml:space="preserve"><value>Automatic indexing</value></data>
+  <data name="Creating" xml:space="preserve"><value>Creating...</value></data>
+  <data name="Submit" xml:space="preserve"><value>Create library</value></data>
+  <data name="Success" xml:space="preserve"><value>Library '{0}' created successfully!</value></data>
+  <data name="Error" xml:space="preserve"><value>Error while creating: {0}</value></data>  <data name="SelectFolderTitle" xml:space="preserve"><value>Select a folder</value></data></root>
+

@@ -64,6 +64,13 @@ try
     app.UseForwardedHeaders();
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
+
+    var supportedCultures = new[] { "fr", "en" };
+    app.UseRequestLocalization(new RequestLocalizationOptions()
+        .SetDefaultCulture("fr")
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures));
+
     app.MapStaticAssets();
 
     app.UseSetupRequired();

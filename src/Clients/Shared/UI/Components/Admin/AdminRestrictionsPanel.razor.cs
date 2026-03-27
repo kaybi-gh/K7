@@ -70,8 +70,8 @@ public partial class AdminRestrictionsPanel
         var parameters = new DialogParameters<AdminRestrictionProfileDialog>
         {
             { x => x.IsNew, true },
-            { x => x.Name, template.Name },
-            { x => x.Description, template.Description },
+            { x => x.Name, L[template.Name] },
+            { x => x.Description, L[template.Description] },
             { x => x.MatchCondition, template.MatchCondition },
             { x => x.Rules, template.Rules.Select(r => new AdminRestrictionProfileDialog.RuleEntry
             {
@@ -86,7 +86,7 @@ public partial class AdminRestrictionsPanel
     private async Task ShowDialog(DialogParameters<AdminRestrictionProfileDialog> parameters)
     {
         var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<AdminRestrictionProfileDialog>("Profil de restriction", parameters, options);
+        var dialog = await DialogService.ShowAsync<AdminRestrictionProfileDialog>(L["ProfileTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -101,7 +101,7 @@ public partial class AdminRestrictionsPanel
             { x => x.ProfileName, profile.Name }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
-        await DialogService.ShowAsync<AdminRestrictedMediasDialog>("Médias restreints", parameters, options);
+        await DialogService.ShowAsync<AdminRestrictedMediasDialog>(L["RestrictedMediaTitle"], parameters, options);
     }
 
     private async Task ConfirmDelete(ContentRestrictionProfileDto profile)
@@ -111,7 +111,7 @@ public partial class AdminRestrictionsPanel
             { x => x.DisplayName, profile.Name }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>("Supprimer le profil", parameters, options);
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>(L["DeleteProfileTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -119,37 +119,37 @@ public partial class AdminRestrictionsPanel
             try
             {
                 await K7ServerService.DeleteContentRestrictionProfileAsync(profile.Id);
-                Snackbar.Add("Profil supprimé.", Severity.Success);
+                Snackbar.Add(L["ProfileDeleted"], Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
         }
     }
 
-    private static string FormatRule(ContentRestrictionRuleDto rule)
+    private string FormatRule(ContentRestrictionRuleDto rule)
     {
         var field = rule.Field switch
         {
-            RestrictionField.Genre => "Genre",
-            RestrictionField.ContentRating => "Classification",
-            RestrictionField.ReleaseYear => "Année",
+            RestrictionField.Genre => L["FieldGenre"].Value,
+            RestrictionField.ContentRating => L["FieldContentRating"].Value,
+            RestrictionField.ReleaseYear => L["FieldReleaseYear"].Value,
             _ => rule.Field.ToString()
         };
         var op = rule.Operator switch
         {
             RestrictionOperator.Equals => "=",
             RestrictionOperator.NotEquals => "≠",
-            RestrictionOperator.Contains => "contient",
-            RestrictionOperator.NotContains => "ne contient pas",
+            RestrictionOperator.Contains => L["OperatorContains"].Value,
+            RestrictionOperator.NotContains => L["OperatorNotContains"].Value,
             RestrictionOperator.GreaterThan => ">",
             RestrictionOperator.LessThan => "<",
             RestrictionOperator.GreaterThanOrEqual => "≥",
             RestrictionOperator.LessThanOrEqual => "≤",
-            RestrictionOperator.IsEmpty => "est vide",
-            RestrictionOperator.IsNotEmpty => "n'est pas vide",
+            RestrictionOperator.IsEmpty => L["OperatorIsEmpty"].Value,
+            RestrictionOperator.IsNotEmpty => L["OperatorIsNotEmpty"].Value,
             _ => rule.Operator.ToString()
         };
         if (rule.Operator is RestrictionOperator.IsEmpty or RestrictionOperator.IsNotEmpty)
@@ -162,8 +162,8 @@ public partial class AdminRestrictionsPanel
     public static class Templates
     {
         public static readonly TemplateDefinition ChildFriendly = new(
-            "Tout public (enfants)",
-            "Bloque les contenus classifiés 12+ / PG-13+, sans classification, et les genres Horreur/Horror/Thriller",
+            "TemplateChildFriendly",
+            "TemplateChildFriendlyDesc",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.IsEmpty },
@@ -181,8 +181,8 @@ public partial class AdminRestrictionsPanel
             ]);
 
         public static readonly TemplateDefinition Family12 = new(
-            "Famille (+12)",
-            "Bloque les contenus classifiés 16+ / R+",
+            "TemplateFamily12",
+            "TemplateFamily12Desc",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "16" },
@@ -193,8 +193,8 @@ public partial class AdminRestrictionsPanel
             ]);
 
         public static readonly TemplateDefinition Teen16 = new(
-            "Adolescent (+16)",
-            "Bloque uniquement les contenus classifiés 18 / NC-17",
+            "TemplateTeen16",
+            "TemplateTeen16Desc",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },
@@ -202,8 +202,8 @@ public partial class AdminRestrictionsPanel
             ]);
 
         public static readonly TemplateDefinition NoHorror = new(
-            "Sans horreur",
-            "Bloque les genres Horreur/Horror et Thriller",
+            "TemplateNoHorror",
+            "TemplateNoHorrorDesc",
             RestrictionMatchCondition.Any,
             [
                 new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horreur" },

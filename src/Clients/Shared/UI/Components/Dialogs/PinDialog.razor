@@ -1,10 +1,13 @@
+@inject IStringLocalizer<PinDialog> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="3" AlignItems="AlignItems.Center" Class="mt-2">
-            <MudText Typo="Typo.body1">Enter PIN for <b>@UserName</b></MudText>
+            <MudText Typo="Typo.body1">@((MarkupString)string.Format(L["EnterForUser"], UserName))</MudText>
             <MudTextField @ref="_pinField"
                           @bind-Value="_pin"
-                          Label="PIN"
+                          Label="@L["PinLabel"]"
                           InputType="InputType.Password"
                           Variant="Variant.Outlined"
                           MaxLength="10"
@@ -14,12 +17,12 @@
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
         <MudButton Color="Color.Primary"
                    Variant="Variant.Filled"
                    OnClick="Submit"
                    Disabled="@string.IsNullOrEmpty(_pin)">
-            OK
+            @S["Ok"]
         </MudButton>
     </DialogActions>
 </MudDialog>

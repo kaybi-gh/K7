@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Header" xml:space="preserve"><value>Smart Playlist</value></data>
+  <data name="Evaluating" xml:space="preserve"><value>Évaluation…</value></data>
+  <data name="Reevaluate" xml:space="preserve"><value>Réévaluer</value></data>
+  <data name="NoResults" xml:space="preserve"><value>Aucun résultat — modifiez les règles ou réévaluez</value></data>
+  <data name="ReevaluateSuccess" xml:space="preserve"><value>Smart playlist réévaluée</value></data>
+  <data name="ReevaluateError" xml:space="preserve"><value>Erreur lors de l'évaluation</value></data>
+  <data name="EditDialogTitle" xml:space="preserve"><value>Modifier la smart playlist</value></data>
+  <data name="DeleteDialogTitle" xml:space="preserve"><value>Supprimer la smart playlist</value></data>
+  <data name="DeleteSuccess" xml:space="preserve"><value>Smart playlist supprimée</value></data>
+  <data name="DeleteError" xml:space="preserve"><value>Erreur lors de la suppression</value></data>
+  <data name="NoRules" xml:space="preserve"><value>Aucune règle définie</value></data>
+</root>
+

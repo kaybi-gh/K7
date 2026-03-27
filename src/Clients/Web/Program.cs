@@ -1,4 +1,5 @@
 using Blazored.LocalStorage;
+using System.Globalization;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Services.K7Server;
@@ -7,6 +8,7 @@ using K7.Shared.Interfaces;
 using K7.Shared.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.JSInterop;
 using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -16,6 +18,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();
 
 builder.Services.AddMudServices();
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
 builder.Services.AddHttpClient<K7ServerService>(httpClient =>
 {
@@ -56,6 +59,12 @@ builder.Services.AddHttpClient("BackendAPI", client =>
 .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
 
 var wasmHost = builder.Build();
+
+var js = wasmHost.Services.GetRequiredService<IJSRuntime>();
+var cultureName = await js.InvokeAsync<string?>("blazorCulture.get");
+var culture = new CultureInfo(cultureName ?? "fr");
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
 
 // Eagerly resolve so it starts listening to audio player events
 wasmHost.Services.GetRequiredService<AudioPlaybackProgressTracker>();

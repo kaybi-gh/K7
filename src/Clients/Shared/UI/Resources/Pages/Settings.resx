@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="DarkMode" xml:space="preserve"><value>Mode sombre</value></data>
+  <data name="Theme" xml:space="preserve"><value>Thème</value></data>
+  <data name="Language" xml:space="preserve"><value>Langue</value></data>
+  <data name="ServerUrl" xml:space="preserve"><value>URL du serveur K7</value></data>
+  <data name="FormFactor" xml:space="preserve"><value>Type d'appareil :</value></data>
+  <data name="Hdr" xml:space="preserve"><value>HDR :</value></data>
+  <data name="Pin" xml:space="preserve"><value>PIN</value></data>
+  <data name="PinSet" xml:space="preserve"><value>Un PIN est défini sur votre compte.</value></data>
+  <data name="ChangePin" xml:space="preserve"><value>Changer le PIN</value></data>
+  <data name="RemovePin" xml:space="preserve"><value>Retirer le PIN</value></data>
+  <data name="PinNotSet" xml:space="preserve"><value>Aucun PIN défini. Un PIN protège l'accès à votre compte sur les appareils partagés.</value></data>
+  <data name="SetPin" xml:space="preserve"><value>Définir un PIN</value></data>
+  <data name="SupportedCodecs" xml:space="preserve"><value>Codecs supportés</value></data>
+  <data name="WarningTitle" xml:space="preserve"><value>Attention</value></data>
+  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changer l'URL du serveur K7 supprimera tous les éléments liés au serveur actuel (statistiques et fichiers).</value></data>
+  <data name="SetPinDialogTitle" xml:space="preserve"><value>Définir un PIN</value></data>
+  <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirmer le PIN</value></data>
+  <data name="PinMismatch" xml:space="preserve"><value>Les PIN ne correspondent pas.</value></data>
+  <data name="NewPinDialogTitle" xml:space="preserve"><value>Nouveau PIN</value></data>
+  <data name="ConfirmNewPinDialogTitle" xml:space="preserve"><value>Confirmer le nouveau PIN</value></data>
+  <data name="RemovePinDialogTitle" xml:space="preserve"><value>Retirer le PIN</value></data>
+  <data name="RemovePinConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir retirer votre PIN ?</value></data>
+  <data name="UserUnknown" xml:space="preserve"><value>Impossible d'identifier l'utilisateur actuel.</value></data>
+  <data name="PinSetSuccess" xml:space="preserve"><value>PIN défini avec succès.</value></data>
+  <data name="PinRemovedSuccess" xml:space="preserve"><value>PIN retiré.</value></data>
+  <data name="PinUpdateFailed" xml:space="preserve"><value>Échec de la mise à jour du PIN : {0}</value></data>
+</root>
+

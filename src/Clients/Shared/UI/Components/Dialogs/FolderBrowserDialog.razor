@@ -1,10 +1,13 @@
+@inject IStringLocalizer<FolderBrowserDialog> L
+@inject IStringLocalizer<SharedResource> S
+
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="2">
             @* Current path display + parent navigation *@
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                 <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Disabled="@string.IsNullOrEmpty(_currentPath)" OnClick="NavigateUp" Size="Size.Small" />
-                <MudTextField @bind-Value="_currentPath" Label="Chemin" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField @bind-Value="_currentPath" Label="@L["PathLabel"]" Variant="Variant.Outlined" ReadOnly="true" />
             </MudStack>
 
             @if (_isLoading)
@@ -33,7 +36,7 @@
                     {
                         <MudListItem Value="@((DirectoryEntryDto?)null)">
                             <ChildContent>
-                                <MudText Color="Color.Secondary" Typo="Typo.body2">Aucun sous-dossier</MudText>
+                                <MudText Color="Color.Secondary" Typo="Typo.body2">@L["NoSubfolders"]</MudText>
                             </ChildContent>
                         </MudListItem>
                     }
@@ -42,9 +45,9 @@
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Confirm" Disabled="@string.IsNullOrEmpty(GetSelectedPath())">
-            Sélectionner ce dossier
+            @L["SelectFolder"]
         </MudButton>
     </DialogActions>
 </MudDialog>

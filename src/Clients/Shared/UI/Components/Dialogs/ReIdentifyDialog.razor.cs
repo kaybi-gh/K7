@@ -51,7 +51,7 @@ public partial class ReIdentifyDialog
     {
         if (string.IsNullOrWhiteSpace(_searchQuery) && string.IsNullOrWhiteSpace(_searchProviderId))
         {
-            Snackbar.Add("Veuillez entrer un titre ou un ID.", Severity.Warning);
+            Snackbar.Add(L["EnterTitleOrId"], Severity.Warning);
             return;
         }
 
@@ -66,7 +66,7 @@ public partial class ReIdentifyDialog
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur lors de la recherche : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(L["SearchError"], ex.Message), Severity.Error);
         }
         finally
         {
@@ -107,7 +107,7 @@ public partial class ReIdentifyDialog
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur lors de la ré-identification : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(L["ReidentifyError"], ex.Message), Severity.Error);
             _isSubmitting = false;
             StateHasChanged();
         }

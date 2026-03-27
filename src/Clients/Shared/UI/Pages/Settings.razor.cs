@@ -1,8 +1,10 @@
+using System.Globalization;
 using System.Security.Claims;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
@@ -18,6 +20,7 @@ public partial class Settings
     private string? _identityUserId;
     private string? _pinError;
     private string? _pinSuccess;
+    private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
     protected override void OnInitialized()
     {
@@ -56,12 +59,18 @@ public partial class Settings
         StateHasChanged();
     }
 
+    private async Task OnCultureChanged(string culture)
+    {
+        await JSRuntime.InvokeVoidAsync("blazorCulture.set", culture);
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+
     private async Task ChangeBackendUrl()
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "Warning",
-            "Changing K7 server URL will remove all elements related to current K7 server (statistics and files).",
-            yesText: "Continue", cancelText: "Cancel");
+            L["WarningTitle"],
+            L["ChangeServerUrlWarning"],
+            yesText: S["Confirm"], cancelText: S["Cancel"]);
 
         if (result == true)
         {
@@ -72,15 +81,15 @@ public partial class Settings
     private async Task SetPin()
     {
         ClearPinMessages();
-        var pin = await ShowPinDialog("Set a PIN");
+        var pin = await ShowPinDialog(L["SetPinDialogTitle"]);
         if (pin is null) return;
 
-        var confirm = await ShowPinDialog("Confirm PIN");
+        var confirm = await ShowPinDialog(L["ConfirmPinDialogTitle"]);
         if (confirm is null) return;
 
         if (pin != confirm)
         {
-            _pinError = "PINs do not match.";
+            _pinError = L["PinMismatch"];
             return;
         }
 
@@ -90,15 +99,15 @@ public partial class Settings
     private async Task ChangePin()
     {
         ClearPinMessages();
-        var newPin = await ShowPinDialog("New PIN");
+        var newPin = await ShowPinDialog(L["NewPinDialogTitle"]);
         if (newPin is null) return;
 
-        var confirm = await ShowPinDialog("Confirm new PIN");
+        var confirm = await ShowPinDialog(L["ConfirmNewPinDialogTitle"]);
         if (confirm is null) return;
 
         if (newPin != confirm)
         {
-            _pinError = "PINs do not match.";
+            _pinError = L["PinMismatch"];
             return;
         }
 
@@ -109,9 +118,9 @@ public partial class Settings
     {
         ClearPinMessages();
         var confirmed = await DialogService.ShowMessageBoxAsync(
-            "Remove PIN",
-            "Are you sure you want to remove your PIN?",
-            yesText: "Remove", cancelText: "Cancel");
+            L["RemovePinDialogTitle"],
+            L["RemovePinConfirm"],
+            yesText: S["Confirm"], cancelText: S["Cancel"]);
 
         if (confirmed != true) return;
 
@@ -122,7 +131,7 @@ public partial class Settings
     {
         if (_currentUserId is null)
         {
-            _pinError = "Unable to identify current user.";
+            _pinError = L["UserUnknown"];
             return;
         }
 
@@ -134,11 +143,11 @@ public partial class Settings
                 LocalUserService.SetPin(_identityUserId, pin);
 
             _hasPin = pin is not null;
-            _pinSuccess = pin is not null ? "PIN set successfully." : "PIN removed.";
+            _pinSuccess = pin is not null ? L["PinSetSuccess"] : L["PinRemovedSuccess"];
         }
         catch (Exception ex)
         {
-            _pinError = $"Failed to update PIN: {ex.Message}";
+            _pinError = S["ErrorWithDetails", ex.Message];
         }
     }
 

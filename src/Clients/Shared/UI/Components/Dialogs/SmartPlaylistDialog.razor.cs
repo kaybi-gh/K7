@@ -97,7 +97,7 @@ public partial class SmartPlaylistDialog
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
                 });
-                Snackbar.Add("Smart playlist modifiée", Severity.Success);
+                Snackbar.Add(L["Updated"], Severity.Success);
                 MudDialog.Close(DialogResult.Ok(SmartPlaylistId!.Value));
             }
             else
@@ -113,11 +113,11 @@ public partial class SmartPlaylistDialog
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
                 });
-                Snackbar.Add("Smart playlist créée", Severity.Success);
+                Snackbar.Add(L["Created"], Severity.Success);
                 MudDialog.Close(DialogResult.Ok(id));
             }
         }
-        catch { Snackbar.Add("Erreur lors de l'enregistrement", Severity.Error); }
+        catch { Snackbar.Add(L["SaveError"], Severity.Error); }
         finally { _isSubmitting = false; }
     }
 
@@ -174,52 +174,52 @@ public partial class SmartPlaylistDialog
         _ => [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals, SmartPlaylistOperator.Contains]
     };
 
-    private static string GetFieldLabel(SmartPlaylistField field) => field switch
+    private string GetFieldLabel(SmartPlaylistField field) => field switch
     {
-        SmartPlaylistField.Title => "Titre",
-        SmartPlaylistField.Genre => "Genre",
-        SmartPlaylistField.Year => "Année",
-        SmartPlaylistField.Rating => "Note",
-        SmartPlaylistField.PlayCount => "Nb lectures",
-        SmartPlaylistField.DateAdded => "Date d'ajout",
-        SmartPlaylistField.LastPlayed => "Dernière lecture",
-        SmartPlaylistField.IsCompleted => "Terminé",
-        SmartPlaylistField.ArtistName => "Artiste",
-        SmartPlaylistField.AlbumTitle => "Album",
-        SmartPlaylistField.TrackNumber => "N° piste",
-        SmartPlaylistField.DiscNumber => "N° disque",
-        SmartPlaylistField.Bpm => "BPM",
-        SmartPlaylistField.Duration => "Durée (s)",
-        SmartPlaylistField.OriginalLanguage => "Langue originale",
+        SmartPlaylistField.Title => L["FieldTitle"],
+        SmartPlaylistField.Genre => L["FieldGenre"],
+        SmartPlaylistField.Year => L["FieldYear"],
+        SmartPlaylistField.Rating => L["FieldRating"],
+        SmartPlaylistField.PlayCount => L["FieldPlayCount"],
+        SmartPlaylistField.DateAdded => L["FieldDateAdded"],
+        SmartPlaylistField.LastPlayed => L["FieldLastPlayed"],
+        SmartPlaylistField.IsCompleted => L["FieldIsWatched"],
+        SmartPlaylistField.ArtistName => L["FieldArtist"],
+        SmartPlaylistField.AlbumTitle => L["FieldAlbum"],
+        SmartPlaylistField.TrackNumber => L["FieldTrackNumber"],
+        SmartPlaylistField.DiscNumber => L["FieldDiscNumber"],
+        SmartPlaylistField.Bpm => L["FieldBpm"],
+        SmartPlaylistField.Duration => L["FieldDuration"],
+        SmartPlaylistField.OriginalLanguage => L["FieldOriginalLanguage"],
         _ => field.ToString()
     };
 
-    private static string GetOperatorLabel(SmartPlaylistOperator op) => op switch
+    private string GetOperatorLabel(SmartPlaylistOperator op) => op switch
     {
-        SmartPlaylistOperator.Equals => "est",
-        SmartPlaylistOperator.NotEquals => "n'est pas",
-        SmartPlaylistOperator.Contains => "contient",
+        SmartPlaylistOperator.Equals => L["OperatorIs"],
+        SmartPlaylistOperator.NotEquals => L["OperatorIsNot"],
+        SmartPlaylistOperator.Contains => L["OperatorContains"],
         SmartPlaylistOperator.GreaterThan => ">",
         SmartPlaylistOperator.LessThan => "<",
         SmartPlaylistOperator.GreaterThanOrEqual => "≥",
         SmartPlaylistOperator.LessThanOrEqual => "≤",
-        SmartPlaylistOperator.InLast => "dans les derniers (jours)",
-        SmartPlaylistOperator.IsEmpty => "est vide",
-        SmartPlaylistOperator.IsNotEmpty => "n'est pas vide",
+        SmartPlaylistOperator.InLast => L["OperatorInLastDays"],
+        SmartPlaylistOperator.IsEmpty => L["OperatorIsEmpty"],
+        SmartPlaylistOperator.IsNotEmpty => L["OperatorIsNotEmpty"],
         _ => op.ToString()
     };
 
-    private static string GetValuePlaceholder(SmartPlaylistField field) => field switch
+    private string GetValuePlaceholder(SmartPlaylistField field) => field switch
     {
-        SmartPlaylistField.Year => "ex : 2024",
-        SmartPlaylistField.Rating => "0-10",
-        SmartPlaylistField.PlayCount => "ex : 5",
-        SmartPlaylistField.DateAdded or SmartPlaylistField.LastPlayed => "jours",
-        SmartPlaylistField.IsCompleted => "true / false",
-        SmartPlaylistField.Bpm => "ex : 120",
-        SmartPlaylistField.Duration => "secondes",
-        SmartPlaylistField.TrackNumber or SmartPlaylistField.DiscNumber => "ex : 1",
-        _ => "valeur"
+        SmartPlaylistField.Year => L["PlaceholderYear"],
+        SmartPlaylistField.Rating => L["PlaceholderRating"],
+        SmartPlaylistField.PlayCount => L["PlaceholderCount"],
+        SmartPlaylistField.DateAdded or SmartPlaylistField.LastPlayed => L["PlaceholderDays"],
+        SmartPlaylistField.IsCompleted => L["PlaceholderBoolean"],
+        SmartPlaylistField.Bpm => L["PlaceholderDuration"],
+        SmartPlaylistField.Duration => L["PlaceholderSeconds"],
+        SmartPlaylistField.TrackNumber or SmartPlaylistField.DiscNumber => L["PlaceholderTrackDisc"],
+        _ => L["PlaceholderDefault"]
     };
 
     private static SmartPlaylistOrderBy[] GetAvailableOrderBy() =>
@@ -238,20 +238,20 @@ public partial class SmartPlaylistDialog
         SmartPlaylistOrderBy.Duration
     ];
 
-    private static string GetOrderByLabel(SmartPlaylistOrderBy order) => order switch
+    private string GetOrderByLabel(SmartPlaylistOrderBy order) => order switch
     {
-        SmartPlaylistOrderBy.Title => "Titre",
-        SmartPlaylistOrderBy.DateAdded => "Date d'ajout",
-        SmartPlaylistOrderBy.LastPlayed => "Dernière lecture",
-        SmartPlaylistOrderBy.PlayCount => "Nb lectures",
-        SmartPlaylistOrderBy.Rating => "Note",
-        SmartPlaylistOrderBy.Year => "Année",
-        SmartPlaylistOrderBy.Random => "Aléatoire",
-        SmartPlaylistOrderBy.ArtistName => "Artiste",
-        SmartPlaylistOrderBy.AlbumTitle => "Album",
-        SmartPlaylistOrderBy.TrackNumber => "N° piste",
-        SmartPlaylistOrderBy.Bpm => "BPM",
-        SmartPlaylistOrderBy.Duration => "Durée",
+        SmartPlaylistOrderBy.Title => L["OrderByTitle"],
+        SmartPlaylistOrderBy.DateAdded => L["OrderByDateAdded"],
+        SmartPlaylistOrderBy.LastPlayed => L["OrderByLastPlayed"],
+        SmartPlaylistOrderBy.PlayCount => L["OrderByPlayCount"],
+        SmartPlaylistOrderBy.Rating => L["OrderByRating"],
+        SmartPlaylistOrderBy.Year => L["OrderByYear"],
+        SmartPlaylistOrderBy.Random => L["OrderByRandom"],
+        SmartPlaylistOrderBy.ArtistName => L["OrderByArtist"],
+        SmartPlaylistOrderBy.AlbumTitle => L["OrderByAlbum"],
+        SmartPlaylistOrderBy.TrackNumber => L["OrderByTrackNumber"],
+        SmartPlaylistOrderBy.Bpm => L["OrderByBpm"],
+        SmartPlaylistOrderBy.Duration => L["OrderByDuration"],
         _ => order.ToString()
     };
 

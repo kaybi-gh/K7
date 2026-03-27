@@ -1,5 +1,7 @@
 ﻿@page "/"
-<PageTitle>Home</PageTitle>
+@inject IStringLocalizer<Home> L
+@inject IStringLocalizer<SharedResource> S
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 @if (isLoading)
 {
@@ -19,15 +21,15 @@ else
 {
     @if (_canTrackProgress && continueWatchingMedias.Count > 0)
     {
-        @RenderCarousel("Continue watching", continueWatchingMedias, true, true)
+        @RenderCarousel(L["ContinueWatching"], continueWatchingMedias, true, true)
     }
 
-    @RenderCarousel("Recently added", recentlyAddedMedias, _canTrackProgress, _canTrackProgress)
-    @RenderCarousel("Recently released", recentlyReleasedMedias, _canTrackProgress, _canTrackProgress)
+    @RenderCarousel(L["RecentlyAdded"], recentlyAddedMedias, _canTrackProgress, _canTrackProgress)
+    @RenderCarousel(L["RecentlyReleased"], recentlyReleasedMedias, _canTrackProgress, _canTrackProgress)
 
     @if (_canTrackProgress)
     {
-        @RenderCarousel("Last played", lastPlayedMedias, true, true)
+        @RenderCarousel(L["LastPlayed"], lastPlayedMedias, true, true)
     }
 }
 

@@ -3,10 +3,12 @@
 @using K7.Shared.Dtos.Entities.Medias
 @inject IServerInfoService K7ServerService
 @inject IK7ServerService ApiClient
-<PageTitle>Radio</PageTitle>
+@inject IStringLocalizer<MusicRadio> L
+@inject IStringLocalizer<SharedResource> S
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">Radio</MudText>
+    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
 </MudStack>
 
 <div class="pa-4">
@@ -49,15 +51,15 @@
         {
             <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-8">
                 <MudProgressCircular Indeterminate="true" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Génération du mix...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Generating"]</MudText>
             </MudStack>
         }
         else if (_tracks.Count == 0)
         {
             <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-8">
                 <MudIcon Icon="@Icons.Material.Outlined.MusicOff" Style="font-size: 48px; opacity: 0.3;" />
-                <MudText Typo="Typo.body1" Color="Color.Secondary">Pas assez de données pour ce mix.</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Écoutez plus de musique pour enrichir vos recommandations.</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Secondary">@L["NotEnoughData"]</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["ListenMoreHint"]</MudText>
             </MudStack>
         }
         else

@@ -23,13 +23,13 @@ public partial class TrackContextMenu
     private void PlayNext()
     {
         Audio.AddToQueueNext(Track);
-        Snackbar.Add($"« {Track.Title} » joué ensuite", Severity.Info);
+        Snackbar.Add(string.Format(L["PlayNextSnackbar"], Track.Title), Severity.Info);
     }
 
     private void AddToQueue()
     {
         Audio.AddToQueue(Track);
-        Snackbar.Add($"« {Track.Title} » ajouté à la queue", Severity.Info);
+        Snackbar.Add(string.Format(L["AddedToQueueSnackbar"], Track.Title), Severity.Info);
     }
 
     private async Task AddToPlaylist()
@@ -39,7 +39,7 @@ public partial class TrackContextMenu
             { x => x.MediaId, Track.MediaId }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
-        await DialogService.ShowAsync<Dialogs.AddToPlaylistDialog>("Ajouter à une playlist", parameters, options);
+        await DialogService.ShowAsync<Dialogs.AddToPlaylistDialog>(L["AddToPlaylistTitle"], parameters, options);
     }
 
     private async Task RadioArtist()
@@ -63,7 +63,7 @@ public partial class TrackContextMenu
         {
             if (!Audio.Shuffle) Audio.ToggleShuffle();
             await Audio.PlayTracksAsync(tracks, 0);
-            Snackbar.Add($"Radio {Track.Artist}", Severity.Info);
+            Snackbar.Add(string.Format(L["RadioArtistSnackbar"], Track.Artist), Severity.Info);
         }
     }
 
@@ -88,7 +88,7 @@ public partial class TrackContextMenu
         {
             if (!Audio.Shuffle) Audio.ToggleShuffle();
             await Audio.PlayTracksAsync(tracks, 0);
-            Snackbar.Add($"Radio {Track.Genre}", Severity.Info);
+            Snackbar.Add(string.Format(L["RadioGenreSnackbar"], Track.Genre), Severity.Info);
         }
     }
 
@@ -96,7 +96,7 @@ public partial class TrackContextMenu
     {
         IndexedFileId = t.IndexedFileId!.Value,
         MediaId = t.Id,
-        Title = t.Title ?? "Sans titre",
+        Title = t.Title ?? S["Untitled"],
         Artist = t.ArtistName,
         AlbumTitle = t.AlbumTitle,
         ArtistPersonId = t.ArtistPersonId,

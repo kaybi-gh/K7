@@ -2,6 +2,8 @@
 @using K7.Shared.Dtos.Entities.Medias
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
+@inject IStringLocalizer<MusicArtistDetail> L
+@inject IStringLocalizer<SharedResource> S
 <PageTitle>@_person?.Name</PageTitle>
 <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
@@ -45,7 +47,7 @@
                                    Size="Size.Small"
                                    EndIcon="@(_overviewExpanded ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)"
                                    OnClick="() => _overviewExpanded = !_overviewExpanded">
-                            @(_overviewExpanded ? "Moins" : "Plus")
+                            @(_overviewExpanded ? L["ShowLess"] : L["ShowMore"])
                         </MudButton>
                     }
                 </MudStack>
@@ -54,7 +56,7 @@
             @if (_albums.Count > 0)
             {
                 <MudItem xs="12">
-                    <Carousel Title="Albums">
+                    <Carousel Title="@L["AlbumsSection"]">
                         @foreach (var album in _albums)
                         {
                             <CarouselItem>
@@ -68,7 +70,7 @@
             @if (_tracks.Count > 0)
             {
                 <MudItem xs="12" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-2">Morceaux</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["TracksSection"]</MudText>
                     <MudTable Items="_tracks"
                               Dense="true"
                               Hover="true"
@@ -80,7 +82,7 @@
                             <MudTh Style="width: 40px;">#</MudTh>
                             <MudTh>Titre</MudTh>
                             <MudTh>Album</MudTh>
-                            <MudTh Style="width: 80px;">Durée</MudTh>
+                            <MudTh Style="width: 80px;">@S["Duration"]</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd>

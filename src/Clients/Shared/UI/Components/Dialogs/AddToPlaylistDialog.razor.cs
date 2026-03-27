@@ -37,19 +37,19 @@ public partial class AddToPlaylistDialog
         try
         {
             await K7ServerService.AddPlaylistItemAsync(playlist.Id, MediaId);
-            Snackbar.Add($"Ajouté à « {playlist.Title} »", Severity.Success);
+            Snackbar.Add(string.Format(L["AddedToPlaylist"], playlist.Title), Severity.Success);
             MudDialog.Close(DialogResult.Ok(playlist.Id));
         }
         catch
         {
-            Snackbar.Add("Erreur lors de l'ajout", Severity.Error);
+            Snackbar.Add(L["AddError"], Severity.Error);
         }
     }
 
     private async Task CreateNewPlaylist()
     {
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<CreatePlaylistDialog>("Nouvelle playlist", options);
+        var dialog = await DialogService.ShowAsync<CreatePlaylistDialog>(L["NewPlaylistTitle"], options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: Guid newId })
@@ -57,12 +57,12 @@ public partial class AddToPlaylistDialog
             try
             {
                 await K7ServerService.AddPlaylistItemAsync(newId, MediaId);
-                Snackbar.Add("Ajouté à la nouvelle playlist", Severity.Success);
+                Snackbar.Add(L["AddedToNewPlaylist"], Severity.Success);
                 MudDialog.Close(DialogResult.Ok(newId));
             }
             catch
             {
-                Snackbar.Add("Playlist créée mais erreur lors de l'ajout", Severity.Warning);
+                Snackbar.Add(L["CreatedButAddFailed"], Severity.Warning);
                 MudDialog.Close(DialogResult.Ok(newId));
             }
         }

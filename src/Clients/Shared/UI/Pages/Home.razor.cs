@@ -149,11 +149,11 @@ public partial class Home : IDisposable
         try
         {
             var excluded = await UserAdminService.ToggleMediaExclusionAsync(Guid.Parse(model.Id));
-            Snackbar.Add(excluded ? $"« {model.Title} » masqué" : $"« {model.Title} » affiché à nouveau", Severity.Success);
+            Snackbar.Add(excluded ? string.Format(S["Hidden"], model.Title) : string.Format(S["Unhidden"], model.Title), Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
         }
     }
 
@@ -165,12 +165,12 @@ public partial class Home : IDisposable
             { x => x.MediaTitle, model.Title }
         };
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<ExcludeMediaForUsersDialog>("Masquer pour un utilisateur", parameters, options);
+        var dialog = await DialogService.ShowAsync<ExcludeMediaForUsersDialog>(S["HideForUser"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
         {
-            Snackbar.Add("Exclusions mises à jour.", Severity.Success);
+            Snackbar.Add(S["ExclusionsUpdated"], Severity.Success);
         }
     }
 }

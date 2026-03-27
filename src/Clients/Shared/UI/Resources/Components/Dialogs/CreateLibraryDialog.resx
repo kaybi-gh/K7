@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Step1" xml:space="preserve"><value>1. Type</value></data>
+  <data name="Step2" xml:space="preserve"><value>2. Configuration</value></data>
+  <data name="Step3" xml:space="preserve"><value>3. Confirmation</value></data>
+  <data name="SelectContentType" xml:space="preserve"><value>Quel type de contenu contiendra cette librairie ?</value></data>
+  <data name="MovieDescription" xml:space="preserve"><value>Films et documentaires</value></data>
+  <data name="SeriesDescription" xml:space="preserve"><value>Séries TV et animes</value></data>
+  <data name="MusicDescription" xml:space="preserve"><value>Albums et morceaux</value></data>
+  <data name="NameLabel" xml:space="preserve"><value>Nom de la librairie</value></data>
+  <data name="NameRequired" xml:space="preserve"><value>Le nom est requis</value></data>
+  <data name="NamePlaceholder" xml:space="preserve"><value>Ex: Mes Films, Séries TV...</value></data>
+  <data name="PathLabel" xml:space="preserve"><value>Chemin du dossier</value></data>
+  <data name="PathRequired" xml:space="preserve"><value>Le chemin est requis</value></data>
+  <data name="PathPlaceholder" xml:space="preserve"><value>Ex: /media/movies, D:\Films...</value></data>
+  <data name="PathHelper" xml:space="preserve"><value>Chemin absolu vers le dossier contenant les fichiers média</value></data>
+  <data name="Browse" xml:space="preserve"><value>Parcourir</value></data>
+  <data name="AutoIndex" xml:space="preserve"><value>Indexer les fichiers automatiquement après la création</value></data>
+  <data name="SummaryTitle" xml:space="preserve"><value>Résumé de la librairie</value></data>
+  <data name="AutoIndexSummary" xml:space="preserve"><value>Indexation automatique</value></data>
+  <data name="Creating" xml:space="preserve"><value>Création...</value></data>
+  <data name="Submit" xml:space="preserve"><value>Créer la librairie</value></data>
+  <data name="Success" xml:space="preserve"><value>Librairie « {0} » créée avec succès !</value></data>
+  <data name="Error" xml:space="preserve"><value>Erreur lors de la création : {0}</value></data>
+  <data name="SelectFolderTitle" xml:space="preserve"><value>Sélectionner un dossier</value></data>
+</root>
+

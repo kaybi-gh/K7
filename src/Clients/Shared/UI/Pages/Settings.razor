@@ -7,42 +7,51 @@
 @inject IDialogService DialogService
 @inject ILocalUserService LocalUserService
 @inject AuthenticationStateProvider AuthenticationStateProvider
-<PageTitle>Settings</PageTitle>
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Settings> L
+@inject IStringLocalizer<SharedResource> S
+@inject IJSRuntime JSRuntime
+<PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="Dark mode" />
-<MudSelect T="ThemeWrapper" Label="Theme" @bind-Value="@ThemeService.ThemeWrapper">
+<MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="@L["DarkMode"]" />
+<MudSelect T="ThemeWrapper" Label="@L["Theme"]" @bind-Value="@ThemeService.ThemeWrapper">
     @foreach (var themeWrapper in Themes.Collection)
     {
         <MudSelectItem Value="@themeWrapper">@themeWrapper?.Name</MudSelectItem>
     }
 </MudSelect>
 
+<MudSelect T="string" Label="@L["Language"]" Value="@_currentCulture" ValueChanged="OnCultureChanged">
+    <MudSelectItem Value="@("fr")">Fran\u00e7ais</MudSelectItem>
+    <MudSelectItem Value="@("en")">English</MudSelectItem>
+</MudSelect>
+
 @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
 {
-    <MudTextField @bind-Value="@_backendUrl" Label="K7 server URL" ReadOnly="true" Variant="Variant.Text" />
+    <MudTextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="Variant.Text" />
 }
 else
 {
-    <MudTextField @bind-Value="@_backendUrl" Label="K7 server URL" ReadOnly="true" Variant="Variant.Text" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Delete" OnAdornmentClick="ChangeBackendUrl" />
+    <MudTextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="Variant.Text" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Delete" OnAdornmentClick="ChangeBackendUrl" />
 }
 
-<MudText>FormFactor: @_deviceType</MudText>
-<MudText>HDR: @_hdrSupport</MudText>
+<MudText>@L["FormFactor"]: @_deviceType</MudText>
+<MudText>@L["Hdr"]: @_hdrSupport</MudText>
 
 <MudDivider Class="my-4" />
-<MudText Typo="Typo.h6" Class="mb-2">PIN</MudText>
+<MudText Typo="Typo.h6" Class="mb-2">@L["Pin"]</MudText>
 @if (_hasPin)
 {
-    <MudText Typo="Typo.body2" Class="mb-2">A PIN is set on your account.</MudText>
+    <MudText Typo="Typo.body2" Class="mb-2">@L["PinSet"]</MudText>
     <MudStack Row="true" Spacing="2">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ChangePin">Change PIN</MudButton>
-        <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="RemovePin">Remove PIN</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ChangePin">@L["ChangePin"]</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="RemovePin">@L["RemovePin"]</MudButton>
     </MudStack>
 }
 else
 {
-    <MudText Typo="Typo.body2" Class="mb-2">No PIN is set. A PIN protects your account access on shared devices.</MudText>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SetPin">Set a PIN</MudButton>
+    <MudText Typo="Typo.body2" Class="mb-2">@L["PinNotSet"]</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SetPin">@L["SetPin"]</MudButton>
 }
 @if (_pinError is not null)
 {
@@ -54,7 +63,7 @@ else
 }
 
 <MudExpansionPanels>
-    <MudExpansionPanel Text="Supported Codecs" MaxHeight="1000">
+    <MudExpansionPanel Text="@L["SupportedCodecs"]" MaxHeight="1000">
         <ul>
             @if (_supportedMediaFormats != null)
             {

@@ -31,12 +31,12 @@ public partial class CreatePlaylistDialog
                 Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim()
             });
 
-            Snackbar.Add("Playlist créée", Severity.Success);
+            Snackbar.Add(L["Created"], Severity.Success);
             MudDialog.Close(DialogResult.Ok(id));
         }
         catch
         {
-            Snackbar.Add("Erreur lors de la création", Severity.Error);
+            Snackbar.Add(L["Error"], Severity.Error);
         }
         finally
         {

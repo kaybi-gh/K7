@@ -9,6 +9,8 @@
 @inject PlaybackProgressTracker PlaybackProgressTracker
 @inject IFeatureAccessService FeatureAccess
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IStringLocalizer<Movie> L
+@inject IStringLocalizer<SharedResource> S
 <PageTitle>@_movie?.Title</PageTitle>
 <MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
@@ -93,7 +95,7 @@ else
                 <MudStack Row="true" AlignItems="AlignItems.Center">
                     <MudText Style="font-size: 20px;" Typo="Typo.overline">@_movie.ReleaseDate!.Value.Year</MudText>
                     |
-                    <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@($"{(int)((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.TotalHours}h {((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.Minutes:D2}min")</MudText>
+                    <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@string.Format(S["DurationHoursMinutes"], (int)((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.TotalHours, ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.Minutes)</MudText>
                 </MudStack>
                 @*<MudText Style="font-style: italic; font-size: 20px; font-family: initial;">
                 “@_movie.TagLine”
@@ -102,13 +104,13 @@ else
                 <MudRating SelectedValue="@Convert.ToInt32(_movie.Ratings?.FirstOrDefault(x => x.Source == Server.Domain.Enums.RatingSource.MetadataProvider)?.Value ?? 0)" />
             </MudStack>*@
                 <MudStack Row="true" data-nav-row>
-                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="PlayAsync">Play</MudButton>
+                    <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="PlayAsync">@S["Play"]</MudButton>
                     <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
                     <AuthorizeView Roles="User,Administrator">
                         <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
                     </AuthorizeView>
                     <AuthorizeView Roles="Administrator">
-                        <MudIconButton Icon="@Icons.Material.Filled.FindReplace" title="Re-Identify" aria-label="re-identify" OnClick="OpenMediaReIdentifyDialogAsync"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.FindReplace" title="@L["ReIdentify"]" aria-label="re-identify" OnClick="OpenMediaReIdentifyDialogAsync"></MudIconButton>
                         <MudIconButton Icon="@Icons.Material.Filled.Settings" aria-label="settings"></MudIconButton>
                     </AuthorizeView>
                     <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions"></MudIconButton>
@@ -119,13 +121,13 @@ else
         <div>
             <MudStack AlignItems="@(_isSmallDevice? AlignItems.Center: AlignItems.Start)" Class="px-10">
                 <MudStack Style="width: 100%;">
-                    <MudSelect @bind-Value="_selectedVideoFileTrack" Label="Video track" Variant="Variant.Filled" FullWidth="true">
+                    <MudSelect @bind-Value="_selectedVideoFileTrack" Label="@L["VideoTrack"]" Variant="Variant.Filled" FullWidth="true">
                         @foreach (var track in ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).VideoTracks ?? [])
                         {
                             <MudSelectItem Value="@track">@($"{track.Codec} - {track.Width}x{track.Height}")</MudSelectItem>
                         }
                     </MudSelect>
-                    <MudSelect @bind-Value="_selectedAudioFileTrack" Label="Audio track" Variant="Variant.Filled" FullWidth="true">
+                    <MudSelect @bind-Value="_selectedAudioFileTrack" Label="@L["AudioTrack"]" Variant="Variant.Filled" FullWidth="true">
                         @foreach (var track in ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).AudioTracks ?? [])
                         {
                             <MudSelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</MudSelectItem>
@@ -134,12 +136,12 @@ else
                 </MudStack>
             </MudStack>
             <MudStack Class="pa-10">
-                <MudText Typo="Typo.h6">Overview</MudText>
+                <MudText Typo="Typo.h6">@L["Overview"]</MudText>
                 <MudText Typo="Typo.body2">@_movie.Overview</MudText>
             </MudStack>
             <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
                 <MudItem xs="12" sm="12" lg="12">
-                    <Carousel Title="Casting and crew">
+                    <Carousel Title="@L["CastingAndCrew"]">
                         @foreach (var cast in (_movie.PersonRoles ?? []).Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
                         {
                             <CarouselItem>
@@ -151,7 +153,7 @@ else
             </MudGrid>
 
             <MudStack Class="pa-10">
-                <MudText Typo="Typo.h6">Versions / Fichiers Indexés</MudText>
+                <MudText Typo="Typo.h6">@L["IndexedVersions"]</MudText>
                 <MudGrid>
                     @foreach (var file in _movie.IndexedFiles ?? [])
                     {
@@ -165,11 +167,11 @@ else
                                         @if (vMeta != null)
                                         {
                                             <MudText Typo="Typo.caption">
-                                                @($"{vMeta.VideoResolution} | {(int)vMeta.Duration.TotalHours}h {vMeta.Duration.Minutes:D2}min | {file.Size / (1024 * 1024):N0} MB")
+                                                @($"{vMeta.VideoResolution} | {string.Format(S["DurationHoursMinutes"], (int)vMeta.Duration.TotalHours, vMeta.Duration.Minutes)} | {file.Size / (1024 * 1024):N0} MB")
                                             </MudText>
                                         }
                                     </MudStack>
-                                    <MudIconButton Icon="@Icons.Material.Filled.FindReplace" title="Ré-identifier ce fichier" OnClick="@(() => OpenFileReIdentifyDialogAsync(file.Id))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.FindReplace" title="@L["ReIdentifyFile"]" OnClick="@(() => OpenFileReIdentifyDialogAsync(file.Id))" />
                                 </MudStack>
                             </MudPaper>
                         </MudItem>

@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
+  <data name="SubtitlesOff" xml:space="preserve"><value>Off</value></data>
+  <data name="ForcedSuffix" xml:space="preserve"><value> (Forced)</value></data>
+  <data name="Quality" xml:space="preserve"><value>Quality</value></data>
+  <data name="Speed" xml:space="preserve"><value>Speed</value></data>
+  <data name="SpeedNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="AspectRatio" xml:space="preserve"><value>Aspect Ratio</value></data>
+  <data name="AspectRatioFit" xml:space="preserve"><value>Fit</value></data>
+  <data name="AspectRatioFillCrop" xml:space="preserve"><value>Fill (crop)</value></data>
+  <data name="AspectRatioStretch" xml:space="preserve"><value>Stretch</value></data>
+</root>
+

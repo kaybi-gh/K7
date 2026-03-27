@@ -1,11 +1,12 @@
 @page "/music/stats"
 @inject IServerInfoService K7ServerService
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
+@inject IStringLocalizer<MusicStats> L
 @implements IDisposable
-<PageTitle>Statistiques</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">Statistiques</MudText>
+    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
 </MudStack>
 
 @if (_loading)
@@ -18,7 +19,7 @@ else if (_stats is null)
 {
     <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
         <MudIcon Icon="@Icons.Material.Outlined.BarChart" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">Aucune donnée disponible</MudText>
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["NoData"]</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary">Écoutez de la musique pour voir apparaître vos statistiques.</MudText>
     </MudStack>
 }
@@ -59,7 +60,7 @@ else
             @if (_stats.TopArtists.Count > 0)
             {
                 <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">Top Artistes</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopArtists"]</MudText>
                     <MudList T="string" Dense="true">
                         @foreach (var (artist, index) in _stats.TopArtists.Select((a, i) => (a, i)))
                         {
@@ -79,7 +80,7 @@ else
             @if (_stats.TopAlbums.Count > 0)
             {
                 <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">Top Albums</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopAlbums"]</MudText>
                     <MudList T="string" Dense="true">
                         @foreach (var (album, index) in _stats.TopAlbums.Select((a, i) => (a, i)))
                         {
@@ -99,7 +100,7 @@ else
             @if (_stats.TopTracks.Count > 0)
             {
                 <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">Top Morceaux</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopTracks"]</MudText>
                     <MudList T="string" Dense="true">
                         @foreach (var (track, index) in _stats.TopTracks.Select((t, i) => (t, i)))
                         {
@@ -119,7 +120,7 @@ else
             @if (_stats.TopGenres.Count > 0)
             {
                 <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">Top Genres</MudText>
+                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopGenres"]</MudText>
                     <MudList T="string" Dense="true">
                         @foreach (var (genre, index) in _stats.TopGenres.Select((g, i) => (g, i)))
                         {

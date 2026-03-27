@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Librairies</value></data>
+  <data name="NewLibrary" xml:space="preserve"><value>Nouvelle librairie</value></data>
+  <data name="Empty" xml:space="preserve"><value>Aucune librairie</value></data>
+  <data name="EmptyDescription" xml:space="preserve"><value>Créez votre première librairie pour commencer à organiser vos médias.</value></data>
+  <data name="CreateLibrary" xml:space="preserve"><value>Créer une librairie</value></data>
+  <data name="AriaIndex" xml:space="preserve"><value>Indexer</value></data>
+  <data name="AriaUserAccess" xml:space="preserve"><value>Accès utilisateurs</value></data>
+  <data name="NewLibraryTitle" xml:space="preserve"><value>Nouvelle librairie</value></data>
+  <data name="IndexStarted" xml:space="preserve"><value>Indexation de « {0} » lancée.</value></data>
+  <data name="AccessTitle" xml:space="preserve"><value>Accès — {0}</value></data>
+</root>
+

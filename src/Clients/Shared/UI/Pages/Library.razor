@@ -1,13 +1,15 @@
 @page "/library/{id}"
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
-<PageTitle>Library @Id</PageTitle>
+@inject IStringLocalizer<Library> L
+
+<PageTitle>@string.Format(L["PageTitle"].Value, Id)</PageTitle>
 
 <MudDrawer @bind-Open="@_gridDrawerOpen" Fixed="false" Anchor="Anchor.End" Elevation="1" Variant="@DrawerVariant.Responsive">
     <MudDrawerHeader>
-        <MudText Typo="Typo.h6">Grid settings</MudText>
+        <MudText Typo="Typo.h6">@L["GridSettings"]</MudText>
     </MudDrawerHeader>
-    <MudSlider @bind-Value="_spacing" Min="0" Max="20" Color="Color.Info" Class="mb-6">Spacing: @_spacing.ToString()</MudSlider>
+    <MudSlider @bind-Value="_spacing" Min="0" Max="20" Color="Color.Info" Class="mb-6">@L["Spacing"]: @_spacing.ToString()</MudSlider>
 </MudDrawer>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.Center" data-nav-row="true">
