@@ -12,7 +12,7 @@ using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Entities.Settings;
 using K7.Server.Domain.Entities.Users;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Infrastructure.Database.Context.Data.Configurations;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;

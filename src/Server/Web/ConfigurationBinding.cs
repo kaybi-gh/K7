@@ -1,4 +1,5 @@
-﻿using K7.Server.Infrastructure.Configuration;
+﻿using K7.Server.Application.Common.Configuration;
+using K7.Server.Infrastructure.Configuration;
 
 namespace K7.Server.Web;
 

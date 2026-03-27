@@ -1,5 +1,5 @@
 using K7.Server.Domain.Entities;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

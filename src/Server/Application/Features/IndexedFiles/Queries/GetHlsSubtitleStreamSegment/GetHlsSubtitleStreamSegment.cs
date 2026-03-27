@@ -4,7 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

@@ -6,7 +6,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Entities;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Domain.Enums;
 using Microsoft.Extensions.Options;
 using FFMpegCore.Enums;

@@ -11,7 +11,7 @@ using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.ValueObjects;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Medias.Commands.CreateMedia;

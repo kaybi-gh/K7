@@ -1,5 +1,5 @@
 ﻿using K7.Server.Application.Helpers;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 

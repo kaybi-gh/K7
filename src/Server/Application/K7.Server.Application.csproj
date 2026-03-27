@@ -15,7 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\K7.Shared\K7.Shared.csproj" />
     <ProjectReference Include="..\Domain\K7.Server.Domain.csproj" />
-    <ProjectReference Include="..\Infrastructure\Configuration\K7.Server.Infrastructure.Configuration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
