@@ -1,3 +1,6 @@
+using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
@@ -15,34 +18,61 @@ public partial class Home : IDisposable
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
 
     private bool isLoading { get; set; } = true;
-    private bool isAuthenticated;
     private bool _canTrackProgress;
-    private List<MediaPosterViewModel> continueWatchingMedias = [];
-    private List<MediaPosterViewModel> recentlyAddedMedias = [];
-    private List<MediaPosterViewModel> recentlyReleasedMedias = [];
-    private List<MediaPosterViewModel> lastPlayedMedias = [];
+    private bool _canExclude;
+    private bool _isAdmin;
+    private List<MediaCardViewModel> continueWatchingMedias = [];
+    private List<MediaCardViewModel> recentlyAddedMedias = [];
+    private List<MediaCardViewModel> recentlyReleasedMedias = [];
+    private List<MediaCardViewModel> lastPlayedMedias = [];
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        var role = await FeatureAccess.GetRoleAsync();
         _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+        _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
+        _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
 
         if (_canTrackProgress)
         {
             K7HubClient.ProgressUpdated += OnProgressUpdated;
-
-            await InitializeContinueWatchingMedias();
+            await LoadCarouselAsync(new GetMediasWithPaginationQuery
+            {
+                ContinueWatching = true,
+                OrderBy = [MediaOrderingOption.LastInteractedDesc],
+                PageNumber = 1,
+                PageSize = 20
+            }, continueWatchingMedias);
         }
 
-        await InitializeRecentlyAddedMedias();
-        await InitializeRecentlyReleasedMedias();
+        await LoadCarouselAsync(new GetMediasWithPaginationQuery
+        {
+            OrderBy = [MediaOrderingOption.CreatedDesc],
+            PageNumber = 1,
+            PageSize = 40
+        }, recentlyAddedMedias);
+
+        await LoadCarouselAsync(new GetMediasWithPaginationQuery
+        {
+            OrderBy = [MediaOrderingOption.ReleaseDateDesc],
+            PageNumber = 1,
+            PageSize = 40
+        }, recentlyReleasedMedias);
 
         if (_canTrackProgress)
         {
-            await InitializeLastPlayedMedias();
+            await LoadCarouselAsync(new GetMediasWithPaginationQuery
+            {
+                OrderBy = [MediaOrderingOption.LastInteractedDesc],
+                PageNumber = 1,
+                PageSize = 40
+            }, lastPlayedMedias);
         }
 
         isLoading = false;
@@ -84,121 +114,63 @@ public partial class Home : IDisposable
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
     }
 
-    private async Task InitializeContinueWatchingMedias()
+    private async Task LoadCarouselAsync(GetMediasWithPaginationQuery query, List<MediaCardViewModel> target)
     {
         try
         {
-            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
-            {
-                ContinueWatching = true,
-                OrderBy = [MediaOrderingOption.LastInteractedDesc],
-                PageNumber = 1,
-                PageSize = 20
-            });
+            var mediasPage = await k7ServerService.GetLiteMediasAsync(query);
 
             if (mediasPage?.Items is not null)
             {
                 foreach (var item in mediasPage.Items)
                 {
-                    if (MapToViewModel(item) is { } vm)
-                        continueWatchingMedias.Add(vm);
+                    if (item.ToCardViewModel(apiClient) is { } vm)
+                        target.Add(vm);
                 }
             }
         }
         catch { }
     }
 
-    private async Task InitializeRecentlyAddedMedias()
+    private string GetHref(MediaCardViewModel item) => item.Kind switch
+    {
+        MediaCardKind.Album => $"/music/albums/{item.Id}",
+        _ => $"/movies/{item.Id}"
+    };
+
+    private MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
+    {
+        MediaCardKind.Album => MediaCardVariant.Cover,
+        _ => MediaCardVariant.Poster
+    };
+
+    private async Task ExcludeForSelf(MediaCardViewModel model)
     {
         try
         {
-            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
-            {
-                OrderBy = [MediaOrderingOption.CreatedDesc],
-                PageNumber = 1,
-                PageSize = 40
-            });
-
-            if (mediasPage?.Items is not null)
-            {
-                foreach (var item in mediasPage.Items)
-                {
-                    if (MapToViewModel(item) is { } vm)
-                        recentlyAddedMedias.Add(vm);
-                }
-            }
+            var excluded = await UserAdminService.ToggleMediaExclusionAsync(Guid.Parse(model.Id));
+            Snackbar.Add(excluded ? $"« {model.Title} » masqué" : $"« {model.Title} » affiché à nouveau", Severity.Success);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
     }
 
-    private async Task InitializeRecentlyReleasedMedias()
+    private async Task ExcludeForOthers(MediaCardViewModel model)
     {
-        try
+        var parameters = new DialogParameters<ExcludeMediaForUsersDialog>
         {
-            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
-            {
-                OrderBy = [MediaOrderingOption.ReleaseDateDesc],
-                PageNumber = 1,
-                PageSize = 40
-            });
-
-            if (mediasPage?.Items is not null)
-            {
-                foreach (var item in mediasPage.Items)
-                {
-                    if (MapToViewModel(item) is { } vm)
-                        recentlyReleasedMedias.Add(vm);
-                }
-            }
-        }
-        catch { }
-    }
-
-    private async Task InitializeLastPlayedMedias()
-    {
-        try
-        {
-            var mediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
-            {
-                OrderBy = [MediaOrderingOption.LastInteractedDesc],
-                PageNumber = 1,
-                PageSize = 40
-            });
-
-            if (mediasPage?.Items is not null)
-            {
-                foreach (var item in mediasPage.Items)
-                {
-                    if (MapToViewModel(item) is { } vm)
-                        lastPlayedMedias.Add(vm);
-                }
-            }
-        }
-        catch { }
-    }
-
-    private MediaPosterViewModel? MapToViewModel(K7.Shared.Dtos.Entities.Medias.LiteMediaDto item)
-    {
-        var kind = item switch
-        {
-            K7.Shared.Dtos.Entities.Medias.LiteMusicAlbumDto => MediaPosterKind.Album,
-            K7.Shared.Dtos.Entities.Medias.LiteMovieDto => MediaPosterKind.Movie,
-            _ => (MediaPosterKind?)null
+            { x => x.MediaId, Guid.Parse(model.Id) },
+            { x => x.MediaTitle, model.Title }
         };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<ExcludeMediaForUsersDialog>("Masquer pour un utilisateur", parameters, options);
+        var result = await dialog.Result;
 
-        if (kind is null) return null;
-
-        var userState = item.UserState;
-
-        return new MediaPosterViewModel
+        if (result is { Canceled: false })
         {
-            Id = item.Id.ToString(),
-            Kind = kind.Value,
-            Title = item.Title,
-            AdditionalInformations = item.ReleaseDate,
-            PosterPictureHref = apiClient.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
-            Watched = userState?.IsCompleted ?? false,
-            Progress = userState?.ProgressPercentage ?? 0
-        };
+            Snackbar.Add("Exclusions mises à jour.", Severity.Success);
+        }
     }
 }

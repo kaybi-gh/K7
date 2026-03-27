@@ -1,56 +1,65 @@
-﻿@if (Skeleton)
+@if (Skeleton)
 {
-    <MudPaper Style="background-color:transparent;" Elevation="0">
-        <div class="media-item-container">
+    <div class="media-card @VariantClass">
+        <div class="media-card-container">
             <MudSkeleton Animation="Animation.Wave" SkeletonType="SkeletonType.Rectangle" Class="rounded-lg" Height="100%" Width="100%" />
         </div>
 
         @if (FooterVisible)
         {
-            <div class="media-item-text">
+            <div class="media-card-footer">
                 <MudStack AlignItems="AlignItems.Center" Spacing="0">
                     <MudSkeleton Animation="Animation.Wave" Height="100%" Width="80%" />
                     <MudSkeleton Animation="Animation.Wave" Height="100%" Width="50%" />
                 </MudStack>
             </div>
         }
-    </MudPaper>
+    </div>
 }
 else
 {
-    <MudPaper Style="background-color:transparent;" Elevation="0">
-        <div class="media-item-container">
-            <a class="media-item-link" href="@("/movies/" + Model.Id)">
-                <MudImage Src="@Model.PosterPictureHref" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
+    <div class="media-card @VariantClass">
+        <div class="media-card-container">
+            <a class="media-card-link" href="@Href">
+                @if (!string.IsNullOrEmpty(Model.PosterPictureHref))
+                {
+                    <MudImage Src="@Model.PosterPictureHref" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                }
+                else if (Variant == MediaCardVariant.Cover)
+                {
+                    <div class="media-card-placeholder rounded-lg">
+                        <MudIcon Icon="@Icons.Material.Outlined.Album" Style="font-size: 48px; opacity: 0.3;" />
+                    </div>
+                }
 
                 @if (WatchedStatusEnabled && Model.Watched)
                 {
-                    <div class="media-item-watched">
+                    <div class="media-card-watched">
                         <MudIcon Size="Size.Small" class="ma-1" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" />
                     </div>
                 }
 
                 @if (ProgressEnabled && !ProgressBarIsHidden())
                 {
-                    <div class="media-item-progress-bar">
+                    <div class="media-card-progress-bar">
                         <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Model.Progress" />
                     </div>
                 }
 
                 @if (OverlayEnabled)
                 {
-                    <div class="media-item-overlay">
+                    <div class="media-card-overlay">
                         <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" tabindex="-1" />
                     </div>
                 }
             </a>
 
-            @if (_canExclude)
+            @if (ExcludeMenuEnabled)
             {
-                <div class="media-item-overlay-more">
+                <div class="media-card-menu">
                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                         <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="OnExcludeForSelf">Masquer pour moi</MudMenuItem>
-                        @if (_isAdmin)
+                        @if (IsAdmin)
                         {
                             <MudMenuItem Icon="@Icons.Material.Filled.PeopleAlt" OnClick="OnExcludeForOthers">Masquer pour un utilisateur</MudMenuItem>
                         }
@@ -61,13 +70,12 @@ else
 
         @if (FooterVisible)
         {
-            <div class="media-item-text">
+            <div class="media-card-footer">
                 <MudStack AlignItems="AlignItems.Center" Spacing="0">
-                    <MudText Class="media-item-text" Typo="Typo.body2">@Model.Title</MudText>
-                    <MudText Class="media-item-text" Typo="Typo.caption">@Model.AdditionalInformations</MudText>
+                    <MudText Class="media-card-title" Typo="Typo.body2">@Model.Title</MudText>
+                    <MudText Class="media-card-subtitle" Typo="Typo.caption">@Model.AdditionalInformations</MudText>
                 </MudStack>
             </div>
         }
-
-    </MudPaper>
+    </div>
 }

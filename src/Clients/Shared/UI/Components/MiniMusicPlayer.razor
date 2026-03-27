@@ -1,6 +1,3 @@
-@inject IAudioPlayerService Audio
-@inject SidebarService SidebarService
-
 @if (Audio.IsVisible && Audio.CurrentTrack is not null)
 {
     <div class="music-mini-player @(SidebarService.IsOpen ? "sidebar-open" : "sidebar-collapsed")">

@@ -22,7 +22,7 @@ public partial class Movie
 
     private bool isLoading { get; set; } = true;
     private static MovieDto? _movie;
-    private static MediaPosterViewModel? _mediaPoster;
+    private static MediaCardViewModel? _mediaCard;
     private bool _isSmallDevice;
     private bool _overviewExpanded;
     private VideoFileTrackDto? _selectedVideoFileTrack;
@@ -33,7 +33,7 @@ public partial class Movie
         _movie = await k7ServerService.GetMovieAsync(Guid.Parse(Id));
         if (_movie != null)
         {
-            _mediaPoster = new MediaPosterViewModel()
+            _mediaCard = new MediaCardViewModel()
             {
                 Id = _movie.Id.ToString(),
                 Title = _movie.Title,

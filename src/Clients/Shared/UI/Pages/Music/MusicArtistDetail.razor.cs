@@ -18,7 +18,7 @@ public partial class MusicArtistDetail
 
     private PersonDto? _person;
     private string? _portraitUrl;
-    private List<MediaPosterViewModel> _albums = [];
+    private List<MediaCardViewModel> _albums = [];
     private List<TrackViewModel> _tracks = [];
     private bool _loading = true;
     private bool _isSmallDevice;
@@ -39,7 +39,7 @@ public partial class MusicArtistDetail
             _albums = roleMedias
                 .OfType<LiteMusicAlbumDto>()
                 .DistinctBy(a => a.Id)
-                .Select(album => new MediaPosterViewModel
+                .Select(album => new MediaCardViewModel
                 {
                     Id = album.Id.ToString(),
                     Title = album.Title,

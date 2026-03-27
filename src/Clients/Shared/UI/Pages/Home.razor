@@ -6,10 +6,10 @@
     @for (int i = 0; i < 3; i++)
     {
         <Carousel Skeleton="true">
-            @for (int i = 0; i < 10; i++)
+            @for (int j = 0; j < 10; j++)
             {
                 <CarouselItem>
-                    <MediaPoster Skeleton="true" FooterVisible="true" />
+                    <MediaCard Skeleton="true" FooterVisible="true" />
                 </CarouselItem>
             }
         </Carousel>
@@ -19,71 +19,36 @@ else
 {
     @if (_canTrackProgress && continueWatchingMedias.Count > 0)
     {
-        <Carousel Title="Continue watching">
-            @foreach (var item in continueWatchingMedias)
-            {
-                <CarouselItem>
-                    @if (item.Kind == MediaPosterKind.Album)
-                    {
-                        <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
-                    }
-                    else
-                    {
-                        <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
-                    }
-                </CarouselItem>
-            }
-        </Carousel>
+        @RenderCarousel("Continue watching", continueWatchingMedias, true, true)
     }
 
-    <Carousel Title="Recently added">
-        @foreach (var item in recentlyAddedMedias)
-        {
-            <CarouselItem>
-                @if (item.Kind == MediaPosterKind.Album)
-                {
-                    <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
-                }
-                else
-                {
-                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="_canTrackProgress" WatchedStatusEnabled="_canTrackProgress" FooterVisible="true"/>
-                }
-            </CarouselItem>
-        }
-    </Carousel>
-
-    <Carousel Title="Recently released">
-        @foreach (var item in recentlyReleasedMedias)
-        {
-            <CarouselItem>
-                @if (item.Kind == MediaPosterKind.Album)
-                {
-                    <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
-                }
-                else
-                {
-                    <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="_canTrackProgress" WatchedStatusEnabled="_canTrackProgress" FooterVisible="true"/>
-                }
-            </CarouselItem>
-        }
-    </Carousel>
+    @RenderCarousel("Recently added", recentlyAddedMedias, _canTrackProgress, _canTrackProgress)
+    @RenderCarousel("Recently released", recentlyReleasedMedias, _canTrackProgress, _canTrackProgress)
 
     @if (_canTrackProgress)
     {
-        <Carousel Title="Last played">
-            @foreach (var item in lastPlayedMedias)
-            {
-                <CarouselItem>
-                    @if (item.Kind == MediaPosterKind.Album)
-                    {
-                        <MediaCover Model="@item" Href="@($"/music/albums/{item.Id}")" FooterVisible="true" />
-                    }
-                    else
-                    {
-                        <MediaPoster Model="@item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true"/>
-                    }
-                </CarouselItem>
-            }
-        </Carousel>
+        @RenderCarousel("Last played", lastPlayedMedias, true, true)
     }
 }
+
+@{ RenderFragment RenderCarousel(string title, List<MediaCardViewModel> items, bool progress, bool watched)
+{
+    return @<Carousel Title="@title">
+        @foreach (var item in items)
+        {
+            <CarouselItem>
+                <MediaCard Model="@item"
+                           Variant="GetVariant(item)"
+                           Href="@GetHref(item)"
+                           OverlayEnabled="item.Kind != MediaCardKind.Album"
+                           ProgressEnabled="progress"
+                           WatchedStatusEnabled="watched"
+                           FooterVisible="true"
+                           ExcludeMenuEnabled="_canExclude"
+                           IsAdmin="_isAdmin"
+                           OnExcludeForSelf="() => ExcludeForSelf(item)"
+                           OnExcludeForOthers="() => ExcludeForOthers(item)" />
+            </CarouselItem>
+        }
+    </Carousel>;
+} }

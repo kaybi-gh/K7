@@ -10,6 +10,9 @@ namespace K7.Clients.Shared.UI.Components;
 
 public partial class MiniMusicPlayer : IDisposable
 {
+    [Inject] private IAudioPlayerService Audio { get; set; } = default!;
+    [Inject] private SidebarService SidebarService { get; set; } = default!;
+
     private ElementReference _progressBarRef;
     private bool _isDragging;
 

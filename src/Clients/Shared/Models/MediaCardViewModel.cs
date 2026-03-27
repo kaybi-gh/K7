@@ -1,11 +1,11 @@
 namespace K7.Clients.Shared.Models;
 
-public enum MediaPosterKind { Movie, Album }
+public enum MediaCardKind { Movie, Album }
 
-public record MediaPosterViewModel
+public record MediaCardViewModel
 {
     public required string Id { get; init; }
-    public MediaPosterKind Kind { get; init; }
+    public MediaCardKind Kind { get; init; }
     public string? Title { get; init; }
     public string? PosterPictureHref { get; init; }
     public string? AdditionalInformations { get; init; }
