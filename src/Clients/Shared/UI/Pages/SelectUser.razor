@@ -23,7 +23,7 @@
         <MudGrid Justify="Justify.Center" Spacing="4" data-nav-grid="true">
             @foreach (var user in _users)
             {
-                <MudItem>
+                <MudItem @key="user.IdentityUserId">
                     <MudStack AlignItems="AlignItems.Center" Spacing="2"
                               tabindex="0"
                               @onclick="() => SelectUserAsync(user)"

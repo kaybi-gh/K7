@@ -38,7 +38,7 @@
         <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">@L["Home"]</MudNavLink>
         @foreach (var library in _libraries)
         {
-            <MudNavLink Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)">@library.Title</MudNavLink>
+            <MudNavLink @key="library.Id" Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)">@library.Title</MudNavLink>
         }
         <MudNavGroup Title="@L["Music"]" Icon="@Icons.Material.Filled.MusicNote" Expanded="false">
             <MudNavLink Href="/music/artists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person">@L["Artists"]</MudNavLink>

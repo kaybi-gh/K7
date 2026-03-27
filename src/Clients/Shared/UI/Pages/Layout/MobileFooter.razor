@@ -36,7 +36,7 @@
         <MudNavMenu>
             @foreach (var library in _libraries)
             {
-                <MudNavLink Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)" OnClick="CloseDrawers">@library.Title</MudNavLink>
+                <MudNavLink @key="library.Id" Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)" OnClick="CloseDrawers">@library.Title</MudNavLink>
             }
         </MudNavMenu>
     </MudDrawer>

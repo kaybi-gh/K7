@@ -54,6 +54,14 @@ No `Result<T>` wrapper pattern.
 - Prefer pattern matching (`is null`, `is not null`) over `== null`.
 - Prefer `field` keyword (C# 14) over manual backing fields in properties.
 
+## Git Conventions
+
+- Always use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description`.
+- Types: `feat`, `fix`, `refactor`, `perf`, `style`, `docs`, `test`, `chore`, `ci`, `build`.
+- Scope is optional but recommended (e.g., `feat(signalr):`, `perf(images):`).
+- Description in lowercase, no period at the end.
+- Never amend a pushed commit.
+
 ## References
 
 - Architecture details: `docs/SolutionArchitecture.md`

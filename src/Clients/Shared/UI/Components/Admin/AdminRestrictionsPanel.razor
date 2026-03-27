@@ -35,7 +35,7 @@ else
     <MudGrid>
         @foreach (var profile in _profiles)
         {
-            <MudItem xs="12" sm="6" md="4">
+            <MudItem @key="profile.Id" xs="12" sm="6" md="4">
                 <MudCard Elevation="2">
                     <MudCardHeader>
                         <CardHeaderContent>

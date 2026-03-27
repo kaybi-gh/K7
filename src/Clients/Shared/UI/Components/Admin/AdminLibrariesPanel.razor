@@ -28,7 +28,7 @@ else
     <MudGrid Spacing="4">
         @foreach (var library in _libraries)
         {
-            <MudItem xs="12" sm="6" md="4">
+            <MudItem @key="library.Id" xs="12" sm="6" md="4">
                 <MudCard Outlined="true">
                     <MudCardContent>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">

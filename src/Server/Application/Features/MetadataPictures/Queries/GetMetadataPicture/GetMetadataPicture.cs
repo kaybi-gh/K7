@@ -66,8 +66,15 @@ public class GetMetadataPictureQueryHandler : IRequestHandler<GetMetadataPicture
 
         var eTag = new EntityTagHeaderValue($"\"{entityId}-{lastModified.ToUnixTimeSeconds()}\"");
 
-        httpContext.Response.GetTypedHeaders().LastModified = lastModified;
-        httpContext.Response.GetTypedHeaders().ETag = eTag;
+        var responseHeaders = httpContext.Response.GetTypedHeaders();
+        responseHeaders.LastModified = lastModified;
+        responseHeaders.ETag = eTag;
+        responseHeaders.CacheControl = new CacheControlHeaderValue
+        {
+            Public = true,
+            MaxAge = TimeSpan.FromDays(30),
+            Extensions = { new NameValueHeaderValue("immutable") }
+        };
 
         var requestHeaders = httpContext.Request.GetTypedHeaders();
 

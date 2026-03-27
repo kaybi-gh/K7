@@ -47,7 +47,7 @@ else
     <MudGrid Style="max-width:100%;" Spacing="6" Justify="Justify.FlexStart" Class="pa-4">
         @foreach (var artist in _artists)
         {
-            <MudItem>
+            <MudItem @key="artist.Id">
                 <a href="@($"/music/artists/{artist.Id}")" class="artist-card-link">
                     <MudPaper Class="artist-card" Elevation="0">
                         @if (artist.PortraitUrl is not null)
@@ -56,7 +56,8 @@ else
                                       Alt="@artist.Name"
                                       Width="160" Height="160"
                                       ObjectFit="ObjectFit.Cover"
-                                      Class="artist-avatar" />
+                                      Class="artist-avatar"
+                                      loading="lazy" />
                         }
                         else
                         {
