@@ -1,5 +1,5 @@
-﻿using System.Security.Claims;
-using K7.Clients.Shared.Domain.Interfaces;
+using System.Security.Claims;
+using K7.Clients.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.Services.K7Server;

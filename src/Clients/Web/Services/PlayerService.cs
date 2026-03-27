@@ -1,5 +1,5 @@
-﻿using K7.Clients.Shared.Domain.Interfaces;
-using K7.Clients.Shared.Domain.Models;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;

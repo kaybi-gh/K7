@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <RootNamespace>K7.Server.Web</RootNamespace>
@@ -16,8 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Clients\Shared\Components\K7.Clients.Shared.Components.csproj" />
-    <ProjectReference Include="..\..\Clients\Shared\Pages\K7.Clients.Shared.Pages.csproj" />
+    <ProjectReference Include="..\..\Clients\Shared\UI\K7.Clients.Shared.UI.csproj" />
     <ProjectReference Include="..\..\Clients\Web\K7.Clients.Web.csproj" />
     <ProjectReference Include="..\..\Shared\Aspire\ServiceDefaults\K7.Shared.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Shared\K7.Shared\K7.Shared.csproj" />

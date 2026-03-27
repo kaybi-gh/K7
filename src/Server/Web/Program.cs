@@ -1,5 +1,4 @@
-using K7.Clients.Shared.Components.Utils;
-using K7.Clients.Shared.Pages.Utils;
+using K7.Clients.Shared.UI.Pages.Utils;
 using K7.Server.Application;
 using K7.Server.Infrastructure.Database.Context;
 using K7.Server.Infrastructure.Database.Context.Data;
@@ -84,7 +83,6 @@ try
         .AddInteractiveWebAssemblyRenderMode()
         .AddAdditionalAssemblies(
             typeof(K7.Clients.Web._Imports).Assembly,
-            typeof(ISharedComponentsPointer).Assembly,
             typeof(ISharedPagesPointer).Assembly);
 
     app.MapScalarApiReference(o => {

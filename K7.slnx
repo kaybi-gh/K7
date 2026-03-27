@@ -18,10 +18,8 @@
     <Project Path="src/Clients/Web/K7.Clients.Web.csproj" />
   </Folder>
   <Folder Name="/Source/Clients/Shared/">
-    <Project Path="src/Clients/Shared/Components/K7.Clients.Shared.Components.csproj" />
-    <Project Path="src/Clients/Shared/Models/K7.Clients.Shared.Domain.csproj" />
-    <Project Path="src/Clients/Shared/Pages/K7.Clients.Shared.Pages.csproj" />
-    <Project Path="src/Clients/Shared/Services/K7.Clients.Shared.Services.csproj" />
+    <Project Path="src/Clients/Shared/K7.Clients.Shared.csproj" />
+    <Project Path="src/Clients/Shared/UI/K7.Clients.Shared.UI.csproj" />
   </Folder>
   <Folder Name="/Source/Server/">
     <Project Path="src/Server/Application/K7.Server.Application.csproj" />

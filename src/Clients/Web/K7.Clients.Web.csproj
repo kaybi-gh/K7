@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 	
   <PropertyGroup>
     <RootNamespace>K7.Clients.Web</RootNamespace>
@@ -21,10 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Shared\Components\K7.Clients.Shared.Components.csproj" />
-    <ProjectReference Include="..\Shared\Models\K7.Clients.Shared.Domain.csproj" />
-    <ProjectReference Include="..\Shared\Pages\K7.Clients.Shared.Pages.csproj" />
-    <ProjectReference Include="..\Shared\Services\K7.Clients.Shared.Services.csproj" />
+    <ProjectReference Include="..\Shared\K7.Clients.Shared.csproj" />
+    <ProjectReference Include="..\Shared\UI\K7.Clients.Shared.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

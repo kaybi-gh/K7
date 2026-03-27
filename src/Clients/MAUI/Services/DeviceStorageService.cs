@@ -1,5 +1,5 @@
-﻿using System.Text.Json;
-using K7.Clients.Shared.Domain.Interfaces;
+using System.Text.Json;
+using K7.Clients.Shared.Interfaces;
 using K7.Shared;
 
 namespace K7.Clients.MAUI.Services;
