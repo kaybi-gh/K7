@@ -11,15 +11,16 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 @inject K7.Server.Web.Components.Account.IdentityRedirectManager RedirectManager
+@inject IStringLocalizer<Welcome> L
 
-<PageTitle>Welcome - K7</PageTitle>
+<PageTitle>@L["PageTitle"] - K7</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
     <MudPaper Class="pa-8" Elevation="4">
         <MudStack Spacing="4" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">K7</MudText>
             <MudText Typo="Typo.body1" Color="Color.Secondary">
-                Choose how you want to continue
+                @L["ChooseHow"]
             </MudText>
 
             <MudDivider Class="my-2" Style="width:100%;" />
@@ -30,7 +31,7 @@
                                      Color="Color.Primary"
                                      Size="Size.Large"
                                      FullWidth="true">
-                        Sign in
+                        @L["SignIn"]
                     </MudStaticButton>
                 </MudLink>
 
@@ -42,7 +43,7 @@
                                          Size="Size.Large"
                                          FullWidth="true"
                                          FormAction="FormAction.Submit">
-                            Continue as guest
+                            @L["ContinueAsGuest"]
                         </MudStaticButton>
                     </EditForm>
                 }

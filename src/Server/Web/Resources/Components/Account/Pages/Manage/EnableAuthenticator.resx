@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+    <value>Configurer l'application d'authentification</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Configurer l'application d'authentification</value>
+  </data>
+  <data name="Step1" xml:space="preserve">
+    <value>Télécharger une application d'authentification à deux facteurs.</value>
+  </data>
+  <data name="Step2" xml:space="preserve">
+    <value>Scannez le QR Code ou entrez cette clé dans votre application. Les espaces et la casse n'ont pas d'importance :</value>
+  </data>
+  <data name="Step3" xml:space="preserve">
+    <value>Entrez le code de vérification fourni par votre application.</value>
+  </data>
+  <data name="VerificationCode" xml:space="preserve">
+    <value>Code de vérification</value>
+  </data>
+  <data name="VerificationCodeHelp" xml:space="preserve">
+    <value>Veuillez entrer le code.</value>
+  </data>
+  <data name="Verify" xml:space="preserve">
+    <value>Vérifier</value>
+  </data>
+  <data name="Verified" xml:space="preserve">
+    <value>Votre application d'authentification a été vérifiée.</value>
+  </data>
+  <data name="InvalidCode" xml:space="preserve">
+    <value>Erreur : le code de vérification est invalide.</value>
+  </data>
+</root>

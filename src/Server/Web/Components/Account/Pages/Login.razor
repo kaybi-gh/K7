@@ -12,8 +12,9 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject IOptions<AuthenticationConfiguration> AuthConfig
+@inject IStringLocalizer<Login> L
 
-<PageTitle>Log in</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <StatusMessage Message="@errorMessage" />
 
@@ -21,8 +22,8 @@
     <MudCard Style="width:420px" Outlined="true">
         <MudCardHeader>
             <MudStack AlignItems="AlignItems.Center" Style="width: 100%;" Spacing="0">
-                <MudText Typo="Typo.h6" Class="mt-5">Welcome back</MudText>
-                <MudText Typo="Typo.caption">Sign in to your account to continue</MudText>
+                <MudText Typo="Typo.h6" Class="mt-5">@L["WelcomeBack"]</MudText>
+                <MudText Typo="Typo.caption">@L["SignInPrompt"]</MudText>
             </MudStack>
         </MudCardHeader>
         <MudCardContent>
@@ -35,20 +36,20 @@
                             <MudStaticTextField InputType="InputType.Email"
                                                 For="@(() => Input!.Email)"
                                                 @bind-Value="Input!.Email"
-                                                Label="Email"
-                                                Placeholder="name@example.com"
+                                                Label="@L["Email"]"
+                                                Placeholder="@L["EmailPlaceholder"]"
                                                 UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } })" />
 
                             <MudStaticTextField InputType="InputType.Password"
                                                 For="@(() => Input.Password)"
                                                 @bind-Value="Input.Password"
-                                                Label="Password"
-                                                Placeholder="password"
+                                                Label="@L["Password"]"
+                                                Placeholder="@L["PasswordPlaceholder"]"
                                                 UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } })"
                                                 Adornment="Adornment.End"
                                                 AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
                                                 AdornmentClickFunction="togglePasswordVisibility"
-                                                AdornmentAriaLabel="Show Password" />
+                                                AdornmentAriaLabel="@L["ShowPassword"]" />
 
                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                 <MudStaticSwitch For="@(() => Input.RememberMe)"
@@ -56,11 +57,11 @@
                                                  Size="Size.Small"
                                                  Color="Color.Primary"
                                                  Typo="Typo.caption"
-                                                 Label="Remember me"/>
+                                                 Label="@L["RememberMe"]"/>
 
                                 <MudLink Href="Account/ForgotPassword"
                                          Typo="Typo.caption">
-                                    Forgot your password?
+                                    @L["ForgotPassword"]
                                 </MudLink>
                             </MudStack>
 
@@ -69,12 +70,12 @@
                                              Size="Size.Small"
                                              FullWidth="true"
                                              FormAction="FormAction.Submit">
-                                Sign in
+                                @L["SignIn"]
                             </MudStaticButton>
                         </MudStack>
                     </EditForm>
                     <MudStack AlignItems="AlignItems.Center">
-                        <MudText Class="continue-with" Typo="Typo.caption">OR CONTINUE WITH</MudText>
+                        <MudText Class="continue-with" Typo="Typo.caption">@L["OrContinueWith"]</MudText>
                         <ExternalLoginPicker />
                     </MudStack>
                 }
@@ -92,16 +93,16 @@
                     @if (AuthConfig.Value.Local.RegistrationEnabled)
                     {
                         <MudStack Row="true" Spacing="1">
-                            <MudText Typo="Typo.caption">Don't have an account?</MudText>
+                            <MudText Typo="Typo.caption">@L["NoAccount"]</MudText>
                             <MudLink Href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"
                                      Typo="Typo.caption">
-                                Sign up
+                                @L["SignUp"]
                             </MudLink>
                         </MudStack>
                     }
                     <MudLink Href="Account/ResendEmailConfirmation"
                              Typo="Typo.caption">
-                        Resend email confirmation
+                        @L["ResendEmailConfirmation"]
                     </MudLink>
                 </MudStack>
             </MudCardActions>
@@ -202,7 +203,7 @@
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            errorMessage = L["InvalidLogin"];
         }
     }
 

@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+    <value>Inscription</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Inscription</value>
+  </data>
+  <data name="AssociateAccount" xml:space="preserve">
+    <value>Associer votre compte {0}.</value>
+  </data>
+  <data name="AuthSuccess" xml:space="preserve">
+    <value>Vous vous êtes authentifié avec succès via {0}. Veuillez entrer une adresse e-mail et cliquer sur Inscription pour terminer.</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>S'inscrire</value>
+  </data>
+  <data name="ErrorExternalProvider" xml:space="preserve">
+    <value>Erreur du fournisseur externe : {0}</value>
+  </data>
+  <data name="ErrorLoadingExternal" xml:space="preserve">
+    <value>Erreur lors du chargement des informations de connexion externe.</value>
+  </data>
+</root>

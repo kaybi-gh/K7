@@ -8,15 +8,16 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 @inject K7.Server.Web.Components.Account.IdentityRedirectManager RedirectManager
+@inject IStringLocalizer<SetupWizard> L
 
-<PageTitle>Setup - K7</PageTitle>
+<PageTitle>@L["PageTitle"] - K7</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
     <MudPaper Class="pa-8" Elevation="4">
         <MudStack Spacing="4">
-            <MudText Typo="Typo.h4" Align="Align.Center">Welcome to K7</MudText>
+            <MudText Typo="Typo.h4" Align="Align.Center">@L["WelcomeTitle"]</MudText>
             <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                Create your administrator account to get started.
+                @L["CreateAdmin"]
             </MudText>
 
             <MudDivider Class="my-2" />
@@ -32,31 +33,31 @@
                 <MudStack Spacing="3">
                     <MudStaticTextField For="@(() => Input!.Email)"
                                         @bind-Value="Input!.Email"
-                                        Label="Email"
-                                        Placeholder="admin@example.com"
+                                        Label="@L["Email"]"
+                                        Placeholder="@L["EmailPlaceholder"]"
                                         InputType="InputType.Email"
                                         UserAttributes="@(new() { { "autocomplete", "email" }, { "aria-required", "true" } })" />
 
                     <MudStaticTextField For="@(() => Input!.Password)"
                                         @bind-Value="Input!.Password"
-                                        Label="Password"
-                                        Placeholder="password"
+                                        Label="@L["Password"]"
+                                        Placeholder="@L["PasswordPlaceholder"]"
                                         InputType="InputType.Password"
                                         Adornment="Adornment.End"
                                         AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
                                         AdornmentClickFunction="togglePasswordVisibility"
-                                        AdornmentAriaLabel="Show Password"
+                                        AdornmentAriaLabel="@L["ShowPassword"]"
                                         UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } })" />
 
                     <MudStaticTextField For="@(() => Input!.ConfirmPassword)"
                                         @bind-Value="Input!.ConfirmPassword"
-                                        Label="Confirm password"
-                                        Placeholder="password"
+                                        Label="@L["ConfirmPassword"]"
+                                        Placeholder="@L["PasswordPlaceholder"]"
                                         InputType="InputType.Password"
                                         Adornment="Adornment.End"
                                         AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
                                         AdornmentClickFunction="togglePasswordVisibility"
-                                        AdornmentAriaLabel="Show Password"
+                                        AdornmentAriaLabel="@L["ShowPassword"]"
                                         UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } })" />
 
                     <MudStaticButton Variant="Variant.Filled"
@@ -64,7 +65,7 @@
                                      Size="Size.Large"
                                      FullWidth="true"
                                      FormAction="FormAction.Submit">
-                        Complete setup
+                        @L["CompleteSetup"]
                     </MudStaticButton>
                 </MudStack>
             </EditForm>

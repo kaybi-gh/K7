@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+    <value>Désactiver l'authentification à deux facteurs</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Désactiver l'authentification à deux facteurs (2FA)</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Cette action ne fait que désactiver la 2FA.</value>
+  </data>
+  <data name="WarningDetail" xml:space="preserve">
+    <value>La désactivation ne modifie pas les clés utilisées dans les applications d'authentification. Si vous souhaitez les modifier, vous devez</value>
+  </data>
+  <data name="ResetKeys" xml:space="preserve">
+    <value>réinitialiser vos clés d'authentification.</value>
+  </data>
+  <data name="Disable2fa" xml:space="preserve">
+    <value>Désactiver la 2FA</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>La 2FA a été désactivée. Vous pourrez la réactiver en configurant une application d'authentification.</value>
+  </data>
+</root>

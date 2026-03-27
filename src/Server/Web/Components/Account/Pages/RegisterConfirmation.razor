@@ -9,10 +9,11 @@
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IStringLocalizer<RegisterConfirmation> L
 
-<PageTitle>Register confirmation</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
-<h1>Register confirmation</h1>
+<h1>@L["Title"]</h1>
 
 <StatusMessage Message="@statusMessage" />
 
@@ -25,7 +26,7 @@
 }
 else
 {
-    <p role="alert">Please check your email to confirm your account.</p>
+    <p role="alert">@L["CheckEmail"]</p>
 }
 
 @code {

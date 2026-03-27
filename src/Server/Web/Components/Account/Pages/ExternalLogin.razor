@@ -16,18 +16,17 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ExternalLogin> Logger
+@inject IStringLocalizer<ExternalLogin> L
 
-<PageTitle>Register</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <StatusMessage Message="@message" />
-<h1>Register</h1>
-<h2>Associate your @ProviderDisplayName account.</h2>
+<h1>@L["Title"]</h1>
+<h2>@L["AssociateAccount", ProviderDisplayName ?? ""]</h2>
 <MudDivider />
 
 <div  class="alert alert-info">
-    You've successfully authenticated with <strong>@ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
-    logging in.
+    @L["AuthSuccess", ProviderDisplayName ?? ""]
 </div>
 
 <div class="row">
@@ -37,10 +36,10 @@
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input!.Email" id="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email." />
-                <label for="Input.Email" class="form-label">Email</label>
+                <label for="Input.Email" class="form-label">@L["Email"]</label>
                 <ValidationMessage For="() => Input!.Email" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">@L["Register"]</button>
         </EditForm>
     </div>
 </div>
@@ -74,13 +73,13 @@
 
         if (RemoteError is not null)
         {
-            RedirectManager.RedirectToWithStatus("Account/Login", $"Error from external provider: {RemoteError}", HttpContext);
+            RedirectManager.RedirectToWithStatus("Account/Login", L["ErrorExternalProvider", RemoteError].Value, HttpContext);
         }
 
         var info = await SignInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
-            RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
+            RedirectManager.RedirectToWithStatus("Account/Login", L["ErrorLoadingExternal"].Value, HttpContext);
         }
 
         externalLoginInfo = info;
@@ -103,7 +102,7 @@
     {
         if (externalLoginInfo is null)
         {
-            RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
+            RedirectManager.RedirectToWithStatus("Account/Login", L["ErrorLoadingExternal"].Value, HttpContext);
         }
 
         // Sign in the user with this external login provider if the user already has a login.
@@ -137,7 +136,7 @@
     {
         if (externalLoginInfo is null)
         {
-            RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information during confirmation.", HttpContext);
+            RedirectManager.RedirectToWithStatus("Account/Login", L["ErrorLoadingExternal"].Value, HttpContext);
         }
 
         var emailStore = GetEmailStore();

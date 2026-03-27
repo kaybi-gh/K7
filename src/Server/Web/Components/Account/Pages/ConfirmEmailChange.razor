@@ -8,10 +8,11 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
+@inject IStringLocalizer<ConfirmEmailChange> L
 
-<PageTitle>Confirm email change</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
-<h1>Confirm email change</h1>
+<h1>@L["Title"]</h1>
 
 <StatusMessage Message="@message" />
 
@@ -35,7 +36,7 @@
         if (UserId is null || Email is null || Code is null)
         {
             RedirectManager.RedirectToWithStatus(
-                "Account/Login", "Error: Invalid email change confirmation link.", HttpContext);
+                "Account/Login", L["InvalidLink"].Value, HttpContext);
         }
 
         var user = await UserManager.FindByIdAsync(UserId);
@@ -49,7 +50,7 @@
         var result = await UserManager.ChangeEmailAsync(user, Email, code);
         if (!result.Succeeded)
         {
-            message = "Error changing email.";
+            message = L["ErrorChangingEmail"];
             return;
         }
 
@@ -58,11 +59,11 @@
         var setUserNameResult = await UserManager.SetUserNameAsync(user, Email);
         if (!setUserNameResult.Succeeded)
         {
-            message = "Error changing user name.";
+            message = L["ErrorChangingUserName"];
             return;
         }
 
         await SignInManager.RefreshSignInAsync(user);
-        message = "Thank you for confirming your email change.";
+        message = L["Success"];
     }
 }
