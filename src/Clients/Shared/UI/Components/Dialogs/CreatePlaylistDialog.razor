@@ -1,7 +1,3 @@
-@using K7.Shared.Dtos.Requests
-@inject IPlaylistService K7ServerService
-@inject ISnackbar Snackbar
-
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="4" Class="mt-2">
@@ -37,40 +33,3 @@
         </MudButton>
     </DialogActions>
 </MudDialog>
-
-@code {
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
-
-    private string _title = "";
-    private string? _description;
-    private bool _isSubmitting;
-
-    private void Cancel() => MudDialog.Cancel();
-
-    private async Task SubmitAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_title)) return;
-
-        _isSubmitting = true;
-        try
-        {
-            var id = await K7ServerService.CreatePlaylistAsync(new CreatePlaylistRequest
-            {
-                Title = _title.Trim(),
-                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim()
-            });
-
-            Snackbar.Add("Playlist créée", Severity.Success);
-            MudDialog.Close(DialogResult.Ok(id));
-        }
-        catch
-        {
-            Snackbar.Add("Erreur lors de la création", Severity.Error);
-        }
-        finally
-        {
-            _isSubmitting = false;
-        }
-    }
-}

@@ -1,13 +1,1 @@
-@using K7.Server.Domain.Enums
-@inject NavigationManager Navigation
-@inject ILocalUserService LocalUserService
-@inject IDeviceService DeviceService
 
-@code {
-    protected override void OnInitialized()
-    {
-        var users = LocalUserService.GetAll();
-        var target = users.Count > 0 && DeviceService.GetClientType() != ClientType.Web ? "select-user" : "sign-in";
-        Navigation.NavigateTo($"{target}?returnUrl={Uri.EscapeDataString(Navigation.Uri)}");
-    }
-}

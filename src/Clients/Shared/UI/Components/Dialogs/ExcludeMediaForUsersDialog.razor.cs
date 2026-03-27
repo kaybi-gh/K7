@@ -1,0 +1,79 @@
+using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Users;
+using Microsoft.AspNetCore.Components;
+using MudBlazor;
+
+namespace K7.Clients.Shared.UI.Components.Dialogs;
+
+public partial class ExcludeMediaForUsersDialog
+{
+    [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Guid MediaId { get; set; }
+    [Parameter] public string? MediaTitle { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private List<UserExclusionState> _userStates = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var users = await K7ServerService.GetUsersAsync();
+            _userStates = users.Select(u => new UserExclusionState
+            {
+                User = u,
+                Excluded = u.ExcludedMediaIds.Contains(MediaId),
+                OriginalExcluded = u.ExcludedMediaIds.Contains(MediaId)
+            }).ToList();
+        }
+        catch
+        {
+            _userStates = [];
+        }
+        _loading = false;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        _saving = true;
+        try
+        {
+            var modified = _userStates.Where(s => s.Excluded != s.OriginalExcluded).ToList();
+            foreach (var entry in modified)
+            {
+                var newExclusions = entry.User.ExcludedMediaIds.ToList();
+                if (entry.Excluded)
+                    newExclusions.Add(MediaId);
+                else
+                    newExclusions.Remove(MediaId);
+
+                await K7ServerService.UpdateUserMediaExclusionsAsync(entry.User.Id, new UpdateUserMediaExclusionsRequest
+                {
+                    ExcludedMediaIds = newExclusions
+                });
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed class UserExclusionState
+    {
+        public required UserDto User { get; init; }
+        public bool Excluded { get; set; }
+        public bool OriginalExcluded { get; init; }
+    }
+}

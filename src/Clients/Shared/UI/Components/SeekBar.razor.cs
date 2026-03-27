@@ -1,0 +1,206 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using MudBlazor;
+using MudBlazor.Services;
+
+namespace K7.Clients.Shared.UI.Components;
+
+public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
+{
+    [Inject] private IPlayerService PlayerService { get; set; } = default!;
+    [Inject] private IBrowserViewportService BrowserViewportService { get; set; } = default!;
+
+    private ElementReference SeekBarRef;
+    private bool IsHovering;
+    private double HoverPercent;
+    private double HoverTime;
+
+    private double SeekBarWidth = 0;
+    private double SeekBarLeft;
+
+    [Parameter] public EventCallback<bool> OnDragChanged { get; set; }
+    [Parameter] public Uri? ThumbnailsUri { get; set; }
+    [Parameter] public List<Chapter> Chapters { get; set; } = [];
+    [Parameter] public bool IsVisible { get; set; }
+
+    private const int ThumbWidth = 320;
+    private const int ThumbHeight = 180;
+    private const int IntervalSeconds = 30;
+    private const int ThumbsPerRow = 10;
+
+    private double CurrentPercent => (PlayerService.CurrentTime / PlayerService.Duration) * 100;
+    private double BufferedPercent => (PlayerService.BufferedTime / PlayerService.Duration) * 100;
+
+    protected override void OnInitialized()
+    {
+        PlayerService.DurationChanged += OnDurationChanged;
+        PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
+        PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
+    }
+
+    private async Task HandleMouseMove(MouseEventArgs e)
+    {
+        if (IsVisible)
+        {
+            if (SeekBarWidth <= 0)
+            {
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
+            }
+
+            UpdateHover(e.ClientX);
+            IsHovering = true;
+        }
+    }
+
+    private async Task OnPointerDown(PointerEventArgs e)
+    {
+        if (IsVisible)
+        {
+            if (SeekBarWidth <= 0)
+            {
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
+            }
+
+            UpdateHover(e.ClientX);
+            IsHovering = true;
+            await OnDragChanged.InvokeAsync(true);
+        }
+    }
+
+    private async Task OnPointerMove(PointerEventArgs e)
+    {
+        if (IsVisible && IsHovering)
+        {
+            if (SeekBarWidth <= 0)
+            {
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
+            }
+
+            UpdateHover(e.ClientX);
+            await OnDragChanged.InvokeAsync(true);
+        }
+    }
+
+    private async Task OnPointerUp(PointerEventArgs e)
+    {
+        if (IsVisible && IsHovering)
+        {
+            if (SeekBarWidth <= 0)
+            {
+                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                SeekBarWidth = bounds.Width;
+                SeekBarLeft = bounds.Left;
+            }
+
+            if (SeekBarWidth > 0)
+            {
+                var x = e.ClientX - SeekBarLeft;
+                var percent = Math.Clamp(x / SeekBarWidth, 0, 1);
+                var seekTime = PlayerService.Duration * percent;
+
+                PlayerService.Seek(seekTime);
+            }
+
+            IsHovering = false;
+            await OnDragChanged.InvokeAsync(false);
+        }
+    }
+
+    private void UpdateHover(double clientX)
+    {
+        if (SeekBarWidth <= 0) return;
+
+        var relativeX = clientX - SeekBarLeft;
+        var percent = Math.Clamp(relativeX / SeekBarWidth, 0, 1);
+        HoverPercent = percent * 100;
+        HoverTime = PlayerService.Duration * percent;
+    }
+
+    private string GetSpriteStyle(double time)
+    {
+        var index = (int)(time / IntervalSeconds);
+        var col = index % ThumbsPerRow;
+        var row = index / ThumbsPerRow;
+
+        return $"background-image: url('{ThumbnailsUri}'); " +
+               $"background-position: -{col * ThumbWidth}px -{row * ThumbHeight}px; " +
+               $"width: {ThumbWidth}px; height: {ThumbHeight}px;";
+    }
+
+    private string GetHumanReadableTime(double seconds)
+    {
+        var time = TimeSpan.FromSeconds(seconds);
+        return time.Hours > 0
+            ? time.ToString(@"h\:mm\:ss")
+            : time.ToString(@"m\:ss");
+    }
+
+    private Chapter? GetHoveredChapter(double seconds)
+    {
+        for (var i = Chapters.Count - 1; i >= 0; i--)
+        {
+            if (Chapters[i].Start <= seconds)
+                return Chapters[i];
+        }
+
+        return null;
+    }
+
+    private void OnDurationChanged(double duration)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnCurrentTimeChanged(double time)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnBufferedTimeChanged(double time)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
+
+    ResizeOptions IBrowserViewportObserver.ResizeOptions { get; } = new()
+    {
+        ReportRate = 50,
+        NotifyOnBreakpointOnly = false
+    };
+
+    Task IBrowserViewportObserver.NotifyBrowserViewportChangeAsync(BrowserViewportEventArgs browserViewportEventArgs)
+    {
+        SeekBarWidth = 0;
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await BrowserViewportService.SubscribeAsync(this);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        PlayerService.DurationChanged -= OnDurationChanged;
+        PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
+        PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;
+        await BrowserViewportService.UnsubscribeAsync(this);
+    }
+
+    public class Chapter
+    {
+        public string? Title { get; set; }
+        public double Start { get; set; }
+    }
+}

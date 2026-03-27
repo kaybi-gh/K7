@@ -1,6 +1,4 @@
-@using K7.Shared.Dtos.Entities
-@inject ILibraryService K7ServerService
-
+﻿
 <MudDialog>
     <DialogContent>
         @if (_loading)
@@ -30,37 +28,3 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Enregistrer</MudButton>
     </DialogActions>
 </MudDialog>
-
-@code {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public List<Guid> ExcludedLibraryIds { get; set; } = [];
-
-    private bool _loading = true;
-    private List<LibraryDto> _libraries = [];
-    private HashSet<Guid> _excludedIds = [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        _excludedIds = new HashSet<Guid>(ExcludedLibraryIds);
-        try
-        {
-            _libraries = await K7ServerService.GetLibrariesAsync();
-        }
-        catch
-        {
-            _libraries = [];
-        }
-        _loading = false;
-    }
-
-    private void ToggleExclusion(Guid libraryId, bool exclude)
-    {
-        if (exclude)
-            _excludedIds.Add(libraryId);
-        else
-            _excludedIds.Remove(libraryId);
-    }
-
-    private void Cancel() => MudDialog.Cancel();
-    private void Submit() => MudDialog.Close(DialogResult.Ok(_excludedIds.ToList()));
-}
