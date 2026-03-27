@@ -11,17 +11,17 @@
 </MudDrawer>
 
 <MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.Center" data-nav-row="true">
-    <span>@MediaPosterViewModels.Count items</span>
+    <span>@MediaCards.Count items</span>
     <MudIconButton Icon="@Icons.Material.Outlined.SortByAlpha"></MudIconButton>
     <MudIconButton Icon="@Icons.Material.Outlined.FilterList"></MudIconButton>
     <MudIconButton Icon="@Icons.Material.Outlined.GridView" OnClick="() => _gridDrawerOpen = true"></MudIconButton>
 </MudStack>
 
 <MudGrid Style="max-width:100%;" Spacing="@_spacing" Justify="Justify.FlexStart" data-nav-grid="true">
-    @foreach (var item in MediaPosterViewModels)
+    @foreach (var item in MediaCards)
     {
         <MudItem>
-            <MediaPoster Model="item" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+            <MediaCard Model="item" Href="@($"/movies/{item.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
         </MudItem>
     }
 </MudGrid>

@@ -12,7 +12,7 @@ public partial class Person
     public required string Id { get; set; }
 
     private static PersonDto? _person;
-    private static List<MediaPosterViewModel>? _movies;
+    private static List<MediaCardViewModel>? _movies;
     private bool _isSmallDevice;
     private bool _overviewExpanded;
 
@@ -25,7 +25,7 @@ public partial class Person
             if (personMedias != null && personMedias.OfType<LiteMovieDto>().Any())
             {
                 _movies = personMedias.OfType<LiteMovieDto>()
-                    .Select(item => new MediaPosterViewModel()
+                    .Select(item => new MediaCardViewModel()
                     {
                         Id = item.Id.ToString(),
                         Title = item.Title,

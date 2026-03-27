@@ -13,14 +13,14 @@ public partial class Library
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
 
-    private List<MediaPosterViewModel> MediaPosterViewModels { get; set; } = [];
+    private List<MediaCardViewModel> MediaCards { get; set; } = [];
 
     private bool _gridDrawerOpen = false;
     private int _spacing { get; set; } = 6;
 
     protected override async Task OnParametersSetAsync()
     {
-        MediaPosterViewModels.Clear();
+        MediaCards.Clear();
 
         var libraryId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
 
@@ -35,7 +35,7 @@ public partial class Library
         {
             foreach (var item in liteMediasPage.Items!)
             {
-                MediaPosterViewModels.Add(new MediaPosterViewModel()
+                MediaCards.Add(new MediaCardViewModel()
                 {
                     Id = item.Id.ToString(),
                     Title = item.Title,

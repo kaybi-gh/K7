@@ -58,7 +58,7 @@
                         @foreach (var album in _albums)
                         {
                             <CarouselItem>
-                                <MediaCover Model="album" Href="@($"/music/albums/{album.Id}")" FooterVisible="true" />
+                                <MediaCard Model="album" Variant="MediaCardVariant.Cover" Href="@($"/music/albums/{album.Id}")" FooterVisible="true" />
                             </CarouselItem>
                         }
                     </Carousel>
