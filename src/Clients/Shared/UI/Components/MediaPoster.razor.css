@@ -4,10 +4,16 @@
 
 .media-item-container {
     position: relative;
-    display: flex;
-    align-items: end;
     width: 200px;
     height: 300px;
+    overflow: hidden;
+    border-radius: var(--mud-default-borderradius);
+}
+
+.media-item-link {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
     .media-item-container:hover .media-item-progress-bar,
