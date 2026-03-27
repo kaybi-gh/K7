@@ -4,32 +4,33 @@
 @using K7.Server.Infrastructure.Database.Context.Identity
 @attribute [Authorize]
 @inject NavigationManager Navigation
+@inject IStringLocalizer<LinkDevice> L
 
-<PageTitle>Link Device - K7</PageTitle>
+<PageTitle>@L["PageTitle"] - K7</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
     <MudPaper Class="pa-8" Elevation="4">
         <MudStack Spacing="4" AlignItems="AlignItems.Center">
             <MudIcon Icon="@Icons.Material.Outlined.Devices" Size="Size.Large" Color="Color.Primary" />
-            <MudText Typo="Typo.h5">Link a Device</MudText>
+            <MudText Typo="Typo.h5">@L["Title"]</MudText>
 
             @if (_approved)
             {
                 <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
-                    Device authorized successfully. You can close this page.
+                    @L["DeviceAuthorized"]
                 </MudAlert>
             }
             else if (!string.IsNullOrEmpty(_error))
             {
                 <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
-                    @_errorMessage
+                    @L["InvalidCode"]
                 </MudAlert>
             }
 
             @if (!_approved)
             {
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
-                    Enter the code displayed on your device.
+                    @L["EnterCode"]
                 </MudText>
 
                 <MudDivider Class="my-2" Style="width:100%;" />
@@ -50,7 +51,7 @@
                                          Size="Size.Large"
                                          FullWidth="true"
                                          FormAction="FormAction.Submit">
-                            Authorize Device
+                            @L["AuthorizeDevice"]
                         </MudStaticButton>
                     </MudStack>
                 </form>
@@ -134,7 +135,6 @@
 @code {
     private string? _userCode;
     private string? _error;
-    private string _errorMessage = "The code is invalid or has expired. Please try again.";
     private bool _approved;
 
     [CascadingParameter]

@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+    <value>Authentification à deux facteurs (2FA)</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Authentification à deux facteurs (2FA)</value>
+  </data>
+  <data name="NoRecoveryCodes" xml:space="preserve">
+    <value>Vous n'avez plus de codes de récupération.</value>
+  </data>
+  <data name="MustGenerate" xml:space="preserve">
+    <value>Vous devez</value>
+  </data>
+  <data name="GenerateNew" xml:space="preserve">
+    <value>générer un nouveau jeu de codes de récupération</value>
+  </data>
+  <data name="OneCodeLeft" xml:space="preserve">
+    <value>Il vous reste 1 code de récupération.</value>
+  </data>
+  <data name="CanGenerate" xml:space="preserve">
+    <value>Vous pouvez</value>
+  </data>
+  <data name="FewCodesLeft" xml:space="preserve">
+    <value>Il vous reste {0} codes de récupération.</value>
+  </data>
+  <data name="ShouldGenerate" xml:space="preserve">
+    <value>Vous devriez</value>
+  </data>
+  <data name="ForgetBrowser" xml:space="preserve">
+    <value>Oublier ce navigateur</value>
+  </data>
+  <data name="Disable2fa" xml:space="preserve">
+    <value>Désactiver la 2FA</value>
+  </data>
+  <data name="ResetCodes" xml:space="preserve">
+    <value>Réinitialiser les codes de récupération</value>
+  </data>
+  <data name="AuthenticatorApp" xml:space="preserve">
+    <value>Application d'authentification</value>
+  </data>
+  <data name="AddAuthenticator" xml:space="preserve">
+    <value>Ajouter une application d'authentification</value>
+  </data>
+  <data name="SetupAuthenticator" xml:space="preserve">
+    <value>Configurer l'application d'authentification</value>
+  </data>
+  <data name="ResetAuthenticator" xml:space="preserve">
+    <value>Réinitialiser l'application d'authentification</value>
+  </data>
+  <data name="PolicyNotAccepted" xml:space="preserve">
+    <value>La politique de confidentialité et de cookies n'a pas été acceptée.</value>
+  </data>
+  <data name="MustAcceptPolicy" xml:space="preserve">
+    <value>Vous devez accepter la politique avant de pouvoir activer l'authentification à deux facteurs.</value>
+  </data>
+  <data name="BrowserForgotten" xml:space="preserve">
+    <value>Le navigateur actuel a été oublié. Lors de votre prochaine connexion, votre code 2FA vous sera demandé.</value>
+  </data>
+</root>

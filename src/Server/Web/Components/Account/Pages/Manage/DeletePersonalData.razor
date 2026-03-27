@@ -9,15 +9,16 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<DeletePersonalData> Logger
+@inject IStringLocalizer<DeletePersonalData> L
 
-<PageTitle>Delete Personal Data</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h6" GutterBottom="true">Delete personal data</MudText>
+<MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
 
 <StatusMessage Message="@message" />
 
 <MudAlert Severity="Severity.Error" Variant="Variant.Text">
-    Deleting this data will permanently remove your account, and this cannot be recovered.
+    @L["Warning"]
 </MudAlert>
 
 <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
@@ -28,12 +29,12 @@
         {
             <MudItem md="12">
                 <MudStaticTextField For="@(() => Input!.Password)" @bind-Value="Input!.Password" InputType="InputType.Password"
-                                    Label="Password" Placeholder="password" HelperText="Please enter your new password."
+                                    Label="@L["Password"]" Placeholder="@L["PasswordPlaceholder"]" HelperText="@L["PasswordHelp"]"
                                     UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } } )" />
             </MudItem>
         }
         <MudItem md="12">
-            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">Delete data and close my account</MudStaticButton>
+            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["DeleteAccount"]</MudStaticButton>
         </MudItem>
     </MudGrid>
 </EditForm>
@@ -60,7 +61,7 @@
     {
         if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input!.Password))
         {
-            message = "Error: Incorrect password.";
+            message = L["IncorrectPassword"].Value;
             return;
         }
 

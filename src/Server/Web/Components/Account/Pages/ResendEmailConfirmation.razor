@@ -11,12 +11,13 @@
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IStringLocalizer<ResendEmailConfirmation> L
 
-<PageTitle>Resend email confirmation</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Resend email confirmation</MudText>
+<MudText Typo="Typo.h3" GutterBottom="true">@L["Title"]</MudText>
 
-<MudText Typo="Typo.body1" GutterBottom="true">Enter your email.</MudText>
+<MudText Typo="Typo.body1" GutterBottom="true">@L["EnterEmail"]</MudText>
 
 <StatusMessage Message="@message" />
 
@@ -26,11 +27,11 @@
     <MudGrid>
         <MudItem md="12">
             <MudStaticTextField For="@(() => Input!.Email)" @bind-Value="Input!.Email"
-                                Label="Email" Placeholder="name@example.com"
+                                Label="@L["Email"]" Placeholder="@L["EmailPlaceholder"]"
                                 UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } } )" />
         </MudItem>
         <MudItem md="12">
-            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">Resend</MudStaticButton>
+            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["Resend"]</MudStaticButton>
         </MudItem>
     </MudGrid>
 </EditForm>
@@ -51,7 +52,7 @@
         var user = await UserManager.FindByEmailAsync(Input!.Email!);
         if (user is null)
         {
-            message = "Verification email sent. Please check your email.";
+            message = L["VerificationSent"];
             return;
         }
 
@@ -63,7 +64,7 @@
             new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
         await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
 
-        message = "Verification email sent. Please check your email.";
+        message = L["VerificationSent"];
     }
 
     private sealed class InputModel

@@ -12,8 +12,9 @@
 @inject UrlEncoder UrlEncoder
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<EnableAuthenticator> Logger
+@inject IStringLocalizer<EnableAuthenticator> L
 
-<PageTitle>Configure authenticator app</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 @if (recoveryCodes is not null)
 {
@@ -21,11 +22,11 @@
 }
 else
 {
-    <MudText Typo="Typo.h6" GutterBottom="true">Configure authenticator app</MudText>
+    <MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
 
     <StatusMessage Message="@message" />
 
-    <MudText Typo="Typo.body1" GutterBottom="true">To use an authenticator app go through the following steps:</MudText>
+    <MudText Typo="Typo.body1" GutterBottom="true">@L["Step1"]</MudText>
 
     <ol class="list">
         <li>
@@ -40,7 +41,7 @@ else
         </li>
         <li>
             <MudText Typo="Typo.body2">
-                Scan the QR Code or enter this key into your two factor authenticator app. Spaces and casing do not matter:
+                @L["Step2"]
             </MudText>
 
             <MudAlert Variant="Variant.Text" Severity="Severity.Info" Icon="@Icons.Material.Filled.Key">@sharedKey</MudAlert>
@@ -53,18 +54,17 @@ else
         </li>
         <li>
             <MudText Typo="Typo.body2">
-                Once you have scanned the QR code or input the key above, your two factor authentication app will provide you
-                with a unique code. Enter the code in the confirmation box below.
+                @L["Step3"]
             </MudText>
 
             <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post">
                 <DataAnnotationsValidator />
                 <MudGrid>
                     <MudItem md="12">
-                        <MudStaticTextField @bind-Value="@Input!.Code" For="@(() => Input!.Code)" Label="Verification Code" HelperText="Please enter the code." />
+                        <MudStaticTextField @bind-Value="@Input!.Code" For="@(() => Input!.Code)" Label="@L["VerificationCode"]" HelperText="@L["VerificationCodeHelp"]" />
                     </MudItem>
                     <MudItem md="12">
-                        <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">Verify</MudStaticButton>
+                        <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["Verify"]</MudStaticButton>
                     </MudItem>
                 </MudGrid>
             </EditForm>
@@ -104,7 +104,7 @@ else
 
         if (!is2faTokenValid)
         {
-            message = "Error: Verification code is invalid.";
+            message = L["InvalidCode"].Value;
             return;
         }
 
@@ -112,7 +112,7 @@ else
         var userId = await UserManager.GetUserIdAsync(user);
         Logger.LogInformation("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
 
-        message = "Your authenticator app has been verified.";
+        message = L["Verified"].Value;
 
         if (await UserManager.CountRecoveryCodesAsync(user) == 0)
         {

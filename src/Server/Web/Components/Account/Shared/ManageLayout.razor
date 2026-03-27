@@ -1,11 +1,13 @@
 @inherits LayoutComponentBase
 @layout K7.Clients.Shared.UI.Pages.Layout.EmptyLayout
 
-<MudText Typo="Typo.h3" GutterBottom="true">Manage your account</MudText>
+@inject IStringLocalizer<ManageLayout> L
+
+<MudText Typo="Typo.h3" GutterBottom="true">@L["Title"]</MudText>
 
 <MudGrid>
     <MudItem md="5">
-        <MudText Typo="Typo.h6" GutterBottom="true">Change your account settings</MudText>
+        <MudText Typo="Typo.h6" GutterBottom="true">@L["Subtitle"]</MudText>
         <ManageNavMenu />
     </MudItem>
     <MudItem md="7">

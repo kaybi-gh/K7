@@ -1,5 +1,7 @@
 ﻿@page "/Account/AccessDenied"
 
-<PageTitle>Access denied</PageTitle>
+@inject IStringLocalizer<AccessDenied> L
 
-<MudAlert Severity="Severity.Error">You do not have access to this resource.</MudAlert>
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<MudAlert Severity="Severity.Error">@L["Message"]</MudAlert>

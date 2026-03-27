@@ -8,26 +8,26 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ResetAuthenticator> Logger
+@inject IStringLocalizer<ResetAuthenticator> L
 
-<PageTitle>Reset authenticator key</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h6" GutterBottom="true">Reset authenticator key</MudText>
+<MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
 
 <StatusMessage />
 
 <MudAlert Severity="Severity.Warning" Variant="Variant.Text">
-    If you reset your authenticator key your authenticator app will not work until you reconfigure it.
+    @L["Warning"]
 </MudAlert>
 
 <MudText Typo="Typo.body2" Class="my-4">
-    This process disables 2FA until you verify your authenticator app.
-    If you do not complete your authenticator app configuration you may lose access to your account.
+    @L["Info"]
 </MudText>
 
 <form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
     <AntiforgeryToken />
 
-    <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">Reset authenticator key</MudStaticButton>
+    <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["ResetKey"]</MudStaticButton>
 </form>
 
 @code {
@@ -46,7 +46,7 @@
 
         RedirectManager.RedirectToWithStatus(
             "Account/Manage/EnableAuthenticator",
-            "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.",
+            L["KeyReset"].Value,
             HttpContext);
     }
 }

@@ -99,6 +99,7 @@ public static class DependencyInjection
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents()
             .AddAuthenticationStateSerialization(options => options.SerializeAllClaims = true);
+        services.AddLocalization(options => options.ResourcesPath = "Resources");
         services.AddMudServices();
         services.AddScoped<ThemeService>();
 
