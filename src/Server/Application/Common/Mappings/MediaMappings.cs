@@ -7,7 +7,7 @@ using K7.Shared.Dtos.Entities.Medias;
 
 namespace K7.Server.Application.Common.Mappings;
 
-public static class MediaDtoMappings
+public static class MediaMappings
 {
     extension(BaseMedia domain)
     {

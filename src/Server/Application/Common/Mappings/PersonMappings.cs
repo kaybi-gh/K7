@@ -6,7 +6,7 @@ using K7.Shared.Dtos.Entities.Persons;
 
 namespace K7.Server.Application.Common.Mappings;
 
-public static class PersonDtoMappings
+public static class PersonMappings
 {
     extension(Person domain)
     {

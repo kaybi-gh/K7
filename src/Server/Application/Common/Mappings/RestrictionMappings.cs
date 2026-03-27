@@ -3,7 +3,7 @@ using K7.Shared.Dtos.Restrictions;
 
 namespace K7.Server.Application.Common.Mappings;
 
-public static class RestrictionDtoMappings
+public static class RestrictionMappings
 {
     extension(ContentRestrictionProfile domain)
     {
