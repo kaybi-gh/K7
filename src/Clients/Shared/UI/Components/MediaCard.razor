@@ -21,9 +21,9 @@ else
     <div class="media-card @VariantClass">
         <div class="media-card-container">
             <a class="media-card-link" href="@Href">
-                @if (!string.IsNullOrEmpty(Model.PosterPictureHref))
+                @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
-                    <MudImage Src="@Model.PosterPictureHref" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                    <MudImage Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" />
                 }
                 else if (Variant == MediaCardVariant.Cover)
                 {

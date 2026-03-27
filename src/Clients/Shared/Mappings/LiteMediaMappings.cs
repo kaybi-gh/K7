@@ -11,8 +11,8 @@ public static class LiteMediaMappings
     {
         var kind = item switch
         {
-            LiteMusicAlbumDto => MediaCardKind.Album,
-            LiteMovieDto => MediaCardKind.Movie,
+            LiteMusicAlbumDto => MediaCardKind.Cover,
+            LiteMovieDto => MediaCardKind.Poster,
             _ => (MediaCardKind?)null
         };
 
@@ -26,7 +26,7 @@ public static class LiteMediaMappings
             Kind = kind.Value,
             Title = item.Title,
             AdditionalInformations = item.ReleaseDate,
-            PosterPictureHref = apiClient.GetAbsoluteUri(
+            PictureUrl = apiClient.GetAbsoluteUri(
                 item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
