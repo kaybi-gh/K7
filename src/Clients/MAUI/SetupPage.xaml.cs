@@ -1,6 +1,6 @@
-﻿using K7.Clients.MAUI.Constants;
+using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Services;
-using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Interfaces;
 
 namespace K7.Clients.MAUI;
 
