@@ -1,0 +1,23 @@
+<MudStack>
+    <div data-carousel @ref="_root">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="ml-4">
+            @if (Skeleton)
+            {
+                <MudSkeleton Animation="Animation.Wave" Height="50px" Width="330px" Class="rounded-lg" />
+            }
+            else
+            {
+                <MudText Typo="Typo.h6">@Title</MudText>
+            }
+            <MudStack Row="true">
+                <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Class="py-0 pr-3" data-carousel-prev tabindex="-1" />
+                <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Class="py-0 pl-3" data-carousel-next tabindex="-1" />
+            </MudStack>
+        </MudStack>
+        <div class="carousel-viewport" data-carousel-viewport>
+            <div class="carousel-container">
+                @ChildContent
+            </div>
+        </div>
+    </div>
+</MudStack>
