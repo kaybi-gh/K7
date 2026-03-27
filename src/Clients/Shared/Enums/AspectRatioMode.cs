@@ -1,4 +1,4 @@
-namespace K7.Clients.Shared.Models;
+namespace K7.Clients.Shared.Enums;
 
 /// <summary>
 /// Defines how the video fits within the player viewport.

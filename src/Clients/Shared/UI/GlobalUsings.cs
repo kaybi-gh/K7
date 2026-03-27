@@ -1,3 +1,4 @@
+global using K7.Clients.Shared.Enums;
 global using K7.Clients.Shared.Interfaces;
 global using K7.Clients.Shared.Models;
 global using K7.Clients.Shared.Services;

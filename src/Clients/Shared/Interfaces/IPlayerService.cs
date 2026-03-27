@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
