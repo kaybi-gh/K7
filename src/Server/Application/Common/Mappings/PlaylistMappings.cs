@@ -8,7 +8,7 @@ using K7.Shared.Dtos.Entities.Playlists;
 
 namespace K7.Server.Application.Common.Mappings;
 
-public static class PlaylistDtoMappings
+public static class PlaylistMappings
 {
     extension(Playlist domain)
     {

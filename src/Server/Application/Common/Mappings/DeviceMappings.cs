@@ -6,7 +6,7 @@ using K7.Shared.Dtos.Users;
 
 namespace K7.Server.Application.Common.Mappings;
 
-public static class DeviceDtoMappings
+public static class DeviceMappings
 {
     extension(Device domain)
     {

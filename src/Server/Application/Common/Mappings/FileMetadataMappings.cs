@@ -8,7 +8,7 @@ using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Server.Application.Common.Mappings;
 
-public static class FileMetadataDtoMappings
+public static class FileMetadataMappings
 {
     extension(BaseFileMetadata domain)
     {
