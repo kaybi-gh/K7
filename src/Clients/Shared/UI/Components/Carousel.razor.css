@@ -1,0 +1,9 @@
+.carousel-viewport {
+    overflow: hidden;
+}
+
+.carousel-container {
+    display: flex;
+    gap: 16px;
+    padding-inline: 16px;
+}
