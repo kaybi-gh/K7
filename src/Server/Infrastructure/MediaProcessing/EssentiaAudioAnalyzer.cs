@@ -1,7 +1,7 @@
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Medias;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

@@ -1,4 +1,4 @@
-﻿namespace K7.Server.Infrastructure.Configuration;
+namespace K7.Server.Application.Common.Configuration;
 
 public class PathsConfiguration
 {

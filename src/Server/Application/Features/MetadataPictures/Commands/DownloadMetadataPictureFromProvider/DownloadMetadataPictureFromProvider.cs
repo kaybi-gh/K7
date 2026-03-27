@@ -4,7 +4,7 @@ using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataP
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;

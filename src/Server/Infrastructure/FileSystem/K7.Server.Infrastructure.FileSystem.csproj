@@ -10,7 +10,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\Configuration\K7.Server.Infrastructure.Configuration.csproj" />
     <ProjectReference Include="..\..\Application\K7.Server.Application.csproj" />
   </ItemGroup>
 

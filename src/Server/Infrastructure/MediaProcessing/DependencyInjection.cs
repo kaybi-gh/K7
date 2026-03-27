@@ -1,7 +1,7 @@
 ﻿using FFMpegCore.Helpers;
 using FFMpegCore;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Infrastructure.Configuration;
+using K7.Server.Application.Common.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
