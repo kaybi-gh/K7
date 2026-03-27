@@ -1,0 +1,12 @@
+using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities.Medias;
+
+namespace K7.Shared.Interfaces;
+
+public interface IServerInfoService
+{
+    Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default);
+    Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default);
+    Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default);
+    Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default);
+}
