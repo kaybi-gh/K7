@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Domain.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Shared;
 using K7.Shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +31,7 @@ public static class DeviceInitializer
         }
         catch (HttpRequestException)
         {
-            // Not authenticated yet — device will be initialized after login
+            // Not authenticated yet � device will be initialized after login
         }
     }
 }
