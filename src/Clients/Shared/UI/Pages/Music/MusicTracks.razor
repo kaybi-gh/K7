@@ -1,0 +1,98 @@
+@page "/music/tracks"
+@inject IK7ServerService k7ServerService
+<PageTitle>Morceaux</PageTitle>
+
+<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
+    <MudText Typo="Typo.h5">Morceaux</MudText>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+        <MudTextField T="string"
+                      @bind-Value="_searchText"
+                      Placeholder="Rechercher un morceau..."
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      DebounceInterval="400"
+                      OnDebounceIntervalElapsed="OnSearchChanged"
+                      Margin="Margin.Dense"
+                      Style="max-width: 300px;" />
+    </MudStack>
+</MudStack>
+
+@if (_loading)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudProgressCircular Indeterminate="true" />
+    </MudStack>
+}
+else if (_tracks.Count == 0)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 64px; opacity: 0.3;" />
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">Aucun morceau trouvé</MudText>
+    </MudStack>
+}
+else
+{
+    <div class="pa-4">
+        <MudTable Items="_tracks"
+                  Dense="true"
+                  Hover="true"
+                  Elevation="0"
+                  T="TrackViewModel"
+                  OnRowClick="OnTrackClick"
+                  RowClass="cursor-pointer"
+                  FixedHeader="true"
+                  Height="calc(100vh - 220px)">
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.Title)">Titre</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.ArtistName ?? string.Empty)">Artiste</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.AlbumTitle ?? string.Empty)">Album</MudTableSortLabel></MudTh>
+                <MudTh Style="width: 80px;">
+                    <MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.Duration)">
+                        <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
+                    </MudTableSortLabel>
+                </MudTh>
+                <MudTh Style="width: 130px;"></MudTh>
+                <MudTh Style="width: 50px;"></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        @if (context.IsPlaying)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Equalizer" Size="Size.Small" Color="Color.Primary" />
+                        }
+                        <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">@context.Title</MudText>
+                    </MudStack>
+                </MudTd>
+                <MudTd>
+                    @if (context.ArtistPersonId.HasValue)
+                    {
+                        <a href="@($"/music/artists/{context.ArtistPersonId}")" class="track-link" @onclick:stopPropagation="true">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.ArtistName</MudText>
+                        </a>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.ArtistName</MudText>
+                    }
+                </MudTd>
+                <MudTd>
+                    <a href="@($"/music/albums/{context.AlbumId}")" class="track-link" @onclick:stopPropagation="true">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText>
+                    </a>
+                </MudTd>
+                <MudTd>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
+                </MudTd>
+                <MudTd>
+                    <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.Id" Value="context.UserRating" Size="Size.Small" />
+                </MudTd>
+                <MudTd>
+                    <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+}
