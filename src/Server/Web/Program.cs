@@ -65,9 +65,9 @@ try
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
 
-    var supportedCultures = new[] { "fr", "en" };
+    var supportedCultures = new[] { "en", "fr" };
     app.UseRequestLocalization(new RequestLocalizationOptions()
-        .SetDefaultCulture("fr")
+        .SetDefaultCulture("en")
         .AddSupportedCultures(supportedCultures)
         .AddSupportedUICultures(supportedCultures));
 

@@ -180,6 +180,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddTransient<IIdentityService, IdentityService>();
         services.AddScoped<IServerSettingsService, ServerSettingsService>();
+        services.AddScoped<IUserSettingsService, UserSettingsService>();
         services.AddScoped<ISetupService, SetupService>();
 
         return services;

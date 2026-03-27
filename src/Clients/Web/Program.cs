@@ -62,7 +62,7 @@ var wasmHost = builder.Build();
 
 var js = wasmHost.Services.GetRequiredService<IJSRuntime>();
 var cultureName = await js.InvokeAsync<string?>("blazorCulture.get");
-var culture = new CultureInfo(cultureName ?? "fr");
+var culture = new CultureInfo(cultureName ?? "en");
 CultureInfo.DefaultThreadCurrentCulture = culture;
 CultureInfo.DefaultThreadCurrentUICulture = culture;
 

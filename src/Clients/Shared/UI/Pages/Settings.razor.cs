@@ -61,6 +61,15 @@ public partial class Settings
 
     private async Task OnCultureChanged(string culture)
     {
+        try
+        {
+            await K7ServerService.UpdateUserLanguageAsync(culture);
+        }
+        catch
+        {
+            // Best effort — server may be unreachable
+        }
+
         await JSRuntime.InvokeVoidAsync("blazorCulture.set", culture);
         NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }

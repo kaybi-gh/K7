@@ -9,6 +9,10 @@
         <MudText Typo="Typo.h4" Class="mb-4">@L["PageTitle"]</MudText>
 
         <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true">
+            <MudTabPanel Text="@L["TabGeneral"]" Icon="@Icons.Material.Filled.Settings">
+                <AdminGeneralPanel />
+            </MudTabPanel>
+
             <MudTabPanel Text="@L["TabLibraries"]" Icon="@Icons.Material.Filled.VideoLibrary">
                 <AdminLibrariesPanel />
             </MudTabPanel>
