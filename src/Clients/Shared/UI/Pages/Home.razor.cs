@@ -134,13 +134,13 @@ public partial class Home : IDisposable
 
     private string GetHref(MediaCardViewModel item) => item.Kind switch
     {
-        MediaCardKind.Album => $"/music/albums/{item.Id}",
+        MediaCardKind.Cover => $"/music/albums/{item.Id}",
         _ => $"/movies/{item.Id}"
     };
 
     private MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
     {
-        MediaCardKind.Album => MediaCardVariant.Cover,
+        MediaCardKind.Cover => MediaCardVariant.Cover,
         _ => MediaCardVariant.Poster
     };
 
