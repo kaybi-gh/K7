@@ -1,7 +1,9 @@
 ﻿using System.Data.Common;
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Infrastructure.Database.Context;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Respawn;
 using Testcontainers.PostgreSql;
@@ -30,9 +32,11 @@ public class PostgreSqlTestContainerDatabase : ITestDatabase
         await _connection.OpenAsync();
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(_connectionString, x => x.MigrationsAssembly(DatabaseProvider.Postgres.Assembly))
+            .UseOpenIddict()
             .Options;
 
-        var context = new ApplicationDbContext(options);
+        var context = new ApplicationDbContext(options,
+            Options.Create(new PathsConfiguration { Metadatas = Path.GetTempPath() }));
         context.Database.Migrate();
 
         _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
