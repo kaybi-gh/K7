@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Localization
 @inject ThemeService ThemeService
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
 @inject NavigationManager NavigationManager
@@ -7,6 +8,7 @@
 @inject IFeatureAccessService FeatureAccess
 @inject AudioPlaybackProgressTracker AudioProgressTracker
 @inject IServiceProvider Services
+@inject IStringLocalizer<MainLayout> L
 
 <MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled />
 <MudPopoverProvider />
@@ -19,7 +21,19 @@
     <MudHidden Breakpoint="Breakpoint.SmAndUp">
         <MudLayout Class="mobile-layout">
             <MudMainContent>
-                @Body
+                <ErrorBoundary @ref="_errorBoundary">
+                    <ChildContent>
+                        @Body
+                    </ChildContent>
+                    <ErrorContent>
+                        <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex flex-column align-center justify-center" Style="min-height: 60vh;">
+                            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" />
+                            <MudText Typo="Typo.h6" Class="mt-4">@L["UnexpectedError"]</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["UnexpectedErrorDescription"]</MudText>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="Recover">@L["Retry"]</MudButton>
+                        </MudContainer>
+                    </ErrorContent>
+                </ErrorBoundary>
             </MudMainContent>
             <MobileFooter />
         </MudLayout>
@@ -29,7 +43,19 @@
         <MudLayout>
             <Sidebar />
             <MudMainContent>
-                @Body
+                <ErrorBoundary @ref="_errorBoundary">
+                    <ChildContent>
+                        @Body
+                    </ChildContent>
+                    <ErrorContent>
+                        <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex flex-column align-center justify-center" Style="min-height: 60vh;">
+                            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" />
+                            <MudText Typo="Typo.h6" Class="mt-4">@L["UnexpectedError"]</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["UnexpectedErrorDescription"]</MudText>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="Recover">@L["Retry"]</MudButton>
+                        </MudContainer>
+                    </ErrorContent>
+                </ErrorBoundary>
             </MudMainContent>
         </MudLayout>
     </MudHidden>
