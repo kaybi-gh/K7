@@ -61,4 +61,32 @@ public static partial class Regexes
     }.ToFrozenSet();
 
     #endregion
+
+    #region Episode extraction
+
+    // S01E01, S01E01-E03, S01E01E02, S1E1
+    [GeneratedRegex(@"[Ss](?<season>\d{1,2})\s*[Ee](?<episode>\d{1,4})(?:[\-Ee]+(?<multiEp>\d{1,4}))*", RegexOptions.Compiled)]
+    public static partial Regex EpisodeSxxExx();
+
+    // 1x01, 1x01-03
+    [GeneratedRegex(@"(?<!\d)(?<season>\d{1,2})[Xx](?<episode>\d{1,3})(?:\-(?<multiEp>\d{1,3}))*", RegexOptions.Compiled)]
+    public static partial Regex EpisodeNxNN();
+
+    // Absolute numbering: "Show Name - 1001" (anime-style, 2-4 digit episode number at end)
+    [GeneratedRegex(@"(?:^|[\s\-._])(?<episode>\d{2,4})(?:\s*v\d)?(?:[\s\-._]|$)", RegexOptions.Compiled)]
+    public static partial Regex EpisodeAbsolute();
+
+    // Season from folder name: "Season 1", "Saison 2", "S01", "Season 01", "Specials"
+    [GeneratedRegex(@"^(?:Season|Saison|Series)\s*(?<season>\d{1,2})$|^S(?<season2>\d{1,2})$|^(?<specials>Specials?|Extras?)$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+    public static partial Regex SeasonFolder();
+
+    // Clean anime fansub tags: [SubGroup], [1080p], [AABBCCDD] (CRC32), v2/v3
+    [GeneratedRegex(@"\[[^\]]+\]|(?<=\s)v\d(?:\s|$)", RegexOptions.Compiled)]
+    public static partial Regex AnimeTags();
+
+    // False positive guards: resolution patterns that look like episode numbers
+    [GeneratedRegex(@"(?:^|\D)(?:1920x1080|1280x720|3840x2160|1080[pi]|720[pi]|2160[pi]|480[pi]|576[pi]|4[Kk])(?:\D|$)", RegexOptions.Compiled)]
+    public static partial Regex ResolutionPattern();
+
+    #endregion
 }
