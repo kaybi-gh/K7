@@ -12,6 +12,7 @@ public record CreateBackgroundTaskCommand : IRequest<Guid>
     public Guid? TargetEntityId { get; set; }
     public BackgroundTaskPriority Priority { get; set; } = BackgroundTaskPriority.Lowest;
     public int MaxAttempts { get; set; } = 1;
+    public string? ConcurrencyGroup { get; set; }
 }
 
 public class CreateBackgroundTaskCommandHandler : IRequestHandler<CreateBackgroundTaskCommand, Guid>
@@ -38,6 +39,7 @@ public class CreateBackgroundTaskCommandHandler : IRequestHandler<CreateBackgrou
             TargetEntityId = request.TargetEntityId,
             Priority = request.Priority,
             MaxAttempts = request.MaxAttempts,
+            ConcurrencyGroup = request.ConcurrencyGroup,
             Status = BackgroundTaskStatus.Pending
         };
 

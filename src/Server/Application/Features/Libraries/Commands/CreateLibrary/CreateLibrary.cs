@@ -50,7 +50,7 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
                 Request = new IndexLibraryFilesCommand(entity.Id),
                 Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = entity.Id,
-                TargetEntityTypeName = nameof(Library)
+                TargetEntityTypeName = nameof(Library),
             }, cancellationToken);
         }
 
