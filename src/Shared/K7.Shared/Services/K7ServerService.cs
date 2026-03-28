@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Entities;
@@ -202,6 +203,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
+    public async Task UpdateLibraryAsync(UpdateLibraryRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/libraries/{request.Id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/index-files", null, cancellationToken);
@@ -214,6 +221,15 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             ? "api/filesystem/directories"
             : $"api/filesystem/directories?path={Uri.EscapeDataString(path)}";
         return await HttpClient.GetFromJsonAsync<DirectoryContentDto>(requestUri, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<List<MetadataProviderInfoDto>> GetMetadataProvidersAsync(LibraryMediaType? mediaType = null, CancellationToken cancellationToken = default)
+    {
+        var requestUri = mediaType.HasValue
+            ? $"api/metadata-providers?mediaType={mediaType.Value}"
+            : "api/metadata-providers";
+        var providers = await HttpClient.GetFromJsonAsync<List<MetadataProviderInfoDto>>(requestUri, _serializerOptions, cancellationToken);
+        return providers ?? [];
     }
 
     public async Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)

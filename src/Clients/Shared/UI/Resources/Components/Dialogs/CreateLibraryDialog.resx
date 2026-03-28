@@ -42,5 +42,7 @@
   <data name="Success" xml:space="preserve"><value>Librairie « {0} » créée avec succès !</value></data>
   <data name="Error" xml:space="preserve"><value>Erreur lors de la création : {0}</value></data>
   <data name="SelectFolderTitle" xml:space="preserve"><value>Sélectionner un dossier</value></data>
+  <data name="ProviderLabel" xml:space="preserve"><value>Fournisseur de métadonnées</value></data>
+  <data name="ProviderRequired" xml:space="preserve"><value>Le fournisseur de métadonnées est requis</value></data>
 </root>
 
