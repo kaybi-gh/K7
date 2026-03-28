@@ -41,6 +41,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("AttemptCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ConcurrencyGroup")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
@@ -90,6 +93,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConcurrencyGroup")
+                        .HasDatabaseName("IX_BackgroundTasks_ConcurrencyGroup");
 
                     b.HasIndex("TargetEntityId")
                         .HasDatabaseName("IX_BackgroundTasks_TargetEntityId");
