@@ -1,8 +1,10 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -11,7 +13,8 @@ namespace K7.Server.Application.Services;
 
 public class BackgroundTasksProcessingService : BackgroundService
 {
-    private const int WorkerCount = 3;
+    private const int DefaultConcurrencyLimit = 1;
+    private static readonly TimeSpan SupervisionInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan OrphanPollInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(1);
     private static readonly TimeSpan CompletedRetention = TimeSpan.FromDays(7);
@@ -22,6 +25,9 @@ public class BackgroundTasksProcessingService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly IBackgroundTaskQueue _taskQueue;
     private readonly BackgroundTaskTypeRegistry _typeRegistry;
+    private readonly ConcurrentDictionary<string, int> _activeCountByGroup = new();
+    private readonly List<WorkerHandle> _workers = [];
+    private readonly Lock _workersLock = new();
 
     public BackgroundTasksProcessingService(
         ILogger<BackgroundTasksProcessingService> logger,
@@ -35,23 +41,127 @@ public class BackgroundTasksProcessingService : BackgroundService
         _typeRegistry = typeRegistry;
     }
 
+    public int ActiveWorkerCount
+    {
+        get
+        {
+            lock (_workersLock)
+            {
+                return _workers.Count(w => !w.ShouldStop);
+            }
+        }
+    }
+
+    public IReadOnlyDictionary<string, int> ActiveCountByGroup => _activeCountByGroup;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("BackgroundTasksProcessingService starting with {WorkerCount} workers", WorkerCount);
+        var desiredCount = await ReadWorkerCountAsync(stoppingToken);
+        _logger.LogInformation("BackgroundTasksProcessingService starting with {WorkerCount} workers", desiredCount);
 
         await RecoverStuckTasksAsync(stoppingToken);
         await RequeueEligibleTasksAsync(stoppingToken);
 
-        var workers = Enumerable.Range(0, WorkerCount)
-            .Select(i => RunWorkerAsync(i, stoppingToken))
-            .ToList();
+        SpawnWorkers(desiredCount, stoppingToken);
 
-        workers.Add(RunOrphanPollerAsync(stoppingToken));
-        workers.Add(RunCleanupAsync(stoppingToken));
+        var supervisorTask = RunSupervisorAsync(stoppingToken);
+        var orphanTask = RunOrphanPollerAsync(stoppingToken);
+        var cleanupTask = RunCleanupAsync(stoppingToken);
 
-        await Task.WhenAll(workers);
+        await Task.WhenAll(supervisorTask, orphanTask, cleanupTask);
+
+        List<Task> workerTasks;
+        lock (_workersLock)
+        {
+            workerTasks = _workers.Select(w => w.Task).ToList();
+        }
+        await Task.WhenAll(workerTasks);
 
         _logger.LogInformation("BackgroundTasksProcessingService stopped");
+    }
+
+    private async Task<int> ReadWorkerCountAsync(CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var settings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
+        var count = await settings.GetAsync(ServerSettingKeys.BackgroundTaskWorkerCount, cancellationToken);
+        return Math.Max(1, count);
+    }
+
+    private async Task<Dictionary<string, int>> ReadConcurrencyLimitsAsync(CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var settings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
+        return await settings.GetAsync(ServerSettingKeys.BackgroundTaskConcurrencyLimits, cancellationToken) ?? new();
+    }
+
+    private void SpawnWorkers(int count, CancellationToken stoppingToken)
+    {
+        lock (_workersLock)
+        {
+            var currentActive = _workers.Count(w => !w.ShouldStop);
+            var toSpawn = count - currentActive;
+
+            for (var i = 0; i < toSpawn; i++)
+            {
+                var workerIndex = _workers.Count;
+                var handle = new WorkerHandle();
+                handle.Task = RunWorkerAsync(workerIndex, handle, stoppingToken);
+                _workers.Add(handle);
+                _logger.LogDebug("Spawned worker {WorkerIndex}", workerIndex);
+            }
+        }
+    }
+
+    private async Task RunSupervisorAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(SupervisionInterval, stoppingToken);
+
+                lock (_workersLock)
+                {
+                    _workers.RemoveAll(w => w.Task.IsCompleted);
+                }
+
+                var desired = await ReadWorkerCountAsync(stoppingToken);
+                int currentActive;
+
+                lock (_workersLock)
+                {
+                    currentActive = _workers.Count(w => !w.ShouldStop);
+                }
+
+                if (desired > currentActive)
+                {
+                    _logger.LogInformation("Scaling up workers from {Current} to {Desired}", currentActive, desired);
+                    SpawnWorkers(desired, stoppingToken);
+                }
+                else if (desired < currentActive)
+                {
+                    _logger.LogInformation("Scaling down workers from {Current} to {Desired}", currentActive, desired);
+                    var toStop = currentActive - desired;
+
+                    lock (_workersLock)
+                    {
+                        foreach (var worker in _workers.Where(w => !w.ShouldStop).TakeLast(toStop))
+                        {
+                            worker.ShouldStop = true;
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Supervisor encountered an error");
+            }
+        }
     }
 
     private async Task RecoverStuckTasksAsync(CancellationToken cancellationToken)
@@ -102,15 +212,21 @@ public class BackgroundTasksProcessingService : BackgroundService
         }
     }
 
-    private async Task RunWorkerAsync(int workerIndex, CancellationToken stoppingToken)
+    private async Task RunWorkerAsync(int workerIndex, WorkerHandle handle, CancellationToken stoppingToken)
     {
         _logger.LogDebug("Worker {WorkerIndex} started", workerIndex);
 
-        while (!stoppingToken.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested && !handle.ShouldStop)
         {
             try
             {
                 await _taskQueue.DequeueAsync(stoppingToken);
+
+                if (handle.ShouldStop)
+                {
+                    break;
+                }
+
                 await PickAndExecuteNextTaskAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -133,10 +249,23 @@ public class BackgroundTasksProcessingService : BackgroundService
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
+        var limits = await ReadConcurrencyLimitsAsync(stoppingToken);
+        var saturatedGroups = _activeCountByGroup
+            .Where(kvp => kvp.Value >= limits.GetValueOrDefault(kvp.Key, DefaultConcurrencyLimit))
+            .Select(kvp => kvp.Key)
+            .ToHashSet();
+
         var now = DateTimeOffset.UtcNow;
-        var task = await context.BackgroundTasks
+        var query = context.BackgroundTasks
             .Where(t => t.Status == BackgroundTaskStatus.Pending
-                || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)))
+                || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= now)));
+
+        if (saturatedGroups.Count > 0)
+        {
+            query = query.Where(t => t.ConcurrencyGroup == null || !saturatedGroups.Contains(t.ConcurrencyGroup));
+        }
+
+        var task = await query
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Created)
             .FirstOrDefaultAsync(stoppingToken);
@@ -149,6 +278,11 @@ public class BackgroundTasksProcessingService : BackgroundService
         task.Status = BackgroundTaskStatus.InProgress;
         task.StartedAt = DateTimeOffset.UtcNow;
         await context.SaveChangesAsync(stoppingToken);
+
+        if (task.ConcurrencyGroup is not null)
+        {
+            _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 1, (_, count) => count + 1);
+        }
 
         var sw = Stopwatch.StartNew();
 
@@ -179,8 +313,8 @@ public class BackgroundTasksProcessingService : BackgroundService
 
             sw.Stop();
             task.Status = BackgroundTaskStatus.Completed;
-            _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts})",
-                task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts);
+            _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
+                task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
@@ -199,6 +333,13 @@ public class BackgroundTasksProcessingService : BackgroundService
             _logger.LogError(ex, "Task {TaskId} ({TaskName}) failed after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts})",
                 task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts);
             HandleTaskFailure(task);
+        }
+        finally
+        {
+            if (task.ConcurrencyGroup is not null)
+            {
+                _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 0, (_, count) => Math.Max(0, count - 1));
+            }
         }
 
         task.AttemptCount++;
@@ -303,5 +444,11 @@ public class BackgroundTasksProcessingService : BackgroundService
                 _logger.LogError(ex, "Cleanup encountered an error");
             }
         }
+    }
+
+    private sealed class WorkerHandle
+    {
+        public Task Task { get; set; } = Task.CompletedTask;
+        public volatile bool ShouldStop;
     }
 }
