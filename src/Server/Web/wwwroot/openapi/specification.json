@@ -1535,6 +1535,39 @@
         }
       }
     },
+    "/api/medias/{serieId}/next-episode": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetNextEpisode",
+        "parameters": [
+          {
+            "name": "serieId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "currentEpisodeId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{mediaId}/rating": {
       "put": {
         "tags": [
@@ -3877,12 +3910,6 @@
             ],
             "format": "int64"
           },
-          "isSplitPart": {
-            "type": "boolean"
-          },
-          "isComposite": {
-            "type": "boolean"
-          },
           "fileMetadata": {
             "oneOf": [
               {
@@ -3940,6 +3967,12 @@
           },
           {
             "$ref": "#/components/schemas/LiteMediaDtoLiteMusicTrackDto"
+          },
+          {
+            "$ref": "#/components/schemas/LiteMediaDtoLiteSerieDto"
+          },
+          {
+            "$ref": "#/components/schemas/LiteMediaDtoLiteSerieEpisodeDto"
           }
         ],
         "discriminator": {
@@ -3947,7 +3980,9 @@
           "mapping": {
             "Movie": "#/components/schemas/LiteMediaDtoLiteMovieDto",
             "MusicAlbum": "#/components/schemas/LiteMediaDtoLiteMusicAlbumDto",
-            "MusicTrack": "#/components/schemas/LiteMediaDtoLiteMusicTrackDto"
+            "MusicTrack": "#/components/schemas/LiteMediaDtoLiteMusicTrackDto",
+            "Serie": "#/components/schemas/LiteMediaDtoLiteSerieDto",
+            "SerieEpisode": "#/components/schemas/LiteMediaDtoLiteSerieEpisodeDto"
           }
         }
       },
@@ -4144,6 +4179,150 @@
               "string"
             ],
             "format": "double"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LiteMediaDtoLiteSerieDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "Serie"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LiteMediaDtoLiteSerieEpisodeDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "SerieEpisode"
+            ],
+            "type": "string"
+          },
+          "episodeNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "duration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "serieId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stillImageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "id": {
             "type": "string",
@@ -4624,6 +4803,132 @@
           }
         }
       },
+      "LiteSerieEpisodeDto": {
+        "type": "object",
+        "properties": {
+          "episodeNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "duration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "serieId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stillImageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LiteSerieSeasonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "episodeCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "poster": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
+          }
+        }
+      },
       "LiteSmartPlaylistDto": {
         "required": [
           "title"
@@ -4710,6 +5015,15 @@
           },
           {
             "$ref": "#/components/schemas/MediaDtoMusicTrackDto"
+          },
+          {
+            "$ref": "#/components/schemas/MediaDtoSerieDto"
+          },
+          {
+            "$ref": "#/components/schemas/MediaDtoSerieSeasonDto"
+          },
+          {
+            "$ref": "#/components/schemas/MediaDtoSerieEpisodeDto"
           }
         ],
         "discriminator": {
@@ -4717,7 +5031,10 @@
           "mapping": {
             "Movie": "#/components/schemas/MediaDtoMovieDto",
             "MusicAlbum": "#/components/schemas/MediaDtoMusicAlbumDto",
-            "MusicTrack": "#/components/schemas/MediaDtoMusicTrackDto"
+            "MusicTrack": "#/components/schemas/MediaDtoMusicTrackDto",
+            "Serie": "#/components/schemas/MediaDtoSerieDto",
+            "SerieSeason": "#/components/schemas/MediaDtoSerieSeasonDto",
+            "SerieEpisode": "#/components/schemas/MediaDtoSerieEpisodeDto"
           }
         }
       },
@@ -5053,6 +5370,391 @@
                 "string"
               ],
               "format": "float"
+            }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "personRoles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LitePersonRoleDto"
+            }
+          },
+          "ratings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RatingDto"
+            }
+          },
+          "indexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "genres": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "MediaDtoSerieDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "Serie"
+            ],
+            "type": "string"
+          },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contentRating": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "network": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "seasons": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiteSerieSeasonDto"
+            }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "personRoles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LitePersonRoleDto"
+            }
+          },
+          "ratings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RatingDto"
+            }
+          },
+          "indexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "genres": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "MediaDtoSerieEpisodeDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "SerieEpisode"
+            ],
+            "type": "string"
+          },
+          "episodeNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "airDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "runtime": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "serieId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serieTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "seasonTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "personRoles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LitePersonRoleDto"
+            }
+          },
+          "ratings": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RatingDto"
+            }
+          },
+          "indexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "genres": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          }
+        }
+      },
+      "MediaDtoSerieSeasonDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "SerieSeason"
+            ],
+            "type": "string"
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "serieId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "serieTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "episodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiteSerieEpisodeDto"
             }
           },
           "id": {
