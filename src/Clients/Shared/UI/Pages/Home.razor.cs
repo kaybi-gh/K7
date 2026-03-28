@@ -165,6 +165,8 @@ public partial class Home : IDisposable
     private string GetHref(MediaCardViewModel item) => item.Kind switch
     {
         MediaCardKind.Cover => $"/music/albums/{item.Id}",
+        MediaCardKind.Serie => $"/series/{item.Id}",
+        MediaCardKind.Episode => $"/series/{item.ParentId}",
         _ => $"/movies/{item.Id}"
     };
 

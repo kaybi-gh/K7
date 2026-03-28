@@ -1,0 +1,70 @@
+@using K7.Shared.Dtos.Entities.Medias
+
+<div class="episode-item @(IsExpanded ? "episode-item--expanded" : "")" @onclick="OnToggleExpand">
+    <div class="episode-item-main">
+        <div class="episode-still-container">
+            @if (!string.IsNullOrEmpty(StillUrl))
+            {
+                <MudImage Src="@StillUrl"
+                          Alt="@Episode.Title"
+                          Class="episode-still"
+                          ObjectFit="ObjectFit.Cover"
+                          loading="lazy" />
+            }
+            else
+            {
+                <div class="episode-still-placeholder">
+                    <MudIcon Icon="@Icons.Material.Filled.Videocam" Style="font-size: 24px; opacity: 0.3;" />
+                </div>
+            }
+            @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
+            {
+                <MudProgressLinear Value="Episode.UserState.ProgressPercentage" Class="episode-progress" Color="Color.Primary" Size="Size.Small" />
+            }
+        </div>
+
+        <div class="episode-info">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Episode.EpisodeNumber</MudText>
+                <MudText Typo="Typo.subtitle2">@(Episode.Title ?? S["Untitled"])</MudText>
+                @if (Episode.UserState?.IsCompleted == true)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                }
+            </MudStack>
+            <MudStack Row="true" Spacing="2">
+                @if (Episode.Duration.HasValue)
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@FormatDuration(Episode.Duration.Value)</MudText>
+                }
+            </MudStack>
+        </div>
+
+        <MudIconButton Icon="@(IsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                       Size="Size.Small"
+                       Class="episode-expand-btn" />
+    </div>
+
+    @if (IsExpanded)
+    {
+        <div class="episode-detail">
+            @if (_fullEpisode?.Overview is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">@_fullEpisode.Overview</MudText>
+            }
+            @if (_fullEpisode?.AirDate is not null)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@string.Format(S["AirDate"], _fullEpisode.AirDate.Value.ToString("d"))</MudText>
+            }
+            <MudStack Row="true" Class="mt-3">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                           OnClick="HandlePlay"
+                           Size="Size.Small">
+                    @(Episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Resume"] : S["Play"])
+                </MudButton>
+            </MudStack>
+        </div>
+    }
+</div>

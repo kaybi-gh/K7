@@ -1,0 +1,26 @@
+@using K7.Shared.Dtos.Entities.Medias
+
+<div class="season-card" @onclick="OnClick">
+    @if (!string.IsNullOrEmpty(PosterUrl))
+    {
+        <MudImage Src="@PosterUrl"
+                  Alt="@Season.Title"
+                  Class="season-card-poster"
+                  ObjectFit="ObjectFit.Cover"
+                  loading="lazy" />
+    }
+    else
+    {
+        <div class="season-card-poster-placeholder">
+            <MudIcon Icon="@Icons.Material.Filled.Tv" Style="font-size: 40px; opacity: 0.3;" />
+        </div>
+    }
+    <MudStack Spacing="0" Class="season-card-info">
+        <MudText Typo="Typo.subtitle2">
+            @(Season.SeasonNumber == 0 ? S["Specials"] : string.Format(S["SeasonNumber"], Season.SeasonNumber))
+        </MudText>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            @string.Format(S["EpisodeCount"], Season.EpisodeCount)
+        </MudText>
+    </MudStack>
+</div>

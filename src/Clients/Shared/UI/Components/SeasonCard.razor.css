@@ -1,0 +1,30 @@
+.season-card {
+    cursor: pointer;
+    width: 140px;
+    transition: transform 0.15s ease;
+}
+
+.season-card:hover {
+    transform: scale(1.03);
+}
+
+.season-card-poster {
+    width: 140px;
+    height: 210px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.season-card-poster-placeholder {
+    width: 140px;
+    height: 210px;
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.season-card-info {
+    padding: 6px 2px 0;
+}
