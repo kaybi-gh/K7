@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="SettingsTitle" xml:space="preserve"><value>Configuration</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="WorkerCountLabel" xml:space="preserve"><value>Worker count</value></data>
+  <data name="ConcurrencyGroupsTitle" xml:space="preserve"><value>Concurrency groups</value></data>
+  <data name="GroupName" xml:space="preserve"><value>Group</value></data>
+  <data name="GroupLimit" xml:space="preserve"><value>Limit</value></data>
+  <data name="GroupActive" xml:space="preserve"><value>Active</value></data>
+  <data name="SettingsSaved" xml:space="preserve"><value>Settings saved.</value></data>
+  <data name="TasksTitle" xml:space="preserve"><value>Background tasks</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="FilterAll" xml:space="preserve"><value>All</value></data>
+  <data name="StatusPending" xml:space="preserve"><value>Pending</value></data>
+  <data name="StatusInProgress" xml:space="preserve"><value>In progress</value></data>
+  <data name="StatusWaitingForRetry" xml:space="preserve"><value>Waiting for retry</value></data>
+  <data name="StatusCompleted" xml:space="preserve"><value>Completed</value></data>
+  <data name="StatusFailed" xml:space="preserve"><value>Failed</value></data>
+  <data name="NoTasks" xml:space="preserve"><value>No tasks.</value></data>
+  <data name="ColName" xml:space="preserve"><value>Name</value></data>
+  <data name="ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="ColPriority" xml:space="preserve"><value>Priority</value></data>
+  <data name="ColGroup" xml:space="preserve"><value>Group</value></data>
+  <data name="ColAttempts" xml:space="preserve"><value>Attempts</value></data>
+  <data name="AriaDetail" xml:space="preserve"><value>Details</value></data>
+  <data name="AriaDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteTitle" xml:space="preserve"><value>Delete task</value></data>
+  <data name="DeleteMessage" xml:space="preserve"><value>Delete task '{0}'?</value></data>
+  <data name="DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
+  <data name="TaskDeleted" xml:space="preserve"><value>Task deleted.</value></data>
+</root>

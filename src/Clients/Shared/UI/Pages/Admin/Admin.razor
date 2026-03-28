@@ -35,6 +35,10 @@
             <MudTabPanel Text="@L["TabAuthentication"]" Icon="@Icons.Material.Filled.Security">
                 <AdminAuthenticationPanel />
             </MudTabPanel>
+
+            <MudTabPanel Text="@L["TabBackgroundTasks"]" Icon="@Icons.Material.Filled.Queue">
+                <AdminBackgroundTasksPanel />
+            </MudTabPanel>
         </MudTabs>
     </Authorized>
     <NotAuthorized>

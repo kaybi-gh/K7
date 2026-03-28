@@ -1,0 +1,130 @@
+@inject IStringLocalizer<AdminBackgroundTasksPanel> L
+@inject IStringLocalizer<SharedResource> S
+
+<MudStack Spacing="4">
+    @* Settings *@
+    <MudPaper Class="pa-4" Outlined="true">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+            <MudText Typo="Typo.h6">@L["SettingsTitle"]</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="SaveSettingsAsync"
+                       Disabled="_isSavingSettings" StartIcon="@Icons.Material.Filled.Save">
+                @L["Save"]
+            </MudButton>
+        </MudStack>
+
+        @if (_settings is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <MudStack Spacing="3">
+                <MudNumericField T="int" @bind-Value="_workerCount" Label="@L["WorkerCountLabel"]"
+                                 Min="1" Max="32" Variant="Variant.Outlined" />
+
+                @if (_settings.ConcurrencyGroups.Count > 0)
+                {
+                    <MudText Typo="Typo.subtitle1" Class="mt-2">@L["ConcurrencyGroupsTitle"]</MudText>
+                    <MudSimpleTable Dense="true" Bordered="true">
+                        <thead>
+                            <tr>
+                                <th>@L["GroupName"]</th>
+                                <th>@L["GroupLimit"]</th>
+                                <th>@L["GroupActive"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var group in _settings.ConcurrencyGroups)
+                            {
+                                <tr>
+                                    <td><MudChip T="string" Size="Size.Small" Color="Color.Default">@group.Name</MudChip></td>
+                                    <td>
+                                        <MudNumericField T="int" Value="@GetGroupLimit(group.Name)"
+                                                         ValueChanged="@(v => SetGroupLimit(group.Name, v))"
+                                                         Min="0" Max="32" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                    </td>
+                                    <td>@group.ActiveCount</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+            </MudStack>
+        }
+    </MudPaper>
+
+    @* Task list *@
+    <MudPaper Class="pa-4" Outlined="true">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+            <MudText Typo="Typo.h6">@L["TasksTitle"]</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadTasksAsync"
+                           Size="Size.Small" Color="Color.Primary" aria-label="@L["Refresh"]" />
+        </MudStack>
+
+        <MudChipSet T="BackgroundTaskStatus?" SelectedValue="_selectedStatus" SelectedValueChanged="OnStatusFilterChanged"
+                    SelectionMode="SelectionMode.SingleSelection" Class="mb-3">
+            <MudChip T="BackgroundTaskStatus?" Value="@((BackgroundTaskStatus?)null)" Color="Color.Default" Variant="Variant.Text">@L["FilterAll"]</MudChip>
+            <MudChip T="BackgroundTaskStatus?" Value="BackgroundTaskStatus.Pending" Color="Color.Info" Variant="Variant.Text">@L["StatusPending"]</MudChip>
+            <MudChip T="BackgroundTaskStatus?" Value="BackgroundTaskStatus.InProgress" Color="Color.Warning" Variant="Variant.Text">@L["StatusInProgress"]</MudChip>
+            <MudChip T="BackgroundTaskStatus?" Value="BackgroundTaskStatus.WaitingForRetry" Color="Color.Secondary" Variant="Variant.Text">@L["StatusWaitingForRetry"]</MudChip>
+            <MudChip T="BackgroundTaskStatus?" Value="BackgroundTaskStatus.Completed" Color="Color.Success" Variant="Variant.Text">@L["StatusCompleted"]</MudChip>
+            <MudChip T="BackgroundTaskStatus?" Value="BackgroundTaskStatus.Failed" Color="Color.Error" Variant="Variant.Text">@L["StatusFailed"]</MudChip>
+        </MudChipSet>
+
+        @if (_isLoadingTasks)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (_tasks?.Items is null or { Count: 0 })
+        {
+            <MudText Color="Color.Secondary" Typo="Typo.body2" Class="pa-4 text-center">@L["NoTasks"]</MudText>
+        }
+        else
+        {
+            <MudTable Items="_tasks.Items" Dense="true" Hover="true" Bordered="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>@L["ColName"]</MudTh>
+                    <MudTh>@L["ColStatus"]</MudTh>
+                    <MudTh>@L["ColPriority"]</MudTh>
+                    <MudTh>@L["ColGroup"]</MudTh>
+                    <MudTh>@L["ColAttempts"]</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@L["ColName"]">
+                        <MudText Typo="Typo.body2">@context.Name</MudText>
+                        @if (context.TargetEntityType is not null)
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@context.TargetEntityType</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="@L["ColStatus"]">
+                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">@GetStatusLabel(context.Status)</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@L["ColPriority"]">@context.Priority</MudTd>
+                    <MudTd DataLabel="@L["ColGroup"]">
+                        @if (context.ConcurrencyGroup is not null)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default">@context.ConcurrencyGroup</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="@L["ColAttempts"]">@context.AttemptCount / @context.MaxAttempts</MudTd>
+                    <MudTd Style="text-align: right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Default"
+                                       OnClick="@(() => OpenDetailDialog(context))" aria-label="@L["AriaDetail"]" />
+                        @if (context.Status is BackgroundTaskStatus.Completed or BackgroundTaskStatus.Failed)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                           OnClick="@(() => DeleteTaskAsync(context))" aria-label="@L["AriaDelete"]" />
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudStack Row="true" Justify="Justify.Center" Class="mt-3">
+                <MudPagination Count="@(_tasks.TotalPages ?? 1)" Selected="_pageNumber"
+                               SelectedChanged="OnPageChanged" Color="Color.Primary" />
+            </MudStack>
+        }
+    </MudPaper>
+</MudStack>
