@@ -43,6 +43,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
@@ -55,12 +58,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<int>("MaxRetryCount")
+                    b.Property<int>("MaxAttempts")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("NextRetryAfter")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
@@ -73,8 +79,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("RetryCount")
-                        .HasColumnType("integer");
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -85,7 +91,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("TargetEntityType")
                         .HasColumnType("text");
 
+                    b.Property<int>("TimeoutSeconds")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TargetEntityId")
+                        .HasDatabaseName("IX_BackgroundTasks_TargetEntityId");
+
+                    b.HasIndex("Status", "Priority", "Created")
+                        .HasDatabaseName("IX_BackgroundTasks_Status_Priority_Created");
 
                     b.ToTable("BackgroundTasks");
                 });
