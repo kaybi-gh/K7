@@ -1,35 +1,62 @@
-﻿
+﻿@inject IStringLocalizer<AdminDevicesPanel> L
+
 @if (_isLoading)
 {
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
 }
-else if (_devices == null || _devices.TotalCount == 0)
+else if (_devices is null || _devices.TotalCount == 0)
 {
-    <MudText Color="Color.Secondary">Aucun appareil trouvé.</MudText>
+    <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+        <MudIcon Icon="@Icons.Material.Filled.DevicesOther" Size="Size.Large" Color="Color.Secondary" />
+        <MudText Typo="Typo.body1" Color="Color.Secondary">@L["NoDevices"]</MudText>
+    </MudStack>
 }
 else
 {
-    <MudSimpleTable Dense="true" Bordered="true">
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>Client</th>
-                <th>OS</th>
-                <th>Dernière activité</th>
-                <th>Utilisateurs</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var d in _devices.Items!)
-            {
-                <tr>
-                    <td>@d.DeviceName</td>
-                    <td>@d.ClientType</td>
-                    <td>@d.OperatingSystem @d.OperatingSystemVersion</td>
-                    <td>@d.LastSeen.LocalDateTime</td>
-                    <td>@d.Users.Count()</td>
-                </tr>
-            }
-        </tbody>
-    </MudSimpleTable>
+    <MudStack Spacing="3" Class="pa-4">
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            @(string.Format(L["DeviceCount"], _devices.TotalCount))
+        </MudText>
+
+        @foreach (var device in _devices.Items!)
+        {
+            <MudCard Elevation="0" Outlined="true">
+                <MudCardContent>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                        <MudIcon Icon="@GetDeviceIcon(device.DeviceType)" Size="Size.Large" Color="Color.Primary" />
+
+                        <MudStack Spacing="0" Style="flex: 1;">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudText Typo="Typo.subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</MudText>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@device.ClientType</MudChip>
+                            </MudStack>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @device.OperatingSystem @device.OperatingSystemVersion
+                                @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
+                                {
+                                    <text> — @($"{device.DisplayWidth:0}×{device.DisplayHeight:0}")</text>
+                                }
+                            </MudText>
+                        </MudStack>
+
+                        <MudStack Spacing="0" AlignItems="AlignItems.End">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["LastSeen"]</MudText>
+                            <MudText Typo="Typo.body2">@device.LastSeen.LocalDateTime.ToString("g")</MudText>
+                        </MudStack>
+                    </MudStack>
+
+                    @if (device.Users.Count > 0)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
+                            <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @(string.Format(L["UserCount"], device.Users.Count))
+                            </MudText>
+                        </MudStack>
+                    }
+                </MudCardContent>
+            </MudCard>
+        }
+    </MudStack>
 }
