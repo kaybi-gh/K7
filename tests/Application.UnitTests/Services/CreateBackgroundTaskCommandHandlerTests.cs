@@ -88,4 +88,43 @@ public class CreateBackgroundTaskCommandHandlerTests
             && t.RequestType.Contains("DeleteBackgroundTaskCommand")
         ));
     }
+
+    [Test]
+    public async Task Handle_ShouldStoreConcurrencyGroup()
+    {
+        // Arrange
+        var command = new CreateBackgroundTaskCommand
+        {
+            Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MaxAttempts = 1,
+            ConcurrencyGroup = "tmdb"
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _context.BackgroundTasks.Received(1).Add(Arg.Is<BackgroundTask>(t =>
+            t.ConcurrencyGroup == "tmdb"
+        ));
+    }
+
+    [Test]
+    public async Task Handle_ShouldAllowNullConcurrencyGroup()
+    {
+        // Arrange
+        var command = new CreateBackgroundTaskCommand
+        {
+            Request = new DeleteBackgroundTaskCommand(Guid.NewGuid()),
+            MaxAttempts = 1
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _context.BackgroundTasks.Received(1).Add(Arg.Is<BackgroundTask>(t =>
+            t.ConcurrencyGroup == null
+        ));
+    }
 }
