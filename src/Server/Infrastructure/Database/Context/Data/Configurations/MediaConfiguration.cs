@@ -27,12 +27,18 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .WithOne(i => i.Media)
             .HasForeignKey(i => i.MediaId);
     }
+}
 
-    public static void Configure(EntityTypeBuilder<Movie> builder)
+public class MovieConfiguration : IEntityTypeConfiguration<Movie>
+{
+    public void Configure(EntityTypeBuilder<Movie> builder)
     {
     }
+}
 
-    public static void Configure(EntityTypeBuilder<MusicAlbum> builder)
+public class MusicAlbumConfiguration : IEntityTypeConfiguration<MusicAlbum>
+{
+    public void Configure(EntityTypeBuilder<MusicAlbum> builder)
     {
         builder
             .HasMany(a => a.Tracks)
@@ -40,20 +46,53 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasForeignKey(t => t.AlbumId)
             .OnDelete(DeleteBehavior.Cascade);
     }
+}
 
-    public static void Configure(EntityTypeBuilder<MusicTrack> builder)
+public class MusicTrackConfiguration : IEntityTypeConfiguration<MusicTrack>
+{
+    public void Configure(EntityTypeBuilder<MusicTrack> builder)
     {
     }
+}
 
-    public static void Configure(EntityTypeBuilder<Serie> builder)
+public class SerieConfiguration : IEntityTypeConfiguration<Serie>
+{
+    public void Configure(EntityTypeBuilder<Serie> builder)
     {
+        builder
+            .HasMany(s => s.Seasons)
+            .WithOne(ss => ss.Serie)
+            .HasForeignKey(ss => ss.SerieId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
+}
 
-    public static void Configure(EntityTypeBuilder<SerieEpisode> builder)
+public class SerieEpisodeConfiguration : IEntityTypeConfiguration<SerieEpisode>
+{
+    public void Configure(EntityTypeBuilder<SerieEpisode> builder)
     {
+        builder
+            .HasOne(e => e.Serie)
+            .WithMany()
+            .HasForeignKey(e => e.SerieId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder
+            .HasIndex(e => new { e.SeasonId, e.EpisodeNumber });
     }
+}
 
-    public static void Configure(EntityTypeBuilder<SerieSeason> builder)
+public class SerieSeasonConfiguration : IEntityTypeConfiguration<SerieSeason>
+{
+    public void Configure(EntityTypeBuilder<SerieSeason> builder)
     {
+        builder
+            .HasMany(ss => ss.Episodes)
+            .WithOne(e => e.Season)
+            .HasForeignKey(e => e.SeasonId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasIndex(ss => new { ss.SerieId, ss.SeasonNumber });
     }
 }

@@ -250,12 +250,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<long>("Hash")
                         .HasColumnType("bigint");
 
-                    b.Property<bool>("IsComposite")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsSplitPart")
-                        .HasColumnType("boolean");
-
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
@@ -1645,6 +1639,33 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<string>("ContentRating")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Network")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OriginalLanguage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
+                    b.ToTable("Medias", t =>
+                        {
+                            t.Property("ContentRating")
+                                .HasColumnName("Serie_ContentRating");
+
+                            t.Property("OriginalLanguage")
+                                .HasColumnName("Serie_OriginalLanguage");
+
+                            t.Property("Overview")
+                                .HasColumnName("Serie_Overview");
+                        });
+
                     b.HasDiscriminator().HasValue(4);
                 });
 
@@ -1652,15 +1673,36 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<int?>("AbsoluteNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("AirDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EpisodeNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("Runtime")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("SeasonId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("SerieId")
                         .HasColumnType("uuid");
 
-                    b.HasIndex("SeasonId");
-
                     b.HasIndex("SerieId");
+
+                    b.HasIndex("SeasonId", "EpisodeNumber");
+
+                    b.ToTable("Medias", t =>
+                        {
+                            t.Property("Overview")
+                                .HasColumnName("SerieEpisode_Overview");
+                        });
 
                     b.HasDiscriminator().HasValue(5);
                 });
@@ -1669,13 +1711,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<int>("SeasonNumber")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("SerieId")
                         .HasColumnType("uuid");
 
-                    b.HasIndex("SerieId");
+                    b.HasIndex("SerieId", "SeasonNumber");
 
                     b.ToTable("Medias", t =>
                         {
+                            t.Property("Overview")
+                                .HasColumnName("SerieSeason_Overview");
+
                             t.Property("SerieId")
                                 .HasColumnName("SerieSeason_SerieId");
                         });
@@ -2119,14 +2170,26 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                             b1.Property<Guid>("IndexedFileId")
                                 .HasColumnType("uuid");
 
+                            b1.Property<int?>("AbsoluteNumber")
+                                .HasColumnType("integer");
+
                             b1.Property<string>("AlbumName")
                                 .HasColumnType("text");
 
                             b1.Property<string>("ArtistName")
                                 .HasColumnType("text");
 
+                            b1.Property<int?>("EpisodeNumber")
+                                .HasColumnType("integer");
+
                             b1.Property<DateOnly?>("ReleaseYear")
                                 .HasColumnType("date");
+
+                            b1.Property<int?>("SeasonNumber")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("SeriesTitle")
+                                .HasColumnType("text");
 
                             b1.Property<string>("Title")
                                 .IsRequired()
@@ -2500,9 +2563,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
 
                     b.HasOne("K7.Server.Domain.Entities.Medias.Serie", "Serie")
-                        .WithMany("Episodes")
+                        .WithMany()
                         .HasForeignKey("SerieId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Season");
@@ -2683,8 +2746,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.Serie", b =>
                 {
-                    b.Navigation("Episodes");
-
                     b.Navigation("Seasons");
                 });
 
