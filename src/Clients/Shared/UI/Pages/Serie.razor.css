@@ -26,11 +26,19 @@
     align-items: flex-end;
 }
 
-.serie-poster {
+.serie-header-poster {
+    flex-shrink: 0;
+    width: 220px;
+    height: 330px;
+}
+
+.serie-poster,
+::deep .serie-poster img {
     width: 220px;
     height: 330px;
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    object-fit: cover;
 }
 
 .serie-poster-placeholder {

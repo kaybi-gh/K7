@@ -8,7 +8,8 @@
     transform: scale(1.03);
 }
 
-.season-card-poster {
+.season-card-poster,
+::deep .season-card-poster img {
     width: 140px;
     height: 210px;
     border-radius: 8px;
