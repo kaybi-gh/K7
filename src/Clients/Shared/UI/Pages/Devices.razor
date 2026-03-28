@@ -1,0 +1,61 @@
+@page "/admin/devices"
+@inject IStringLocalizer<Devices> L
+@inject IStringLocalizer<SharedResource> S
+
+<AuthorizeView Roles="Administrator">
+    <Authorized>
+        <h3>@L["PageTitle"]</h3>
+
+@if (isLoading)
+{
+    <p>@S["Loading"]</p>
+}
+else
+{
+    if (devices != null)
+    {
+        if (devices.TotalCount == 0)
+        {
+            <p>@L["NoDevices"]</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Client</th>
+                        <th>OS</th>
+                        <th>Last Seen</th>
+                        <th>Users</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in devices.Items!)
+                    {
+                        <tr>
+                            <td>@d.Id</td>
+                            <td>@d.DeviceName</td>
+                            <td>@d.ClientType</td>
+                            <td>@d.OperatingSystem @d.OperatingSystemVersion</td>
+                            <td>@d.LastSeen.LocalDateTime</td>
+                            <td>@d.Users.Count()</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-16">
+            <MudStack AlignItems="AlignItems.Center" Spacing="4">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" />
+                <MudText Typo="Typo.h5">@S["AccessDenied"]</MudText>
+                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">@S["GoToHome"]</MudButton>
+            </MudStack>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
