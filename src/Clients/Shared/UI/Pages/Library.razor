@@ -1,6 +1,7 @@
 @page "/library/{id}"
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
+@inject ILibraryService libraryService
 @inject IStringLocalizer<Library> L
 
 <PageTitle>@string.Format(L["PageTitle"].Value, Id)</PageTitle>
@@ -18,7 +19,7 @@
         <MudIconButton Icon="@Icons.Material.Outlined.FilterList" />
     </ToolbarContent>
     <GridTemplate Context="item">
-        <MediaCard Model="item" Href="@($"/movies/{item.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+        <MediaCard Model="item" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
     </GridTemplate>
     <TableHeaderContent>
         <th>@L["Title"]</th>
@@ -44,7 +45,7 @@
         </tr>
     </TableRowTemplate>
     <ListTemplate Context="item">
-        <a href="@($"/movies/{item.Id}")" class="library-list-item">
+        <a href="@GetItemHref(item)" class="library-list-item">
             @if (!string.IsNullOrEmpty(item.PictureUrl))
             {
                 <MudImage Src="@item.PictureUrl" Alt="@item.Title" Width="40" Height="60" ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
