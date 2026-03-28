@@ -26,11 +26,19 @@
     align-items: flex-end;
 }
 
-.season-poster {
+.season-header-poster {
+    flex-shrink: 0;
+    width: 160px;
+    height: 240px;
+}
+
+.season-poster,
+::deep .season-poster img {
     width: 160px;
     height: 240px;
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    object-fit: cover;
 }
 
 .season-poster-placeholder {
