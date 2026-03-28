@@ -1,11 +1,15 @@
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.Layout;
 
 public partial class MainLayout
 {
+    private ErrorBoundary? _errorBoundary;
+
     protected override async Task OnInitializedAsync()
     {
         ThemeService.ThemeOnChange += StateHasChanged;
@@ -38,5 +42,10 @@ public partial class MainLayout
     {
         ThemeService.ThemeOnChange -= StateHasChanged;
         ThemeService.DarkModeEnabledOnChange -= StateHasChanged;
+    }
+
+    private void Recover()
+    {
+        _errorBoundary?.Recover();
     }
 }
