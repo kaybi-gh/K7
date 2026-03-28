@@ -6,6 +6,8 @@ namespace K7.Shared.Dtos.Entities.Medias;
 [JsonDerivedType(typeof(LiteMovieDto), nameof(Movie))]
 [JsonDerivedType(typeof(LiteMusicAlbumDto), nameof(MusicAlbum))]
 [JsonDerivedType(typeof(LiteMusicTrackDto), nameof(MusicTrack))]
+[JsonDerivedType(typeof(LiteSerieDto), nameof(Serie))]
+[JsonDerivedType(typeof(LiteSerieEpisodeDto), nameof(SerieEpisode))]
 public abstract record LiteMediaDto
 {
     public Guid Id { get; init; }

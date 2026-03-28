@@ -12,8 +12,6 @@ public sealed record IndexedFileDto
     public string? ParentDirectory { get; init; }
     public required uint Hash { get; init; }
     public required long Size { get; init; }
-    public bool IsSplitPart { get; init; }
-    public bool IsComposite { get; init; }
 
     public FileMetadataDto? FileMetadata { get; set; }
 }
