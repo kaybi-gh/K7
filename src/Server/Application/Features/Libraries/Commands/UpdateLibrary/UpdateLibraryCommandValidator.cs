@@ -10,12 +10,15 @@ public class UpdateLibraryCommandValidator : AbstractValidator<UpdateLibraryComm
     {
         _context = context;
 
-        RuleFor(v => v.Title)
-            .NotEmpty()
-            .MaximumLength(200)
-            .MustAsync(BeUniqueTitle)
-                .WithMessage("'{PropertyName}' must be unique.")
-                .WithErrorCode("Unique");
+        When(v => v.Title is not null, () =>
+        {
+            RuleFor(v => v.Title)
+                .NotEmpty()
+                .MaximumLength(200)
+                .MustAsync(BeUniqueTitle)
+                    .WithMessage("'{PropertyName}' must be unique.")
+                    .WithErrorCode("Unique");
+        });
     }
 
     public async Task<bool> BeUniqueTitle(UpdateLibraryCommand model, string title, CancellationToken cancellationToken)

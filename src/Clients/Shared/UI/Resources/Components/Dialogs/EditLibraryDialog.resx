@@ -19,8 +19,10 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="ProviderLabel" xml:space="preserve"><value>Metadata provider</value></data>
-  <data name="ProviderRequired" xml:space="preserve"><value>Metadata provider is required</value></data>
-  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="TitleLabel" xml:space="preserve"><value>Nom de la librairie</value></data>
+  <data name="TitleRequired" xml:space="preserve"><value>Le nom est requis</value></data>
+  <data name="ProviderLabel" xml:space="preserve"><value>Fournisseur de métadonnées</value></data>
+  <data name="ProviderRequired" xml:space="preserve"><value>Le fournisseur de métadonnées est requis</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
 </root>

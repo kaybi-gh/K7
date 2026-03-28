@@ -13,12 +13,7 @@ public class UpdateLibrary : IEndpoint
 
         endpointRouteBuilder.MapPut("/api/libraries/{id}", async ([FromServices] ISender sender, Guid id, UpdateLibraryCommand command, CancellationToken cancellationToken) =>
         {
-            if (id != command.Id)
-            {
-                return Results.BadRequest();
-            }
-
-            await sender.Send(command, cancellationToken);
+            await sender.Send(command with { Id = id }, cancellationToken);
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.AdminOnly)

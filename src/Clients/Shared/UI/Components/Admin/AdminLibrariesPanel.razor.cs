@@ -96,7 +96,7 @@ public partial class AdminLibrariesPanel
         await DialogService.ShowAsync<AdminLibraryUsersDialog>(string.Format(L["AccessTitle"], library.Title), parameters, options);
     }
 
-    private async Task OpenEditProviderDialog(LibraryDto library)
+    private async Task OpenEditDialog(LibraryDto library)
     {
         List<MetadataProviderInfoDto> providers;
         try
@@ -109,37 +109,53 @@ public partial class AdminLibrariesPanel
             return;
         }
 
-        var selectedProvider = library.MetadataProviderName;
-
-        var parameters = new DialogParameters<Dialogs.EditMetadataProviderDialog>
+        var parameters = new DialogParameters<Dialogs.EditLibraryDialog>
         {
-            { x => x.LibraryTitle, library.Title },
+            { x => x.Title, library.Title },
             { x => x.AvailableProviders, providers },
-            { x => x.SelectedProvider, selectedProvider }
+            { x => x.SelectedProvider, library.MetadataProviderName }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<Dialogs.EditMetadataProviderDialog>(
-            string.Format(L["EditProviderTitle"], library.Title), parameters, options);
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<Dialogs.EditLibraryDialog>(
+            string.Format(L["EditTitle"], library.Title), parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false, Data: string newProvider } && newProvider != library.MetadataProviderName)
+        if (result is { Canceled: false, Data: UpdateLibraryRequest request })
         {
             try
             {
-                var request = new UpdateLibraryRequest
-                {
-                    Id = library.Id,
-                    MetadataProviderName = newProvider
-                };
-                await K7ServerService.UpdateLibraryAsync(request);
-                Snackbar.Add(L["ProviderUpdated"], Severity.Success);
+                await K7ServerService.UpdateLibraryAsync(library.Id, request);
+                Snackbar.Add(L["LibraryUpdated"], Severity.Success);
                 await LoadLibraries();
             }
             catch (Exception ex)
             {
                 Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
+        }
+    }
+
+    private async Task DeleteLibrary(LibraryDto library)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["DeleteDialogTitle"],
+            string.Format(L["DeleteDialogMessage"], library.Title),
+            yesText: L["DeleteConfirm"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed is not true)
+            return;
+
+        try
+        {
+            await K7ServerService.DeleteLibraryAsync(library.Id);
+            Snackbar.Add(string.Format(L["DeleteSuccess"], library.Title), Severity.Success);
+            await LoadLibraries();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
         }
     }
 }
