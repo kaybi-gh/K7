@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Devices;
 using Microsoft.AspNetCore.Components;
 
@@ -23,4 +24,14 @@ public partial class AdminDevicesPanel
             _isLoading = false;
         }
     }
+
+    private static string GetDeviceIcon(DeviceType deviceType) => deviceType switch
+    {
+        DeviceType.Desktop => Icons.Material.Filled.Computer,
+        DeviceType.Phone => Icons.Material.Filled.PhoneAndroid,
+        DeviceType.Tablet => Icons.Material.Filled.Tablet,
+        DeviceType.TV => Icons.Material.Filled.Tv,
+        DeviceType.Watch => Icons.Material.Filled.Watch,
+        _ => Icons.Material.Filled.DevicesOther
+    };
 }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -19,7 +19,9 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>All devices</value></data>
-  <data name="None" xml:space="preserve"><value>No devices found.</value></data>
+  <data name="NoDevices" xml:space="preserve"><value>Aucun appareil trouvé.</value></data>
+  <data name="DeviceCount" xml:space="preserve"><value>{0} appareil(s)</value></data>
+  <data name="UnknownDevice" xml:space="preserve"><value>Appareil inconnu</value></data>
+  <data name="LastSeen" xml:space="preserve"><value>Dernière activité</value></data>
+  <data name="UserCount" xml:space="preserve"><value>{0} utilisateur(s)</value></data>
 </root>
-
