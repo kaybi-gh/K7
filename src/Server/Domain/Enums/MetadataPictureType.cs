@@ -6,5 +6,6 @@ public enum MetadataPictureType
     Backdrop = 2,
     Thumbnail = 3,
     Logo = 4,
-    Portrait = 5
+    Portrait = 5,
+    Still = 6
 }

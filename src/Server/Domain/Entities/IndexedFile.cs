@@ -12,8 +12,6 @@ public class IndexedFile : BaseAuditableEntity
     public string? ParentDirectory { get; set; }
     public required uint Hash { get; set; }
     public required long Size { get; set; }
-    public bool IsSplitPart { get; set; } = false;
-    public bool IsComposite { get; set; } = false;
 
     public MediaIdentification? Identification { get; set; }
     public BaseFileMetadata? FileMetadata { get; set; }
