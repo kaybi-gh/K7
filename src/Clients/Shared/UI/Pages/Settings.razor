@@ -11,6 +11,7 @@
 @inject IStringLocalizer<Settings> L
 @inject IStringLocalizer<SharedResource> S
 @inject IJSRuntime JSRuntime
+@inject IDeviceStorageService DeviceStorageService
 <PageTitle>@L["PageTitle"]</PageTitle>
 
 <MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="@L["DarkMode"]" />
@@ -24,6 +25,12 @@
 <MudSelect T="string" Label="@L["Language"]" Value="@_currentCulture" ValueChanged="OnCultureChanged">
     <MudSelectItem Value="@("fr")">Fran\u00e7ais</MudSelectItem>
     <MudSelectItem Value="@("en")">English</MudSelectItem>
+</MudSelect>
+
+<MudSelect T="string" Label="@L["NextEpisodeBehavior"]" Value="@_nextEpisodeBehavior" ValueChanged="OnNextEpisodeBehaviorChanged">
+    <MudSelectItem Value="@("AutoPlay")">@L["NextEpisodeAutoPlay"]</MudSelectItem>
+    <MudSelectItem Value="@("ButtonOnly")">@L["NextEpisodeButtonOnly"]</MudSelectItem>
+    <MudSelectItem Value="@("Off")">@L["NextEpisodeOff"]</MudSelectItem>
 </MudSelect>
 
 @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)

@@ -20,4 +20,5 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<string> LOCAL_USERS = new("LocalUsers");
     public static readonly PreferenceKey<bool> SINGLE_USER_MODE = new("SingleUserMode");
     public static readonly PreferenceKey<string> LAST_ACTIVE_USER_ID = new("LastActiveUserId");
+    public static readonly PreferenceKey<string> NEXT_EPISODE_BEHAVIOR = new("NextEpisodeBehavior");
 }
