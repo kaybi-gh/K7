@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using K7.Server.Application.Common.Behaviours;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Interfaces;
@@ -27,6 +28,9 @@ public static class DependencyInjection
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
         });
 
+        services.AddSingleton<BackgroundTaskQueue>();
+        services.AddSingleton<IBackgroundTaskQueue>(sp => sp.GetRequiredService<BackgroundTaskQueue>());
+        services.AddSingleton<BackgroundTaskTypeRegistry>();
         services.AddHostedService<BackgroundTasksProcessingService>();
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
