@@ -1,5 +1,7 @@
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -92,5 +94,52 @@ public partial class AdminLibrariesPanel
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<AdminLibraryUsersDialog>(string.Format(L["AccessTitle"], library.Title), parameters, options);
+    }
+
+    private async Task OpenEditProviderDialog(LibraryDto library)
+    {
+        List<MetadataProviderInfoDto> providers;
+        try
+        {
+            providers = await K7ServerService.GetMetadataProvidersAsync(library.MediaType);
+        }
+        catch
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], "Failed to load providers"), Severity.Error);
+            return;
+        }
+
+        var selectedProvider = library.MetadataProviderName;
+
+        var parameters = new DialogParameters<Dialogs.EditMetadataProviderDialog>
+        {
+            { x => x.LibraryTitle, library.Title },
+            { x => x.AvailableProviders, providers },
+            { x => x.SelectedProvider, selectedProvider }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<Dialogs.EditMetadataProviderDialog>(
+            string.Format(L["EditProviderTitle"], library.Title), parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string newProvider } && newProvider != library.MetadataProviderName)
+        {
+            try
+            {
+                var request = new UpdateLibraryRequest
+                {
+                    Id = library.Id,
+                    MetadataProviderName = newProvider
+                };
+                await K7ServerService.UpdateLibraryAsync(request);
+                Snackbar.Add(L["ProviderUpdated"], Severity.Success);
+                await LoadLibraries();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            }
+        }
     }
 }

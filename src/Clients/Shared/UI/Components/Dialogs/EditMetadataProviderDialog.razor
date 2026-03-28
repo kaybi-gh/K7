@@ -1,0 +1,20 @@
+@inject IStringLocalizer<EditMetadataProviderDialog> L
+
+<MudDialog>
+    <DialogContent>
+        <MudSelect T="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="Variant.Outlined"
+                   Required="true" RequiredError="@L["ProviderRequired"]">
+            @foreach (var provider in AvailableProviders)
+            {
+                <MudSelectItem T="string" Value="@provider.ProviderName">@provider.ProviderName</MudSelectItem>
+            }
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+                   Disabled="@string.IsNullOrWhiteSpace(SelectedProvider)">
+            @L["Save"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>

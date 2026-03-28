@@ -29,5 +29,8 @@
   <data name="NewLibraryTitle" xml:space="preserve"><value>Nouvelle librairie</value></data>
   <data name="IndexStarted" xml:space="preserve"><value>Indexation de « {0} » lancée.</value></data>
   <data name="AccessTitle" xml:space="preserve"><value>Accès — {0}</value></data>
+  <data name="AriaEditProvider" xml:space="preserve"><value>Modifier le fournisseur</value></data>
+  <data name="EditProviderTitle" xml:space="preserve"><value>Fournisseur — {0}</value></data>
+  <data name="ProviderUpdated" xml:space="preserve"><value>Fournisseur de métadonnées mis à jour.</value></data>
 </root>
 

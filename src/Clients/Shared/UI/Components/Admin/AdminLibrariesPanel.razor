@@ -35,7 +35,10 @@ else
                             <MudIcon Icon="@GetMediaTypeIcon(library.MediaType)" Size="Size.Large" Color="Color.Primary" />
                             <MudStack Spacing="0">
                                 <MudText Typo="Typo.h6">@library.Title</MudText>
-                                <MudChip T="string" Size="Size.Small" Color="Color.Default">@GetMediaTypeLabel(library.MediaType)</MudChip>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@GetMediaTypeLabel(library.MediaType)</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Info">@library.MetadataProviderName</MudChip>
+                                </MudStack>
                             </MudStack>
                         </MudStack>
                         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
@@ -44,6 +47,8 @@ else
                         </MudText>
                     </MudCardContent>
                     <MudCardActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Default"
+                                       OnClick="@(() => OpenEditProviderDialog(library))" aria-label="@L["AriaEditProvider"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Primary"
                                        OnClick="@(() => IndexLibrary(library))" aria-label="@L["AriaIndex"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Default"
