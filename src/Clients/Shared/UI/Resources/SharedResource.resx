@@ -75,4 +75,9 @@
   <data name="MediaTypeMusic" xml:space="preserve"><value>Musique</value></data>
   <data name="ItemSize" xml:space="preserve"><value>Taille</value></data>
   <data name="Spacing" xml:space="preserve"><value>Espacement</value></data>
+  <data name="SeasonNumber" xml:space="preserve"><value>Saison {0}</value></data>
+  <data name="EpisodeCount" xml:space="preserve"><value>{0} episodes</value></data>
+  <data name="Specials" xml:space="preserve"><value>Hors-serie</value></data>
+  <data name="AirDate" xml:space="preserve"><value>Diffusion : {0}</value></data>
+  <data name="Resume" xml:space="preserve"><value>Reprendre</value></data>
 </root>
