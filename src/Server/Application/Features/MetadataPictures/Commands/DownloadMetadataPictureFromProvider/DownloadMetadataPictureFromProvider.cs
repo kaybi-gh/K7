@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
@@ -90,7 +91,8 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                     Priority = BackgroundTaskPriority.Lowest,
                     TargetEntityId = entity.Id,
                     TargetEntityTypeName = nameof(MetadataPicture),
-                    MaxAttempts = 3
+                    MaxAttempts = 3,
+                    ConcurrencyGroup = ConcurrencyGroups.ImageProcessing
                 }, cancellationToken);
             }
         }

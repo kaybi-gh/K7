@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
@@ -76,7 +77,8 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = newMedia.Id,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 1
+            MaxAttempts = 1,
+            ConcurrencyGroup = ConcurrencyGroups.Tmdb
         }, cancellationToken);
     }
 }

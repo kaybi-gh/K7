@@ -17,4 +17,5 @@ public class BackgroundTask : BaseAuditableEntity
     public DateTimeOffset? StartedAt { get; set; }
     public DateTimeOffset? NextRetryAfter { get; set; }
     public int TimeoutSeconds { get; set; } = 300;
+    public string? ConcurrencyGroup { get; set; }
 }

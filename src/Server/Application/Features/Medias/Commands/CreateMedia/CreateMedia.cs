@@ -2,6 +2,7 @@
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -111,7 +112,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = movie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
-                MaxAttempts = 1
+                MaxAttempts = 1,
+                ConcurrencyGroup = ConcurrencyGroups.Tmdb
             }, cancellationToken);
         }
 
@@ -180,7 +182,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     Priority = BackgroundTaskPriority.Low,
                     TargetEntityId = album.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
-                    MaxAttempts = 3
+                    MaxAttempts = 3,
+                    ConcurrencyGroup = ConcurrencyGroups.MusicBrainz
                 }, cancellationToken);
             }
         }
@@ -329,7 +332,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             Priority = BackgroundTaskPriority.Lowest,
             TargetEntityId = picture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
-            MaxAttempts = 3
+            MaxAttempts = 3,
+            ConcurrencyGroup = ConcurrencyGroups.ImageProcessing
         }, cancellationToken);
     }
 }
