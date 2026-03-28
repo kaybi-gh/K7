@@ -3,6 +3,7 @@ using System.Security.Claims;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
@@ -21,11 +22,13 @@ public partial class Settings
     private string? _pinError;
     private string? _pinSuccess;
     private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    private string _nextEpisodeBehavior = "AutoPlay";
 
     protected override void OnInitialized()
     {
         ThemeService.ThemeOnChange += StateHasChanged;
         ThemeService.DarkModeEnabledOnChange += StateHasChanged;
+        _nextEpisodeBehavior = DeviceStorageService.Get(PreferenceKeys.NEXT_EPISODE_BEHAVIOR, "AutoPlay") ?? "AutoPlay";
     }
 
     protected override async Task OnInitializedAsync()
@@ -72,6 +75,12 @@ public partial class Settings
 
         await JSRuntime.InvokeVoidAsync("blazorCulture.set", culture);
         NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+
+    private void OnNextEpisodeBehaviorChanged(string value)
+    {
+        _nextEpisodeBehavior = value;
+        DeviceStorageService.Set(PreferenceKeys.NEXT_EPISODE_BEHAVIOR, value);
     }
 
     private async Task ChangeBackendUrl()

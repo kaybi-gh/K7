@@ -15,6 +15,7 @@ public class PlaybackProgressTracker : IDisposable
     private readonly IStreamingService _serverService;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
+    private Guid? _currentSerieId;
     private Guid _sessionId;
     private double _lastReportedPosition;
     private double _lastKnownTime;
@@ -24,6 +25,9 @@ public class PlaybackProgressTracker : IDisposable
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(10);
     private const double MinPositionDeltaToReport = 2.0;
     private const double SeekDetectionThreshold = 3.0;
+
+    public Guid? CurrentMediaId => _currentMediaId;
+    public Guid? CurrentSerieId => _currentSerieId;
 
     public PlaybackProgressTracker(IPlayerService playerService, IStreamingService serverService)
     {
@@ -39,10 +43,12 @@ public class PlaybackProgressTracker : IDisposable
     /// </summary>
     /// <param name="mediaId">The media being played.</param>
     /// <param name="isAuthenticated">Whether the current user is authenticated. When false, progress is not reported.</param>
-    public void StartTracking(Guid mediaId, bool isAuthenticated = true)
+    /// <param name="serieId">Optional serie ID when playing a serie episode.</param>
+    public void StartTracking(Guid mediaId, bool isAuthenticated = true, Guid? serieId = null)
     {
         StopTimer();
         _currentMediaId = mediaId;
+        _currentSerieId = serieId;
         _sessionId = Guid.NewGuid();
         _lastReportedPosition = 0;
         _isAuthenticated = isAuthenticated;
@@ -57,6 +63,7 @@ public class PlaybackProgressTracker : IDisposable
         StopTimer();
         var mediaId = _currentMediaId;
         _currentMediaId = null;
+        _currentSerieId = null;
         if (mediaId is not null)
         {
             await ReportProgressAsync(mediaId.Value);

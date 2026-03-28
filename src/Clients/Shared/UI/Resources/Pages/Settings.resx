@@ -46,5 +46,9 @@
   <data name="PinSetSuccess" xml:space="preserve"><value>PIN défini avec succès.</value></data>
   <data name="PinRemovedSuccess" xml:space="preserve"><value>PIN retiré.</value></data>
   <data name="PinUpdateFailed" xml:space="preserve"><value>Échec de la mise à jour du PIN : {0}</value></data>
+  <data name="NextEpisodeBehavior" xml:space="preserve"><value>Épisode suivant</value></data>
+  <data name="NextEpisodeAutoPlay" xml:space="preserve"><value>Lecture automatique</value></data>
+  <data name="NextEpisodeButtonOnly" xml:space="preserve"><value>Bouton uniquement</value></data>
+  <data name="NextEpisodeOff" xml:space="preserve"><value>Désactivé</value></data>
 </root>
 
