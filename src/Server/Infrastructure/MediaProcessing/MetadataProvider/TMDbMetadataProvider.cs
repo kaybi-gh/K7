@@ -14,10 +14,11 @@ using TMDbLib.Client;
 using TMDbLib.Objects.Movies;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
-public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider
+public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider, IMetadataProviderInfo
 {
     private const string Token = "8e7586ad850237f5d506d8789f4c3936";
     public string ProviderName => "tmdb";
+    public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Movie, LibraryMediaType.Serie];
     private readonly TMDbClient _tdmbClient;
 
     private readonly FrozenSet<(string Department, string Job)> _wantedCrewRoles = new List<(string, string)>

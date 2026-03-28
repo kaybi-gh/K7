@@ -1274,6 +1274,38 @@
         }
       }
     },
+    "/api/metadata-providers": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "GetMetadataProviders",
+        "parameters": [
+          {
+            "name": "mediaType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/LibraryMediaType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetadataProviderInfoDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/metadata/search": {
       "get": {
         "tags": [
@@ -5214,6 +5246,24 @@
       },
       "MetadataPictureType": {
         "type": "integer"
+      },
+      "MetadataProviderInfoDto": {
+        "required": [
+          "providerName",
+          "supportedMediaTypes"
+        ],
+        "type": "object",
+        "properties": {
+          "providerName": {
+            "type": "string"
+          },
+          "supportedMediaTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryMediaType"
+            }
+          }
+        }
       },
       "MusicRadioType": {
         "type": "integer"

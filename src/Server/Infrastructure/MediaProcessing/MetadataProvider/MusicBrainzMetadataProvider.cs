@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 
-public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider
+public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider, IMetadataProviderInfo
 {
     private const string BaseUrl = "https://musicbrainz.org/ws/2";
     private const string CoverArtBaseUrl = "https://coverartarchive.org";
@@ -40,6 +40,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     }
 
     public string ProviderName => "musicbrainz";
+    public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Music];
 
     private async Task WaitRateLimitAsync(CancellationToken cancellationToken)
     {
