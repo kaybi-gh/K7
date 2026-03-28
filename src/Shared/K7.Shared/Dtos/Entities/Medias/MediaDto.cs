@@ -7,6 +7,9 @@ namespace K7.Shared.Dtos.Entities.Medias;
 [JsonDerivedType(typeof(MovieDto), nameof(Movie))]
 [JsonDerivedType(typeof(MusicAlbumDto), nameof(MusicAlbum))]
 [JsonDerivedType(typeof(MusicTrackDto), nameof(MusicTrack))]
+[JsonDerivedType(typeof(SerieDto), nameof(Serie))]
+[JsonDerivedType(typeof(SerieSeasonDto), nameof(SerieSeason))]
+[JsonDerivedType(typeof(SerieEpisodeDto), nameof(SerieEpisode))]
 public abstract record MediaDto
 {
     public Guid Id { get; init; }

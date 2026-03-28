@@ -82,6 +82,22 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         }
     }
 
+    public async Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync($"api/medias/{serieId}/next-episode?currentEpisodeId={currentEpisodeId}", cancellationToken);
+            if (!response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                return null;
+            return await response.Content.ReadFromJsonAsync<LiteSerieEpisodeDto>(_serializerOptions, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return null;
+        }
+    }
+
     public async Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default)
     {
         var requestUri = GetMediasWithPaginationQueryUriBuilder.Build(query);
