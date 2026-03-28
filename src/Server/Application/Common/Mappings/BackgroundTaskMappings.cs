@@ -15,8 +15,11 @@ public static class BackgroundTaskMappings
             TargetEntityId = domain.TargetEntityId,
             Status = domain.Status,
             Priority = domain.Priority,
-            RetryCount = domain.RetryCount,
-            MaxRetryCount = domain.MaxRetryCount
+            AttemptCount = domain.AttemptCount,
+            MaxAttempts = domain.MaxAttempts,
+            StartedAt = domain.StartedAt,
+            NextRetryAfter = domain.NextRetryAfter,
+            TimeoutSeconds = domain.TimeoutSeconds
         };
     }
 }

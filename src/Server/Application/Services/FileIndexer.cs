@@ -108,7 +108,7 @@ public class FileIndexer : IFileIndexer
                             },
                             Priority = BackgroundTaskPriority.Normal,
                             TargetEntityTypeName = nameof(BaseMedia),
-                            MaxRetryCount = 5
+                            MaxAttempts = 5
                         });
                     }
                 }
@@ -132,7 +132,7 @@ public class FileIndexer : IFileIndexer
                                 },
                                 Priority = BackgroundTaskPriority.Normal,
                                 TargetEntityTypeName = nameof(BaseMedia),
-                                MaxRetryCount = 5
+                                MaxAttempts = 5
                             });
                         }
                     }
@@ -170,7 +170,7 @@ public class FileIndexer : IFileIndexer
             Request = new DeleteIndexedFileCommand(x.Id),
             Priority = BackgroundTaskPriority.Normal,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxRetryCount = 5
+            MaxAttempts = 5
         }));
     }
 
@@ -201,7 +201,7 @@ public class FileIndexer : IFileIndexer
                     },
                     Priority = BackgroundTaskPriority.Normal,
                     TargetEntityTypeName = nameof(BaseMedia),
-                    MaxRetryCount = 5
+                    MaxAttempts = 5
                 });
             }
 

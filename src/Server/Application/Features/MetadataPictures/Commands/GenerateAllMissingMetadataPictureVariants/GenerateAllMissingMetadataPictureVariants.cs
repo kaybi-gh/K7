@@ -48,7 +48,7 @@ public class GenerateAllMissingMetadataPictureVariantsCommandHandler
                 Priority = BackgroundTaskPriority.Lowest,
                 TargetEntityId = pictureId,
                 TargetEntityTypeName = nameof(MetadataPicture),
-                MaxRetryCount = 3
+                MaxAttempts = 3
             }, cancellationToken);
         }
 

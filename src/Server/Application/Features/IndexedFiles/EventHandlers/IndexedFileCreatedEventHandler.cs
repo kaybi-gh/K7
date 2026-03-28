@@ -34,7 +34,7 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
             },
             Priority = BackgroundTaskPriority.VeryHigh,
             TargetEntityTypeName = nameof(IndexedFile),
-            MaxRetryCount = 5
+            MaxAttempts = 5
         }, cancellationToken);
 
         await _sender.Send(new CreateBackgroundTaskCommand()
@@ -47,7 +47,7 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = notification.IndexedFile.Id,
             TargetEntityTypeName = nameof(IndexedFile),
-            MaxRetryCount = 5
+            MaxAttempts = 5
         }, cancellationToken);
 
         if (notification.FileType == FileType.Video)
@@ -61,7 +61,7 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
                 Priority = BackgroundTaskPriority.Lowest,
                 TargetEntityId = notification.IndexedFile.Id,
                 TargetEntityTypeName = nameof(IndexedFile),
-                MaxRetryCount = 1
+                MaxAttempts = 1
             }, cancellationToken);
         }
     }

@@ -10,6 +10,9 @@ public sealed record BackgroundTaskDto
     public Guid? TargetEntityId { get; init; }
     public BackgroundTaskStatus Status { get; init; }
     public BackgroundTaskPriority Priority { get; init; }
-    public int RetryCount { get; init; }
-    public int MaxRetryCount { get; init; }
+    public int AttemptCount { get; init; }
+    public int MaxAttempts { get; init; }
+    public DateTimeOffset? StartedAt { get; init; }
+    public DateTimeOffset? NextRetryAfter { get; init; }
+    public int TimeoutSeconds { get; init; }
 }

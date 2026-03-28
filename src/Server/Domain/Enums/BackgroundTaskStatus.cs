@@ -4,6 +4,7 @@ public enum BackgroundTaskStatus
 {
     Pending,
     InProgress,
+    WaitingForRetry,
     Completed,
     Failed
 }
