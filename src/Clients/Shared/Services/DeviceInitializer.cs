@@ -15,23 +15,38 @@ public static class DeviceInitializer
 
             if (string.IsNullOrEmpty(existingDeviceId))
             {
-                var deviceService = services.GetRequiredService<IDeviceService>();
-                var deviceApiService = services.GetRequiredService<IDeviceApiService>();
-                var request = await deviceService.GenerateCreateDeviceRequestAsync();
-                var deviceId = await deviceApiService.CreateDeviceAsync(request);
-                deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceId.ToString());
-                existingDeviceId = deviceId.ToString();
+                existingDeviceId = await CreateNewDeviceAsync(services, deviceStorageService);
             }
 
             if (Guid.TryParse(existingDeviceId, out var parsedId))
             {
                 var deviceApiService = services.GetRequiredService<IDeviceApiService>();
-                await deviceApiService.AttachCurrentUserToDeviceAsync(parsedId);
+
+                try
+                {
+                    await deviceApiService.AttachCurrentUserToDeviceAsync(parsedId);
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    deviceStorageService.Remove(PreferenceKeys.DEVICE_ID);
+                    await CreateNewDeviceAsync(services, deviceStorageService);
+                }
             }
         }
         catch (HttpRequestException)
         {
-            // Not authenticated yet � device will be initialized after login
+            // Not authenticated yet — device will be initialized after login
         }
+    }
+
+    private static async Task<string> CreateNewDeviceAsync(IServiceProvider services, IDeviceStorageService deviceStorageService)
+    {
+        var deviceService = services.GetRequiredService<IDeviceService>();
+        var deviceApiService = services.GetRequiredService<IDeviceApiService>();
+        var request = await deviceService.GenerateCreateDeviceRequestAsync();
+        var deviceId = await deviceApiService.CreateDeviceAsync(request);
+        var deviceIdStr = deviceId.ToString();
+        deviceStorageService.Set(PreferenceKeys.DEVICE_ID, deviceIdStr);
+        return deviceIdStr;
     }
 }
