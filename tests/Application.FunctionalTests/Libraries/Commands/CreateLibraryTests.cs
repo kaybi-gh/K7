@@ -17,6 +17,7 @@ public class CreateLibraryTests : DatabaseFixture
         var command = new CreateLibraryCommand()
         {
             MediaType = LibraryMediaType.Music,
+            MetadataProviderName = "musicbrainz",
             RootPath = null!,
             Title = null!
         };
@@ -33,12 +34,14 @@ public class CreateLibraryTests : DatabaseFixture
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = "/root/path"
         });
         var command = new CreateLibraryCommand
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = "/root/path"
         };
 
@@ -57,6 +60,7 @@ public class CreateLibraryTests : DatabaseFixture
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = "/root/path"
         };
 

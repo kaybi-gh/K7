@@ -26,9 +26,11 @@ public static class DependencyInjection
         services.AddHostedService<TranscodeJobCleanupService>();
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
-        services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>()); // TODO - Make it customizable
+        services.AddKeyedScoped<IMetadataProvider<ExternalMovieMetadata>>("tmdb", (sp, _) => sp.GetRequiredService<TMDbMetadataProvider>());
+        services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<MusicBrainzMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
+        services.AddKeyedScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>("musicbrainz", (sp, _) => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddScoped<IMusicArtistMetadataProvider>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddScoped<IMusicArtistMetadataProvider, WikidataMetadataProvider>();
 

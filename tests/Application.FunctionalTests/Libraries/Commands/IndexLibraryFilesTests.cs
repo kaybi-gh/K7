@@ -29,6 +29,7 @@ public class IndexLibraryFilesTests : FileAndDatabaseFixture
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = FileHelper.TestDirectoryPath
         });
         FileHelper.CreateTestFile("movie.mp4", "movie");

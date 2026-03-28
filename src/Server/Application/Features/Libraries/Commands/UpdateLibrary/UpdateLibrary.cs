@@ -10,6 +10,7 @@ public record UpdateLibraryCommand : IRequest
     public Guid Id { get; init; }
 
     public string? Title { get; init; }
+    public string? MetadataProviderName { get; init; }
 }
 
 public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
@@ -28,6 +29,7 @@ public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
 
         Guard.Against.NotFound(request.Id, entity);
         entity.Title = request.Title ?? entity.Title;
+        entity.MetadataProviderName = request.MetadataProviderName ?? entity.MetadataProviderName;
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

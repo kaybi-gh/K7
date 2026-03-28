@@ -5,7 +5,6 @@ using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTa
 using K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Helpers;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -110,7 +109,7 @@ public class FileIndexer : IFileIndexer
                             Priority = BackgroundTaskPriority.Normal,
                             TargetEntityTypeName = nameof(BaseMedia),
                             MaxAttempts = 5,
-                            ConcurrencyGroup = ConcurrencyGroups.Tmdb
+                            ConcurrencyGroup = library.MetadataProviderName
                         });
                     }
                 }
@@ -135,7 +134,7 @@ public class FileIndexer : IFileIndexer
                                 Priority = BackgroundTaskPriority.Normal,
                                 TargetEntityTypeName = nameof(BaseMedia),
                                 MaxAttempts = 5,
-                                ConcurrencyGroup = ConcurrencyGroups.MusicBrainz
+                                ConcurrencyGroup = library.MetadataProviderName
                             });
                         }
                     }
@@ -205,7 +204,7 @@ public class FileIndexer : IFileIndexer
                     Priority = BackgroundTaskPriority.Normal,
                     TargetEntityTypeName = nameof(BaseMedia),
                     MaxAttempts = 5,
-                    ConcurrencyGroup = ConcurrencyGroups.Tmdb
+                    ConcurrencyGroup = library.MetadataProviderName
                 });
             }
 

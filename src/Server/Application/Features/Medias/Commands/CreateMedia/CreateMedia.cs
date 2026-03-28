@@ -2,7 +2,6 @@
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
@@ -13,6 +12,7 @@ using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.ValueObjects;
 using K7.Server.Application.Common.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Features.Medias.Commands.CreateMedia;
@@ -27,23 +27,20 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
-    private readonly IMetadataProvider<ExternalMovieMetadata> _metadataProvider;
-    private readonly IMetadataProvider<ExternalMusicAlbumMetadata> _musicMetadataProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IAudioTagReader _audioTagReader;
     private readonly PathsConfiguration _pathsConfiguration;
 
     public CreateMediaCommandHandler(
         IApplicationDbContext context,
         ISender sender,
-        IMetadataProvider<ExternalMovieMetadata> metadataProvider,
-        IMetadataProvider<ExternalMusicAlbumMetadata> musicMetadataProvider,
+        IServiceProvider serviceProvider,
         IAudioTagReader audioTagReader,
         IOptions<PathsConfiguration> pathsConfiguration)
     {
         _context = context;
         _sender = sender;
-        _metadataProvider = metadataProvider;
-        _musicMetadataProvider = musicMetadataProvider;
+        _serviceProvider = serviceProvider;
         _audioTagReader = audioTagReader;
         _pathsConfiguration = pathsConfiguration.Value;
     }
@@ -56,17 +53,22 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         Guard.Against.NotFound(request.IndexedFileId, indexedFile);
         Guard.Against.NullOrEmpty(indexedFile.Path);
 
+        var library = await _context.Libraries
+            .FindAsync([indexedFile.LibraryId], cancellationToken);
+        Guard.Against.NotFound(indexedFile.LibraryId, library);
+
         return request.MediaType switch
         {
-            MediaType.Movie => await HandleMovie(indexedFile, cancellationToken),
-            MediaType.MusicTrack => await HandleMusicTrack(indexedFile, cancellationToken),
+            MediaType.Movie => await HandleMovie(indexedFile, library, cancellationToken),
+            MediaType.MusicTrack => await HandleMusicTrack(indexedFile, library, cancellationToken),
             _ => throw new NotImplementedException($"Media type {request.MediaType} is not supported.")
         };
     }
 
-    private async Task<Guid> HandleMovie(IndexedFile indexedFile, CancellationToken cancellationToken)
+    private async Task<Guid> HandleMovie(IndexedFile indexedFile, Library library, CancellationToken cancellationToken)
     {
-        var metadataProviderExternalId = await _metadataProvider.SearchAsync(indexedFile.Identification!, cancellationToken);
+        var metadataProvider = _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMovieMetadata>>(library.MetadataProviderName);
+        var metadataProviderExternalId = await metadataProvider.SearchAsync(indexedFile.Identification!, cancellationToken);
 
         if (string.IsNullOrEmpty(metadataProviderExternalId))
         {
@@ -106,6 +108,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 {
                     MediaId = movie.Id,
                     MetadataProviderExternalId = metadataProviderExternalId,
+                    MetadataProviderName = library.MetadataProviderName!,
                     Language = "fr",
                     FallbackLanguage = "en"
                 },
@@ -113,14 +116,14 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 TargetEntityId = movie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
                 MaxAttempts = 1,
-                ConcurrencyGroup = ConcurrencyGroups.Tmdb
+                ConcurrencyGroup = library.MetadataProviderName
             }, cancellationToken);
         }
 
         return movie.Id;
     }
 
-    private async Task<Guid> HandleMusicTrack(IndexedFile indexedFile, CancellationToken cancellationToken)
+    private async Task<Guid> HandleMusicTrack(IndexedFile indexedFile, Library library, CancellationToken cancellationToken)
     {
         var identification = indexedFile.Identification;
         Guard.Against.Null(identification);
@@ -167,7 +170,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 ArtistName = albumArtistName,
                 ReleaseYear = releaseYear
             };
-            var musicBrainzId = await _musicMetadataProvider.SearchAsync(albumIdentification, cancellationToken);
+            var musicBrainzId = await _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(library.MetadataProviderName)
+                .SearchAsync(albumIdentification, cancellationToken);
             if (!string.IsNullOrEmpty(musicBrainzId))
             {
                 await _sender.Send(new CreateBackgroundTaskCommand()
@@ -176,6 +180,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     {
                         MediaId = album.Id,
                         MetadataProviderExternalId = musicBrainzId,
+                        MetadataProviderName = library.MetadataProviderName,
                         Language = "en",
                         FallbackLanguage = "en"
                     },
@@ -183,7 +188,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     TargetEntityId = album.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
                     MaxAttempts = 3,
-                    ConcurrencyGroup = ConcurrencyGroups.MusicBrainz
+                    ConcurrencyGroup = library.MetadataProviderName
                 }, cancellationToken);
             }
         }
@@ -333,7 +338,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             TargetEntityId = picture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
             MaxAttempts = 3,
-            ConcurrencyGroup = ConcurrencyGroups.ImageProcessing
+            ConcurrencyGroup = "image-processing"
         }, cancellationToken);
     }
 }

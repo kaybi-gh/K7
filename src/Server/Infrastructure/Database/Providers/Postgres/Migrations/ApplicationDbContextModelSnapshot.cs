@@ -312,6 +312,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int>("MediaType")
                         .HasColumnType("integer");
 
+                    b.Property<string>("MetadataProviderName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("RootPath")
                         .IsRequired()
                         .HasColumnType("text");

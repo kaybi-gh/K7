@@ -1,6 +1,5 @@
 ﻿using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.DownloadMetadataPictureFromProvider;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
@@ -47,7 +46,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             TargetEntityId = notification.MetadataPicture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
             MaxAttempts = 5,
-            ConcurrencyGroup = ConcurrencyGroups.Tmdb
+            ConcurrencyGroup = "image-download"
         }, cancellationToken);
     }
 }

@@ -32,12 +32,14 @@ public class UpdateLibraryListTests : DatabaseFixture
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = "/root/path"
         });
         await SendAsync(new CreateLibraryCommand
         {
             Title = "Other Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = "/root/path"
         });
         var command = new UpdateLibraryCommand
@@ -63,6 +65,7 @@ public class UpdateLibraryListTests : DatabaseFixture
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = "/root/path"
         });
         var command = new UpdateLibraryCommand

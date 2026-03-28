@@ -3404,7 +3404,8 @@
         "required": [
           "title",
           "mediaType",
-          "rootPath"
+          "rootPath",
+          "metadataProviderName"
         ],
         "type": "object",
         "properties": {
@@ -3415,6 +3416,9 @@
             "$ref": "#/components/schemas/LibraryMediaType"
           },
           "rootPath": {
+            "type": "string"
+          },
+          "metadataProviderName": {
             "type": "string"
           },
           "triggerFileIndexingOnCreation": {
@@ -3864,7 +3868,8 @@
           "id",
           "title",
           "mediaType",
-          "rootPath"
+          "rootPath",
+          "metadataProviderName"
         ],
         "type": "object",
         "properties": {
@@ -3879,6 +3884,9 @@
             "$ref": "#/components/schemas/LibraryMediaType"
           },
           "rootPath": {
+            "type": "string"
+          },
+          "metadataProviderName": {
             "type": "string"
           }
         }
@@ -6393,6 +6401,12 @@
             "format": "uuid"
           },
           "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "metadataProviderName": {
             "type": [
               "null",
               "string"

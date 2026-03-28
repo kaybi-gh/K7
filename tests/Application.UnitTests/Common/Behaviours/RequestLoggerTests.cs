@@ -32,7 +32,8 @@ public class RequestLoggerTests
         {
             MediaType = LibraryMediaType.Music,
             Title = "title",
-            RootPath = "path"
+            RootPath = "path",
+            MetadataProviderName = "tmdb"
         }, new CancellationToken());
 
         // Assert
@@ -50,7 +51,8 @@ public class RequestLoggerTests
         {
             MediaType = LibraryMediaType.Music,
             Title = "title",
-            RootPath = "path"
+            RootPath = "path",
+            MetadataProviderName = "tmdb"
         }, new CancellationToken());
 
         // Assert
