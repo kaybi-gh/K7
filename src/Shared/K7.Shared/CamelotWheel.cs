@@ -32,7 +32,7 @@ public static class CamelotWheel
 
     /// <summary>
     /// Two keys are harmonically compatible if they share the same Camelot position,
-    /// are ±1 on the wheel (same letter, wrapping 12→1),
+    /// are +-1 on the wheel (same letter, wrapping 12->1),
     /// or have the same number with opposite letter (relative major/minor).
     /// </summary>
     public static bool AreKeysCompatible(string? keyA, string? keyB)

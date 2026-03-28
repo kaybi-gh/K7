@@ -86,7 +86,7 @@ public partial class App : MauiWinUIApplication
                 }
                 else
                 {
-                    Debug.WriteLine("❌ AuthenticationService introuvable !");
+                    Debug.WriteLine("AuthenticationService introuvable !");
                 }
             });*/
         }
