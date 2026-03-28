@@ -1,6 +1,8 @@
 @page "/admin"
+@page "/admin/{Tab}"
 @inject IStringLocalizer<Admin> L
 @inject IStringLocalizer<SharedResource> S
+@inject NavigationManager NavigationManager
 
 <AuthorizeView Roles="Administrator">
     <Authorized>
@@ -8,7 +10,8 @@
 
         <MudText Typo="Typo.h4" Class="mb-4">@L["PageTitle"]</MudText>
 
-        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true">
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true"
+                 ActivePanelIndex="@_activePanelIndex" ActivePanelIndexChanged="OnActivePanelIndexChanged">
             <MudTabPanel Text="@L["TabGeneral"]" Icon="@Icons.Material.Filled.Settings">
                 <AdminGeneralPanel />
             </MudTabPanel>
