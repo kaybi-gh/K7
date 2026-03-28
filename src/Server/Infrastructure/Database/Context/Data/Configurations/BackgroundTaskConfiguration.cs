@@ -14,5 +14,8 @@ public class BackgroundTaskConfiguration : IEntityTypeConfiguration<BackgroundTa
 
         builder.HasIndex(t => t.TargetEntityId)
             .HasDatabaseName("IX_BackgroundTasks_TargetEntityId");
+
+        builder.HasIndex(t => t.ConcurrencyGroup)
+            .HasDatabaseName("IX_BackgroundTasks_ConcurrencyGroup");
     }
 }
