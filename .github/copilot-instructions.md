@@ -53,6 +53,7 @@ No `Result<T>` wrapper pattern.
 - Always forward `CancellationToken`. Last parameter. Public methods: `CancellationToken cancellationToken = default`.
 - Prefer pattern matching (`is null`, `is not null`) over `== null`.
 - Prefer `field` keyword (C# 14) over manual backing fields in properties.
+- **Comments**: No emojis, no Unicode arrows (`→`, `←`, `↔`), no decorative symbols in code comments. Use only plain ASCII characters a human would type (e.g., `->` instead of `→`).
 
 ## Git Conventions
 
