@@ -2852,6 +2852,40 @@
         }
       }
     },
+    "/api/admin/background-tasks/settings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetBackgroundTaskSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateBackgroundTaskSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBackgroundTaskSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/settings/default-language": {
       "put": {
         "tags": [
@@ -3168,6 +3202,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "concurrencyGroup": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -6267,6 +6307,34 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateBackgroundTaskSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "workerCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "concurrencyLimits": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
           }
         }
       },
