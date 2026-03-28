@@ -144,7 +144,25 @@ public class FileIndexer : IFileIndexer
             case LibraryMediaType.Serie:
                 foreach (var group in toBeIdentifiedFiles.GroupBy(f => f.ParentDirectory))
                 {
-                    //file.TryIdentifySerieEpisode(library);
+                    var filesInSameDirectory = group.ToList();
+                    foreach (var file in filesInSameDirectory)
+                    {
+                        if (file.TryIdentifySerieEpisode(library, filesInSameDirectory))
+                        {
+                            backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                            {
+                                Request = new CreateMediaCommand()
+                                {
+                                    IndexedFileId = file.Id,
+                                    MediaType = MediaType.SerieEpisode
+                                },
+                                Priority = BackgroundTaskPriority.Normal,
+                                TargetEntityTypeName = nameof(BaseMedia),
+                                MaxAttempts = 5,
+                                ConcurrencyGroup = library.MetadataProviderName
+                            });
+                        }
+                    }
                 }
                 break;
         }
@@ -182,8 +200,6 @@ public class FileIndexer : IFileIndexer
         {
             oldFile.Extension = newFile.Extension;
             oldFile.Hash = newFile.Hash;
-            oldFile.IsComposite = newFile.IsComposite;
-            oldFile.IsSplitPart = newFile.IsSplitPart;
             oldFile.Name = newFile.Name;
             oldFile.ParentDirectory = newFile.ParentDirectory;
             oldFile.Path = newFile.Path;

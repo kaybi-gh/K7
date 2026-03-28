@@ -61,6 +61,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         {
             MediaType.Movie => await HandleMovie(indexedFile, library, cancellationToken),
             MediaType.MusicTrack => await HandleMusicTrack(indexedFile, library, cancellationToken),
+            MediaType.SerieEpisode => await HandleSerieEpisode(indexedFile, library, cancellationToken),
             _ => throw new NotImplementedException($"Media type {request.MediaType} is not supported.")
         };
     }
@@ -340,5 +341,174 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             MaxAttempts = 3,
             ConcurrencyGroup = "image-processing"
         }, cancellationToken);
+    }
+
+    private async Task<Guid> HandleSerieEpisode(IndexedFile indexedFile, Library library, CancellationToken cancellationToken)
+    {
+        var identification = indexedFile.Identification;
+        Guard.Against.Null(identification);
+        Guard.Against.NullOrEmpty(identification.SeriesTitle);
+
+        if (_context.Entry(indexedFile).State == EntityState.Detached)
+        {
+            _context.IndexedFiles.Attach(indexedFile);
+        }
+
+        var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(library.MetadataProviderName);
+
+        var (serie, isNewSerie, providerExternalId) = await FindOrCreateSerie(identification, metadataProvider, cancellationToken);
+
+        // Resolve absolute number to season/episode if needed
+        var seasonNumber = identification.SeasonNumber;
+        var episodeNumber = identification.EpisodeNumber;
+
+        if (seasonNumber is null && episodeNumber is null
+            && identification.AbsoluteNumber.HasValue
+            && !string.IsNullOrEmpty(providerExternalId))
+        {
+            var resolved = await metadataProvider.ResolveAbsoluteEpisodeAsync(
+                providerExternalId, identification.AbsoluteNumber.Value, cancellationToken);
+            if (resolved.HasValue)
+            {
+                seasonNumber = resolved.Value.Season;
+                episodeNumber = resolved.Value.Episode;
+            }
+            else
+            {
+                seasonNumber = 1;
+                episodeNumber = identification.AbsoluteNumber.Value;
+            }
+        }
+
+        if (!seasonNumber.HasValue || !episodeNumber.HasValue)
+        {
+            throw new InvalidOperationException(
+                $"Could not determine season/episode for {indexedFile.Path}");
+        }
+
+        // Find or create season
+        await _context.Entry(serie).Collection(s => s.Seasons).LoadAsync(cancellationToken);
+        var season = serie.Seasons.FirstOrDefault(s => s.SeasonNumber == seasonNumber.Value);
+        if (season is null)
+        {
+            season = new SerieSeason
+            {
+                SerieId = serie.Id,
+                Serie = serie,
+                SeasonNumber = seasonNumber.Value,
+                Title = seasonNumber.Value == 0 ? "Specials" : $"Season {seasonNumber.Value}"
+            };
+            serie.Seasons.Add(season);
+            _context.Medias.Add(season);
+        }
+
+        // Find or create episode
+        await _context.Entry(season).Collection(s => s.Episodes).LoadAsync(cancellationToken);
+        var existingEpisode = season.Episodes.FirstOrDefault(e => e.EpisodeNumber == episodeNumber.Value);
+
+        if (existingEpisode is not null)
+        {
+            existingEpisode.IndexedFiles.Add(indexedFile);
+            await _context.SaveChangesAsync(cancellationToken);
+            return existingEpisode.Id;
+        }
+
+        var episode = new SerieEpisode
+        {
+            SerieId = serie.Id,
+            Serie = serie,
+            SeasonId = season.Id,
+            Season = season,
+            EpisodeNumber = episodeNumber.Value,
+            AbsoluteNumber = identification.AbsoluteNumber,
+            Title = $"Episode {episodeNumber.Value}",
+            IndexedFiles = [indexedFile]
+        };
+
+        season.Episodes.Add(episode);
+        _context.Medias.Add(episode);
+        episode.AddDomainEvent(new MediaCreatedEvent(episode));
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // Queue metadata refresh for the serie (only if newly created)
+        if (isNewSerie && !string.IsNullOrEmpty(providerExternalId))
+        {
+            await _sender.Send(new CreateBackgroundTaskCommand
+            {
+                Request = new RefreshMediaMetadatasCommand
+                {
+                    MediaId = serie.Id,
+                    MetadataProviderExternalId = providerExternalId,
+                    MetadataProviderName = library.MetadataProviderName!,
+                    Language = "fr",
+                    FallbackLanguage = "en"
+                },
+                Priority = BackgroundTaskPriority.Normal,
+                TargetEntityId = serie.Id,
+                TargetEntityTypeName = nameof(BaseMedia),
+                MaxAttempts = 3,
+                ConcurrencyGroup = library.MetadataProviderName
+            }, cancellationToken);
+        }
+
+        return episode.Id;
+    }
+
+    private async Task<(Serie Serie, bool IsNew, string? ProviderExternalId)> FindOrCreateSerie(
+        MediaIdentification identification, ISerieMetadataProvider metadataProvider, CancellationToken cancellationToken)
+    {
+        var seriesTitle = identification.SeriesTitle ?? identification.Title;
+
+        // Check DB first by title to avoid redundant API calls for subsequent episodes
+        var existingSerie = await _context.Medias
+            .OfType<Serie>()
+            .Include(s => s.ExternalIds)
+            .FirstOrDefaultAsync(s => s.Title == seriesTitle, cancellationToken);
+
+        if (existingSerie is not null)
+        {
+            var externalId = existingSerie.ExternalIds
+                .FirstOrDefault(e => e.ProviderName == metadataProvider.ProviderName)?.Value;
+            return (existingSerie, false, externalId);
+        }
+
+        // Search provider
+        var providerExternalId = await metadataProvider.SearchSerieAsync(identification, cancellationToken);
+
+        // Double-check by external ID (title may differ from what's in DB after metadata refresh)
+        if (!string.IsNullOrEmpty(providerExternalId))
+        {
+            var existingExternalId = await _context.ExternalIds
+                .Include(x => x.Media)
+                .FirstOrDefaultAsync(x => x.Value == providerExternalId
+                    && x.ProviderName == metadataProvider.ProviderName
+                    && x.Media is Serie, cancellationToken);
+
+            if (existingExternalId?.Media is Serie existingSerieById)
+            {
+                return (existingSerieById, false, providerExternalId);
+            }
+        }
+
+        // Create new serie
+        var serie = new Serie
+        {
+            Title = seriesTitle,
+            ReleaseDate = identification.ReleaseYear
+        };
+        _context.Medias.Add(serie);
+        serie.AddDomainEvent(new MediaCreatedEvent(serie));
+
+        if (!string.IsNullOrEmpty(providerExternalId))
+        {
+            serie.ExternalIds.Add(new ExternalId
+            {
+                ProviderName = metadataProvider.ProviderName,
+                Value = providerExternalId
+            });
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return (serie, true, providerExternalId);
     }
 }

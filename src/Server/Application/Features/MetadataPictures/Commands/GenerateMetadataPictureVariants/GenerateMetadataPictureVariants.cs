@@ -22,7 +22,7 @@ public class GenerateMetadataPictureVariantsCommandHandler : IRequestHandler<Gen
 
     /// <summary>
     /// Target widths per picture type and size.
-    /// Key: (PictureType, Size) → maxWidth in pixels.
+    /// Key: (PictureType, Size) -> maxWidth in pixels.
     /// </summary>
     private static readonly Dictionary<(MetadataPictureType, MetadataPictureSize), int> VariantWidths = new()
     {

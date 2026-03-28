@@ -50,11 +50,31 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
             .Include(x => (x as MusicAlbum)!.Tracks)
                 .ThenInclude(t => t.AudioAnalysis)
             .Include(x => (x as MusicTrack)!.AudioAnalysis)
+            // Serie: include seasons with their pictures and episode counts
+            .Include(x => (x as Serie)!.Seasons)
+                .ThenInclude(s => s.Pictures)
+                    .ThenInclude(p => p.Variants)
+            .Include(x => (x as Serie)!.Seasons)
+                .ThenInclude(s => s.Episodes)
+            // SerieSeason: include episodes with their pictures, indexed files, and user states
+            .Include(x => (x as SerieSeason)!.Episodes)
+                .ThenInclude(e => e.Pictures)
+                    .ThenInclude(p => p.Variants)
+            .Include(x => (x as SerieSeason)!.Episodes)
+                .ThenInclude(e => e.IndexedFiles)
+                    .ThenInclude(f => f.FileMetadata)
+            .Include(x => (x as SerieSeason)!.Serie)
+            // SerieEpisode: include serie and season for context
+            .Include(x => (x as SerieEpisode)!.Serie)
+            .Include(x => (x as SerieEpisode)!.Season)
             .AsQueryable();
 
         if (userId.HasValue)
         {
-            query = query.Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value));
+            query = query
+                .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
+                .Include(x => (x as SerieSeason)!.Episodes)
+                    .ThenInclude(e => e.UserMediaStates.Where(s => s.UserId == userId.Value));
         }
 
         var entity = await query
