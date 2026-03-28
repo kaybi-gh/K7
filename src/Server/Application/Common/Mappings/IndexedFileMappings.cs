@@ -17,8 +17,6 @@ public static class IndexedFileMappings
             ParentDirectory = domain.ParentDirectory,
             Hash = domain.Hash,
             Size = domain.Size,
-            IsSplitPart = domain.IsSplitPart,
-            IsComposite = domain.IsComposite,
             FileMetadata = domain.FileMetadata?.ToFileMetadataDto()
         };
     }

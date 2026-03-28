@@ -55,6 +55,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         {
             Movie movie => HandleMovieAsync(request, movie, cancellationToken),
             MusicAlbum album => HandleMusicAlbumAsync(request, album, cancellationToken),
+            Serie serie => HandleSerieAsync(request, serie, cancellationToken),
             _ => throw new NotImplementedException()
         };
 
@@ -129,6 +130,94 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         {
             album.ApplyMetadata(metadata);
             await EnrichArtistsAsync(album, metadata, request.Language, cancellationToken);
+        }
+    }
+
+    private async Task HandleSerieAsync(RefreshMediaMetadatasCommand request, Serie serie, CancellationToken cancellationToken)
+    {
+        // Load serie-specific includes
+        await _context.Entry(serie).Collection(s => s.Seasons).Query()
+            .Include(s => s.Pictures)
+            .Include(s => s.ExternalIds)
+            .Include(s => s.Episodes).ThenInclude(e => e.ExternalIds)
+            .Include(s => s.Episodes).ThenInclude(e => e.Pictures)
+            .LoadAsync(cancellationToken);
+
+        var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(request.MetadataProviderName);
+
+        var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
+            request.MetadataProviderExternalId, request.Language, cancellationToken);
+        serie.ApplyMetadata(serieMetadata);
+
+        // Person dedup
+        if (serieMetadata.PersonRoles?.Count > 0)
+        {
+            serie.PersonRoles.Clear();
+            foreach (var role in serieMetadata.PersonRoles)
+            {
+                var existingPerson = await _context.Persons
+                    .Include(p => p.ExternalIds)
+                    .FirstOrDefaultAsync(p => p.ExternalIds.Any(e =>
+                        role.Person.ExternalIds.Any(re => re.ProviderName == e.ProviderName && re.Value == e.Value)),
+                        cancellationToken);
+
+                if (existingPerson is not null)
+                {
+                    role.Person = existingPerson;
+                }
+
+                serie.PersonRoles.Add(role);
+            }
+        }
+
+        // Ratings
+        foreach (var rating in serieMetadata.Ratings)
+        {
+            var existing = serie.Ratings.OfType<MetadataProviderRating>()
+                .FirstOrDefault(r => r.MetadataProvider == rating.MetadataProvider);
+            if (existing is not null)
+            {
+                existing.Value = rating.Value;
+                existing.RatingCount = rating.RatingCount;
+            }
+            else
+            {
+                serie.Ratings.Add(rating);
+            }
+        }
+
+        // Fetch and apply season metadata
+        foreach (var season in serie.Seasons)
+        {
+            var seasonMetadata = await metadataProvider.FetchSeasonMetadataAsync(
+                request.MetadataProviderExternalId, season.SeasonNumber, request.Language, cancellationToken);
+            season.ApplyMetadata(seasonMetadata);
+        }
+
+        // Fetch and apply episode metadata
+        foreach (var season in serie.Seasons)
+        {
+            foreach (var episode in season.Episodes)
+            {
+                var episodeMetadata = await metadataProvider.FetchEpisodeMetadataAsync(
+                    request.MetadataProviderExternalId, season.SeasonNumber, episode.EpisodeNumber,
+                    request.Language, cancellationToken);
+
+                episode.ApplyMetadata(episodeMetadata);
+
+                if (!string.IsNullOrEmpty(episodeMetadata.StillImageUrl))
+                {
+                    var stillPicture = new MetadataPicture
+                    {
+                        OriginalRemoteUri = new Uri(episodeMetadata.StillImageUrl),
+                        Type = MetadataPictureType.Still
+                    };
+                    stillPicture.AddDomainEvent(new MetadataPictureCreatedEvent(stillPicture));
+
+                    episode.Pictures.Clear();
+                    episode.Pictures.Add(stillPicture);
+                }
+            }
         }
     }
 
