@@ -76,7 +76,7 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = newMedia.Id,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxRetryCount = 1
+            MaxAttempts = 1
         }, cancellationToken);
     }
 }

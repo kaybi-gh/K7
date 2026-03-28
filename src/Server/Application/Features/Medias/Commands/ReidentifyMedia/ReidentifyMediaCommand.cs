@@ -55,7 +55,7 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxRetryCount = 1
+            MaxAttempts = 1
         }, cancellationToken);
     }
 }

@@ -111,7 +111,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = movie.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
-                MaxRetryCount = 1
+                MaxAttempts = 1
             }, cancellationToken);
         }
 
@@ -180,7 +180,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     Priority = BackgroundTaskPriority.Low,
                     TargetEntityId = album.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
-                    MaxRetryCount = 3
+                    MaxAttempts = 3
                 }, cancellationToken);
             }
         }
@@ -329,7 +329,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             Priority = BackgroundTaskPriority.Lowest,
             TargetEntityId = picture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
-            MaxRetryCount = 3
+            MaxAttempts = 3
         }, cancellationToken);
     }
 }

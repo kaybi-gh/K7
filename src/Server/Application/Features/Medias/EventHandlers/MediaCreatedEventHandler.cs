@@ -22,7 +22,7 @@ public class MediaCreatedEventHandler(ISender sender, ILogger<MediaCreatedEventH
                 Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = track.Id,
                 TargetEntityTypeName = nameof(MusicTrack),
-                MaxRetryCount = 2
+                MaxAttempts = 2
             }, cancellationToken);
         }
     }

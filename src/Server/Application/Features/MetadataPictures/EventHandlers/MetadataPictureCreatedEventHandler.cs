@@ -45,7 +45,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             Priority = priority,
             TargetEntityId = notification.MetadataPicture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
-            MaxRetryCount = 5
+            MaxAttempts = 5
         }, cancellationToken);
     }
 }

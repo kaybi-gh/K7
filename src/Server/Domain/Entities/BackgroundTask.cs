@@ -12,6 +12,9 @@ public class BackgroundTask : BaseAuditableEntity
 
     public BackgroundTaskStatus Status { get; set; } = BackgroundTaskStatus.Pending;
     public BackgroundTaskPriority Priority { get; set; } = BackgroundTaskPriority.Lowest;
-    public int RetryCount { get; set; } = 0;
-    public int MaxRetryCount { get; set; } = 1;
+    public int AttemptCount { get; set; }
+    public int MaxAttempts { get; set; } = 1;
+    public DateTimeOffset? StartedAt { get; set; }
+    public DateTimeOffset? NextRetryAfter { get; set; }
+    public int TimeoutSeconds { get; set; } = 300;
 }

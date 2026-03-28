@@ -90,7 +90,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
                     Priority = BackgroundTaskPriority.Lowest,
                     TargetEntityId = entity.Id,
                     TargetEntityTypeName = nameof(MetadataPicture),
-                    MaxRetryCount = 3
+                    MaxAttempts = 3
                 }, cancellationToken);
             }
         }

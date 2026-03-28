@@ -1,5 +1,4 @@
-﻿using K7.Server.Domain.Events;
-using K7.Server.Application.Common.Interfaces;
+﻿using K7.Server.Application.Common.Interfaces;
 
 namespace K7.Server.Application.Features.BackgroundTasks.Commands.DeleteBackgroundTask;
 
@@ -21,7 +20,6 @@ public class DeleteBackgroundTaskCommandHandler : IRequestHandler<DeleteBackgrou
 
         Guard.Against.NotFound(request.Id, entity);
         _context.BackgroundTasks.Remove(entity);
-        entity.AddDomainEvent(new BackgroundTaskDeletedEvent(entity));
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
