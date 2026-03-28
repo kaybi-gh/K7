@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -19,13 +19,15 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PageTitle" xml:space="preserve"><value>Administration</value></data>
-  <data name="TabLibraries" xml:space="preserve"><value>Librairies</value></data>
-  <data name="TabUsers" xml:space="preserve"><value>Utilisateurs</value></data>
-  <data name="TabDevices" xml:space="preserve"><value>Appareils</value></data>
-  <data name="TabRestrictions" xml:space="preserve"><value>Restrictions</value></data>
-  <data name="TabAuthentication" xml:space="preserve"><value>Authentification</value></data>
-  <data name="TabGeneral" xml:space="preserve"><value>Général</value></data>
-  <data name="TabBackgroundTasks" xml:space="preserve"><value>Tâches</value></data>
+  <data name="Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="ConcurrencyGroup" xml:space="preserve"><value>Concurrency Group</value></data>
+  <data name="Attempts" xml:space="preserve"><value>Attempts</value></data>
+  <data name="Timeout" xml:space="preserve"><value>Timeout</value></data>
+  <data name="TargetType" xml:space="preserve"><value>Target Type</value></data>
+  <data name="TargetId" xml:space="preserve"><value>Target ID</value></data>
+  <data name="StartedAt" xml:space="preserve"><value>Started At</value></data>
+  <data name="NextRetryAfter" xml:space="preserve"><value>Next Retry After</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
 </root>
-

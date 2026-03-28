@@ -17,7 +17,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -465,5 +465,38 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<List<RestrictedMediaPreviewDto>>($"api/restriction-profiles/{profileId}/restricted-medias", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, CancellationToken cancellationToken = default)
+    {
+        var uri = $"api/background-tasks?pageNumber={pageNumber}&pageSize={pageSize}";
+        if (statuses is { Count: > 0 })
+            uri += $"&status={string.Join(",", statuses)}";
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<BackgroundTaskDto>>(uri, _serializerOptions, cancellationToken)
+            ?? new PaginatedListDto<BackgroundTaskDto> { Items = [], PageNumber = 1, TotalPages = 0, TotalCount = 0 };
+    }
+
+    public async Task<BackgroundTaskDto> GetBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<BackgroundTaskDto>($"api/background-tasks/{id}", _serializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Background task not found.");
+    }
+
+    public async Task DeleteBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/background-tasks/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<BackgroundTaskSettingsDto>("api/admin/background-tasks/settings", _serializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to load settings.");
+    }
+
+    public async Task UpdateSettingsAsync(UpdateBackgroundTaskSettingsRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/background-tasks/settings", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }

@@ -1,0 +1,70 @@
+@inject IStringLocalizer<BackgroundTaskDetailDialog> L
+
+<MudDialog>
+    <DialogContent>
+        <MudSimpleTable Dense="true" Bordered="true">
+            <tbody>
+                <tr>
+                    <td><strong>@L["Name"]</strong></td>
+                    <td>@Task.Name</td>
+                </tr>
+                <tr>
+                    <td><strong>@L["Status"]</strong></td>
+                    <td>
+                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(Task.Status)">@Task.Status</MudChip>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>@L["Priority"]</strong></td>
+                    <td>@Task.Priority</td>
+                </tr>
+                @if (Task.ConcurrencyGroup is not null)
+                {
+                    <tr>
+                        <td><strong>@L["ConcurrencyGroup"]</strong></td>
+                        <td><MudChip T="string" Size="Size.Small" Color="Color.Default">@Task.ConcurrencyGroup</MudChip></td>
+                    </tr>
+                }
+                <tr>
+                    <td><strong>@L["Attempts"]</strong></td>
+                    <td>@Task.AttemptCount / @Task.MaxAttempts</td>
+                </tr>
+                <tr>
+                    <td><strong>@L["Timeout"]</strong></td>
+                    <td>@Task.TimeoutSeconds s</td>
+                </tr>
+                @if (Task.TargetEntityType is not null)
+                {
+                    <tr>
+                        <td><strong>@L["TargetType"]</strong></td>
+                        <td>@Task.TargetEntityType</td>
+                    </tr>
+                }
+                @if (Task.TargetEntityId is not null)
+                {
+                    <tr>
+                        <td><strong>@L["TargetId"]</strong></td>
+                        <td><code>@Task.TargetEntityId</code></td>
+                    </tr>
+                }
+                @if (Task.StartedAt is not null)
+                {
+                    <tr>
+                        <td><strong>@L["StartedAt"]</strong></td>
+                        <td>@Task.StartedAt.Value.LocalDateTime.ToString("g")</td>
+                    </tr>
+                }
+                @if (Task.NextRetryAfter is not null)
+                {
+                    <tr>
+                        <td><strong>@L["NextRetryAfter"]</strong></td>
+                        <td>@Task.NextRetryAfter.Value.LocalDateTime.ToString("g")</td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">@L["Close"]</MudButton>
+    </DialogActions>
+</MudDialog>
