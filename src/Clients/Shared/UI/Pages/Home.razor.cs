@@ -32,6 +32,9 @@ public partial class Home : IDisposable
     private List<MediaCardViewModel> lastPlayedMedias = [];
     private Timer? _mediaAddedDebounce;
 
+    private static readonly HashSet<MediaType> _topLevelMediaTypes =
+        [MediaType.Movie, MediaType.MusicAlbum, MediaType.Serie];
+
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -56,6 +59,7 @@ public partial class Home : IDisposable
 
         await LoadCarouselAsync(new GetMediasWithPaginationQuery
         {
+            MediaTypes = _topLevelMediaTypes,
             OrderBy = [MediaOrderingOption.CreatedDesc],
             PageNumber = 1,
             PageSize = 40
@@ -63,6 +67,7 @@ public partial class Home : IDisposable
 
         await LoadCarouselAsync(new GetMediasWithPaginationQuery
         {
+            MediaTypes = _topLevelMediaTypes,
             OrderBy = [MediaOrderingOption.ReleaseDateDesc],
             PageNumber = 1,
             PageSize = 40
@@ -136,8 +141,7 @@ public partial class Home : IDisposable
     {
         var fresh = new List<MediaCardViewModel>();
         await LoadCarouselAsync(new GetMediasWithPaginationQuery
-        {
-            OrderBy = [MediaOrderingOption.CreatedDesc],
+        {            MediaTypes = _topLevelMediaTypes,            OrderBy = [MediaOrderingOption.CreatedDesc],
             PageNumber = 1,
             PageSize = 40
         }, fresh);
@@ -166,7 +170,6 @@ public partial class Home : IDisposable
     {
         MediaCardKind.Cover => $"/music/albums/{item.Id}",
         MediaCardKind.Serie => $"/series/{item.Id}",
-        MediaCardKind.Episode => $"/series/{item.ParentId}",
         _ => $"/movies/{item.Id}"
     };
 
