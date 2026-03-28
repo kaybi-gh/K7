@@ -16,7 +16,6 @@ using TMDbLib.Objects.Movies;
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider, IMetadataProviderInfo
 {
-    private const string Token = "8e7586ad850237f5d506d8789f4c3936";
     public string ProviderName => "tmdb";
     public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Movie, LibraryMediaType.Serie];
     private readonly TMDbClient _tdmbClient;
@@ -31,10 +30,9 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         ("Writing", "Screenplay")
     }.ToFrozenSet();
 
-    public TMDbMetadataProvider()
+    public TMDbMetadataProvider(TMDbClient tmdbClient)
     {
-        _tdmbClient = new(Token);
-        _tdmbClient.SetConfig(_tdmbClient.GetConfigAsync().Result);
+        _tdmbClient = tmdbClient;
     }
 
     public async Task<string?> SearchAsync(MediaIdentification movieIdentification, CancellationToken cancellationToken = default)

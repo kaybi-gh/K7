@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 using K7.Server.Application.Common.Interfaces;
+using TMDbLib.Client;
 
 namespace K7.Server.Infrastructure.MediaProcessing;
 
@@ -24,11 +25,20 @@ public static class DependencyInjection
         services.AddSingleton<IAudioAnalyzer, EssentiaAudioAnalyzer>();
         services.AddSingleton<IWaveformGenerator, FfmpegWaveformGenerator>();
         services.AddHostedService<TranscodeJobCleanupService>();
+        services.AddSingleton<TMDbClient>(sp =>
+        {
+            var client = new TMDbClient("8e7586ad850237f5d506d8789f4c3936");
+            client.SetConfig(client.GetConfigAsync().GetAwaiter().GetResult());
+            return client;
+        });
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddKeyedScoped<IMetadataProvider<ExternalMovieMetadata>>("tmdb", (sp, _) => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
+        services.AddScoped<TMDbSerieMetadataProvider>();
+        services.AddKeyedScoped<ISerieMetadataProvider>("tmdb", (sp, _) => sp.GetRequiredService<TMDbSerieMetadataProvider>());
+        services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbSerieMetadataProvider>());
         services.AddScoped<MusicBrainzMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddKeyedScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>("musicbrainz", (sp, _) => sp.GetRequiredService<MusicBrainzMetadataProvider>());
