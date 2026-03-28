@@ -41,6 +41,7 @@ public class IndexedFileExtensionsTests : FileFixture
         {
             Id = Guid.NewGuid(),
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = FileHelper.TestDirectoryPath,
             Title = "Movies"
         };
@@ -79,6 +80,7 @@ public class IndexedFileExtensionsTests : FileFixture
         {
             Id = Guid.NewGuid(),
             MediaType = LibraryMediaType.Music,
+            MetadataProviderName = "musicbrainz",
             RootPath = FileHelper.TestDirectoryPath,
             Title = "Music"
         };

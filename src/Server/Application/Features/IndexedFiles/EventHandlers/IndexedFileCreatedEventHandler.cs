@@ -2,7 +2,6 @@
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
@@ -36,7 +35,7 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
             Priority = BackgroundTaskPriority.VeryHigh,
             TargetEntityTypeName = nameof(IndexedFile),
             MaxAttempts = 5,
-            ConcurrencyGroup = ConcurrencyGroups.Ffmpeg
+            ConcurrencyGroup = "ffmpeg"
         }, cancellationToken);
 
         await _sender.Send(new CreateBackgroundTaskCommand()
@@ -50,7 +49,7 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
             TargetEntityId = notification.IndexedFile.Id,
             TargetEntityTypeName = nameof(IndexedFile),
             MaxAttempts = 5,
-            ConcurrencyGroup = ConcurrencyGroups.Ffmpeg
+            ConcurrencyGroup = "ffmpeg"
         }, cancellationToken);
 
         if (notification.FileType == FileType.Video)
@@ -65,7 +64,7 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
                 TargetEntityId = notification.IndexedFile.Id,
                 TargetEntityTypeName = nameof(IndexedFile),
                 MaxAttempts = 1,
-                ConcurrencyGroup = ConcurrencyGroups.Ffmpeg
+                ConcurrencyGroup = "ffmpeg"
             }, cancellationToken);
         }
     }

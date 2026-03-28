@@ -29,6 +29,7 @@ public class GetLibraryTests : DatabaseFixture
         {
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
+            MetadataProviderName = "tmdb",
             RootPath = "/root/path"
         });
 

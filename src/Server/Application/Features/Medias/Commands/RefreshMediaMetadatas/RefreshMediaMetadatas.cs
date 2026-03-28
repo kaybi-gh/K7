@@ -7,6 +7,7 @@ using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 
@@ -14,6 +15,7 @@ public record RefreshMediaMetadatasCommand : IRequest
 {
     public required Guid MediaId { get; init; }
     public required string MetadataProviderExternalId { get; init; }
+    public required string MetadataProviderName { get; init; }
     public required string Language { get; init; }
     public required string FallbackLanguage { get; init; }
 }
@@ -21,19 +23,16 @@ public record RefreshMediaMetadatasCommand : IRequest
 public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaMetadatasCommand>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IMetadataProvider<ExternalMovieMetadata> _movieMetadataProvider;
-    private readonly IMetadataProvider<ExternalMusicAlbumMetadata> _musicMetadataProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
-        IMetadataProvider<ExternalMovieMetadata> movieMetadataProvider,
-        IMetadataProvider<ExternalMusicAlbumMetadata> musicMetadataProvider,
+        IServiceProvider serviceProvider,
         IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders)
     {
         _context = context;
-        _movieMetadataProvider = movieMetadataProvider;
-        _musicMetadataProvider = musicMetadataProvider;
+        _serviceProvider = serviceProvider;
         _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
     }
 
@@ -65,7 +64,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
     private async Task HandleMovieAsync(RefreshMediaMetadatasCommand request, Movie movie, CancellationToken cancellationToken = default)
     {
-        var metadata = await _movieMetadataProvider.FetchMetadata(request.MetadataProviderExternalId,
+        var provider = _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMovieMetadata>>(request.MetadataProviderName);
+        var metadata = await provider.FetchMetadata(request.MetadataProviderExternalId,
                 request.Language,
                 cancellationToken);
 
@@ -121,7 +121,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
     private async Task HandleMusicAlbumAsync(RefreshMediaMetadatasCommand request, MusicAlbum album, CancellationToken cancellationToken)
     {
-        var metadata = await _musicMetadataProvider.FetchMetadata(
+        var provider = _serviceProvider.GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(request.MetadataProviderName);
+        var metadata = await provider.FetchMetadata(
             request.MetadataProviderExternalId, request.Language, cancellationToken);
 
         if (metadata != null)

@@ -14,6 +14,11 @@ public class LibraryConfiguration : IEntityTypeConfiguration<Library>
             .IsRequired();
 
         builder
+            .Property(t => t.MetadataProviderName)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder
             .HasMany(l => l.IndexedFiles)
             .WithOne()
             .HasForeignKey(i => i.LibraryId);
