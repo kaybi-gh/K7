@@ -48,11 +48,14 @@ else
                     </MudCardContent>
                     <MudCardActions>
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Default"
-                                       OnClick="@(() => OpenEditProviderDialog(library))" aria-label="@L["AriaEditProvider"]" />
+                                       OnClick="@(() => OpenEditDialog(library))" aria-label="@L["AriaEdit"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Primary"
                                        OnClick="@(() => IndexLibrary(library))" aria-label="@L["AriaIndex"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Default"
                                        OnClick="@(() => OpenUsersDialog(library))" aria-label="@L["AriaUserAccess"]" />
+                        <MudSpacer />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       OnClick="@(() => DeleteLibrary(library))" aria-label="@L["AriaDelete"]" />
                     </MudCardActions>
                 </MudCard>
             </MudItem>

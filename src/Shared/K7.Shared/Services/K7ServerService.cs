@@ -203,9 +203,15 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
-    public async Task UpdateLibraryAsync(UpdateLibraryRequest request, CancellationToken cancellationToken = default)
+    public async Task UpdateLibraryAsync(Guid libraryId, UpdateLibraryRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PutAsJsonAsync($"api/libraries/{request.Id}", request, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync($"api/libraries/{libraryId}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteLibraryAsync(Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/libraries/{libraryId}", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
