@@ -31,7 +31,8 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundTaskQueue>();
         services.AddSingleton<IBackgroundTaskQueue>(sp => sp.GetRequiredService<BackgroundTaskQueue>());
         services.AddSingleton<BackgroundTaskTypeRegistry>();
-        services.AddHostedService<BackgroundTasksProcessingService>();
+        services.AddSingleton<BackgroundTasksProcessingService>();
+        services.AddHostedService(sp => sp.GetRequiredService<BackgroundTasksProcessingService>());
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
 
