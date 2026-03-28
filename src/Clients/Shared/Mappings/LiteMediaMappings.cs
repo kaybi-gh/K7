@@ -13,6 +13,8 @@ public static class LiteMediaMappings
         {
             LiteMusicAlbumDto => MediaCardKind.Cover,
             LiteMovieDto => MediaCardKind.Poster,
+            LiteSerieDto => MediaCardKind.Serie,
+            LiteSerieEpisodeDto => MediaCardKind.Episode,
             _ => (MediaCardKind?)null
         };
 
@@ -29,6 +31,7 @@ public static class LiteMediaMappings
             PictureUrl = apiClient.GetAbsoluteUri(
                 item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+            ParentId = item is LiteSerieEpisodeDto ep ? ep.SerieId.ToString() : null,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0
         };

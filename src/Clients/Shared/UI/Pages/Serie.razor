@@ -1,0 +1,113 @@
+@page "/series/{Id}"
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.PersonRoles
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Serie> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@_serie?.Title</PageTitle>
+
+@if (_loading)
+{
+    <div class="serie-page">
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+            <MudProgressCircular Indeterminate="true" />
+        </MudStack>
+    </div>
+}
+else if (_serie is not null)
+{
+    <div class="serie-page">
+        @if (_backdropUrl is not null)
+        {
+            <div class="serie-hero-bg" style="background-image: url('@_backdropUrl')"></div>
+        }
+
+        <div class="serie-header">
+            <div class="serie-header-poster">
+                @if (_posterUrl is not null)
+                {
+                    <MudImage Src="@_posterUrl"
+                              Alt="@_serie.Title"
+                              Class="serie-poster"
+                              ObjectFit="ObjectFit.Cover" />
+                }
+                else
+                {
+                    <div class="serie-poster-placeholder">
+                        <MudIcon Icon="@Icons.Material.Filled.Tv"
+                                 Style="font-size: 64px; opacity: 0.3;" />
+                    </div>
+                }
+            </div>
+
+            <div class="serie-header-info">
+                <MudText Typo="Typo.h4" Class="serie-title">@_serie.Title</MudText>
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                    @if (_serie.ReleaseDate.HasValue)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_serie.ReleaseDate.Value.Year</MudText>
+                    }
+                    @if (!string.IsNullOrEmpty(_serie.Status))
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_serie.Status</MudText>
+                    }
+                    @if (!string.IsNullOrEmpty(_serie.Network))
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_serie.Network</MudText>
+                    }
+                    @if (!string.IsNullOrEmpty(_serie.ContentRating))
+                    {
+                        <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@_serie.ContentRating</MudChip>
+                    }
+                </MudStack>
+
+                @if (_serie.Genres?.Any() == true)
+                {
+                    <MudStack Row="true" Spacing="1" Class="mt-2" Wrap="Wrap.Wrap">
+                        @foreach (var genre in _serie.Genres)
+                        {
+                            <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@genre</MudChip>
+                        }
+                    </MudStack>
+                }
+
+                @if (!string.IsNullOrEmpty(_serie.Overview))
+                {
+                    <MudText Typo="Typo.body2" Class="mt-3" Color="Color.Secondary" Style="max-width: 700px;">@_serie.Overview</MudText>
+                }
+            </div>
+        </div>
+
+        @if ((_serie.PersonRoles?.Count ?? 0) > 0)
+        {
+            <Carousel Title="@L["CastingAndCrew"]">
+                @foreach (var cast in _serie.PersonRoles!.Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
+                {
+                    <CarouselItem @key="cast.Id">
+                        <PersonRole LitePersonRoleDto="@cast" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
+
+        @if (_seasons.Count > 0)
+        {
+            <div class="serie-seasons">
+                <MudText Typo="Typo.h6" Class="mb-3">@L["Seasons"]</MudText>
+                <div class="serie-seasons-grid">
+                    @foreach (var season in _seasons)
+                    {
+                        <SeasonCard @key="season.Id"
+                                    Season="season"
+                                    PosterUrl="@GetSeasonPosterUrl(season)"
+                                    OnClick="() => NavigateToSeason(season)" />
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

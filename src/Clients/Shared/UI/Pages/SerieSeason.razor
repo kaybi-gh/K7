@@ -1,0 +1,92 @@
+@page "/series/{SerieId}/seasons/{SeasonNumber:int}"
+@using K7.Shared.Dtos.Entities.Medias
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
+@inject NavigationManager NavigationManager
+@inject IPlayerService PlayerService
+@inject PlaybackProgressTracker PlaybackProgressTracker
+@inject IFeatureAccessService FeatureAccess
+@inject IStringLocalizer<SerieSeason> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@_pageTitle</PageTitle>
+
+@if (_loading)
+{
+    <div class="season-page">
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+            <MudProgressCircular Indeterminate="true" />
+        </MudStack>
+    </div>
+}
+else if (_season is not null)
+{
+    <div class="season-page">
+        @if (_backdropUrl is not null)
+        {
+            <div class="season-hero-bg" style="background-image: url('@_backdropUrl')"></div>
+        }
+
+        <div class="season-header">
+            <div class="season-header-poster">
+                @if (_seasonPosterUrl is not null)
+                {
+                    <MudImage Src="@_seasonPosterUrl"
+                              Alt="@_season.Title"
+                              Class="season-poster"
+                              ObjectFit="ObjectFit.Cover" />
+                }
+                else
+                {
+                    <div class="season-poster-placeholder">
+                        <MudIcon Icon="@Icons.Material.Filled.Tv"
+                                 Style="font-size: 48px; opacity: 0.3;" />
+                    </div>
+                }
+            </div>
+
+            <div class="season-header-info">
+                <MudLink Href="@($"/series/{SerieId}")" Typo="Typo.subtitle1" Color="Color.Primary" Underline="Underline.Hover">@_season.SerieTitle</MudLink>
+                <MudText Typo="Typo.h4" Class="season-title">
+                    @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
+                </MudText>
+
+                @if (!string.IsNullOrEmpty(_season.Overview))
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2" Style="max-width: 700px;">@_season.Overview</MudText>
+                }
+
+                <MudStack Row="true" Spacing="2" Class="mt-2">
+                    @if (_previousSeasonNumber is not null)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                   StartIcon="@Icons.Material.Filled.ChevronLeft"
+                                   OnClick="GoToPreviousSeason">
+                            @L["PreviousSeason"]
+                        </MudButton>
+                    }
+                    @if (_nextSeasonNumber is not null)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                   EndIcon="@Icons.Material.Filled.ChevronRight"
+                                   OnClick="GoToNextSeason">
+                            @L["NextSeason"]
+                        </MudButton>
+                    }
+                </MudStack>
+            </div>
+        </div>
+
+        <div class="season-episodes">
+            @foreach (var episode in _episodes)
+            {
+                <EpisodeListItem @key="episode.Id"
+                                 Episode="episode"
+                                 StillUrl="@GetEpisodeStillUrl(episode)"
+                                 IsExpanded="@(_expandedEpisodeId == episode.Id)"
+                                 OnToggleExpand="() => ToggleExpand(episode.Id)"
+                                 OnPlay="() => PlayEpisodeAsync(episode)" />
+            }
+        </div>
+    </div>
+}

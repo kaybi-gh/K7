@@ -1,0 +1,76 @@
+.episode-item {
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+.episode-item:hover {
+    background: var(--mud-palette-background-gray);
+}
+
+.episode-item--expanded {
+    background: var(--mud-palette-background-gray);
+}
+
+.episode-item-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 12px;
+}
+
+.episode-still-container {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.episode-still {
+    width: 160px;
+    height: 90px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.episode-still-placeholder {
+    width: 160px;
+    height: 90px;
+    border-radius: 6px;
+    background: var(--mud-palette-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.episode-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 0 0 6px 6px;
+}
+
+.episode-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.episode-expand-btn {
+    flex-shrink: 0;
+}
+
+.episode-detail {
+    padding: 0 12px 12px 188px;
+}
+
+@media (max-width: 600px) {
+    .episode-still,
+    .episode-still-placeholder {
+        width: 120px;
+        height: 68px;
+    }
+
+    .episode-detail {
+        padding: 0 12px 12px;
+    }
+}

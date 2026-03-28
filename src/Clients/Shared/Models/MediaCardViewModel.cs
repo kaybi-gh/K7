@@ -1,6 +1,6 @@
 namespace K7.Clients.Shared.Models;
 
-public enum MediaCardKind { Poster, Cover }
+public enum MediaCardKind { Poster, Cover, Serie, Episode }
 
 public record MediaCardViewModel
 {
@@ -9,6 +9,7 @@ public record MediaCardViewModel
     public string? Title { get; init; }
     public string? PictureUrl { get; init; }
     public string? AdditionalInformations { get; init; }
+    public string? ParentId { get; init; }
     public bool Watched { get; init; } = false;
     public double Progress { get; init; } = 0;
 }

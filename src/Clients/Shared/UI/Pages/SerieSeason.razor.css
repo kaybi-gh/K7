@@ -1,0 +1,71 @@
+.season-page {
+    position: relative;
+    overflow: hidden;
+}
+
+.season-hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 350px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(40px) brightness(0.3);
+    transform: scale(1.2);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.season-header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 24px;
+    padding: 24px;
+    align-items: flex-end;
+}
+
+.season-poster {
+    width: 160px;
+    height: 240px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.season-poster-placeholder {
+    width: 160px;
+    height: 240px;
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.season-title {
+    font-weight: 700;
+}
+
+.season-episodes {
+    position: relative;
+    z-index: 1;
+    padding: 0 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+@media (max-width: 600px) {
+    .season-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .season-poster,
+    .season-poster-placeholder {
+        width: 140px;
+        height: 210px;
+    }
+}
