@@ -101,6 +101,11 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
             }
             state.LastPlaybackPosition = 0;
             state.ProgressPercentage = 100;
+
+            if (media is SerieEpisode episode)
+            {
+                await EnqueueNextEpisodeAsync(userId, episode, timeNow, cancellationToken);
+            }
         }
         else
         {
@@ -133,5 +138,56 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         {
             _logger.LogWarning("Skipped SignalR notification: identityUserId is null/empty");
         }
+    }
+
+    private async Task EnqueueNextEpisodeAsync(Guid userId, SerieEpisode episode, DateTime timeNow, CancellationToken cancellationToken)
+    {
+        var nextEpisode = await _context.Medias
+            .OfType<SerieEpisode>()
+            .Where(e => e.SeasonId == episode.SeasonId && e.EpisodeNumber > episode.EpisodeNumber)
+            .OrderBy(e => e.EpisodeNumber)
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (nextEpisode == default)
+        {
+            var currentSeasonNumber = await _context.Medias
+                .OfType<SerieEpisode>()
+                .Where(e => e.Id == episode.Id)
+                .Select(e => e.Season.SeasonNumber)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            nextEpisode = await _context.Medias
+                .OfType<SerieEpisode>()
+                .Where(e => e.SerieId == episode.SerieId && e.Season.SeasonNumber > currentSeasonNumber)
+                .OrderBy(e => e.Season.SeasonNumber)
+                .ThenBy(e => e.EpisodeNumber)
+                .Select(e => e.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if (nextEpisode == default) return;
+
+        var nextState = await _context.UserMediaStates
+            .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == nextEpisode, cancellationToken);
+
+        if (nextState is null)
+        {
+            nextState = new UserMediaState
+            {
+                UserId = userId,
+                MediaId = nextEpisode,
+                PlayCount = 0,
+                IsCompleted = false,
+                LastPlaybackPosition = 0
+            };
+            _context.UserMediaStates.Add(nextState);
+        }
+        else if (nextState.IsCompleted)
+        {
+            return;
+        }
+
+        nextState.LastInteractedAt = timeNow;
     }
 }
