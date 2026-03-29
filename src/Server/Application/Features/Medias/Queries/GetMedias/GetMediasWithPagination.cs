@@ -123,7 +123,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             query = query.Where(x => x.UserMediaStates.Any(s =>
                 s.UserId == userId.Value
                 && !s.IsCompleted
-                && s.LastPlaybackPosition > 0));
+                && s.LastInteractedAt != null));
         }
 
         if (request.PersonIds?.Length > 0)

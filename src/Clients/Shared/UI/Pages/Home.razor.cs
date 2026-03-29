@@ -165,12 +165,14 @@ public partial class Home : IDisposable
     {
         MediaCardKind.Cover => $"/music/albums/{item.Id}",
         MediaCardKind.Serie => $"/series/{item.Id}",
+        MediaCardKind.Episode => $"/series/{item.Id}",
         _ => $"/movies/{item.Id}"
     };
 
     private MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
     {
         MediaCardKind.Cover => MediaCardVariant.Cover,
+        MediaCardKind.Episode => MediaCardVariant.Cover,
         _ => MediaCardVariant.Poster
     };
 

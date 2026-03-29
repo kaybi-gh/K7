@@ -14,6 +14,7 @@ public static class LiteMediaMappings
             LiteMusicAlbumDto => MediaCardKind.Cover,
             LiteMovieDto => MediaCardKind.Poster,
             LiteSerieDto => MediaCardKind.Serie,
+            LiteSerieEpisodeDto => MediaCardKind.Episode,
             _ => (MediaCardKind?)null
         };
 
@@ -21,14 +22,22 @@ public static class LiteMediaMappings
 
         var userState = item.UserState;
 
+        var pictureType = kind == MediaCardKind.Episode
+            ? MetadataPictureType.Still
+            : MetadataPictureType.Poster;
+
+        var episodeDto = item as LiteSerieEpisodeDto;
+
         return new MediaCardViewModel
         {
-            Id = item.Id.ToString(),
+            Id = episodeDto?.SerieId.ToString() ?? item.Id.ToString(),
             Kind = kind.Value,
-            Title = item.Title,
+            Title = episodeDto is not null
+                ? $"S{episodeDto.SeasonNumber:D2}E{episodeDto.EpisodeNumber:D2} — {item.Title}"
+                : item.Title,
             AdditionalInformations = item.ReleaseDate,
             PictureUrl = apiClient.GetAbsoluteUri(
-                item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+                item.Pictures?.FirstOrDefault(p => p.Type == pictureType)?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0
