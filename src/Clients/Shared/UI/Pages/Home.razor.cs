@@ -26,14 +26,11 @@ public partial class Home : IDisposable
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _isAdmin;
-    private List<MediaCardViewModel> continueWatchingMedias = [];
-    private List<MediaCardViewModel> recentlyAddedMedias = [];
-    private List<MediaCardViewModel> recentlyReleasedMedias = [];
-    private List<MediaCardViewModel> lastPlayedMedias = [];
+    private readonly List<MediaCardViewModel> continueWatchingMedias = [];
+    private readonly List<MediaCardViewModel> recentlyAddedMedias = [];
+    private readonly List<MediaCardViewModel> recentlyReleasedMedias = [];
+    private readonly List<MediaCardViewModel> lastPlayedMedias = [];
     private Timer? _mediaAddedDebounce;
-
-    private static readonly HashSet<MediaType> _topLevelMediaTypes =
-        [MediaType.Movie, MediaType.MusicAlbum, MediaType.Serie];
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,7 +56,6 @@ public partial class Home : IDisposable
 
         await LoadCarouselAsync(new GetMediasWithPaginationQuery
         {
-            MediaTypes = _topLevelMediaTypes,
             OrderBy = [MediaOrderingOption.CreatedDesc],
             PageNumber = 1,
             PageSize = 40
@@ -67,7 +63,6 @@ public partial class Home : IDisposable
 
         await LoadCarouselAsync(new GetMediasWithPaginationQuery
         {
-            MediaTypes = _topLevelMediaTypes,
             OrderBy = [MediaOrderingOption.ReleaseDateDesc],
             PageNumber = 1,
             PageSize = 40
@@ -139,13 +134,13 @@ public partial class Home : IDisposable
 
     private async Task RefreshRecentlyAddedAsync()
     {
-        var fresh = new List<MediaCardViewModel>();
+        recentlyAddedMedias.Clear();
         await LoadCarouselAsync(new GetMediasWithPaginationQuery
-        {            MediaTypes = _topLevelMediaTypes,            OrderBy = [MediaOrderingOption.CreatedDesc],
+        {
+            OrderBy = [MediaOrderingOption.CreatedDesc],
             PageNumber = 1,
             PageSize = 40
-        }, fresh);
-        recentlyAddedMedias = fresh;
+        }, recentlyAddedMedias);
     }
 
     private async Task LoadCarouselAsync(GetMediasWithPaginationQuery query, List<MediaCardViewModel> target)
@@ -169,7 +164,6 @@ public partial class Home : IDisposable
     private string GetHref(MediaCardViewModel item) => item.Kind switch
     {
         MediaCardKind.Cover => $"/music/albums/{item.Id}",
-        MediaCardKind.Serie => $"/series/{item.Id}",
         _ => $"/movies/{item.Id}"
     };
 

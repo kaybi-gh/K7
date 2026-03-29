@@ -47,7 +47,7 @@
             </MudGrid>
         }
 
-        @* Step 2: Name, path and provider *@
+        @* Step 2: Name and path *@
         @if (_activeStep == 1)
         {
             <MudStack Spacing="4" Class="mt-2">
@@ -65,21 +65,6 @@
                         @L["Browse"]
                     </MudButton>
                 </MudStack>
-
-                @if (_isLoadingProviders)
-                {
-                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-                }
-                else
-                {
-                    <MudSelect T="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="Variant.Outlined"
-                               Required="true" RequiredError="@L["ProviderRequired"]">
-                        @foreach (var provider in _availableProviders)
-                        {
-                            <MudSelectItem T="string" Value="@provider.ProviderName">@provider.ProviderName</MudSelectItem>
-                        }
-                    </MudSelect>
-                }
 
                 <MudCheckBox @bind-Value="_triggerIndexing" Label="@L["AutoIndex"]" Color="Color.Primary" />
             </MudStack>
@@ -104,10 +89,6 @@
                     <tr>
                         <td><strong>@S["Path"]</strong></td>
                         <td><code>@_rootPath</code></td>
-                    </tr>
-                    <tr>
-                        <td><strong>@L["ProviderLabel"]</strong></td>
-                        <td>@_selectedProvider</td>
                     </tr>
                     <tr>
                         <td><strong>@L["AutoIndexSummary"]</strong></td>

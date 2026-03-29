@@ -1,5 +1,4 @@
 using K7.Server.Domain.Enums;
-using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
@@ -20,9 +19,6 @@ public partial class CreateLibraryDialog
     private bool _mediaTypeSelected;
     private string _title = "";
     private string _rootPath = "";
-    private string? _selectedProvider;
-    private List<MetadataProviderInfoDto> _availableProviders = [];
-    private bool _isLoadingProviders;
     private bool _triggerIndexing = true;
     private bool _isSubmitting;
 
@@ -57,19 +53,14 @@ public partial class CreateLibraryDialog
     private bool CanAdvance() => _activeStep switch
     {
         0 => _mediaTypeSelected,
-        1 => !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_rootPath) && !string.IsNullOrWhiteSpace(_selectedProvider),
+        1 => !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_rootPath),
         _ => true
     };
 
-    private async Task NextStep()
+    private void NextStep()
     {
-        if (!CanAdvance() || _activeStep >= 2)
-            return;
-
-        if (_activeStep == 0)
-            await LoadProvidersAsync();
-
-        _activeStep++;
+        if (CanAdvance() && _activeStep < 2)
+            _activeStep++;
     }
 
     private void PreviousStep()
@@ -101,25 +92,6 @@ public partial class CreateLibraryDialog
         }
     }
 
-    private async Task LoadProvidersAsync()
-    {
-        _isLoadingProviders = true;
-        try
-        {
-            _availableProviders = await K7ServerService.GetMetadataProvidersAsync(_selectedMediaType);
-            _selectedProvider = _availableProviders.Count == 1 ? _availableProviders[0].ProviderName : null;
-        }
-        catch
-        {
-            _availableProviders = [];
-            _selectedProvider = null;
-        }
-        finally
-        {
-            _isLoadingProviders = false;
-        }
-    }
-
     private async Task SubmitAsync()
     {
         _isSubmitting = true;
@@ -132,8 +104,8 @@ public partial class CreateLibraryDialog
                 Title = _title.Trim(),
                 MediaType = _selectedMediaType,
                 RootPath = _rootPath.Trim(),
-                MetadataProviderName = _selectedProvider!,
-                TriggerFileIndexingOnCreation = _triggerIndexing
+                TriggerFileIndexingOnCreation = _triggerIndexing,
+                MetadataProviderName = "tmdb"
             };
 
             await K7ServerService.CreateLibraryAsync(request);

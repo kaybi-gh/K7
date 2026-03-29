@@ -1,7 +1,5 @@
 using K7.Server.Domain.Enums;
-using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
-using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 
@@ -94,68 +92,5 @@ public partial class AdminLibrariesPanel
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<AdminLibraryUsersDialog>(string.Format(L["AccessTitle"], library.Title), parameters, options);
-    }
-
-    private async Task OpenEditDialog(LibraryDto library)
-    {
-        List<MetadataProviderInfoDto> providers;
-        try
-        {
-            providers = await K7ServerService.GetMetadataProvidersAsync(library.MediaType);
-        }
-        catch
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], "Failed to load providers"), Severity.Error);
-            return;
-        }
-
-        var parameters = new DialogParameters<Dialogs.EditLibraryDialog>
-        {
-            { x => x.Title, library.Title },
-            { x => x.AvailableProviders, providers },
-            { x => x.SelectedProvider, library.MetadataProviderName }
-        };
-
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<Dialogs.EditLibraryDialog>(
-            string.Format(L["EditTitle"], library.Title), parameters, options);
-        var result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: UpdateLibraryRequest request })
-        {
-            try
-            {
-                await K7ServerService.UpdateLibraryAsync(library.Id, request);
-                Snackbar.Add(L["LibraryUpdated"], Severity.Success);
-                await LoadLibraries();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
-            }
-        }
-    }
-
-    private async Task DeleteLibrary(LibraryDto library)
-    {
-        var confirmed = await DialogService.ShowMessageBoxAsync(
-            L["DeleteDialogTitle"],
-            string.Format(L["DeleteDialogMessage"], library.Title),
-            yesText: L["DeleteConfirm"],
-            cancelText: S["Cancel"]);
-
-        if (confirmed is not true)
-            return;
-
-        try
-        {
-            await K7ServerService.DeleteLibraryAsync(library.Id);
-            Snackbar.Add(string.Format(L["DeleteSuccess"], library.Title), Severity.Success);
-            await LoadLibraries();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
-        }
     }
 }

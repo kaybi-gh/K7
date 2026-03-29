@@ -1,6 +1,6 @@
 namespace K7.Clients.Shared.Models;
 
-public enum MediaCardKind { Poster, Cover, Serie }
+public enum MediaCardKind { Poster, Cover }
 
 public record MediaCardViewModel
 {
