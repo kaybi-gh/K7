@@ -7,4 +7,5 @@ public sealed record LiteSerieEpisodeDto : LiteMediaDto
     public double? Duration { get; init; }
     public Guid SerieId { get; init; }
     public Guid? StillImageId { get; init; }
+    public IReadOnlyList<MetadataPictureDto>? SeriePictures { get; init; }
 }

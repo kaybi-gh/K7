@@ -236,6 +236,7 @@ public static class MediaMappings
                     .Where(p => p.Type == MetadataPictureType.Still)
                     .Select(p => (Guid?)p.Id)
                     .FirstOrDefault(),
+                SeriePictures = episode.Serie?.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
