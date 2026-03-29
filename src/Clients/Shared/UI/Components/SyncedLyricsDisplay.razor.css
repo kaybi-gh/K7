@@ -24,8 +24,14 @@
     line-height: 1.5;
 }
 
-.lyrics-line:hover {
+.lyrics-line:hover,
+.lyrics-line:focus-visible {
     opacity: 0.6;
+}
+
+.lyrics-line:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
 }
 
 .lyrics-line-active {

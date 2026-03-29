@@ -51,7 +51,8 @@
     text-decoration: none;
 }
 
-.album-artist-link:hover {
+.album-artist-link:hover,
+.album-artist-link:focus-visible {
     text-decoration: underline;
 }
 

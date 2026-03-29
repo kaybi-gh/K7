@@ -6,6 +6,7 @@
     text-decoration: none;
 }
 
-.track-link:hover {
+.track-link:hover,
+.track-link:focus-visible {
     text-decoration: underline;
 }

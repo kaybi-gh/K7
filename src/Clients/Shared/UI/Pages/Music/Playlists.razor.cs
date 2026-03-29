@@ -4,6 +4,7 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -70,6 +71,14 @@ public partial class Playlists
             ? $"/smart-playlists/{playlist.Id}"
             : $"/playlists/{playlist.Id}";
         NavigationManager.NavigateTo(url);
+    }
+
+    private void OnPlaylistKeyDown(KeyboardEventArgs e, LitePlaylistDto playlist)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            GoToPlaylist(playlist);
+        }
     }
 
     private string? GetCoverUrl(LitePlaylistDto playlist)

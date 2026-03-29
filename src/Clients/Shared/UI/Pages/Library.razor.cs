@@ -2,6 +2,7 @@ using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -44,6 +45,14 @@ public partial class Library
     private void NavigateToItem(MediaCardViewModel item)
     {
         Navigation.NavigateTo(GetItemHref(item));
+    }
+
+    private void OnRowKeyDown(KeyboardEventArgs e, MediaCardViewModel item)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            NavigateToItem(item);
+        }
     }
 
     private static string GetItemHref(MediaCardViewModel item) => item.Kind switch

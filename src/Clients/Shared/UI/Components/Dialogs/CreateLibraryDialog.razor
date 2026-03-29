@@ -18,7 +18,7 @@
             <MudText Typo="Typo.h6" Class="mb-4">@L["SelectContentType"]</MudText>
             <MudGrid Spacing="4" Justify="Justify.Center">
                 <MudItem xs="12" sm="4">
-                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Movie)">
+                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Movie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Movie)">
                         <MudCardContent Class="d-flex flex-column align-center pa-6">
                             <MudIcon Icon="@Icons.Material.Filled.Theaters" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
                             <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeMovies"]</MudText>
@@ -27,7 +27,7 @@
                     </MudCard>
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Serie)">
+                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Serie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Serie)">
                         <MudCardContent Class="d-flex flex-column align-center pa-6">
                             <MudIcon Icon="@Icons.Material.Filled.Tv" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
                             <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeSeries"]</MudText>
@@ -36,7 +36,7 @@
                     </MudCard>
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" @onclick="() => SelectMediaType(LibraryMediaType.Music)">
+                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Music)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Music)">
                         <MudCardContent Class="d-flex flex-column align-center pa-6">
                             <MudIcon Icon="@Icons.Material.Filled.MusicNote" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
                             <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeMusic"]</MudText>

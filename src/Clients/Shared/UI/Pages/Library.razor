@@ -25,7 +25,7 @@
         <th>@L["Status"]</th>
     </TableHeaderContent>
     <TableRowTemplate Context="item">
-        <tr @onclick="() => NavigateToItem(item)">
+        <tr tabindex="0" role="button" @onclick="() => NavigateToItem(item)" @onkeydown="(e) => OnRowKeyDown(e, item)">
             <td>
                 <div class="library-table-title">
                     @if (!string.IsNullOrEmpty(item.PictureUrl))

@@ -1,5 +1,6 @@
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -15,4 +16,12 @@ public partial class SeasonCard
 
     [Parameter]
     public EventCallback OnClick { get; set; }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            await OnClick.InvokeAsync();
+        }
+    }
 }

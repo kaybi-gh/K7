@@ -41,7 +41,7 @@
         </MudStack>
     </EmptyContent>
     <GridTemplate Context="playlist">
-        <MudCard Outlined="true" Class="playlist-card" @onclick="() => GoToPlaylist(playlist)" Style="cursor: pointer;">
+        <MudCard Outlined="true" Class="playlist-card" tabindex="0" @onclick="() => GoToPlaylist(playlist)" @onkeydown="(e) => OnPlaylistKeyDown(e, playlist)" Style="cursor: pointer;">
             <MudCardContent>
                 <MudStack AlignItems="AlignItems.Center" Spacing="2">
                     @if (playlist.CoverPicture is not null)

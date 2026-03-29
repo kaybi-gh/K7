@@ -1,5 +1,6 @@
 using K7.Shared;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -71,5 +72,13 @@ public partial class SyncedLyricsDisplay : ComponentBase
     {
         if (index >= 0 && index < _lines.Count && SeekRequested.HasDelegate)
             await SeekRequested.InvokeAsync(_lines[index].Timestamp.TotalSeconds);
+    }
+
+    private async Task OnLineKeyDown(KeyboardEventArgs e, int index)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            await OnLineClick(index);
+        }
     }
 }

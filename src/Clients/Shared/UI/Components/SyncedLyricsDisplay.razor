@@ -10,8 +10,10 @@
             var isPast = i < _activeIndex;
 
             <div class="lyrics-line @(isActive ? "lyrics-line-active" : "") @(isPast ? "lyrics-line-past" : "")"
+                 tabindex="0" role="button"
                  @ref="_lineRefs[idx]"
-                 @onclick="() => OnLineClick(idx)">
+                 @onclick="() => OnLineClick(idx)"
+                 @onkeydown="(e) => OnLineKeyDown(e, idx)">
                 @if (string.IsNullOrEmpty(_lines[idx].Text))
                 {
                     <span class="lyrics-interlude">♪</span>

@@ -16,7 +16,7 @@
         @foreach (var radio in _radioTypes)
         {
             <MudItem xs="12" sm="6" md="4" lg="3">
-                <MudCard Class="radio-card" Elevation="0" Outlined="true" @onclick="() => PlayRadioAsync(radio)">
+                <MudCard Class="radio-card" Elevation="0" Outlined="true" tabindex="0" @onclick="() => PlayRadioAsync(radio)" @onkeydown="(e) => OnRadioKeyDown(e, radio)">
                     <MudCardContent Class="radio-card-content">
                         <MudIcon Icon="@radio.Icon" Style="font-size: 48px;" Color="@radio.Color" />
                         <MudText Typo="Typo.h6" Class="mt-2">@radio.Title</MudText>

@@ -139,6 +139,29 @@ public partial class MiniMusicPlayer : IDisposable
     private void OnVisibilityChanged() => InvokeAsync(StateHasChanged);
     private void OnSidebarChanged() => InvokeAsync(StateHasChanged);
 
+    private void OnProgressKeyDown(KeyboardEventArgs e)
+    {
+        if (Audio.Duration <= 0) return;
+
+        switch (e.Code)
+        {
+            case "ArrowRight":
+                Audio.Seek(Math.Min(Audio.CurrentTime + 5, Audio.Duration));
+                break;
+            case "ArrowLeft":
+                Audio.Seek(Math.Max(Audio.CurrentTime - 5, 0));
+                break;
+        }
+    }
+
+    private void OnTrackInfoKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            Audio.ToggleFullScreen();
+        }
+    }
+
     private static string FormatTime(double seconds)
     {
         if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0)
