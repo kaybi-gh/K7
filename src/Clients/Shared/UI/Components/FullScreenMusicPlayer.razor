@@ -64,8 +64,10 @@
                     @if (_waveformMaskStyle is not null)
                     {
                         <div class="waveform-container" style="@_waveformMaskStyle"
+                             tabindex="0" role="slider"
                              @ref="_seekBarRef"
                              @onclick="OnSeekClick"
+                             @onkeydown="OnSeekKeyDown"
                              @onpointerdown="OnSeekPointerDown"
                              @onpointermove="OnSeekPointerMove"
                              @onpointerup="OnSeekPointerUp">
@@ -76,7 +78,9 @@
                     else
                     {
                         <div class="seek-bar" @ref="_seekBarRef"
+                             tabindex="0" role="slider"
                              @onclick="OnSeekClick"
+                             @onkeydown="OnSeekKeyDown"
                              @onpointerdown="OnSeekPointerDown"
                              @onpointermove="OnSeekPointerMove"
                              @onpointerup="OnSeekPointerUp">
@@ -153,7 +157,9 @@
                             var isCurrent = i == Audio.CurrentIndex;
 
                             <div class="queue-item @(isCurrent ? "queue-item-current" : "")"
-                                 @onclick="() => PlayFromQueue(index)">
+                                 tabindex="0" role="button"
+                                 @onclick="() => PlayFromQueue(index)"
+                                 @onkeydown="(e) => OnQueueItemKeyDown(e, index)">
                                 <div class="queue-item-index">
                                     @if (isCurrent)
                                     {

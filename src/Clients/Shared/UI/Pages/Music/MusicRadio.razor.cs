@@ -4,6 +4,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 
 using K7.Shared.Dtos.Entities.Metadatas.Files;
@@ -61,6 +62,14 @@ public partial class MusicRadio
         }
 
         _loading = false;
+    }
+
+    private async Task OnRadioKeyDown(KeyboardEventArgs e, RadioTypeInfo radio)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            await PlayRadioAsync(radio);
+        }
     }
 
     private async Task OnTrackClick(TableRowClickEventArgs<TrackViewModel> args)

@@ -250,6 +250,29 @@ public partial class FullScreenMusicPlayer : IDisposable
 
     private void OnSeekPointerUp(PointerEventArgs e) => _isDragging = false;
 
+    private void OnSeekKeyDown(KeyboardEventArgs e)
+    {
+        if (Audio.Duration <= 0) return;
+
+        switch (e.Code)
+        {
+            case "ArrowRight":
+                Audio.Seek(Math.Min(Audio.CurrentTime + 5, Audio.Duration));
+                break;
+            case "ArrowLeft":
+                Audio.Seek(Math.Max(Audio.CurrentTime - 5, 0));
+                break;
+        }
+    }
+
+    private async Task OnQueueItemKeyDown(KeyboardEventArgs e, int index)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            await PlayFromQueue(index);
+        }
+    }
+
     private async Task SeekToPosition(MouseEventArgs e)
     {
         var bounds = await _seekBarRef.MudGetBoundingClientRectAsync();

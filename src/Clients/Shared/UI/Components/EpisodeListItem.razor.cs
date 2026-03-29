@@ -1,5 +1,6 @@
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -37,6 +38,14 @@ public partial class EpisodeListItem
     private async Task HandlePlay()
     {
         await OnPlay.InvokeAsync();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            await OnToggleExpand.InvokeAsync();
+        }
     }
 
     private static string FormatDuration(double totalSeconds)

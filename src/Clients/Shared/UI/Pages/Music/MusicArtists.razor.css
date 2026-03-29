@@ -14,7 +14,8 @@
     cursor: pointer;
 }
 
-.artist-card:hover {
+.artist-card:hover,
+.artist-card:focus-within {
     background: var(--mud-palette-action-default-hover);
 }
 

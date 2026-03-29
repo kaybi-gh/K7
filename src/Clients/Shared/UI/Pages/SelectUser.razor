@@ -25,7 +25,7 @@
             {
                 <MudItem @key="user.IdentityUserId">
                     <MudStack AlignItems="AlignItems.Center" Spacing="2"
-                              tabindex="0"
+                              tabindex="0" role="button"
                               @onclick="() => SelectUserAsync(user)"
                               @onkeydown="(e) => OnUserKeyDown(e, user)"
                               Class="cursor-pointer pa-4 rounded-lg select-user-card"
@@ -47,7 +47,7 @@
 
             <MudItem>
                 <MudStack AlignItems="AlignItems.Center" Spacing="2"
-                          tabindex="0"
+                          tabindex="0" role="button"
                           @onclick="AddUserAsync"
                           @onkeydown="OnAddUserKeyDown"
                           Class="cursor-pointer pa-4 rounded-lg select-user-card"

@@ -2,7 +2,9 @@
 {
     <div class="music-mini-player @(SidebarService.IsOpen ? "sidebar-open" : "sidebar-collapsed")">
         <div class="mini-player-progress" @ref="_progressBarRef"
+             tabindex="0" role="slider"
              @onclick="OnProgressClick"
+             @onkeydown="OnProgressKeyDown"
              @onpointerdown="OnProgressPointerDown"
              @onpointermove="OnProgressPointerMove"
              @onpointerup="OnProgressPointerUp">
@@ -11,7 +13,7 @@
         </div>
 
         <div class="mini-player-content">
-            <div class="mini-player-track-info" @onclick="Audio.ToggleFullScreen" style="cursor: pointer;">
+            <div class="mini-player-track-info" tabindex="0" role="button" @onclick="Audio.ToggleFullScreen" @onkeydown="OnTrackInfoKeyDown" style="cursor: pointer;">
                 @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
                 {
                     <MudImage Src="@Audio.CurrentTrack.CoverUrl"

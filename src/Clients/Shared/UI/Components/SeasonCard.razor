@@ -1,6 +1,6 @@
 @using K7.Shared.Dtos.Entities.Medias
 
-<div class="season-card" @onclick="OnClick">
+<div class="season-card" tabindex="0" role="button" @onclick="OnClick" @onkeydown="OnKeyDown">
     @if (!string.IsNullOrEmpty(PosterUrl))
     {
         <MudImage Src="@PosterUrl"

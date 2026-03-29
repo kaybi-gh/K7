@@ -70,8 +70,14 @@
     text-align: left;
 }
 
-.browse-view-table-el tbody tr:hover {
+.browse-view-table-el tbody tr:hover,
+.browse-view-table-el tbody tr:focus-visible {
     background: var(--mud-palette-action-default-hover);
+}
+
+.browse-view-table-el tbody tr:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: -2px;
 }
 
 .browse-view-list {

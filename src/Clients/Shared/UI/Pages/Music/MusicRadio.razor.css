@@ -3,9 +3,15 @@
     transition: all 0.2s ease;
 }
 
-::deep .radio-card:hover {
+::deep .radio-card:hover,
+::deep .radio-card:focus-visible {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+::deep .radio-card:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
 }
 
 ::deep .radio-card-content {

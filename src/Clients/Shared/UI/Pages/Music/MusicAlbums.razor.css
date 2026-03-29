@@ -13,7 +13,8 @@
     cursor: pointer;
 }
 
-.album-card:hover {
+.album-card:hover,
+.album-card:focus-within {
     background: var(--mud-palette-action-default-hover);
 }
 

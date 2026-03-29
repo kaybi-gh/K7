@@ -1,6 +1,7 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
@@ -26,6 +27,14 @@ public partial class CreateLibraryDialog
     {
         _selectedMediaType = mediaType;
         _mediaTypeSelected = true;
+    }
+
+    private void OnMediaTypeKeyDown(KeyboardEventArgs e, LibraryMediaType mediaType)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            SelectMediaType(mediaType);
+        }
     }
 
     private string GetMediaTypeCardClass(LibraryMediaType type)

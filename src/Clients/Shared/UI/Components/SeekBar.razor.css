@@ -20,7 +20,8 @@
     z-index: 0;
 }
 
-.seekbar-container:hover .seekbar-track {
+.seekbar-container:hover .seekbar-track,
+.seekbar-container:focus-within .seekbar-track {
     height: 8px;
 }
 
@@ -101,7 +102,8 @@
     overflow: visible;
 }
 
-    .chapter-segment-container:hover .chapter-segment {
+    .chapter-segment-container:hover .chapter-segment,
+    .chapter-segment-container:focus-within .chapter-segment {
         height: 8px;
     }
 

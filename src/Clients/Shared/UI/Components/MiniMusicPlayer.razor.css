@@ -28,8 +28,14 @@
     touch-action: none;
 }
 
-.mini-player-progress:hover {
+.mini-player-progress:hover,
+.mini-player-progress:focus-visible {
     height: 6px;
+}
+
+.mini-player-progress:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
 }
 
 .progress-buffered,

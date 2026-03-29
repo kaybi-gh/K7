@@ -5,8 +5,14 @@
     cursor: pointer;
 }
 
-.episode-item:hover {
+.episode-item:hover,
+.episode-item:focus-visible {
     background: var(--mud-palette-background-gray);
+}
+
+.episode-item:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: -2px;
 }
 
 .episode-item--expanded {
