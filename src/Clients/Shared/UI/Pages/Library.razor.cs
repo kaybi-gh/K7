@@ -1,6 +1,4 @@
-using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
-using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 
@@ -23,21 +21,9 @@ public partial class Library
 
         var libraryId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
 
-        MediaType[]? mediaTypeFilter = null;
-        if (libraryId.HasValue)
-        {
-            var libraries = await libraryService.GetLibrariesAsync();
-            var lib = libraries.FirstOrDefault(l => l.Id == libraryId.Value);
-            if (lib?.MediaType == LibraryMediaType.Serie)
-            {
-                mediaTypeFilter = [MediaType.Serie];
-            }
-        }
-
         var liteMediasPage = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery()
         {
             LibraryIds = libraryId.HasValue ? [libraryId.Value] : null,
-            MediaTypes = mediaTypeFilter is not null ? [..mediaTypeFilter] : null,
             PageNumber = 1,
             PageSize = 1000
         });
@@ -46,8 +32,12 @@ public partial class Library
         {
             foreach (var item in liteMediasPage.Items!)
             {
-                if (item.ToCardViewModel(apiClient) is { } vm)
-                    MediaCards.Add(vm);
+                MediaCards.Add(new MediaCardViewModel()
+                {
+                    Id = item.Id.ToString(),
+                    Title = item.Title,
+                    PictureUrl = apiClient.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                });
             }
         }
 
@@ -56,13 +46,6 @@ public partial class Library
 
     private void NavigateToItem(MediaCardViewModel item)
     {
-        Navigation.NavigateTo(GetItemHref(item));
+        Navigation.NavigateTo($"/movies/{item.Id}");
     }
-
-    private static string GetItemHref(MediaCardViewModel item) => item.Kind switch
-    {
-        MediaCardKind.Serie => $"/series/{item.Id}",
-        MediaCardKind.Cover => $"/music/albums/{item.Id}",
-        _ => $"/movies/{item.Id}"
-    };
 }

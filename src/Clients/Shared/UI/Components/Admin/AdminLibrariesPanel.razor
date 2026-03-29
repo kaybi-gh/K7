@@ -35,10 +35,7 @@ else
                             <MudIcon Icon="@GetMediaTypeIcon(library.MediaType)" Size="Size.Large" Color="Color.Primary" />
                             <MudStack Spacing="0">
                                 <MudText Typo="Typo.h6">@library.Title</MudText>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@GetMediaTypeLabel(library.MediaType)</MudChip>
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Info">@library.MetadataProviderName</MudChip>
-                                </MudStack>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default">@GetMediaTypeLabel(library.MediaType)</MudChip>
                             </MudStack>
                         </MudStack>
                         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
@@ -47,15 +44,10 @@ else
                         </MudText>
                     </MudCardContent>
                     <MudCardActions>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Default"
-                                       OnClick="@(() => OpenEditDialog(library))" aria-label="@L["AriaEdit"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" Color="Color.Primary"
                                        OnClick="@(() => IndexLibrary(library))" aria-label="@L["AriaIndex"]" />
                         <MudIconButton Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Default"
                                        OnClick="@(() => OpenUsersDialog(library))" aria-label="@L["AriaUserAccess"]" />
-                        <MudSpacer />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                       OnClick="@(() => DeleteLibrary(library))" aria-label="@L["AriaDelete"]" />
                     </MudCardActions>
                 </MudCard>
             </MudItem>

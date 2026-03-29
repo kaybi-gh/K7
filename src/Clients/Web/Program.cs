@@ -34,7 +34,6 @@ builder.Services.AddTransient<IDeviceApiService>(sp => sp.GetRequiredService<K7S
 builder.Services.AddTransient<IUserAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IRatingService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IServerInfoService>(sp => sp.GetRequiredService<K7ServerService>());
-builder.Services.AddTransient<IBackgroundTaskService>(sp => sp.GetRequiredService<K7ServerService>());
 
 builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();

@@ -13,7 +13,6 @@ public static class LiteMediaMappings
         {
             LiteMusicAlbumDto => MediaCardKind.Cover,
             LiteMovieDto => MediaCardKind.Poster,
-            LiteSerieDto => MediaCardKind.Serie,
             _ => (MediaCardKind?)null
         };
 
