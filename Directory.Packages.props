@@ -54,12 +54,13 @@
     <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.20" />
     <PackageVersion Include="Microsoft.Maui.Essentials" Version="10.0.20" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageVersion Include="MockQueryable.NSubstitute" Version="10.0.5" />
     <PackageVersion Include="Microsoft.TestPlatform.TestHost" Version="17.8.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageVersion Include="Microsoft.Web.LibraryManager.Build" Version="3.0.71" />
     <PackageVersion Include="MudBlazor" Version="9.0.0-preview.1" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-    <PackageVersion Include="NSubstitute" Version="5.1.0" />
+    <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.16" />
     <PackageVersion Include="nunit" Version="4.0.1" />
     <PackageVersion Include="NUnit.Analyzers" Version="3.10.0" />
