@@ -22,22 +22,20 @@ public static class LiteMediaMappings
 
         var userState = item.UserState;
 
-        var pictureType = kind == MediaCardKind.Episode
-            ? MetadataPictureType.Still
-            : MetadataPictureType.Poster;
-
         var episodeDto = item as LiteSerieEpisodeDto;
+
+        var pictureSource = episodeDto?.SeriePictures ?? item.Pictures;
 
         return new MediaCardViewModel
         {
             Id = episodeDto?.SerieId.ToString() ?? item.Id.ToString(),
             Kind = kind.Value,
             Title = episodeDto is not null
-                ? $"S{episodeDto.SeasonNumber:D2}E{episodeDto.EpisodeNumber:D2} — {item.Title}"
+                ? $"S{episodeDto.SeasonNumber:D2}E{episodeDto.EpisodeNumber:D2} \u2014 {item.Title}"
                 : item.Title,
             AdditionalInformations = item.ReleaseDate,
             PictureUrl = apiClient.GetAbsoluteUri(
-                item.Pictures?.FirstOrDefault(p => p.Type == pictureType)?
+                pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0

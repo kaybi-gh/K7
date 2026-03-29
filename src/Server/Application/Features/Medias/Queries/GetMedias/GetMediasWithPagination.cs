@@ -51,11 +51,14 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 .Include(x => ((MusicTrack)x).AudioAnalysis);
         }
 
-        if (request.MediaTypes?.Contains(MediaType.SerieEpisode) == true)
+        if (request.MediaTypes?.Contains(MediaType.SerieEpisode) == true
+            || request.ContinueWatching == true)
         {
             query = query
                 .Include(x => ((SerieEpisode)x).Season)
-                .Include(x => ((SerieEpisode)x).Serie);
+                .Include(x => ((SerieEpisode)x).Serie)
+                    .ThenInclude(s => s.Pictures)
+                        .ThenInclude(p => p.Variants);
         }
 
         if (userId.HasValue)
