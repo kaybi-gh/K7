@@ -93,8 +93,11 @@ else
                     }
                 </MudStack>
                 <MudStack Row="true" AlignItems="AlignItems.Center">
-                    <MudText Style="font-size: 20px;" Typo="Typo.overline">@_movie.ReleaseDate!.Value.Year</MudText>
-                    |
+                    @if (_movie.ReleaseDate.HasValue)
+                    {
+                        <MudText Style="font-size: 20px;" Typo="Typo.overline">@_movie.ReleaseDate.Value.Year</MudText>
+                        <MudText>|</MudText>
+                    }
                     <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@string.Format(S["DurationHoursMinutes"], (int)((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.TotalHours, ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).Duration.Minutes)</MudText>
                 </MudStack>
                 @*<MudText Style="font-style: italic; font-size: 20px; font-family: initial;">
