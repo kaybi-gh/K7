@@ -27,14 +27,6 @@
     height: 90px;
 }
 
-.episode-still,
-::deep .episode-still img {
-    width: 160px;
-    height: 90px;
-    border-radius: 6px;
-    object-fit: cover;
-}
-
 .episode-still-placeholder {
     width: 160px;
     height: 90px;
