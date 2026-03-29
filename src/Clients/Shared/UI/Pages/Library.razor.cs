@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
@@ -32,12 +33,8 @@ public partial class Library
         {
             foreach (var item in liteMediasPage.Items!)
             {
-                MediaCards.Add(new MediaCardViewModel()
-                {
-                    Id = item.Id.ToString(),
-                    Title = item.Title,
-                    PictureUrl = apiClient.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-                });
+                if (item.ToCardViewModel(apiClient) is { } vm)
+                    MediaCards.Add(vm);
             }
         }
 
@@ -46,6 +43,13 @@ public partial class Library
 
     private void NavigateToItem(MediaCardViewModel item)
     {
-        Navigation.NavigateTo($"/movies/{item.Id}");
+        Navigation.NavigateTo(GetItemHref(item));
     }
+
+    private static string GetItemHref(MediaCardViewModel item) => item.Kind switch
+    {
+        MediaCardKind.Cover => $"/music/albums/{item.Id}",
+        MediaCardKind.Serie => $"/series/{item.Id}",
+        _ => $"/movies/{item.Id}"
+    };
 }

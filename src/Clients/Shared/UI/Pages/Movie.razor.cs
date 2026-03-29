@@ -39,8 +39,8 @@ public partial class Movie
                 Title = _movie.Title,
                 PictureUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
             };
-            _selectedVideoFileTrack = ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).VideoTracks.First(x => x.IsDefault);
-            _selectedAudioFileTrack = ((VideoFileMetadataDto)_movie.IndexedFiles!.First().FileMetadata!).AudioTracks.First(x => x.IsDefault);
+            _selectedVideoFileTrack = (_movie.IndexedFiles?.FirstOrDefault()?.FileMetadata as VideoFileMetadataDto)?.VideoTracks.FirstOrDefault(x => x.IsDefault);
+            _selectedAudioFileTrack = (_movie.IndexedFiles?.FirstOrDefault()?.FileMetadata as VideoFileMetadataDto)?.AudioTracks.FirstOrDefault(x => x.IsDefault);
         }
         base.OnInitialized();
         isLoading = false;
