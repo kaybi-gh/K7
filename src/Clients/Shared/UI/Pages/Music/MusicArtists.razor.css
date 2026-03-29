@@ -1,6 +1,12 @@
 .artist-card-link {
     text-decoration: none;
     color: inherit;
+    border-radius: 8px;
+}
+
+.artist-card-link:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
 }
 
 .artist-card {
@@ -15,7 +21,7 @@
 }
 
 .artist-card:hover,
-.artist-card:focus-within {
+.artist-card-link:focus-visible .artist-card {
     background: var(--mud-palette-action-default-hover);
 }
 

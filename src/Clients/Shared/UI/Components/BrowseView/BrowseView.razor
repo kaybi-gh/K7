@@ -73,7 +73,7 @@
         @switch (_currentMode)
         {
             case BrowseViewMode.Grid when GridTemplate is not null:
-                <div class="browse-view-grid"
+                <div class="browse-view-grid" data-nav-grid="true"
                      style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;"
                      @ref="_gridRef">
                     <Virtualize Items="_rows" Context="row" ItemSize="_estimatedRowHeight" OverscanCount="2">

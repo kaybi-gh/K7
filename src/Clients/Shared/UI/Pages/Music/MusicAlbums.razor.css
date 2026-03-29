@@ -1,6 +1,12 @@
 .album-card-link {
     text-decoration: none;
     color: inherit;
+    border-radius: 8px;
+}
+
+.album-card-link:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
 }
 
 .album-card {
@@ -14,7 +20,7 @@
 }
 
 .album-card:hover,
-.album-card:focus-within {
+.album-card-link:focus-visible .album-card {
     background: var(--mud-palette-action-default-hover);
 }
 
