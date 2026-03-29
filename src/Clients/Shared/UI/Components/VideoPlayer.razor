@@ -14,7 +14,6 @@
     {
         <div class="video-container" @ref="_videoContainer">
             <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" />
-            <NextEpisodeOverlay />
             @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
             {
             <video id="video-player" class="video-js" @ref="_player">
@@ -29,6 +28,7 @@
                 </p>
             </video>
             }
+            <NextEpisodeOverlay />
         </div>
     }
 }

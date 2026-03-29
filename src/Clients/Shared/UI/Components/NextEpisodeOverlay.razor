@@ -4,45 +4,45 @@
 @if (_visible && _nextEpisode is not null)
 {
     <div class="next-episode-overlay">
-        <div class="next-episode-card">
-            @if (_stillUrl is not null)
-            {
-                <MudImage Src="@_stillUrl"
-                          Alt="@_nextEpisode.Title"
-                          Class="next-episode-still"
-                          ObjectFit="ObjectFit.Cover" />
-            }
-            else
-            {
-                <div class="next-episode-still-placeholder">
-                    <MudIcon Icon="@Icons.Material.Filled.SkipNext" Style="font-size: 32px; opacity: 0.5;" />
-                </div>
-            }
-            <div class="next-episode-info">
-                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["NextEpisode"]</MudText>
-                <MudText Typo="Typo.subtitle2">
-                    S@(_nextEpisode.SeasonNumber.ToString("D2"))E@(_nextEpisode.EpisodeNumber.ToString("D2"))
+        <div class="next-episode-content">
+            <div class="next-episode-center">
+                @if (_stillUrl is not null)
+                {
+                    <MudImage Src="@_stillUrl"
+                              Alt="@_nextEpisode.Title"
+                              Class="next-episode-still"
+                              ObjectFit="ObjectFit.Cover" />
+                }
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="next-episode-label">
+                    @L["NextEpisode"]
                 </MudText>
-                <MudText Typo="Typo.body2">@(_nextEpisode.Title ?? "")</MudText>
-            </div>
-            <div class="next-episode-actions">
+                <MudText Typo="Typo.h5" Class="next-episode-title">
+                    S@(_nextEpisode.SeasonNumber.ToString("D2"))E@(_nextEpisode.EpisodeNumber.ToString("D2"))
+                    @if (!string.IsNullOrEmpty(_nextEpisode.Title))
+                    {
+                        <span> &mdash; @_nextEpisode.Title</span>
+                    }
+                </MudText>
+
                 @if (_countdownSeconds > 0)
                 {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">
+                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">
                         @string.Format(L["AutoPlayIn"], _countdownSeconds)
                     </MudText>
                 }
-                <MudStack Row="true" Spacing="2">
+
+                <MudStack Row="true" Spacing="3" Class="mt-4">
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.PlayArrow"
-                               Size="Size.Small"
+                               Size="Size.Large"
                                OnClick="PlayNextAsync">
                         @L["PlayNow"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
-                               Size="Size.Small"
-                               OnClick="Dismiss">
+                               Size="Size.Large"
+                               OnClick="Dismiss"
+                               Style="color: white; border-color: rgba(255,255,255,0.3);">
                         @L["Dismiss"]
                     </MudButton>
                 </MudStack>

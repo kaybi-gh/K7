@@ -34,6 +34,8 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private async void OnPlaybackStateChanged(PlaybackState state)
     {
+        if (_disposed) return;
+
         if (state == PlaybackState.Ended)
         {
             await HandlePlaybackEndedAsync();
@@ -66,7 +68,7 @@ public partial class NextEpisodeOverlay : IDisposable
 
         _stillUrl = ApiClient.GetAbsoluteUri(
             _nextEpisode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)?
-                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
         _visible = true;
 
@@ -81,6 +83,8 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private async void OnCountdownTick(object? state)
     {
+        if (_disposed) return;
+
         _countdownSeconds--;
 
         if (_countdownSeconds <= 0)
@@ -98,13 +102,14 @@ public partial class NextEpisodeOverlay : IDisposable
     {
         if (_nextEpisode is null) return;
 
-        Reset();
-
+        var nextEpisodeId = _nextEpisode.Id;
         var serieId = PlaybackProgressTracker.CurrentSerieId;
+
+        Reset();
 
         PlaybackProgressTracker.StopTracking();
 
-        var episodeMedia = await MediaService.GetMediaAsync(_nextEpisode.Id);
+        var episodeMedia = await MediaService.GetMediaAsync(nextEpisodeId);
         if (episodeMedia is not SerieEpisodeDto episodeDto) return;
 
         var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();
@@ -113,7 +118,7 @@ public partial class NextEpisodeOverlay : IDisposable
         var videoMetadata = indexedFile.FileMetadata as VideoFileMetadataDto;
         if (videoMetadata is null) return;
 
-        PlaybackProgressTracker.StartTracking(_nextEpisode.Id,
+        PlaybackProgressTracker.StartTracking(nextEpisodeId,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
             serieId);
 
@@ -128,10 +133,11 @@ public partial class NextEpisodeOverlay : IDisposable
         StateHasChanged();
     }
 
-    private void Dismiss()
+    private async Task Dismiss()
     {
         Reset();
-        StateHasChanged();
+        PlayerService.Stop();
+        await PlayerService.HideAsync();
     }
 
     private void Reset()
