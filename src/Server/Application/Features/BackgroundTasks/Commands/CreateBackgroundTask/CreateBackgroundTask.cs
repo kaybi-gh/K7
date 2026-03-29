@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -29,10 +30,25 @@ public class CreateBackgroundTaskCommandHandler : IRequestHandler<CreateBackgrou
     public async Task<Guid> Handle(CreateBackgroundTaskCommand request, CancellationToken cancellationToken)
     {
         var requestType = request.Request.GetType();
+        var taskName = requestType.Name;
+
+        var existingTaskId = await _context.BackgroundTasks
+            .Where(t => t.Name == taskName
+                && t.TargetEntityId == request.TargetEntityId
+                && (t.Status == BackgroundTaskStatus.Pending
+                    || t.Status == BackgroundTaskStatus.InProgress
+                    || t.Status == BackgroundTaskStatus.WaitingForRetry))
+            .Select(t => (Guid?)t.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (existingTaskId is not null)
+        {
+            return existingTaskId.Value;
+        }
 
         var entity = new BackgroundTask
         {
-            Name = requestType.Name,
+            Name = taskName,
             RequestType = requestType.FullName!,
             RequestData = JsonSerializer.Serialize(request.Request, requestType),
             TargetEntityType = request.TargetEntityTypeName,
