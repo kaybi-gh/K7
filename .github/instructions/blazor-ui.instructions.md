@@ -74,3 +74,10 @@ This future-proofs against a potential framework swap.
 - Use **CSS variables** for theming values.
 - No inline styles (`style="..."`) — use CSS classes.
 - If custom CSS is needed outside scoped files, place it in the relevant project's `wwwroot/` folder.
+
+## Localization and Translations
+
+- **Mandatory Translations**: Every new label, text, or user-facing string in a component or page MUST be localized.
+- Do not hardcode any text strings in the .razor or .cs files.
+- Use the IStringLocalizer service (or equivalent localization mechanism used in K7) to retrieve translated strings from .resx resources.
+- When creating a new component or page, ensure its associated resource files (e.g., en, default) are updated with the new required keys.
