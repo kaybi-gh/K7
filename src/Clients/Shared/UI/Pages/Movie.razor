@@ -102,8 +102,7 @@ else
                         <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@string.Format(S["DurationHoursMinutes"], (int)vMetaDuration.Duration.TotalHours, vMetaDuration.Duration.Minutes)</MudText>
                     }
                 </MudStack>
-                <MudStack Class="pa-10">
-                    <MudText Typo="Typo.h6">@L["Overview"]</MudText>
+                <MudStack>
                     <MudText Typo="Typo.body2">@_movie.Overview</MudText>
                 </MudStack>
                 @*<MudText Style="font-style: italic; font-size: 20px; font-family: initial;">
