@@ -105,9 +105,10 @@ public partial class SerieSeason
 
         await PlayerService.PlayIndexedFileAsync(
             indexedFile.Id,
-            videoMetadata.AudioTracks,
+            videoMetadata.AudioTracks ?? [],
             videoMetadata.SubtitleTracks,
-            videoMetadata.AudioTracks.FirstOrDefault(t => t.IsDefault)?.Index,
+            videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             videoMetadata.VideoResolution,
             videoMetadata.Thumbnails?.Uri?.ToString());
 
