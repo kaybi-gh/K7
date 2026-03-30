@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
@@ -8,6 +9,9 @@ public interface ILibraryService
 {
     Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default);
     Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default);
+    Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default);
+    Task DeleteLibraryAsync(Guid id, CancellationToken cancellationToken = default);
     Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default);
     Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default);
+    Task<List<MetadataProviderInfoDto>> GetMetadataProvidersAsync(LibraryMediaType? mediaType = null, CancellationToken cancellationToken = default);
 }

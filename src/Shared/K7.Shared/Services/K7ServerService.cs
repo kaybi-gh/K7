@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Entities;
@@ -16,7 +17,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -215,6 +216,27 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/index-files", null, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/libraries/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteLibraryAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/libraries/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<MetadataProviderInfoDto>> GetMetadataProvidersAsync(LibraryMediaType? mediaType = null, CancellationToken cancellationToken = default)
+    {
+        var uri = mediaType.HasValue
+            ? $"api/metadata-providers?mediaType={mediaType.Value}"
+            : "api/metadata-providers";
+        var providers = await HttpClient.GetFromJsonAsync<List<MetadataProviderInfoDto>>(uri, _serializerOptions, cancellationToken);
+        return providers ?? [];
     }
 
     public async Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default)
@@ -452,5 +474,42 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<List<RestrictedMediaPreviewDto>>($"api/restriction-profiles/{profileId}/restricted-medias", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, CancellationToken cancellationToken = default)
+    {
+        var uri = $"api/background-tasks?pageNumber={pageNumber}&pageSize={pageSize}";
+        if (statuses is { Count: > 0 })
+        {
+            foreach (var status in statuses)
+            {
+                uri += $"&status={status}";
+            }
+        }
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<BackgroundTaskDto>>(uri, _serializerOptions, cancellationToken) ?? new PaginatedListDto<BackgroundTaskDto>();
+    }
+
+    public async Task<BackgroundTaskDto> GetBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<BackgroundTaskDto>($"api/background-tasks/{id}", _serializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Task not found");
+    }
+
+    public async Task DeleteBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/background-tasks/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<BackgroundTaskSettingsDto>("api/admin/background-tasks/settings", _serializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Settings not found");
+    }
+
+    public async Task UpdateSettingsAsync(UpdateBackgroundTaskSettingsRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/background-tasks/settings", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }
