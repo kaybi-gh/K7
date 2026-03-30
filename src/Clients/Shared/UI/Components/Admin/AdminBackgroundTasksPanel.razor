@@ -86,6 +86,7 @@
                 <HeaderContent>
                     <MudTh>@L["ColName"]</MudTh>
                     <MudTh>@L["ColStatus"]</MudTh>
+                     <MudTh>@L["ColDate"]</MudTh>
                     <MudTh>@L["ColPriority"]</MudTh>
                     <MudTh>@L["ColGroup"]</MudTh>
                     <MudTh>@L["ColAttempts"]</MudTh>
@@ -101,6 +102,10 @@
                     </MudTd>
                     <MudTd DataLabel="@L["ColStatus"]">
                         <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)">@GetStatusLabel(context.Status)</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@L["ColDate"]">
+                        <MudText Typo="Typo.body2">@(context.LastModified.ToLocalTime().ToString("g"))</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Created"]: @(context.Created.ToLocalTime().ToString("g"))</MudText>
                     </MudTd>
                     <MudTd DataLabel="@L["ColPriority"]">@context.Priority</MudTd>
                     <MudTd DataLabel="@L["ColGroup"]">

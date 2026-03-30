@@ -12,6 +12,8 @@ public sealed record BackgroundTaskDto
     public BackgroundTaskPriority Priority { get; init; }
     public int AttemptCount { get; init; }
     public int MaxAttempts { get; init; }
+    public DateTimeOffset Created { get; init; }
+    public DateTimeOffset LastModified { get; init; }
     public DateTimeOffset? StartedAt { get; init; }
     public DateTimeOffset? NextRetryAfter { get; init; }
     public int TimeoutSeconds { get; init; }
