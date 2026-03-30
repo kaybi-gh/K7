@@ -72,7 +72,11 @@ public partial class Movie
         }
 
         var indexedFileId = _movie.IndexedFiles.First().Id;
-        var videoMetadata = (VideoFileMetadataDto)_movie.IndexedFiles.First().FileMetadata!;
+        if (_movie.IndexedFiles.First().FileMetadata is not VideoFileMetadataDto videoMetadata)
+        {
+            return;
+        }
+        
         var audioTracks = videoMetadata.AudioTracks;
         var subtitleTracks = videoMetadata.SubtitleTracks;
         var audioTrackIndex = _selectedAudioFileTrack?.Index;
