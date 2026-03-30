@@ -2,6 +2,7 @@
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 public record CreateFileMetadatasCommand : IRequest
@@ -61,6 +62,7 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
 
         await _context.FileMetadatas.AddAsync(fileMetadata, cancellationToken);
         indexedFile.FileMetadata = fileMetadata;
+        indexedFile.AddDomainEvent(new FileMetadataCreatedEvent(indexedFile, request.FileType));
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

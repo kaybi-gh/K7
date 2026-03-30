@@ -1,7 +1,5 @@
 ﻿using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
-using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
-using K7.Server.Application.Features.IndexedFiles.Commands.GenerateThumbnails;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
@@ -37,35 +35,5 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
             MaxAttempts = 5,
             ConcurrencyGroup = "ffmpeg"
         }, cancellationToken);
-
-        await _sender.Send(new CreateBackgroundTaskCommand()
-        {
-            Request = new ComputeHlsSegmentsCommand()
-            {
-                Id = notification.IndexedFile.Id,
-                SegmentsDuration = TimeSpan.FromSeconds(2)
-            },
-            Priority = BackgroundTaskPriority.High,
-            TargetEntityId = notification.IndexedFile.Id,
-            TargetEntityTypeName = nameof(IndexedFile),
-            MaxAttempts = 5,
-            ConcurrencyGroup = "ffmpeg"
-        }, cancellationToken);
-
-        if (notification.FileType == FileType.Video)
-        {
-            await _sender.Send(new CreateBackgroundTaskCommand()
-            {
-                Request = new GenerateThumbnailsCommand()
-                {
-                    Id = notification.IndexedFile.Id
-                },
-                Priority = BackgroundTaskPriority.Lowest,
-                TargetEntityId = notification.IndexedFile.Id,
-                TargetEntityTypeName = nameof(IndexedFile),
-                MaxAttempts = 1,
-                ConcurrencyGroup = "ffmpeg"
-            }, cancellationToken);
-        }
     }
 }
