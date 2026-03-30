@@ -18,6 +18,10 @@
     aspect-ratio: 1 / 1;
 }
 
+.media-card--backdrop .media-card-container {
+    aspect-ratio: 16 / 9;
+}
+
 .media-card-link {
     display: block;
     width: 100%;
@@ -51,6 +55,15 @@
     background-color: var(--mud-palette-overlay-dark);
     display: flex;
     border-radius: 0 0 0 5px;
+}
+
+.media-card-group-count {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    display: flex;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .media-card-progress-bar {
@@ -132,5 +145,19 @@
     .media-card--cover .media-card-title,
     .media-card--cover .media-card-subtitle {
         max-width: 30vw;
+    }
+
+    .media-card--backdrop .media-card-container {
+        width: 60vw;
+        aspect-ratio: 16 / 9;
+    }
+
+    .media-card--backdrop .media-card-footer {
+        max-width: 60vw;
+    }
+
+    .media-card--backdrop .media-card-title,
+    .media-card--backdrop .media-card-subtitle {
+        max-width: 60vw;
     }
 }

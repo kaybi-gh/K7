@@ -41,6 +41,13 @@ else
                     </div>
                 }
 
+                @if (Model.GroupCount > 1)
+                {
+                    <div class="media-card-group-count">
+                        <MudChip Size="Size.Small" T="int" Color="Color.Dark" Variant="MudBlazor.Variant.Filled">@Model.GroupCount</MudChip>
+                    </div>
+                }
+
                 @if (ProgressEnabled && !ProgressBarIsHidden())
                 {
                     <div class="media-card-progress-bar">

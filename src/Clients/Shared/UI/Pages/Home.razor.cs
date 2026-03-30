@@ -58,15 +58,15 @@ public partial class Home : IDisposable
         {
             OrderBy = [MediaOrderingOption.CreatedDesc],
             PageNumber = 1,
-            PageSize = 40
-        }, recentlyAddedMedias);
+            PageSize = 100
+        }, recentlyAddedMedias, useParentTitle: true);
 
         await LoadCarouselAsync(new GetMediasWithPaginationQuery
         {
             OrderBy = [MediaOrderingOption.ReleaseDateDesc],
             PageNumber = 1,
-            PageSize = 40
-        }, recentlyReleasedMedias);
+            PageSize = 100
+        }, recentlyReleasedMedias, useParentTitle: true);
 
         if (_canTrackProgress)
         {
@@ -139,11 +139,11 @@ public partial class Home : IDisposable
         {
             OrderBy = [MediaOrderingOption.CreatedDesc],
             PageNumber = 1,
-            PageSize = 40
-        }, recentlyAddedMedias);
+            PageSize = 100
+        }, recentlyAddedMedias, useParentTitle: true);
     }
 
-    private async Task LoadCarouselAsync(GetMediasWithPaginationQuery query, List<MediaCardViewModel> target)
+    private async Task LoadCarouselAsync(GetMediasWithPaginationQuery query, List<MediaCardViewModel> target, bool useParentTitle = false)
     {
         try
         {
@@ -151,10 +151,23 @@ public partial class Home : IDisposable
 
             if (mediasPage?.Items is not null)
             {
+                var seenMap = new Dictionary<string, MediaCardViewModel>();
                 foreach (var item in mediasPage.Items)
                 {
-                    if (item.ToCardViewModel(apiClient) is { } vm)
-                        target.Add(vm);
+                    if (item.ToCardViewModel(apiClient, useParentTitle) is { } vm)
+                    {
+                        var groupingId = useParentTitle ? (vm.ParentId ?? vm.Id) : vm.Id;
+                        if (seenMap.TryGetValue(groupingId, out var existingCard))
+                        {
+                            existingCard.GroupCount++;
+                            existingCard.Watched &= vm.Watched;
+                        }
+                        else
+                        {
+                            seenMap.Add(groupingId, vm);
+                            target.Add(vm);
+                        }
+                    }
                 }
             }
         }
@@ -163,16 +176,16 @@ public partial class Home : IDisposable
 
     private string GetHref(MediaCardViewModel item) => item.Kind switch
     {
-        MediaCardKind.Cover => $"/music/albums/{item.Id}",
+        MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
         MediaCardKind.Serie => $"/series/{item.Id}",
-        MediaCardKind.Episode => $"/series/{item.Id}",
+        MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}",
         _ => $"/movies/{item.Id}"
     };
 
     private MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
     {
         MediaCardKind.Cover => MediaCardVariant.Cover,
-        MediaCardKind.Episode => MediaCardVariant.Cover,
+        MediaCardKind.Episode => MediaCardVariant.Poster,
         _ => MediaCardVariant.Poster
     };
 
