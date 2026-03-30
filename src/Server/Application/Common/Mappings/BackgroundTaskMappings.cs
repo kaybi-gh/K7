@@ -17,6 +17,8 @@ public static class BackgroundTaskMappings
             Priority = domain.Priority,
             AttemptCount = domain.AttemptCount,
             MaxAttempts = domain.MaxAttempts,
+            Created = domain.Created,
+            LastModified = domain.LastModified,
             StartedAt = domain.StartedAt,
             NextRetryAfter = domain.NextRetryAfter,
             TimeoutSeconds = domain.TimeoutSeconds,

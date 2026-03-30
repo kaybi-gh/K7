@@ -41,6 +41,8 @@
   <data name="ColPriority" xml:space="preserve"><value>Priorité</value></data>
   <data name="ColGroup" xml:space="preserve"><value>Groupe</value></data>
   <data name="ColAttempts" xml:space="preserve"><value>Tentatives</value></data>
+  <data name="ColDate" xml:space="preserve"><value>Date</value></data>
+  <data name="Created" xml:space="preserve"><value>Créé le</value></data>
   <data name="AriaDetail" xml:space="preserve"><value>Détails</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Supprimer</value></data>
   <data name="DeleteTitle" xml:space="preserve"><value>Supprimer la tâche</value></data>

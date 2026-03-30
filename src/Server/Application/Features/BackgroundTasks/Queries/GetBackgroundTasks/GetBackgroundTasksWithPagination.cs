@@ -30,7 +30,7 @@ public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetB
         var query = _context.BackgroundTasks.AsQueryable();
 
         query = ApplyFilters(request, query);
-        var orderedQuery = query.OrderByDescending(x => x.Priority).ThenBy(x => x.Created); // TODO - Add custom sorting?
+        var orderedQuery = query.OrderByDescending(x => x.LastModified);
         return await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 
