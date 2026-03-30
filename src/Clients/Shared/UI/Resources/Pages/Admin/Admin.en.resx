@@ -26,5 +26,6 @@
   <data name="TabRestrictions" xml:space="preserve"><value>Restrictions</value></data>
   <data name="TabAuthentication" xml:space="preserve"><value>Authentication</value></data>
   <data name="TabGeneral" xml:space="preserve"><value>General</value></data>
+  <data name="TabBackgroundTasks" xml:space="preserve"><value>Background Tasks</value></data>
 </root>
 
