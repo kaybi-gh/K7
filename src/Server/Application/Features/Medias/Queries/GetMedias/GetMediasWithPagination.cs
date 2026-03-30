@@ -39,7 +39,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .AsNoTracking()
             .AsQueryable();
 
-        if (request.MediaTypes?.Contains(MediaType.MusicTrack) == true)
+        if (request.MediaTypes?.Contains(MediaType.MusicTrack) == true
+            || request.MediaTypes == null)
         {
             query = query
                 .Include(x => ((MusicTrack)x).Album)
@@ -52,10 +53,13 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         }
 
         if (request.MediaTypes?.Contains(MediaType.SerieEpisode) == true
-            || request.ContinueWatching == true)
+            || request.ContinueWatching == true
+            || request.MediaTypes == null)
         {
             query = query
                 .Include(x => ((SerieEpisode)x).Season)
+                    .ThenInclude(s => s.Pictures)
+                        .ThenInclude(p => p.Variants)
                 .Include(x => ((SerieEpisode)x).Serie)
                     .ThenInclude(s => s.Pictures)
                         .ThenInclude(p => p.Variants);

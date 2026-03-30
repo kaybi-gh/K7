@@ -4317,6 +4317,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "serieTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "stillImageId": {
             "type": [
               "null",
@@ -4325,6 +4331,15 @@
             "format": "uuid"
           },
           "seriePictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "seasonPictures": {
             "type": [
               "null",
               "array"
@@ -4844,6 +4859,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "serieTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "stillImageId": {
             "type": [
               "null",
@@ -4852,6 +4873,15 @@
             "format": "uuid"
           },
           "seriePictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "seasonPictures": {
             "type": [
               "null",
               "array"

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public enum MediaCardVariant { Poster, Cover }
+public enum MediaCardVariant { Poster, Cover, Backdrop }
 
 public partial class MediaCard
 {
@@ -19,7 +19,12 @@ public partial class MediaCard
     [Parameter] public EventCallback OnExcludeForSelf { get; set; }
     [Parameter] public EventCallback OnExcludeForOthers { get; set; }
 
-    private string VariantClass => Variant == MediaCardVariant.Cover ? "media-card--cover" : "media-card--poster";
+    private string VariantClass => Variant switch
+    {
+        MediaCardVariant.Cover => "media-card--cover",
+        MediaCardVariant.Backdrop => "media-card--backdrop",
+        _ => "media-card--poster"
+    };
 
     private bool ProgressBarIsHidden() => Model.Progress == 0 || Model.Progress >= 100;
 }

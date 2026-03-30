@@ -7,3 +7,17 @@
     gap: 16px;
     padding-inline: 16px;
 }
+
+@media (min-width: 601px) {
+    ::deep .carousel-item > .media-card.media-card--poster {
+        width: 200px !important;
+    }
+
+    ::deep .carousel-item > .media-card.media-card--cover {
+        width: 200px !important;
+    }
+
+    ::deep .carousel-item > .media-card.media-card--backdrop {
+        width: 320px !important;
+    }
+}
