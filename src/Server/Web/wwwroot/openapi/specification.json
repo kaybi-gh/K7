@@ -4324,6 +4324,15 @@
             ],
             "format": "uuid"
           },
+          "seriePictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -4841,6 +4850,15 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "seriePictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
           },
           "id": {
             "type": "string",
