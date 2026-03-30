@@ -12,7 +12,7 @@ var SpatialNavigation = (function () {
 
     var _initialized = false;
 
-    var FOCUSABLE = 'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]):not([data-carousel-prev]):not([data-carousel-next]), [tabindex="0"]';
+    var FOCUSABLE = 'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]):not([data-carousel-prev]):not([data-carousel-next]), input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [tabindex="0"]';
 
     function getRows() {
         return Array.from(document.querySelectorAll('[data-nav-row], [data-carousel], [data-nav-grid]'));
@@ -180,17 +180,142 @@ var SpatialNavigation = (function () {
         }
     }
 
+    function handleDialogNavigation(e, dialog, key) {
+        var active = document.activeElement;
+        
+        // Ensure we only navigate within the dialog
+        var focusables = Array.from(dialog.querySelectorAll(FOCUSABLE)).filter(function(el) { return el.offsetParent !== null; });
+        if (focusables.length === 0) return;
+
+        if (!active || !dialog.contains(active)) {
+            // Focus the first item if focus was lost or not yet in dialog
+            focusAndScroll(focusables[0]);
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        var refRect = getRect(active);
+        var refCenterX = refRect.left + refRect.width / 2;
+        var refCenterY = refRect.top + refRect.height / 2;
+        
+        var best = null;
+        var bestDist = Infinity;
+        
+        for (var i = 0; i < focusables.length; i++) {
+            if (focusables[i] === active) continue;
+            var r = getRect(focusables[i]);
+            if (r.width === 0 && r.height === 0) continue;
+            
+            var cx = r.left + r.width / 2;
+            var cy = r.top + r.height / 2;
+            
+            if (key === 'ArrowDown' && cy <= refCenterY + 2) continue;
+            if (key === 'ArrowUp' && cy >= refCenterY - 2) continue;
+            if (key === 'ArrowRight' && cx <= refCenterX + 2) continue;
+            if (key === 'ArrowLeft' && cx >= refCenterX - 2) continue;
+            
+            var dx = Math.abs(cx - refCenterX);
+            var dy = Math.abs(cy - refCenterY);
+            
+            // Prioritize correct axis
+            var dist;
+            if (key === 'ArrowUp' || key === 'ArrowDown') {
+                dist = dx * 10 + dy;
+            } else {
+                dist = dy * 10 + dx;
+            }
+            
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = focusables[i];
+            }
+        }
+        
+        if (best) {
+            focusAndScroll(best);
+        }
+    }
+
     function handleArrowKey(e) {
         var key = e.key;
+        var active = document.activeElement;
+        var tag = (active && active.tagName || '').toLowerCase();
+
+        // Pass on Blur to remove editing state
+        if (!window.__snBlurAdded) {
+            window.__snBlurAdded = true;
+            document.addEventListener('blur', function(ev) {
+                if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-sn-editing')) {
+                    ev.target.removeAttribute('data-sn-editing');
+                }
+            }, true);
+        }
+
+        // Handle Edit mode toggling for inputs
+        if (key === 'Enter' || key === 'Escape') {
+            var type = active ? active.getAttribute('type') || 'text' : '';
+            var isTextLike = (tag === 'textarea') || (tag === 'input' && ['text', 'password', 'search', 'email', 'number', 'tel', 'url'].indexOf(type.toLowerCase()) !== -1);
+            
+            if (isTextLike && !active.hasAttribute('readonly') && !active.disabled) {
+                if (key === 'Enter') {
+                    if (active.hasAttribute('data-sn-editing')) {
+                        active.removeAttribute('data-sn-editing');
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                    } else {
+                        active.setAttribute('data-sn-editing', 'true');
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                    }
+                    return;
+                } else if (key === 'Escape') {
+                    if (active.hasAttribute('data-sn-editing')) {
+                        active.removeAttribute('data-sn-editing');
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        return;
+                    }
+                }
+            }
+        }
+
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) === -1) {
             return;
         }
 
-        var tag = (document.activeElement && document.activeElement.tagName || '').toLowerCase();
-        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        // If a dropdown or popover is open, let MudBlazor handle navigation inside it
+        if (document.querySelector('.mud-popover-open')) {
+            return;
+        }
 
-        // Don't navigate behind open dialogs
-        if (document.querySelector('.mud-overlay-dialog')) return;
+        // Check if we are currently editing an input. If so, let native behavior execute.
+        if (tag === 'input' || tag === 'textarea') {
+            var type = active ? active.getAttribute('type') || 'text' : '';
+            var isTextLike = (tag === 'textarea') || (tag === 'input' && ['text', 'password', 'search', 'email', 'number', 'tel', 'url'].indexOf(type.toLowerCase()) !== -1);
+            
+            // Only strictly text inputs can have this Edit Mode concept
+            if (isTextLike && active.hasAttribute('data-sn-editing')) {
+                return; // Let native cursor movement happen
+            }
+            
+            // We just let the rest of spatial-navigation run if not in edit mode
+            e.preventDefault(); 
+        }
+
+        // If a dialog is open, constrain navigation inside it
+        var openDialogs = document.querySelectorAll('.mud-dialog');
+        if (openDialogs.length > 0) {
+            var activeDialog = openDialogs[openDialogs.length - 1]; // top overlay
+            handleDialogNavigation(e, activeDialog, key);
+            return;
+        }
+
+        // Don't navigate behind other non-dialog overlays (if any)
+        if (document.querySelector('.mud-overlay-dialog') && openDialogs.length === 0) return;
 
         var active = document.activeElement;
         if (!active || active === document.body) {
@@ -552,7 +677,7 @@ var SpatialNavigation = (function () {
     function init() {
         if (_initialized) return;
         _initialized = true;
-        document.addEventListener('keydown', handleArrowKey);
+        document.addEventListener('keydown', handleArrowKey, true);
         document.addEventListener('keydown', handleBackNavigation);
     }
 
