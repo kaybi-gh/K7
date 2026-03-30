@@ -85,22 +85,33 @@ else
                 {
                     <MudText Typo="Typo.h1">@_movie.Title?.ToUpper()</MudText>
                 }
-                <MudStack Row="true">
-                    @foreach (var genre in _movie.Genres ?? [])
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
                     {
-                        <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@genre</MudChip>
+                        <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Star" Label="true" Color="Color.Error">@externalRating.ToString("N1")</MudChip>
                     }
-                </MudStack>
-                <MudStack Row="true" AlignItems="AlignItems.Center">
-                    @if (_movie.ReleaseDate.HasValue)
-                    {
-                        <MudText Style="font-size: 20px;" Typo="Typo.overline">@_movie.ReleaseDate.Value.Year</MudText>
-                        <MudText>|</MudText>
-                    }
-                    @if (_movie.IndexedFiles != null && _movie.IndexedFiles.Any() && _movie.IndexedFiles.First().FileMetadata is VideoFileMetadataDto vMetaDuration)
-                    {
-                        <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@string.Format(S["DurationHoursMinutes"], (int)vMetaDuration.Duration.TotalHours, vMetaDuration.Duration.Minutes)</MudText>
-                    }
+                    <MudText Typo="Typo.caption">|</MudText>
+                    <MudStack Row="true" Spacing="0">
+                        @foreach (var genre in _movie.Genres ?? [])
+                        {
+                            <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@genre</MudChip>
+                        }
+                    </MudStack>
+                    <MudText Typo="Typo.caption" >|</MudText>
+                    <MudStack Row="true" Spacing="1">
+                        @if (_movie.ReleaseDate.HasValue)
+                        {
+                            <MudText Typo="Typo.caption">@_movie.ReleaseDate.Value.Year</MudText>
+                        }
+                        @if (_movie.ReleaseDate.HasValue && _movie.IndexedFiles != null && _movie.IndexedFiles.Any() && _movie.IndexedFiles.First().FileMetadata is VideoFileMetadataDto)
+                        {
+                            <MudText Typo="Typo.caption">•</MudText>
+                        }
+                        @if (_movie.IndexedFiles != null && _movie.IndexedFiles.Any() && _movie.IndexedFiles.First().FileMetadata is VideoFileMetadataDto vMetaDuration)
+                        {
+                            <MudText Typo="Typo.caption">@string.Format(S["DurationHoursMinutes"], (int)vMetaDuration.Duration.TotalHours, vMetaDuration.Duration.Minutes)</MudText>
+                        }
+                    </MudStack>
                 </MudStack>
                 <MudStack Class="pb-5">
                     <MudText Typo="Typo.body1">@_movie.Overview</MudText>
