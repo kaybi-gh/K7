@@ -75,15 +75,15 @@ else
     @if (_movie != null)
     {
         <div class="hero-page-stack">
-            <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
+            <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Start" Justify="Justify.FlexEnd">
                 <div class="background-image" style="--background-picture: url(@apiClient.GetAbsoluteUri(apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri)" />
-                @if (apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri is string logoUri)
+                @if (apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is string logoUri)
                 {
-                    <MudImage Style="max-width: 80vw;" Height="150" ObjectFit="ObjectFit.ScaleDown" Src="@logoUri"></MudImage>
+                    <MudImage Style="max-width: 80vw;" Height="200" ObjectFit="ObjectFit.ScaleDown" Src="@logoUri"></MudImage>
                 }
                 else
                 {
-                    <MudText Typo="Typo.h4">@_movie.Title</MudText>
+                    <MudText Typo="Typo.h1">@_movie.Title?.ToUpper()</MudText>
                 }
                 <MudStack Row="true">
                     @foreach (var genre in _movie.Genres ?? [])
@@ -102,8 +102,8 @@ else
                         <MudText Style="font-size: 20px; text-wrap: nowrap;" Typo="Typo.overline">@string.Format(S["DurationHoursMinutes"], (int)vMetaDuration.Duration.TotalHours, vMetaDuration.Duration.Minutes)</MudText>
                     }
                 </MudStack>
-                <MudStack>
-                    <MudText Typo="Typo.body2">@_movie.Overview</MudText>
+                <MudStack Class="pb-5">
+                    <MudText Typo="Typo.body1">@_movie.Overview</MudText>
                 </MudStack>
                 @*<MudText Style="font-style: italic; font-size: 20px; font-family: initial;">
                 “@_movie.TagLine”
@@ -111,8 +111,9 @@ else
                 @*<MudStack Row="true">
                 <MudRating SelectedValue="@Convert.ToInt32(_movie.Ratings?.FirstOrDefault(x => x.Source == Server.Domain.Enums.RatingSource.MetadataProvider)?.Value ?? 0)" />
             </MudStack>*@
-                <MudStack Row="true" data-nav-row>
+                <MudStack Row="true" data-nav-row Class="mt-5">
                     <MudButton Disabled="@(_movie.IndexedFiles == null || !_movie.IndexedFiles.Any())" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PlayArrow" Color="Color.Primary" OnClick="PlayAsync">@S["Play"]</MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Tune" aria-label="playback-options" OnClick="OpenPlaybackOptionsAsync"></MudIconButton>
                     <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
                     <AuthorizeView Roles="User,Administrator">
                         <MudIconButton Icon="@Icons.Material.Filled.CheckCircle" aria-label="mark-as-shown"></MudIconButton>
@@ -127,25 +128,6 @@ else
             </MudStack>
         </div>
         <div>
-            @if (_movie.IndexedFiles != null && _movie.IndexedFiles.Any() && _movie.IndexedFiles.First().FileMetadata is VideoFileMetadataDto vMetaTracks)
-            {
-                <MudStack AlignItems="@(_isSmallDevice? AlignItems.Center: AlignItems.Start)" Class="px-10">
-                    <MudStack Style="width: 100%;">
-                        <MudSelect @bind-Value="_selectedVideoFileTrack" Label="@L["VideoTrack"]" Variant="Variant.Filled" FullWidth="true">
-                            @foreach (var track in vMetaTracks.VideoTracks ?? [])
-                            {
-                                <MudSelectItem Value="@track">@($"{track.Codec} - {track.Width}x{track.Height}")</MudSelectItem>
-                            }
-                        </MudSelect>
-                        <MudSelect @bind-Value="_selectedAudioFileTrack" Label="@L["AudioTrack"]" Variant="Variant.Filled" FullWidth="true">
-                            @foreach (var track in vMetaTracks.AudioTracks ?? [])
-                            {
-                                <MudSelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudStack>
-                </MudStack>
-            }
             <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
                 <MudItem xs="12" sm="12" lg="12">
                     <Carousel Title="@L["CastingAndCrew"]">

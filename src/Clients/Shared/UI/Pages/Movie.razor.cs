@@ -25,8 +25,9 @@ public partial class Movie
     private static MediaCardViewModel? _mediaCard;
     private bool _isSmallDevice;
     private bool _overviewExpanded;
-    private VideoFileTrackDto? _selectedVideoFileTrack;
+    private IndexedFileDto? _selectedFile;
     private AudioFileTrackDto? _selectedAudioFileTrack;
+    private SubtitleFileTrackDto? _selectedSubtitleFileTrack;
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,8 +40,13 @@ public partial class Movie
                 Title = _movie.Title,
                 PictureUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
             };
-            _selectedVideoFileTrack = (_movie.IndexedFiles?.FirstOrDefault()?.FileMetadata as VideoFileMetadataDto)?.VideoTracks.FirstOrDefault(x => x.IsDefault);
-            _selectedAudioFileTrack = (_movie.IndexedFiles?.FirstOrDefault()?.FileMetadata as VideoFileMetadataDto)?.AudioTracks.FirstOrDefault(x => x.IsDefault);
+            
+            _selectedFile = _movie.IndexedFiles?.FirstOrDefault();
+            if (_selectedFile?.FileMetadata is VideoFileMetadataDto vMeta)
+            {
+                _selectedAudioFileTrack = vMeta.AudioTracks?.FirstOrDefault(x => x.IsDefault) ?? vMeta.AudioTracks?.FirstOrDefault();
+                _selectedSubtitleFileTrack = vMeta.SubtitleTracks?.FirstOrDefault(x => x.IsDefault);
+            }
         }
         base.OnInitialized();
         isLoading = false;
@@ -66,13 +72,13 @@ public partial class Movie
 
     private async Task PlayAsync()
     {
-        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any())
+        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any() || _selectedFile == null)
         {
             return;
         }
 
-        var indexedFileId = _movie.IndexedFiles.First().Id;
-        if (_movie.IndexedFiles.First().FileMetadata is not VideoFileMetadataDto videoMetadata)
+        var indexedFileId = _selectedFile.Id;
+        if (_selectedFile.FileMetadata is not VideoFileMetadataDto videoMetadata)
         {
             return;
         }
@@ -80,12 +86,13 @@ public partial class Movie
         var audioTracks = videoMetadata.AudioTracks;
         var subtitleTracks = videoMetadata.SubtitleTracks;
         var audioTrackIndex = _selectedAudioFileTrack?.Index;
+        var subtitleTrackIndex = _selectedSubtitleFileTrack?.Index;
         var videoResolution = videoMetadata.VideoResolution;
         var thumbnailsUrl = videoMetadata.Thumbnails?.Uri?.ToString();
 
         PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress));
 
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks, subtitleTracks, audioTrackIndex, videoResolution, thumbnailsUrl);
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl);
 
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
@@ -94,7 +101,34 @@ public partial class Movie
         }
     }
 
-private async Task OpenMediaReIdentifyDialogAsync()
+    private async Task OpenPlaybackOptionsAsync()
+    {
+        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any()) return;
+
+        var parameters = new DialogParameters<PlaybackOptionsDialog>
+        {
+            { x => x.Movie, _movie },
+            { x => x.InitialFileId, _selectedFile?.Id }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        // I use localizer from the dialog to avoid injecting it here just for the title
+        var title = _movie.IndexedFiles.Count > 1 ? L["IndexedVersions"] : L["AudioTrack"]; // Fallbacks until we can rely on PlaybackOptionsDialog.resx properly.
+        var dialog = await DialogService.ShowAsync<PlaybackOptionsDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is PlaybackOptionsResult optionsResult)
+        {
+            _selectedFile = optionsResult.SelectedFile;
+            _selectedAudioFileTrack = optionsResult.AudioTrack;
+            _selectedSubtitleFileTrack = optionsResult.SubtitleTrack;
+            
+            await PlayAsync();
+        }
+    }
+
+    private async Task OpenMediaReIdentifyDialogAsync()
     {
         if (_movie == null) return;
 
