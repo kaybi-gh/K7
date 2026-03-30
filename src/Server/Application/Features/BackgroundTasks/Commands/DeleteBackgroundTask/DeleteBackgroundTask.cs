@@ -7,10 +7,12 @@ public record DeleteBackgroundTaskCommand(Guid Id) : IRequest;
 public class DeleteBackgroundTaskCommandHandler : IRequestHandler<DeleteBackgroundTaskCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IBackgroundTaskNotifier _notifier;
 
-    public DeleteBackgroundTaskCommandHandler(IApplicationDbContext context)
+    public DeleteBackgroundTaskCommandHandler(IApplicationDbContext context, IBackgroundTaskNotifier notifier)
     {
         _context = context;
+        _notifier = notifier;
     }
 
     public async Task Handle(DeleteBackgroundTaskCommand request, CancellationToken cancellationToken)
@@ -21,5 +23,6 @@ public class DeleteBackgroundTaskCommandHandler : IRequestHandler<DeleteBackgrou
         Guard.Against.NotFound(request.Id, entity);
         _context.BackgroundTasks.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
+        await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);
     }
 }

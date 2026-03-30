@@ -25,6 +25,7 @@ public class BackgroundTasksProcessingService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly IBackgroundTaskQueue _taskQueue;
     private readonly BackgroundTaskTypeRegistry _typeRegistry;
+    private readonly IBackgroundTaskNotifier _notifier;
     private readonly ConcurrentDictionary<string, int> _activeCountByGroup = new();
     private readonly List<WorkerHandle> _workers = [];
     private readonly Lock _workersLock = new();
@@ -33,12 +34,14 @@ public class BackgroundTasksProcessingService : BackgroundService
         ILogger<BackgroundTasksProcessingService> logger,
         IServiceProvider serviceProvider,
         IBackgroundTaskQueue taskQueue,
-        BackgroundTaskTypeRegistry typeRegistry)
+        BackgroundTaskTypeRegistry typeRegistry,
+        IBackgroundTaskNotifier notifier)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _taskQueue = taskQueue;
         _typeRegistry = typeRegistry;
+        _notifier = notifier;
     }
 
     public int ActiveWorkerCount
@@ -183,6 +186,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         if (stuckTasks.Count > 0)
         {
             await context.SaveChangesAsync(cancellationToken);
+            await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);
             _logger.LogInformation("Recovered {Count} stuck tasks from previous run", stuckTasks.Count);
         }
     }
@@ -278,6 +282,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         task.Status = BackgroundTaskStatus.InProgress;
         task.StartedAt = DateTimeOffset.UtcNow;
         await context.SaveChangesAsync(stoppingToken);
+        await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
 
         if (task.ConcurrencyGroup is not null)
         {
@@ -297,6 +302,7 @@ public class BackgroundTasksProcessingService : BackgroundService
                 _logger.LogError("Unknown request type {RequestType} for task {TaskId}, marking as failed", task.RequestType, task.Id);
                 task.Status = BackgroundTaskStatus.Failed;
                 await context.SaveChangesAsync(stoppingToken);
+                await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
                 return;
             }
 
@@ -306,6 +312,7 @@ public class BackgroundTasksProcessingService : BackgroundService
                 _logger.LogError("Failed to deserialize task {TaskId} ({TaskName}) with type {RequestType}", task.Id, task.Name, task.RequestType);
                 task.Status = BackgroundTaskStatus.Failed;
                 await context.SaveChangesAsync(stoppingToken);
+                await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
                 return;
             }
 
@@ -344,6 +351,7 @@ public class BackgroundTasksProcessingService : BackgroundService
 
         task.AttemptCount++;
         await context.SaveChangesAsync(stoppingToken);
+        await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
     }
 
     private void HandleTaskFailure(BackgroundTask task)
@@ -431,6 +439,7 @@ public class BackgroundTasksProcessingService : BackgroundService
                     context.BackgroundTasks.RemoveRange(staleCompleted);
                     context.BackgroundTasks.RemoveRange(staleFailed);
                     await context.SaveChangesAsync(stoppingToken);
+                    await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
                     _logger.LogInformation("Cleaned up {CompletedCount} completed and {FailedCount} failed tasks",
                         staleCompleted.Count, staleFailed.Count);
                 }

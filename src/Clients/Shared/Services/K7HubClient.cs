@@ -15,6 +15,7 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<Guid, double, bool>? ProgressUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
     public event Action<Guid, int>? LibraryScanCompleted;
+    public event Action? BackgroundTaskUpdated;
 
     public async Task EnsureStartedAsync(Uri baseUri, string userId)
     {
@@ -54,6 +55,11 @@ public sealed class K7HubClient : IAsyncDisposable
             _hubConnection.On<Guid, int>("ReceiveLibraryScanCompleted", (libraryId, addedCount) =>
             {
                 LibraryScanCompleted?.Invoke(libraryId, addedCount);
+            });
+
+            _hubConnection.On("ReceiveBackgroundTaskUpdated", () =>
+            {
+                BackgroundTaskUpdated?.Invoke();
             });
 
             await _hubConnection.StartAsync();
