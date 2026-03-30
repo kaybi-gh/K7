@@ -31,6 +31,23 @@ public static class Themes
             Success = "#4db288",
             AppbarBackground = "#0c0c0c",
             //DarkContrastText = "#ffffff",
+        },
+        Typography = new Typography()
+        {
+            Default = { FontFamily = ["Manrope", "Helvetica", "Arial", "sans-serif"] },
+            H1 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            H2 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            H3 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            H4 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            H5 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            H6 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            Body1 = { FontFamily = ["Manrope", "Helvetica", "Arial", "sans-serif"] },
+            Body2 = { FontFamily = ["Manrope", "Helvetica", "Arial", "sans-serif"] },
+            Button = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            Caption = { FontFamily = ["Manrope", "Helvetica", "Arial", "sans-serif"] },
+            Subtitle1 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            Subtitle2 = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] },
+            Overline = { FontFamily = ["Epilogue", "Helvetica", "Arial", "sans-serif"] }
         }
     });
 

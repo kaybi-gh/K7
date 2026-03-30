@@ -16,6 +16,30 @@
       "files": [
         "qrcode.min.js"
       ]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "@fontsource/epilogue@5.0.8",
+      "destination": "wwwroot/lib/fonts/epilogue",
+      "files": [
+        "700.css",
+        "900.css",
+        "files/epilogue-latin-700-normal.woff2",
+        "files/epilogue-latin-900-normal.woff2"
+      ]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "@fontsource/manrope@5.0.8",
+      "destination": "wwwroot/lib/fonts/manrope",
+      "files": [
+        "400.css",
+        "500.css",
+        "700.css",
+        "files/manrope-latin-400-normal.woff2",
+        "files/manrope-latin-500-normal.woff2",
+        "files/manrope-latin-700-normal.woff2"
+      ]
     }
   ]
 }
