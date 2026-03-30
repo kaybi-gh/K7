@@ -20,11 +20,13 @@ public class CreateBackgroundTaskCommandHandler : IRequestHandler<CreateBackgrou
 {
     private readonly IApplicationDbContext _context;
     private readonly IBackgroundTaskQueue _taskQueue;
+    private readonly IBackgroundTaskNotifier _notifier;
 
-    public CreateBackgroundTaskCommandHandler(IApplicationDbContext context, IBackgroundTaskQueue taskQueue)
+    public CreateBackgroundTaskCommandHandler(IApplicationDbContext context, IBackgroundTaskQueue taskQueue, IBackgroundTaskNotifier notifier)
     {
         _context = context;
         _taskQueue = taskQueue;
+        _notifier = notifier;
     }
 
     public async Task<Guid> Handle(CreateBackgroundTaskCommand request, CancellationToken cancellationToken)
@@ -61,6 +63,7 @@ public class CreateBackgroundTaskCommandHandler : IRequestHandler<CreateBackgrou
 
         _context.BackgroundTasks.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
+        await _notifier.NotifyBackgroundTaskUpdatedAsync(cancellationToken);
 
         _taskQueue.Enqueue(entity.Id);
 

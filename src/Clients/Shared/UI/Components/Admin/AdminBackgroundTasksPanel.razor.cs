@@ -6,11 +6,12 @@ using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
-public partial class AdminBackgroundTasksPanel
+public partial class AdminBackgroundTasksPanel : IDisposable
 {
     [Inject] private IBackgroundTaskService BackgroundTaskService { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
 
     private PaginatedListDto<BackgroundTaskDto>? _tasks;
     private BackgroundTaskSettingsDto? _settings;
@@ -23,7 +24,22 @@ public partial class AdminBackgroundTasksPanel
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(LoadTasksAsync(), LoadSettingsAsync());
+        K7HubClient.BackgroundTaskUpdated += OnBackgroundTaskUpdated;
+        await Task.WhenAll(LoadTasksAsync(), LoadSettingsAsync(initial: true));
+    }
+
+    public void Dispose()
+    {
+        K7HubClient.BackgroundTaskUpdated -= OnBackgroundTaskUpdated;
+    }
+
+    private void OnBackgroundTaskUpdated()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await Task.WhenAll(LoadTasksAsync(), LoadSettingsAsync());
+            StateHasChanged();
+        });
     }
 
     private async Task LoadTasksAsync()
@@ -44,13 +60,16 @@ public partial class AdminBackgroundTasksPanel
         }
     }
 
-    private async Task LoadSettingsAsync()
+    private async Task LoadSettingsAsync(bool initial = false)
     {
         try
         {
             _settings = await BackgroundTaskService.GetSettingsAsync();
-            _workerCount = _settings.WorkerCount;
-            _concurrencyLimits = _settings.ConcurrencyGroups.ToDictionary(g => g.Name, g => g.Limit);
+            if (initial)
+            {
+                _workerCount = _settings.WorkerCount;
+                _concurrencyLimits = _settings.ConcurrencyGroups.ToDictionary(g => g.Name, g => g.Limit);
+            }
         }
         catch
         {
@@ -70,7 +89,7 @@ public partial class AdminBackgroundTasksPanel
             };
             await BackgroundTaskService.UpdateSettingsAsync(request);
             Snackbar.Add(L["SettingsSaved"], Severity.Success);
-            await LoadSettingsAsync();
+            await LoadSettingsAsync(initial: true);
         }
         catch (Exception ex)
         {
