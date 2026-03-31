@@ -16,7 +16,7 @@
               DefaultSpacing="6"
               GridItemAspectRatio="1.8f">
     <ToolbarContent>
-        <span>@MediaCards.Count items</span>
+        <span>@string.Format(L["ItemCount"], MediaCards.Count)</span>
         @if (_availableMediaTypes.Count > 1)
         {
             <MudChipSet T="MediaType" SelectionMode="SelectionMode.SingleSelection" SelectedValue="_selectedMediaType" SelectedValueChanged="OnMediaTypeFilterChanged" CheckMark="false">
