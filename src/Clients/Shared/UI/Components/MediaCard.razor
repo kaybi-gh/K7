@@ -27,10 +27,10 @@ else
                 {
                     <MudImage Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" loading="lazy" />
                 }
-                else if (Variant == MediaCardVariant.Cover)
+                else
                 {
                     <div class="media-card-placeholder rounded-lg">
-                        <MudIcon Icon="@Icons.Material.Outlined.Album" Style="font-size: 48px; opacity: 0.3;" />
+                        <MudIcon Icon="@PlaceholderIcon" Style="font-size: 48px; opacity: 0.3;" />
                     </div>
                 }
 
