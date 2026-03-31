@@ -10,6 +10,11 @@
     justify-content: center;
     align-items: center;
     transform: translate(-50%,-50%);
-    transition: all ease-in-out 600ms;
     z-index: 99;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .splash {
+        transition: opacity ease-in-out 600ms;
+    }
 }

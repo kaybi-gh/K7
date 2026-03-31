@@ -17,11 +17,16 @@
     font-weight: 600;
     text-align: center;
     opacity: 0.3;
-    transition: opacity 0.3s, transform 0.3s, color 0.3s;
     cursor: pointer;
     padding: 4px 8px;
     border-radius: 4px;
     line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .lyrics-line {
+        transition: opacity 0.3s, transform 0.3s, color 0.3s;
+    }
 }
 
 .lyrics-line:hover,

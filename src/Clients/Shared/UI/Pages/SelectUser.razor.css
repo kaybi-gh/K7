@@ -4,3 +4,9 @@
     border-radius: 8px;
     background: rgba(var(--mud-palette-primary-rgb), 0.08);
 }
+
+@media (prefers-reduced-motion: no-preference) {
+    ::deep .select-user-card {
+        transition: background 0.15s;
+    }
+}
