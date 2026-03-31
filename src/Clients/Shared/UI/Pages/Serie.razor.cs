@@ -13,6 +13,7 @@ public partial class Serie
     private SerieDto? _serie;
     private string? _posterUrl;
     private string? _backdropUrl;
+    private string? _logoUrl;
     private List<LiteSerieSeasonDto> _seasons = [];
     private bool _loading = true;
 
@@ -31,6 +32,10 @@ public partial class Serie
 
             _backdropUrl = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?
+                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+
+            _logoUrl = apiClient.GetAbsoluteUri(
+                serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
             _seasons = (serie.Seasons ?? [])

@@ -1,6 +1,7 @@
 @page "/series/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
+@using K7.Server.Domain.Enums
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject NavigationManager NavigationManager
@@ -22,65 +23,61 @@ else if (_serie is not null)
     <div class="serie-page">
         @if (_backdropUrl is not null)
         {
-            <div class="serie-hero-bg" style="background-image: url('@_backdropUrl')"></div>
+            <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
         }
 
-        <div class="serie-header">
-            <div class="serie-header-poster">
-                @if (_posterUrl is not null)
+        <div class="serie-hero">
+            <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Start" Justify="Justify.FlexEnd">
+                @if (_logoUrl is not null)
                 {
-                    <MudImage Src="@_posterUrl"
-                              Alt="@_serie.Title"
-                              Class="rounded-lg"
-                              Style="width: 220px; height: 330px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);"
-                              ObjectFit="ObjectFit.Cover" />
+                    <img src="@_logoUrl" alt="@_serie.Title" style="height: 180px; max-width: 80vw; object-fit: scale-down; object-position: left center;" />
                 }
                 else
                 {
-                    <div class="serie-poster-placeholder">
-                        <MudIcon Icon="@Icons.Material.Filled.Tv"
-                                 Style="font-size: 64px; opacity: 0.3;" />
-                    </div>
+                    <MudText Typo="Typo.h2" Class="serie-title">@_serie.Title?.ToUpper()</MudText>
                 }
-            </div>
 
-            <div class="serie-header-info">
-                <MudText Typo="Typo.h4" Class="serie-title">@_serie.Title</MudText>
-
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
-                    @if (_serie.ReleaseDate.HasValue)
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Wrap="Wrap.Wrap">
+                    @if (_serie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_serie.ReleaseDate.Value.Year</MudText>
+                        <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Star" Label="true" Color="Color.Primary" Variant="Variant.Filled" Style="font-weight: 700;">@externalRating.ToString("N1")</MudChip>
                     }
-                    @if (!string.IsNullOrEmpty(_serie.Status))
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_serie.Status</MudText>
-                    }
-                    @if (!string.IsNullOrEmpty(_serie.Network))
-                    {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_serie.Network</MudText>
-                    }
+                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                        @foreach (var genre in _serie.Genres ?? [])
+                        {
+                            <MudChip T="string" Label="true" Variant="Variant.Text" Size="Size.Small" Style="opacity: 0.9; font-weight: 600;">@genre</MudChip>
+                        }
+                    </MudStack>
                     @if (!string.IsNullOrEmpty(_serie.ContentRating))
                     {
                         <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@_serie.ContentRating</MudChip>
                     }
-                </MudStack>
-
-                @if (_serie.Genres?.Any() == true)
-                {
-                    <MudStack Row="true" Spacing="1" Class="mt-2" Wrap="Wrap.Wrap">
-                        @foreach (var genre in _serie.Genres)
+                    <MudText Typo="Typo.caption" Style="opacity: 0.4;">|</MudText>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        @if (_serie.ReleaseDate.HasValue)
                         {
-                            <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@genre</MudChip>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@_serie.ReleaseDate.Value.Year</MudText>
+                        }
+                        @if (!string.IsNullOrEmpty(_serie.Status))
+                        {
+                            <MudText Typo="Typo.body2" Style="opacity: 0.5;">&bull;</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@_serie.Status</MudText>
+                        }
+                        @if (!string.IsNullOrEmpty(_serie.Network))
+                        {
+                            <MudText Typo="Typo.body2" Style="opacity: 0.5;">&bull;</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@_serie.Network</MudText>
                         }
                     </MudStack>
-                }
+                </MudStack>
 
                 @if (!string.IsNullOrEmpty(_serie.Overview))
                 {
-                    <MudText Typo="Typo.body2" Class="mt-3" Color="Color.Secondary" Style="max-width: 700px;">@_serie.Overview</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2" Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem; max-width: 800px;">
+                        @_serie.Overview
+                    </MudText>
                 }
-            </div>
+            </MudStack>
         </div>
 
         @if ((_serie.PersonRoles?.Count ?? 0) > 0)

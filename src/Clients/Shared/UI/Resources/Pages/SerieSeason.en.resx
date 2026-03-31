@@ -23,4 +23,5 @@
   <data name="Specials" xml:space="preserve"><value>Specials</value></data>
   <data name="PreviousSeason" xml:space="preserve"><value>Previous season</value></data>
   <data name="NextSeason" xml:space="preserve"><value>Next season</value></data>
+  <data name="BackToSerie" xml:space="preserve"><value>Back to series</value></data>
 </root>
