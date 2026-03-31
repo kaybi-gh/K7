@@ -57,8 +57,9 @@ public partial class Library
 
     private static string GetItemHref(MediaCardViewModel item) => item.Kind switch
     {
-        MediaCardKind.Cover => $"/music/albums/{item.Id}",
+        MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
         MediaCardKind.Serie => $"/series/{item.Id}",
+        MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}",
         _ => $"/movies/{item.Id}"
     };
 }
