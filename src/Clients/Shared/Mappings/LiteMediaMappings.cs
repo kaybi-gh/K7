@@ -63,6 +63,8 @@ public static class LiteMediaMappings
         {
             Id = item.Id.ToString(),
             ParentId = episodeDto?.SerieId.ToString() ?? seasonDto?.SerieId.ToString() ?? trackDto?.AlbumId.ToString(),
+            SeasonNumber = seasonDto?.SeasonNumber ?? episodeDto?.SeasonNumber,
+            EpisodeNumber = episodeDto?.EpisodeNumber,
             Kind = kind.Value,
             Title = cardTitle,
             AdditionalInformations = item.ReleaseDate,

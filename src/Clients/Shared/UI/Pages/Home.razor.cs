@@ -178,7 +178,8 @@ public partial class Home : IDisposable
     {
         MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
         MediaCardKind.Serie => $"/series/{item.Id}",
-        MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}",
+        MediaCardKind.Season => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}",
+        MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}#ep-{item.EpisodeNumber}",
         _ => $"/movies/{item.Id}"
     };
 
