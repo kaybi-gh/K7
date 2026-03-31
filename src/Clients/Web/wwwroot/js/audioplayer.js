@@ -31,6 +31,10 @@ window.K7 = window.K7 || {};
 window.K7.scrollIntoViewSmooth = function (el) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
+window.K7.scrollToElement = function (id) {
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
 
 // MediaSession API
 window.K7.updateMediaSession = function (title, artist, album, artworkUrl) {

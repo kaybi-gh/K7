@@ -8,6 +8,7 @@
 @inject IFeatureAccessService FeatureAccess
 @inject IStringLocalizer<SerieSeason> L
 @inject IStringLocalizer<SharedResource> S
+@inject IJSRuntime JSRuntime
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -81,12 +82,14 @@ else if (_season is not null)
         <div class="season-episodes">
             @foreach (var episode in _episodes)
             {
-                <EpisodeListItem @key="episode.Id"
-                                 Episode="episode"
-                                 StillUrl="@GetEpisodeStillUrl(episode)"
-                                 IsExpanded="@(_expandedEpisodeId == episode.Id)"
-                                 OnToggleExpand="() => ToggleExpand(episode.Id)"
-                                 OnPlay="() => PlayEpisodeAsync(episode)" />
+                <div id="ep-@episode.EpisodeNumber">
+                    <EpisodeListItem @key="episode.Id"
+                                     Episode="episode"
+                                     StillUrl="@GetEpisodeStillUrl(episode)"
+                                     IsExpanded="@(_expandedEpisodeId == episode.Id)"
+                                     OnToggleExpand="() => ToggleExpand(episode.Id)"
+                                     OnPlay="() => PlayEpisodeAsync(episode)" />
+                </div>
             }
         </div>
     </div>
