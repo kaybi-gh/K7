@@ -25,30 +25,26 @@ else if (_season is not null)
     <div class="season-page">
         @if (_backdropUrl is not null)
         {
-            <div class="season-hero-bg" style="background-image: url('@_backdropUrl')"></div>
+            <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
         }
 
         <div class="season-header">
-            <div class="season-header-poster">
-                @if (_seasonPosterUrl is not null)
+            <div class="season-header-info">
+                @if (_logoUrl is not null)
                 {
-                    <MudImage Src="@_seasonPosterUrl"
-                              Alt="@_season.Title"
-                              Class="rounded-lg"
-                              Style="width: 160px; height: 240px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);"
-                              ObjectFit="ObjectFit.Cover" />
+                    <MudImage Style="max-width: 60vw; max-height: 120px;" ObjectFit="ObjectFit.ScaleDown" Src="@_logoUrl" Alt="@_season.SerieTitle" />
                 }
                 else
                 {
-                    <div class="season-poster-placeholder">
-                        <MudIcon Icon="@Icons.Material.Filled.Tv"
-                                 Style="font-size: 48px; opacity: 0.3;" />
-                    </div>
+                    <MudText Typo="Typo.h3" Class="season-serie-title">@_season.SerieTitle?.ToUpper()</MudText>
                 }
-            </div>
-
-            <div class="season-header-info">
-                <MudLink Href="@($"/series/{SerieId}")" Typo="Typo.subtitle1" Color="Color.Primary" Underline="Underline.Hover">@_season.SerieTitle</MudLink>
+                <MudButton Variant="Variant.Text"
+                           StartIcon="@Icons.Material.Filled.ChevronLeft"
+                           Color="Color.Primary"
+                           Href="@($"/series/{SerieId}")"
+                           Class="px-0">
+                    @L["BackToSerie"]
+                </MudButton>
                 <MudText Typo="Typo.h4" Class="season-title">
                     @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
                 </MudText>

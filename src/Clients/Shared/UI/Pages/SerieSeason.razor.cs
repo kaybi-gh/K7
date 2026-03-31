@@ -17,7 +17,7 @@ public partial class SerieSeason
 
     private SerieSeasonDto? _season;
     private string? _backdropUrl;
-    private string? _seasonPosterUrl;
+    private string? _logoUrl;
     private List<LiteSerieEpisodeDto> _episodes = [];
     private int? _previousSeasonNumber;
     private int? _nextSeasonNumber;
@@ -43,6 +43,10 @@ public partial class SerieSeason
             serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)
                 ?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
+        _logoUrl = apiClient.GetAbsoluteUri(
+            serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo)
+                ?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+
         var seasonSummary = serie.Seasons?
             .OrderBy(s => s.SeasonNumber)
             .ToList() ?? [];
@@ -61,9 +65,6 @@ public partial class SerieSeason
         if (seasonMedia is SerieSeasonDto seasonDto)
         {
             _season = seasonDto;
-            _seasonPosterUrl = apiClient.GetAbsoluteUri(
-                seasonDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                    ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
 
             _episodes = (seasonDto.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
