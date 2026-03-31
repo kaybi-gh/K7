@@ -1,0 +1,24 @@
+.code-segment {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    letter-spacing: 0.15em;
+    padding: 12px 4px;
+    border: 2px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+    outline: none;
+}
+
+.code-segment:focus {
+    border-color: var(--mud-palette-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .code-segment {
+        transition: border-color 0.2s;
+    }
+}

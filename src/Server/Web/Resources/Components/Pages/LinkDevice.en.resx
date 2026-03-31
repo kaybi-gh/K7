@@ -41,4 +41,13 @@
   <data name="AuthorizeDevice" xml:space="preserve">
     <value>Authorize Device</value>
   </data>
+  <data name="CodePart1" xml:space="preserve">
+    <value>Code part 1</value>
+  </data>
+  <data name="CodePart2" xml:space="preserve">
+    <value>Code part 2</value>
+  </data>
+  <data name="CodePart3" xml:space="preserve">
+    <value>Code part 3</value>
+  </data>
 </root>

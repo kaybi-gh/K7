@@ -41,4 +41,13 @@
   <data name="AuthorizeDevice" xml:space="preserve">
     <value>Autoriser l'appareil</value>
   </data>
+  <data name="CodePart1" xml:space="preserve">
+    <value>Partie 1 du code</value>
+  </data>
+  <data name="CodePart2" xml:space="preserve">
+    <value>Partie 2 du code</value>
+  </data>
+  <data name="CodePart3" xml:space="preserve">
+    <value>Partie 3 du code</value>
+  </data>
 </root>
