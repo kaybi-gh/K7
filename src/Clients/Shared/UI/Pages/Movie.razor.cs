@@ -6,6 +6,7 @@ using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using MudBlazor;
 
@@ -68,6 +69,14 @@ public partial class Movie
     private void ToggleOverview()
     {
         _overviewExpanded = !_overviewExpanded;
+    }
+
+    private async Task HandleOverviewKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await OpenSynopsisDialogAsync();
+        }
     }
 
     private async Task PlayAsync()
@@ -166,5 +175,32 @@ public partial class Movie
             Snackbar.Add(L["ReIdentifyFileSent"], Severity.Success);
             NavigationManager.NavigateTo("/");
         }
+    }
+
+    private async Task OpenIndexedFilesDialogAsync()
+    {
+        if (_movie == null) return;
+
+        var parameters = new DialogParameters<IndexedFilesDialog>
+        {
+            { x => x.Movie, _movie },
+            { x => x.OnReIdentifyFile, EventCallback.Factory.Create<Guid>(this, OpenFileReIdentifyDialogAsync) }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        await DialogService.ShowAsync<IndexedFilesDialog>(L["IndexedVersions"], parameters, options);
+    }
+
+    private Task OpenSynopsisDialogAsync()
+    {
+        if (_movie == null || string.IsNullOrWhiteSpace(_movie.Overview)) return Task.CompletedTask;
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var parameters = new DialogParameters
+        {
+            { "ContentText", _movie.Overview },
+            { "ButtonText", S["Cancel"].Value }
+        };
+        return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
     }
 }

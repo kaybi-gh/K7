@@ -110,3 +110,15 @@
     width: 100vw;
     max-width: 100vw;
 }
+
+.overview-clickable {
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.overview-clickable:hover,
+.overview-clickable:focus-visible {
+    background-color: rgba(128, 128, 128, 0.15);
+}
