@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="VideoTracks" xml:space="preserve"><value>Pistes video</value></data>
+  <data name="AudioTracks" xml:space="preserve"><value>Pistes audio</value></data>
+  <data name="SubtitleTracks" xml:space="preserve"><value>Sous-titres</value></data>
+  <data name="Codec" xml:space="preserve"><value>Codec</value></data>
+  <data name="Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="Profile" xml:space="preserve"><value>Profil</value></data>
+  <data name="PixelFormat" xml:space="preserve"><value>Format pixel</value></data>
+  <data name="BitDepth" xml:space="preserve"><value>Profondeur</value></data>
+  <data name="Language" xml:space="preserve"><value>Langue</value></data>
+  <data name="Channels" xml:space="preserve"><value>Canaux</value></data>
+  <data name="SampleRate" xml:space="preserve"><value>Echantillonnage</value></data>
+  <data name="Default" xml:space="preserve"><value>Defaut</value></data>
+  <data name="Forced" xml:space="preserve"><value>Force</value></data>
+</root>

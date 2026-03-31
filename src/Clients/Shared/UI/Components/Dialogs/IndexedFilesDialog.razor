@@ -1,0 +1,134 @@
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.Metadatas.Files
+@using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
+@using Microsoft.Extensions.Localization
+@using K7.Clients.Shared.UI.Pages
+@inject IStringLocalizer<SharedResource> S
+@inject IStringLocalizer<IndexedFilesDialog> L
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4">
+            @foreach (var file in Movie.IndexedFiles ?? [])
+            {
+                var vMeta = file.FileMetadata as VideoFileMetadataDto;
+                <MudPaper Class="pa-4" Outlined="true">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@file.Name</MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.FindReplace" Size="Size.Small" OnClick="@(() => ReIdentifyFile(file.Id))" />
+                        </MudStack>
+
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="word-break: break-all;">@file.Path</MudText>
+
+                        <MudStack Row="true" Spacing="3" Wrap="Wrap.Wrap">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@file.Extension</MudChip>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@($"{file.Size / (1024 * 1024):N0} MB")</MudChip>
+                            @if (vMeta != null)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@vMeta.Container</MudChip>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">@vMeta.VideoResolution</MudChip>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@string.Format(S["DurationHoursMinutes"], (int)vMeta.Duration.TotalHours, vMeta.Duration.Minutes)</MudChip>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@($"{vMeta.VideoBitrate / 1000} kbps")</MudChip>
+                            }
+                        </MudStack>
+
+                        @if (vMeta != null)
+                        {
+                            @if (vMeta.VideoTracks.Count > 0)
+                            {
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;" Class="mt-2">@L["VideoTracks"]</MudText>
+                                <MudSimpleTable Dense="true" Bordered="true" Style="overflow-x: auto;">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>@L["Codec"]</th>
+                                            <th>@L["Resolution"]</th>
+                                            <th>@L["Profile"]</th>
+                                            <th>@L["PixelFormat"]</th>
+                                            <th>@L["BitDepth"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var vTrack in vMeta.VideoTracks)
+                                        {
+                                            <tr>
+                                                <td>@vTrack.Index</td>
+                                                <td>@vTrack.Codec</td>
+                                                <td>@($"{vTrack.Width}x{vTrack.Height}")</td>
+                                                <td>@vTrack.Profile @(vTrack.Level > 0 ? $"L{vTrack.Level}" : "")</td>
+                                                <td>@(vTrack.PixelFormat ?? "-")</td>
+                                                <td>@(vTrack.BitDepth?.ToString() ?? "-")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </MudSimpleTable>
+                            }
+
+                            @if (vMeta.AudioTracks.Count > 0)
+                            {
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;" Class="mt-2">@L["AudioTracks"]</MudText>
+                                <MudSimpleTable Dense="true" Bordered="true" Style="overflow-x: auto;">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>@L["Language"]</th>
+                                            <th>@L["Codec"]</th>
+                                            <th>@L["Channels"]</th>
+                                            <th>@L["SampleRate"]</th>
+                                            <th>@L["Default"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var aTrack in vMeta.AudioTracks)
+                                        {
+                                            <tr>
+                                                <td>@aTrack.Index</td>
+                                                <td>@(aTrack.Language ?? "-") @(!string.IsNullOrEmpty(aTrack.Name) ? $"({aTrack.Name})" : "")</td>
+                                                <td>@aTrack.Codec @(!string.IsNullOrEmpty(aTrack.Profile) ? $"({aTrack.Profile})" : "")</td>
+                                                <td>@aTrack.Channels @(!string.IsNullOrEmpty(aTrack.ChannelLayout) ? $"({aTrack.ChannelLayout})" : "")</td>
+                                                <td>@(aTrack.SampleRateHz.HasValue ? $"{aTrack.SampleRateHz} Hz" : "-")</td>
+                                                <td>@(aTrack.IsDefault ? S["Yes"] : "")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </MudSimpleTable>
+                            }
+
+                            @if (vMeta.SubtitleTracks.Count > 0)
+                            {
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;" Class="mt-2">@L["SubtitleTracks"]</MudText>
+                                <MudSimpleTable Dense="true" Bordered="true" Style="overflow-x: auto;">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>@L["Language"]</th>
+                                            <th>@L["Codec"]</th>
+                                            <th>@L["Forced"]</th>
+                                            <th>@L["Default"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var sTrack in vMeta.SubtitleTracks)
+                                        {
+                                            <tr>
+                                                <td>@sTrack.Index</td>
+                                                <td>@(sTrack.Language ?? "-") @(!string.IsNullOrEmpty(sTrack.Name) ? $"({sTrack.Name})" : "")</td>
+                                                <td>@sTrack.Codec</td>
+                                                <td>@(sTrack.IsForced ? S["Yes"] : "")</td>
+                                                <td>@(sTrack.IsDefault ? S["Yes"] : "")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </MudSimpleTable>
+                            }
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">@S["Cancel"]</MudButton>
+    </DialogActions>
+</MudDialog>
