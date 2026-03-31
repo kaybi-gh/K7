@@ -1,7 +1,10 @@
 @page "/library/{id}"
+@using K7.Server.Domain.Enums
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
+@inject ILibraryService LibraryService
 @inject IStringLocalizer<Library> L
+@inject IStringLocalizer<SharedResource> S
 
 <PageTitle>@string.Format(L["PageTitle"].Value, Id)</PageTitle>
 
@@ -14,6 +17,16 @@
               GridItemAspectRatio="1.8f">
     <ToolbarContent>
         <span>@MediaCards.Count items</span>
+        @if (_availableMediaTypes.Count > 1)
+        {
+            <MudChipSet T="MediaType" SelectionMode="SelectionMode.SingleSelection" SelectedValue="_selectedMediaType" SelectedValueChanged="OnMediaTypeFilterChanged" CheckMark="false">
+                <MudChip T="MediaType" Value="default(MediaType)" Variant="@(IsAllSelected ? Variant.Filled : Variant.Text)" Color="Color.Primary" Text="@S["All"]" />
+                @foreach (var mt in _availableMediaTypes)
+                {
+                    <MudChip T="MediaType" Value="@mt" Variant="@(_selectedMediaType.Equals(mt) ? Variant.Filled : Variant.Text)" Color="Color.Primary" Text="@GetMediaTypeLabel(mt)" />
+                }
+            </MudChipSet>
+        }
         <MudIconButton Icon="@Icons.Material.Outlined.SortByAlpha" />
         <MudIconButton Icon="@Icons.Material.Outlined.FilterList" />
     </ToolbarContent>
