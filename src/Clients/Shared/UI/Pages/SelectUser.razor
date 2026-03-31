@@ -29,7 +29,7 @@
                               @onclick="() => SelectUserAsync(user)"
                               @onkeydown="(e) => OnUserKeyDown(e, user)"
                               Class="cursor-pointer pa-4 rounded-lg select-user-card"
-                              Style="transition: background 0.15s; min-width: 120px;">
+                              Style="min-width: 120px;">
                         <MudAvatar Size="Size.Large" Color="Color.Primary"
                                    Style="width:80px; height:80px; font-size:2rem;">
                             @GetInitials(user.UserName)
@@ -51,7 +51,7 @@
                           @onclick="AddUserAsync"
                           @onkeydown="OnAddUserKeyDown"
                           Class="cursor-pointer pa-4 rounded-lg select-user-card"
-                          Style="transition: background 0.15s; min-width: 120px;">
+                          Style="min-width: 120px;">
                     <MudAvatar Size="Size.Large" Color="Color.Default"
                                Style="width:80px; height:80px; font-size:2rem;">
                         <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Large" />

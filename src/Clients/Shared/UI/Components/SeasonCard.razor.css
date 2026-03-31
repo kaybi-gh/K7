@@ -1,7 +1,12 @@
 .season-card {
     cursor: pointer;
     width: 140px;
-    transition: transform 0.15s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .season-card {
+        transition: transform 0.15s ease;
+    }
 }
 
 .season-card:hover,

@@ -1,7 +1,6 @@
 .episode-item {
     border-radius: 8px;
     background: var(--mud-palette-surface);
-    transition: background 0.15s ease;
     cursor: pointer;
 }
 
