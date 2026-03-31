@@ -1,10 +1,9 @@
 namespace K7.Shared.Dtos.Entities.Medias;
 
-public sealed record LiteSerieSeasonDto
+public sealed record LiteSerieSeasonDto : LiteMediaDto
 {
-    public Guid Id { get; init; }
+    public Guid SerieId { get; init; }
     public int SeasonNumber { get; init; }
-    public string? Title { get; init; }
     public int EpisodeCount { get; init; }
     public MetadataPictureDto? Poster { get; init; }
 }

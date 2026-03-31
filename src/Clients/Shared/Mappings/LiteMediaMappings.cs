@@ -15,6 +15,7 @@ public static class LiteMediaMappings
             LiteMusicTrackDto => MediaCardKind.Cover,
             LiteMovieDto => MediaCardKind.Poster,
             LiteSerieDto => MediaCardKind.Serie,
+            LiteSerieSeasonDto => MediaCardKind.Season,
             LiteSerieEpisodeDto => MediaCardKind.Episode,
             _ => (MediaCardKind?)null
         };
@@ -25,6 +26,7 @@ public static class LiteMediaMappings
 
         var episodeDto = item as LiteSerieEpisodeDto;
         var trackDto = item as LiteMusicTrackDto;
+        var seasonDto = item as LiteSerieSeasonDto;
 
         var pictureSource = episodeDto is not null
             ? (episodeDto.SeriePictures?.Count > 0 ? episodeDto.SeriePictures : null)
@@ -60,7 +62,7 @@ public static class LiteMediaMappings
         return new MediaCardViewModel
         {
             Id = item.Id.ToString(),
-            ParentId = episodeDto?.SerieId.ToString() ?? trackDto?.AlbumId.ToString(),
+            ParentId = episodeDto?.SerieId.ToString() ?? seasonDto?.SerieId.ToString() ?? trackDto?.AlbumId.ToString(),
             Kind = kind.Value,
             Title = cardTitle,
             AdditionalInformations = item.ReleaseDate,
