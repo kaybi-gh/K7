@@ -28,7 +28,7 @@
 <MudText Typo="Typo.h3" GutterBottom="true">@L["Title"]</MudText>
 
 <MudGrid>
-    <MudItem md="6">
+    <MudItem xs="12" md="6">
         <StatusMessage Message="@Message" />
         <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />

@@ -39,11 +39,11 @@
                     <input type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
                     <MudStack Spacing="3" AlignItems="AlignItems.Center">
                         <div style="display:flex; align-items:center; gap:6px; justify-content:center; width:100%;">
-                            <input type="text" class="code-segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" />
+                            <input type="text" class="code-segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart1"]" />
                             <span style="font-size:1rem; color:var(--mud-palette-text-secondary);">—</span>
-                            <input type="text" class="code-segment" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" />
+                            <input type="text" class="code-segment" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart2"]" />
                             <span style="font-size:1rem; color:var(--mud-palette-text-secondary);">—</span>
-                            <input type="text" class="code-segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" />
+                            <input type="text" class="code-segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
                         </div>
 
                         <MudStaticButton Variant="Variant.Filled"
@@ -55,27 +55,6 @@
                         </MudStaticButton>
                     </MudStack>
                 </form>
-
-                <style>
-                    .code-segment {
-                        flex: 1;
-                        min-width: 0;
-                        text-align: center;
-                        font-size: 1.4rem;
-                        font-weight: bold;
-                        letter-spacing: 0.15em;
-                        padding: 12px 4px;
-                        border: 2px solid var(--mud-palette-lines-default);
-                        border-radius: 8px;
-                        background: var(--mud-palette-surface);
-                        color: var(--mud-palette-text-primary);
-                        outline: none;
-                        transition: border-color 0.2s;
-                    }
-                    .code-segment:focus {
-                        border-color: var(--mud-palette-primary);
-                    }
-                </style>
 
                 <script>
                     (function () {
