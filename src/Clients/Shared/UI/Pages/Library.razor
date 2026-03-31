@@ -20,7 +20,6 @@
         @if (_availableMediaTypes.Count > 1)
         {
             <MudChipSet T="MediaType" SelectionMode="SelectionMode.SingleSelection" SelectedValue="_selectedMediaType" SelectedValueChanged="OnMediaTypeFilterChanged" CheckMark="false">
-                <MudChip T="MediaType" Value="default(MediaType)" Variant="@(IsAllSelected ? Variant.Filled : Variant.Text)" Color="Color.Primary" Text="@S["All"]" />
                 @foreach (var mt in _availableMediaTypes)
                 {
                     <MudChip T="MediaType" Value="@mt" Variant="@(_selectedMediaType.Equals(mt) ? Variant.Filled : Variant.Text)" Color="Color.Primary" Text="@GetMediaTypeLabel(mt)" />
@@ -31,7 +30,7 @@
         <MudIconButton Icon="@Icons.Material.Outlined.FilterList" />
     </ToolbarContent>
     <GridTemplate Context="item">
-        <MediaCard Model="item" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+        <MediaCard Model="item" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
     </GridTemplate>
     <TableHeaderContent>
         <th>@L["Title"]</th>

@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
@@ -19,7 +20,6 @@ public partial class Library
     private LibraryMediaType? _libraryMediaType;
     private List<MediaType> _availableMediaTypes = [];
     private MediaType _selectedMediaType;
-    private bool IsAllSelected => _selectedMediaType == default;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -43,7 +43,15 @@ public partial class Library
             _ => []
         };
 
-        await LoadMediasAsync(libraryId);
+        _selectedMediaType = _availableMediaTypes.Count > 0
+            ? _availableMediaTypes[0]
+            : default;
+
+        HashSet<MediaType>? initialFilter = _selectedMediaType != default
+            ? [_selectedMediaType]
+            : null;
+
+        await LoadMediasAsync(libraryId, initialFilter);
     }
 
     private async Task LoadMediasAsync(Guid? libraryId, HashSet<MediaType>? mediaTypes = null)
@@ -73,12 +81,12 @@ public partial class Library
 
     private async Task OnMediaTypeFilterChanged(MediaType value)
     {
+        if (value == default) return;
+
         _selectedMediaType = value;
 
         var libraryId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
-        HashSet<MediaType>? filter = value == default ? null : [value];
-
-        await LoadMediasAsync(libraryId, filter);
+        await LoadMediasAsync(libraryId, [value]);
     }
 
     private string GetMediaTypeLabel(MediaType mediaType) => mediaType switch
@@ -109,8 +117,14 @@ public partial class Library
     {
         MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
         MediaCardKind.Serie => $"/series/{item.Id}",
-        MediaCardKind.Season => $"/series/{item.ParentId ?? item.Id}",
-        MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}",
+        MediaCardKind.Season => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}",
+        MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}#ep-{item.EpisodeNumber}",
         _ => $"/movies/{item.Id}"
+    };
+
+    private static MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
+    {
+        MediaCardKind.Cover => MediaCardVariant.Cover,
+        _ => MediaCardVariant.Poster
     };
 }
