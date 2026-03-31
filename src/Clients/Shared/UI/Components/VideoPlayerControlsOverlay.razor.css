@@ -43,9 +43,9 @@
 
     .controls-bar button,
     .controls-bar select {
-        background: #ffffff22;
+        background: var(--video-controls-btn-bg, #ffffff22);
         border: none;
-        color: white;
+        color: var(--player-text-color, white);
         padding: 0.3rem 0.6rem;
         border-radius: 0.3rem;
     }
