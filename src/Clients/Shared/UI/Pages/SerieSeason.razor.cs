@@ -24,11 +24,13 @@ public partial class SerieSeason
     private Guid? _expandedEpisodeId;
     private string _pageTitle = "";
     private bool _loading = true;
+    private string? _focusEpisodeFragment;
 
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
         _expandedEpisodeId = null;
+        _focusEpisodeFragment = null;
 
         var serieMedia = await k7ServerService.GetMediaAsync(Guid.Parse(SerieId));
         if (serieMedia is not SerieDto serie)
@@ -38,8 +40,8 @@ public partial class SerieSeason
         }
 
         _backdropUrl = apiClient.GetAbsoluteUri(
-            serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?
-                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+            serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)
+                ?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
         var seasonSummary = serie.Seasons?
             .OrderBy(s => s.SeasonNumber)
@@ -60,8 +62,8 @@ public partial class SerieSeason
         {
             _season = seasonDto;
             _seasonPosterUrl = apiClient.GetAbsoluteUri(
-                seasonDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
-                    .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+                seasonDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                    ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
 
             _episodes = (seasonDto.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
@@ -72,15 +74,31 @@ public partial class SerieSeason
                 : $"{serie.Title} - {string.Format(L["SeasonNumber"], SeasonNumber)}";
         }
 
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (!string.IsNullOrEmpty(uri.Fragment))
+        {
+            _focusEpisodeFragment = uri.Fragment;
+        }
+
         _loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusEpisodeFragment is not null)
+        {
+            var elementId = _focusEpisodeFragment.TrimStart('#');
+            _focusEpisodeFragment = null;
+            await JSRuntime.InvokeVoidAsync("K7.scrollToElement", elementId);
+        }
     }
 
     private string? GetEpisodeStillUrl(LiteSerieEpisodeDto episode)
     {
         if (episode.StillImageId is null) return null;
         return apiClient.GetAbsoluteUri(
-            episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)?
-                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+            episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
     }
 
     private void ToggleExpand(Guid episodeId)
