@@ -27,4 +27,10 @@ public partial class MediaCard
     };
 
     private bool ProgressBarIsHidden() => Model.Progress == 0 || Model.Progress >= 100;
+
+    private string PlaceholderIcon => Variant switch
+    {
+        MediaCardVariant.Cover => Icons.Material.Outlined.Album,
+        _ => Icons.Material.Outlined.Movie
+    };
 }
