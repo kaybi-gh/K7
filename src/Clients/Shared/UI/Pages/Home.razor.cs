@@ -42,41 +42,45 @@ public partial class Home : IDisposable
 
         K7HubClient.MediaAdded += OnMediaAdded;
 
+        var tasks = new List<Task>();
+
         if (_canTrackProgress)
         {
             K7HubClient.ProgressUpdated += OnProgressUpdated;
-            await LoadCarouselAsync(new GetMediasWithPaginationQuery
+            tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
             {
                 ContinueWatching = true,
                 OrderBy = [MediaOrderingOption.LastInteractedDesc],
                 PageNumber = 1,
                 PageSize = 20
-            }, continueWatchingMedias);
+            }, continueWatchingMedias));
         }
 
-        await LoadCarouselAsync(new GetMediasWithPaginationQuery
+        tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
         {
             OrderBy = [MediaOrderingOption.CreatedDesc],
             PageNumber = 1,
-            PageSize = 100
-        }, recentlyAddedMedias, useParentTitle: true);
+            PageSize = 50
+        }, recentlyAddedMedias, useParentTitle: true));
 
-        await LoadCarouselAsync(new GetMediasWithPaginationQuery
+        tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
         {
             OrderBy = [MediaOrderingOption.ReleaseDateDesc],
             PageNumber = 1,
-            PageSize = 100
-        }, recentlyReleasedMedias, useParentTitle: true);
+            PageSize = 50
+        }, recentlyReleasedMedias, useParentTitle: true));
 
         if (_canTrackProgress)
         {
-            await LoadCarouselAsync(new GetMediasWithPaginationQuery
+            tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
             {
                 OrderBy = [MediaOrderingOption.LastInteractedDesc],
                 PageNumber = 1,
                 PageSize = 40
-            }, lastPlayedMedias);
+            }, lastPlayedMedias));
         }
+
+        await Task.WhenAll(tasks);
 
         isLoading = false;
     }
