@@ -5,7 +5,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.95);
+    background: var(--player-overlay-bg, rgba(0, 0, 0, 0.95));
     --dominant-color: 128,128,128;
 }
 
@@ -40,7 +40,7 @@
     max-width: 480px;
     height: 100%;
     padding: 16px 24px;
-    color: #fff;
+    color: var(--player-text-color, #fff);
     overflow-y: auto;
 }
 
@@ -76,7 +76,7 @@
     max-width: 360px;
     aspect-ratio: 1;
     border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--media-artwork-shadow, 0 8px 32px rgba(0, 0, 0, 0.5));
     object-fit: cover;
 }
 
