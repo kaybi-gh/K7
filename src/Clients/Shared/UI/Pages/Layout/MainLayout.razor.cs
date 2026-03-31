@@ -23,7 +23,7 @@ public partial class MainLayout
 
             if (isAuth && !string.IsNullOrEmpty(userId))
             {
-                await DeviceInitializer.InitializeDeviceAsync(Services);
+                await DeviceInitializer.InitializeDeviceAsync(Services, userId);
 
                 var canReport = await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
                 AudioProgressTracker.SetCanReport(canReport);

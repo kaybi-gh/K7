@@ -6,12 +6,13 @@ using Microsoft.Extensions.DependencyInjection;
 namespace K7.Clients.Shared.Services;
 public static class DeviceInitializer
 {
-    public static async Task InitializeDeviceAsync(IServiceProvider services)
+    public static async Task InitializeDeviceAsync(IServiceProvider services, string? userId = null)
     {
         try
         {
             var deviceStorageService = services.GetRequiredService<IDeviceStorageService>();
             var existingDeviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
+            var attachedUserId = deviceStorageService.Get(PreferenceKeys.DEVICE_ATTACHED_USER_ID);
 
             if (string.IsNullOrEmpty(existingDeviceId))
             {
@@ -20,16 +21,24 @@ public static class DeviceInitializer
 
             if (Guid.TryParse(existingDeviceId, out var parsedId))
             {
-                var deviceApiService = services.GetRequiredService<IDeviceApiService>();
+                if (string.IsNullOrEmpty(userId) || attachedUserId != userId)
+                {
+                    var deviceApiService = services.GetRequiredService<IDeviceApiService>();
 
-                try
-                {
-                    await deviceApiService.AttachCurrentUserToDeviceAsync(parsedId);
-                }
-                catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    deviceStorageService.Remove(PreferenceKeys.DEVICE_ID);
-                    await CreateNewDeviceAsync(services, deviceStorageService);
+                    try
+                    {
+                        await deviceApiService.AttachCurrentUserToDeviceAsync(parsedId);
+                        if (!string.IsNullOrEmpty(userId))
+                        {
+                            deviceStorageService.Set(PreferenceKeys.DEVICE_ATTACHED_USER_ID, userId);
+                        }
+                    }
+                    catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        deviceStorageService.Remove(PreferenceKeys.DEVICE_ID);
+                        deviceStorageService.Remove(PreferenceKeys.DEVICE_ATTACHED_USER_ID);
+                        await CreateNewDeviceAsync(services, deviceStorageService);
+                    }
                 }
             }
         }
