@@ -17,7 +17,7 @@
                         @if (hasOverride)
                         {
                             <MudIconButton Icon="@Icons.Material.Filled.Undo" Size="Size.Small" Color="Color.Secondary"
-                                           OnClick="@(() => RemoveOverride(capability))" aria-label="Réinitialiser" />
+                                           OnClick="@(() => RemoveOverride(capability))" aria-label="@S["Reset"]" />
                         }
                         <MudSwitch T="bool" Value="@effectiveValue" ValueChanged="@(v => SetOverride(capability, v, defaultEnabled))"
                                    Color="@(hasOverride ? Color.Warning : Color.Primary)" />
@@ -27,7 +27,7 @@
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
+        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Enregistrer</MudButton>
     </DialogActions>
 </MudDialog>

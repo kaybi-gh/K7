@@ -1,6 +1,8 @@
+using K7.Clients.Shared.UI;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
@@ -8,6 +10,7 @@ namespace K7.Clients.Shared.UI.Components.Admin;
 public partial class AdminUserCapabilitiesDialog
 {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Parameter] public string UserName { get; set; } = "";
     [Parameter] public string Role { get; set; } = Roles.User;
     [Parameter] public Dictionary<Capability, bool> Overrides { get; set; } = new();
