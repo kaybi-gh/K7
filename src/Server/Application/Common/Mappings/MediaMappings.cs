@@ -100,8 +100,11 @@ public static class MediaMappings
                     .Select(s => new LiteSerieSeasonDto
                     {
                         Id = s.Id,
-                        SeasonNumber = s.SeasonNumber,
                         Title = s.Title,
+                        ReleaseDate = s.ReleaseDate?.ToString(),
+                        Pictures = s.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                        SerieId = s.SerieId,
+                        SeasonNumber = s.SeasonNumber,
                         EpisodeCount = s.Episodes.Count,
                         Poster = s.Pictures
                             .Where(p => p.Type == MetadataPictureType.Poster)
@@ -217,6 +220,24 @@ public static class MediaMappings
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate?.ToString(),
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                    ? state.ToUserMediaStateDto()
+                    : null,
+                UserRating = GetUserRating(domain)
+            },
+            SerieSeason season => new LiteSerieSeasonDto()
+            {
+                Id = domain.Id,
+                Title = domain.Title,
+                ReleaseDate = domain.ReleaseDate?.ToString(),
+                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                SerieId = season.SerieId,
+                SeasonNumber = season.SeasonNumber,
+                EpisodeCount = season.Episodes.Count,
+                Poster = domain.Pictures
+                    .Where(p => p.Type == MetadataPictureType.Poster)
+                    .Select(p => p.ToMetadataPictureDto())
+                    .FirstOrDefault(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,

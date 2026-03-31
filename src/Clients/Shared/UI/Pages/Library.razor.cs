@@ -38,7 +38,7 @@ public partial class Library
 
         _availableMediaTypes = _libraryMediaType switch
         {
-            LibraryMediaType.Serie => [MediaType.Serie, MediaType.SerieEpisode],
+            LibraryMediaType.Serie => [MediaType.Serie, MediaType.SerieSeason, MediaType.SerieEpisode],
             LibraryMediaType.Music => [MediaType.MusicAlbum, MediaType.MusicTrack],
             _ => []
         };
@@ -85,6 +85,7 @@ public partial class Library
     {
         MediaType.Movie => S["MediaTypeMovies"],
         MediaType.Serie => S["MediaTypeSeries"],
+        MediaType.SerieSeason => L["Seasons"],
         MediaType.SerieEpisode => L["Episodes"],
         MediaType.MusicAlbum => L["Albums"],
         MediaType.MusicTrack => L["Tracks"],
@@ -108,6 +109,7 @@ public partial class Library
     {
         MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
         MediaCardKind.Serie => $"/series/{item.Id}",
+        MediaCardKind.Season => $"/series/{item.ParentId ?? item.Id}",
         MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}",
         _ => $"/movies/{item.Id}"
     };
