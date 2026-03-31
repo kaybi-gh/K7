@@ -6,6 +6,8 @@ public record MediaCardViewModel
 {
     public required string Id { get; init; }
     public string? ParentId { get; init; }
+    public int? SeasonNumber { get; init; }
+    public int? EpisodeNumber { get; init; }
     public MediaCardKind Kind { get; init; }
     public string? Title { get; init; }
     public string? PictureUrl { get; init; }
