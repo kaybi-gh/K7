@@ -3,6 +3,9 @@
     <div class="music-mini-player @(SidebarService.IsOpen ? "sidebar-open" : "sidebar-collapsed")">
         <div class="mini-player-progress" @ref="_progressBarRef"
              tabindex="0" role="slider"
+             aria-label="@S["SeekBar"]"
+             aria-valuemin="0" aria-valuemax="100"
+             aria-valuenow="@((int)CurrentPercent)"
              @onclick="OnProgressClick"
              @onkeydown="OnProgressKeyDown"
              @onpointerdown="OnProgressPointerDown"
@@ -17,7 +20,7 @@
                 @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
                 {
                     <MudImage Src="@Audio.CurrentTrack.CoverUrl"
-                              Alt="Cover"
+                              Alt="@($"{Audio.CurrentTrack.Title} — {Audio.CurrentTrack.Artist}")"
                               Width="48" Height="48"
                               ObjectFit="ObjectFit.Cover"
                               Class="mini-player-cover" />

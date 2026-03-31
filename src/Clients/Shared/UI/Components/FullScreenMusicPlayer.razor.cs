@@ -7,8 +7,10 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Localization;
 using MudBlazor;
 using MudBlazor.Services;
+using K7.Clients.Shared.UI;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -16,6 +18,7 @@ public enum FullScreenView { Player, Lyrics, Queue }
 
 public partial class FullScreenMusicPlayer : IDisposable
 {
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     private ElementReference _seekBarRef;
     private bool _isDragging;
     private FullScreenView _view;

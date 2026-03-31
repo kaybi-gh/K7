@@ -17,8 +17,9 @@
             <div class="fullscreen-player-header">
                 <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown"
                                Color="Color.Inherit"
+                               aria-label="@S["Close"]"
                                OnClick="Close" />
-                <span class="fullscreen-player-header-title">En cours de lecture</span>
+                <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
                 <MudIconButton Icon="@Icons.Material.Filled.Lyrics"
                                Color="@(_view == FullScreenView.Lyrics ? Color.Primary : Color.Inherit)"
                                OnClick="ToggleLyrics" />
@@ -33,7 +34,7 @@
                     @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
                     {
                         <MudImage Src="@Audio.CurrentTrack.CoverUrl"
-                                  Alt="Cover"
+                                  Alt="@($"{Audio.CurrentTrack.Title} — {Audio.CurrentTrack.Artist}")"
                                   ObjectFit="ObjectFit.Cover"
                                   Class="artwork-image" />
                     }
@@ -65,6 +66,9 @@
                     {
                         <div class="waveform-container" style="@_waveformMaskStyle"
                              tabindex="0" role="slider"
+                             aria-label="@S["SeekBar"]"
+                             aria-valuemin="0" aria-valuemax="100"
+                             aria-valuenow="@((int)CurrentPercent)"
                              @ref="_seekBarRef"
                              @onclick="OnSeekClick"
                              @onkeydown="OnSeekKeyDown"
@@ -79,6 +83,9 @@
                     {
                         <div class="seek-bar" @ref="_seekBarRef"
                              tabindex="0" role="slider"
+                             aria-label="@S["SeekBar"]"
+                             aria-valuemin="0" aria-valuemax="100"
+                             aria-valuenow="@((int)CurrentPercent)"
                              @onclick="OnSeekClick"
                              @onkeydown="OnSeekKeyDown"
                              @onpointerdown="OnSeekPointerDown"

@@ -3,8 +3,10 @@ using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Localization;
 using MudBlazor;
 using MudBlazor.Services;
+using K7.Clients.Shared.UI;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -12,6 +14,7 @@ public partial class MiniMusicPlayer : IDisposable
 {
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
     [Inject] private SidebarService SidebarService { get; set; } = default!;
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     private ElementReference _progressBarRef;
     private bool _isDragging;
