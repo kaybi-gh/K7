@@ -26,5 +26,6 @@
   <data name="Seasons" xml:space="preserve"><value>Saisons</value></data>
   <data name="Albums" xml:space="preserve"><value>Albums</value></data>
   <data name="Tracks" xml:space="preserve"><value>Morceaux</value></data>
+  <data name="ItemCount" xml:space="preserve"><value>{0} élément(s)</value></data>
 </root>
 

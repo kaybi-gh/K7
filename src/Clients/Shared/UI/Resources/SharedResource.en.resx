@@ -75,4 +75,12 @@
   <data name="MediaTypeMusic" xml:space="preserve"><value>Music</value></data>
   <data name="ItemSize" xml:space="preserve"><value>Size</value></data>
   <data name="Spacing" xml:space="preserve"><value>Spacing</value></data>
+  <data name="SeekBar" xml:space="preserve"><value>Seek bar</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="NowPlaying" xml:space="preserve"><value>Now playing</value></data>
+  <data name="ItemCount" xml:space="preserve"><value>{0} item(s)</value></data>
+  <data name="Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="SeasonNumber" xml:space="preserve"><value>Season {0}</value></data>
+  <data name="Specials" xml:space="preserve"><value>Specials</value></data>
+  <data name="EpisodeCount" xml:space="preserve"><value>{0} episode(s)</value></data>
 </root>
