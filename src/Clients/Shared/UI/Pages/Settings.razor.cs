@@ -33,7 +33,7 @@ public partial class Settings
         _deviceType = await DeviceService.GetDeviceTypeAsync();
         _supportedMediaFormats = await DeviceService.GetSupportedMediaFormatsAsync();
         _hdrSupport = await DeviceService.GetHdrSupportAsync();
-        _backendUrl = ApiClient.GetAbsoluteUri()?.AbsoluteUri;
+        _backendUrl = ApiClient.HttpClient.BaseAddress?.AbsoluteUri;
 
         var me = await K7ServerService.GetCurrentUserAsync();
         if (me is not null)

@@ -3,5 +3,5 @@
 public interface IK7ServerService
 {
     HttpClient HttpClient { get; }
-    Uri? GetAbsoluteUri(string? relativePath = null);
+    Uri? GetAbsoluteUri(string? relativePath);
 }

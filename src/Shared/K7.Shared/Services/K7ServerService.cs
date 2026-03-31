@@ -35,11 +35,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         _serializerOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
-    public Uri? GetAbsoluteUri(string? relativePath = null)
+    public Uri? GetAbsoluteUri(string? relativePath)
     {
-        return HttpClient.BaseAddress != null && !string.IsNullOrEmpty(relativePath)
+        return HttpClient.BaseAddress is not null && !string.IsNullOrEmpty(relativePath)
             ? new Uri(HttpClient.BaseAddress, relativePath)
-            : HttpClient.BaseAddress;
+            : null;
     }
 
     public async Task<Guid> CreateDeviceAsync(CreateDeviceRequest request, CancellationToken cancellationToken = default)
