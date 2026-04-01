@@ -103,8 +103,9 @@ public class FileIndexer : IFileIndexer
                         {
                             Request = new CreateMediaCommand()
                             {
-                                IndexedFileId = file.Id,
-                                MediaType = MediaType.Movie
+                                IndexedFileIds = [file.Id],
+                                MediaType = MediaType.Movie,
+                                LibraryId = library.Id
                             },
                             Priority = BackgroundTaskPriority.Normal,
                             TargetEntityTypeName = nameof(BaseMedia),
@@ -120,24 +121,26 @@ public class FileIndexer : IFileIndexer
                 {
                     var filesInSameDirectory = group.ToList();
                     foreach (var file in filesInSameDirectory)
+                        file.TryIdentifyMusicTrack(library, filesInSameDirectory);
+                }
+
+                foreach (var albumGroup in toBeIdentifiedFiles
+                    .Where(f => f.Identification is not null)
+                    .GroupBy(f => f.Identification!.AlbumName ?? f.ParentDirectory))
+                {
+                    backgroundTasks.Add(new CreateBackgroundTaskCommand()
                     {
-                        if (file.TryIdentifyMusicTrack(library, filesInSameDirectory))
+                        Request = new CreateMediaCommand()
                         {
-                            file.Identification = file.Identification;
-                            backgroundTasks.Add(new CreateBackgroundTaskCommand()
-                            {
-                                Request = new CreateMediaCommand()
-                                {
-                                    IndexedFileId = file.Id,
-                                    MediaType = MediaType.MusicTrack
-                                },
-                                Priority = BackgroundTaskPriority.Normal,
-                                TargetEntityTypeName = nameof(BaseMedia),
-                                MaxAttempts = 5,
-                                ConcurrencyGroup = library.MetadataProviderName
-                            });
-                        }
-                    }
+                            IndexedFileIds = albumGroup.Select(f => f.Id).ToList(),
+                            MediaType = MediaType.MusicAlbum,
+                            LibraryId = library.Id
+                        },
+                        Priority = BackgroundTaskPriority.Normal,
+                        TargetEntityTypeName = nameof(BaseMedia),
+                        MaxAttempts = 5,
+                        ConcurrencyGroup = library.MetadataProviderName
+                    });
                 }
                 break;
 
@@ -146,23 +149,26 @@ public class FileIndexer : IFileIndexer
                 {
                     var filesInSameDirectory = group.ToList();
                     foreach (var file in filesInSameDirectory)
+                        file.TryIdentifySerieEpisode(library, filesInSameDirectory);
+                }
+
+                foreach (var serieGroup in toBeIdentifiedFiles
+                    .Where(f => f.Identification?.SeriesTitle is not null)
+                    .GroupBy(f => f.Identification!.SeriesTitle))
+                {
+                    backgroundTasks.Add(new CreateBackgroundTaskCommand()
                     {
-                        if (file.TryIdentifySerieEpisode(library, filesInSameDirectory))
+                        Request = new CreateMediaCommand()
                         {
-                            backgroundTasks.Add(new CreateBackgroundTaskCommand()
-                            {
-                                Request = new CreateMediaCommand()
-                                {
-                                    IndexedFileId = file.Id,
-                                    MediaType = MediaType.SerieEpisode
-                                },
-                                Priority = BackgroundTaskPriority.Normal,
-                                TargetEntityTypeName = nameof(BaseMedia),
-                                MaxAttempts = 5,
-                                ConcurrencyGroup = library.MetadataProviderName
-                            });
-                        }
-                    }
+                            IndexedFileIds = serieGroup.Select(f => f.Id).ToList(),
+                            MediaType = MediaType.Serie,
+                            LibraryId = library.Id
+                        },
+                        Priority = BackgroundTaskPriority.Normal,
+                        TargetEntityTypeName = nameof(BaseMedia),
+                        MaxAttempts = 5,
+                        ConcurrencyGroup = library.MetadataProviderName
+                    });
                 }
                 break;
         }
@@ -214,8 +220,9 @@ public class FileIndexer : IFileIndexer
                 {
                     Request = new CreateMediaCommand()
                     {
-                        IndexedFileId = oldFile.Id,
-                        MediaType = MediaType.Movie
+                        IndexedFileIds = [oldFile.Id],
+                        MediaType = MediaType.Movie,
+                        LibraryId = library.Id
                     },
                     Priority = BackgroundTaskPriority.Normal,
                     TargetEntityTypeName = nameof(BaseMedia),

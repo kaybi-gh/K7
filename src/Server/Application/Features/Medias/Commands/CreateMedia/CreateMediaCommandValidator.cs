@@ -8,7 +8,10 @@ public class CreateMediaCommandValidator : AbstractValidator<CreateMediaCommand>
             .IsInEnum()
             .NotEmpty();
 
-        RuleFor(v => v.IndexedFileId)
-            .NotNull();
+        RuleFor(v => v.LibraryId)
+            .NotEmpty();
+
+        RuleFor(v => v.IndexedFileIds)
+            .NotEmpty();
     }
 }
