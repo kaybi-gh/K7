@@ -3981,6 +3981,9 @@
           },
           {
             "$ref": "#/components/schemas/LiteMediaDtoLiteSerieEpisodeDto"
+          },
+          {
+            "$ref": "#/components/schemas/LiteMediaDtoLiteSerieSeasonDto"
           }
         ],
         "discriminator": {
@@ -3990,7 +3993,8 @@
             "MusicAlbum": "#/components/schemas/LiteMediaDtoLiteMusicAlbumDto",
             "MusicTrack": "#/components/schemas/LiteMediaDtoLiteMusicTrackDto",
             "Serie": "#/components/schemas/LiteMediaDtoLiteSerieDto",
-            "SerieEpisode": "#/components/schemas/LiteMediaDtoLiteSerieEpisodeDto"
+            "SerieEpisode": "#/components/schemas/LiteMediaDtoLiteSerieEpisodeDto",
+            "SerieSeason": "#/components/schemas/LiteMediaDtoLiteSerieSeasonDto"
           }
         }
       },
@@ -4355,6 +4359,90 @@
             "items": {
               "$ref": "#/components/schemas/MetadataPictureDto"
             }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LiteMediaDtoLiteSerieSeasonDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "SerieSeason"
+            ],
+            "type": "string"
+          },
+          "serieId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "episodeCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "poster": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MetadataPictureDto"
+              }
+            ]
           },
           "id": {
             "type": "string",
@@ -4947,7 +5035,7 @@
       "LiteSerieSeasonDto": {
         "type": "object",
         "properties": {
-          "id": {
+          "serieId": {
             "type": "string",
             "format": "uuid"
           },
@@ -4958,12 +5046,6 @@
               "string"
             ],
             "format": "int32"
-          },
-          "title": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "episodeCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -4982,6 +5064,50 @@
                 "$ref": "#/components/schemas/MetadataPictureDto"
               }
             ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pictures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -5992,10 +6118,7 @@
             ]
           },
           "availableSizes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MetadataPictureSize"
-            }
+            "$ref": "#/components/schemas/PaginatedListDtoOfLiteMediaDto/properties/items/items/anyOf/0/properties/pictures/items/properties/availableSizes"
           }
         }
       },
