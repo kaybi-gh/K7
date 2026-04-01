@@ -269,20 +269,42 @@ public class BackgroundTasksProcessingService : BackgroundService
             query = query.Where(t => t.ConcurrencyGroup == null || !saturatedGroups.Contains(t.ConcurrencyGroup));
         }
 
-        var task = await query
+        var taskId = await query
             .OrderByDescending(t => t.Priority)
             .ThenBy(t => t.Created)
+            .Select(t => t.Id)
             .FirstOrDefaultAsync(stoppingToken);
 
-        if (task is null)
+        if (taskId == default)
         {
             return;
         }
 
-        task.Status = BackgroundTaskStatus.InProgress;
-        task.StartedAt = DateTimeOffset.UtcNow;
-        await context.SaveChangesAsync(stoppingToken);
+        // Atomically claim the task: only succeeds if it is still Pending/WaitingForRetry.
+        // This prevents duplicate execution when multiple workers race on the same task.
+        var claimTime = DateTimeOffset.UtcNow;
+        var claimed = await context.BackgroundTasks
+            .Where(t => t.Id == taskId
+                && (t.Status == BackgroundTaskStatus.Pending
+                    || (t.Status == BackgroundTaskStatus.WaitingForRetry && (t.NextRetryAfter == null || t.NextRetryAfter <= claimTime))))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.Status, BackgroundTaskStatus.InProgress)
+                .SetProperty(t => t.StartedAt, claimTime)
+                .SetProperty(t => t.LastModified, claimTime),
+                stoppingToken);
+
+        if (claimed == 0)
+        {
+            return; // Another worker claimed this task first.
+        }
+
         await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
+
+        var task = await context.BackgroundTasks.FindAsync([taskId], stoppingToken);
+        if (task is null)
+        {
+            return;
+        }
 
         if (task.ConcurrencyGroup is not null)
         {

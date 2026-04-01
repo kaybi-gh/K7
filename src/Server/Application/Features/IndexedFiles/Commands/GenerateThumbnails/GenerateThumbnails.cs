@@ -44,7 +44,10 @@ public class GenerateThumbnailsCommandHandler : IRequestHandler<GenerateThumbnai
 
         var thumbnails = await _mediaAnalysisService.GenerateThumbnailsAsync(entity, cancellationToken: cancellationToken);
 
-        // TODO - Does it clear picture?
+        if (videoFileMetadata.Thumbnails is not null)
+        {
+            _context.MetadataPictures.Remove(videoFileMetadata.Thumbnails);
+        }
         videoFileMetadata.Thumbnails = thumbnails;
         await _context.SaveChangesAsync(cancellationToken);
     }
