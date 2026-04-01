@@ -155,16 +155,20 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             serie.PersonRoles.Clear();
             foreach (var role in serieMetadata.PersonRoles)
             {
-                var existingPerson = await _context.Persons
-                    .Include(p => p.ExternalIds)
-                    .FirstOrDefaultAsync(p => p.ExternalIds.Any(e =>
-                        role.Person.ExternalIds.Any(re => re.ProviderName == e.ProviderName && re.Value == e.Value)),
-                        cancellationToken);
+                Person? existingPerson = null;
+                foreach (var externalId in role.Person.ExternalIds)
+                {
+                    existingPerson = await _context.Persons
+                        .Include(p => p.ExternalIds)
+                        .FirstOrDefaultAsync(p => p.ExternalIds.Any(e =>
+                            e.ProviderName == externalId.ProviderName && e.Value == externalId.Value),
+                            cancellationToken);
+                    if (existingPerson is not null)
+                        break;
+                }
 
                 if (existingPerson is not null)
-                {
                     role.Person = existingPerson;
-                }
 
                 serie.PersonRoles.Add(role);
             }
