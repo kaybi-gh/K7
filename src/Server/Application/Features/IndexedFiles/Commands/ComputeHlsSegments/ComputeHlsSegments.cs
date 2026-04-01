@@ -49,6 +49,7 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
                     (long)audioFileMetadata.Duration.TotalMilliseconds,
                     entity.FileMetadata.Id,
                     entity.Id);
+                _context.HlsSegments.RemoveRange(audioFileMetadata.HlsSegments);
                 audioFileMetadata.HlsSegments = audioSegments;
                 break;
 
@@ -58,7 +59,7 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
                     request.SegmentsDuration,
                     (long)videoFileMetadata.Duration.TotalMilliseconds,
                     cancellationToken);
-                // TODO - Does it clear current segments?
+                _context.HlsSegments.RemoveRange(videoFileMetadata.HlsSegments);
                 videoFileMetadata.HlsSegments = segments;
                 break;
 
