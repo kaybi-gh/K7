@@ -1,27 +1,29 @@
 @using K7.Shared.Dtos.Entities.Medias
 
 <div class="season-card" tabindex="0" role="button" @onclick="OnClick" @onkeydown="OnKeyDown">
-    @if (!string.IsNullOrEmpty(PosterUrl))
-    {
-        <MudImage Src="@PosterUrl"
-                  Alt="@Season.Title"
-                  Class="rounded-lg"
-                  Style="width: 140px; height: 210px;"
-                  ObjectFit="ObjectFit.Cover"
-                  loading="lazy" />
-    }
-    else
-    {
-        <div class="season-card-poster-placeholder">
-            <MudIcon Icon="@Icons.Material.Filled.Tv" Style="font-size: 40px; opacity: 0.3;" />
+    <div class="season-card-poster-container">
+        @if (!string.IsNullOrEmpty(PosterUrl))
+        {
+            <MudImage Src="@PosterUrl"
+                      Alt="@Season.Title"
+                      Class="rounded-lg"
+                      Style="width: 140px; height: 210px;"
+                      ObjectFit="ObjectFit.Cover"
+                      loading="lazy" />
+        }
+        else
+        {
+            <div class="season-card-poster-placeholder">
+                <MudIcon Icon="@Icons.Material.Filled.Tv" Style="font-size: 40px; opacity: 0.3;" />
+            </div>
+        }
+        <div class="season-card-badge">
+            <MudChip Size="Size.Small" T="int" Color="Color.Dark" Variant="MudBlazor.Variant.Filled">@Season.EpisodeCount</MudChip>
         </div>
-    }
-    <MudStack Spacing="0" Class="season-card-info">
+    </div>
+    <div class="season-card-info">
         <MudText Typo="Typo.subtitle2">
             @(Season.SeasonNumber == 0 ? S["Specials"] : string.Format(S["SeasonNumber"], Season.SeasonNumber))
         </MudText>
-        <MudText Typo="Typo.caption" Color="Color.Secondary">
-            @string.Format(S["EpisodeCount"], Season.EpisodeCount)
-        </MudText>
-    </MudStack>
+    </div>
 </div>
