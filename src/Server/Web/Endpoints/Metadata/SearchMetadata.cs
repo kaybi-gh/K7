@@ -1,5 +1,6 @@
 using K7.Server.Application.Features.Metadata.Queries.SearchMetadata;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,13 +13,14 @@ public class SearchMetadata : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/metadata/search", async ([FromServices] ISender sender, [FromQuery] string query, [FromQuery] int? year, [FromQuery] string? providerId, CancellationToken cancellationToken) =>  
+        endpointRouteBuilder.MapGet("/api/metadata/search", async ([FromServices] ISender sender, [FromQuery] string query, [FromQuery] int? year, [FromQuery] string? providerId, [FromQuery] MediaType? mediaType, CancellationToken cancellationToken) =>  
         {
             var result = await sender.Send(new SearchMetadataQuery()
             {
                 Query = query,
                 Year = year,
-                ProviderId = providerId
+                ProviderId = providerId,
+                MediaType = mediaType
             }, cancellationToken);
             
             return Results.Ok(result);

@@ -23,6 +23,9 @@ public partial class ReIdentifyDialog
     [Parameter]
     public string? InitialSearchQuery { get; set; }
 
+    [Parameter]
+    public K7.Server.Domain.Enums.MediaType? MediaType { get; set; }
+
     private string _searchQuery = "";
     private int? _searchYear;
     private string? _searchProviderId;
@@ -61,7 +64,7 @@ public partial class ReIdentifyDialog
 
         try
         {
-            var results = await K7ServerService.SearchMetadataAsync(_searchQuery, _searchYear, _searchProviderId);
+            var results = await K7ServerService.SearchMetadataAsync(_searchQuery, _searchYear, _searchProviderId, MediaType);
             _results = results.ToList();
         }
         catch (Exception ex)

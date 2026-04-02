@@ -60,8 +60,11 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     }
 
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(
-        string query, int? year, string? providerId, CancellationToken cancellationToken)
+        string query, int? year, string? providerId, K7.Server.Domain.Enums.MediaType? mediaType, CancellationToken cancellationToken)
     {
+        if (mediaType.HasValue && mediaType != K7.Server.Domain.Enums.MediaType.Serie)
+            return [];
+
         var results = new List<MetadataSearchResult>();
 
         try
