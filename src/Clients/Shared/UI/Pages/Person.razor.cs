@@ -17,8 +17,7 @@ public partial class Person : IDisposable
     private PersonDto? _person;
     private string? _portraitUrl;
     private List<string> _backdropUrls = [];
-    private List<MediaCardViewModel> _movies = [];
-    private List<MediaCardViewModel> _series = [];
+    private List<MediaCardViewModel> _medias = [];
     private bool _loading = true;
     private int _activeBackdropIndex;
     private Timer? _backdropTimer;
@@ -51,8 +50,8 @@ public partial class Person : IDisposable
 
             switch (role.Media)
             {
-                case LiteMovieDto movie when _movies.All(m => m.Id != movie.Id.ToString()):
-                    _movies.Add(new MediaCardViewModel
+                case LiteMovieDto movie when _medias.All(m => m.Id != movie.Id.ToString()):
+                    _medias.Add(new MediaCardViewModel
                     {
                         Id = movie.Id.ToString(),
                         Title = movie.Title,
@@ -64,7 +63,7 @@ public partial class Person : IDisposable
                     break;
 
                 case LiteSerieDto serie when seenSeries.Add(serie.Id):
-                    _series.Add(new MediaCardViewModel
+                    _medias.Add(new MediaCardViewModel
                     {
                         Id = serie.Id.ToString(),
                         Kind = MediaCardKind.Serie,
@@ -77,7 +76,7 @@ public partial class Person : IDisposable
                     break;
 
                 case LiteSerieEpisodeDto episode when seenSeries.Add(episode.SerieId):
-                    _series.Add(new MediaCardViewModel
+                    _medias.Add(new MediaCardViewModel
                     {
                         Id = episode.SerieId.ToString(),
                         Kind = MediaCardKind.Serie,

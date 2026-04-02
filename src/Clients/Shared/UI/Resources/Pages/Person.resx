@@ -19,8 +19,7 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Movies" xml:space="preserve"><value>Films</value></data>
-  <data name="Series" xml:space="preserve"><value>S&#233;ries</value></data>
+  <data name="Filmography" xml:space="preserve"><value>Filmographie</value></data>
   <data name="More" xml:space="preserve"><value>Plus</value></data>
   <data name="Less" xml:space="preserve"><value>Moins</value></data>
   <data name="YearsOld" xml:space="preserve"><value>ans</value></data>
