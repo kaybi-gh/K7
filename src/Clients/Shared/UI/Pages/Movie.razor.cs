@@ -183,7 +183,7 @@ public partial class Movie
 
         var parameters = new DialogParameters<IndexedFilesDialog>
         {
-            { x => x.Movie, _movie },
+            { x => x.Media, _movie },
             { x => x.OnReIdentifyFile, EventCallback.Factory.Create<Guid>(this, OpenFileReIdentifyDialogAsync) }
         };
 

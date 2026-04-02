@@ -9,7 +9,7 @@
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="4">
-            @foreach (var file in Movie.IndexedFiles ?? [])
+            @foreach (var file in Media.IndexedFiles ?? [])
             {
                 var vMeta = file.FileMetadata as VideoFileMetadataDto;
                 <MudPaper Class="pa-4" Outlined="true">
