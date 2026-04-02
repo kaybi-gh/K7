@@ -15,4 +15,5 @@ public record MediaCardViewModel
     public bool Watched { get; set; } = false;
     public double Progress { get; set; } = 0;
     public int GroupCount { get; set; } = 1;
+    public int SerieSeasonCount { get; set; } = 1;
 }

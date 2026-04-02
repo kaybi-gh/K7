@@ -83,4 +83,5 @@
   <data name="SeasonNumber" xml:space="preserve"><value>Saison {0}</value></data>
   <data name="Specials" xml:space="preserve"><value>Hors-série</value></data>
   <data name="EpisodeCount" xml:space="preserve"><value>{0} épisode(s)</value></data>
+  <data name="IndexedVersions" xml:space="preserve"><value>Fichiers indexés</value></data>
 </root>

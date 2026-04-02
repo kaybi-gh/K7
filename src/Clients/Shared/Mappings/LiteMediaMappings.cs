@@ -43,9 +43,7 @@ public static class LiteMediaMappings
         {
             if (episodeDto is not null)
             {
-                cardTitle = episodeDto.SeasonNumber > 0 
-                    ? $"{episodeDto.SerieTitle} — Saison {episodeDto.SeasonNumber}" 
-                    : episodeDto.SerieTitle ?? item.Title;
+                cardTitle = episodeDto.SerieTitle ?? item.Title;
             }
             else
             {
@@ -70,7 +68,8 @@ public static class LiteMediaMappings
             AdditionalInformations = item.ReleaseDate,
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
-            Progress = userState?.ProgressPercentage ?? 0
+            Progress = userState?.ProgressPercentage ?? 0,
+            SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1
         };
     }
 }
