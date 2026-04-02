@@ -1,50 +1,132 @@
 using K7.Clients.Shared.Models;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Persons;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class Person
+public partial class Person : IDisposable
 {
     [Parameter]
     public required string Id { get; set; }
 
-    private static PersonDto? _person;
-    private static List<MediaCardViewModel>? _movies;
-    private bool _isSmallDevice;
-    private bool _overviewExpanded;
+    private PersonDto? _person;
+    private string? _portraitUrl;
+    private List<string> _backdropUrls = [];
+    private List<MediaCardViewModel> _movies = [];
+    private List<MediaCardViewModel> _series = [];
+    private bool _loading = true;
+    private int _activeBackdropIndex;
+    private Timer? _backdropTimer;
 
     protected override async Task OnInitializedAsync()
     {
         _person = await k7ServerService.GetPersonAsync(Guid.Parse(Id));
-        if (_person != null)
+        if (_person is null)
         {
-            var personMedias = _person.Roles.Select(x => x.Media);
-            if (personMedias != null && personMedias.OfType<LiteMovieDto>().Any())
+            _loading = false;
+            return;
+        }
+
+        _portraitUrl = apiClient.GetAbsoluteUri(
+            _person.PortraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+
+        var seenMedia = new HashSet<Guid>();
+        var seenSeries = new HashSet<Guid>();
+
+        foreach (var role in _person.Roles)
+        {
+            if (seenMedia.Add(role.MediaId) && _backdropUrls.Count < 5)
             {
-                _movies = personMedias.OfType<LiteMovieDto>()
-                    .Select(item => new MediaCardViewModel()
+                var backdropUri = role.Media?.Pictures
+                    ?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)
+                    ?.GetUri(MetadataPictureSize.Medium)?.OriginalString;
+                if (apiClient.GetAbsoluteUri(backdropUri)?.AbsoluteUri is { } url)
+                    _backdropUrls.Add(url);
+            }
+
+            switch (role.Media)
+            {
+                case LiteMovieDto movie when _movies.All(m => m.Id != movie.Id.ToString()):
+                    _movies.Add(new MediaCardViewModel
                     {
-                        Id = item.Id.ToString(),
-                        Title = item.Title,
-                        AdditionalInformations = item.ReleaseDate,
-                        PictureUrl = apiClient.GetAbsoluteUri(item.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-                    }).ToList();
+                        Id = movie.Id.ToString(),
+                        Title = movie.Title,
+                        AdditionalInformations = movie.ReleaseDate,
+                        PictureUrl = apiClient.GetAbsoluteUri(
+                            movie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                    });
+                    break;
+
+                case LiteSerieDto serie when seenSeries.Add(serie.Id):
+                    _series.Add(new MediaCardViewModel
+                    {
+                        Id = serie.Id.ToString(),
+                        Kind = MediaCardKind.Serie,
+                        Title = serie.Title,
+                        AdditionalInformations = serie.ReleaseDate,
+                        PictureUrl = apiClient.GetAbsoluteUri(
+                            serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                    });
+                    break;
+
+                case LiteSerieEpisodeDto episode when seenSeries.Add(episode.SerieId):
+                    _series.Add(new MediaCardViewModel
+                    {
+                        Id = episode.SerieId.ToString(),
+                        Kind = MediaCardKind.Serie,
+                        Title = episode.SerieTitle,
+                        PictureUrl = apiClient.GetAbsoluteUri(
+                            episode.SeriePictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                    });
+                    break;
             }
         }
-        
-        base.OnInitialized();
+
+        if (_backdropUrls.Count > 1)
+        {
+            _backdropTimer = new Timer(async _ =>
+            {
+                _activeBackdropIndex = (_activeBackdropIndex + 1) % _backdropUrls.Count;
+                await InvokeAsync(StateHasChanged);
+            }, null, TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(6));
+        }
+
+        _loading = false;
     }
 
-    private void ScreenResized(Breakpoint breakpoint)
+    private Task OpenBioDialogAsync()
     {
-        _isSmallDevice = breakpoint == Breakpoint.Xs;
+        if (_person is null || string.IsNullOrWhiteSpace(_person.Biography)) return Task.CompletedTask;
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var parameters = new DialogParameters
+        {
+            { "ContentText", _person.Biography },
+            { "ButtonText", S["Cancel"].Value }
+        };
+        return DialogService.ShowAsync<OverviewDialog>(_person.Name ?? string.Empty, parameters, options);
     }
 
-    private void ToggleOverview()
+    private async Task HandleBioKeyDown(KeyboardEventArgs e)
     {
-        _overviewExpanded = !_overviewExpanded;
+        if (e.Key is "Enter" or " ")
+            await OpenBioDialogAsync();
     }
+
+    private static int Age(DateOnly birthday)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var age = today.Year - birthday.Year;
+        if (birthday.AddYears(age) > today) age--;
+        return age;
+    }
+
+    public void Dispose() => _backdropTimer?.Dispose();
 }

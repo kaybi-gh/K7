@@ -1,52 +1,125 @@
-@page "/persons/{id}"
+﻿@page "/persons/{Id}"
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.PersonRoles
+@using K7.Clients.Shared.UI.Components.Dialogs
+@implements IDisposable
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
+@inject IDialogService DialogService
+@inject IStringLocalizer<Person> L
+@inject IStringLocalizer<SharedResource> S
 <PageTitle>@_person?.Name</PageTitle>
-<MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
 
-@if (_person != null)
+@if (_loading)
 {
-    <div class="background" style="--background-picture: url(@apiClient.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)" />
-    <div>
-        <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
-            <MudItem xs="12" sm="4" lg="1">
-                <MudStack AlignItems="AlignItems.Center">
-                    @if (_person.PortraitPicture is not null)
+    <div class="person-page">
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+            <MudProgressCircular Indeterminate="true" />
+        </MudStack>
+    </div>
+}
+else if (_person is not null)
+{
+    <div class="person-page">
+        @if (_backdropUrls.Count > 0)
+        {
+            <div class="person-backdrops">
+                @for (int i = 0; i < _backdropUrls.Count; i++)
+                {
+                    var idx = i;
+                    <div class="person-backdrop @(idx == _activeBackdropIndex ? "person-backdrop--active" : "")"
+                         style="background-image: url('@_backdropUrls[idx]')" />
+                }
+            </div>
+        }
+
+        <div class="person-hero">
+            <div class="person-hero-content">
+                <div class="person-portrait">
+                    @if (_portraitUrl is not null)
                     {
-                        <MudImage Src="@apiClient.GetAbsoluteUri(_person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri" Alt="@_person.Name" Class="rounded-lg" Style="max-width: 220px;" Fluid="true" ObjectFit="ObjectFit.Cover" />
+                        <img src="@_portraitUrl" alt="@_person.Name" class="person-portrait-img" />
                     }
                     else
                     {
-                        <MudImage Src="_content/K7.Clients.Shared.UI/images/person-placeholder.png" Alt="@_person.Name" Fluid="true" ObjectFit="ObjectFit.Cover" />
-                    }
-                </MudStack>
-            </MudItem>
-            <MudItem xs="12" sm="6" lg="5">
-                <MudStack AlignItems="@(_isSmallDevice ? AlignItems.Center : AlignItems.Start)">
-                    <MudText Typo="Typo.h4">@_person.Name</MudText>
-                    <MudStack>
-                        <div class="overview-container mx-4">
-                            <MudText Class="@(_overviewExpanded ? "" : "overview-collapsed")">@_person.Biography</MudText>
+                        <div class="person-portrait-placeholder">
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 64px; opacity: 0.3;" />
                         </div>
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
-                            <MudButton Variant="Variant.Text" Size="Size.Small" EndIcon="@(_overviewExpanded ? @Icons.Material.Filled.KeyboardArrowUp : @Icons.Material.Filled.KeyboardArrowDown)" OnClick="ToggleOverview">@(_overviewExpanded ? "Less" : "More")</MudButton>
-                        </MudStack>
-                    </MudStack>
-                </MudStack>
-            </MudItem>
-            <MudItem xs="12" sm="12" lg="12">
-                @if (_movies != null)
-                {
-                    <Carousel Title="Movies">
-                        @foreach (var movie in _movies)
+                    }
+                </div>
+
+                <div class="person-info">
+                    <MudText Typo="Typo.h3" Class="person-name">@_person.Name</MudText>
+
+                    <MudStack Row="true" Spacing="4" Wrap="Wrap.Wrap" Class="mt-3">
+                        @if (_person.Birthday.HasValue)
                         {
-                            <CarouselItem @key="movie.Id">
-                                <MediaCard Model="movie" Href="@($"/movies/{movie.Id}")" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
-                            </CarouselItem>
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Outlined.Cake" Size="Size.Small" Style="opacity:0.55" />
+                                <MudText Typo="Typo.body2">@_person.Birthday.Value.ToString("d MMMM yyyy")</MudText>
+                                @if (_person.Deathday is null)
+                                {
+                                    <MudText Typo="Typo.body2" Style="opacity:0.6;">(@Age(_person.Birthday.Value) @L["YearsOld"])</MudText>
+                                }
+                            </MudStack>
                         }
-                    </Carousel>
+                        @if (_person.Deathday.HasValue)
+                        {
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.body2" Style="opacity:0.5;">†</MudText>
+                                <MudText Typo="Typo.body2">@_person.Deathday.Value.ToString("d MMMM yyyy")</MudText>
+                            </MudStack>
+                        }
+                        @if (!string.IsNullOrEmpty(_person.BirthPlace))
+                        {
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Outlined.Place" Size="Size.Small" Style="opacity:0.55" />
+                                <MudText Typo="Typo.body2">@_person.BirthPlace</MudText>
+                            </MudStack>
+                        }
+                    </MudStack>
+
+                    @if (!string.IsNullOrEmpty(_person.Biography))
+                    {
+                        <div class="person-bio overview-clickable" tabindex="0" @onclick="OpenBioDialogAsync" @onkeydown="HandleBioKeyDown">
+                            <MudText Typo="Typo.body1" Style="opacity: 0.85; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">@_person.Biography</MudText>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (_movies.Count > 0)
+        {
+            <Carousel Title="@L["Movies"]">
+                @foreach (var movie in _movies)
+                {
+                    <CarouselItem @key="movie.Id">
+                        <MediaCard Model="movie"
+                                   Href="@($"/movies/{movie.Id}")"
+                                   OverlayEnabled="true"
+                                   ProgressEnabled="true"
+                                   WatchedStatusEnabled="true"
+                                   FooterVisible="true" />
+                    </CarouselItem>
                 }
-            </MudItem>
-        </MudGrid>
+            </Carousel>
+        }
+
+        @if (_series.Count > 0)
+        {
+            <Carousel Title="@L["Series"]">
+                @foreach (var serie in _series)
+                {
+                    <CarouselItem @key="serie.Id">
+                        <MediaCard Model="serie"
+                                   Href="@($"/series/{serie.Id}")"
+                                   OverlayEnabled="true"
+                                   FooterVisible="true" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
     </div>
 }
