@@ -104,18 +104,6 @@ else if (_serie is not null)
             </MudStack>
         </div>
 
-        @if ((_serie.PersonRoles?.Count ?? 0) > 0)
-        {
-            <Carousel Title="@L["CastingAndCrew"]">
-                @foreach (var cast in _serie.PersonRoles!.Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
-                {
-                    <CarouselItem @key="cast.Id">
-                        <PersonRole LitePersonRoleDto="@cast" />
-                    </CarouselItem>
-                }
-            </Carousel>
-        }
-
         @if (_seasons.Count > 0)
         {
             <div class="serie-seasons">
@@ -130,6 +118,18 @@ else if (_serie is not null)
                     }
                 </div>
             </div>
+        }
+
+        @if ((_serie.PersonRoles?.Count ?? 0) > 0)
+        {
+            <Carousel Title="@L["CastingAndCrew"]">
+                @foreach (var cast in _serie.PersonRoles!.Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
+                {
+                    <CarouselItem @key="cast.Id">
+                        <PersonRole LitePersonRoleDto="@cast" />
+                    </CarouselItem>
+                }
+            </Carousel>
         }
     </div>
 }
