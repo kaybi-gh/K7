@@ -251,6 +251,7 @@ public static class MediaMappings
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 EpisodeNumber = episode.EpisodeNumber,
                 SeasonNumber = episode.Season?.SeasonNumber ?? 0,
+                SerieSeasonCount = episode.Serie?.Seasons?.Count ?? 1,
                 Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds,
                 SerieId = episode.SerieId,
                 SerieTitle = episode.Serie?.Title,

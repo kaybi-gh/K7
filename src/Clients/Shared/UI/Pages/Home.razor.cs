@@ -152,28 +152,58 @@ public partial class Home : IDisposable
         try
         {
             var mediasPage = await k7ServerService.GetLiteMediasAsync(query);
+            if (mediasPage?.Items is null) return;
 
-            if (mediasPage?.Items is not null)
+            if (!useParentTitle)
             {
-                var seenMap = new Dictionary<string, MediaCardViewModel>();
+                var seen = new HashSet<string>();
                 foreach (var item in mediasPage.Items)
                 {
-                    if (item.ToCardViewModel(apiClient, useParentTitle) is { } vm)
+                    if (item.ToCardViewModel(apiClient, false) is { } vm && seen.Add(vm.Id))
+                        target.Add(vm);
+                }
+                return;
+            }
+
+            // Smart grouping: episodes are aggregated per serie, then resolved to Episode/Season/Serie cards
+            var insertOrder = 0;
+            var orderedCards = new List<(int Order, MediaCardViewModel Card)>();
+            var serieInsertOrder = new Dictionary<string, int>();
+            var serieEpisodes = new Dictionary<string, List<MediaCardViewModel>>();
+
+            foreach (var item in mediasPage.Items)
+            {
+                if (item.ToCardViewModel(apiClient, useParentTitle: true) is not { } vm) continue;
+                if (vm.Kind == MediaCardKind.Serie) continue;
+
+                if (vm.Kind == MediaCardKind.Episode && vm.ParentId is not null)
+                {
+                    if (!serieInsertOrder.ContainsKey(vm.ParentId))
                     {
-                        var groupingId = useParentTitle ? (vm.ParentId ?? vm.Id) : vm.Id;
-                        if (seenMap.TryGetValue(groupingId, out var existingCard))
-                        {
-                            existingCard.GroupCount++;
-                            existingCard.Watched &= vm.Watched;
-                        }
-                        else
-                        {
-                            seenMap.Add(groupingId, vm);
-                            target.Add(vm);
-                        }
+                        serieInsertOrder[vm.ParentId] = insertOrder++;
+                        serieEpisodes[vm.ParentId] = [];
                     }
+                    serieEpisodes[vm.ParentId].Add(vm);
+                }
+                else
+                {
+                    orderedCards.Add((insertOrder++, vm));
                 }
             }
+
+            foreach (var (serieId, episodes) in serieEpisodes)
+            {
+                var firstEp = episodes[0];
+                var allWatched = episodes.All(e => e.Watched);
+                MediaCardViewModel card = episodes.Count == 1
+                    ? firstEp
+                    : episodes.Select(e => e.SeasonNumber).Distinct().Count() == 1 && firstEp.SerieSeasonCount > 1
+                        ? firstEp with { Kind = MediaCardKind.Season, GroupCount = episodes.Count, Watched = allWatched }
+                        : firstEp with { Id = serieId, Kind = MediaCardKind.Serie, GroupCount = episodes.Count, Watched = allWatched };
+                orderedCards.Add((serieInsertOrder[serieId], card));
+            }
+
+            target.AddRange(orderedCards.OrderBy(x => x.Order).Select(x => x.Card));
         }
         catch { }
     }
