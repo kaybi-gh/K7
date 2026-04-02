@@ -159,7 +159,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<MediaDto>>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, K7.Server.Domain.Enums.MediaType? mediaType = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"query={Uri.EscapeDataString(query)}" };
         
@@ -171,6 +171,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         if (!string.IsNullOrWhiteSpace(providerId))
         {
             queryParams.Add($"providerId={Uri.EscapeDataString(providerId)}");
+        }
+
+        if (mediaType.HasValue)
+        {
+            queryParams.Add($"mediaType={(int)mediaType.Value}");
         }
 
         var queryString = string.Join("&", queryParams);

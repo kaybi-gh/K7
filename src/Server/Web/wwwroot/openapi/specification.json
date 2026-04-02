@@ -1339,6 +1339,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "mediaType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MediaType"
+            }
           }
         ],
         "responses": {
