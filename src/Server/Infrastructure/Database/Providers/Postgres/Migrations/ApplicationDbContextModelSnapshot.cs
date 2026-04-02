@@ -439,8 +439,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OriginalTitle");
+
+                    b.HasIndex("ReleaseDate");
+
                     b.HasIndex("Slug")
                         .IsUnique();
+
+                    b.HasIndex("Title");
+
+                    b.HasIndex("Type");
 
                     b.ToTable("Medias");
 
@@ -1094,7 +1102,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "LibraryId")
+                        .IsUnique();
 
                     b.ToTable("UserLibraryExclusions");
                 });
@@ -1113,7 +1122,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "MediaId")
+                        .IsUnique();
 
                     b.ToTable("UserMediaExclusions");
                 });
@@ -1161,7 +1171,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasIndex("MediaId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "LastInteractedAt")
+                        .HasDatabaseName("IX_UserMediaStates_UserId_LastInteractedAt");
+
+                    b.HasIndex("UserId", "MediaId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "PlayCount")
+                        .HasDatabaseName("IX_UserMediaStates_UserId_PlayCount");
+
+                    b.HasIndex("UserId", "IsCompleted", "LastInteractedAt")
+                        .HasDatabaseName("IX_UserMediaStates_UserId_IsCompleted_LastInteractedAt");
 
                     b.ToTable("UserMediaStates");
                 });
@@ -1993,6 +2013,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasColumnType("uuid");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("MediaId", "UserId")
+                        .HasDatabaseName("IX_Ratings_MediaId_UserId");
 
                     b.HasDiscriminator().HasValue(2);
                 });

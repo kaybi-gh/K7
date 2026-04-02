@@ -26,6 +26,11 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasMany(m => m.IndexedFiles)
             .WithOne(i => i.Media)
             .HasForeignKey(i => i.MediaId);
+
+        builder.HasIndex(e => e.Type);
+        builder.HasIndex(e => e.Title);
+        builder.HasIndex(e => e.OriginalTitle);
+        builder.HasIndex(e => e.ReleaseDate);
     }
 }
 
