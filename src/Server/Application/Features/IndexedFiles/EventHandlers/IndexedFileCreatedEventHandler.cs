@@ -31,6 +31,7 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
                 FileType = notification.FileType
             },
             Priority = BackgroundTaskPriority.VeryHigh,
+            TargetEntityId = notification.IndexedFile.Id,
             TargetEntityTypeName = nameof(IndexedFile),
             MaxAttempts = 5,
             ConcurrencyGroup = "ffmpeg"
