@@ -27,3 +27,13 @@ public class RatingConfiguration : IEntityTypeConfiguration<BaseRating>
             .HasForeignKey(r => r.UserId);
     }
 }
+
+public class UserRatingConfiguration : IEntityTypeConfiguration<UserRating>
+{
+    public void Configure(EntityTypeBuilder<UserRating> builder)
+    {
+        builder
+            .HasIndex(r => new { r.MediaId, r.UserId })
+            .HasDatabaseName("IX_Ratings_MediaId_UserId");
+    }
+}

@@ -30,8 +30,54 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
     {
         Guid? userId = currentUser.Id;
 
-        var query = context.Medias
-            .Include(x => x.ExternalIds)
+        var filterQuery = context.Medias
+            .AsNoTracking()
+            .AsQueryable();
+
+        filterQuery = ApplyFilters(request, filterQuery, userId);
+
+        if (userId.HasValue)
+        {
+            var excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == userId.Value)
+                .Select(e => e.LibraryId);
+
+            filterQuery = filterQuery.Where(x =>
+                x is MusicAlbum
+                    ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                    : x is Serie
+                        ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
+                        : x is SerieSeason
+                            ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                            : !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
+
+            var excludedMediaIds = context.UserMediaExclusions
+                .Where(e => e.UserId == userId.Value)
+                .Select(e => e.MediaId);
+
+            filterQuery = filterQuery.Where(x => !excludedMediaIds.Contains(x.Id));
+
+            var restrictionProfile = await context.ContentRestrictionProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId.Value), cancellationToken);
+
+            if (restrictionProfile is not null)
+                filterQuery = ContentRestrictionEvaluator.ApplyRestriction(filterQuery, restrictionProfile);
+        }
+
+        var totalCount = await filterQuery.CountAsync(cancellationToken);
+
+        var pageIds = await ApplyOrdering(request.OrderBy, filterQuery, userId)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(m => m.Id)
+            .ToListAsync(cancellationToken);
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<BaseMedia>([], totalCount, request.PageNumber, request.PageSize);
+
+        var dataQuery = context.Medias
+            .Where(m => pageIds.Contains(m.Id))
             .Include(x => x.Pictures)
                 .ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
@@ -43,7 +89,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (request.MediaTypes?.Contains(MediaType.MusicTrack) == true
             || request.MediaTypes == null)
         {
-            query = query
+            dataQuery = dataQuery
                 .Include(x => ((MusicTrack)x).Album)
                     .ThenInclude(a => a.PersonRoles)
                         .ThenInclude(r => r.Person)
@@ -57,7 +103,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             || request.ContinueWatching == true
             || request.MediaTypes == null)
         {
-            query = query
+            dataQuery = dataQuery
                 .Include(x => ((SerieEpisode)x).Season)
                     .ThenInclude(s => s.Pictures)
                         .ThenInclude(p => p.Variants)
@@ -70,48 +116,18 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (request.MediaTypes?.Contains(MediaType.SerieSeason) == true)
         {
-            query = query
-                .Include(x => ((SerieSeason)x).Episodes);
+            dataQuery = dataQuery.Include(x => ((SerieSeason)x).Episodes);
         }
 
         if (userId.HasValue)
         {
-            query = query.Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value));
+            dataQuery = dataQuery.Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value));
         }
 
-        query = ApplyFilters(request, query, userId);
+        var items = await dataQuery.ToListAsync(cancellationToken);
+        var ordered = pageIds.Select(id => items.First(m => m.Id == id)).ToList();
 
-        if (userId.HasValue)
-        {
-            var excludedLibraryIds = context.UserLibraryExclusions
-                .Where(e => e.UserId == userId.Value)
-                .Select(e => e.LibraryId);
-
-            query = query.Where(x =>
-                x is MusicAlbum
-                    ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                    : x is Serie
-                        ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
-                        : x is SerieSeason
-                            ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                            : !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
-
-            var excludedMediaIds = context.UserMediaExclusions
-                .Where(e => e.UserId == userId.Value)
-                .Select(e => e.MediaId);
-
-            query = query.Where(x => !excludedMediaIds.Contains(x.Id));
-
-            var restrictionProfile = await context.ContentRestrictionProfiles
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId.Value), cancellationToken);
-
-            if (restrictionProfile is not null)
-                query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
-        }
-
-        var orderedQuery = ApplyOrdering(request.OrderBy, query, userId);
-        return await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
+        return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
 
     private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)

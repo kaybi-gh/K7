@@ -18,80 +18,25 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser) 
         if (currentUser.Id is not { } userId)
             return;
 
-        var isExcluded = await context.UserMediaExclusions
-            .AnyAsync(e => e.UserId == userId && e.MediaId == mediaId, cancellationToken);
+        var check = await context.Medias
+            .AsNoTracking()
+            .Where(m => m.Id == mediaId)
+            .Select(m => new
+            {
+                IsMediaExcluded = context.UserMediaExclusions
+                    .Any(e => e.UserId == userId && e.MediaId == mediaId),
+                HasNonExcludedFile = !m.IndexedFiles.Any()
+                    || m.IndexedFiles.Any(f => !context.UserLibraryExclusions
+                        .Any(e => e.UserId == userId && e.LibraryId == f.LibraryId))
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (isExcluded)
+        if (check is null)
+            return;
+
+        if (check.IsMediaExcluded || !check.HasNonExcludedFile)
             throw new NotFoundException(mediaId.ToString(), nameof(BaseMedia));
 
-        var media = await context.Medias
-            .AsNoTracking()
-            .Include(m => m.IndexedFiles)
-            .FirstOrDefaultAsync(m => m.Id == mediaId, cancellationToken);
-
-        if (media is null)
-            return;
-
-        await EnsureNotLibraryExcluded(media, userId, cancellationToken);
-        await EnsureNotContentRestricted(media, userId, cancellationToken);
-    }
-
-    public async Task EnsureAccessByIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
-    {
-        if (currentUser.Id is not { } userId)
-            return;
-
-        var indexedFile = await context.IndexedFiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.Id == indexedFileId, cancellationToken);
-
-        if (indexedFile is null)
-            return;
-
-        var excludedLibraryIds = await context.UserLibraryExclusions
-            .Where(e => e.UserId == userId)
-            .Select(e => e.LibraryId)
-            .ToListAsync(cancellationToken);
-
-        if (excludedLibraryIds.Contains(indexedFile.LibraryId))
-            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
-
-        if (indexedFile.MediaId is not { } mediaId)
-            return;
-
-        var isExcluded = await context.UserMediaExclusions
-            .AnyAsync(e => e.UserId == userId && e.MediaId == mediaId, cancellationToken);
-
-        if (isExcluded)
-            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
-
-        var media = await context.Medias
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == mediaId, cancellationToken);
-
-        if (media is not null)
-            await EnsureNotContentRestricted(media, userId, cancellationToken);
-    }
-
-    private async Task EnsureNotLibraryExcluded(BaseMedia media, Guid userId, CancellationToken cancellationToken)
-    {
-        var excludedLibraryIds = await context.UserLibraryExclusions
-            .Where(e => e.UserId == userId)
-            .Select(e => e.LibraryId)
-            .ToListAsync(cancellationToken);
-
-        if (excludedLibraryIds.Count == 0)
-            return;
-
-        var allFilesExcluded = media.IndexedFiles.Count > 0
-            && media.IndexedFiles.All(f => excludedLibraryIds.Contains(f.LibraryId));
-
-        if (allFilesExcluded)
-            throw new NotFoundException(media.Id.ToString(), nameof(BaseMedia));
-    }
-
-    private async Task EnsureNotContentRestricted(BaseMedia media, Guid userId, CancellationToken cancellationToken)
-    {
         var profile = await context.ContentRestrictionProfiles
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
@@ -99,11 +44,53 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser) 
         if (profile is null)
             return;
 
-        var restricted = ContentRestrictionEvaluator.GetRestricted(
-            context.Medias.AsNoTracking().Where(m => m.Id == media.Id),
-            profile);
+        if (await ContentRestrictionEvaluator.GetRestricted(
+                context.Medias.AsNoTracking().Where(m => m.Id == mediaId), profile)
+                .AnyAsync(cancellationToken))
+            throw new NotFoundException(mediaId.ToString(), nameof(BaseMedia));
+    }
 
-        if (await restricted.AnyAsync(cancellationToken))
-            throw new NotFoundException(media.Id.ToString(), nameof(BaseMedia));
+    public async Task EnsureAccessByIndexedFileAsync(Guid indexedFileId, CancellationToken cancellationToken = default)
+    {
+        if (currentUser.Id is not { } userId)
+            return;
+
+        var check = await context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.Id == indexedFileId)
+            .Select(f => new
+            {
+                f.MediaId,
+                IsLibraryExcluded = context.UserLibraryExclusions
+                    .Any(e => e.UserId == userId && e.LibraryId == f.LibraryId),
+                IsMediaExcluded = f.MediaId != null && context.UserMediaExclusions
+                    .Any(e => e.UserId == userId && e.MediaId == f.MediaId)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (check is null)
+            return;
+
+        if (check.IsLibraryExcluded)
+            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
+
+        if (check.IsMediaExcluded)
+            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
+
+        if (check.MediaId is not { } mediaId)
+            return;
+
+        var profile = await context.ContentRestrictionProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
+
+        if (profile is null)
+            return;
+
+        if (await ContentRestrictionEvaluator.GetRestricted(
+                context.Medias.AsNoTracking().Where(m => m.Id == mediaId), profile)
+                .AnyAsync(cancellationToken))
+            throw new NotFoundException(indexedFileId.ToString(), "IndexedFile");
     }
 }
+
