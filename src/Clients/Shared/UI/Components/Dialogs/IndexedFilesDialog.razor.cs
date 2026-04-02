@@ -10,7 +10,7 @@ public partial class IndexedFilesDialog
     IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter]
-    public required MovieDto Movie { get; set; }
+    public required MediaDto Media { get; set; }
 
     [Parameter]
     public EventCallback<Guid> OnReIdentifyFile { get; set; }

@@ -57,7 +57,7 @@
             {
                 <MudText Typo="Typo.caption" Color="Color.Secondary">@string.Format(S["AirDate"], _fullEpisode.AirDate.Value.ToString("d"))</MudText>
             }
-            <MudStack Row="true" Class="mt-3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-3">
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.PlayArrow"
@@ -65,6 +65,12 @@
                            Size="Size.Small">
                     @(Episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Resume"] : S["Play"])
                 </MudButton>
+                @if (_fullEpisode?.IndexedFiles is { Count: > 0 })
+                {
+                    <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.FolderZip" OnClick="OpenIndexedFilesDialogAsync">@S["IndexedVersions"]</MudMenuItem>
+                    </MudMenu>
+                }
             </MudStack>
         </div>
     }
