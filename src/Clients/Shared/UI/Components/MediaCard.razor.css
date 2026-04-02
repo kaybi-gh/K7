@@ -1,6 +1,7 @@
 .media-card {
     width: 100%;
     min-width: 0;
+    container-type: inline-size;
 }
 
 .media-card-container {
@@ -110,12 +111,34 @@
     width: 100%;
 }
 
-.media-card-title,
-.media-card-subtitle {
+::deep .media-card-title {
     width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+::deep .media-card-subtitle {
+    width: 100%;
+    text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+}
+
+.media-card-title-inner {
+    display: inline-block;
+    will-change: transform;
+}
+
+.media-card:hover .media-card-title-inner,
+.media-card:focus-within .media-card-title-inner {
+    animation: media-card-title-scroll 3s linear 0.5s infinite alternate;
+}
+
+@keyframes media-card-title-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(min(0px, calc(100cqw - 100%))); }
 }
 
 @media (max-width: 600px) {
