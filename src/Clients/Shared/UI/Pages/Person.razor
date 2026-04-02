@@ -90,32 +90,17 @@ else if (_person is not null)
             </div>
         </div>
 
-        @if (_movies.Count > 0)
+        @if (_medias.Count > 0)
         {
-            <Carousel Title="@L["Movies"]">
-                @foreach (var movie in _movies)
+            <Carousel Title="@L["Filmography"]">
+                @foreach (var media in _medias)
                 {
-                    <CarouselItem @key="movie.Id">
-                        <MediaCard Model="movie"
-                                   Href="@($"/movies/{movie.Id}")"
+                    <CarouselItem @key="media.Id">
+                        <MediaCard Model="media"
+                                   Href="@(media.Kind == MediaCardKind.Serie ? $"/series/{media.Id}" : $"/movies/{media.Id}")"
                                    OverlayEnabled="true"
                                    ProgressEnabled="true"
                                    WatchedStatusEnabled="true"
-                                   FooterVisible="true" />
-                    </CarouselItem>
-                }
-            </Carousel>
-        }
-
-        @if (_series.Count > 0)
-        {
-            <Carousel Title="@L["Series"]">
-                @foreach (var serie in _series)
-                {
-                    <CarouselItem @key="serie.Id">
-                        <MediaCard Model="serie"
-                                   Href="@($"/series/{serie.Id}")"
-                                   OverlayEnabled="true"
                                    FooterVisible="true" />
                     </CarouselItem>
                 }
