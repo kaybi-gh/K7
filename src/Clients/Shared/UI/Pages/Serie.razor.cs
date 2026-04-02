@@ -1,12 +1,16 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
+using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
 
 public partial class Serie
 {
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
     [Parameter]
     public required string Id { get; set; }
 
@@ -55,5 +59,34 @@ public partial class Serie
     private void NavigateToSeason(LiteSerieSeasonDto season)
     {
         NavigationManager.NavigateTo($"/series/{Id}/seasons/{season.SeasonNumber}");
+    }
+
+    private void WatchAsync()
+    {
+        var first = _seasons.FirstOrDefault();
+        if (first is not null)
+            NavigationManager.NavigateTo($"/series/{Id}/seasons/{first.SeasonNumber}");
+    }
+
+    private async Task OpenMediaReIdentifyDialogAsync()
+    {
+        if (_serie is null) return;
+
+        var parameters = new DialogParameters<ReIdentifyDialog>
+        {
+            { x => x.MediaId, _serie.Id },
+            { x => x.InitialSearchQuery, _serie.Title },
+            { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Serie }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyMediaDialogTitle"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(L["ReIdentifyMediaSent"], Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
     }
 }
