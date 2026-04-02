@@ -150,10 +150,16 @@ public static class DependencyInjection
     {
         var configuredLogDirectory = configuration.GetValue<string>("Paths:Logs")!;
         var logFilePath = Path.Combine(configuredLogDirectory, "log-.log");
-        Log.Logger = new LoggerConfiguration()
+        var loggerConfig = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
             .WriteTo.File(logFilePath, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1000000, rollingInterval: RollingInterval.Day)
-            .WriteTo.Console()
-            .CreateLogger();
+            .WriteTo.Console();
+
+        if (!string.IsNullOrWhiteSpace(configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+        {
+            loggerConfig.WriteTo.OpenTelemetry();
+        }
+
+        Log.Logger = loggerConfig.CreateLogger();
     }
 }
