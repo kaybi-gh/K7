@@ -38,4 +38,9 @@
     .serie-hero {
         height: 60vh;
     }
+
+    .serie-hero ::deep .serie-actions,
+    .serie-hero ::deep .serie-actions-primary {
+        width: 100%;
+    }
 }
