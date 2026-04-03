@@ -40,7 +40,8 @@
     }
 
     .serie-hero ::deep .serie-actions,
-    .serie-hero ::deep .serie-actions-primary {
+    .serie-hero ::deep .serie-actions-primary,
+    .serie-hero ::deep .serie-meta {
         width: 100%;
     }
 }
