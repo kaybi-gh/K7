@@ -21,3 +21,17 @@
         width: 320px !important;
     }
 }
+
+@media (max-width: 600px) {
+    ::deep .carousel-item > .media-card.media-card--poster {
+        width: 30vw !important;
+    }
+
+    ::deep .carousel-item > .media-card.media-card--cover {
+        width: 30vw !important;
+    }
+
+    ::deep .carousel-item > .media-card.media-card--backdrop {
+        width: 60vw !important;
+    }
+}
