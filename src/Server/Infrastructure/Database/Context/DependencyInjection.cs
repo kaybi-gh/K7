@@ -182,11 +182,16 @@ public static class DependencyInjection
         switch (databaseConfiguration.Provider.ToLowerInvariant())
         {
             case "postgres":
-                options.UseNpgsql(connectionString!, x => x.MigrationsAssembly(DatabaseProvider.Postgres.Assembly)).EnableSensitiveDataLogging();
+                options.UseNpgsql(connectionString!, x => x
+                    .MigrationsAssembly(DatabaseProvider.Postgres.Assembly)
+                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
+                    .EnableSensitiveDataLogging();
                 break;
 
             case "sqlite":
-                options.UseSqlite(connectionString!, x => x.MigrationsAssembly(DatabaseProvider.Sqlite.Assembly));
+                options.UseSqlite(connectionString!, x => x
+                    .MigrationsAssembly(DatabaseProvider.Sqlite.Assembly)
+                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
                 break;
 
             default:
