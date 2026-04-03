@@ -106,18 +106,16 @@ else if (_serie is not null)
 
         @if (_seasons.Count > 0)
         {
-            <div class="serie-seasons">
-                <MudText Typo="Typo.h6" Class="mb-3">@L["Seasons"]</MudText>
-                <div class="serie-seasons-grid">
-                    @foreach (var season in _seasons)
-                    {
-                        <SeasonCard @key="season.Id"
-                                    Season="season"
+            <Carousel Title="@L["Seasons"]">
+                @foreach (var season in _seasons)
+                {
+                    <CarouselItem @key="season.Id">
+                        <SeasonCard Season="season"
                                     PosterUrl="@GetSeasonPosterUrl(season)"
                                     OnClick="() => NavigateToSeason(season)" />
-                    }
-                </div>
-            </div>
+                    </CarouselItem>
+                }
+            </Carousel>
         }
 
         @if ((_serie.PersonRoles?.Count ?? 0) > 0)
