@@ -34,19 +34,6 @@
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-.serie-seasons {
-    position: relative;
-    z-index: 1;
-    margin-top: auto;
-    padding: 0 24px 40px;
-}
-
-.serie-seasons-grid {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
 @media (max-width: 600px) {
     .serie-hero {
         height: 60vh;

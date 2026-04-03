@@ -16,8 +16,12 @@ body.no-scroll {
     padding-top: 0px;
 }
 
-.mud-layout:has(.mud-appbar) .mud-main-content {
+.mud-layout:has(.mud-appbar-fixed-top) .mud-main-content {
     padding-top: calc(var(--mud-appbar-height) - var(--mud-appbar-height)/8);
+}
+
+.mud-layout:has(.mud-appbar-fixed-bottom) .mud-main-content {
+    padding-bottom: var(--mud-appbar-height);
 }
 
 @media (min-width: 600px) {
@@ -25,7 +29,7 @@ body.no-scroll {
         padding-top: 0px;
     }
 
-    .mud-layout:has(.mud-appbar) .mud-main-content {
+    .mud-layout:has(.mud-appbar-fixed-top) .mud-main-content {
         padding-top: var(--mud-appbar-height);
     }
 }
