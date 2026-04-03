@@ -83,7 +83,6 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .Include(x => x.Ratings)
             .Include(x => x.IndexedFiles)
             .AsNoTracking()
-            .AsSplitQuery()
             .AsQueryable();
 
         if (request.MediaTypes?.Contains(MediaType.MusicTrack) == true
