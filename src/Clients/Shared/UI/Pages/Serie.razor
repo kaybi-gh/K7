@@ -79,27 +79,32 @@ else if (_serie is not null)
                     </MudText>
                 }
 
-                <MudStack Row="true" data-nav-row Class="mt-4" Spacing="3" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
-                    <MudButton Disabled="@(_seasons.Count == 0)"
-                               Variant="Variant.Filled"
-                               StartIcon="@Icons.Material.Filled.PlayArrow"
-                               Color="Color.Primary"
-                               Size="Size.Large"
-                               DropShadow="false"
-                               Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
-                               OnClick="WatchAsync">@S["Play"]</MudButton>
+                <MudStack Row="true" data-nav-row Class="mt-4 serie-actions" Spacing="3" AlignItems="AlignItems.Center" StretchItems="StretchItems.All" Breakpoint="Breakpoint.Xs">
+                    <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" StretchItems="StretchItems.All" Class="serie-actions-primary">
+                        <MudButton Disabled="@(_seasons.Count == 0)"
+                                   Variant="Variant.Filled"
+                                   StartIcon="@Icons.Material.Filled.PlayArrow"
+                                   Color="Color.Primary"
+                                   Size="Size.Large"
+                                   DropShadow="false"
+                                   FullWidth="true"
+                                   Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
+                                   OnClick="WatchAsync">@S["Play"]</MudButton>
+                    </MudStack>
 
-                    <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer" />
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.Center">
+                        <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer" />
 
-                    <AuthorizeView Roles="User,Administrator">
-                        <MudIconButton Icon="@Icons.Material.Filled.CheckCircleOutline" aria-label="mark-as-watched" />
-                    </AuthorizeView>
-
-                    <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" ListClass="pa-2">
-                        <AuthorizeView Roles="Administrator">
-                            <MudMenuItem Icon="@Icons.Material.Filled.FindReplace" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</MudMenuItem>
+                        <AuthorizeView Roles="User,Administrator">
+                            <MudIconButton Icon="@Icons.Material.Filled.CheckCircleOutline" aria-label="mark-as-watched" />
                         </AuthorizeView>
-                    </MudMenu>
+
+                        <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" ListClass="pa-2">
+                            <AuthorizeView Roles="Administrator">
+                                <MudMenuItem Icon="@Icons.Material.Filled.FindReplace" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</MudMenuItem>
+                            </AuthorizeView>
+                        </MudMenu>
+                    </MudStack>
                 </MudStack>
             </MudStack>
         </div>
