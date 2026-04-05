@@ -26,11 +26,6 @@ else
 
     @RenderCarousel(L["RecentlyAdded"], recentlyAddedMedias, _canTrackProgress, _canTrackProgress)
     @RenderCarousel(L["RecentlyReleased"], recentlyReleasedMedias, _canTrackProgress, _canTrackProgress)
-
-    @if (_canTrackProgress)
-    {
-        @RenderCarousel(L["LastPlayed"], lastPlayedMedias, true, true)
-    }
 }
 
 @{ RenderFragment RenderCarousel(string title, List<MediaCardViewModel> items, bool progress, bool watched)
