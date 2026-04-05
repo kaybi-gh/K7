@@ -1,10 +1,12 @@
 using System.Globalization;
 using System.Security.Claims;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Web.Endpoints.Hubs;
@@ -15,7 +17,7 @@ namespace K7.Server.Web.Endpoints.Hubs;
 /// The identity is resolved from the auth cookie when available, with a fallback to a query string
 /// parameter for environments where cookies are not transmitted (e.g. Blazor WASM WebSocket connections).
 /// </summary>
-public class K7Hub(ISender sender, ILogger<K7Hub> logger) : Hub<IK7HubClient>
+public class K7Hub(ISender sender, IApplicationDbContext dbContext, ILogger<K7Hub> logger) : Hub<IK7HubClient>
 {
     public override async Task OnConnectedAsync()
     {
@@ -32,8 +34,16 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger) : Hub<IK7HubClient>
 
         await Groups.AddToGroupAsync(Context.ConnectionId, identityUserId);
 
-        // If a streaming session was requested, set up the session group as well
+        // Update device LastSeen timestamp
         var httpContext = Context.GetHttpContext();
+        if (Guid.TryParse(httpContext?.Request.Query["deviceId"], out var deviceId))
+        {
+            await dbContext.Devices
+                .Where(d => d.Id == deviceId)
+                .ExecuteUpdateAsync(s => s.SetProperty(d => d.LastSeen, DateTimeOffset.UtcNow));
+        }
+
+        // If a streaming session was requested, set up the session group as well
         if (Guid.TryParse(httpContext?.Request.Query["indexedFileId"], out Guid indexedFileId))
         {
             double position = 0;

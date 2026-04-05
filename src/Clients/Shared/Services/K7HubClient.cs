@@ -17,7 +17,7 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<Guid, int>? LibraryScanCompleted;
     public event Action? BackgroundTaskUpdated;
 
-    public async Task EnsureStartedAsync(Uri baseUri, string userId)
+    public async Task EnsureStartedAsync(Uri baseUri, string userId, string? deviceId = null)
     {
         if (string.IsNullOrEmpty(userId)) return;
 
@@ -35,7 +35,13 @@ public sealed class K7HubClient : IAsyncDisposable
                 await _hubConnection.DisposeAsync();
             }
 
-            var hubUrl = new Uri(baseUri, $"/hub?userId={Uri.EscapeDataString(userId)}");
+            var query = $"/hub?userId={Uri.EscapeDataString(userId)}";
+            if (!string.IsNullOrEmpty(deviceId))
+            {
+                query += $"&deviceId={Uri.EscapeDataString(deviceId)}";
+            }
+
+            var hubUrl = new Uri(baseUri, query);
 
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
