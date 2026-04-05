@@ -1,7 +1,9 @@
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using MudBlazor;
 
@@ -9,14 +11,20 @@ namespace K7.Clients.Shared.UI.Pages.Layout;
 
 public partial class Sidebar
 {
-    string _debouncedText = "";
+    [Inject] private K7HubClient HubClient { get; set; } = default!;
+
+    private string _debouncedText = "";
     private DotNetObjectReference<Sidebar>? _dotNetRef;
     private List<LibraryDto> _libraries = [];
+    private Color _badgeColor = Color.Default;
+    private string _badgeTitle = string.Empty;
 
     protected override void OnInitialized()
     {
         SidebarService.IsOpenOnChange += StateHasChanged;
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
+        HubClient.ConnectionStateChanged += OnConnectionStateChanged;
+        UpdateBadge(HubClient.State);
     }
 
     protected override async Task OnInitializedAsync()
@@ -72,10 +80,26 @@ public partial class Sidebar
         }
     }
 
+    private void OnConnectionStateChanged(HubConnectionState state)
+    {
+        UpdateBadge(state);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateBadge(HubConnectionState state)
+    {
+        (_badgeColor, _badgeTitle) = state switch
+        {
+            HubConnectionState.Connected => (Color.Success, L["Connected"]),
+            _ => (Color.Default, L["Reconnecting"])
+        };
+    }
+
     public void Dispose()
     {
         SidebarService.IsOpenOnChange -= StateHasChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
+        HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         _dotNetRef?.Dispose();
     }
 

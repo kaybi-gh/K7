@@ -4,6 +4,7 @@ using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.SignalR.Client;
 using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Layout;
@@ -14,15 +15,20 @@ public partial class MobileFooter : IDisposable
     private bool _musicDrawerOpen;
     private bool _menuDrawerOpen;
     private List<LibraryDto> _libraries = [];
+    private Color _badgeColor = Color.Default;
+    private string _badgeTitle = string.Empty;
 
     [Inject] private NavigationManager Nav { get; set; } = default!;
     [Inject] private BackButtonService BackButton { get; set; } = default!;
+    [Inject] private K7HubClient HubClient { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
         Nav.LocationChanged += OnLocationChanged;
         BackButton.Register(HandleBackButton);
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
+        HubClient.ConnectionStateChanged += OnConnectionStateChanged;
+        UpdateBadge(HubClient.State);
 
         try
         {
@@ -80,10 +86,26 @@ public partial class MobileFooter : IDisposable
         _menuDrawerOpen = false;
     }
 
+    private void OnConnectionStateChanged(HubConnectionState state)
+    {
+        UpdateBadge(state);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateBadge(HubConnectionState state)
+    {
+        (_badgeColor, _badgeTitle) = state switch
+        {
+            HubConnectionState.Connected => (Color.Success, L["Connected"]),
+            _ => (Color.Default, L["Reconnecting"])
+        };
+    }
+
     public void Dispose()
     {
         Nav.LocationChanged -= OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
+        HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         BackButton.Unregister();
     }
 

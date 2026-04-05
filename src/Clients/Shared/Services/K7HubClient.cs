@@ -12,6 +12,9 @@ public sealed class K7HubClient : IAsyncDisposable
     private bool _started;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
+    public HubConnectionState State => _hubConnection?.State ?? HubConnectionState.Disconnected;
+
+    public event Action<HubConnectionState>? ConnectionStateChanged;
     public event Action<Guid, double, bool>? ProgressUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
     public event Action<Guid, int>? LibraryScanCompleted;
@@ -45,8 +48,26 @@ public sealed class K7HubClient : IAsyncDisposable
 
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
-                .WithAutomaticReconnect()
+                .WithAutomaticReconnect(new InfiniteRetryPolicy())
                 .Build();
+
+            _hubConnection.Reconnecting += _ =>
+            {
+                ConnectionStateChanged?.Invoke(HubConnectionState.Reconnecting);
+                return Task.CompletedTask;
+            };
+
+            _hubConnection.Reconnected += _ =>
+            {
+                ConnectionStateChanged?.Invoke(HubConnectionState.Connected);
+                return Task.CompletedTask;
+            };
+
+            _hubConnection.Closed += _ =>
+            {
+                ConnectionStateChanged?.Invoke(HubConnectionState.Disconnected);
+                return Task.CompletedTask;
+            };
 
             _hubConnection.On<Guid, double, bool>("ReceivePlaybackProgress", (mediaId, progress, isCompleted) =>
             {
@@ -70,6 +91,7 @@ public sealed class K7HubClient : IAsyncDisposable
 
             await _hubConnection.StartAsync();
             _started = true;
+            ConnectionStateChanged?.Invoke(HubConnectionState.Connected);
         }
         finally
         {
@@ -86,5 +108,11 @@ public sealed class K7HubClient : IAsyncDisposable
         }
 
         _lock.Dispose();
+    }
+
+    private sealed class InfiniteRetryPolicy : IRetryPolicy
+    {
+        public TimeSpan? NextRetryDelay(RetryContext retryContext) =>
+            TimeSpan.FromSeconds(Math.Min(retryContext.PreviousRetryCount * 2, 10));
     }
 }

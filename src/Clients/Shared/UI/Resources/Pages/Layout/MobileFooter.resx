@@ -30,5 +30,8 @@
   <data name="SwitchUser" xml:space="preserve"><value>Changer d'utilisateur</value></data>
   <data name="Logout" xml:space="preserve"><value>Déconnexion</value></data>
   <data name="Login" xml:space="preserve"><value>Connexion</value></data>
+  <data name="Connected" xml:space="preserve"><value>Connecté</value></data>
+  <data name="Reconnecting" xml:space="preserve"><value>Reconnexion...</value></data>
+  <data name="Disconnected" xml:space="preserve"><value>Déconnecté</value></data>
 </root>
 

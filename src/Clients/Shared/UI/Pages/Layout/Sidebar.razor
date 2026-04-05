@@ -69,14 +69,18 @@
             @if (!SidebarService.IsOpen)
             {
                 <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
-                    <MudAvatar Color="Color.Primary">K</MudAvatar>
+                    <MudBadge Dot="true" Color="@_badgeColor" Overlap="true" Bordered="true" BadgeClass="connection-badge" title="@_badgeTitle">
+                        <MudAvatar Color="Color.Primary">K</MudAvatar>
+                    </MudBadge>
                 </MudStack>
             }
             else
             {
                 <MudPaper Class="px-8 py-4 ma-4">
                     <MudStack Row="true">
-                        <MudAvatar Color="Color.Primary">K</MudAvatar>
+                        <MudBadge Dot="true" Color="@_badgeColor" Overlap="true" Bordered="true" BadgeClass="connection-badge" title="@_badgeTitle">
+                            <MudAvatar Color="Color.Primary">K</MudAvatar>
+                        </MudBadge>
                         <MudStack Justify="Justify.Center" Spacing="0">
                             <MudText Typo="Typo.body1">@context.User.Identity?.Name</MudText>
                             <MudStack Row="true" Spacing="1">
