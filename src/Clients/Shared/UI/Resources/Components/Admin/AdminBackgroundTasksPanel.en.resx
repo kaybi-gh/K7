@@ -49,4 +49,9 @@
   <data name="DeleteMessage" xml:space="preserve"><value>Delete task '{0}'?</value></data>
   <data name="DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
   <data name="TaskDeleted" xml:space="preserve"><value>Task deleted.</value></data>
+  <data name="TaskTypesTitle" xml:space="preserve"><value>Task types</value></data>
+  <data name="TimeJustNow" xml:space="preserve"><value>Just now</value></data>
+  <data name="TimeMinutesAgo" xml:space="preserve"><value>{0} min ago</value></data>
+  <data name="TimeHoursAgo" xml:space="preserve"><value>{0}h ago</value></data>
+  <data name="TimeDaysAgo" xml:space="preserve"><value>{0}d ago</value></data>
 </root>

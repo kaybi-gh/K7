@@ -84,4 +84,5 @@
   <data name="Specials" xml:space="preserve"><value>Specials</value></data>
   <data name="EpisodeCount" xml:space="preserve"><value>{0} episode(s)</value></data>
   <data name="IndexedVersions" xml:space="preserve"><value>Indexed files</value></data>
+  <data name="LoadError" xml:space="preserve"><value>Failed to load.</value></data>
 </root>

@@ -2,6 +2,12 @@
 
 <MudDialog>
     <DialogContent>
+        @if (Task.ErrorDetails is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3" NoIcon="false">
+                <MudText Typo="Typo.body2" Style="white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">@Task.ErrorDetails</MudText>
+            </MudAlert>
+        }
         <MudSimpleTable Dense="true" Bordered="true">
             <tbody>
                 <tr>
@@ -11,7 +17,7 @@
                 <tr>
                     <td><strong>@L["Status"]</strong></td>
                     <td>
-                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(Task.Status)">@Task.Status</MudChip>
+                        <MudChip T="string" Size="Size.Small" Color="@BackgroundTaskStatusHelper.GetColor(Task.Status)">@Task.Status</MudChip>
                     </td>
                 </tr>
                 <tr>

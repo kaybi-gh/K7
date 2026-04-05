@@ -48,5 +48,10 @@
   <data name="DeleteTitle" xml:space="preserve"><value>Supprimer la tâche</value></data>
   <data name="DeleteMessage" xml:space="preserve"><value>Supprimer la tâche « {0} » ?</value></data>
   <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="TaskDeleted" xml:space="preserve"><value>Tâche supprimée.</value></data>
+  <data name="TaskDeleted" xml:space="preserve"><value>Tache supprimee.</value></data>
+  <data name="TaskTypesTitle" xml:space="preserve"><value>Types de taches</value></data>
+  <data name="TimeJustNow" xml:space="preserve"><value>A l'instant</value></data>
+  <data name="TimeMinutesAgo" xml:space="preserve"><value>Il y a {0} min</value></data>
+  <data name="TimeHoursAgo" xml:space="preserve"><value>Il y a {0}h</value></data>
+  <data name="TimeDaysAgo" xml:space="preserve"><value>Il y a {0}j</value></data>
 </root>

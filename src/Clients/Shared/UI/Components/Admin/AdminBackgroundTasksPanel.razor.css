@@ -1,0 +1,16 @@
+.summary-card {
+    transition: border-color 0.2s ease;
+}
+
+.summary-card:hover {
+    border-color: var(--mud-palette-primary);
+}
+
+.summary-card-active {
+    border-color: var(--mud-palette-primary);
+    border-width: 2px;
+}
+
+.actions-cell {
+    text-align: right;
+}
