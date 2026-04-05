@@ -517,4 +517,10 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         var response = await HttpClient.PutAsJsonAsync("api/admin/background-tasks/settings", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<BackgroundTaskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<BackgroundTaskSummaryDto>("api/background-tasks/summary", _serializerOptions, cancellationToken)
+            ?? new BackgroundTaskSummaryDto { TotalCount = 0, StatusCounts = [], TaskTypeCounts = [] };
+    }
 }
