@@ -20,15 +20,21 @@ else
 
         @foreach (var device in _devices.Items!)
         {
-            <MudCard Elevation="0" Outlined="true">
+            var isCurrent = IsCurrentDevice(device);
+
+            <MudCard Elevation="0" Outlined="true" Class="@(isCurrent ? "current-device" : "")">
                 <MudCardContent>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                        <MudIcon Icon="@GetDeviceIcon(device.DeviceType)" Size="Size.Large" Color="Color.Primary" />
+                        <MudIcon Icon="@GetDeviceIcon(device.DeviceType)" Size="Size.Large" Color="@(isCurrent ? Color.Primary : Color.Default)" />
 
                         <MudStack Spacing="0" Style="flex: 1;">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                 <MudText Typo="Typo.subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</MudText>
                                 <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@device.ClientType</MudChip>
+                                @if (isCurrent)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary">@L["ThisDevice"]</MudChip>
+                                }
                             </MudStack>
 
                             <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -44,6 +50,12 @@ else
                             <MudText Typo="Typo.caption" Color="Color.Secondary">@L["LastSeen"]</MudText>
                             <MudText Typo="Typo.body2">@device.LastSeen.LocalDateTime.ToString("g")</MudText>
                         </MudStack>
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       Size="Size.Small"
+                                       title="@L["DeleteDevice"]"
+                                       OnClick="@(() => DeleteDeviceAsync(device))" />
                     </MudStack>
 
                     @if (device.Users.Count > 0)

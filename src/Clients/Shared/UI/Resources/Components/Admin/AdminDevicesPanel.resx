@@ -24,4 +24,10 @@
   <data name="UnknownDevice" xml:space="preserve"><value>Appareil inconnu</value></data>
   <data name="LastSeen" xml:space="preserve"><value>Dernière activité</value></data>
   <data name="UserCount" xml:space="preserve"><value>{0} utilisateur(s)</value></data>
+  <data name="ThisDevice" xml:space="preserve"><value>Cet appareil</value></data>
+  <data name="DeleteDevice" xml:space="preserve"><value>Supprimer l'appareil</value></data>
+  <data name="DeleteDeviceTitle" xml:space="preserve"><value>Supprimer l'appareil</value></data>
+  <data name="DeleteDeviceConfirmation" xml:space="preserve"><value>Voulez-vous vraiment supprimer cet appareil ?</value></data>
+  <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
 </root>

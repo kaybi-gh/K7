@@ -63,6 +63,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<DeviceDto>>(requestUri, _serializerOptions, cancellationToken);
     }
 
+    public async Task DeleteDeviceAsync(Guid deviceId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/devices/{deviceId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default)
     {
         var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions, cancellationToken);
