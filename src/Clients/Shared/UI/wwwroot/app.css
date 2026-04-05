@@ -99,3 +99,9 @@ body.no-scroll {
         content: var(--blazor-load-percentage-text, "Loading");
     }
 input[data-sn-editing="true"], textarea[data-sn-editing="true"] { outline: 2px solid var(--mud-palette-primary) !important; outline-offset: 2px; }
+
+.connection-badge.mud-badge-dot {
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+}

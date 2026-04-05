@@ -64,7 +64,9 @@
             <AuthorizeView>
                 <Authorized>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                        <MudAvatar Color="Color.Primary">@context.User.Identity?.Name?[0]</MudAvatar>
+                        <MudBadge Dot="true" Color="@_badgeColor" Overlap="true" Bordered="true" BadgeClass="connection-badge" title="@_badgeTitle">
+                            <MudAvatar Color="Color.Primary">@context.User.Identity?.Name?[0]</MudAvatar>
+                        </MudBadge>
                         <MudText Typo="Typo.h6">@context.User.Identity?.Name</MudText>
                     </MudStack>
                 </Authorized>
