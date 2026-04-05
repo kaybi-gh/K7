@@ -22,7 +22,8 @@ public static class BackgroundTaskMappings
             StartedAt = domain.StartedAt,
             NextRetryAfter = domain.NextRetryAfter,
             TimeoutSeconds = domain.TimeoutSeconds,
-            ConcurrencyGroup = domain.ConcurrencyGroup
+            ConcurrencyGroup = domain.ConcurrencyGroup,
+            ErrorDetails = domain.ErrorDetails
         };
     }
 }
