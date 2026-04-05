@@ -29,7 +29,6 @@ public partial class Home : IDisposable
     private readonly List<MediaCardViewModel> continueWatchingMedias = [];
     private readonly List<MediaCardViewModel> recentlyAddedMedias = [];
     private readonly List<MediaCardViewModel> recentlyReleasedMedias = [];
-    private readonly List<MediaCardViewModel> lastPlayedMedias = [];
     private Timer? _mediaAddedDebounce;
 
     protected override async Task OnInitializedAsync()
@@ -70,16 +69,6 @@ public partial class Home : IDisposable
             PageSize = 50
         }, recentlyReleasedMedias, useParentTitle: true));
 
-        if (_canTrackProgress)
-        {
-            tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
-            {
-                OrderBy = [MediaOrderingOption.LastInteractedDesc],
-                PageNumber = 1,
-                PageSize = 40
-            }, lastPlayedMedias));
-        }
-
         await Task.WhenAll(tasks);
 
         isLoading = false;
@@ -98,7 +87,7 @@ public partial class Home : IDisposable
         var id = mediaId.ToString();
         var changed = false;
 
-        foreach (var list in new[] { continueWatchingMedias, recentlyAddedMedias, recentlyReleasedMedias, lastPlayedMedias })
+        foreach (var list in new[] { continueWatchingMedias, recentlyAddedMedias, recentlyReleasedMedias })
         {
             for (var i = 0; i < list.Count; i++)
             {
