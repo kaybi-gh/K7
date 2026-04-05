@@ -481,7 +481,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<RestrictedMediaPreviewDto>>($"api/restriction-profiles/{profileId}/restricted-medias", _serializerOptions, cancellationToken) ?? [];
     }
 
-    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, CancellationToken cancellationToken = default)
     {
         var uri = $"api/background-tasks?pageNumber={pageNumber}&pageSize={pageSize}";
         if (statuses is { Count: > 0 })
@@ -489,6 +489,13 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             foreach (var status in statuses)
             {
                 uri += $"&status={status}";
+            }
+        }
+        if (names is { Count: > 0 })
+        {
+            foreach (var name in names)
+            {
+                uri += $"&names={Uri.EscapeDataString(name)}";
             }
         }
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<BackgroundTaskDto>>(uri, _serializerOptions, cancellationToken) ?? new PaginatedListDto<BackgroundTaskDto>();
