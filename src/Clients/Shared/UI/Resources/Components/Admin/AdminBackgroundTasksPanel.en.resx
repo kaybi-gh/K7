@@ -50,6 +50,18 @@
   <data name="DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
   <data name="TaskDeleted" xml:space="preserve"><value>Task deleted.</value></data>
   <data name="TaskTypesTitle" xml:space="preserve"><value>Task types</value></data>
+  <data name="TaskType_AnalyzeMusicTrackAudioCommand" xml:space="preserve"><value>Audio analysis</value></data>
+  <data name="TaskType_ComputeHlsSegmentsCommand" xml:space="preserve"><value>HLS segment computation</value></data>
+  <data name="TaskType_CreateFileMetadatasCommand" xml:space="preserve"><value>File metadata extraction</value></data>
+  <data name="TaskType_CreateMediaCommand" xml:space="preserve"><value>Media creation</value></data>
+  <data name="TaskType_DeleteIndexedFileCommand" xml:space="preserve"><value>File deletion</value></data>
+  <data name="TaskType_DownloadMetadataPictureFromProviderCommand" xml:space="preserve"><value>Image download</value></data>
+  <data name="TaskType_GenerateMetadataPictureVariantsCommand" xml:space="preserve"><value>Thumbnail generation</value></data>
+  <data name="TaskType_GenerateThumbnailsCommand" xml:space="preserve"><value>Video thumbnail generation</value></data>
+  <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Library indexing</value></data>
+  <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Metadata refresh</value></data>
+  <data name="FilterByType" xml:space="preserve"><value>Filter by type</value></data>
+  <data name="AllTypes" xml:space="preserve"><value>All types</value></data>
   <data name="TimeJustNow" xml:space="preserve"><value>Just now</value></data>
   <data name="TimeMinutesAgo" xml:space="preserve"><value>{0} min ago</value></data>
   <data name="TimeHoursAgo" xml:space="preserve"><value>{0}h ago</value></data>

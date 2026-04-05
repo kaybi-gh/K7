@@ -2764,6 +2764,16 @@
             }
           },
           {
+            "name": "Names",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
             "name": "Status",
             "in": "query",
             "schema": {

@@ -50,6 +50,18 @@
   <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
   <data name="TaskDeleted" xml:space="preserve"><value>Tache supprimee.</value></data>
   <data name="TaskTypesTitle" xml:space="preserve"><value>Types de taches</value></data>
+  <data name="TaskType_AnalyzeMusicTrackAudioCommand" xml:space="preserve"><value>Analyse audio</value></data>
+  <data name="TaskType_ComputeHlsSegmentsCommand" xml:space="preserve"><value>Calcul des segments HLS</value></data>
+  <data name="TaskType_CreateFileMetadatasCommand" xml:space="preserve"><value>Extraction des metadonnees</value></data>
+  <data name="TaskType_CreateMediaCommand" xml:space="preserve"><value>Creation de media</value></data>
+  <data name="TaskType_DeleteIndexedFileCommand" xml:space="preserve"><value>Suppression de fichier</value></data>
+  <data name="TaskType_DownloadMetadataPictureFromProviderCommand" xml:space="preserve"><value>Telechargement d'image</value></data>
+  <data name="TaskType_GenerateMetadataPictureVariantsCommand" xml:space="preserve"><value>Generation de miniatures</value></data>
+  <data name="TaskType_GenerateThumbnailsCommand" xml:space="preserve"><value>Generation de vignettes video</value></data>
+  <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Indexation de bibliotheque</value></data>
+  <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Rafraichissement des metadonnees</value></data>
+  <data name="FilterByType" xml:space="preserve"><value>Filtrer par type</value></data>
+  <data name="AllTypes" xml:space="preserve"><value>Tous les types</value></data>
   <data name="TimeJustNow" xml:space="preserve"><value>A l'instant</value></data>
   <data name="TimeMinutesAgo" xml:space="preserve"><value>Il y a {0} min</value></data>
   <data name="TimeHoursAgo" xml:space="preserve"><value>Il y a {0}h</value></data>

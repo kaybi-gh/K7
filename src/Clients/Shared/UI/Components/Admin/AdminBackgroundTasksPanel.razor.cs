@@ -28,7 +28,9 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private BackgroundTaskSummaryDto? _summary;
     private bool _isLoadingTasks = true;
     private bool _isSavingSettings;
+    private bool _settingsDrawerOpen;
     private BackgroundTaskStatus? _selectedStatus;
+    private string? _selectedTaskType;
     private int _pageNumber = 1;
     private int _workerCount;
     private Dictionary<string, int> _concurrencyLimits = new();
@@ -68,7 +70,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         try
         {
             var statuses = _selectedStatus.HasValue ? new[] { _selectedStatus.Value } : null;
-            _tasks = await BackgroundTaskService.GetBackgroundTasksAsync(_pageNumber, 20, statuses, _cts.Token);
+            var names = _selectedTaskType is not null ? new[] { _selectedTaskType } : null;
+            _tasks = await BackgroundTaskService.GetBackgroundTasksAsync(_pageNumber, 20, statuses, names, _cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -157,6 +160,13 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         await LoadTasksAsync();
     }
 
+    private async Task OnTaskTypeFilterChanged(string? taskType)
+    {
+        _selectedTaskType = taskType;
+        _pageNumber = 1;
+        await LoadTasksAsync();
+    }
+
     private async Task OnPageChanged(int page)
     {
         _pageNumber = page;
@@ -176,6 +186,13 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         BackgroundTaskStatus.Failed => L["StatusFailed"],
         _ => status.ToString()
     };
+
+    private string GetTaskTypeLabel(string taskName)
+    {
+        var key = $"TaskType_{taskName}";
+        var localized = L[key];
+        return localized.ResourceNotFound ? taskName : localized.Value;
+    }
 
     private static string GetStatusIcon(BackgroundTaskStatus status) => status switch
     {
