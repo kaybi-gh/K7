@@ -2818,6 +2818,26 @@
         }
       }
     },
+    "/api/background-tasks/summary": {
+      "get": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "GetBackgroundTaskSummary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskSummaryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/server-info": {
       "get": {
         "tags": [
@@ -3288,6 +3308,12 @@
               "null",
               "string"
             ]
+          },
+          "errorDetails": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3296,6 +3322,36 @@
       },
       "BackgroundTaskStatus": {
         "type": "integer"
+      },
+      "BackgroundTaskSummaryDto": {
+        "required": [
+          "totalCount",
+          "statusCounts",
+          "taskTypeCounts"
+        ],
+        "type": "object",
+        "properties": {
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "statusCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusCountDto"
+            }
+          },
+          "taskTypeCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskTypeCountDto"
+            }
+          }
+        }
       },
       "Browser": {
         "type": "integer"
@@ -7192,6 +7248,26 @@
           }
         }
       },
+      "StatusCountDto": {
+        "required": [
+          "status",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/BackgroundTaskStatus"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "SubtitleFileTrackDto": {
         "required": [
           "codec"
@@ -7229,6 +7305,26 @@
           },
           "isDefault": {
             "type": "boolean"
+          }
+        }
+      },
+      "TaskTypeCountDto": {
+        "required": [
+          "taskName",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "taskName": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
