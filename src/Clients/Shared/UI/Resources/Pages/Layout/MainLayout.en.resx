@@ -22,4 +22,6 @@
   <data name="UnexpectedError" xml:space="preserve"><value>An unexpected error occurred</value></data>
   <data name="UnexpectedErrorDescription" xml:space="preserve"><value>The application encountered a problem. Please try again.</value></data>
   <data name="Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Reconnecting" xml:space="preserve"><value>Reconnecting...</value></data>
+  <data name="ReconnectingDescription" xml:space="preserve"><value>Connection to the server was lost. Attempting to reconnect automatically.</value></data>
 </root>

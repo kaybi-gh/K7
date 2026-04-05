@@ -105,3 +105,16 @@ input[data-sn-editing="true"], textarea[data-sn-editing="true"] { outline: 2px s
     height: 14px !important;
     min-width: 14px !important;
 }
+
+.reconnection-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--mud-palette-background);
+    opacity: 0.92;
+    pointer-events: all;
+}

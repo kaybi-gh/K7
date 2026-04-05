@@ -20,6 +20,14 @@
 <MudBreakpointProvider>
     <MudHidden Breakpoint="Breakpoint.SmAndUp">
         <MudLayout Class="mobile-layout">
+            @if (_showOverlay)
+            {
+                <div class="reconnection-overlay">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                    <MudText Typo="Typo.h6" Class="mt-4">@L["Reconnecting"]</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["ReconnectingDescription"]</MudText>
+                </div>
+            }
             <MudMainContent>
                 <ErrorBoundary @ref="_errorBoundary">
                     <ChildContent>
@@ -41,6 +49,14 @@
 
     <MudHidden Breakpoint="Breakpoint.Xs">
         <MudLayout>
+            @if (_showOverlay)
+            {
+                <div class="reconnection-overlay">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                    <MudText Typo="Typo.h6" Class="mt-4">@L["Reconnecting"]</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["ReconnectingDescription"]</MudText>
+                </div>
+            }
             <Sidebar />
             <MudMainContent>
                 <ErrorBoundary @ref="_errorBoundary">
