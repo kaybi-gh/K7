@@ -6,7 +6,7 @@ namespace K7.Shared.Interfaces;
 
 public interface IBackgroundTaskService
 {
-    Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, CancellationToken cancellationToken = default);
+    Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, CancellationToken cancellationToken = default);
     Task<BackgroundTaskDto> GetBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default);
     Task DeleteBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default);
     Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default);

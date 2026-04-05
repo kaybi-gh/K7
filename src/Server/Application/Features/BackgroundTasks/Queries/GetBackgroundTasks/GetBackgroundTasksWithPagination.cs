@@ -10,6 +10,7 @@ namespace K7.Server.Application.Features.BackgroundTasks.Queries.GetBackgroundTa
 public record GetBackgroundTasksWithPaginationQuery : IRequest<PaginatedList<BackgroundTask>>
 {
     public Guid[]? Ids { get; init; }
+    public string[]? Names { get; init; }
     public EnumHashSetQueryParam<BackgroundTaskStatus>? Status { get; init; }
     public EnumHashSetQueryParam<BackgroundTaskPriority>? Priority { get; init; }
     public required int PageNumber { get; init; } = 1;
@@ -39,6 +40,11 @@ public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetB
         if (request.Ids?.Length > 0)
         {
             query = query.Where(x => request.Ids.Contains(x.Id));
+        }
+
+        if (request.Names?.Length > 0)
+        {
+            query = query.Where(x => request.Names.Contains(x.Name));
         }
 
         if (request.Status?.Count > 0)
