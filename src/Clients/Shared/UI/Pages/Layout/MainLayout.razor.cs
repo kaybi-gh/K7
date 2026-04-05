@@ -1,8 +1,11 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace K7.Clients.Shared.UI.Pages.Layout;
 
@@ -28,8 +31,11 @@ public partial class MainLayout
                 var canReport = await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
                 AudioProgressTracker.SetCanReport(canReport);
 
+                var deviceStorageService = Services.GetRequiredService<IDeviceStorageService>();
+                var deviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
+
                 var baseUri = NavigationManager.ToAbsoluteUri("/");
-                await K7HubClient.EnsureStartedAsync(baseUri, userId);
+                await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId);
             }
         }
         catch (Exception ex)
