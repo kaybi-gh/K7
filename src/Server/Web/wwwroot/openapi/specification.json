@@ -3298,6 +3298,13 @@
             ],
             "format": "date-time"
           },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "nextRetryAfter": {
             "type": [
               "null",
@@ -3320,6 +3327,13 @@
             ]
           },
           "errorDetails": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "duration": {
+            "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
             "type": [
               "null",
               "string"

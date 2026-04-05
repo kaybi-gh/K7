@@ -15,8 +15,13 @@ public sealed record BackgroundTaskDto
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
     public DateTimeOffset? StartedAt { get; init; }
+    public DateTimeOffset? CompletedAt { get; init; }
     public DateTimeOffset? NextRetryAfter { get; init; }
     public int TimeoutSeconds { get; init; }
     public string? ConcurrencyGroup { get; init; }
     public string? ErrorDetails { get; init; }
+
+    public TimeSpan? Duration => CompletedAt is not null && StartedAt is not null
+        ? CompletedAt - StartedAt
+        : null;
 }

@@ -42,6 +42,11 @@
   <data name="ColGroup" xml:space="preserve"><value>Group</value></data>
   <data name="ColAttempts" xml:space="preserve"><value>Attempts</value></data>
   <data name="ColDate" xml:space="preserve"><value>Date</value></data>
+  <data name="ColDuration" xml:space="preserve"><value>Duration</value></data>
+  <data name="DurationSubSecond" xml:space="preserve"><value>&lt; 1s</value></data>
+  <data name="DurationSeconds" xml:space="preserve"><value>{0}s</value></data>
+  <data name="DurationMinutes" xml:space="preserve"><value>{0}m {1}s</value></data>
+  <data name="DurationHours" xml:space="preserve"><value>{0}h {1}m</value></data>
   <data name="Created" xml:space="preserve"><value>Created</value></data>
   <data name="AriaDetail" xml:space="preserve"><value>Details</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Delete</value></data>
