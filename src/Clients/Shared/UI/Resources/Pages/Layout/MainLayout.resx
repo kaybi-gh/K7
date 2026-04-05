@@ -22,4 +22,6 @@
   <data name="UnexpectedError" xml:space="preserve"><value>Une erreur inattendue s'est produite</value></data>
   <data name="UnexpectedErrorDescription" xml:space="preserve"><value>L'application a rencontré un problème. Veuillez réessayer.</value></data>
   <data name="Retry" xml:space="preserve"><value>Réessayer</value></data>
+  <data name="Reconnecting" xml:space="preserve"><value>Reconnexion en cours...</value></data>
+  <data name="ReconnectingDescription" xml:space="preserve"><value>La connexion au serveur a été perdue. Tentative de reconnexion automatique.</value></data>
 </root>
