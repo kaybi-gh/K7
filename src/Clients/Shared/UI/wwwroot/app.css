@@ -107,7 +107,7 @@ input[data-sn-editing="true"], textarea[data-sn-editing="true"] { outline: 2px s
 }
 
 .reconnection-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 9999;
     display: flex;
