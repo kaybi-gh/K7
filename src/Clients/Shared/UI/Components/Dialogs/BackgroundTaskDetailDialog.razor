@@ -60,6 +60,20 @@
                         <td>@Task.StartedAt.Value.LocalDateTime.ToString("g")</td>
                     </tr>
                 }
+                @if (Task.CompletedAt is not null)
+                {
+                    <tr>
+                        <td><strong>@L["CompletedAt"]</strong></td>
+                        <td>@Task.CompletedAt.Value.LocalDateTime.ToString("g")</td>
+                    </tr>
+                }
+                @if (Task.Duration is not null)
+                {
+                    <tr>
+                        <td><strong>@L["Duration"]</strong></td>
+                        <td>@Task.Duration.Value.ToString(@"hh\:mm\:ss")</td>
+                    </tr>
+                }
                 @if (Task.NextRetryAfter is not null)
                 {
                     <tr>

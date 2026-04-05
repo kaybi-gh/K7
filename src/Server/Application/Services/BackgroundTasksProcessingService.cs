@@ -180,6 +180,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         {
             task.Status = BackgroundTaskStatus.Pending;
             task.StartedAt = null;
+            task.CompletedAt = null;
             _logger.LogWarning("Recovered stuck task {TaskId} ({TaskName})", task.Id, task.Name);
         }
 
@@ -290,6 +291,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             .ExecuteUpdateAsync(s => s
                 .SetProperty(t => t.Status, BackgroundTaskStatus.InProgress)
                 .SetProperty(t => t.StartedAt, claimTime)
+                .SetProperty(t => t.CompletedAt, (DateTimeOffset?)null)
                 .SetProperty(t => t.LastModified, claimTime),
                 stoppingToken);
 
@@ -344,6 +346,7 @@ public class BackgroundTasksProcessingService : BackgroundService
 
             sw.Stop();
             task.Status = BackgroundTaskStatus.Completed;
+            task.CompletedAt = DateTimeOffset.UtcNow;
             task.ErrorDetails = null;
             _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
                 task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
@@ -386,6 +389,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         if (task.AttemptCount + 1 >= task.MaxAttempts)
         {
             task.Status = BackgroundTaskStatus.Failed;
+            task.CompletedAt = DateTimeOffset.UtcNow;
             _logger.LogError("Task {TaskId} ({TaskName}) exhausted all {MaxAttempts} attempts, marked as failed",
                 task.Id, task.Name, task.MaxAttempts);
         }
@@ -395,6 +399,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             task.Status = BackgroundTaskStatus.WaitingForRetry;
             task.NextRetryAfter = DateTimeOffset.UtcNow.Add(delay);
             task.StartedAt = null;
+            task.CompletedAt = null;
             _logger.LogWarning("Task {TaskId} ({TaskName}) will retry after {Delay} (attempt {Attempt}/{MaxAttempts})",
                 task.Id, task.Name, delay, task.AttemptCount + 1, task.MaxAttempts);
         }

@@ -103,6 +103,7 @@
                         <MudTh>@L["ColStatus"]</MudTh>
                         <MudTh>@L["ColDate"]</MudTh>
                         <MudTh>@L["ColPriority"]</MudTh>
+                        <MudTh>@L["ColDuration"]</MudTh>
                         <MudTh>@L["ColGroup"]</MudTh>
                         <MudTh>@L["ColAttempts"]</MudTh>
                         <MudTh></MudTh>
@@ -136,6 +137,12 @@
                             </MudTooltip>
                         </MudTd>
                         <MudTd DataLabel="@L["ColPriority"]">@context.Priority</MudTd>
+                        <MudTd DataLabel="@L["ColDuration"]">
+                            @if (context.Duration is not null)
+                            {
+                                <MudText Typo="Typo.body2">@FormatDuration(context.Duration.Value)</MudText>
+                            }
+                        </MudTd>
                         <MudTd DataLabel="@L["ColGroup"]">
                             @if (context.ConcurrencyGroup is not null)
                             {

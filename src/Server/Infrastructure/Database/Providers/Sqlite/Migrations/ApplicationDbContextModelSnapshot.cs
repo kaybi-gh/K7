@@ -41,6 +41,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("AttemptCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ConcurrencyGroup")
                         .HasColumnType("TEXT");
 

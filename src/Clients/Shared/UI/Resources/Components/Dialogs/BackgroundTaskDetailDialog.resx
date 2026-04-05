@@ -28,6 +28,8 @@
   <data name="TargetType" xml:space="preserve"><value>Type cible</value></data>
   <data name="TargetId" xml:space="preserve"><value>ID cible</value></data>
   <data name="StartedAt" xml:space="preserve"><value>Démarré à</value></data>
+  <data name="CompletedAt" xml:space="preserve"><value>Terminé à</value></data>
+  <data name="Duration" xml:space="preserve"><value>Durée</value></data>
   <data name="NextRetryAfter" xml:space="preserve"><value>Prochain retry après</value></data>
   <data name="Close" xml:space="preserve"><value>Fermer</value></data>
 </root>

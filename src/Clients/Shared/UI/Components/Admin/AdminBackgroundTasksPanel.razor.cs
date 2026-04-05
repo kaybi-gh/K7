@@ -216,6 +216,14 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         };
     }
 
+    private string FormatDuration(TimeSpan duration) => duration.TotalSeconds switch
+    {
+        < 1 => L["DurationSubSecond"],
+        < 60 => string.Format(L["DurationSeconds"], (int)duration.TotalSeconds),
+        < 3600 => string.Format(L["DurationMinutes"], (int)duration.TotalMinutes, duration.Seconds),
+        _ => string.Format(L["DurationHours"], (int)duration.TotalHours, duration.Minutes)
+    };
+
     private async Task OpenDetailDialog(BackgroundTaskDto task)
     {
         var parameters = new DialogParameters<Dialogs.BackgroundTaskDetailDialog>

@@ -20,6 +20,7 @@ public static class BackgroundTaskMappings
             Created = domain.Created,
             LastModified = domain.LastModified,
             StartedAt = domain.StartedAt,
+            CompletedAt = domain.CompletedAt,
             NextRetryAfter = domain.NextRetryAfter,
             TimeoutSeconds = domain.TimeoutSeconds,
             ConcurrencyGroup = domain.ConcurrencyGroup,
