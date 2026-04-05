@@ -18,4 +18,5 @@ public sealed record BackgroundTaskDto
     public DateTimeOffset? NextRetryAfter { get; init; }
     public int TimeoutSeconds { get; init; }
     public string? ConcurrencyGroup { get; init; }
+    public string? ErrorDetails { get; init; }
 }

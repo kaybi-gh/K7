@@ -323,6 +323,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             {
                 _logger.LogError("Unknown request type {RequestType} for task {TaskId}, marking as failed", task.RequestType, task.Id);
                 task.Status = BackgroundTaskStatus.Failed;
+                task.ErrorDetails = $"Unknown request type: {task.RequestType}";
                 await context.SaveChangesAsync(stoppingToken);
                 await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
                 return;
@@ -333,6 +334,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             {
                 _logger.LogError("Failed to deserialize task {TaskId} ({TaskName}) with type {RequestType}", task.Id, task.Name, task.RequestType);
                 task.Status = BackgroundTaskStatus.Failed;
+                task.ErrorDetails = $"Failed to deserialize request data for type: {task.RequestType}";
                 await context.SaveChangesAsync(stoppingToken);
                 await _notifier.NotifyBackgroundTaskUpdatedAsync(stoppingToken);
                 return;
@@ -342,6 +344,7 @@ public class BackgroundTasksProcessingService : BackgroundService
 
             sw.Stop();
             task.Status = BackgroundTaskStatus.Completed;
+            task.ErrorDetails = null;
             _logger.LogInformation("Task {TaskId} ({TaskName}) completed in {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts}, group {ConcurrencyGroup})",
                 task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts, task.ConcurrencyGroup ?? "none");
         }
@@ -354,6 +357,7 @@ public class BackgroundTasksProcessingService : BackgroundService
         {
             sw.Stop();
             _logger.LogError("Task {TaskId} ({TaskName}) timed out after {TimeoutSeconds}s", task.Id, task.Name, task.TimeoutSeconds);
+            task.ErrorDetails = $"Task timed out after {task.TimeoutSeconds}s";
             HandleTaskFailure(task);
         }
         catch (Exception ex)
@@ -361,6 +365,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             sw.Stop();
             _logger.LogError(ex, "Task {TaskId} ({TaskName}) failed after {ElapsedMs}ms (attempt {Attempt}/{MaxAttempts})",
                 task.Id, task.Name, sw.ElapsedMilliseconds, task.AttemptCount + 1, task.MaxAttempts);
+            task.ErrorDetails = ex.Message.Length > 2000 ? ex.Message[..2000] : ex.Message;
             HandleTaskFailure(task);
         }
         finally
