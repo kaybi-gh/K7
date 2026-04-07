@@ -203,4 +203,19 @@ public partial class Movie
         };
         return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
     }
+
+    private async Task RefreshMetadataAsync()
+    {
+        if (_movie is null) return;
+
+        try
+        {
+            await k7ServerService.RefreshMediaMetadataAsync(_movie.Id);
+            Snackbar.Add(L["RefreshMetadataSent"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+        }
+    }
 }

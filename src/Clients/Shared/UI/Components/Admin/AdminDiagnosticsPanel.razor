@@ -1,0 +1,245 @@
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<AdminDiagnosticsPanel> L
+@inject IStringLocalizer<SharedResource> S
+
+<MudStack Spacing="4">
+    @* Summary cards *@
+    <div aria-live="polite">
+        @if (_isLoadingSummary)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (_summaries is { Count: > 0 })
+        {
+            <MudGrid Spacing="3">
+                <MudItem xs="6" sm="3">
+                    <MudPaper Class="@SummaryCardClass(null)" Outlined="true"
+                              @onclick="@(() => OnSeverityFilterChanged(null))">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.overline">@L["AllIssues"]</MudText>
+                                <MudText Typo="Typo.h3" Class="summary-number">@_totalIssueCount</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @string.Format(L["AcrossLibraries"], _summaries.Count)
+                                </MudText>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.Assessment" Class="summary-icon" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudPaper Class="@SummaryCardClass("error")" Outlined="true"
+                              @onclick="@(() => OnSeverityFilterChanged("error"))">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.overline">@L["SeverityErrors"]</MudText>
+                                <MudText Typo="Typo.h3" Class="summary-number" Color="Color.Error">@_errorCount</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["ErrorsDescription"]</MudText>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Class="summary-icon" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudPaper Class="@SummaryCardClass("warning")" Outlined="true"
+                              @onclick="@(() => OnSeverityFilterChanged("warning"))">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.overline">@L["SeverityWarnings"]</MudText>
+                                <MudText Typo="Typo.h3" Class="summary-number" Color="Color.Warning">@_warningCount</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["WarningsDescription"]</MudText>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Class="summary-icon" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudPaper Class="@SummaryCardClass("info")" Outlined="true"
+                              @onclick="@(() => OnSeverityFilterChanged("info"))">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                            <MudStack Spacing="1">
+                                <MudText Typo="Typo.overline">@L["SeverityInfo"]</MudText>
+                                <MudText Typo="Typo.h3" Class="summary-number" Color="Color.Info">@_infoCount</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@L["InfoDescription"]</MudText>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Info" Class="summary-icon" />
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4 text-center">@L["NoData"]</MudText>
+        }
+    </div>
+
+    @* Details table *@
+    <MudPaper Class="pa-4" Outlined="true">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudText Typo="Typo.h6">@L["ItemsTitle"]</MudText>
+                @foreach (var chip in _activeFilterChips)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" OnClose="@(() => RemoveFilter(chip.Key))">
+                        @chip.Value
+                    </MudChip>
+                }
+            </MudStack>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                @if (_selectedItems.Count > 0 && GetBulkFixAction() is not null)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Build" OnClick="BulkFixAsync"
+                               Disabled="_isBulkFixing">
+                        @string.Format(L["FixSelected"], _selectedItems.Count)
+                    </MudButton>
+                }
+                <MudMenu Icon="@Icons.Material.Filled.FilterList" Size="Size.Small" Dense="true"
+                         Color="@(HasActiveFilters ? Color.Primary : Color.Default)"
+                         aria-label="@L["ClearFilters"]">
+                    <MudMenuItem OnClick="ClearFilters">
+                        <MudText Typo="Typo.body2" Style="@(HasActiveFilters ? "" : "font-weight: 600;")">@L["ClearFilters"]</MudText>
+                    </MudMenuItem>
+                    <MudDivider />
+                    <MudMenuItem AutoClose="false">
+                        <MudSelect T="Guid?" Value="_filterLibraryId" ValueChanged="OnLibraryFilterChanged"
+                                   Label="@L["FilterLibrary"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   Clearable="true" Dense="true" Style="min-width: 220px;">
+                            @if (_summaries is not null)
+                            {
+                                @foreach (var lib in _summaries)
+                                {
+                                    <MudSelectItem T="Guid?" Value="@lib.LibraryId">@lib.LibraryTitle</MudSelectItem>
+                                }
+                            }
+                        </MudSelect>
+                    </MudMenuItem>
+                    <MudMenuItem AutoClose="false">
+                        <MudSelect T="DiagnosticEntityType?" Value="_filterEntityType" ValueChanged="OnEntityTypeFilterChanged"
+                                   Label="@L["FilterEntityType"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   Clearable="true" Dense="true" Style="min-width: 220px;">
+                            <MudSelectItem T="DiagnosticEntityType?" Value="DiagnosticEntityType.Media">@L["EntityTypeMedia"]</MudSelectItem>
+                            <MudSelectItem T="DiagnosticEntityType?" Value="DiagnosticEntityType.IndexedFile">@L["EntityTypeIndexedFile"]</MudSelectItem>
+                        </MudSelect>
+                    </MudMenuItem>
+                    <MudMenuItem AutoClose="false">
+                        <MudSelect T="DiagnosticIssue?" Value="_filterIssue" ValueChanged="OnIssueFilterChanged"
+                                   Label="@L["FilterIssue"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   Clearable="true" Dense="true" Style="min-width: 220px;">
+                            @foreach (var issue in Enum.GetValues<DiagnosticIssue>())
+                            {
+                                <MudSelectItem T="DiagnosticIssue?" Value="@issue">@GetIssueLabel(issue)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudMenuItem>
+                </MudMenu>
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync"
+                               Size="Size.Small" Color="Color.Primary" aria-label="@L["Refresh"]" />
+            </MudStack>
+        </MudStack>
+
+        <div aria-live="polite">
+            @if (_isLoadingItems)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_items?.Items is null or { Count: 0 })
+            {
+                <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Size="Size.Large" Color="Color.Secondary" />
+                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">@L["NoItems"]</MudText>
+                </MudPaper>
+            }
+            else
+            {
+                <MudTable Items="_items.Items" @bind-SelectedItems="_selectedItems"
+                          MultiSelection="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>@L["ColName"]</MudTh>
+                        <MudTh>@L["ColLibrary"]</MudTh>
+                        <MudTh>@L["ColIssues"]</MudTh>
+                        <MudTh Style="width: 160px; text-align: right;">@L["ColActions"]</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="@L["ColName"]">
+                            <MudStack Spacing="0">
+                                @if (context.MediaUrl is not null)
+                                {
+                                    <MudLink Href="@context.MediaUrl" Typo="Typo.body2">@context.EntityName</MudLink>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.body2">@context.EntityName</MudText>
+                                }
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @(context.EntityType == DiagnosticEntityType.Media ? L["EntityTypeMedia"] : L["EntityTypeIndexedFile"])
+                                </MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd DataLabel="@L["ColLibrary"]">
+                            <MudText Typo="Typo.body2">@context.LibraryTitle</MudText>
+                        </MudTd>
+                        <MudTd DataLabel="@L["ColIssues"]">
+                            <MudStack Spacing="0">
+                                @foreach (var issue in context.Issues)
+                                {
+                                    <MudTooltip Text="@GetIssueDetail(context, issue)" Placement="Placement.Top">
+                                        <MudText Typo="Typo.body2" Color="@GetIssueColor(issue)">@GetIssueLabel(issue)</MudText>
+                                    </MudTooltip>
+                                }
+                            </MudStack>
+                        </MudTd>
+                        <MudTd Class="actions-cell">
+                            <MudStack Row="true" Spacing="1" Justify="Justify.FlexEnd">
+                                @if (context.EntityType == DiagnosticEntityType.Media)
+                                {
+                                    <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary"
+                                               StartIcon="@Icons.Material.Filled.Refresh"
+                                               OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.RefreshMetadata))">
+                                        @L["ActionRefresh"]
+                                    </MudButton>
+                                    @if (context.MediaUrl is not null)
+                                    {
+                                        <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Default"
+                                                   StartIcon="@Icons.Material.Filled.OpenInNew"
+                                                   Href="@context.MediaUrl">
+                                            @L["GoToMedia"]
+                                        </MudButton>
+                                    }
+                                }
+                                @if (context.EntityType == DiagnosticEntityType.IndexedFile)
+                                {
+                                    @if (context.Issues.Contains(DiagnosticIssue.MissingFileMetadata))
+                                    {
+                                        <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary"
+                                                   StartIcon="@Icons.Material.Filled.DataObject"
+                                                   OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.ExtractFileMetadata))">
+                                            @L["ActionExtract"]
+                                        </MudButton>
+                                    }
+                                    @if (context.Issues.Contains(DiagnosticIssue.MissingHlsSegments))
+                                    {
+                                        <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary"
+                                                   StartIcon="@Icons.Material.Filled.Segment"
+                                                   OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.ComputeHlsSegments))">
+                                            @L["ActionHls"]
+                                        </MudButton>
+                                    }
+                                }
+                            </MudStack>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                @if (_items.TotalPages > 1)
+                {
+                    <MudStack Row="true" Justify="Justify.Center" Class="mt-3">
+                        <MudPagination Count="@(_items.TotalPages ?? 1)" Selected="_pageNumber"
+                                       SelectedChanged="OnPageChanged" Color="Color.Primary" />
+                    </MudStack>
+                }
+            }
+        </div>
+    </MudPaper>
+</MudStack>

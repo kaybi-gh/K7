@@ -24,4 +24,6 @@
   <data name="ReIdentify" xml:space="preserve"><value>Re-identify</value></data>
   <data name="ReIdentifyMediaDialogTitle" xml:space="preserve"><value>Re-identify media</value></data>
   <data name="ReIdentifyMediaSent" xml:space="preserve"><value>Media re-identification sent and being processed by the server in the background.</value></data>
+  <data name="RefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh queued as background task.</value></data>
 </root>

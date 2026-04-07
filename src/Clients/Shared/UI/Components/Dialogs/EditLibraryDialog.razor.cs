@@ -13,6 +13,7 @@ public partial class EditLibraryDialog
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public List<MetadataProviderInfoDto> AvailableProviders { get; set; } = [];
     [Parameter] public string? SelectedProvider { get; set; }
+    [Parameter] public int? MetadataRefreshIntervalDays { get; set; }
 
     private bool CanSubmit => !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(SelectedProvider);
 
@@ -21,7 +22,8 @@ public partial class EditLibraryDialog
         var result = new UpdateLibraryRequest
         {
             Title = Title.Trim(),
-            MetadataProviderName = SelectedProvider
+            MetadataProviderName = SelectedProvider,
+            MetadataRefreshIntervalDays = MetadataRefreshIntervalDays
         };
         MudDialog.Close(DialogResult.Ok(result));
     }

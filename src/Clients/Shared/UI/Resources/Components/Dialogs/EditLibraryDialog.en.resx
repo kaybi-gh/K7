@@ -25,4 +25,6 @@
   <data name="ProviderRequired" xml:space="preserve"><value>Metadata provider is required</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Auto-refresh metadata (days)</value></data>
+  <data name="MetadataRefreshHelper" xml:space="preserve"><value>0 or empty = disabled</value></data>
 </root>

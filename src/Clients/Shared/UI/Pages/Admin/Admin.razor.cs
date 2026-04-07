@@ -4,7 +4,7 @@ namespace K7.Clients.Shared.UI.Pages.Admin;
 
 public partial class Admin
 {
-    private static readonly string[] TabSlugs = ["general", "libraries", "users", "devices", "restrictions", "authentication", "background-tasks"];
+    private static readonly string[] TabSlugs = ["general", "libraries", "users", "devices", "restrictions", "authentication", "background-tasks", "diagnostics"];
 
     private int _activePanelIndex;
 

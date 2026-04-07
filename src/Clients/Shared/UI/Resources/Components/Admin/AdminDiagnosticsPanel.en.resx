@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="AllIssues" xml:space="preserve"><value>Total</value></data>
+  <data name="SeverityErrors" xml:space="preserve"><value>Errors</value></data>
+  <data name="SeverityWarnings" xml:space="preserve"><value>Warnings</value></data>
+  <data name="SeverityInfo" xml:space="preserve"><value>Info</value></data>
+  <data name="NoData" xml:space="preserve"><value>No data available.</value></data>
+  <data name="MediaSection" xml:space="preserve"><value>Media</value></data>
+  <data name="TotalMedia" xml:space="preserve"><value>Total</value></data>
+  <data name="MissingPictures" xml:space="preserve"><value>Missing pictures</value></data>
+  <data name="MissingMetadata" xml:space="preserve"><value>Missing metadata</value></data>
+  <data name="MissingFiles" xml:space="preserve"><value>Missing files</value></data>
+  <data name="StaleMetadata" xml:space="preserve"><value>Stale metadata</value></data>
+  <data name="IndexedFilesSection" xml:space="preserve"><value>Source files</value></data>
+  <data name="TotalFiles" xml:space="preserve"><value>Total</value></data>
+  <data name="OrphanFiles" xml:space="preserve"><value>Orphan files</value></data>
+  <data name="UnidentifiedFiles" xml:space="preserve"><value>Unidentified files</value></data>
+  <data name="MissingFileMetadata" xml:space="preserve"><value>Missing file metadata</value></data>
+  <data name="MissingHlsSegments" xml:space="preserve"><value>Missing HLS segments</value></data>
+  <data name="MissingAudioAnalysis" xml:space="preserve"><value>Missing audio analysis</value></data>
+  <data name="BackgroundTasksSection" xml:space="preserve"><value>Background tasks</value></data>
+  <data name="PendingTasks" xml:space="preserve"><value>Pending</value></data>
+  <data name="FailedTasks" xml:space="preserve"><value>Failed</value></data>
+  <data name="ItemsTitle" xml:space="preserve"><value>Details</value></data>
+  <data name="ClearFilters" xml:space="preserve"><value>Clear filters</value></data>
+  <data name="FilterLibrary" xml:space="preserve"><value>Library</value></data>
+  <data name="FilterEntityType" xml:space="preserve"><value>Type</value></data>
+  <data name="FilterIssue" xml:space="preserve"><value>Issue</value></data>
+  <data name="EntityTypeMedia" xml:space="preserve"><value>Media</value></data>
+  <data name="EntityTypeIndexedFile" xml:space="preserve"><value>Source file</value></data>
+  <data name="NoItems" xml:space="preserve"><value>No items.</value></data>
+  <data name="ColName" xml:space="preserve"><value>Name</value></data>
+  <data name="ColLibrary" xml:space="preserve"><value>Library</value></data>
+  <data name="ColType" xml:space="preserve"><value>Type</value></data>
+  <data name="ColIssues" xml:space="preserve"><value>Issues</value></data>
+  <data name="ColSeverity" xml:space="preserve"><value>Severity</value></data>
+  <data name="ColActions" xml:space="preserve"><value>Actions</value></data>
+  <data name="AriaRefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh queued as background task.</value></data>
+  <data name="GoToMedia" xml:space="preserve"><value>Go to media</value></data>
+  <data name="ExtractMetadata" xml:space="preserve"><value>Extract file metadata</value></data>
+  <data name="ComputeHls" xml:space="preserve"><value>Compute HLS segments</value></data>
+  <data name="FixSelected" xml:space="preserve"><value>Fix ({0})</value></data>
+  <data name="FixQueued" xml:space="preserve"><value>Fix queued as background task.</value></data>
+  <data name="BulkFixQueued" xml:space="preserve"><value>{0} fix(es) queued as background tasks.</value></data>
+  <data name="DetailMissingPictures" xml:space="preserve"><value>Missing: {0}</value></data>
+  <data name="DetailStaleRefreshed" xml:space="preserve"><value>Last refreshed: {0} (threshold: {1} days)</value></data>
+  <data name="DetailNeverRefreshed" xml:space="preserve"><value>Never refreshed</value></data>
+  <data name="AcrossLibraries" xml:space="preserve"><value>{0} libraries</value></data>
+  <data name="ErrorsDescription" xml:space="preserve"><value>Action required</value></data>
+  <data name="WarningsDescription" xml:space="preserve"><value>Refresh available</value></data>
+  <data name="InfoDescription" xml:space="preserve"><value>Non-critical</value></data>
+  <data name="ActionRefresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="ActionExtract" xml:space="preserve"><value>Extract</value></data>
+  <data name="ActionHls" xml:space="preserve"><value>HLS</value></data>
+</root>

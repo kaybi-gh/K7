@@ -89,4 +89,19 @@ public partial class Serie
             NavigationManager.NavigateTo("/");
         }
     }
+
+    private async Task RefreshMetadataAsync()
+    {
+        if (_serie is null) return;
+
+        try
+        {
+            await k7ServerService.RefreshMediaMetadataAsync(_serie.Id);
+            Snackbar.Add(L["RefreshMetadataSent"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+        }
+    }
 }

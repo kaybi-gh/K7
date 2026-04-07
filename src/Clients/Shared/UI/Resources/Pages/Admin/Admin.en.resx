@@ -27,5 +27,6 @@
   <data name="TabAuthentication" xml:space="preserve"><value>Authentication</value></data>
   <data name="TabGeneral" xml:space="preserve"><value>General</value></data>
   <data name="TabBackgroundTasks" xml:space="preserve"><value>Background Tasks</value></data>
+  <data name="TabDiagnostics" xml:space="preserve"><value>Diagnostics</value></data>
 </root>
 
