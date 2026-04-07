@@ -1609,6 +1609,30 @@
         }
       }
     },
+    "/api/medias/{id}/refresh-metadata": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "RefreshMediaMetadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{id}/reidentify": {
       "post": {
         "tags": [
@@ -2362,6 +2386,122 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/diagnostics/fix": {
+      "post": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "operationId": "FixDiagnosticItems",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixDiagnosticItemsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/diagnostics/items": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "operationId": "GetDiagnosticItems",
+        "parameters": [
+          {
+            "name": "LibraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "EntityType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DiagnosticEntityType"
+            }
+          },
+          {
+            "name": "Issue",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DiagnosticIssue"
+            }
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListDtoOfDiagnosticItemDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/summary": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "operationId": "GetDiagnosticsSummary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryHealthSummaryDto"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -3796,6 +3936,105 @@
       "DeviceType": {
         "type": "integer"
       },
+      "DiagnosticEntityType": {
+        "type": "integer"
+      },
+      "DiagnosticFixAction": {
+        "type": "integer"
+      },
+      "DiagnosticIssue": {
+        "type": "integer"
+      },
+      "DiagnosticItemDto": {
+        "required": [
+          "entityId",
+          "entityName",
+          "entityType",
+          "libraryId",
+          "libraryTitle",
+          "issues",
+          "severity"
+        ],
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entityName": {
+            "type": "string"
+          },
+          "entityType": {
+            "$ref": "#/components/schemas/DiagnosticEntityType"
+          },
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "libraryTitle": {
+            "type": "string"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticIssue"
+            }
+          },
+          "severity": {
+            "$ref": "#/components/schemas/DiagnosticSeverity"
+          },
+          "detailText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            ]
+          },
+          "missingPictureTypes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "lastMetadataRefreshedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "metadataRefreshIntervalDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "DiagnosticSeverity": {
+        "type": "integer"
+      },
       "ExternalIdDto": {
         "required": [
           "providerName",
@@ -3935,6 +4174,25 @@
           }
         }
       },
+      "FixDiagnosticItemsRequest": {
+        "required": [
+          "entityIds",
+          "action"
+        ],
+        "type": "object",
+        "properties": {
+          "entityIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "action": {
+            "$ref": "#/components/schemas/DiagnosticFixAction"
+          }
+        }
+      },
       "GenreStatDto": {
         "required": [
           "genre"
@@ -4042,6 +4300,152 @@
           },
           "metadataProviderName": {
             "type": "string"
+          },
+          "metadataRefreshIntervalDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LibraryHealthSummaryDto": {
+        "required": [
+          "libraryId",
+          "libraryTitle",
+          "mediaType",
+          "totalMediaCount",
+          "mediaMissingPicturesCount",
+          "mediaMissingMetadataCount",
+          "mediaWithoutFilesCount",
+          "staleMetadataCount",
+          "totalIndexedFileCount",
+          "orphanIndexedFileCount",
+          "unidentifiedIndexedFileCount",
+          "missingFileMetadataCount",
+          "missingHlsSegmentsCount",
+          "missingAudioAnalysisCount",
+          "pendingBackgroundTaskCount",
+          "failedBackgroundTaskCount"
+        ],
+        "type": "object",
+        "properties": {
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "libraryTitle": {
+            "type": "string"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/LibraryMediaType"
+          },
+          "totalMediaCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "mediaMissingPicturesCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "mediaMissingMetadataCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "mediaWithoutFilesCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "staleMetadataCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalIndexedFileCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "orphanIndexedFileCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unidentifiedIndexedFileCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingFileMetadataCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingHlsSegmentsCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingAudioAnalysisCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pendingBackgroundTaskCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "failedBackgroundTaskCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -5447,6 +5851,13 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "lastMetadataRefreshedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -5547,6 +5958,13 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "lastMetadataRefreshedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -5731,6 +6149,13 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "lastMetadataRefreshedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -5855,6 +6280,13 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "lastMetadataRefreshedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -5998,6 +6430,13 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "lastMetadataRefreshedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -6116,6 +6555,13 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "lastMetadataRefreshedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -6412,6 +6858,53 @@
             ],
             "items": {
               "$ref": "#/components/schemas/DeviceDto"
+            }
+          },
+          "pageNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalPages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaginatedListDtoOfDiagnosticItemDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticItemDto"
             }
           },
           "pageNumber": {
@@ -7485,6 +7978,15 @@
               "null",
               "string"
             ]
+          },
+          "metadataRefreshIntervalDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -7892,6 +8394,9 @@
     },
     {
       "name": "FileSystem"
+    },
+    {
+      "name": "Diagnostics"
     },
     {
       "name": "Devices"
