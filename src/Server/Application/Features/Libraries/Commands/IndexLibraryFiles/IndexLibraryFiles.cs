@@ -9,11 +9,13 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
 {
     private readonly IApplicationDbContext _context;
     private readonly IFileIndexer _fileIndexerService;
+    private readonly ILibraryNotifier _libraryNotifier;
 
-    public IndexLibraryFilesCommandHandler(IApplicationDbContext context, IFileIndexer fileIndexerService)
+    public IndexLibraryFilesCommandHandler(IApplicationDbContext context, IFileIndexer fileIndexerService, ILibraryNotifier libraryNotifier)
     {
         _context = context;
         _fileIndexerService = fileIndexerService;
+        _libraryNotifier = libraryNotifier;
     }
 
     public async Task Handle(IndexLibraryFilesCommand request, CancellationToken cancellationToken)
@@ -23,6 +25,7 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
-        await _fileIndexerService.IndexAsync(entity, cancellationToken);
+        var result = await _fileIndexerService.IndexAsync(entity, cancellationToken);
+        await _libraryNotifier.NotifyLibraryScanCompletedAsync(entity.Id, result.AddedCount, cancellationToken);
     }
 }

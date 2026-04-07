@@ -60,6 +60,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         };
 
         await metadataUpdate;
+        media.LastMetadataRefreshedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
     }
 

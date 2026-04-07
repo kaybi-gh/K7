@@ -13,7 +13,8 @@ public static class LibraryMappings
             Title = domain.Title,
             MediaType = domain.MediaType,
             RootPath = domain.RootPath,
-            MetadataProviderName = domain.MetadataProviderName
+            MetadataProviderName = domain.MetadataProviderName,
+            MetadataRefreshIntervalDays = domain.MetadataRefreshIntervalDays
         };
     }
 }

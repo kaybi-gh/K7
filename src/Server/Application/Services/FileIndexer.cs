@@ -27,7 +27,7 @@ public class FileIndexer : IFileIndexer
         _sender = sender;
     }
 
-    public async Task IndexAsync(Library library, CancellationToken cancellationToken)
+    public async Task<LibraryScanResult> IndexAsync(Library library, CancellationToken cancellationToken)
     {
         List<IBaseRequest> backgroundTasks = [];
 
@@ -39,8 +39,13 @@ public class FileIndexer : IFileIndexer
             var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles, skippedFilePaths);
             var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)).ToList();
 
+            var unchangedCount = unchangedFiles.Count();
+            var addedCount = addedFiles.Count();
+            var removedCount = removedFiles.Count();
+            var renamedCount = renamedFiles.Count();
+
             _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {SkippedCount} skipped, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified.",
-                unchangedFiles.Count(), addedFiles.Count(), removedFiles.Count(), skippedFilePaths.Count, renamedFiles.Count(), toBeIdentifiedFiles.Count);
+                unchangedCount, addedCount, removedCount, skippedFilePaths.Count, renamedCount, toBeIdentifiedFiles.Count);
 
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
             ProcessAddedFiles(library, addedFiles);
@@ -53,6 +58,14 @@ public class FileIndexer : IFileIndexer
             {
                 await _sender.Send(request, cancellationToken);
             }
+
+            return new LibraryScanResult(
+                unchangedCount,
+                addedCount,
+                removedCount,
+                renamedCount,
+                skippedFilePaths.Count,
+                [.. skippedFilePaths]);
         }
         catch (Exception ex)
         {
