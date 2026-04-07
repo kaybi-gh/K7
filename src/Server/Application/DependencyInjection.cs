@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundTaskTypeRegistry>();
         services.AddSingleton<BackgroundTasksProcessingService>();
         services.AddHostedService(sp => sp.GetRequiredService<BackgroundTasksProcessingService>());
+        services.AddHostedService<MetadataRefreshSchedulerService>();
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
 

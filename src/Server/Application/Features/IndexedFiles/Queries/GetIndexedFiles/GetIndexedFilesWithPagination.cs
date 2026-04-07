@@ -23,11 +23,11 @@ public class GetIndexedFilesQueryHandler : IRequestHandler<GetIndexedFilesWithPa
 
     public async Task<PaginatedList<IndexedFile>> Handle(GetIndexedFilesWithPaginationQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.IndexedFiles;
+        var query = _context.IndexedFiles.AsQueryable();
 
         if (request.LibraryId.HasValue)
         {
-            query.Where(x => x.LibraryId == request.LibraryId);
+            query = query.Where(x => x.LibraryId == request.LibraryId.Value);
         }
 
         return await query.OrderBy(x => x.Path)

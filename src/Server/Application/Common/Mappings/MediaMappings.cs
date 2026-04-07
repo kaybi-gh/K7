@@ -33,7 +33,8 @@ public static class MediaMappings
                 Revenue = movie.Revenue,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
-                    : null
+                    : null,
+                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             MusicAlbum album => new MusicAlbumDto()
             {
@@ -50,7 +51,8 @@ public static class MediaMappings
                 Tracks = album.Tracks.Select(t => (LiteMusicTrackDto)t.ToLiteMediaDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
-                    : null
+                    : null,
+                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             MusicTrack track => new MusicTrackDto()
             {
@@ -77,7 +79,8 @@ public static class MediaMappings
                 WaveformPeaks = track.AudioAnalysis?.WaveformPeaks,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
-                    : null
+                    : null,
+                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             Serie serie => new SerieDto()
             {
@@ -114,7 +117,8 @@ public static class MediaMappings
                     .ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
-                    : null
+                    : null,
+                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             SerieSeason season => new SerieSeasonDto()
             {
@@ -137,7 +141,8 @@ public static class MediaMappings
                     .ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
-                    : null
+                    : null,
+                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             SerieEpisode episode => new SerieEpisodeDto()
             {
@@ -161,7 +166,8 @@ public static class MediaMappings
                 SeasonTitle = episode.Season?.Title,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
-                    : null
+                    : null,
+                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
             },
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
         };

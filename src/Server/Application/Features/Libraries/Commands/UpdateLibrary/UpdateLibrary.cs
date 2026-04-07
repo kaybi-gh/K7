@@ -11,6 +11,7 @@ public record UpdateLibraryCommand : IRequest
 
     public string? Title { get; init; }
     public string? MetadataProviderName { get; init; }
+    public int? MetadataRefreshIntervalDays { get; init; }
 }
 
 public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
@@ -30,6 +31,7 @@ public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
         Guard.Against.NotFound(request.Id, entity);
         entity.Title = request.Title ?? entity.Title;
         entity.MetadataProviderName = request.MetadataProviderName ?? entity.MetadataProviderName;
+        entity.MetadataRefreshIntervalDays = request.MetadataRefreshIntervalDays;
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
