@@ -13,6 +13,7 @@ public class CreateBackgroundTaskCommandHandlerTests
 {
     private IApplicationDbContext _context;
     private IBackgroundTaskQueue _taskQueue;
+    private IBackgroundTaskNotifier _notifier;
     private CreateBackgroundTaskCommandHandler _handler;
     private List<BackgroundTask> _existingTasks;
 
@@ -21,12 +22,13 @@ public class CreateBackgroundTaskCommandHandlerTests
     {
         _context = Substitute.For<IApplicationDbContext>();
         _taskQueue = Substitute.For<IBackgroundTaskQueue>();
+        _notifier = Substitute.For<IBackgroundTaskNotifier>();
         _existingTasks = [];
 
         var dbSet = _existingTasks.BuildMockDbSet();
         _context.BackgroundTasks.Returns(dbSet);
 
-        _handler = new CreateBackgroundTaskCommandHandler(_context, _taskQueue);
+        _handler = new CreateBackgroundTaskCommandHandler(_context, _taskQueue, _notifier);
     }
 
     [Test]
