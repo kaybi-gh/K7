@@ -146,6 +146,7 @@ else
                     <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" ListClass="pa-2">
                         <AuthorizeView Roles="Administrator">
                             <MudMenuItem Icon="@Icons.Material.Filled.FindReplace" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Refresh" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</MudMenuItem>
                         </AuthorizeView>
                         <MudMenuItem Icon="@Icons.Material.Filled.FolderZip" OnClick="OpenIndexedFilesDialogAsync">@L["IndexedVersions"]</MudMenuItem>
                     </MudMenu>

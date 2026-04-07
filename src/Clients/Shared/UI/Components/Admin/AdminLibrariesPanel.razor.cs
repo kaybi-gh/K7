@@ -103,7 +103,8 @@ public partial class AdminLibrariesPanel
         {
             { x => x.Title, library.Title },
             { x => x.AvailableProviders, providers },
-            { x => x.SelectedProvider, library.MetadataProviderName }
+            { x => x.SelectedProvider, library.MetadataProviderName },
+            { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays }
         };
 
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };

@@ -13,6 +13,11 @@
                     <MudSelectItem T="string" Value="@provider.ProviderName">@provider.ProviderName</MudSelectItem>
                 }
             </MudSelect>
+
+            <MudNumericField T="int?" @bind-Value="MetadataRefreshIntervalDays"
+                             Label="@L["MetadataRefreshLabel"]" Variant="Variant.Outlined"
+                             Min="0" Max="365"
+                             HelperText="@L["MetadataRefreshHelper"]" />
         </MudStack>
     </DialogContent>
     <DialogActions>
