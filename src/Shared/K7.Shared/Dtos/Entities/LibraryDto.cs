@@ -9,4 +9,5 @@ public sealed record LibraryDto
     public required LibraryMediaType MediaType { get; init; }
     public required string RootPath { get; init; }
     public required string MetadataProviderName { get; init; }
+    public int? MetadataRefreshIntervalDays { get; init; }
 }

@@ -4,4 +4,5 @@ public sealed record UpdateLibraryRequest
 {
     public string? Title { get; init; }
     public string? MetadataProviderName { get; init; }
+    public int? MetadataRefreshIntervalDays { get; init; }
 }

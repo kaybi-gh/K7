@@ -22,4 +22,5 @@ public abstract record MediaDto
     public IReadOnlyList<IndexedFileDto>? IndexedFiles { get; init; }
     public IReadOnlyList<string>? Genres { get; init; }
     public UserMediaStateDto? UserState { get; init; }
+    public DateTimeOffset? LastMetadataRefreshedAt { get; init; }
 }

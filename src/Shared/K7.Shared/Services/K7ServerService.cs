@@ -2,6 +2,7 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
+using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Interfaces;
@@ -17,7 +18,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -198,6 +199,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync($"api/medias/{id}/reidentify", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RefreshMediaMetadataAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/medias/{id}/refresh-metadata", null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -535,5 +542,30 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         return await HttpClient.GetFromJsonAsync<BackgroundTaskSummaryDto>("api/background-tasks/summary", _serializerOptions, cancellationToken)
             ?? new BackgroundTaskSummaryDto { TotalCount = 0, StatusCounts = [], TaskTypeCounts = [] };
+    }
+
+    public async Task<List<LibraryHealthSummaryDto>> GetDiagnosticsSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<LibraryHealthSummaryDto>>("api/diagnostics/summary", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<PaginatedListDto<DiagnosticItemDto>> GetDiagnosticItemsAsync(Guid? libraryId = null, DiagnosticEntityType? entityType = null, DiagnosticIssue? issue = null, int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        var uri = $"api/diagnostics/items?pageNumber={pageNumber}&pageSize={pageSize}";
+        if (libraryId.HasValue)
+            uri += $"&libraryId={libraryId.Value}";
+        if (entityType.HasValue)
+            uri += $"&entityType={entityType.Value}";
+        if (issue.HasValue)
+            uri += $"&issue={issue.Value}";
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<DiagnosticItemDto>>(uri, _serializerOptions, cancellationToken) ?? new PaginatedListDto<DiagnosticItemDto>();
+    }
+
+    public async Task<int> FixDiagnosticItemsAsync(IReadOnlyList<Guid> entityIds, DiagnosticFixAction action, CancellationToken cancellationToken = default)
+    {
+        var request = new FixDiagnosticItemsRequest { EntityIds = entityIds, Action = action };
+        var response = await HttpClient.PostAsJsonAsync("api/diagnostics/fix", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<int>(_serializerOptions, cancellationToken);
     }
 }
