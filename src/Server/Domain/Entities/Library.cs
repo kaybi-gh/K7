@@ -6,6 +6,7 @@ public class Library : BaseAuditableEntity
     public required LibraryMediaType MediaType { get; set; }
     public required string RootPath { get; set; }
     public required string MetadataProviderName { get; set; }
+    public int? MetadataRefreshIntervalDays { get; set; }
     public bool? RootPathAccessible { get; set; }
 
     public IList<IndexedFile> IndexedFiles { get; set; } = [];

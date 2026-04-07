@@ -17,6 +17,8 @@ public abstract class BaseMedia(MediaType type) : BaseSlugEntity
     public IList<BaseRating> Ratings { get; set; } = [];
     public IList<BasePersonRole> PersonRoles { get; set; } = [];
     public IList<string> Genres { get; set; } = []; // TODO - Use typed tags instead
+    public DateTimeOffset? LastMetadataRefreshedAt { get; set; }
+
     public IList<IndexedFile> IndexedFiles { get; set; } = [];
     public IList<UserMediaState> UserMediaStates { get; set; } = [];
 }
