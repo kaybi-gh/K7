@@ -317,6 +317,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int?>("MetadataRefreshIntervalDays")
+                        .HasColumnType("integer");
+
                     b.Property<string>("RootPath")
                         .IsRequired()
                         .HasColumnType("text");
@@ -420,6 +423,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.PrimitiveCollection<string[]>("Genres")
                         .IsRequired()
                         .HasColumnType("text[]");
+
+                    b.Property<DateTimeOffset?>("LastMetadataRefreshedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
