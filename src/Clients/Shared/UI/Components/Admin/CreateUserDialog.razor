@@ -1,0 +1,28 @@
+@inject IStringLocalizer<CreateUserDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4" Class="mt-2">
+            <MudTextField @bind-Value="_username" Label="@L["Username"]" Variant="Variant.Outlined"
+                          Required="true" RequiredError="@L["UsernameRequired"]" />
+            <MudTextField @bind-Value="_password" Label="@L["Password"]" Variant="Variant.Outlined"
+                          InputType="InputType.Password" HelperText="@L["PasswordHelper"]" />
+            <MudSelect T="string" @bind-Value="_role" Label="@L["Role"]" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("User")">@S["RoleUser"]</MudSelectItem>
+                <MudSelectItem Value="@("Administrator")">@S["RoleAdministrator"]</MudSelectItem>
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+                   Disabled="@(string.IsNullOrWhiteSpace(_username) || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @L["Create"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>

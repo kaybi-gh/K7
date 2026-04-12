@@ -17,6 +17,7 @@ public partial class AdminUsersPanel
 
     private bool _isLoading = true;
     private List<UserDto> _users = [];
+    private Guid? _currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -29,6 +30,11 @@ public partial class AdminUsersPanel
         try
         {
             _users = await K7ServerService.GetUsersAsync();
+            if (_currentUserId is null)
+            {
+                var me = await K7ServerService.GetCurrentUserAsync();
+                _currentUserId = me?.Id;
+            }
         }
         catch
         {
@@ -221,6 +227,55 @@ public partial class AdminUsersPanel
             {
                 Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
             }
+        }
+    }
+
+    private async Task OpenCreateUserDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<CreateUserDialog>(L["CreateUserTitle"], options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UserDto createdUser })
+        {
+            Snackbar.Add(string.Format(L["UserCreated"], createdUser.UserName), Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task OpenMergeUserDialog(UserDto user)
+    {
+        var parameters = new DialogParameters<MergeUserDialog>
+        {
+            { x => x.SourceUser, user },
+            { x => x.AllUsers, _users }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<MergeUserDialog>(L["MergeUserTitle"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(L["UserMerged"], Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task OpenResetPasswordDialog(UserDto user)
+    {
+        var parameters = new DialogParameters<ResetPasswordDialog>
+        {
+            { x => x.User, user }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<ResetPasswordDialog>(L["ResetPasswordTitle"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add(string.Format(L["PasswordReset"], user.UserName), Severity.Success);
         }
     }
 }

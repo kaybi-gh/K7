@@ -3,6 +3,10 @@
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
     <MudText Typo="Typo.h6">@L["Title"]</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+               OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
+        @L["CreateUserTitle"]
+    </MudButton>
 </MudStack>
 
 @if (_isLoading)
@@ -72,8 +76,12 @@ else
                             <MudIconButton Icon="@Icons.Material.Filled.Shield" Size="Size.Small"
                                            Color="@(user.ContentRestrictionProfileId.HasValue ? Color.Warning : Color.Default)"
                                            OnClick="@(() => OpenRestrictionProfileDialog(user))" aria-label="@L["AriaRestrictionProfile"]" />
-                            @if (!user.IsGuest)
+                            @if (!user.IsGuest && user.Id != _currentUserId)
                             {
+                                <MudIconButton Icon="@Icons.Material.Filled.Password" Size="Size.Small" Color="Color.Default"
+                                               OnClick="@(() => OpenResetPasswordDialog(user))" aria-label="@L["AriaResetPassword"]" />
+                                <MudIconButton Icon="@Icons.Material.Filled.MergeType" Size="Size.Small" Color="Color.Default"
+                                               OnClick="@(() => OpenMergeUserDialog(user))" aria-label="@L["AriaMerge"]" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
                                                OnClick="@(() => ConfirmDelete(user))" aria-label="@L["AriaDelete"]" />
                             }

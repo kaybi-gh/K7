@@ -47,5 +47,14 @@
   <data name="HiddenMediaUpdated" xml:space="preserve"><value>Médias masqués mis à jour.</value></data>
   <data name="RestrictionProfileTitle" xml:space="preserve"><value>Profil de restriction</value></data>
   <data name="RestrictionProfileUpdated" xml:space="preserve"><value>Profil de restriction mis à jour.</value></data>
+  <data name="CreateUserTitle" xml:space="preserve"><value>Créer un utilisateur</value></data>
+  <data name="UserCreated" xml:space="preserve"><value>Utilisateur {0} créé.</value></data>
+  <data name="AriaMerge" xml:space="preserve"><value>Fusionner</value></data>
+  <data name="AriaCreateUser" xml:space="preserve"><value>Créer un utilisateur</value></data>
+  <data name="MergeUserTitle" xml:space="preserve"><value>Fusionner l'utilisateur</value></data>
+  <data name="UserMerged" xml:space="preserve"><value>Utilisateur fusionné avec succès.</value></data>
+  <data name="AriaResetPassword" xml:space="preserve"><value>Réinitialiser le mot de passe</value></data>
+  <data name="ResetPasswordTitle" xml:space="preserve"><value>Réinitialiser le mot de passe</value></data>
+  <data name="PasswordReset" xml:space="preserve"><value>Mot de passe de {0} réinitialisé.</value></data>
 </root>
 

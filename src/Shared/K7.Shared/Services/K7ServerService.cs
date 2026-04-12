@@ -137,9 +137,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
     }
 
-    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, double position, double duration, CancellationToken cancellationToken = default)
+    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, CancellationToken cancellationToken = default)
     {
-        var payload = new { MediaId = mediaId, SessionId = sessionId, Position = position, Duration = duration };
+        var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId };
         var response = await HttpClient.PostAsJsonAsync("api/medias/playback-progress", payload, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
@@ -153,6 +153,22 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<MusicStatsDto>("api/music/stats", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string> { $"period={Uri.EscapeDataString(period)}" };
+        if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
+        var url = $"api/stats?{string.Join("&", queryParams)}";
+        return await HttpClient.GetFromJsonAsync<WatchStatsDto>(url, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string> { $"page={page}", $"pageSize={pageSize}" };
+        if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
+        var url = $"api/stats/history?{string.Join("&", queryParams)}";
+        return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
 
     public async Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default)
@@ -361,6 +377,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<ActiveStreamDto>>("api/admin/streams", _serializerOptions, cancellationToken);
+    }
+
     public async Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<AuthenticationInfoDto>("api/admin/authentication-info", _serializerOptions, cancellationToken);
@@ -399,6 +420,26 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync($"api/users/{userId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/users", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<UserDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default)
+    {
+        var body = strategy is not null ? new MergeUsersRequest { Strategy = strategy } : null;
+        var response = await HttpClient.PostAsJsonAsync($"api/users/{sourceUserId}/merge-into/{targetUserId}", body, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/users/{userId}/reset-password", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
