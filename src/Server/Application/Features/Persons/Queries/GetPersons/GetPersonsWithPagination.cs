@@ -36,10 +36,13 @@ public class GetPersonsQueryHandler(IApplicationDbContext context, IUser current
                 .Where(e => e.UserId == userId)
                 .Select(e => e.LibraryId);
 
+            var roleFilter = request.RoleTypes;
+
             query = query.Where(p => p.Roles.Any(r =>
-                r.Media is MusicAlbum
+                (roleFilter == null || roleFilter.Count == 0 || roleFilter.Contains(r.Type)) &&
+                (r.Media is MusicAlbum
                     ? ((MusicAlbum)r.Media).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                    : r.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                    : r.Media.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
             ));
         }
 

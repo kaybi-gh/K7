@@ -187,7 +187,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
-            var url = $"{BaseUrl}/release/{releaseId}?inc=recordings+artist-credits&fmt=json";
+            var url = $"{BaseUrl}/release/{releaseId}?inc=recordings+artist-credits+isrcs&fmt=json";
             await WaitRateLimitAsync(cancellationToken);
             return await _httpClient.GetFromJsonAsync<MbRelease>(url, JsonOptions, cancellationToken);
         }
@@ -263,7 +263,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                     TrackNumber = track.Position,
                     DiscNumber = medium.Position,
                     Duration = track.Length.HasValue ? TimeSpan.FromMilliseconds(track.Length.Value) : null,
-                    MusicBrainzRecordingId = track.Recording?.Id
+                    MusicBrainzRecordingId = track.Recording?.Id,
+                    Isrc = track.Recording?.Isrcs?.FirstOrDefault()
                 });
             }
         }
@@ -451,6 +452,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         public string Id { get; init; } = "";
         public string? Title { get; init; }
+        public List<string>? Isrcs { get; init; }
     }
 
     private record MbArtistSearchResult

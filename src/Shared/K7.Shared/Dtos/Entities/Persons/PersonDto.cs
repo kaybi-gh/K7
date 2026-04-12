@@ -6,7 +6,6 @@ namespace K7.Shared.Dtos.Entities.Persons;
 public sealed record PersonDto
 {
     public Guid Id { get; init; }
-    public string Slug { get; init; } = null!;
     public string? Name { get; init; }
     public PersonGender Gender { get; init; } = PersonGender.NotSpecified;
     public string? Biography { get; init; }

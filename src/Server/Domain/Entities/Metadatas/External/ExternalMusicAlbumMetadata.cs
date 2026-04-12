@@ -22,6 +22,7 @@ public class ExternalMusicTrackMetadata
     public int? DiscNumber { get; init; }
     public TimeSpan? Duration { get; init; }
     public string? MusicBrainzRecordingId { get; init; }
+    public string? Isrc { get; init; }
 }
 
 public class ExternalMusicArtistMetadata
