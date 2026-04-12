@@ -11,7 +11,7 @@ public class SerieSeason() : BaseMedia(MediaType.SerieSeason)
     public int SeasonNumber { get; set; }
     public string? Overview { get; set; }
 
-    public override string GetSlugSource() => $"{Serie.Slug}-{Title}";
+
 
     public void ApplyMetadata(ExternalSeasonMetadata metadata)
     {

@@ -12,7 +12,7 @@ public class Serie() : BaseMedia(MediaType.Serie)
     public string? Status { get; set; }
     public string? Network { get; set; }
 
-    public override string GetSlugSource() => $"{Title}-{ReleaseDate?.Year}";
+
 
     public void ApplyMetadata(ExternalSerieMetadata metadata)
     {

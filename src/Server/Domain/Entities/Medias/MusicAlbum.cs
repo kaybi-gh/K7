@@ -7,7 +7,7 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
 
     public IList<MusicTrack> Tracks { get; set; } = [];
 
-    public override string GetSlugSource() => $"{Title}-{ReleaseDate?.Year}";
+
 
     public void ApplyMetadata(ExternalMusicAlbumMetadata metadata)
     {

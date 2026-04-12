@@ -12,5 +12,5 @@ public class MusicTrack() : BaseMedia(MediaType.MusicTrack)
 
     public AudioAnalysis? AudioAnalysis { get; set; }
 
-    public override string GetSlugSource() => $"{Album.Slug}-{Title}";
+
 }
