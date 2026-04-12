@@ -79,8 +79,8 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 | `--include` | Data types to import: `history`, `ratings`, `playlists` (default: all, repeatable) |
 | `--spotify-data-dir` | Path to Spotify extended streaming history export folder (for full listen history) |
 | `--user-mapping` | Map a source user to an existing K7 user (format: `sourceUser:k7User`, repeatable) |
-| `--create-missing` | Create virtual media entities for unmatched items (default: `true`) |
-| `--no-create-missing` | Disable virtual media creation — only import data for already-matched items |
+| `--only-match-existing` | Only import data for media that already exists in K7 — skip virtual media creation for unmatched items |
+| `--fetch-metadata` | Fetch rich metadata (posters, descriptions, etc.) for newly created media |
 | `--playcount-mode` | Play count merge strategy: `additive` (sum) or `max` (highest wins). Default: `additive` |
 | `--rating-mode` | Rating conflict strategy: `keep` (keep existing) or `overwrite`. Default: `keep` |
 | `--progress-mode` | Progress conflict strategy: `recent` (most recent wins) or `overwrite`. Default: `recent` |
@@ -198,11 +198,16 @@ k7-import -s spotify --k7-url http://localhost:5000 \
 
 ## Virtual Media Creation
 
-By default (`--create-missing`), unmatched source items are created as **virtual media** in K7 — lightweight entities without physical media files. This ensures all watch history, ratings, and play counts are preserved, even if K7 doesn't have the corresponding media files yet.
+By default, unmatched source items are created as **virtual media** in K7 — lightweight entities without physical media files. This ensures all watch history, ratings, and play counts are preserved, even if K7 doesn't have the corresponding media files yet.
 
 Virtual media can later be enriched with metadata or linked to real media files when they become available.
 
-To disable this and only import data for items already in K7:
+To automatically fetch rich metadata (posters, descriptions, ratings) for newly created media, use `--fetch-metadata`. This queues background metadata tasks for enrichable types (movies, albums, series) that have external IDs:
 ```bash
-k7-import -s spotify --k7-url http://localhost:5000 --no-create-missing
+k7-import -s tautulli --source-url http://localhost:8181 --source-api-key YOUR_KEY --k7-url http://localhost:5000 --fetch-metadata
+```
+
+To disable virtual media creation and only import data for items already in K7:
+```bash
+k7-import -s spotify --k7-url http://localhost:5000 --only-match-existing
 ```
