@@ -1,8 +1,8 @@
-@import url('./lib/fonts/epilogue/700.css');
-@import url('./lib/fonts/epilogue/900.css');
-@import url('./lib/fonts/manrope/400.css');
-@import url('./lib/fonts/manrope/500.css');
-@import url('./lib/fonts/manrope/700.css');
+@import url('./lib/fonts/epilogue/latin-700.css');
+@import url('./lib/fonts/epilogue/latin-900.css');
+@import url('./lib/fonts/manrope/latin-400.css');
+@import url('./lib/fonts/manrope/latin-500.css');
+@import url('./lib/fonts/manrope/latin-700.css');
 
 body.no-scroll {
     overflow: hidden;
