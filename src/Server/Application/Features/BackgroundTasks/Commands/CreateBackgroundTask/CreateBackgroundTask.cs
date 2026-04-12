@@ -2,6 +2,7 @@
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
@@ -16,18 +17,13 @@ public record CreateBackgroundTaskCommand : IRequest<Guid>
     public string? ConcurrencyGroup { get; set; }
 }
 
-public class CreateBackgroundTaskCommandHandler : IRequestHandler<CreateBackgroundTaskCommand, Guid>
+public class CreateBackgroundTaskCommandHandler(IApplicationDbContext context, IBackgroundTaskQueue taskQueue, IBackgroundTaskNotifier notifier, ILogger<CreateBackgroundTaskCommandHandler> logger)
+    : IRequestHandler<CreateBackgroundTaskCommand, Guid>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IBackgroundTaskQueue _taskQueue;
-    private readonly IBackgroundTaskNotifier _notifier;
-
-    public CreateBackgroundTaskCommandHandler(IApplicationDbContext context, IBackgroundTaskQueue taskQueue, IBackgroundTaskNotifier notifier)
-    {
-        _context = context;
-        _taskQueue = taskQueue;
-        _notifier = notifier;
-    }
+    private readonly IApplicationDbContext _context = context;
+    private readonly IBackgroundTaskQueue _taskQueue = taskQueue;
+    private readonly IBackgroundTaskNotifier _notifier = notifier;
+    private readonly ILogger _logger = logger;
 
     public async Task<Guid> Handle(CreateBackgroundTaskCommand request, CancellationToken cancellationToken)
     {
@@ -45,6 +41,8 @@ public class CreateBackgroundTaskCommandHandler : IRequestHandler<CreateBackgrou
 
         if (existingTaskId is not null)
         {
+            _logger.LogWarning("Background task deduplicated: {TaskName} with TargetEntityId={TargetEntityId} already exists as {ExistingTaskId}",
+                taskName, request.TargetEntityId, existingTaskId.Value);
             return existingTaskId.Value;
         }
 
