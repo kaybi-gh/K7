@@ -19,12 +19,14 @@ public class FileIndexer : IFileIndexer
     private readonly ILogger<FileIndexer> _logger;
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IAudioTagReader _audioTagReader;
 
-    public FileIndexer(ILogger<FileIndexer> logger, IApplicationDbContext context, ISender sender)
+    public FileIndexer(ILogger<FileIndexer> logger, IApplicationDbContext context, ISender sender, IAudioTagReader audioTagReader)
     {
         _logger = logger;
         _context = context;
         _sender = sender;
+        _audioTagReader = audioTagReader;
     }
 
     public async Task<LibraryScanResult> IndexAsync(Library library, CancellationToken cancellationToken)
@@ -100,7 +102,7 @@ public class FileIndexer : IFileIndexer
         return ([.. indexedFiles], [.. skippedFilePaths]);
     }
 
-    private static void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<IBaseRequest> backgroundTasks)
+    private void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<IBaseRequest> backgroundTasks)
     {
         if (toBeIdentifiedFiles.Count == 0) return;
 
@@ -121,6 +123,7 @@ public class FileIndexer : IFileIndexer
                                 LibraryId = library.Id
                             },
                             Priority = BackgroundTaskPriority.Normal,
+                            TargetEntityId = file.Id,
                             TargetEntityTypeName = nameof(BaseMedia),
                             MaxAttempts = 5,
                             ConcurrencyGroup = library.MetadataProviderName
@@ -134,22 +137,27 @@ public class FileIndexer : IFileIndexer
                 {
                     var filesInSameDirectory = group.ToList();
                     foreach (var file in filesInSameDirectory)
+                    {
                         file.TryIdentifyMusicTrack(library, filesInSameDirectory);
+                        EnrichMusicIdentificationFromTags(file);
+                    }
                 }
 
                 foreach (var albumGroup in toBeIdentifiedFiles
                     .Where(f => f.Identification is not null)
-                    .GroupBy(f => f.Identification!.AlbumName ?? f.ParentDirectory))
+                    .GroupBy(f => (f.Identification!.AlbumName ?? f.ParentDirectory, f.Identification.ArtistName)))
                 {
+                    var albumFiles = albumGroup.ToList();
                     backgroundTasks.Add(new CreateBackgroundTaskCommand()
                     {
                         Request = new CreateMediaCommand()
                         {
-                            IndexedFileIds = albumGroup.Select(f => f.Id).ToList(),
+                            IndexedFileIds = albumFiles.Select(f => f.Id).ToList(),
                             MediaType = MediaType.MusicAlbum,
                             LibraryId = library.Id
                         },
                         Priority = BackgroundTaskPriority.Normal,
+                        TargetEntityId = albumFiles[0].Id,
                         TargetEntityTypeName = nameof(BaseMedia),
                         MaxAttempts = 5,
                         ConcurrencyGroup = library.MetadataProviderName
@@ -169,15 +177,17 @@ public class FileIndexer : IFileIndexer
                     .Where(f => f.Identification?.SeriesTitle is not null)
                     .GroupBy(f => f.Identification!.SeriesTitle))
                 {
+                    var serieFiles = serieGroup.ToList();
                     backgroundTasks.Add(new CreateBackgroundTaskCommand()
                     {
                         Request = new CreateMediaCommand()
                         {
-                            IndexedFileIds = serieGroup.Select(f => f.Id).ToList(),
+                            IndexedFileIds = serieFiles.Select(f => f.Id).ToList(),
                             MediaType = MediaType.Serie,
                             LibraryId = library.Id
                         },
                         Priority = BackgroundTaskPriority.Normal,
+                        TargetEntityId = serieFiles[0].Id,
                         TargetEntityTypeName = nameof(BaseMedia),
                         MaxAttempts = 5,
                         ConcurrencyGroup = library.MetadataProviderName
@@ -238,6 +248,7 @@ public class FileIndexer : IFileIndexer
                         LibraryId = library.Id
                     },
                     Priority = BackgroundTaskPriority.Normal,
+                    TargetEntityId = oldFile.Id,
                     TargetEntityTypeName = nameof(BaseMedia),
                     MaxAttempts = 5,
                     ConcurrencyGroup = library.MetadataProviderName
@@ -245,6 +256,37 @@ public class FileIndexer : IFileIndexer
             }
 
             _context.IndexedFiles.Update(oldFile);
+        }
+    }
+
+    private void EnrichMusicIdentificationFromTags(IndexedFile file)
+    {
+        if (file.Identification is null) return;
+
+        try
+        {
+            var tags = _audioTagReader.ReadTags(file.Path);
+            if (tags is null) return;
+
+            if (!string.IsNullOrEmpty(tags.Album))
+                file.Identification.AlbumName = tags.Album;
+
+            var artist = tags.AlbumArtists.FirstOrDefault() ?? tags.Artists.FirstOrDefault();
+            if (!string.IsNullOrEmpty(artist))
+                file.Identification.ArtistName = artist;
+
+            if (!string.IsNullOrEmpty(tags.Title))
+                file.Identification.Title = tags.Title;
+
+            if (tags.TrackNumber.HasValue)
+                file.Identification.TrackNumber = tags.TrackNumber;
+
+            if (tags.Year.HasValue)
+                file.Identification.ReleaseYear = new DateOnly(tags.Year.Value, 1, 1);
+        }
+        catch
+        {
+            // Tag reading failure is non-fatal — directory-based identification remains
         }
     }
 }
