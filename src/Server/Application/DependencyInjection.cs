@@ -34,6 +34,8 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundTasksProcessingService>();
         services.AddHostedService(sp => sp.GetRequiredService<BackgroundTasksProcessingService>());
         services.AddHostedService<MetadataRefreshSchedulerService>();
+        services.AddSingleton<ActiveStreamTracker>();
+        services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
 

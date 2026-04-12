@@ -5,6 +5,158 @@
     "version": "v1"
   },
   "paths": {
+    "/api/users/{userId}/playback-sessions/bulk": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "BulkCreatePlaybackSessions",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCreatePlaybackSessionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/media-states/bulk": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "BulkUpsertMediaStates",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpsertMediaStatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/ratings/bulk": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "BulkUpsertRatings",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpsertRatingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "CreateUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUsers",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{id}": {
       "delete": {
         "tags": [
@@ -76,28 +228,82 @@
         }
       }
     },
-    "/api/users": {
-      "get": {
+    "/api/users/{sourceUserId}/merge-into/{targetUserId}": {
+      "post": {
         "tags": [
           "Users"
         ],
-        "operationId": "GetUsers",
+        "operationId": "MergeUsers",
         "parameters": [
           {
-            "name": "role",
-            "in": "query",
+            "name": "sourceUserId",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
-            "name": "isActive",
-            "in": "query",
+            "name": "targetUserId",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MergeUsersRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/reset-password": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "ResetUserPassword",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetUserPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -384,6 +590,98 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/stats/history": {
+      "get": {
+        "tags": [
+          "Stats"
+        ],
+        "operationId": "GetPlaybackHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 25
+            }
+          },
+          {
+            "name": "mediaType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MediaType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackHistoryPageDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": [
+          "Stats"
+        ],
+        "operationId": "GetWatchStats",
+        "parameters": [
+          {
+            "name": "mediaType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MediaType"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchStatsDto"
+                }
+              }
+            }
           }
         }
       }
@@ -1399,6 +1697,52 @@
         }
       }
     },
+    "/api/medias/bulk-create": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "BulkCreateMedias",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCreateMediasRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/bulk-link-artists": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "BulkLinkArtists",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkLinkArtistsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{id}": {
       "get": {
         "tags": [
@@ -1568,6 +1912,29 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/by-external-ids": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "LookupMediasByExternalIds",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupMediasByExternalIdsRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -3081,6 +3448,92 @@
         }
       }
     },
+    "/api/admin/streams": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetActiveStreams",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActiveStreamDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/stats/history": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetAdminPlaybackHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 25
+            }
+          },
+          {
+            "name": "mediaType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MediaType"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackHistoryPageDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/authentication-info": {
       "get": {
         "tags": [
@@ -3154,6 +3607,97 @@
   },
   "components": {
     "schemas": {
+      "ActiveStreamDto": {
+        "required": [
+          "connectionId"
+        ],
+        "type": "object",
+        "properties": {
+          "connectionId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "userName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "mediaTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "deviceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "position": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "duration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "state": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "AddPlaylistItemRequest": {
         "required": [
           "mediaId"
@@ -3295,6 +3839,22 @@
             "items": {
               "$ref": "#/components/schemas/PlaylistItemDto"
             }
+          }
+        }
+      },
+      "ArtistLinkItem": {
+        "required": [
+          "mediaId",
+          "artistName"
+        ],
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": "string"
           }
         }
       },
@@ -3519,6 +4079,166 @@
       },
       "Browser": {
         "type": "integer"
+      },
+      "BulkCreateMediaItem": {
+        "required": [
+          "key",
+          "mediaType",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "externalIds": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "artistName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "albumName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "seriesTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "seasonNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "episodeNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "BulkCreateMediasRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkCreateMediaItem"
+            }
+          }
+        }
+      },
+      "BulkCreatePlaybackSessionsRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaybackSessionItem"
+            }
+          }
+        }
+      },
+      "BulkLinkArtistsRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistLinkItem"
+            }
+          }
+        }
+      },
+      "BulkUpsertMediaStatesRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaStateItem"
+            }
+          },
+          "strategy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MergeStrategy"
+              }
+            ]
+          }
+        }
+      },
+      "BulkUpsertRatingsRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RatingItem"
+            }
+          },
+          "strategy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MergeStrategy"
+              }
+            ]
+          }
+        }
       },
       "Capability": {
         "type": "integer"
@@ -3820,6 +4540,54 @@
           }
         }
       },
+      "CreateUserRequest": {
+        "required": [
+          "username",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DayOfWeekPointDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "day": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "DeviceDto": {
         "required": [
           "playbackCapabilities",
@@ -4054,6 +4822,21 @@
           }
         }
       },
+      "ExternalIdItem": {
+        "required": [
+          "provider",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "FileMetadataDto": {
         "required": [
           "$type"
@@ -4203,6 +4986,27 @@
             "type": "string"
           },
           "playCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "HourOfDayPointDto": {
+        "type": "object",
+        "properties": {
+          "hour": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "count": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -5123,9 +5927,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "slug": {
-            "type": "string"
-          },
           "name": {
             "type": [
               "null",
@@ -5690,6 +6491,20 @@
           }
         }
       },
+      "LookupMediasByExternalIdsRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdItem"
+            }
+          }
+        }
+      },
       "MediaDto": {
         "required": [
           "$type"
@@ -5780,9 +6595,6 @@
           "id": {
             "type": "string",
             "format": "uuid"
-          },
-          "slug": {
-            "type": "string"
           },
           "title": {
             "type": [
@@ -5887,9 +6699,6 @@
           "id": {
             "type": "string",
             "format": "uuid"
-          },
-          "slug": {
-            "type": "string"
           },
           "title": {
             "type": [
@@ -6079,9 +6888,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "slug": {
-            "type": "string"
-          },
           "title": {
             "type": [
               "null",
@@ -6209,9 +7015,6 @@
           "id": {
             "type": "string",
             "format": "uuid"
-          },
-          "slug": {
-            "type": "string"
           },
           "title": {
             "type": [
@@ -6360,9 +7163,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "slug": {
-            "type": "string"
-          },
           "title": {
             "type": [
               "null",
@@ -6484,9 +7284,6 @@
           "id": {
             "type": "string",
             "format": "uuid"
-          },
-          "slug": {
-            "type": "string"
           },
           "title": {
             "type": [
@@ -6640,8 +7437,83 @@
           }
         }
       },
+      "MediaStateItem": {
+        "required": [
+          "mediaId"
+        ],
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "playCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lastPlaybackPosition": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "progressPercentage": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isCompleted": {
+            "type": "boolean"
+          },
+          "lastInteractedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "MediaType": {
         "type": "integer"
+      },
+      "MergeStrategy": {
+        "type": "object",
+        "properties": {
+          "playCount": {
+            "$ref": "#/components/schemas/PlayCountMergeMode"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/RatingConflictMode"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ProgressConflictMode"
+          }
+        }
+      },
+      "MergeUsersRequest": {
+        "type": "object",
+        "properties": {
+          "strategy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MergeStrategy"
+              }
+            ]
+          }
+        }
       },
       "MetadataPictureDto": {
         "type": "object",
@@ -7043,9 +7915,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "slug": {
-            "type": "string"
-          },
           "name": {
             "type": [
               "null",
@@ -7343,6 +8212,250 @@
           }
         }
       },
+      "PlaybackHistoryItemDto": {
+        "type": "object",
+        "properties": {
+          "referenceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mediaType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stoppedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "totalWatchedSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "segmentCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "deviceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isCompleted": {
+            "type": "boolean"
+          },
+          "userName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamQuality": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StreamQualityDto"
+              }
+            ]
+          }
+        }
+      },
+      "PlaybackHistoryPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaybackHistoryItemDto"
+            }
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PlaybackSessionItem": {
+        "required": [
+          "mediaId",
+          "startedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isCompleted": {
+            "type": "boolean"
+          },
+          "referenceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "watchedDurationSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isTranscode": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "videoDecision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "audioDecision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bitrate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sourceVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceAudioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceVideoWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sourceVideoHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "streamVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamAudioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PlaybackState": {
+        "type": "integer"
+      },
+      "PlayCountMergeMode": {
+        "type": "integer"
+      },
       "PlaylistDto": {
         "required": [
           "title"
@@ -7507,6 +8620,9 @@
           }
         }
       },
+      "ProgressConflictMode": {
+        "type": "integer"
+      },
       "RateMediaRequest": {
         "required": [
           "value"
@@ -7522,6 +8638,9 @@
             "format": "int32"
           }
         }
+      },
+      "RatingConflictMode": {
+        "type": "integer"
       },
       "RatingDto": {
         "type": "object",
@@ -7562,6 +8681,27 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "RatingItem": {
+        "required": [
+          "mediaId",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "value": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
               "number",
               "string"
             ],
@@ -7615,6 +8755,17 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "ResetUserPasswordRequest": {
+        "required": [
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string"
           }
         }
       },
@@ -7785,6 +8936,44 @@
           }
         }
       },
+      "StreamQualityDto": {
+        "type": "object",
+        "properties": {
+          "isTranscode": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "resolution": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "videoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "audioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bitrate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "SubtitleFileTrackDto": {
         "required": [
           "codec"
@@ -7834,6 +9023,26 @@
         "properties": {
           "taskName": {
             "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "TimeSeriesPointDto": {
+        "required": [
+          "date"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
           },
           "count": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -7994,8 +9203,10 @@
         "required": [
           "mediaId",
           "sessionId",
+          "referenceId",
           "position",
-          "duration"
+          "duration",
+          "state"
         ],
         "type": "object",
         "properties": {
@@ -8004,6 +9215,10 @@
             "format": "uuid"
           },
           "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referenceId": {
             "type": "string",
             "format": "uuid"
           },
@@ -8022,6 +9237,16 @@
               "string"
             ],
             "format": "double"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PlaybackState"
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -8288,6 +9513,92 @@
       "VideoResolutionIdentifier": {
         "type": "integer"
       },
+      "WatchStatsDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "totalWatchTimeHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "totalPlays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "uniqueItemsPlayed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "topItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topArtists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topAlbums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topShows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "topGenres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GenreStatDto"
+            }
+          },
+          "topDevices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopItemDto"
+            }
+          },
+          "playsOverTime": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesPointDto"
+            }
+          },
+          "playsByDayOfWeek": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayOfWeekPointDto"
+            }
+          },
+          "playsByHourOfDay": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HourOfDayPointDto"
+            }
+          }
+        }
+      },
       "WebDeviceDetailsDto": {
         "type": "object",
         "properties": {
@@ -8358,6 +9669,9 @@
     },
     {
       "name": "StreamSessions"
+    },
+    {
+      "name": "Stats"
     },
     {
       "name": "SmartPlaylists"

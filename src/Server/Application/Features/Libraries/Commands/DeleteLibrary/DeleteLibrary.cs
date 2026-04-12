@@ -8,23 +8,17 @@ namespace K7.Server.Application.Features.Libraries.Commands.DeleteLibrary;
 [Authorize(Roles = Roles.Administrator)]
 public record DeleteLibraryCommand(Guid Id) : IRequest;
 
-public class DeleteLibraryCommandHandler : IRequestHandler<DeleteLibraryCommand>
+public class DeleteLibraryCommandHandler(IApplicationDbContext context) : IRequestHandler<DeleteLibraryCommand>
 {
-    private readonly IApplicationDbContext _context;
-
-    public DeleteLibraryCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task Handle(DeleteLibraryCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.Libraries
+        var library = await context.Libraries
             .FindAsync([request.Id], cancellationToken);
 
-        Guard.Against.NotFound(request.Id, entity);
-        _context.Libraries.Remove(entity);
-        entity.AddDomainEvent(new LibraryDeletedEvent(entity));
-        await _context.SaveChangesAsync(cancellationToken);
+        Guard.Against.NotFound(request.Id, library);
+
+        context.Libraries.Remove(library);
+        library.AddDomainEvent(new LibraryDeletedEvent(library));
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

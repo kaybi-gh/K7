@@ -55,6 +55,33 @@ public static class OidcInitializer
                 await manager.DeleteAsync(existing);
             }
             await manager.CreateAsync(descriptor);
+
+            var cliDescriptor = new OpenIddictApplicationDescriptor
+            {
+                DisplayName = "K7 CLI tool",
+                ClientId = "k7-cli",
+                ApplicationType = ApplicationTypes.Native,
+                ConsentType = ConsentTypes.Implicit,
+                ClientType = ClientTypes.Public,
+                RedirectUris = { new Uri("http://localhost/") },
+                Permissions =
+                {
+                    Permissions.Endpoints.DeviceAuthorization,
+                    Permissions.Endpoints.Token,
+                    Permissions.GrantTypes.DeviceCode,
+                    Permissions.Scopes.Email,
+                    Permissions.Scopes.Profile,
+                    Permissions.Scopes.Roles,
+                    Permissions.Prefixes.Scope + "api"
+                }
+            };
+
+            var existingCli = await manager.FindByClientIdAsync("k7-cli");
+            if (existingCli != null)
+            {
+                await manager.DeleteAsync(existingCli);
+            }
+            await manager.CreateAsync(cliDescriptor);
         }
 
         static async Task RegisterScopesAsync(IServiceProvider serviceProvider)

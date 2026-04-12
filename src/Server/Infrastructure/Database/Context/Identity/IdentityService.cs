@@ -34,7 +34,7 @@ public class IdentityService : IIdentityService
         var user = new ApplicationUser
         {
             UserName = userName,
-            Email = userName,
+            Email = userName.Contains('@') ? userName : $"{userName}@local",
         };
 
         var result = await _userManager.CreateAsync(user, password);
@@ -101,5 +101,20 @@ public class IdentityService : IIdentityService
             await _userManager.RemoveFromRolesAsync(user, currentRoles);
 
         await _userManager.AddToRoleAsync(user, role);
+    }
+
+    public async Task ResetPasswordAsync(string userId, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to reset password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
     }
 }

@@ -129,8 +129,13 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         if (metadata != null)
         {
+            await _context.Entry(album).Collection(a => a.Tracks).Query()
+                .Include(t => t.ExternalIds)
+                .LoadAsync(cancellationToken);
+
             album.ApplyMetadata(metadata);
             await EnrichArtistsAsync(album, metadata, request.Language, cancellationToken);
+            await PersistTrackExternalIdsAsync(album, metadata, cancellationToken);
         }
     }
 
@@ -222,6 +227,45 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     episode.Pictures.Clear();
                     episode.Pictures.Add(stillPicture);
                 }
+            }
+        }
+    }
+
+    private async Task PersistTrackExternalIdsAsync(MusicAlbum album, ExternalMusicAlbumMetadata metadata, CancellationToken cancellationToken)
+    {
+        if (metadata.Tracks is not { Count: > 0 }) return;
+
+        var trackIds = album.Tracks.Select(t => t.Id).ToList();
+        var existingExternalIds = await _context.ExternalIds
+            .Where(e => e.MediaId.HasValue && trackIds.Contains(e.MediaId.Value))
+            .ToListAsync(cancellationToken);
+
+        foreach (var track in album.Tracks)
+        {
+            var metadataTrack = metadata.Tracks.FirstOrDefault(mt =>
+                string.Equals(mt.Title, track.Title, StringComparison.OrdinalIgnoreCase)
+                || mt.TrackNumber == track.TrackNumber);
+
+            if (metadataTrack is null) continue;
+
+            if (!string.IsNullOrEmpty(metadataTrack.MusicBrainzRecordingId)
+                && !existingExternalIds.Any(e => e.MediaId == track.Id && e.ProviderName == "musicbrainz"))
+            {
+                track.ExternalIds.Add(new ExternalId
+                {
+                    ProviderName = "musicbrainz",
+                    Value = metadataTrack.MusicBrainzRecordingId
+                });
+            }
+
+            if (!string.IsNullOrEmpty(metadataTrack.Isrc)
+                && !existingExternalIds.Any(e => e.MediaId == track.Id && e.ProviderName == "isrc"))
+            {
+                track.ExternalIds.Add(new ExternalId
+                {
+                    ProviderName = "isrc",
+                    Value = metadataTrack.Isrc
+                });
             }
         }
     }

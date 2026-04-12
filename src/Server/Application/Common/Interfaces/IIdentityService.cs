@@ -19,4 +19,6 @@ public interface IIdentityService // How to put this into domain?
     Task<IList<string>> GetRolesAsync(string userId);
 
     Task SetRoleAsync(string userId, string role);
+
+    Task ResetPasswordAsync(string userId, string newPassword);
 }

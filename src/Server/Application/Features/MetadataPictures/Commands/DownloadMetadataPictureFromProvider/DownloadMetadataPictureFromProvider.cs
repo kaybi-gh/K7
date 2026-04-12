@@ -63,23 +63,33 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             file.Directory?.Create();
             await File.WriteAllBytesAsync(tempFilePath, imageData, cancellationToken);
 
-            // Convert to WebP
-            var webpFilePath = Path.Combine(directory, $"{entity.Id}.webp");
-            if (!string.Equals(originalExtension, ".webp", StringComparison.OrdinalIgnoreCase))
+            var isSvg = string.Equals(originalExtension, ".svg", StringComparison.OrdinalIgnoreCase);
+
+            // Convert to WebP (skip for SVGs — ffmpeg cannot decode them)
+            if (isSvg)
             {
-                await _imageProcessor.ConvertToWebPAsync(tempFilePath, webpFilePath, cancellationToken: cancellationToken);
-                File.Delete(tempFilePath);
+                entity.LocalPath = tempFilePath;
             }
             else
             {
-                webpFilePath = tempFilePath;
+                var webpFilePath = Path.Combine(directory, $"{entity.Id}.webp");
+                if (!string.Equals(originalExtension, ".webp", StringComparison.OrdinalIgnoreCase))
+                {
+                    await _imageProcessor.ConvertToWebPAsync(tempFilePath, webpFilePath, cancellationToken: cancellationToken);
+                    File.Delete(tempFilePath);
+                }
+                else
+                {
+                    webpFilePath = tempFilePath;
+                }
+
+                entity.LocalPath = webpFilePath;
             }
 
-            entity.LocalPath = webpFilePath;
             await _context.SaveChangesAsync(cancellationToken);
 
-            // Enqueue variant generation as a background task
-            if (entity.Type != MetadataPictureType.Thumbnail)
+            // Enqueue variant generation as a background task (skip for SVGs)
+            if (!isSvg && entity.Type != MetadataPictureType.Thumbnail)
             {
                 await _sender.Send(new CreateBackgroundTaskCommand
                 {
