@@ -4,6 +4,7 @@ using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.MAUI;
 
@@ -12,12 +13,14 @@ public partial class BlazorPage : ContentPage
     private readonly IPlayerService _playerService;
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly BackButtonService _backButtonService;
+    private readonly IK7ServerService _k7ServerService;
 
-    public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService)
+    public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService, IK7ServerService k7ServerService)
     {
         _playerService = playerService;
         _audioPlayerService = audioPlayerService;
         _backButtonService = backButtonService;
+        _k7ServerService = k7ServerService;
         InitializeComponent();
         InitializePlayer();
         InitializeAudioPlayer();
@@ -89,7 +92,7 @@ public partial class BlazorPage : ContentPage
             {
                 System.Diagnostics.Debug.WriteLine($"[K7-Player] Setting source: {source.Url}");
                 System.Diagnostics.Debug.WriteLine($"[K7-Player] Volume={NativePlayer.Volume}, ShouldMute={NativePlayer.ShouldMute}");
-                NativePlayer.Source = MediaSource.FromUri(source.Url);
+                NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
             }
         });
     }
@@ -209,8 +212,23 @@ public partial class BlazorPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (!string.IsNullOrEmpty(source.Url))
-                NativeAudioPlayer.Source = MediaSource.FromUri(source.Url);
+                NativeAudioPlayer.Source = CreateMediaSourceWithAuth(source.Url);
         });
+    }
+
+    private MediaSource CreateMediaSourceWithAuth(string url)
+    {
+        var authHeader = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
+        if (authHeader is not null)
+        {
+            var headers = new Dictionary<string, string>
+            {
+                ["Authorization"] = authHeader.ToString()
+            };
+            return MediaSource.FromUri(new Uri(url), headers);
+        }
+
+        return MediaSource.FromUri(url);
     }
 
     private void AudioPlayer_PositionChanged(object? sender, MediaPositionChangedEventArgs e)
