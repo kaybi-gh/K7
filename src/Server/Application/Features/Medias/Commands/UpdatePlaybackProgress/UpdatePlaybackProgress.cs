@@ -13,14 +13,23 @@ using Microsoft.Extensions.Logging;
 namespace K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
 
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
-public record UpdatePlaybackProgressCommand(Guid MediaId, Guid SessionId, double Position, double Duration) : IRequest;
+public record UpdatePlaybackProgressCommand(
+    Guid MediaId,
+    Guid SessionId,
+    Guid ReferenceId,
+    double Position,
+    double Duration,
+    PlaybackState State,
+    Guid? DeviceId = null) : IRequest;
 
-public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, IMediaAccessGuard accessGuard, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
+public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, IMediaAccessGuard accessGuard, IActiveStreamTracker activeStreamTracker, IIdentityService identityService, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly IApplicationDbContext _context = context;
     private readonly IUser _currentUser = currentUserService;
     private readonly IPlaybackProgressNotifier _progressNotifier = progressNotifier;
     private readonly IMediaAccessGuard _accessGuard = accessGuard;
+    private readonly IActiveStreamTracker _activeStreamTracker = activeStreamTracker;
+    private readonly IIdentityService _identityService = identityService;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
@@ -33,28 +42,47 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         var media = await _context.Medias
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
-        if (media == null) return;
+        if (media is null) return;
 
         var timeNow = DateTime.UtcNow;
 
         var session = await _context.MediaPlaybackSessions
             .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken);
 
-        if (session == null)
+        if (session is null)
         {
             session = new MediaPlaybackSession
             {
                 UserId = userId,
                 MediaId = request.MediaId,
                 SessionId = request.SessionId,
+                ReferenceId = request.ReferenceId,
                 StartedAt = timeNow,
-                LastUpdateAt = timeNow
+                LastUpdateAt = timeNow,
+                State = request.State,
+                DeviceId = request.DeviceId
             };
             _context.MediaPlaybackSessions.Add(session);
         }
         else
         {
+            if (session.State == PlaybackState.Playing && session.LastUpdateAt.HasValue)
+            {
+                var delta = (timeNow - session.LastUpdateAt.Value).TotalSeconds;
+                if (delta is > 0 and < 120)
+                {
+                    session.WatchedDurationSeconds += delta;
+                }
+            }
+
+            if (request.State is PlaybackState.Paused or PlaybackState.Ended or PlaybackState.Idle
+                && session.State == PlaybackState.Playing)
+            {
+                session.StoppedAt = timeNow;
+            }
+
             session.LastUpdateAt = timeNow;
+            session.State = request.State;
         }
 
         session.PositionSeconds = request.Position;
@@ -63,7 +91,7 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         var state = await _context.UserMediaStates
             .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == request.MediaId, cancellationToken);
 
-        if (state == null)
+        if (state is null)
         {
             state = new UserMediaState
             {
@@ -80,9 +108,8 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
 
         double progress = request.Duration > 0 ? request.Position / request.Duration : 0;
 
-        bool isMusic = media.Type == MediaType.MusicTrack;
-        // Music: 50% or 4 minutes (industry standard scrobble threshold)
-        bool completed = isMusic
+        var isMusic = media.Type == MediaType.MusicTrack;
+        var completed = isMusic
             ? progress >= 0.50 || request.Position >= 240
             : progress >= 0.80;
 
@@ -122,6 +149,45 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (request.State is PlaybackState.Playing or PlaybackState.Buffering)
+        {
+            var deviceName = request.DeviceId.HasValue
+                ? await _context.Devices
+                    .Where(d => d.Id == request.DeviceId.Value)
+                    .Select(d => d.DeviceName)
+                    .FirstOrDefaultAsync(cancellationToken)
+                : null;
+
+            var identityId = _currentUser.IdentityId;
+            var userName = !string.IsNullOrEmpty(identityId)
+                ? await _identityService.GetUserNameAsync(identityId)
+                : null;
+
+            _activeStreamTracker.Upsert(request.SessionId, new ActiveStreamInfo
+            {
+                SessionId = request.SessionId,
+                IdentityUserId = identityId ?? userId.ToString(),
+                UserId = userId,
+                UserName = userName,
+                MediaId = request.MediaId,
+                MediaTitle = media.Title,
+                MediaType = media.Type.ToString(),
+                ParentId = media is MusicTrack track ? track.AlbumId
+                    : media is SerieEpisode ep ? ep.SerieId
+                    : null,
+                DeviceId = request.DeviceId,
+                DeviceName = deviceName,
+                StartedAt = session.StartedAt,
+                Position = request.Position,
+                Duration = request.Duration,
+                State = (int)request.State
+            });
+        }
+        else
+        {
+            _activeStreamTracker.Remove(request.SessionId);
+        }
 
         var identityUserId = _currentUser.IdentityId;
         _logger.LogDebug("Playback progress updated: identityUserId='{IdentityUserId}', mediaId={MediaId}, progress={Progress:F1}%", identityUserId, request.MediaId, state.ProgressPercentage);

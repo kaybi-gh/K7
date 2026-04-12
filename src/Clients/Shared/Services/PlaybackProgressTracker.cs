@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
@@ -13,14 +14,17 @@ public class PlaybackProgressTracker : IDisposable
 {
     private readonly IPlayerService _playerService;
     private readonly IStreamingService _serverService;
+    private readonly IDeviceStorageService _deviceStorage;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid? _currentSerieId;
     private Guid _sessionId;
+    private Guid _referenceId;
     private double _lastReportedPosition;
     private double _lastKnownTime;
     private bool _isAuthenticated;
     private bool _disposed;
+    private PlaybackState _lastState = PlaybackState.Unknown;
 
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(10);
     private const double MinPositionDeltaToReport = 2.0;
@@ -29,10 +33,11 @@ public class PlaybackProgressTracker : IDisposable
     public Guid? CurrentMediaId => _currentMediaId;
     public Guid? CurrentSerieId => _currentSerieId;
 
-    public PlaybackProgressTracker(IPlayerService playerService, IStreamingService serverService)
+    public PlaybackProgressTracker(IPlayerService playerService, IStreamingService serverService, IDeviceStorageService deviceStorage)
     {
         _playerService = playerService;
         _serverService = serverService;
+        _deviceStorage = deviceStorage;
 
         _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged += OnCurrentTimeChanged;
@@ -50,6 +55,7 @@ public class PlaybackProgressTracker : IDisposable
         _currentMediaId = mediaId;
         _currentSerieId = serieId;
         _sessionId = Guid.NewGuid();
+        _referenceId = Guid.NewGuid();
         _lastReportedPosition = 0;
         _isAuthenticated = isAuthenticated;
         StartTimer();
@@ -83,6 +89,7 @@ public class PlaybackProgressTracker : IDisposable
 
     private void OnPlaybackStateChanged(PlaybackState state)
     {
+        _lastState = state;
         switch (state)
         {
             case PlaybackState.Paused:
@@ -90,6 +97,7 @@ public class PlaybackProgressTracker : IDisposable
                 _ = ReportProgressAsync();
                 break;
             case PlaybackState.Playing:
+                _ = ReportProgressAsync();
                 StartTimer();
                 break;
             case PlaybackState.Idle:
@@ -127,11 +135,16 @@ public class PlaybackProgressTracker : IDisposable
 
         try
         {
+            var deviceIdStr = _deviceStorage.Get(PreferenceKeys.DEVICE_ID);
+            Guid? deviceId = Guid.TryParse(deviceIdStr, out var parsed) ? parsed : null;
             await _serverService.ReportPlaybackProgressAsync(
                 mediaId.Value,
                 _sessionId,
+                _referenceId,
                 position,
-                duration);
+                duration,
+                (int)_lastState,
+                deviceId);
         }
         catch (Exception ex)
         {
