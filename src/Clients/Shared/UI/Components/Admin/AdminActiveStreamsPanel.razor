@@ -1,0 +1,57 @@
+@inject IStringLocalizer<AdminActiveStreamsPanel> L
+@inject IServerInfoService K7ServerService
+@implements IDisposable
+
+<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
+    <MudText Typo="Typo.h5">@L["Title"]</MudText>
+    <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="FetchStreamsAsync" />
+</MudStack>
+
+@if (_loading)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudProgressCircular Indeterminate="true" />
+    </MudStack>
+}
+else if (_streams is null || _streams.Count == 0)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudIcon Icon="@Icons.Material.Outlined.LiveTv" Style="font-size: 64px; opacity: 0.3;" />
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["NoActiveStreams"]</MudText>
+    </MudStack>
+}
+else
+{
+    <div class="pa-4">
+        <MudTable Items="@_streams" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>@L["User"]</MudTh>
+                <MudTh>@L["Media"]</MudTh>
+                <MudTh>@L["Device"]</MudTh>
+                <MudTh>@L["Progress"]</MudTh>
+                <MudTh>@L["StartedAt"]</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="stream">
+                <MudTd DataLabel="@L["User"]">@(stream.UserName ?? "-")</MudTd>
+                <MudTd DataLabel="@L["Media"]">
+                    @if (stream.MediaId.HasValue && GetMediaRoute(stream) is string route)
+                    {
+                        <MudLink Href="@route">@stream.MediaTitle</MudLink>
+                    }
+                    else
+                    {
+                        @(stream.MediaTitle ?? "-")
+                    }
+                </MudTd>
+                <MudTd DataLabel="@L["Device"]">@(stream.DeviceName ?? "-")</MudTd>
+                <MudTd DataLabel="@L["Progress"]">
+                    @if (stream.Duration > 0)
+                    {
+                        <MudProgressLinear Value="@(stream.Position / stream.Duration * 100)" Color="Color.Primary" Rounded="true" Size="Size.Small" />
+                    }
+                </MudTd>
+                <MudTd DataLabel="@L["StartedAt"]">@stream.StartedAt.ToLocalTime().ToString("g")</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+}
