@@ -3,6 +3,7 @@ using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Services;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Shared.Interfaces;
 
 namespace K7.Clients.MAUI;
 
@@ -12,13 +13,15 @@ public partial class App : Application
     private readonly IPlayerService _playerService;
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly BackButtonService _backButtonService;
+    private readonly IK7ServerService _k7ServerService;
 
-    public App(K7ServerManagerService k7ServerManagerService, IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService)
+    public App(K7ServerManagerService k7ServerManagerService, IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService, IK7ServerService k7ServerService)
     {
         _k7ServerManagerService = k7ServerManagerService;
         _playerService = playerService;
         _audioPlayerService = audioPlayerService;
         _backButtonService = backButtonService;
+        _k7ServerService = k7ServerService;
         InitializeComponent();
     }
 
@@ -83,7 +86,7 @@ public partial class App : Application
         {
             _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
             Debug.WriteLine("K7 MAUI - GetNavigationPage - creating BlazorPage");
-            page = new BlazorPage(_playerService, _audioPlayerService, _backButtonService);
+            page = new BlazorPage(_playerService, _audioPlayerService, _backButtonService, _k7ServerService);
             Debug.WriteLine("K7 MAUI - GetNavigationPage - BlazorPage created");
         }
 
