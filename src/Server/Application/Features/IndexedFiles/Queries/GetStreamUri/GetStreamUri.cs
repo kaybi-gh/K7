@@ -156,9 +156,23 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         };
     }
 
+    // Codecs that work inside fMP4 segments (HLS with MSE), ordered by preference.
+    // MP3 is deliberately excluded: browsers support MP3 for direct playback but
+    // MSE does not support MP3 inside fMP4 containers, which breaks HLS.
+    private static readonly string[] HlsFmp4AudioCodecPriority = ["aac", "opus", "ac3", "eac3", "flac", "alac"];
+
     public static AudioMediaFormat GetDeviceBestSupportedAudioMediaFormat(ICollection<BaseMediaFormat> supportedAudioCodecs)
     {
-        return supportedAudioCodecs.OfType<AudioMediaFormat>().First(); // TODO - Implement prioritizing algorithm (cost vs size vs quality)
+        var audioFormats = supportedAudioCodecs.OfType<AudioMediaFormat>().ToList();
+
+        foreach (var codec in HlsFmp4AudioCodecPriority)
+        {
+            var match = audioFormats.FirstOrDefault(f => string.Equals(f.Codec, codec, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+                return match;
+        }
+
+        return audioFormats.First();
     }
 
     public static VideoMediaFormat GetDeviceBestSupportedVideoMediaFormat(ICollection<BaseMediaFormat> supportedVideoCodecs)
