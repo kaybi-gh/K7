@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Statistics</value></data>
+  <data name="Week" xml:space="preserve"><value>Week</value></data>
+  <data name="Month" xml:space="preserve"><value>Month</value></data>
+  <data name="Year" xml:space="preserve"><value>Year</value></data>
+  <data name="AllTime" xml:space="preserve"><value>All Time</value></data>
+  <data name="All" xml:space="preserve"><value>All</value></data>
+  <data name="Music" xml:space="preserve"><value>Music</value></data>
+  <data name="Movies" xml:space="preserve"><value>Movies</value></data>
+  <data name="TVShows" xml:space="preserve"><value>TV Shows</value></data>
+  <data name="NoData" xml:space="preserve"><value>No data available</value></data>
+  <data name="WatchTime" xml:space="preserve"><value>Watch Time</value></data>
+  <data name="TotalPlays" xml:space="preserve"><value>Total Plays</value></data>
+  <data name="UniqueItems" xml:space="preserve"><value>Unique Items</value></data>
+  <data name="PlaysOverTime" xml:space="preserve"><value>Plays Over Time</value></data>
+  <data name="ByHourOfDay" xml:space="preserve"><value>By Hour of Day</value></data>
+  <data name="ByDayOfWeek" xml:space="preserve"><value>By Day of Week</value></data>
+  <data name="TopItems" xml:space="preserve"><value>Top Items</value></data>
+  <data name="TopArtists" xml:space="preserve"><value>Top Artists</value></data>
+  <data name="TopAlbums" xml:space="preserve"><value>Top Albums</value></data>
+  <data name="TopShows" xml:space="preserve"><value>Top Shows</value></data>
+  <data name="TopGenres" xml:space="preserve"><value>Top Genres</value></data>
+  <data name="TopDevices" xml:space="preserve"><value>Top Devices</value></data>
+</root>

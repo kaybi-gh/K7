@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Historique de lecture</value></data>
+  <data name="All" xml:space="preserve"><value>Tout</value></data>
+  <data name="Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="Movies" xml:space="preserve"><value>Films</value></data>
+  <data name="TVShows" xml:space="preserve"><value>Séries</value></data>
+  <data name="NoHistory" xml:space="preserve"><value>Aucun historique</value></data>
+  <data name="Title" xml:space="preserve"><value>Titre</value></data>
+  <data name="Type" xml:space="preserve"><value>Type</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Duration" xml:space="preserve"><value>Durée</value></data>
+  <data name="Device" xml:space="preserve"><value>Appareil</value></data>
+  <data name="Status" xml:space="preserve"><value>Statut</value></data>
+</root>
