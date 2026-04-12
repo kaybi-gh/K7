@@ -376,6 +376,7 @@ public class BackgroundTasksProcessingService : BackgroundService
             if (task.ConcurrencyGroup is not null)
             {
                 _activeCountByGroup.AddOrUpdate(task.ConcurrencyGroup, 0, (_, count) => Math.Max(0, count - 1));
+                _taskQueue.Enqueue(Guid.Empty);
             }
         }
 
