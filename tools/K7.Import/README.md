@@ -33,6 +33,7 @@ You can select which data types to import with the `--include` option (see below
 - **Plex**: Settings > Account > Authorized Devices, or use your X-Plex-Token (found in the XML of any library request)
 - **Jellyfin**: Dashboard > API Keys > Create
 - **Tautulli**: Settings > Web Interface > API Key
+- **Tracearr**: Settings > Generate API Key
 - **Spotify**: Generate an access token at https://developer.spotify.com/console with `user-library-read`, `user-read-recently-played`, and `playlist-read-private` scopes
 
 ### Spotify Full Listening History
