@@ -6,8 +6,9 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
-| **Plex** | Yes | Yes (0-10 scale) | Yes | Full library + per-user data |
-| **Jellyfin** | Yes | Yes (like=10, dislike=1) | Yes | Full library + per-user data |
+| **Plex** | No | Yes (0-10 scale) | Yes | No per-play timestamps, use Tracearr for history |
+| **Jellyfin** | No | Yes (like=10, dislike=1) | Yes | No per-play timestamps, use Tracearr for history |
+| **Tracearr** | Yes | No | No | Per-play history with timestamps |
 | **Tautulli** | Yes (aggregated) | No | No | History only, aggregated from play logs |
 | **Spotify** | Full (via data export) or partial (last 50 via API) | Liked songs = 10 | Yes | Use `--spotify-data-dir` for full history |
 
@@ -64,7 +65,7 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 
 | Option | Description |
 |---|---|
-| `--source`, `-s` | Source type: `plex`, `jellyfin`, `tautulli`, or `spotify` |
+| `--source`, `-s` | Source type: `plex`, `jellyfin`, `tautulli`, `tracearr`, or `spotify` |
 | `--source-api-key` | API key or access token for the source (not needed for spotify with `--spotify-data-dir`) |
 | `--k7-url` | URL of your K7 server (e.g. `http://localhost:5000`) |
 
@@ -135,13 +136,13 @@ k7-import -s jellyfin \
   --include playlists
 ```
 
-**Import history and ratings only (no playlists):**
+**Import history from Tracearr:**
 ```bash
-k7-import -s plex \
-  --source-url http://192.168.1.10:32400 \
-  --source-api-key "your-plex-token" \
+k7-import -s tracearr \
+  --source-url http://192.168.1.10:7878 \
+  --source-api-key "your-tracearr-api-key" \
   --k7-url http://localhost:5000 \
-  --include history --include ratings
+  --include history
 ```
 
 ## Authentication with K7
