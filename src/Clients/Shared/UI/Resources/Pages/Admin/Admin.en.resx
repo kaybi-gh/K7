@@ -28,5 +28,6 @@
   <data name="TabGeneral" xml:space="preserve"><value>General</value></data>
   <data name="TabBackgroundTasks" xml:space="preserve"><value>Background Tasks</value></data>
   <data name="TabDiagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="TabActiveStreams" xml:space="preserve"><value>Active Streams</value></data>
 </root>
 
