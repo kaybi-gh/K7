@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
@@ -9,19 +10,24 @@ public class AudioPlaybackProgressTracker : IDisposable
 {
     private readonly IAudioPlayerService _audio;
     private readonly IStreamingService _serverService;
+    private readonly IDeviceStorageService _deviceStorage;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid _sessionId;
+    private Guid _referenceId;
     private bool _disposed;
     private bool _transitioning;
     private bool _canReport;
+    private PlaybackState _lastState = PlaybackState.Unknown;
 
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan InitialDelay = TimeSpan.FromSeconds(3);
 
-    public AudioPlaybackProgressTracker(IAudioPlayerService audio, IStreamingService serverService)
+    public AudioPlaybackProgressTracker(IAudioPlayerService audio, IStreamingService serverService, IDeviceStorageService deviceStorage)
     {
         _audio = audio;
         _serverService = serverService;
+        _deviceStorage = deviceStorage;
 
         _audio.CurrentTrackChanged += OnTrackChanged;
         _audio.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -40,13 +46,14 @@ public class AudioPlaybackProgressTracker : IDisposable
         StopTimer();
 
         if (prevMediaId.HasValue && prevDuration > 0)
-            _ = SendReportAsync(prevMediaId.Value, prevSessionId, prevPosition, prevDuration);
+            _ = SendReportAsync(prevMediaId.Value, prevSessionId, prevPosition, prevDuration, PlaybackState.Ended);
 
         _currentMediaId = newTrack?.MediaId;
 
         if (newTrack is not null)
         {
             _sessionId = Guid.NewGuid();
+            _referenceId = Guid.NewGuid();
             _transitioning = true;
             StartTimer();
         }
@@ -54,10 +61,12 @@ public class AudioPlaybackProgressTracker : IDisposable
 
     private void OnPlaybackStateChanged(PlaybackState state)
     {
+        _lastState = state;
         switch (state)
         {
             case PlaybackState.Playing:
                 _transitioning = false;
+                _ = ReportCurrentAsync();
                 StartTimer();
                 break;
             case PlaybackState.Paused:
@@ -78,16 +87,18 @@ public class AudioPlaybackProgressTracker : IDisposable
         var duration = _audio.Duration;
         if (duration <= 0) return;
 
-        await SendReportAsync(mediaId, _sessionId, position, duration);
+        await SendReportAsync(mediaId, _sessionId, position, duration, _lastState);
     }
 
-    private async Task SendReportAsync(Guid mediaId, Guid sessionId, double position, double duration)
+    private async Task SendReportAsync(Guid mediaId, Guid sessionId, double position, double duration, PlaybackState state)
     {
         if (!_canReport) return;
 
         try
         {
-            await _serverService.ReportPlaybackProgressAsync(mediaId, sessionId, position, duration);
+            var deviceIdStr = _deviceStorage.Get(PreferenceKeys.DEVICE_ID);
+            Guid? deviceId = Guid.TryParse(deviceIdStr, out var parsed) ? parsed : null;
+            await _serverService.ReportPlaybackProgressAsync(mediaId, sessionId, _referenceId, position, duration, (int)state, deviceId);
         }
         catch
         {
@@ -97,7 +108,7 @@ public class AudioPlaybackProgressTracker : IDisposable
 
     private void StartTimer()
     {
-        _reportTimer ??= new Timer(_ => _ = ReportCurrentAsync(), null, ReportInterval, ReportInterval);
+        _reportTimer ??= new Timer(_ => _ = ReportCurrentAsync(), null, InitialDelay, ReportInterval);
     }
 
     private void StopTimer()
