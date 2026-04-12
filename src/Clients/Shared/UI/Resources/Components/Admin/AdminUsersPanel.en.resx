@@ -47,5 +47,14 @@
   <data name="HiddenMediaUpdated" xml:space="preserve"><value>Hidden media updated.</value></data>
   <data name="RestrictionProfileTitle" xml:space="preserve"><value>Restriction profile</value></data>
   <data name="RestrictionProfileUpdated" xml:space="preserve"><value>Restriction profile updated.</value></data>
+  <data name="CreateUserTitle" xml:space="preserve"><value>Create user</value></data>
+  <data name="UserCreated" xml:space="preserve"><value>User {0} created.</value></data>
+  <data name="AriaMerge" xml:space="preserve"><value>Merge</value></data>
+  <data name="AriaCreateUser" xml:space="preserve"><value>Create user</value></data>
+  <data name="MergeUserTitle" xml:space="preserve"><value>Merge user</value></data>
+  <data name="UserMerged" xml:space="preserve"><value>User merged successfully.</value></data>
+  <data name="AriaResetPassword" xml:space="preserve"><value>Reset password</value></data>
+  <data name="ResetPasswordTitle" xml:space="preserve"><value>Reset password</value></data>
+  <data name="PasswordReset" xml:space="preserve"><value>{0}'s password reset.</value></data>
 </root>
 

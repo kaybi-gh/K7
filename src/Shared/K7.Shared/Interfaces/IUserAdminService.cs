@@ -24,4 +24,7 @@ public interface IUserAdminService
     Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default);
     Task<string?> GetUserLanguageAsync(CancellationToken cancellationToken = default);
     Task UpdateUserLanguageAsync(string language, CancellationToken cancellationToken = default);
+    Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
+    Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default);
+    Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default);
 }

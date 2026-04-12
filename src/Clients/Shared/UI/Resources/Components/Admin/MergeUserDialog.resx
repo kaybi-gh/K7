@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Warning" xml:space="preserve"><value>Cette action est irréversible. L'utilisateur source sera supprimé après la fusion.</value></data>
+  <data name="Description" xml:space="preserve"><value>Transférer toutes les données de {0} (historique, notes, playlists) vers l'utilisateur cible.</value></data>
+  <data name="TargetUser" xml:space="preserve"><value>Utilisateur cible</value></data>
+  <data name="TargetUserRequired" xml:space="preserve"><value>Veuillez sélectionner un utilisateur cible</value></data>
+  <data name="MergeStrategyTitle" xml:space="preserve"><value>Stratégie de fusion</value></data>
+  <data name="PlayCount" xml:space="preserve"><value>Nombre de lectures</value></data>
+  <data name="PlayCountAdditive" xml:space="preserve"><value>Cumuler (additionner)</value></data>
+  <data name="PlayCountMax" xml:space="preserve"><value>Maximum (garder le plus élevé)</value></data>
+  <data name="RatingConflict" xml:space="preserve"><value>Conflit de note</value></data>
+  <data name="RatingKeepExisting" xml:space="preserve"><value>Garder l'existante</value></data>
+  <data name="RatingOverwrite" xml:space="preserve"><value>Écraser</value></data>
+  <data name="ProgressConflict" xml:space="preserve"><value>Conflit de progression</value></data>
+  <data name="ProgressMostRecent" xml:space="preserve"><value>La plus récente</value></data>
+  <data name="ProgressAlwaysOverwrite" xml:space="preserve"><value>Toujours écraser</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Merge" xml:space="preserve"><value>Fusionner</value></data>
+</root>

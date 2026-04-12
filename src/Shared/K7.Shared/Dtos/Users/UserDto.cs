@@ -5,8 +5,8 @@ namespace K7.Shared.Dtos.Users;
 public sealed record UserDto
 {
     public required Guid Id { get; init; }
-    public required string? IdentityUserId { get; init; }
-    public required string? Email { get; init; }
+    public string? IdentityUserId { get; init; }
+    public string? Email { get; init; }
     public required string? UserName { get; init; }
     public required string Role { get; init; }
     public required DateTimeOffset Created { get; init; }

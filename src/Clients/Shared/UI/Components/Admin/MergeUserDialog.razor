@@ -1,0 +1,57 @@
+@using K7.Shared.Dtos.Requests
+@inject IStringLocalizer<MergeUserDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4" Class="mt-2">
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                @L["Warning"]
+            </MudAlert>
+
+            <MudText Typo="Typo.body1">
+                @string.Format(L["Description"], SourceDisplayName)
+            </MudText>
+
+            <MudSelect T="Guid?" @bind-Value="_targetUserId" Label="@L["TargetUser"]" Variant="Variant.Outlined"
+                       Required="true" RequiredError="@L["TargetUserRequired"]">
+                @foreach (var user in _availableTargets)
+                {
+                    <MudSelectItem T="Guid?" Value="@user.Id">@(user.UserName ?? user.Email ?? user.Id.ToString())</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudDivider />
+            <MudText Typo="Typo.subtitle2">@L["MergeStrategyTitle"]</MudText>
+
+            <MudSelect T="PlayCountMergeMode" @bind-Value="_playCountMode" Label="@L["PlayCount"]"
+                       Variant="Variant.Outlined" Dense="true">
+                <MudSelectItem Value="PlayCountMergeMode.Additive">@L["PlayCountAdditive"]</MudSelectItem>
+                <MudSelectItem Value="PlayCountMergeMode.Max">@L["PlayCountMax"]</MudSelectItem>
+            </MudSelect>
+
+            <MudSelect T="RatingConflictMode" @bind-Value="_ratingMode" Label="@L["RatingConflict"]"
+                       Variant="Variant.Outlined" Dense="true">
+                <MudSelectItem Value="RatingConflictMode.KeepExisting">@L["RatingKeepExisting"]</MudSelectItem>
+                <MudSelectItem Value="RatingConflictMode.Overwrite">@L["RatingOverwrite"]</MudSelectItem>
+            </MudSelect>
+
+            <MudSelect T="ProgressConflictMode" @bind-Value="_progressMode" Label="@L["ProgressConflict"]"
+                       Variant="Variant.Outlined" Dense="true">
+                <MudSelectItem Value="ProgressConflictMode.MostRecent">@L["ProgressMostRecent"]</MudSelectItem>
+                <MudSelectItem Value="ProgressConflictMode.AlwaysOverwrite">@L["ProgressAlwaysOverwrite"]</MudSelectItem>
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="Submit"
+                   Disabled="@(!_targetUserId.HasValue || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @L["Merge"]
+        </MudButton>
+    </DialogActions>
+</MudDialog>
