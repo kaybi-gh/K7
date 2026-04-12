@@ -1,0 +1,67 @@
+@inject IServerInfoService K7ServerService
+@inject IStringLocalizer<PlaybackHistory> L
+
+<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
+    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
+    <MudChipSet T="string" SelectionMode="SelectionMode.SingleSelection" SelectedValue="@_selectedMediaType" SelectedValueChanged="OnMediaTypeChanged">
+        <MudChip T="string" Value="@("")" Variant="Variant.Filled" Color="Color.Primary">@L["All"]</MudChip>
+        <MudChip T="string" Value="@("3")" Variant="Variant.Outlined">@L["Music"]</MudChip>
+        <MudChip T="string" Value="@("1")" Variant="Variant.Outlined">@L["Movies"]</MudChip>
+        <MudChip T="string" Value="@("5")" Variant="Variant.Outlined">@L["TVShows"]</MudChip>
+    </MudChipSet>
+</MudStack>
+
+@if (_loading)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudProgressCircular Indeterminate="true" />
+    </MudStack>
+}
+else if (_history is null || _history.Items.Count == 0)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
+        <MudIcon Icon="@Icons.Material.Outlined.History" Style="font-size: 64px; opacity: 0.3;" />
+        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["NoHistory"]</MudText>
+    </MudStack>
+}
+else
+{
+    <div class="pa-4">
+        <MudTable Items="@_history.Items" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>@L["Title"]</MudTh>
+                <MudTh>@L["Type"]</MudTh>
+                <MudTh>@L["Date"]</MudTh>
+                <MudTh>@L["Duration"]</MudTh>
+                <MudTh>@L["Device"]</MudTh>
+                <MudTh>@L["Status"]</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="item">
+                <MudTd DataLabel="@L["Title"]">@item.MediaTitle</MudTd>
+                <MudTd DataLabel="@L["Type"]">@item.MediaType</MudTd>
+                <MudTd DataLabel="@L["Date"]">@item.StartedAt.ToLocalTime().ToString("g")</MudTd>
+                <MudTd DataLabel="@L["Duration"]">@FormatDuration(item.TotalWatchedSeconds)</MudTd>
+                <MudTd DataLabel="@L["Device"]">@(item.DeviceName ?? "-")</MudTd>
+                <MudTd DataLabel="@L["Status"]">
+                    @if (item.IsCompleted)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.PauseCircle" Color="Color.Warning" Size="Size.Small" />
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+
+        @if (_history.TotalCount > _history.PageSize)
+        {
+            <MudStack Row="true" Justify="Justify.Center" Class="mt-4">
+                <MudPagination Count="@((int)Math.Ceiling((double)_history.TotalCount / _history.PageSize))"
+                               Selected="@_currentPage"
+                               SelectedChanged="OnPageChanged" />
+            </MudStack>
+        }
+    </div>
+}
