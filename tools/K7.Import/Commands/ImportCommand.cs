@@ -26,8 +26,8 @@ public sealed class ImportCommand
         var includeOption = new Option<string[]>("--include") { Description = "Data types to import: history, ratings, playlists (default: all)", AllowMultipleArgumentsPerToken = true };
         var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify extended streaming history export folder (JSON files)" };
         var userMappingOption = new Option<string[]>("--user-mapping") { Description = "Map source user to K7 user (format: sourceUser:k7User)", AllowMultipleArgumentsPerToken = true };
-        var createMissingOption = new Option<bool>("--create-missing") { Description = "Create virtual media entities for unmatched items (default: true)", DefaultValueFactory = _ => true };
-        var noCreateMissingOption = new Option<bool>("--no-create-missing") { Description = "Disable virtual media creation for unmatched items" };
+        var onlyMatchExistingOption = new Option<bool>("--only-match-existing") { Description = "Only import data for media that already exists in K7 — skip virtual media creation for unmatched items" };
+        var fetchMetadataOption = new Option<bool>("--fetch-metadata") { Description = "Fetch rich metadata (posters, descriptions, etc.) for newly created media" };
         var playcountModeOption = new Option<string>("--playcount-mode") { Description = "PlayCount merge strategy: additive or max (default: additive)", DefaultValueFactory = _ => "additive" };
         var ratingModeOption = new Option<string>("--rating-mode") { Description = "Rating conflict strategy: keep or overwrite (default: keep)", DefaultValueFactory = _ => "keep" };
         var progressModeOption = new Option<string>("--progress-mode") { Description = "Progress conflict strategy: recent or overwrite (default: recent)", DefaultValueFactory = _ => "recent" };
@@ -41,8 +41,8 @@ public sealed class ImportCommand
         command.Add(includeOption);
         command.Add(spotifyDataDirOption);
         command.Add(userMappingOption);
-        command.Add(createMissingOption);
-        command.Add(noCreateMissingOption);
+        command.Add(onlyMatchExistingOption);
+        command.Add(fetchMetadataOption);
         command.Add(playcountModeOption);
         command.Add(ratingModeOption);
         command.Add(progressModeOption);
@@ -58,7 +58,8 @@ public sealed class ImportCommand
             var spotifyDataDir = parseResult.GetValue(spotifyDataDirOption);
             var userMapping = parseResult.GetValue(userMappingOption) ?? [];
             var scope = ParseIncludeScope(include);
-            var createMissing = parseResult.GetValue(createMissingOption) && !parseResult.GetValue(noCreateMissingOption);
+            var createMissing = !parseResult.GetValue(onlyMatchExistingOption);
+            var fetchMetadata = parseResult.GetValue(fetchMetadataOption);
 
             var strategy = new MergeStrategy
             {
@@ -70,13 +71,13 @@ public sealed class ImportCommand
                     ? ProgressConflictMode.AlwaysOverwrite : ProgressConflictMode.MostRecent
             };
 
-            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, createMissing, strategy);
+            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, createMissing, fetchMetadata, strategy);
         });
 
         return command;
     }
 
-    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool createMissing, MergeStrategy strategy)
+    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool createMissing, bool fetchMetadata, MergeStrategy strategy)
     {
         var cancellationToken = CancellationToken.None;
 
@@ -207,7 +208,7 @@ public sealed class ImportCommand
                                 EpisodeNumber = i.EpisodeNumber
                             }).ToList();
 
-                            var createResult = await k7Client.BulkCreateMediasAsync(createItems, cancellationToken);
+                            var createResult = await k7Client.BulkCreateMediasAsync(createItems, fetchMetadata, cancellationToken);
 
                             foreach (var r in createResult.Results)
                             {
