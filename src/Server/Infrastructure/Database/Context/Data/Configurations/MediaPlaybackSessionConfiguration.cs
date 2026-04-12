@@ -9,7 +9,20 @@ public class MediaPlaybackSessionConfiguration : IEntityTypeConfiguration<MediaP
     public void Configure(EntityTypeBuilder<MediaPlaybackSession> builder)
     {
         builder.HasIndex(e => e.SessionId).IsUnique();
+        builder.HasIndex(e => e.ReferenceId);
         builder.HasIndex(e => new { e.UserId, e.CompletedAt });
+        builder.HasIndex(e => new { e.UserId, e.StartedAt });
         builder.HasIndex(e => new { e.UserId, e.MediaId, e.CompletedAt });
+        builder.HasIndex(e => e.DeviceId);
+
+        builder.HasOne(e => e.Device)
+            .WithMany()
+            .HasForeignKey(e => e.DeviceId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(e => e.Details)
+            .WithOne(d => d.MediaPlaybackSession)
+            .HasForeignKey<PlaybackSessionDetails>(d => d.MediaPlaybackSessionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
