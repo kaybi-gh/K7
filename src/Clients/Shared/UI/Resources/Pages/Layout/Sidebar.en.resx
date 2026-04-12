@@ -35,5 +35,9 @@
   <data name="Connected" xml:space="preserve"><value>Connected</value></data>
   <data name="Reconnecting" xml:space="preserve"><value>Reconnecting...</value></data>
   <data name="Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="Statistics" xml:space="preserve"><value>Statistics</value></data>
+  <data name="Overview" xml:space="preserve"><value>Overview</value></data>
+  <data name="History" xml:space="preserve"><value>History</value></data>
+  <data name="ActiveStreams" xml:space="preserve"><value>Active Streams</value></data>
 </root>
 

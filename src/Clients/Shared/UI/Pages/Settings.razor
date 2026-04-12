@@ -1,5 +1,7 @@
 @page "/settings"
+@page "/settings/{Tab}"
 @using System.Security.Claims
+@using K7.Clients.Shared.UI.Pages.Stats
 @inject ThemeService ThemeService
 @inject IDeviceService DeviceService
 @inject IUserAdminService K7ServerService
@@ -13,7 +15,13 @@
 @inject IJSRuntime JSRuntime
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="@L["DarkMode"]" />
+<MudText Typo="Typo.h4" Class="mb-4">@L["PageTitle"]</MudText>
+
+<MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true"
+         ActivePanelIndex="@_activePanelIndex" ActivePanelIndexChanged="OnActivePanelIndexChanged">
+    <MudTabPanel Text="@L["TabGeneral"]" Icon="@Icons.Material.Filled.Settings">
+        <div class="pa-4">
+            <MudSwitch @bind-Value="@ThemeService.DarkModeEnabled" Color="Color.Primary" Class="ma-4" T="bool" Label="@L["DarkMode"]" />
 <MudSelect T="ThemeWrapper" Label="@L["Theme"]" @bind-Value="@ThemeService.ThemeWrapper">
     @foreach (var themeWrapper in Themes.Collection)
     {
@@ -79,3 +87,14 @@ else
         </ul>
     </MudExpansionPanel>
 </MudExpansionPanels>
+        </div>
+    </MudTabPanel>
+
+    <MudTabPanel Text="@L["TabStats"]" Icon="@Icons.Material.Filled.BarChart">
+        <WatchStats />
+    </MudTabPanel>
+
+    <MudTabPanel Text="@L["TabHistory"]" Icon="@Icons.Material.Filled.History">
+        <PlaybackHistory />
+    </MudTabPanel>
+</MudTabs>

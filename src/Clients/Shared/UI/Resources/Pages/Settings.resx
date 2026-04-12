@@ -50,5 +50,8 @@
   <data name="NextEpisodeAutoPlay" xml:space="preserve"><value>Lecture automatique</value></data>
   <data name="NextEpisodeButtonOnly" xml:space="preserve"><value>Bouton uniquement</value></data>
   <data name="NextEpisodeOff" xml:space="preserve"><value>Désactivé</value></data>
+  <data name="TabGeneral" xml:space="preserve"><value>Général</value></data>
+  <data name="TabStats" xml:space="preserve"><value>Statistiques</value></data>
+  <data name="TabHistory" xml:space="preserve"><value>Historique</value></data>
 </root>
 

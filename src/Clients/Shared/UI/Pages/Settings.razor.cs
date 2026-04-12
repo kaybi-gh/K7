@@ -11,6 +11,9 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class Settings
 {
+    private static readonly string[] TabSlugs = ["general", "stats", "history"];
+
+    private int _activePanelIndex;
     private DeviceType _deviceType;
     private List<MediaFormatDto>? _supportedMediaFormats;
     private bool? _hdrSupport;
@@ -22,10 +25,37 @@ public partial class Settings
     private string? _pinSuccess;
     private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
+    [Parameter] public string? Tab { get; set; }
+
     protected override void OnInitialized()
     {
         ThemeService.ThemeOnChange += StateHasChanged;
         ThemeService.DarkModeEnabledOnChange += StateHasChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _activePanelIndex = GetTabIndex(Tab);
+    }
+
+    private void OnActivePanelIndexChanged(int index)
+    {
+        if (index == _activePanelIndex)
+            return;
+
+        _activePanelIndex = index;
+
+        var slug = index >= 0 && index < TabSlugs.Length ? TabSlugs[index] : TabSlugs[0];
+        NavigationManager.NavigateTo($"/settings/{slug}", replace: true);
+    }
+
+    private static int GetTabIndex(string? tab)
+    {
+        if (string.IsNullOrEmpty(tab))
+            return 0;
+
+        var index = Array.FindIndex(TabSlugs, s => s.Equals(tab, StringComparison.OrdinalIgnoreCase));
+        return index >= 0 ? index : 0;
     }
 
     protected override async Task OnInitializedAsync()
