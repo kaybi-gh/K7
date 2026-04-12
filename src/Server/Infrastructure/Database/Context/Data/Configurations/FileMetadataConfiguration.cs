@@ -6,7 +6,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace K7.Server.Infrastructure.Database.Context.Data.Configurations;
 
-public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetadata>
+public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetadata>,
+    IEntityTypeConfiguration<AudioFileMetadata>,
+    IEntityTypeConfiguration<VideoFileMetadata>
 {
     public void Configure(EntityTypeBuilder<BaseFileMetadata> builder)
     {
@@ -22,7 +24,7 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .OnDelete(DeleteBehavior.Cascade);
     }
 
-    public static void Configure(EntityTypeBuilder<AudioFileMetadata> builder)
+    public void Configure(EntityTypeBuilder<AudioFileMetadata> builder)
     {
         builder
             .HasOne(x => x.AudioTrack)
@@ -31,7 +33,7 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .OnDelete(DeleteBehavior.Cascade);
     }
 
-    public static void Configure(EntityTypeBuilder<VideoFileMetadata> builder)
+    public void Configure(EntityTypeBuilder<VideoFileMetadata> builder)
     {
         builder
             .HasMany(x => x.AudioTracks)
