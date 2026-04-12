@@ -56,6 +56,7 @@ public sealed class K7ApiClient
 
     public async Task<BulkCreateMediasResponse> BulkCreateMediasAsync(
         IReadOnlyList<BulkCreateMediasRequest.BulkCreateMediaItem> items,
+        bool fetchMetadata = false,
         CancellationToken cancellationToken = default)
     {
         const int chunkSize = 200;
@@ -64,7 +65,7 @@ public sealed class K7ApiClient
         foreach (var chunk in items.Chunk(chunkSize))
         {
             var response = await _httpClient.PostAsJsonAsync("api/medias/bulk-create",
-                new BulkCreateMediasRequest { Items = chunk }, JsonOptions, cancellationToken);
+                new BulkCreateMediasRequest { Items = chunk, FetchMetadata = fetchMetadata }, JsonOptions, cancellationToken);
             response.EnsureSuccessStatusCode();
             var result = await response.Content.ReadFromJsonAsync<BulkCreateMediasResponse>(JsonOptions, cancellationToken);
             if (result?.Results is not null)
