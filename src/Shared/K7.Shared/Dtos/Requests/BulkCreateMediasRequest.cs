@@ -3,6 +3,7 @@ namespace K7.Shared.Dtos.Requests;
 public sealed record BulkCreateMediasRequest
 {
     public required IReadOnlyList<BulkCreateMediaItem> Items { get; init; }
+    public bool FetchMetadata { get; init; }
 
     public sealed record BulkCreateMediaItem
     {

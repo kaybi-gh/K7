@@ -1,11 +1,14 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Responses;
 using System.Linq.Expressions;
@@ -17,9 +20,10 @@ namespace K7.Server.Application.Features.Medias.Commands.BulkCreateMedias;
 public record BulkCreateMediasCommand : IRequest<BulkCreateMediasResponse>
 {
     public required IReadOnlyList<BulkCreateMediasRequest.BulkCreateMediaItem> Items { get; init; }
+    public bool FetchMetadata { get; init; }
 }
 
-public partial class BulkCreateMediasCommandHandler(IApplicationDbContext context)
+public partial class BulkCreateMediasCommandHandler(IApplicationDbContext context, ISender sender, IEnumerable<IMetadataProviderInfo> metadataProviders)
     : IRequestHandler<BulkCreateMediasCommand, BulkCreateMediasResponse>
 {
     private const int SaveBatchSize = 500;
@@ -71,10 +75,16 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             .ToList();
 
         var batchGroups = GroupForIntraBatchDedup(toCreate);
+        var newEnrichableMediaIds = new List<Guid>();
 
-        await CreateMoviesAsync(batchGroups, resultMap, cancellationToken);
-        await CreateMusicAsync(batchGroups, resultMap, cancellationToken);
-        await CreateEpisodesAsync(batchGroups, resultMap, cancellationToken);
+        await CreateMoviesAsync(batchGroups, resultMap, newEnrichableMediaIds, cancellationToken);
+        await CreateMusicAsync(batchGroups, resultMap, newEnrichableMediaIds, cancellationToken);
+        await CreateEpisodesAsync(batchGroups, resultMap, newEnrichableMediaIds, cancellationToken);
+
+        if (request.FetchMetadata && newEnrichableMediaIds.Count > 0)
+        {
+            await QueueMetadataRefreshAsync(newEnrichableMediaIds, cancellationToken);
+        }
 
         return new BulkCreateMediasResponse
         {
@@ -94,6 +104,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
     private async Task CreateMoviesAsync(
         List<BatchGroup> batchGroups,
         Dictionary<string, (Guid MediaId, bool WasCreated)> resultMap,
+        List<Guid> newEnrichableMediaIds,
         CancellationToken cancellationToken)
     {
         var movieGroups = batchGroups.Where(g => g.MediaType == "movie").ToList();
@@ -114,6 +125,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             if (pending.Count >= SaveBatchSize)
             {
                 await context.SaveChangesAsync(cancellationToken);
+                newEnrichableMediaIds.AddRange(pending.Select(p => p.Entity.Id));
                 FlushPending(pending, resultMap);
             }
         }
@@ -121,6 +133,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         if (pending.Count > 0)
         {
             await context.SaveChangesAsync(cancellationToken);
+            newEnrichableMediaIds.AddRange(pending.Select(p => p.Entity.Id));
             FlushPending(pending, resultMap);
         }
     }
@@ -128,6 +141,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
     private async Task CreateMusicAsync(
         List<BatchGroup> batchGroups,
         Dictionary<string, (Guid MediaId, bool WasCreated)> resultMap,
+        List<Guid> newEnrichableMediaIds,
         CancellationToken cancellationToken)
     {
         var musicGroups = batchGroups.Where(g => g.MediaType == "music").ToList();
@@ -232,6 +246,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         if (newAlbums.Count > 0)
         {
             await context.SaveChangesAsync(cancellationToken);
+            newEnrichableMediaIds.AddRange(newAlbums.Select(a => a.Id));
         }
 
         // 3. Link artists to albums via MusicArtist roles
@@ -327,6 +342,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
     private async Task CreateEpisodesAsync(
         List<BatchGroup> batchGroups,
         Dictionary<string, (Guid MediaId, bool WasCreated)> resultMap,
+        List<Guid> newEnrichableMediaIds,
         CancellationToken cancellationToken)
     {
         var episodeGroups = batchGroups.Where(g => g.MediaType == "episode").ToList();
@@ -374,6 +390,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         if (newSeries.Count > 0)
         {
             await context.SaveChangesAsync(cancellationToken);
+            newEnrichableMediaIds.AddRange(newSeries.Select(s => s.Id));
         }
 
         // Batch-create/find all seasons
@@ -451,6 +468,41 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         {
             await context.SaveChangesAsync(cancellationToken);
             FlushPending(pending, resultMap);
+        }
+    }
+
+    private async Task QueueMetadataRefreshAsync(List<Guid> mediaIds, CancellationToken cancellationToken)
+    {
+        var supportedProviderNames = metadataProviders.Select(p => p.ProviderName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var enrichableMedia = await context.Medias
+            .Include(m => m.ExternalIds)
+            .Where(m => mediaIds.Contains(m.Id))
+            .Where(m => m is Movie || m is MusicAlbum || m is Serie)
+            .Where(m => m.ExternalIds.Count > 0)
+            .ToListAsync(cancellationToken);
+
+        foreach (var media in enrichableMedia)
+        {
+            var externalId = media.ExternalIds.FirstOrDefault(e => supportedProviderNames.Contains(e.ProviderName));
+            if (externalId is null) continue;
+
+            await sender.Send(new CreateBackgroundTaskCommand
+            {
+                Request = new RefreshMediaMetadatasCommand
+                {
+                    MediaId = media.Id,
+                    MetadataProviderExternalId = externalId.Value,
+                    MetadataProviderName = externalId.ProviderName,
+                    Language = "fr",
+                    FallbackLanguage = "en"
+                },
+                Priority = BackgroundTaskPriority.Low,
+                TargetEntityId = media.Id,
+                TargetEntityTypeName = nameof(BaseMedia),
+                MaxAttempts = 1,
+                ConcurrencyGroup = externalId.ProviderName
+            }, cancellationToken);
         }
     }
 

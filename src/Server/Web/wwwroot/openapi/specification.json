@@ -4161,6 +4161,9 @@
             "items": {
               "$ref": "#/components/schemas/BulkCreateMediaItem"
             }
+          },
+          "fetchMetadata": {
+            "type": "boolean"
           }
         }
       },
