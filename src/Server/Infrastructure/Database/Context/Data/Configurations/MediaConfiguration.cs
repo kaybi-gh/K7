@@ -19,10 +19,6 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasValue<SerieSeason>(MediaType.SerieSeason);
 
         builder
-            .HasIndex(e => e.Slug)
-            .IsUnique();
-
-        builder
             .HasMany(m => m.IndexedFiles)
             .WithOne(i => i.Media)
             .HasForeignKey(i => i.MediaId);

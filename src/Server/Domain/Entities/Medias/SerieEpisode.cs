@@ -15,7 +15,7 @@ public class SerieEpisode() : BaseMedia(MediaType.SerieEpisode)
     public DateOnly? AirDate { get; set; }
     public int? Runtime { get; set; }
 
-    public override string GetSlugSource() => $"{Season.Slug}-{Title}";
+
 
     public void ApplyMetadata(ExternalEpisodeMetadata metadata)
     {

@@ -10,7 +10,7 @@ public class Movie() : BaseMedia(MediaType.Movie)
     public long? Budget { get; set; }
     public long? Revenue { get; set; }
 
-    public override string GetSlugSource() => $"{Title}-{ReleaseDate?.Year}";
+
 
     public void ApplyMetadata(ExternalMovieMetadata metadata)
     {

@@ -4,7 +4,7 @@ using K7.Server.Domain.Entities.Users;
 
 namespace K7.Server.Domain.Entities.Medias;
 
-public abstract class BaseMedia(MediaType type) : BaseSlugEntity
+public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
 {
     public MediaType Type { get; protected set; } = type;
 

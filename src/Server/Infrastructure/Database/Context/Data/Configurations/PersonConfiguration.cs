@@ -10,10 +10,6 @@ public class PersonConfiguration : IEntityTypeConfiguration<Person>
     public void Configure(EntityTypeBuilder<Person> builder)
     {
         builder
-            .HasIndex(e => e.Slug)
-            .IsUnique();
-
-        builder
             .HasMany(p => p.Roles)
             .WithOne(r => r.Person)
             .HasForeignKey(r => r.PersonId);
