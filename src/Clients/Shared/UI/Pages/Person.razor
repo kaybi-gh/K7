@@ -90,6 +90,20 @@ else if (_person is not null)
             </div>
         </div>
 
+        @if (_discography.Count > 0)
+        {
+            <Carousel Title="@L["Discography"]">
+                @foreach (var album in _discography)
+                {
+                    <CarouselItem @key="album.Id">
+                        <MediaCard Model="album"
+                                   Href="@($"/music/albums/{album.Id}")"
+                                   FooterVisible="true" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
+
         @if (_medias.Count > 0)
         {
             <Carousel Title="@L["Filmography"]">

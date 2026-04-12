@@ -23,5 +23,6 @@
   <data name="ShowMore" xml:space="preserve"><value>Plus</value></data>
   <data name="AlbumsSection" xml:space="preserve"><value>Albums</value></data>
   <data name="TracksSection" xml:space="preserve"><value>Morceaux</value></data>
+  <data name="ViewPerson" xml:space="preserve"><value>Voir la personne</value></data>
 </root>
 

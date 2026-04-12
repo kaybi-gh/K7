@@ -18,6 +18,7 @@ public partial class Person : IDisposable
     private string? _portraitUrl;
     private List<string> _backdropUrls = [];
     private List<MediaCardViewModel> _medias = [];
+    private List<MediaCardViewModel> _discography = [];
     private bool _loading = true;
     private int _activeBackdropIndex;
     private Timer? _backdropTimer;
@@ -86,6 +87,23 @@ public partial class Person : IDisposable
                                 ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
                     });
                     break;
+            }
+        }
+
+        var seenAlbums = new HashSet<Guid>();
+        foreach (var role in _person.Roles)
+        {
+            if (role.Media is LiteMusicAlbumDto album && seenAlbums.Add(album.Id))
+            {
+                _discography.Add(new MediaCardViewModel
+                {
+                    Id = album.Id.ToString(),
+                    Title = album.Title,
+                    AdditionalInformations = album.ReleaseDate,
+                    PictureUrl = apiClient.GetAbsoluteUri(
+                        album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                            ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                });
             }
         }
 

@@ -36,8 +36,19 @@ public partial class MusicArtistDetail
 
             var roleMedias = _person.Roles.Select(r => r.Media).Where(m => m is not null);
 
+            var playableTracks = roleMedias
+                .OfType<LiteMusicTrackDto>()
+                .Where(t => t.IndexedFileId.HasValue)
+                .DistinctBy(t => t.Id)
+                .ToList();
+
+            var playableAlbumIds = playableTracks
+                .Select(t => t.AlbumId)
+                .ToHashSet();
+
             _albums = roleMedias
                 .OfType<LiteMusicAlbumDto>()
+                .Where(a => playableAlbumIds.Contains(a.Id))
                 .DistinctBy(a => a.Id)
                 .Select(album => new MediaCardViewModel
                 {
@@ -50,9 +61,7 @@ public partial class MusicArtistDetail
                 })
                 .ToList();
 
-            _tracks = roleMedias
-                .OfType<LiteMusicTrackDto>()
-                .DistinctBy(t => t.Id)
+            _tracks = playableTracks
                 .OrderBy(t => t.TrackNumber)
                 .Select(track => new TrackViewModel
                 {

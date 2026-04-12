@@ -13,7 +13,6 @@ namespace K7.Shared.Dtos.Entities.Medias;
 public abstract record MediaDto
 {
     public Guid Id { get; init; }
-    public string Slug { get; init; } = null!;
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }

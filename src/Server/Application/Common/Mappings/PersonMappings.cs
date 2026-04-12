@@ -13,7 +13,6 @@ public static class PersonMappings
         public PersonDto ToPersonDto() => new()
         {
             Id = domain.Id,
-            Slug = domain.Slug,
             Name = domain.Name,
             Gender = domain.Gender,
             Biography = domain.Biography,
@@ -28,7 +27,6 @@ public static class PersonMappings
         public LitePersonDto ToLitePersonDto() => new()
         {
             Id = domain.Id,
-            Slug = domain.Slug,
             Name = domain.Name,
             Gender = domain.Gender,
             Birthday = domain.Birthday,

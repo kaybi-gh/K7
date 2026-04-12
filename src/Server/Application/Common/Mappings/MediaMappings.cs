@@ -17,7 +17,6 @@ public static class MediaMappings
             Movie movie => new MovieDto()
             {
                 Id = domain.Id,
-                Slug = domain.Slug,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
@@ -39,7 +38,6 @@ public static class MediaMappings
             MusicAlbum album => new MusicAlbumDto()
             {
                 Id = domain.Id,
-                Slug = domain.Slug,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
@@ -57,7 +55,6 @@ public static class MediaMappings
             MusicTrack track => new MusicTrackDto()
             {
                 Id = domain.Id,
-                Slug = domain.Slug,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
@@ -85,7 +82,6 @@ public static class MediaMappings
             Serie serie => new SerieDto()
             {
                 Id = domain.Id,
-                Slug = domain.Slug,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
@@ -123,7 +119,6 @@ public static class MediaMappings
             SerieSeason season => new SerieSeasonDto()
             {
                 Id = domain.Id,
-                Slug = domain.Slug,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
@@ -147,7 +142,6 @@ public static class MediaMappings
             SerieEpisode episode => new SerieEpisodeDto()
             {
                 Id = domain.Id,
-                Slug = domain.Slug,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),

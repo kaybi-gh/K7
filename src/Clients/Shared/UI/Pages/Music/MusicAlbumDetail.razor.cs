@@ -126,7 +126,7 @@ public partial class MusicAlbumDetail
 
         return new AudioQueueItem
         {
-            IndexedFileId = t.IndexedFileId!.Value,
+            IndexedFileId = t.IndexedFileId ?? Guid.Empty,
             MediaId = t.Id,
             Title = t.Title,
             Artist = artistName,
