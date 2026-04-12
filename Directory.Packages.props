@@ -9,7 +9,7 @@
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
     <PackageVersion Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageVersion Include="bunit" Version="2.6.2" />
-    <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="7.0.0" />
+    <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="9.0.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="Extensions.MudBlazor.StaticInput" Version="3.2.1" />
     <PackageVersion Include="FFMpegCore" Version="5.4.0" />
@@ -50,9 +50,9 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
     <PackageVersion Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.4.0" />
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.20" />
-    <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.20" />
-    <PackageVersion Include="Microsoft.Maui.Essentials" Version="10.0.20" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.41" />
+    <PackageVersion Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.41" />
+    <PackageVersion Include="Microsoft.Maui.Essentials" Version="10.0.41" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageVersion Include="MockQueryable.NSubstitute" Version="10.0.5" />
     <PackageVersion Include="Microsoft.TestPlatform.TestHost" Version="17.8.0" />
@@ -86,9 +86,7 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <PackageVersion Include="Spectre.Console" Version="0.50.0" />
-
     <PackageVersion Include="System.CommandLine" Version="2.0.0-beta5.25306.1" />
-
     <PackageVersion Include="System.Text.Json" Version="10.0.0" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
     <PackageVersion Include="Testcontainers.MsSql" Version="3.6.0" />
