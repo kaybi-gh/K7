@@ -16,81 +16,89 @@ public class GetMusicStatsQueryHandler(IApplicationDbContext context, IUser curr
         if (currentUser.Id is not { } userId)
             return new MusicStatsDto();
 
-        // Completed music sessions for this user
-        var completedSessions = context.MediaPlaybackSessions
+        // Play counts from UserMediaStates (authoritative aggregate: imports + native plays)
+        var musicStates = context.UserMediaStates
+            .Where(s => s.UserId == userId && s.PlayCount > 0)
+            .Join(
+                context.Medias.Where(m => m.Type == MediaType.MusicTrack),
+                s => s.MediaId,
+                m => m.Id,
+                (s, m) => new { s.MediaId, s.PlayCount, Media = m });
+
+        var totalPlays = await musicStates.SumAsync(s => s.PlayCount, cancellationToken);
+        var uniqueTracks = await musicStates.CountAsync(cancellationToken);
+
+        // Listening time from completed sessions (only sessions have actual durations)
+        var totalSeconds = await context.MediaPlaybackSessions
             .Where(s => s.UserId == userId && s.CompletedAt != null)
             .Join(
                 context.Medias.Where(m => m.Type == MediaType.MusicTrack),
                 s => s.MediaId,
                 m => m.Id,
-                (s, m) => new { s.MediaId, s.DurationSeconds, s.CompletedAt, Media = m });
-
-        var totalPlays = await completedSessions.CountAsync(cancellationToken);
-        var totalSeconds = await completedSessions.SumAsync(s => s.DurationSeconds, cancellationToken);
-        var uniqueTracks = await completedSessions.Select(s => s.MediaId).Distinct().CountAsync(cancellationToken);
+                (s, _) => s.DurationSeconds)
+            .SumAsync(cancellationToken);
 
         // Top tracks by play count
-        var topTracks = await completedSessions
-            .GroupBy(s => new { s.MediaId, s.Media.Title })
-            .Select(g => new TopItemDto
+        var topTracks = await musicStates
+            .Select(s => new TopItemDto
             {
-                Id = g.Key.MediaId,
-                Name = g.Key.Title ?? "Sans titre",
-                PlayCount = g.Count()
+                Id = s.MediaId,
+                Name = s.Media.Title ?? "Sans titre",
+                PlayCount = s.PlayCount
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
             .ToListAsync(cancellationToken);
 
         // Top artists: join through PersonRoles
-        var topArtists = await completedSessions
+        var topArtists = await musicStates
             .Join(
                 context.PersonRoles.OfType<MusicArtist>(),
                 s => s.MediaId,
                 pr => pr.MediaId,
-                (s, pr) => new { pr.PersonId, pr.Person.Name })
+                (s, pr) => new { s.PlayCount, pr.PersonId, pr.Person.Name })
             .GroupBy(x => new { x.PersonId, x.Name })
             .Select(g => new TopItemDto
             {
                 Id = g.Key.PersonId,
                 Name = g.Key.Name ?? "Artiste inconnu",
-                PlayCount = g.Count()
+                PlayCount = g.Sum(x => x.PlayCount)
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
             .ToListAsync(cancellationToken);
 
         // Top albums: join through MusicTrack.AlbumId
-        var topAlbums = await completedSessions
+        var topAlbums = await musicStates
             .Join(
                 context.Medias.OfType<MusicTrack>(),
                 s => s.MediaId,
                 t => t.Id,
-                (s, t) => new { t.AlbumId })
+                (s, t) => new { s.PlayCount, t.AlbumId })
             .Join(
                 context.Medias.OfType<MusicAlbum>(),
                 x => x.AlbumId,
                 a => a.Id,
-                (x, a) => new { a.Id, a.Title })
+                (x, a) => new { x.PlayCount, a.Id, a.Title })
             .GroupBy(x => new { x.Id, x.Title })
             .Select(g => new TopItemDto
             {
                 Id = g.Key.Id,
                 Name = g.Key.Title ?? "Album inconnu",
-                PlayCount = g.Count()
+                PlayCount = g.Sum(x => x.PlayCount)
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
             .ToListAsync(cancellationToken);
 
         // Top genres
-        var topGenres = await completedSessions
-            .SelectMany(s => s.Media.Genres, (s, genre) => genre)
-            .GroupBy(g => g)
+        var topGenres = await musicStates
+            .SelectMany(s => s.Media.Genres, (s, genre) => new { s.PlayCount, Genre = genre })
+            .GroupBy(x => x.Genre)
             .Select(g => new GenreStatDto
             {
                 Genre = g.Key,
-                PlayCount = g.Count()
+                PlayCount = g.Sum(x => x.PlayCount)
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)

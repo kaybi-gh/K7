@@ -130,7 +130,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var releaseYear = firstTags?.Year != null ? new DateOnly(firstTags.Year.Value, 1, 1) : firstIdentification.ReleaseYear;
         var albumArtistName = firstTags?.AlbumArtists.FirstOrDefault() ?? firstTags?.Artists.FirstOrDefault() ?? firstIdentification.ArtistName;
 
-        var (album, isNewAlbum) = await FindOrCreateAlbumAsync(firstFile, albumName, releaseYear, cancellationToken);
+        var (album, isNewAlbum) = await FindOrCreateAlbumAsync(firstFile, albumName, albumArtistName, releaseYear, cancellationToken);
 
         if (isNewAlbum)
         {
@@ -177,6 +177,14 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             }
         }
 
+        if (!isNewAlbum)
+        {
+            await _context.Entry(album).Collection(a => a.Tracks)
+                .Query()
+                .Include(t => t.IndexedFiles)
+                .LoadAsync(cancellationToken);
+        }
+
         foreach (var indexedFile in indexedFiles)
         {
             if (_context.Entry(indexedFile).State == EntityState.Detached)
@@ -186,11 +194,28 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             if (identification is null) continue;
 
             var tags = _audioTagReader.ReadTags(indexedFile.Path);
+            var trackTitle = tags?.Title ?? identification.Title;
+            var trackNumber = tags?.TrackNumber ?? identification.TrackNumber;
+
+            // Re-link to existing orphan track (no IndexedFiles) when album was reused
+            if (!isNewAlbum)
+            {
+                var existingTrack = album.Tracks.FirstOrDefault(t =>
+                    !t.IndexedFiles.Any()
+                    && (t.TrackNumber == trackNumber
+                        || string.Equals(t.Title, trackTitle, StringComparison.OrdinalIgnoreCase)));
+
+                if (existingTrack is not null)
+                {
+                    existingTrack.IndexedFiles.Add(indexedFile);
+                    continue;
+                }
+            }
 
             var track = new MusicTrack
             {
-                Title = tags?.Title ?? identification.Title,
-                TrackNumber = tags?.TrackNumber ?? identification.TrackNumber,
+                Title = trackTitle,
+                TrackNumber = trackNumber,
                 DiscNumber = tags?.DiscNumber,
                 ReleaseDate = tags?.Year != null ? new DateOnly(tags.Year.Value, 1, 1) : identification.ReleaseYear,
                 Lyrics = tags?.Lyrics,
@@ -335,7 +360,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     }
 
     private async Task<(MusicAlbum Album, bool IsNew)> FindOrCreateAlbumAsync(
-        IndexedFile indexedFile, string? albumName, DateOnly? releaseYear, CancellationToken cancellationToken)
+        IndexedFile indexedFile, string? albumName, string? artistName, DateOnly? releaseYear, CancellationToken cancellationToken)
     {
         var resolvedAlbumName = albumName ?? "Unknown Album";
 
@@ -343,7 +368,9 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             .OfType<MusicAlbum>()
             .FirstOrDefaultAsync(a =>
                 a.Title == resolvedAlbumName &&
-                a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId)) &&
+                (a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId))
+                    || !a.Tracks.Any(t => t.IndexedFiles.Any())) &&
+                (artistName == null || a.PersonRoles.Any(r => r.Person.Name == artistName)) &&
                 (releaseYear == null || a.ReleaseDate == null || a.ReleaseDate == releaseYear),
                 cancellationToken);
 

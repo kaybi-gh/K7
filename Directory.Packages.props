@@ -85,6 +85,9 @@
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
+    <PackageVersion Include="Spectre.Console" Version="0.50.0" />
+
+    <PackageVersion Include="System.CommandLine" Version="2.0.0-beta5.25306.1" />
 
     <PackageVersion Include="System.Text.Json" Version="10.0.0" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />

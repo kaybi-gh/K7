@@ -1,4 +1,5 @@
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -20,20 +21,25 @@ public partial class CreateLibraryDialog
     private bool _mediaTypeSelected;
     private string _title = "";
     private string _rootPath = "";
+    private string _selectedProvider = "";
+    private List<MetadataProviderInfoDto> _availableProviders = [];
     private bool _triggerIndexing = true;
     private bool _isSubmitting;
 
-    private void SelectMediaType(LibraryMediaType mediaType)
+    private async Task SelectMediaType(LibraryMediaType mediaType)
     {
         _selectedMediaType = mediaType;
         _mediaTypeSelected = true;
+
+        _availableProviders = await K7ServerService.GetMetadataProvidersAsync(mediaType);
+        _selectedProvider = _availableProviders.FirstOrDefault()?.ProviderName ?? "";
     }
 
-    private void OnMediaTypeKeyDown(KeyboardEventArgs e, LibraryMediaType mediaType)
+    private async Task OnMediaTypeKeyDown(KeyboardEventArgs e, LibraryMediaType mediaType)
     {
         if (e.Code is "Enter" or "Space")
         {
-            SelectMediaType(mediaType);
+            await SelectMediaType(mediaType);
         }
     }
 
@@ -62,7 +68,7 @@ public partial class CreateLibraryDialog
     private bool CanAdvance() => _activeStep switch
     {
         0 => _mediaTypeSelected,
-        1 => !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_rootPath),
+        1 => !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_rootPath) && !string.IsNullOrWhiteSpace(_selectedProvider),
         _ => true
     };
 
@@ -114,7 +120,7 @@ public partial class CreateLibraryDialog
                 MediaType = _selectedMediaType,
                 RootPath = _rootPath.Trim(),
                 TriggerFileIndexingOnCreation = _triggerIndexing,
-                MetadataProviderName = "tmdb"
+                MetadataProviderName = _selectedProvider
             };
 
             await K7ServerService.CreateLibraryAsync(request);
