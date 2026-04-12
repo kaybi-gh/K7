@@ -50,6 +50,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public new DbSet<User> Users => Set<User>();
     public DbSet<UserMediaState> UserMediaStates => Set<UserMediaState>();
     public DbSet<MediaPlaybackSession> MediaPlaybackSessions => Set<MediaPlaybackSession>();
+    public DbSet<PlaybackSessionDetails> PlaybackSessionDetails => Set<PlaybackSessionDetails>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<PlaylistItem> PlaylistItems => Set<PlaylistItem>();
     public DbSet<AudioAnalysis> AudioAnalysis => Set<AudioAnalysis>();

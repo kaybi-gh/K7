@@ -434,10 +434,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<DateOnly?>("ReleaseDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
@@ -449,9 +445,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasIndex("OriginalTitle");
 
                     b.HasIndex("ReleaseDate");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
 
                     b.HasIndex("Title");
 
@@ -683,14 +676,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
 
                     b.ToTable("Persons");
                 });
@@ -995,6 +981,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("DeviceId")
+                        .HasColumnType("TEXT");
+
                     b.Property<double>("DurationSeconds")
                         .HasColumnType("REAL");
 
@@ -1013,27 +1002,98 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double>("PositionSeconds")
                         .HasColumnType("REAL");
 
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("SessionId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("State")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StoppedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
 
+                    b.Property<double>("WatchedDurationSeconds")
+                        .HasColumnType("REAL");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("DeviceId");
+
                     b.HasIndex("MediaId");
+
+                    b.HasIndex("ReferenceId");
 
                     b.HasIndex("SessionId")
                         .IsUnique();
 
                     b.HasIndex("UserId", "CompletedAt");
 
+                    b.HasIndex("UserId", "StartedAt");
+
                     b.HasIndex("UserId", "MediaId", "CompletedAt");
 
                     b.ToTable("MediaPlaybackSessions");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.PlaybackSessionDetails", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AudioDecision")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("Bitrate")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("IsTranscode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("MediaPlaybackSessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceAudioCodec")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceVideoCodec")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SourceVideoHeight")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SourceVideoWidth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StreamAudioCodec")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StreamVideoCodec")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VideoDecision")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaPlaybackSessionId")
+                        .IsUnique();
+
+                    b.ToTable("PlaybackSessionDetails");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
@@ -2421,6 +2481,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSession", b =>
                 {
+                    b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
                         .WithMany()
                         .HasForeignKey("MediaId")
@@ -2433,9 +2498,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Device");
+
                     b.Navigation("Media");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.PlaybackSessionDetails", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.MediaPlaybackSession", "MediaPlaybackSession")
+                        .WithOne("Details")
+                        .HasForeignKey("K7.Server.Domain.Entities.Users.PlaybackSessionDetails", "MediaPlaybackSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MediaPlaybackSession");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
@@ -2614,25 +2692,29 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                 {
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.AudioFileMetadata", null)
                         .WithOne("AudioTrack")
-                        .HasForeignKey("K7.Server.Domain.Entities.Metadatas.Files.Tracks.AudioFileTrack", "AudioFileMetadataId");
+                        .HasForeignKey("K7.Server.Domain.Entities.Metadatas.Files.Tracks.AudioFileTrack", "AudioFileMetadataId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", null)
                         .WithMany("AudioTracks")
-                        .HasForeignKey("VideoFileMetadataId");
+                        .HasForeignKey("VideoFileMetadataId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.Tracks.SubtitleFileTrack", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", null)
                         .WithMany("SubtitleTracks")
-                        .HasForeignKey("VideoFileMetadataId");
+                        .HasForeignKey("VideoFileMetadataId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.Tracks.VideoFileTrack", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", null)
                         .WithMany("VideoTracks")
-                        .HasForeignKey("VideoFileMetadataId");
+                        .HasForeignKey("VideoFileMetadataId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Playlists.SmartPlaylist", b =>
@@ -2735,6 +2817,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSession", b =>
+                {
+                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>

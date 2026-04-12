@@ -34,6 +34,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<User> Users { get; }
     DbSet<UserMediaState> UserMediaStates { get; }
     DbSet<MediaPlaybackSession> MediaPlaybackSessions { get; }
+    DbSet<PlaybackSessionDetails> PlaybackSessionDetails { get; }
     DbSet<Playlist> Playlists { get; }
     DbSet<PlaylistItem> PlaylistItems { get; }
     DbSet<AudioAnalysis> AudioAnalysis { get; }
