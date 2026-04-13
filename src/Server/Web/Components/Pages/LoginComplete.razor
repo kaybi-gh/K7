@@ -1,0 +1,48 @@
+@page "/auth/complete"
+@layout K7.Server.Web.Components.Pages.Setup.SetupLayout
+@attribute [AllowAnonymous]
+@inject IStringLocalizer<LoginComplete> L
+
+<PageTitle>@L["PageTitle"] - K7</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
+    <MudPaper Class="pa-8" Elevation="4">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            @if (_isError)
+            {
+                <MudIcon Icon="@Icons.Material.Outlined.Error" Size="Size.Large" Color="Color.Error" />
+                <MudText Typo="Typo.h5">@_title</MudText>
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                    @_message
+                </MudAlert>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Size="Size.Large" Color="Color.Success" />
+                <MudText Typo="Typo.h5">@_title</MudText>
+                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                    @_message
+                </MudAlert>
+            }
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? Status { get; set; }
+
+    private string _title = "";
+    private string _message = "";
+    private bool _isError;
+
+    protected override void OnInitialized()
+    {
+        (_title, _message, _isError) = Status?.ToLowerInvariant() switch
+        {
+            "denied" => (L["DeniedTitle"].Value, L["DeniedMessage"].Value, true),
+            "error" => (L["ErrorTitle"].Value, L["ErrorMessage"].Value, true),
+            _ => (L["SuccessTitle"].Value, L["SuccessMessage"].Value, false)
+        };
+    }
+}
