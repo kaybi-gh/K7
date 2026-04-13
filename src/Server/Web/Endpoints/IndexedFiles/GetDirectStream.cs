@@ -12,7 +12,7 @@ public class GetDirectStream : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet(GetIndexedFileDirectStreamQueryUriBuilder.Route, async ([FromServices] ISender sender, [FromRoute] Guid id) =>
+        endpointRouteBuilder.MapMethods(GetIndexedFileDirectStreamQueryUriBuilder.Route, ["GET", "HEAD"], async ([FromServices] ISender sender, [FromRoute] Guid id) =>
         {
             return await sender.Send(new GetDirectStreamQuery(id));
         })

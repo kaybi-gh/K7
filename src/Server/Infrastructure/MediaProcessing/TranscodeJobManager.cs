@@ -69,9 +69,6 @@ public class TranscodeJobManager : ITranscodeJobManager
                 ? $"video-{quality}-{videoCodec ?? "copy"}-sub{subtitleBurnInStreamIndex.Value}"
                 : $"video-{quality}-{videoCodec ?? "copy"}";
 
-            if (!isAudioOnly && audioCodec is not null)
-                videoSubDir += $"-a{audioTrackIndex}-{audioCodec}";
-
             var outputDir = isAudioOnly
                 ? Path.Combine(transcodingPath, indexedFileId.ToString("N"), $"audio-{audioCodec ?? "copy"}-a{audioTrackIndex}")
                 : Path.Combine(transcodingPath, indexedFileId.ToString("N"), videoSubDir);
@@ -396,10 +393,6 @@ public class TranscodeJobManager : ITranscodeJobManager
                 }
                 else
                 {
-                    // Detect muxed audio: when a video job has an explicit audio codec set
-                    int? muxedAudioTrackIndex = job.AudioCodec is not null ? job.AudioTrackIndex : null;
-                    var muxedAudioCodec = job.AudioCodec is not null && job.AudioCodec != "copy" ? job.AudioCodec : null;
-
                     await _mediaTranscoder.StartVideoStreamingTranscodeAsync(
                         job.InputFilePath,
                         job.OutputDirectory,
@@ -409,9 +402,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                         linkedCts.Token,
                         videoCodec,
                         job.Quality,
-                        job.SubtitleBurnInStreamIndex,
-                        muxedAudioTrackIndex,
-                        muxedAudioCodec);
+                        job.SubtitleBurnInStreamIndex);
                 }
             }, linkedCts.Token);
 

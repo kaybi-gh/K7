@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.IndexedFiles;
@@ -22,6 +23,7 @@ public class GetHlsSubtitleStreamSegment : IEndpoint
                         segmentNumber,
                         streamSessionId), cancellationToken);
                 })
+            .RequireAuthorization(Policies.GuestOrAbove)
             .WithName(nameof(GetHlsSubtitleStreamSegment))
             .WithTags("IndexedFiles");
     }

@@ -2286,6 +2286,28 @@
             "description": "OK"
           }
         }
+      },
+      "head": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "GetDirectStream",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/indexed-files/{id}/hls-stream/audio/{audioTrackIndex}/index.m3u8": {
@@ -2612,25 +2634,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "MuxedAudioTrackIndex",
-            "in": "query",
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          },
-          {
-            "name": "MuxedAudioCodec",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -2683,25 +2686,6 @@
           },
           {
             "name": "TranscodingVideoCodec",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "MuxedAudioTrackIndex",
-            "in": "query",
-            "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
-            }
-          },
-          {
-            "name": "MuxedAudioCodec",
             "in": "query",
             "schema": {
               "type": "string"

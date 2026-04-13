@@ -34,5 +34,21 @@
                 <RootComponent Selector="#app" ComponentType="{x:Type sharedPages:Routes}" />
             </BlazorWebView.RootComponents>
         </BlazorWebView>
+
+        <!-- Close button for native player on Windows (overlay is not usable due to opaque WebView2) -->
+        <Button x:Name="NativePlayerCloseButton"
+                Text="&#x2715;"
+                IsVisible="False"
+                ZIndex="4"
+                HorizontalOptions="End"
+                VerticalOptions="Start"
+                Margin="16"
+                WidthRequest="40"
+                HeightRequest="40"
+                CornerRadius="20"
+                BackgroundColor="#80000000"
+                TextColor="White"
+                FontSize="18"
+                Clicked="OnNativePlayerCloseClicked" />
     </Grid>
 </ContentPage>

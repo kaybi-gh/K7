@@ -1,4 +1,5 @@
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.IndexedFiles;
@@ -25,6 +26,7 @@ public class GetHlsAudioStreamSegment : IEndpoint
                         streamSessionId,
                         TranscodingAudioCodec), cancellationToken);
                 })
+            .RequireAuthorization(Policies.GuestOrAbove)
             .WithName(nameof(GetHlsAudioStreamSegment))
             .WithTags("IndexedFiles");
     }

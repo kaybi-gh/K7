@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
+using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.IndexedFiles;
@@ -14,8 +15,6 @@ public class GetHlsVideoStreamSegment : IEndpoint
                     [FromRoute] string segmentNumber,
                     [FromQuery] Guid streamSessionId,
                     [FromQuery] string? TranscodingVideoCodec,
-                    [FromQuery] int? MuxedAudioTrackIndex,
-                    [FromQuery] string? MuxedAudioCodec,
                     [FromServices] ISender sender, 
                     CancellationToken cancellationToken) =>
                 {
@@ -26,10 +25,9 @@ public class GetHlsVideoStreamSegment : IEndpoint
                         quality, 
                         segmentIndex,
                         streamSessionId,
-                        TranscodingVideoCodec,
-                        MuxedAudioTrackIndex,
-                        MuxedAudioCodec), cancellationToken);
+                        TranscodingVideoCodec), cancellationToken);
                 })
+            .RequireAuthorization(Policies.GuestOrAbove)
             .WithName(nameof(GetHlsVideoStreamSegment))
             .WithTags("IndexedFiles");
     }

@@ -39,6 +39,6 @@ public class GetDirectStreamQueryHandler : IRequestHandler<GetDirectStreamQuery,
             ? mime
             : "application/octet-stream";
 
-        return Results.Stream(file.OpenRead(), contentType: mimeType, enableRangeProcessing: true);
+        return Results.File(entity.Path, contentType: mimeType, enableRangeProcessing: true);
     }
 }

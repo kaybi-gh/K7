@@ -16,17 +16,13 @@ public class GetHlsVideoStreamIndex : IEndpoint
             [FromRoute] Guid id, 
             [FromRoute] string quality,
             [FromQuery] Guid streamSessionId,
-            [FromQuery] string? TranscodingVideoCodec,
-            [FromQuery] int? MuxedAudioTrackIndex,
-            [FromQuery] string? MuxedAudioCodec) =>
+            [FromQuery] string? TranscodingVideoCodec) =>
         {
             return await sender.Send(new GetHlsVideoStreamIndexQuery(
                 id, 
                 quality,
                 streamSessionId,
-                TranscodingVideoCodec,
-                MuxedAudioTrackIndex,
-                MuxedAudioCodec));
+                TranscodingVideoCodec));
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
