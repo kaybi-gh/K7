@@ -164,11 +164,10 @@ public static partial class MauiProgram
                         ProviderName = "K7",
                         ClientId = "k7-native",
 #if ANDROID || IOS || MACCATALYST
-                        RedirectUri = new Uri("k7://login-callback", UriKind.Absolute),
+                        RedirectUri = new Uri("k7://callback/login", UriKind.Absolute),
 #else
                         RedirectUri = new Uri("http://localhost/", UriKind.Absolute),
 #endif
-                        PostLogoutRedirectUri = new Uri("http://localhost/", UriKind.Absolute),
                         Scopes = { Scopes.Email, Scopes.Profile, Scopes.OfflineAccess, "api" }
                     });
                 }
@@ -185,14 +184,16 @@ public static partial class MauiProgram
         services.AddSingleton<IHostApplicationLifetime, MauiHostApplicationLifetime>();
 
 #if !ANDROID
+        // Resolve the SAME singleton instances that OpenIddict registered as IHostedService,
+        // so that handlers (e.g. AttachDynamicPortToRedirectUri) see the started instances.
         services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            ActivatorUtilities.CreateInstance<OpenIddictClientSystemIntegrationActivationHandler>(provider)));
+            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationActivationHandler>().Single()));
 
         services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            ActivatorUtilities.CreateInstance<OpenIddictClientSystemIntegrationHttpListener>(provider)));
+            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationHttpListener>().Single()));
 
         services.AddSingleton<IMauiInitializeService>(static provider => new MauiHostedServiceAdapter(
-            ActivatorUtilities.CreateInstance<OpenIddictClientSystemIntegrationPipeListener>(provider)));
+            provider.GetServices<IHostedService>().OfType<OpenIddictClientSystemIntegrationPipeListener>().Single()));
 #endif
 
         services.AddScoped<IMauiInitializeScopedService, MauiDatabaseInitializer>();
