@@ -8,7 +8,6 @@ using K7.Server.Domain.Common;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
-using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -108,18 +107,12 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             return Results.NotFound();
         }
 
-        var streamSession = await _context.StreamSessions
-            .Include(s => s.Device)
-            .FirstOrDefaultAsync(s => s.Id == query.StreamSessionId, cancellationToken);
-
-        var muxedAudio = streamSession?.Device is { ClientType: ClientType.Native, OperatingSystem: Domain.Enums.OperatingSystem.Windows };
-
         await LoadFileTracksAsync(indexedFile.FileMetadata, cancellationToken);
 
         var masterPlaylist = indexedFile.FileMetadata switch
         {
             AudioFileMetadata x => GenerateAudioFileMasterPlaylist(x, query),
-            VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x, query, muxedAudio),
+            VideoFileMetadata x => GenerateVideoFileMasterPlaylist(x, query),
             _ => throw new InvalidOperationException()
         };
         return Results.Content(masterPlaylist, "application/vnd.apple.mpegurl");
@@ -190,7 +183,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         return playlist.ToString();
     }
 
-    private static string GenerateVideoFileMasterPlaylist(VideoFileMetadata videoFileMetadata, GetHlsStreamManifestQuery query, bool muxedAudio)
+    private static string GenerateVideoFileMasterPlaylist(VideoFileMetadata videoFileMetadata, GetHlsStreamManifestQuery query)
     {
         var playlist = new StringBuilder();
         playlist.AppendLine("#EXTM3U");
@@ -239,19 +232,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             .ThenBy(t => t.Index)
             .ToList();
 
-        // In muxed mode, resolve which audio track and codec to embed in video segments
-        int? muxedAudioTrackIndex = null;
-        string? muxedAudioCodec = null;
-
-        if (muxedAudio && defaultAudioTrack is not null)
-        {
-            muxedAudioTrackIndex = query.DefaultAudioTrackIndex ?? defaultAudioTrack.Index;
-            audioTrackTranscodings.TryGetValue(muxedAudioTrackIndex.Value, out muxedAudioCodec);
-        }
-
-        if (!muxedAudio)
-        {
-            foreach (var track in audioTracks)
+        foreach (var track in audioTracks)
             {
                 var isDefault = query.DefaultAudioTrackIndex.HasValue
                     ? track.Index == query.DefaultAudioTrackIndex.Value
@@ -281,7 +262,6 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
                     $"AUTOSELECT={BoolToYesNo(isDefault)}," +
                     $"URI=\"{audioUri}\"");
             }
-        }
 
         // Generate #EXT-X-MEDIA:TYPE=SUBTITLES entries for text-based subtitle tracks
         var subtitleQueryString = $"?streamSessionId={query.StreamSessionId}";
@@ -351,7 +331,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             $"AVERAGE-BANDWIDTH={targetResolution.AverageBitrate}," +
             $"RESOLUTION={targetResolution.Width}x{targetResolution.Height}," +
             $"CODECS=\"{effectiveCodecsAttribute}\"" +
-            (muxedAudio ? "" : ",AUDIO=\"audio\"") +
+            ",AUDIO=\"audio\"" +
             subtitlesAttribute);
 
         var playlistUrl = GetHlsVideoStreamIndexQueryUriBuilder.BuildManifestRelativePath(playlistQuality);
@@ -363,13 +343,6 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         if (!string.IsNullOrEmpty(effectiveVideoCodec))
             videoQueryParams.Add($"TranscodingVideoCodec={effectiveVideoCodec}");
-
-        if (muxedAudioTrackIndex.HasValue)
-        {
-            videoQueryParams.Add($"MuxedAudioTrackIndex={muxedAudioTrackIndex.Value}");
-            if (!string.IsNullOrEmpty(muxedAudioCodec))
-                videoQueryParams.Add($"MuxedAudioCodec={muxedAudioCodec}");
-        }
 
         var videoQueryString = "?" + string.Join("&", videoQueryParams);
         playlistUrl += videoQueryString;

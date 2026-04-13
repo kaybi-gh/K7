@@ -111,6 +111,7 @@ public partial class BlazorPage : ContentPage
                 NativePlayer.ZIndex = 3;
                 NativePlayer.ShouldShowPlaybackControls = true;
                 NativePlayer.InputTransparent = false;
+                NativePlayerCloseButton.IsVisible = true;
 #endif
             }
             else
@@ -121,6 +122,7 @@ public partial class BlazorPage : ContentPage
                 NativePlayer.ZIndex = 1;
                 NativePlayer.ShouldShowPlaybackControls = false;
                 NativePlayer.InputTransparent = true;
+                NativePlayerCloseButton.IsVisible = false;
 #endif
             }
         });
@@ -164,6 +166,12 @@ public partial class BlazorPage : ContentPage
         base.OnDisappearing();
         NativePlayer.Stop();
         NativeAudioPlayer.Stop();
+    }
+
+    private async void OnNativePlayerCloseClicked(object? sender, EventArgs e)
+    {
+        _playerService.Stop();
+        await _playerService.HideAsync();
     }
 
     private void InitializeAudioPlayer()

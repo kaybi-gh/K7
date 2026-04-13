@@ -130,11 +130,16 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         }
 
         Dictionary<int, string>? audioTrackTranscodings = null;
-        var supportedAudioCodecSet = supportedAudioFormats.Select(x => x.Codec).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // HLS uses fMP4 segments (ISO BMFF / mp4 container), so only audio codecs
+        // that the device supports inside mp4 can be stream-copied without transcoding.
+        var hlsCompatibleAudioCodecSet = supportedAudioFormats
+            .Where(x => x.Container == "mp4")
+            .Select(x => x.Codec)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var audioTrack in videoFileMetadata.AudioTracks)
         {
-            if (!supportedAudioCodecSet.Contains(audioTrack.Codec))
+            if (!hlsCompatibleAudioCodecSet.Contains(audioTrack.Codec))
             {
                 audioTrackTranscodings ??= [];
                 var fallback = GetDeviceBestSupportedAudioMediaFormat([.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
@@ -156,9 +161,8 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         };
     }
 
-    // Codecs that work inside fMP4 segments (HLS with MSE), ordered by preference.
-    // MP3 is deliberately excluded: browsers support MP3 for direct playback but
-    // MSE does not support MP3 inside fMP4 containers, which breaks HLS.
+    // Codecs that work inside fMP4 segments (HLS with ISO BMFF), ordered by preference.
+    // MP3 is excluded: MSE does not support MP3 inside fMP4 containers.
     private static readonly string[] HlsFmp4AudioCodecPriority = ["aac", "opus", "ac3", "eac3", "flac", "alac"];
 
     public static AudioMediaFormat GetDeviceBestSupportedAudioMediaFormat(ICollection<BaseMediaFormat> supportedAudioCodecs)
