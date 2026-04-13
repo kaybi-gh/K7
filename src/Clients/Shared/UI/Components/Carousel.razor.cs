@@ -20,7 +20,11 @@ public partial class Carousel : IAsyncDisposable
 
         _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
             "import", "./_content/K7.Clients.Shared.UI/js/carousel.js");
-        await _module.InvokeVoidAsync("init", _root);
+
+        if (_root.Id is not null)
+        {
+            await _module.InvokeVoidAsync("init", _root);
+        }
     }
 
     public async ValueTask DisposeAsync()
