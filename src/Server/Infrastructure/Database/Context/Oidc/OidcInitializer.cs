@@ -26,8 +26,8 @@ public static class OidcInitializer
                 ApplicationType = ApplicationTypes.Native,
                 ConsentType = ConsentTypes.Implicit,
                 ClientType = ClientTypes.Public,
-                RedirectUris = { new Uri("http://localhost/"), new Uri("k7://login-callback/") },
-                PostLogoutRedirectUris = { new Uri("http://localhost/") },
+                RedirectUris = { new Uri("k7://callback/login"), new Uri("http://localhost/") },
+                PostLogoutRedirectUris = { new Uri("k7://callback/logout"), new Uri("http://localhost/") },
                 Permissions =
                 {
                     Permissions.Endpoints.Authorization,
