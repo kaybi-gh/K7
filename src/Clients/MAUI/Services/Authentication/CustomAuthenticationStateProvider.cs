@@ -57,21 +57,22 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
-            var challenge = await _openIddictClientService.ChallengeInteractivelyAsync(new()
-            {
-                CancellationToken = timeout.Token,
-                ProviderName = "K7",
-                AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
+            var challenge = await Task.Run(async () =>
+                await _openIddictClientService.ChallengeInteractivelyAsync(new()
                 {
-                    ["prompt"] = "login"
-                }
-            });
+                    CancellationToken = timeout.Token,
+                    ProviderName = "K7",
+                    AdditionalAuthorizationRequestParameters = new Dictionary<string, OpenIddict.Abstractions.OpenIddictParameter>
+                    {
+                        ["prompt"] = "login"
+                    }
+                }));
 
-            var result = await _openIddictClientService.AuthenticateInteractivelyAsync(new()
+            var result = await Task.Run(async () => await _openIddictClientService.AuthenticateInteractivelyAsync(new()
             {
                 CancellationToken = timeout.Token,
                 Nonce = challenge.Nonce
-            });
+            }));
 
             _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict"));
 
