@@ -156,6 +156,8 @@ public static partial class MauiProgram
                 options.UseSystemNetHttp()
                        .SetProductInformation(typeof(MauiProgram).Assembly);
 
+                options.AddEventHandler(LoginCallbackResponseHandler.Descriptor);
+
                 if (!string.IsNullOrEmpty(serverUrl))
                 {
                     options.AddRegistration(new OpenIddictClientRegistration

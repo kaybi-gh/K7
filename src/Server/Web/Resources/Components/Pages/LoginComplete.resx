@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data name="PageTitle" xml:space="preserve">
+    <value>Connexion</value>
+  </data>
+  <data name="SuccessTitle" xml:space="preserve">
+    <value>Connexion réussie</value>
+  </data>
+  <data name="SuccessMessage" xml:space="preserve">
+    <value>Vous pouvez fermer cette page et retourner dans l'application.</value>
+  </data>
+  <data name="DeniedTitle" xml:space="preserve">
+    <value>Accès refusé</value>
+  </data>
+  <data name="DeniedMessage" xml:space="preserve">
+    <value>L'autorisation a été refusée. Vous pouvez fermer cette page.</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>Échec de l'authentification</value>
+  </data>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de l'authentification. Vous pouvez fermer cette page.</value>
+  </data>
+</root>
