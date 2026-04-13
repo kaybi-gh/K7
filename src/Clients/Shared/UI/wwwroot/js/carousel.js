@@ -1,5 +1,5 @@
 export function init(rootElement) {
-    if (rootElement.__embla) return;
+    if (!rootElement || rootElement.__embla) return;
 
     var viewportNode = rootElement.querySelector('[data-carousel-viewport]');
     if (!viewportNode) return;
