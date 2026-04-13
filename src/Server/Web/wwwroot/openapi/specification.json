@@ -2612,6 +2612,25 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "MuxedAudioTrackIndex",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "MuxedAudioCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2664,6 +2683,25 @@
           },
           {
             "name": "TranscodingVideoCodec",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "MuxedAudioTrackIndex",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "MuxedAudioCodec",
             "in": "query",
             "schema": {
               "type": "string"

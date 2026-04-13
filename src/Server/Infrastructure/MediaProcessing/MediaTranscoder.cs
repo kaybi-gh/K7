@@ -111,18 +111,21 @@ public class MediaTranscoder : IMediaTranscoder
         CancellationToken cancellationToken,
         string? videoCodec = null,
         string? videoResolutionIdentifier = null,
-        int? subtitleBurnInStreamIndex = null)
+        int? subtitleBurnInStreamIndex = null,
+        int? muxedAudioTrackIndex = null,
+        string? muxedAudioCodec = null)
     {
         var (startTime, endTime) = ValidateAndComputeTimeRange(allSegments, startSegmentIndex, endSegmentIndex);
         Directory.CreateDirectory(outputDirectory);
 
         var hasBurnIn = subtitleBurnInStreamIndex.HasValue;
+        var hasMuxedAudio = muxedAudioTrackIndex.HasValue;
         // Burn-in forces a transcode (can't stream copy when overlaying subtitles)
         var needsTranscode = !string.IsNullOrEmpty(videoCodec) || hasBurnIn;
 
         _logger.LogInformation(
-            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, burnIn={BurnIn}",
-            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy", subtitleBurnInStreamIndex?.ToString() ?? "none");
+            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, burnIn={BurnIn}, muxedAudio={MuxedAudioTrack}",
+            inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy", subtitleBurnInStreamIndex?.ToString() ?? "none", muxedAudioTrackIndex?.ToString() ?? "none");
 
         var ffmpegTask = FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true, options => options
@@ -134,7 +137,10 @@ public class MediaTranscoder : IMediaTranscoder
                 {
                     // Map both video and subtitle for overlay filter
                     options.WithCustomArgument("-map 0:v:0");
-                    options.WithCustomArgument("-an");
+                    if (hasMuxedAudio)
+                        options.WithCustomArgument($"-map 0:{muxedAudioTrackIndex!.Value}");
+                    else
+                        options.WithCustomArgument("-an");
 
                     // Apply subtitle overlay filter
                     options.WithCustomArgument($"-filter_complex \"[0:v][0:{subtitleBurnInStreamIndex!.Value}]overlay\"");
@@ -142,7 +148,10 @@ public class MediaTranscoder : IMediaTranscoder
                 else
                 {
                     options.WithCustomArgument("-map 0:v:0");
-                    options.WithCustomArgument("-an");
+                    if (hasMuxedAudio)
+                        options.WithCustomArgument($"-map 0:{muxedAudioTrackIndex!.Value}");
+                    else
+                        options.WithCustomArgument("-an");
                 }
 
                 if (needsTranscode)
@@ -175,6 +184,25 @@ public class MediaTranscoder : IMediaTranscoder
                 {
                     options.WithCustomArgument("-c:v copy");
                     options.WithCustomArgument("-tag:v hvc1");
+                }
+
+                if (hasMuxedAudio)
+                {
+                    if (muxedAudioCodec == "aac")
+                    {
+                        options.WithCustomArgument("-c:a aac");
+                        options.WithCustomArgument("-ac 2");
+                        options.WithCustomArgument("-ar 48000");
+                        options.WithCustomArgument("-b:a 128k");
+                    }
+                    else if (muxedAudioCodec == "opus")
+                    {
+                        options.WithCustomArgument("-c:a libopus");
+                    }
+                    else
+                    {
+                        options.WithCustomArgument("-c:a copy");
+                    }
                 }
 
                 ConfigureHlsOutput(options, startSegmentIndex, endTime);
