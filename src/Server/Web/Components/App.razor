@@ -60,6 +60,7 @@
         || HttpContext.Request.Path.StartsWithSegments("/setup")
         || HttpContext.Request.Path.StartsWithSegments("/welcome")
         || HttpContext.Request.Path.StartsWithSegments("/link")
+        || HttpContext.Request.Path.StartsWithSegments("/auth")
         ? null
         : new InteractiveWebAssemblyRenderMode(false);
 }
