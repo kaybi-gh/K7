@@ -48,8 +48,14 @@ public class Authorize : IEndpoint
 
             if (result is null || !result.Succeeded)
             {
-                var currentUrl = httpContext.Request.PathBase + httpContext.Request.Path + httpContext.Request.QueryString;
-                return Results.Challenge(new AuthenticationProperties { RedirectUri = currentUrl });
+                // Strip "prompt=login" from the ReturnUrl: the user is already unauthenticated,
+                // so a fresh login is guaranteed without needing to force it on the next pass.
+                var filtered = httpContext.Request.Query
+                    .Where(q => !string.Equals(q.Key, "prompt", StringComparison.OrdinalIgnoreCase))
+                    .Select(q => new KeyValuePair<string, string?>(q.Key, q.Value.ToString()));
+                var redirectUrl = httpContext.Request.PathBase + httpContext.Request.Path + QueryString.Create(filtered);
+
+                return Results.Challenge(new AuthenticationProperties { RedirectUri = redirectUrl.ToString() });
             }
 
             var user = await userManager.GetUserAsync(result.Principal) ??
