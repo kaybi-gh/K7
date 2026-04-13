@@ -21,9 +21,11 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Starts a video-only streaming transcode job.
+    /// Starts a video streaming transcode job.
     /// Generates video fMP4 segments from startSegmentIndex up to (but not including) endSegmentIndex.
     /// When <paramref name="subtitleBurnInStreamIndex"/> is set, burns the bitmap subtitle into the video.
+    /// When <paramref name="muxedAudioTrackIndex"/> is set, includes the specified audio track in the video segments
+    /// instead of stripping audio (used for clients that don't support separate HLS audio renditions).
     /// </summary>
     Task StartVideoStreamingTranscodeAsync(
         string inputFilePath,
@@ -34,7 +36,9 @@ public interface IMediaTranscoder
         CancellationToken cancellationToken,
         string? videoCodec = null,
         string? videoResolutionIdentifier = null,
-        int? subtitleBurnInStreamIndex = null);
+        int? subtitleBurnInStreamIndex = null,
+        int? muxedAudioTrackIndex = null,
+        string? muxedAudioCodec = null);
 
     /// <summary>
     /// Starts an audio-only streaming transcode job.

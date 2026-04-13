@@ -14,6 +14,8 @@ public class GetHlsVideoStreamSegment : IEndpoint
                     [FromRoute] string segmentNumber,
                     [FromQuery] Guid streamSessionId,
                     [FromQuery] string? TranscodingVideoCodec,
+                    [FromQuery] int? MuxedAudioTrackIndex,
+                    [FromQuery] string? MuxedAudioCodec,
                     [FromServices] ISender sender, 
                     CancellationToken cancellationToken) =>
                 {
@@ -24,7 +26,9 @@ public class GetHlsVideoStreamSegment : IEndpoint
                         quality, 
                         segmentIndex,
                         streamSessionId,
-                        TranscodingVideoCodec), cancellationToken);
+                        TranscodingVideoCodec,
+                        MuxedAudioTrackIndex,
+                        MuxedAudioCodec), cancellationToken);
                 })
             .WithName(nameof(GetHlsVideoStreamSegment))
             .WithTags("IndexedFiles");

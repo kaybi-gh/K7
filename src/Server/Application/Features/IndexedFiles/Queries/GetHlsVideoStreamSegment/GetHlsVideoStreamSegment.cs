@@ -32,7 +32,9 @@ public record GetHlsVideoStreamSegmentQuery(
     string Quality, 
     int SegmentNumber,
     Guid StreamSessionId,
-    string? TranscodingVideoCodec = null) : IRequest<IResult>;
+    string? TranscodingVideoCodec = null,
+    int? MuxedAudioTrackIndex = null,
+    string? MuxedAudioCodec = null) : IRequest<IResult>;
 
 public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoStreamSegmentQuery, IResult>
 {
@@ -134,8 +136,8 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             entity.Path,
             query.Quality,
             videoCodec,
-            audioCodec: null,
-            audioTrackIndex: 0,
+            audioCodec: query.MuxedAudioTrackIndex.HasValue ? (query.MuxedAudioCodec ?? "copy") : null,
+            audioTrackIndex: query.MuxedAudioTrackIndex ?? 0,
             isAudioOnly: false,
             streamSessionId,
             cancellationToken);
