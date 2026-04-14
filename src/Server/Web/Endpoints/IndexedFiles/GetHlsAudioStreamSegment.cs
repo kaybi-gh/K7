@@ -8,7 +8,7 @@ public class GetHlsAudioStreamSegment : IEndpoint
 {
     public void Map(IEndpointRouteBuilder app)
     {
-        app.MapGet($"/api/indexed-files/{{id}}/hls-stream/audio/{{audioTrackIndex}}/segments/{{segmentNumber}}.m4s",
+        app.MapMethods($"/api/indexed-files/{{id}}/hls-stream/audio/{{audioTrackIndex}}/segments/{{segmentNumber}}.m4s", ["GET", "HEAD"],
                 async (
                     [FromRoute] Guid id,
                     [FromRoute] int audioTrackIndex,

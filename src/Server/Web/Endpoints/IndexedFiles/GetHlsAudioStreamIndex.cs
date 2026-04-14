@@ -11,7 +11,7 @@ public class GetHlsAudioStreamIndex : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet($"/api/indexed-files/{GetHlsAudioStreamIndexQueryUriBuilder.Route}", async (
+        endpointRouteBuilder.MapMethods($"/api/indexed-files/{GetHlsAudioStreamIndexQueryUriBuilder.Route}", ["GET", "HEAD"], async (
             [FromServices] ISender sender,
             [FromRoute] Guid id,
             [FromRoute] int audioTrackIndex,
