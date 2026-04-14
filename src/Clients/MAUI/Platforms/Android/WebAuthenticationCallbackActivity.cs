@@ -9,7 +9,8 @@ namespace K7.Clients.MAUI.Platforms.Android;
 [IntentFilter([Intent.ActionView],
               Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
               DataScheme = "k7",
-              DataHost = "login-callback")]
+              DataHost = "callback",
+              DataPath = "/login")]
 public class CallbackActivity : Activity
 {
     protected override async void OnCreate(global::Android.OS.Bundle? savedInstanceState)
