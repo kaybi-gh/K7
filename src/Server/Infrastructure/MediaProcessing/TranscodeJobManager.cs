@@ -73,6 +73,23 @@ public class TranscodeJobManager : ITranscodeJobManager
                 ? Path.Combine(transcodingPath, indexedFileId.ToString("N"), $"audio-{audioCodec ?? "copy"}-a{audioTrackIndex}")
                 : Path.Combine(transcodingPath, indexedFileId.ToString("N"), videoSubDir);
 
+            if (Directory.Exists(outputDir))
+            {
+                foreach (var oldFile in Directory.EnumerateFiles(outputDir, "*.m4s"))
+                {
+                    try
+                    {
+                        File.Delete(oldFile);
+                    }
+                    catch (IOException ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to delete stale segment {File}", oldFile);
+                    }
+                }
+
+                _logger.LogInformation("Cleared stale segments from {OutputDir}", outputDir);
+            }
+
             Directory.CreateDirectory(outputDir);
 
             var job = new TranscodeJob
@@ -238,7 +255,7 @@ public class TranscodeJobManager : ITranscodeJobManager
     {
         var now = DateTime.UtcNow;
         var staleJobs = _activeJobs.Values
-            .Where(j => j.AttachedStreamSessions.Count == 0 && (now - j.LastPingTime) > staleThreshold)
+            .Where(j => (now - j.LastPingTime) > staleThreshold)
             .ToList();
 
         foreach (var job in staleJobs)
@@ -266,7 +283,18 @@ public class TranscodeJobManager : ITranscodeJobManager
 
             _activeJobs.TryRemove(job.JobId, out _);
 
-            // TODO - Optionally delete segments (for now, keep them for potential reuse)
+            if (Directory.Exists(job.OutputDirectory))
+            {
+                try
+                {
+                    Directory.Delete(job.OutputDirectory, recursive: true);
+                    _logger.LogInformation("Deleted output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete output directory for stale job {JobId}: {Dir}", job.JobId, job.OutputDirectory);
+                }
+            }
         }
 
         await Task.CompletedTask;
