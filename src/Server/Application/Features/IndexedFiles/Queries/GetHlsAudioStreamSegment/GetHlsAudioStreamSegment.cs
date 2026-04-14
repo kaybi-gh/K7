@@ -144,14 +144,14 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
         }
 
         // Wait for the file to be accessible (not locked by FFmpeg)
-        FileStream? stream = null;
         var accessDeadline = DateTime.UtcNow.AddSeconds(5);
 
-        while (stream == null && DateTime.UtcNow < accessDeadline)
+        while (DateTime.UtcNow < accessDeadline)
         {
             try
             {
-                stream = new FileStream(segmentPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var probe = new FileStream(segmentPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                break;
             }
             catch (IOException)
             {
@@ -159,16 +159,7 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
             }
         }
 
-        if (stream == null)
-        {
-            _logger.LogError(
-                "Audio segment {SegmentNumber} file is locked and could not be accessed for job {JobId}",
-                query.SegmentNumber,
-                job.JobId);
-            return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
-        }
-
-        return Results.Stream(stream, "audio/mp4", enableRangeProcessing: true);
+        return Results.File(segmentPath, "audio/mp4", enableRangeProcessing: true);
     }
 
     /// <summary>
