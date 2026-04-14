@@ -11,7 +11,7 @@ public class GetHlsStreamManifest : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet(GetHlsStreamManifestQueryUriBuilder.Route,
+        endpointRouteBuilder.MapMethods(GetHlsStreamManifestQueryUriBuilder.Route, ["GET", "HEAD"],
             async ([FromServices] ISender sender, [FromRoute] Guid id, [FromQuery] Guid streamSessionId, [FromQuery] string? transcodingVideoCodec, [FromQuery] int? defaultAudioTrackIndex, [FromQuery] string? quality, [FromQuery] string? audioTrackTranscodings) =>
         {
             return await sender.Send(new GetHlsStreamManifestQuery()

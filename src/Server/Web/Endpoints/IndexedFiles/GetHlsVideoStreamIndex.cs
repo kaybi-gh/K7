@@ -11,7 +11,7 @@ public class GetHlsVideoStreamIndex : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet($"/api/indexed-files/{GetHlsVideoStreamIndexQueryUriBuilder.Route}", async (
+        endpointRouteBuilder.MapMethods($"/api/indexed-files/{GetHlsVideoStreamIndexQueryUriBuilder.Route}", ["GET", "HEAD"], async (
             [FromServices] ISender sender, 
             [FromRoute] Guid id, 
             [FromRoute] string quality,

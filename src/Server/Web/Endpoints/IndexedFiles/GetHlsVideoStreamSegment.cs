@@ -8,7 +8,7 @@ public class GetHlsVideoStreamSegment : IEndpoint
 {
     public void Map(IEndpointRouteBuilder app)
     {
-        app.MapGet($"/api/indexed-files/{{id}}/hls-stream/video/{{quality}}/segments/{{segmentNumber}}.m4s",
+        app.MapMethods($"/api/indexed-files/{{id}}/hls-stream/video/{{quality}}/segments/{{segmentNumber}}.m4s", ["GET", "HEAD"],
                 async (
                     [FromRoute] Guid id, 
                     [FromRoute] string quality, 

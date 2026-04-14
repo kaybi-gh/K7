@@ -8,7 +8,7 @@ public class GetHlsSubtitleStreamSegment : IEndpoint
 {
     public void Map(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/indexed-files/{id}/hls-stream/subtitles/{subtitleTrackIndex}/segments/{segmentNumber}.vtt",
+        app.MapMethods("/api/indexed-files/{id}/hls-stream/subtitles/{subtitleTrackIndex}/segments/{segmentNumber}.vtt", ["GET", "HEAD"],
                 async (
                     [FromRoute] Guid id,
                     [FromRoute] int subtitleTrackIndex,
