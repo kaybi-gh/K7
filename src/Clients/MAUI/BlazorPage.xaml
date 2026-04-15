@@ -6,10 +6,9 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="K7.Clients.MAUI.BlazorPage"
              NavigationPage.HasNavigationBar="False"
-             BackgroundColor="{DynamicResource PageBackgroundColor}"
-             SafeAreaEdges="None">
+             BackgroundColor="{DynamicResource PageBackgroundColor}">
 
-    <Grid x:Name="RootGrid" SafeAreaEdges="None">
+    <Grid x:Name="RootGrid">
         <!-- Native MediaElement (video) -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
