@@ -10,7 +10,11 @@
 @inject IDeviceService DeviceService
 @inject IStringLocalizer<VideoPlayerControlsOverlay> L
 
-<div class="video-controls-overlay" @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap" @ontouchstart="OnOverlayTap" @ontouchstart:preventDefault style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
+<div class="video-controls-overlay" tabindex="0" @ref="_overlayRef"
+     @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap" @ontouchstart="OnOverlayTap" @ontouchstart:preventDefault
+     @onkeydown="OnKeyDown" @onkeydown:preventDefault="@_preventKeyDefault" @onkeydown:stopPropagation
+     @onfocusin="OnFocusIn"
+     style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <MudIconButton Icon="@Icons.Material.Outlined.Close" Color="Color.Inherit" OnClick="OnCloseButtonClick" />
     </div>
@@ -134,7 +138,9 @@
     private bool _isMouseOverVolumeButton = false;
     private bool _isMouseOverVolumeSlider = false;
     private bool _isVolumeSliderVisible = false;
+    private bool _preventKeyDefault = true;
     private Timer? _overlayVisibleTimer;
+    private ElementReference _overlayRef;
     private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
@@ -159,7 +165,11 @@
         _overlayVisibleTimer.Elapsed += async (_, e) =>
         {
             _showOverlay = false;
-            await InvokeAsync(StateHasChanged);
+            await InvokeAsync(async () =>
+            {
+                StateHasChanged();
+                await _overlayRef.FocusAsync();
+            });
         };
         _overlayVisibleTimer.Start();
         PlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -176,6 +186,100 @@
         {
             await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _overlayRef.FocusAsync();
+        }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        _preventKeyDefault = true;
+
+        // Global shortcuts - always active
+        switch (e.Code)
+        {
+            case "Space" or "MediaPlayPause":
+                TogglePlayPause();
+                ResetOverlayTimeout();
+                return;
+            case "Escape" or "BrowserBack" or "GoBack" or "MediaStop":
+                if (_isMenuOpen)
+                {
+                    _isMenuOpen = false;
+                    StateHasChanged();
+                }
+                else
+                {
+                    OnCloseButtonClick();
+                }
+                return;
+            case "KeyM":
+                ToggleIsMuted();
+                ResetOverlayTimeout();
+                return;
+            case "KeyF":
+                ToggleFullscreen();
+                ResetOverlayTimeout();
+                return;
+        }
+
+        if (!_showOverlay)
+        {
+            // Overlay hidden: arrows control playback
+            switch (e.Code)
+            {
+                case "Enter":
+                    _showOverlay = true;
+                    ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+                    _ = FocusByDirectionAsync("first");
+                    return;
+                case "ArrowLeft":
+                    PlayerService.Seek(Math.Max(0, PlayerService.CurrentTime - 10));
+                    ResetOverlayTimeout();
+                    return;
+                case "ArrowRight":
+                    PlayerService.Seek(Math.Min(PlayerService.Duration, PlayerService.CurrentTime + 10));
+                    ResetOverlayTimeout();
+                    return;
+                case "ArrowUp":
+                    PlayerService.SetVolume(Math.Min(1, PlayerService.Volume + 0.1));
+                    ResetOverlayTimeout();
+                    return;
+                case "ArrowDown":
+                    PlayerService.SetVolume(Math.Max(0, PlayerService.Volume - 0.1));
+                    ResetOverlayTimeout();
+                    return;
+            }
+        }
+        else
+        {
+            // Overlay visible: arrows navigate between focusable controls
+            switch (e.Code)
+            {
+                case "ArrowLeft" or "ArrowUp":
+                    _ = FocusByDirectionAsync("prev");
+                    ResetOverlayTimeout();
+                    return;
+                case "ArrowRight" or "ArrowDown":
+                    _ = FocusByDirectionAsync("next");
+                    ResetOverlayTimeout();
+                    return;
+            }
+        }
+
+        // Unhandled key: let browser handle it
+        _preventKeyDefault = false;
+    }
+
+    private async Task FocusByDirectionAsync(string direction)
+    {
+        await Task.Yield();
+        await JSRuntime.InvokeVoidAsync("K7.focusDirection", _overlayRef, direction);
     }
 
     public void ResetOverlayTimeout(TimeSpan? timeout = null)
@@ -204,6 +308,14 @@
 
         _showOverlay = true;
         ResetOverlayTimeout();
+    }
+
+    private void OnFocusIn(FocusEventArgs args)
+    {
+        if (_showOverlay)
+        {
+            ResetOverlayTimeout();
+        }
     }
 
     private void OnOverlayTap()

@@ -288,7 +288,35 @@ var SpatialNavigation = (function () {
         }
 
         // If a dropdown or popover is open, let MudBlazor handle navigation inside it
+        // But if the video player overlay is active, we help navigate within the popover
         if (document.querySelector('.mud-popover-open')) {
+            if (document.querySelector('.video-controls-overlay')) {
+                var popover = document.querySelector('.mud-popover-open');
+                if (popover) {
+                    var items = Array.from(popover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) {
+                        return el.offsetParent !== null;
+                    });
+                    if (items.length > 0) {
+                        var idx = items.indexOf(active);
+                        var target = null;
+                        if (key === 'ArrowDown' || key === 'ArrowRight') {
+                            target = idx < items.length - 1 ? items[idx + 1] : items[0];
+                        } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
+                            target = idx > 0 ? items[idx - 1] : items[items.length - 1];
+                        }
+                        if (target) {
+                            target.focus();
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+        // If the video player overlay is active, let its own keyboard handler manage navigation
+        if (document.querySelector('.video-controls-overlay')) {
             return;
         }
 
@@ -706,3 +734,30 @@ document.addEventListener('DOMContentLoaded', function () {
 if (document.readyState !== 'loading') {
     SpatialNavigation.init();
 }
+
+// Focus navigation within a container (used by video player overlay)
+window.K7 = window.K7 || {};
+window.K7.focusDirection = function (container, direction) {
+    if (!container) return;
+    var FOCUSABLE = 'button:not([disabled]):not([tabindex="-1"]), [tabindex="0"], a[href]:not([tabindex="-1"])';
+    var items = Array.from(container.querySelectorAll(FOCUSABLE)).filter(function (el) {
+        return el.offsetParent !== null && el !== container;
+    });
+    if (items.length === 0) return;
+
+    var active = document.activeElement;
+    var idx = items.indexOf(active);
+
+    if (direction === 'first') {
+        // Prefer bottom controls bar (play/pause) over close button
+        var bottomBar = container.querySelector('.controls-bar.bottom');
+        var target = bottomBar ? bottomBar.querySelector('button:not([disabled])') : items[0];
+        (target || items[0]).focus();
+    } else if (direction === 'next') {
+        var next = idx < items.length - 1 ? idx + 1 : 0;
+        items[next].focus();
+    } else if (direction === 'prev') {
+        var prev = idx > 0 ? idx - 1 : items.length - 1;
+        items[prev].focus();
+    }
+};

@@ -13,8 +13,13 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
 
     private ElementReference SeekBarRef;
     private bool IsHovering;
+    private bool _isDragging;
+    private bool _isFocused;
+    private bool _isScrubbing;
+    private bool _preventKeyDefault;
     private double HoverPercent;
     private double HoverTime;
+    private double _scrubTime;
 
     private double SeekBarWidth = 0;
     private double SeekBarLeft;
@@ -39,22 +44,6 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
         PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
     }
 
-    private async Task HandleMouseMove(MouseEventArgs e)
-    {
-        if (IsVisible)
-        {
-            if (SeekBarWidth <= 0)
-            {
-                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
-                SeekBarWidth = bounds.Width;
-                SeekBarLeft = bounds.Left;
-            }
-
-            UpdateHover(e.ClientX);
-            IsHovering = true;
-        }
-    }
-
     private async Task OnPointerDown(PointerEventArgs e)
     {
         if (IsVisible)
@@ -68,29 +57,37 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
 
             UpdateHover(e.ClientX);
             IsHovering = true;
+            _isDragging = true;
             await OnDragChanged.InvokeAsync(true);
         }
     }
 
     private async Task OnPointerMove(PointerEventArgs e)
     {
-        if (IsVisible && IsHovering)
-        {
-            if (SeekBarWidth <= 0)
-            {
-                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
-                SeekBarWidth = bounds.Width;
-                SeekBarLeft = bounds.Left;
-            }
+        if (!IsVisible) return;
 
-            UpdateHover(e.ClientX);
+        if (SeekBarWidth <= 0)
+        {
+            var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+            SeekBarWidth = bounds.Width;
+            SeekBarLeft = bounds.Left;
+        }
+
+        UpdateHover(e.ClientX);
+
+        if (_isDragging)
+        {
             await OnDragChanged.InvokeAsync(true);
+        }
+        else
+        {
+            IsHovering = true;
         }
     }
 
     private async Task OnPointerUp(PointerEventArgs e)
     {
-        if (IsVisible && IsHovering)
+        if (IsVisible && _isDragging)
         {
             if (SeekBarWidth <= 0)
             {
@@ -108,9 +105,80 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
                 PlayerService.Seek(seekTime);
             }
 
+            _isDragging = false;
             IsHovering = false;
             await OnDragChanged.InvokeAsync(false);
         }
+    }
+
+    private void OnPointerLeave(PointerEventArgs e)
+    {
+        if (!_isDragging)
+        {
+            IsHovering = false;
+        }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        _preventKeyDefault = true;
+
+        if (_isScrubbing)
+        {
+            switch (e.Code)
+            {
+                case "ArrowLeft":
+                    _scrubTime = Math.Max(0, _scrubTime - 5);
+                    HoverPercent = _scrubTime / PlayerService.Duration * 100;
+                    HoverTime = _scrubTime;
+                    break;
+                case "ArrowRight":
+                    _scrubTime = Math.Min(PlayerService.Duration, _scrubTime + 5);
+                    HoverPercent = _scrubTime / PlayerService.Duration * 100;
+                    HoverTime = _scrubTime;
+                    break;
+                case "Enter":
+                    PlayerService.Seek(_scrubTime);
+                    _isScrubbing = false;
+                    IsHovering = false;
+                    break;
+                case "Escape":
+                    _isScrubbing = false;
+                    IsHovering = false;
+                    break;
+                default:
+                    _preventKeyDefault = false;
+                    break;
+            }
+        }
+        else
+        {
+            switch (e.Code)
+            {
+                case "Enter":
+                    _isScrubbing = true;
+                    _scrubTime = PlayerService.CurrentTime;
+                    HoverPercent = CurrentPercent;
+                    HoverTime = _scrubTime;
+                    IsHovering = true;
+                    break;
+                default:
+                    _preventKeyDefault = false;
+                    break;
+            }
+        }
+    }
+
+    private void OnFocus(FocusEventArgs e)
+    {
+        _isFocused = true;
+    }
+
+    private void OnBlur(FocusEventArgs e)
+    {
+        _isFocused = false;
+        _isScrubbing = false;
+        IsHovering = false;
     }
 
     private void UpdateHover(double clientX)
@@ -131,6 +199,7 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
 
         return $"background-image: url('{ThumbnailsUri}'); " +
                $"background-position: -{col * ThumbWidth}px -{row * ThumbHeight}px; " +
+               $"background-size: {ThumbsPerRow * ThumbWidth}px auto; " +
                $"width: {ThumbWidth}px; height: {ThumbHeight}px;";
     }
 
