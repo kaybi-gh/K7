@@ -20,7 +20,7 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<Guid, int>? LibraryScanCompleted;
     public event Action? BackgroundTaskUpdated;
 
-    public async Task EnsureStartedAsync(Uri baseUri, string userId, string? deviceId = null)
+    public async Task EnsureStartedAsync(Uri baseUri, string userId, string? deviceId = null, string? accessToken = null)
     {
         if (string.IsNullOrEmpty(userId)) return;
 
@@ -47,7 +47,13 @@ public sealed class K7HubClient : IAsyncDisposable
             var hubUrl = new Uri(baseUri, query);
 
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl(hubUrl)
+                .WithUrl(hubUrl, options =>
+                {
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        options.Headers["Authorization"] = $"Bearer {accessToken}";
+                    }
+                })
                 .WithAutomaticReconnect(new InfiniteRetryPolicy())
                 .Build();
 
@@ -89,7 +95,8 @@ public sealed class K7HubClient : IAsyncDisposable
                 BackgroundTaskUpdated?.Invoke();
             });
 
-            await _hubConnection.StartAsync();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await _hubConnection.StartAsync(cts.Token);
             _started = true;
             ConnectionStateChanged?.Invoke(HubConnectionState.Connected);
         }

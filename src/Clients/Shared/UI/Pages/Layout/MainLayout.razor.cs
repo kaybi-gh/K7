@@ -46,8 +46,11 @@ public partial class MainLayout : IDisposable
                 var deviceStorageService = Services.GetRequiredService<IDeviceStorageService>();
                 var deviceId = deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
 
-                var baseUri = NavigationManager.ToAbsoluteUri("/");
-                await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId);
+                var baseUri = DeviceService.GetClientType() == ClientType.Web
+                    ? NavigationManager.ToAbsoluteUri("/")
+                    : K7ServerService.HttpClient.BaseAddress ?? NavigationManager.ToAbsoluteUri("/");
+                var accessToken = K7ServerService.HttpClient.DefaultRequestHeaders.Authorization?.Parameter;
+                await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken);
             }
         }
         catch (Exception ex)
