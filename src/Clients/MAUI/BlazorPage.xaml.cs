@@ -127,6 +127,8 @@ public partial class BlazorPage : ContentPage
             {
                 BackgroundColor = Colors.Black;
                 Padding = new Thickness(0);
+                SafeAreaEdges = SafeAreaEdges.None;
+                RootGrid.SafeAreaEdges = SafeAreaEdges.None;
 #if ANDROID || IOS
                 DeviceDisplay.Current.KeepScreenOn = true;
                 Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayInfoChanged;
@@ -144,6 +146,8 @@ public partial class BlazorPage : ContentPage
             else
             {
                 BackgroundColor = (Color)Application.Current!.Resources["PageBackgroundColor"];
+                SafeAreaEdges = SafeAreaEdges.Default;
+                RootGrid.SafeAreaEdges = SafeAreaEdges.Default;
                 NativePlayer.Stop();
                 NativePlayer.Source = null;
 #if ANDROID || IOS
