@@ -5,6 +5,7 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MockQueryable.NSubstitute;
 
 namespace K7.Server.Application.UnitTests.Services;
@@ -14,6 +15,7 @@ public class CreateBackgroundTaskCommandHandlerTests
     private IApplicationDbContext _context;
     private IBackgroundTaskQueue _taskQueue;
     private IBackgroundTaskNotifier _notifier;
+    private ILogger<CreateBackgroundTaskCommandHandler> _logger;
     private CreateBackgroundTaskCommandHandler _handler;
     private List<BackgroundTask> _existingTasks;
 
@@ -23,12 +25,13 @@ public class CreateBackgroundTaskCommandHandlerTests
         _context = Substitute.For<IApplicationDbContext>();
         _taskQueue = Substitute.For<IBackgroundTaskQueue>();
         _notifier = Substitute.For<IBackgroundTaskNotifier>();
+        _logger = Substitute.For<ILogger<CreateBackgroundTaskCommandHandler>>();
         _existingTasks = [];
 
         var dbSet = _existingTasks.BuildMockDbSet();
         _context.BackgroundTasks.Returns(dbSet);
 
-        _handler = new CreateBackgroundTaskCommandHandler(_context, _taskQueue, _notifier);
+        _handler = new CreateBackgroundTaskCommandHandler(_context, _taskQueue, _notifier, _logger);
     }
 
     [Test]
