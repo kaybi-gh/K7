@@ -5,6 +5,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Shared.Interfaces;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.MAUI;
 
@@ -31,7 +32,25 @@ public partial class BlazorPage : ContentPage
         if (_backButtonService.HandleBackButton())
             return true;
 
-        return base.OnBackButtonPressed();
+        if (_playerService.IsVisible)
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                _playerService.Stop();
+                _playerService.HideAsync();
+            });
+            return true;
+        }
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _ = blazorWebView.TryDispatchAsync(async sp =>
+            {
+                var js = sp.GetRequiredService<IJSRuntime>();
+                await js.InvokeVoidAsync("history.back");
+            });
+        });
+        return true;
     }
 
     private void InitializePlayer()
@@ -92,6 +111,7 @@ public partial class BlazorPage : ContentPage
             {
                 System.Diagnostics.Debug.WriteLine($"[K7-Player] Setting source: {source.Url}");
                 System.Diagnostics.Debug.WriteLine($"[K7-Player] Volume={NativePlayer.Volume}, ShouldMute={NativePlayer.ShouldMute}");
+                NativePlayer.ShouldAutoPlay = true;
                 NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
             }
         });
@@ -105,6 +125,13 @@ public partial class BlazorPage : ContentPage
 
             if (_playerService.IsVisible)
             {
+                BackgroundColor = Colors.Black;
+                Padding = new Thickness(0);
+#if ANDROID || IOS
+                DeviceDisplay.Current.KeepScreenOn = true;
+                Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayInfoChanged;
+                SetLandscapeOrientation();
+#endif
 #if WINDOWS
                 // WebView2 transparency is broken on WinUI3 (microsoft-ui-xaml#6527).
                 // Place MediaElement in front of the BlazorWebView and use native controls.
@@ -116,8 +143,14 @@ public partial class BlazorPage : ContentPage
             }
             else
             {
+                BackgroundColor = (Color)Application.Current!.Resources["PageBackgroundColor"];
                 NativePlayer.Stop();
                 NativePlayer.Source = null;
+#if ANDROID || IOS
+                DeviceDisplay.Current.KeepScreenOn = false;
+                Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged -= OnDisplayInfoChanged;
+                RestoreOrientation();
+#endif
 #if WINDOWS
                 NativePlayer.ZIndex = 1;
                 NativePlayer.ShouldShowPlaybackControls = false;
@@ -253,4 +286,84 @@ public partial class BlazorPage : ContentPage
     {
         System.Diagnostics.Debug.WriteLine($"[K7-Audio] Playback failed: {e.ErrorMessage}");
     }
+
+#if ANDROID || IOS
+    private static void SetLandscapeOrientation()
+    {
+        DeviceDisplay.Current.KeepScreenOn = true;
+#if ANDROID
+        var activity = Platform.CurrentActivity;
+        if (activity is not null)
+        {
+            activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.SensorLandscape;
+
+            var window = activity.Window;
+            if (window is not null)
+            {
+#pragma warning disable CA1422, CS0618
+                if (OperatingSystem.IsAndroidVersionAtLeast(30))
+                {
+                    window.SetDecorFitsSystemWindows(false);
+                }
+                window.SetStatusBarColor(Android.Graphics.Color.Transparent);
+                window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+                window.AddFlags(Android.Views.WindowManagerFlags.Fullscreen);
+                window.AddFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
+
+                if (OperatingSystem.IsAndroidVersionAtLeast(28))
+                {
+                    window.Attributes!.LayoutInDisplayCutoutMode =
+                        Android.Views.LayoutInDisplayCutoutMode.ShortEdges;
+                }
+
+                window.DecorView.SystemUiFlags =
+                    Android.Views.SystemUiFlags.Fullscreen
+                    | Android.Views.SystemUiFlags.HideNavigation
+                    | Android.Views.SystemUiFlags.ImmersiveSticky
+                    | Android.Views.SystemUiFlags.LayoutFullscreen
+                    | Android.Views.SystemUiFlags.LayoutHideNavigation
+                    | Android.Views.SystemUiFlags.LayoutStable;
+#pragma warning restore CA1422, CS0618
+            }
+        }
+#endif
+    }
+
+    private static void RestoreOrientation()
+    {
+        DeviceDisplay.Current.KeepScreenOn = false;
+#if ANDROID
+        var activity = Platform.CurrentActivity;
+        if (activity is not null)
+        {
+            activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.Unspecified;
+
+            var window = activity.Window;
+            if (window is not null)
+            {
+#pragma warning disable CA1422, CS0618
+                if (OperatingSystem.IsAndroidVersionAtLeast(30))
+                {
+                    window.SetDecorFitsSystemWindows(true);
+                }
+                window.ClearFlags(Android.Views.WindowManagerFlags.Fullscreen);
+                window.ClearFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
+
+                if (OperatingSystem.IsAndroidVersionAtLeast(28))
+                {
+                    window.Attributes!.LayoutInDisplayCutoutMode =
+                        Android.Views.LayoutInDisplayCutoutMode.Default;
+                }
+
+                window.DecorView.SystemUiFlags = Android.Views.SystemUiFlags.Visible;
+#pragma warning restore CA1422, CS0618
+            }
+        }
+#endif
+    }
+
+    private void OnDisplayInfoChanged(object? sender, DisplayInfoChangedEventArgs e)
+    {
+    }
+#endif
 }
