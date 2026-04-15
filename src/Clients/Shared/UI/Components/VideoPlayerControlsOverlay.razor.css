@@ -8,6 +8,7 @@
     background-color: rgba(0, 0, 0, 0);
     color: white;
     z-index: 100000;
+    outline: none;
 }
 
     .video-controls-overlay::before {

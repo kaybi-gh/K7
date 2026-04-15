@@ -4,6 +4,13 @@
     cursor: pointer;
     touch-action: none;
     user-select: none;
+    outline: none;
+}
+
+.seekbar-container:focus-visible .seekbar-track,
+.seekbar-container:focus-visible .chapter-segment {
+    height: 8px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
 }
 
 .seekbar-track {

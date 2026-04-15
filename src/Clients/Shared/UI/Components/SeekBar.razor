@@ -1,12 +1,17 @@
 @using System.Globalization
 
-<div class="seekbar-container"
-@onmousemove="HandleMouseMove"
-@onmouseleave="() => IsHovering = false"
+<div class="seekbar-container" tabindex="0" role="slider"
+     aria-valuemin="0" aria-valuemax="@PlayerService.Duration.ToString(CultureInfo.InvariantCulture)"
+     aria-valuenow="@PlayerService.CurrentTime.ToString(CultureInfo.InvariantCulture)"
+     aria-label="Seek"
 @onpointerdown="OnPointerDown"
 @onpointermove="OnPointerMove"
 @onpointerup="OnPointerUp"
 @onpointercancel="OnPointerUp"
+@onpointerleave="OnPointerLeave"
+@onkeydown="OnKeyDown" @onkeydown:preventDefault="_preventKeyDefault" @onkeydown:stopPropagation
+@onfocus="OnFocus"
+@onblur="OnBlur"
 @ref="SeekBarRef">
 
     @if (!Chapters.Any())
@@ -55,25 +60,30 @@
         }
     }
 
-    @if (IsHovering)
-    {
-        <div class="thumb" style="left: @CurrentPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+    @{
+        var showPreview = IsHovering || _isScrubbing || _isFocused;
+        var previewPercent = IsHovering || _isScrubbing ? HoverPercent : CurrentPercent;
+        var previewTime = IsHovering || _isScrubbing ? HoverTime : PlayerService.CurrentTime;
+    }
 
-        <div class="thumbnail" style="left: @HoverPercent.ToString(CultureInfo.InvariantCulture)%">
+    @if (showPreview)
+    {
+        <div class="thumb" style="left: @previewPercent.ToString(CultureInfo.InvariantCulture)%"></div>
+
+        <div class="thumbnail" style="left: @previewPercent.ToString(CultureInfo.InvariantCulture)%">
             @if (ThumbnailsUri != null)
             {
-                <div class="thumbnail-image" style="@GetSpriteStyle(HoverTime)"></div>
-
+                <div class="thumbnail-image" style="@GetSpriteStyle(previewTime)"></div>
             }
             @if (Chapters.Any())
             {
-                var hoveredChapter = GetHoveredChapter(HoverTime);
+                var hoveredChapter = GetHoveredChapter(previewTime);
                 @if (hoveredChapter is not null)
                 {
                     <div class="thumbnail-chapter-title">@hoveredChapter.Title</div>
                 }
             }
-            <div class="thumbnail-time">@GetHumanReadableTime(HoverTime)</div>
+            <div class="thumbnail-time">@GetHumanReadableTime(previewTime)</div>
         </div>
     }
 </div>
