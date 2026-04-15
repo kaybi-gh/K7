@@ -49,7 +49,9 @@ public static partial class MauiProgram
         builder.ConfigureMauiHandlers(handlers =>
         {
 #if WINDOWS
-            handlers.AddHandler<BlazorWebView, TransparentBlazorWebViewHandler>();
+            handlers.AddHandler<BlazorWebView, Platforms.Windows.TransparentBlazorWebViewHandler>();
+#elif ANDROID
+            handlers.AddHandler<BlazorWebView, Platforms.Android.TransparentBlazorWebViewHandler>();
 #endif
         });
 
