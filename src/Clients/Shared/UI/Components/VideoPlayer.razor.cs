@@ -69,7 +69,7 @@ public partial class VideoPlayer : IAsyncDisposable
     protected override void OnInitialized()
     {
         PlayerService.SourceChanged += OnSourceChange;
-        PlayerService.IsVisibleChanged += StateHasChanged;
+        PlayerService.IsVisibleChanged += OnVisibilityChanged;
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {
@@ -89,10 +89,21 @@ public partial class VideoPlayer : IAsyncDisposable
         }
     }
 
+    private void OnVisibilityChanged()
+    {
+        StateHasChanged();
+
+        if (DeviceService.GetClientType() == ClientType.Native)
+        {
+            var method = PlayerService.IsVisible ? "add" : "remove";
+            _ = JSRuntime.InvokeVoidAsync("eval", $"document.body.classList.{method}('native-player-active')");
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         PlayerService.SourceChanged -= OnSourceChange;
-        PlayerService.IsVisibleChanged -= StateHasChanged;
+        PlayerService.IsVisibleChanged -= OnVisibilityChanged;
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {
@@ -133,7 +144,19 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         SourceUri = playerSource.Url!;
         SourceMimeType = playerSource.MimeType!;
-        ThumbnailsSource = playerSource.ThumbnailsUrl;
+
+        if (DeviceService.GetClientType() == ClientType.Native
+            && !string.IsNullOrEmpty(playerSource.ThumbnailsUrl)
+            && K7ServerService.HttpClient.BaseAddress is not null
+            && Uri.TryCreate(playerSource.ThumbnailsUrl, UriKind.RelativeOrAbsolute, out var thumbUri)
+            && !thumbUri.IsAbsoluteUri)
+        {
+            ThumbnailsSource = new Uri(K7ServerService.HttpClient.BaseAddress, playerSource.ThumbnailsUrl).ToString();
+        }
+        else
+        {
+            ThumbnailsSource = playerSource.ThumbnailsUrl;
+        }
 
         if (DeviceService.GetClientType() == ClientType.Web && _isInitialized && !string.IsNullOrEmpty(_player.Id))
         {
