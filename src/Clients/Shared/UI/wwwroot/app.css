@@ -8,6 +8,23 @@ body.no-scroll {
     overflow: hidden;
 }
 
+body.native-player-active {
+    background: transparent !important;
+}
+
+body.native-player-active > * {
+    visibility: hidden !important;
+}
+
+body.native-player-active .video-container,
+body.native-player-active .mud-popover-provider {
+    visibility: visible !important;
+}
+
+body.native-player-active .mud-popover {
+    z-index: 100010 !important;
+}
+
 .mud-drawer .sidebar-search-bar .mud-input {
     border-radius: 10px !important;
 }

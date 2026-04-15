@@ -2,6 +2,7 @@
 @inject IJSRuntime JSRuntime
 @inject IPlayerService PlayerService
 @inject IDeviceService DeviceService
+@inject IK7ServerService K7ServerService
 
 @if (PlayerService.IsVisible)
 {
@@ -12,7 +13,10 @@
 
     if (!useNativeControls)
     {
-        <div class="video-container" @ref="_videoContainer">
+        var isNative = DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Native;
+        var containerClass = isNative ? "video-container native-overlay" : "video-container";
+
+        <div class="@containerClass" @ref="_videoContainer">
             <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" />
             @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
             {
