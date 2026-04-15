@@ -10,12 +10,12 @@
 @inject IDeviceService DeviceService
 @inject IStringLocalizer<VideoPlayerControlsOverlay> L
 
-<div class="video-controls-overlay" @onmousemove="OnOverlayMouseMove" style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
-    <div class="controls-bar top" @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+<div class="video-controls-overlay" @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap" @ontouchstart="OnOverlayTap" @ontouchstart:preventDefault style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
+    <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <MudIconButton Icon="@Icons.Material.Outlined.Close" Color="Color.Inherit" OnClick="OnCloseButtonClick" />
     </div>
 
-    <div class="controls-bar bottom" @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+    <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <MudStack Row="true" StretchItems="StretchItems.Middle" AlignItems="AlignItems.Center" Style="width:100%">
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudToggleIconButton Icon="@Icons.Material.Outlined.Pause"
@@ -178,10 +178,14 @@
         }
     }
 
-    public void ResetOverlayTimeout()
+    public void ResetOverlayTimeout(TimeSpan? timeout = null)
     {
         _showOverlay = true;
         _overlayVisibleTimer?.Stop();
+        if (timeout.HasValue && _overlayVisibleTimer is not null)
+        {
+            _overlayVisibleTimer.Interval = timeout.Value.TotalMilliseconds;
+        }
         _overlayVisibleTimer?.Start();
     }
 
@@ -200,6 +204,20 @@
 
         _showOverlay = true;
         ResetOverlayTimeout();
+    }
+
+    private void OnOverlayTap()
+    {
+        if (_showOverlay && !_isMouseOverControlsBar && !_isMenuOpen)
+        {
+            _showOverlay = false;
+            _overlayVisibleTimer?.Stop();
+        }
+        else
+        {
+            _showOverlay = true;
+            ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+        }
     }
 
     private void OnSeekBarDragChanged(bool draging)
