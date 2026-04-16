@@ -17,6 +17,8 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
     private bool _isFocused;
     private bool _isScrubbing;
     private bool _preventKeyDefault;
+    private int _scrubRepeatCount;
+    private System.Timers.Timer? _scrubDecayTimer;
     private double HoverPercent;
     private double HoverTime;
     private double _scrubTime;
@@ -42,6 +44,8 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
         PlayerService.DurationChanged += OnDurationChanged;
         PlayerService.CurrentTimeChanged += OnCurrentTimeChanged;
         PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
+        _scrubDecayTimer = new System.Timers.Timer(400) { AutoReset = false };
+        _scrubDecayTimer.Elapsed += (_, _) => _scrubRepeatCount = 0;
     }
 
     private async Task OnPointerDown(PointerEventArgs e)
@@ -128,22 +132,30 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
             switch (e.Code)
             {
                 case "ArrowLeft":
-                    _scrubTime = Math.Max(0, _scrubTime - 5);
+                    _scrubRepeatCount++;
+                    _scrubDecayTimer?.Stop();
+                    _scrubDecayTimer?.Start();
+                    _scrubTime = Math.Max(0, _scrubTime - GetScrubStep());
                     HoverPercent = _scrubTime / PlayerService.Duration * 100;
                     HoverTime = _scrubTime;
                     break;
                 case "ArrowRight":
-                    _scrubTime = Math.Min(PlayerService.Duration, _scrubTime + 5);
+                    _scrubRepeatCount++;
+                    _scrubDecayTimer?.Stop();
+                    _scrubDecayTimer?.Start();
+                    _scrubTime = Math.Min(PlayerService.Duration, _scrubTime + GetScrubStep());
                     HoverPercent = _scrubTime / PlayerService.Duration * 100;
                     HoverTime = _scrubTime;
                     break;
                 case "Enter":
                     PlayerService.Seek(_scrubTime);
                     _isScrubbing = false;
+                    _scrubRepeatCount = 0;
                     IsHovering = false;
                     break;
                 case "Escape":
                     _isScrubbing = false;
+                    _scrubRepeatCount = 0;
                     IsHovering = false;
                     break;
                 default:
@@ -157,6 +169,7 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
             {
                 case "Enter":
                     _isScrubbing = true;
+                    _scrubRepeatCount = 0;
                     _scrubTime = PlayerService.CurrentTime;
                     HoverPercent = CurrentPercent;
                     HoverTime = _scrubTime;
@@ -178,7 +191,20 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
     {
         _isFocused = false;
         _isScrubbing = false;
+        _scrubRepeatCount = 0;
         IsHovering = false;
+    }
+
+    private double GetScrubStep()
+    {
+        return _scrubRepeatCount switch
+        {
+            <= 5 => 10,
+            <= 12 => 20,
+            <= 20 => 30,
+            <= 30 => 60,
+            _ => 120
+        };
     }
 
     private void UpdateHover(double clientX)
@@ -261,6 +287,7 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
 
     public async ValueTask DisposeAsync()
     {
+        _scrubDecayTimer?.Dispose();
         PlayerService.DurationChanged -= OnDurationChanged;
         PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
         PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;

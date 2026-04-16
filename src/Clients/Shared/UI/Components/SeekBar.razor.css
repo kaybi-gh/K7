@@ -73,6 +73,12 @@
     }
 }
 
+.seekbar-container.scrubbing .seekbar-track .progress,
+.seekbar-container.scrubbing .seekbar-track .buffered,
+.seekbar-container.scrubbing .thumb {
+    transition: none;
+}
+
 .thumb {
     position: absolute;
     top: 50%;

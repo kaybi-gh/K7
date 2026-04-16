@@ -1,6 +1,6 @@
 @using System.Globalization
 
-<div class="seekbar-container" tabindex="0" role="slider"
+<div class="seekbar-container @(_isScrubbing ? "scrubbing" : "")" tabindex="0" role="slider"
      aria-valuemin="0" aria-valuemax="@PlayerService.Duration.ToString(CultureInfo.InvariantCulture)"
      aria-valuenow="@PlayerService.CurrentTime.ToString(CultureInfo.InvariantCulture)"
      aria-label="Seek"
@@ -9,7 +9,7 @@
 @onpointerup="OnPointerUp"
 @onpointercancel="OnPointerUp"
 @onpointerleave="OnPointerLeave"
-@onkeydown="OnKeyDown" @onkeydown:preventDefault="_preventKeyDefault" @onkeydown:stopPropagation
+@onkeydown="OnKeyDown" @onkeydown:preventDefault="_preventKeyDefault" @onkeydown:stopPropagation="_isScrubbing"
 @onfocus="OnFocus"
 @onblur="OnBlur"
 @ref="SeekBarRef">
