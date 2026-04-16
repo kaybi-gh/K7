@@ -30,6 +30,83 @@
     font-variant-numeric: tabular-nums;
 }
 
+.double-tap-ripple {
+    position: fixed;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 100009;
+    animation: ripple-fade 0.4s ease-out forwards;
+}
+
+    .double-tap-ripple.left {
+        left: 0;
+    }
+
+    .double-tap-ripple.right {
+        right: 0;
+        left: auto;
+    }
+
+@keyframes ripple-fade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.brightness-overlay {
+    position: fixed;
+    inset: 0;
+    background: black;
+    pointer-events: none;
+    z-index: 100008;
+}
+
+.swipe-indicator {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 0.75rem;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    z-index: 100010;
+    pointer-events: none;
+}
+
+    .swipe-indicator.left {
+        left: 1.5rem;
+    }
+
+    .swipe-indicator.right {
+        right: 1.5rem;
+    }
+
+.swipe-bar-container {
+    width: 4px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+}
+
+.swipe-bar-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    border-radius: 2px;
+}
+
     .video-controls-overlay::before {
         content: '';
         --gradient-steps: hsl(0 0% 0% / 0) 0%, hsl(0 0% 0% / 0.013) 8.1%, hsl(0 0% 0% / 0.049) 15.5%, hsl(0 0% 0% / 0.104) 22.5%, hsl(0 0% 0% / 0.175) 29%, hsl(0 0% 0% / 0.259) 35.3%, hsl(0 0% 0% / 0.352) 41.2%, hsl(0 0% 0% / 0.45) 47.1%, hsl(0 0% 0% / 0.55) 52.9%, hsl(0 0% 0% / 0.648) 58.8%, hsl(0 0% 0% / 0.741) 64.7%, hsl(0 0% 0% / 0.825) 71%, hsl(0 0% 0% / 0.896) 77.5%, hsl(0 0% 0% / 0.951) 84.5%, hsl(0 0% 0% / 0.987) 91.9%, hsl(0 0% 0%) 100%;

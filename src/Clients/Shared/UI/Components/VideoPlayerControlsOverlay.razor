@@ -8,10 +8,14 @@
 @implements IAsyncDisposable
 @inject IPlayerService PlayerService
 @inject IDeviceService DeviceService
+@inject IBrightnessService BrightnessService
 @inject IStringLocalizer<VideoPlayerControlsOverlay> L
 
 <div class="video-controls-overlay" tabindex="0" @ref="_overlayRef"
-     @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap" @ontouchstart="OnOverlayTap" @ontouchstart:preventDefault
+     @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap"
+     @ontouchstart="OnTouchStart" @ontouchstart:preventDefault
+     @ontouchmove="OnTouchMove" @ontouchmove:preventDefault
+     @ontouchend="OnTouchEnd" @ontouchend:preventDefault
      @onkeydown="OnKeyDown" @onkeydown:preventDefault="@_preventKeyDefault" @onkeydown:stopPropagation
      @onfocusin="OnFocusIn"
      style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
@@ -133,6 +137,27 @@
     </div>
 }
 
+@if (_doubleTapSide is not null)
+{
+    <div class="double-tap-ripple @(_doubleTapSide)" />
+}
+
+@if (_brightnessOverlayOpacity > 0)
+{
+    <div class="brightness-overlay" style="opacity: @(_brightnessOverlayOpacity.ToString(CultureInfo.InvariantCulture))" />
+}
+
+@if (_swipeGestureActive)
+{
+    <div class="swipe-indicator @(_swipeSide == SwipeSide.Left ? "left" : "right")">
+        <MudIcon Icon="@_hudIcon" Size="Size.Large" />
+        <div class="swipe-bar-container">
+            <div class="swipe-bar-fill" style="height: @(_swipeBarPercent.ToString(CultureInfo.InvariantCulture))%" />
+        </div>
+        <span>@_hudText</span>
+    </div>
+}
+
 @code {
     [Parameter] public string? PosterImage { get; set; }
     [Parameter] public string? ThumbnailsSource { get; set; }
@@ -161,6 +186,26 @@
     private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
+    // Touch gesture state
+    private double _touchStartX;
+    private double _touchStartY;
+    private double _touchStartTime;
+    private double _lastTapTime;
+    private double _lastTapX;
+    private bool _swipeGestureActive;
+    private SwipeSide _swipeSide;
+    private double _swipeBarPercent;
+    private double _brightnessOverlayOpacity;
+    private string? _doubleTapSide;
+    private Timer? _doubleTapTimer;
+    private Timer? _tapDelayTimer;
+    private bool _tapPending;
+    private int _doubleTapSeekCount;
+    private double _viewportWidth;
+    private const double SwipeThreshold = 15;
+
+    private enum SwipeSide { Left, Right }
+
     private static readonly double[] _playbackSpeedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     private static readonly AspectRatioMode[] _aspectRatioOptions = [AspectRatioMode.Fit, AspectRatioMode.Fill, AspectRatioMode.Stretch];
 
@@ -185,6 +230,10 @@
         _seekDebounceTimer.Elapsed += OnSeekDebounceElapsed;
         _hudTimer = new Timer(800) { AutoReset = false };
         _hudTimer.Elapsed += OnHudTimerElapsed;
+        _doubleTapTimer = new Timer(500) { AutoReset = false };
+        _doubleTapTimer.Elapsed += OnDoubleTapTimerElapsed;
+        _tapDelayTimer = new Timer(300) { AutoReset = false };
+        _tapDelayTimer.Elapsed += OnTapDelayElapsed;
         PlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
         PlayerService.IsMutedChanged += OnIsMutedChanged;
         PlayerService.VolumeChanged += OnVolumeChanged;
@@ -431,6 +480,138 @@
         }
     }
 
+    private async Task OnTouchStart(TouchEventArgs e)
+    {
+        if (e.Touches.Length != 1) return;
+        var touch = e.Touches[0];
+        _touchStartX = touch.ClientX;
+        _touchStartY = touch.ClientY;
+        _touchStartTime = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
+
+        if (_viewportWidth <= 0)
+        {
+            _viewportWidth = await JSRuntime.InvokeAsync<double>("eval", "window.innerWidth");
+        }
+    }
+
+    private void OnTouchMove(TouchEventArgs e)
+    {
+        if (e.Touches.Length != 1 || _isMouseOverControlsBar || _isMenuOpen) return;
+        var touch = e.Touches[0];
+        var dx = Math.Abs(touch.ClientX - _touchStartX);
+        var dy = touch.ClientY - _touchStartY;
+
+        if (!_swipeGestureActive && (dx < SwipeThreshold && Math.Abs(dy) > SwipeThreshold))
+        {
+            _swipeGestureActive = true;
+            _swipeSide = _touchStartX < _viewportWidth / 2 ? SwipeSide.Left : SwipeSide.Right;
+        }
+
+        if (_swipeGestureActive)
+        {
+            var delta = -dy / 300.0;
+            if (_swipeSide == SwipeSide.Right)
+            {
+                var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
+                PlayerService.SetVolume(newVolume);
+                _hudIcon = Icons.Material.Filled.VolumeUp;
+                _hudText = $"{(int)Math.Round(newVolume * 100)}%";
+                _swipeBarPercent = newVolume * 100;
+            }
+            else
+            {
+                var newBrightness = Math.Clamp(BrightnessService.Brightness + delta, 0, 1);
+                BrightnessService.SetBrightness(newBrightness);
+                _brightnessOverlayOpacity = 1.0 - newBrightness;
+                _hudIcon = Icons.Material.Filled.BrightnessHigh;
+                _hudText = $"{(int)Math.Round(newBrightness * 100)}%";
+                _swipeBarPercent = newBrightness * 100;
+            }
+
+            _touchStartY = touch.ClientY;
+            StateHasChanged();
+        }
+    }
+
+    private void OnTouchEnd(TouchEventArgs e)
+    {
+        if (_swipeGestureActive)
+        {
+            _swipeGestureActive = false;
+            _hudText = null;
+            StateHasChanged();
+            return;
+        }
+
+        if (_isMouseOverControlsBar || _isMenuOpen) return;
+
+        var now = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
+        var elapsed = now - _touchStartTime;
+        if (elapsed > 500) return;
+
+        var isRightHalf = _touchStartX > _viewportWidth / 2;
+
+        if (now - _lastTapTime < 300 && IsSameSide(_lastTapX, _touchStartX))
+        {
+            _tapDelayTimer?.Stop();
+            _tapPending = false;
+            HandleDoubleTap(isRightHalf);
+        }
+        else
+        {
+            _lastTapTime = now;
+            _lastTapX = _touchStartX;
+            _tapPending = true;
+            _tapDelayTimer?.Stop();
+            _tapDelayTimer?.Start();
+        }
+    }
+
+    private bool IsSameSide(double x1, double x2)
+    {
+        var mid = _viewportWidth / 2;
+        return (x1 < mid) == (x2 < mid);
+    }
+
+    private void HandleDoubleTap(bool isRightHalf)
+    {
+        _doubleTapSeekCount++;
+        var seekStep = isRightHalf ? 10.0 : -10.0;
+        _doubleTapSide = isRightHalf ? "right" : "left";
+        _hudIcon = isRightHalf ? Icons.Material.Filled.FastForward : Icons.Material.Filled.FastRewind;
+        ShowHud($"{(seekStep > 0 ? "+" : "")}{(int)(seekStep * _doubleTapSeekCount)}s");
+
+        var target = Math.Clamp(PlayerService.CurrentTime + seekStep, 0, PlayerService.Duration);
+        PlayerService.Seek(target);
+
+        _doubleTapTimer?.Stop();
+        _doubleTapTimer?.Start();
+        StateHasChanged();
+    }
+
+    private void OnDoubleTapTimerElapsed(object? sender, ElapsedEventArgs args)
+    {
+        InvokeAsync(() =>
+        {
+            _doubleTapSide = null;
+            _doubleTapSeekCount = 0;
+            StateHasChanged();
+        });
+    }
+
+    private void OnTapDelayElapsed(object? sender, ElapsedEventArgs args)
+    {
+        InvokeAsync(() =>
+        {
+            if (_tapPending)
+            {
+                _tapPending = false;
+                OnOverlayTap();
+                StateHasChanged();
+            }
+        });
+    }
+
     private void OnSeekBarDragChanged(bool draging)
     {
         if (draging)
@@ -623,6 +804,9 @@
         _overlayVisibleTimer?.Dispose();
         _seekDebounceTimer?.Dispose();
         _hudTimer?.Dispose();
+        _doubleTapTimer?.Dispose();
+        _tapDelayTimer?.Dispose();
+        BrightnessService.ResetBrightness();
         _dotNetRef?.Dispose();
         try { await JSRuntime.InvokeVoidAsync("K7.unregisterVideoOverlay"); }
         catch (JSException) { }
