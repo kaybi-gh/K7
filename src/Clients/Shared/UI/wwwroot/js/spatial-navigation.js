@@ -283,6 +283,65 @@ var SpatialNavigation = (function () {
             }
         }
 
+        // Video overlay: Escape closes only the topmost popover (submenu first, then parent menu)
+        if (key === 'Escape' && document.querySelector('.video-controls-overlay')) {
+            if (window.K7._skipNextEscape) {
+                window.K7._skipNextEscape = false;
+                return;
+            }
+            var openPopovers = document.querySelectorAll('.mud-popover-open');
+            if (openPopovers.length > 1) {
+                // Multiple popovers: let MudBlazor close the deepest submenu natively
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                var parentPopover = openPopovers[openPopovers.length - 2];
+                window.K7._skipNextEscape = true;
+                var synth = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true });
+                (document.activeElement || document.body).dispatchEvent(synth);
+                // Focus first item in the parent popover after MudBlazor closes the submenu
+                setTimeout(function () {
+                    if (parentPopover) {
+                        var parentItems = Array.from(parentPopover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) { return el.offsetParent !== null; });
+                        if (parentItems.length > 0) parentItems[0].focus();
+                    }
+                }, 50);
+                return;
+            }
+            if (openPopovers.length === 1 && window.K7._videoOverlayRef) {
+                window.K7._videoOverlayRef.invokeMethodAsync('CloseMenu');
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
+            // No popover: let event propagate to overlay's Blazor handler
+            return;
+        }
+
+        // Video overlay: Enter activates focused popover item (MudMenuItem is <li>, not <button>)
+        if (key === 'Enter' && document.querySelector('.video-controls-overlay')) {
+            var popovers = document.querySelectorAll('.mud-popover-open');
+            for (var p = 0; p < popovers.length; p++) {
+                if (popovers[p].contains(active)) {
+                    var popoverCountBefore = popovers.length;
+                    active.click();
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    // If a new submenu opened, focus its first item
+                    setTimeout(function () {
+                        var newPopovers = document.querySelectorAll('.mud-popover-open');
+                        if (newPopovers.length > popoverCountBefore) {
+                            var newest = newPopovers[newPopovers.length - 1];
+                            var items = Array.from(newest.querySelectorAll('.mud-menu-item, .mud-list-item')).filter(function(el) {
+                                return el.offsetParent !== null;
+                            });
+                            if (items.length > 0) items[0].focus();
+                        }
+                    }, 100);
+                    return;
+                }
+            }
+        }
+
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) === -1) {
             return;
         }
@@ -291,7 +350,9 @@ var SpatialNavigation = (function () {
         // But if the video player overlay is active, we help navigate within the popover
         if (document.querySelector('.mud-popover-open')) {
             if (document.querySelector('.video-controls-overlay')) {
-                var popover = document.querySelector('.mud-popover-open');
+                // Navigate within the topmost popover
+                var allPopovers = document.querySelectorAll('.mud-popover-open');
+                var popover = allPopovers[allPopovers.length - 1];
                 if (popover) {
                     var items = Array.from(popover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) {
                         return el.offsetParent !== null;
@@ -679,6 +740,32 @@ var SpatialNavigation = (function () {
         var tag = (document.activeElement && document.activeElement.tagName || '').toLowerCase();
         if (tag === 'input' || tag === 'textarea') return;
 
+        // Video overlay with menu open: close only submenu, or parent menu
+        if (document.querySelector('.video-controls-overlay') && window.K7._videoOverlayRef) {
+            var openPopovers = document.querySelectorAll('.mud-popover-open');
+            if (openPopovers.length > 1) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                var parentPopover = openPopovers[openPopovers.length - 2];
+                window.K7._skipNextEscape = true;
+                var synth = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true });
+                (document.activeElement || document.body).dispatchEvent(synth);
+                setTimeout(function () {
+                    if (parentPopover) {
+                        var parentItems = Array.from(parentPopover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) { return el.offsetParent !== null; });
+                        if (parentItems.length > 0) parentItems[0].focus();
+                    }
+                }, 50);
+                return;
+            }
+            if (openPopovers.length === 1) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                window.K7._videoOverlayRef.invokeMethodAsync('CloseMenu');
+                return;
+            }
+        }
+
         e.preventDefault();
         e.stopImmediatePropagation();
 
@@ -759,5 +846,56 @@ window.K7.focusDirection = function (container, direction) {
     } else if (direction === 'prev') {
         var prev = idx > 0 ? idx - 1 : items.length - 1;
         items[prev].focus();
+    }
+};
+
+window.K7.isFocusInOverlayChild = function (container) {
+    if (!container || !document.activeElement) return false;
+    return container.contains(document.activeElement) && document.activeElement !== container;
+};
+
+window.K7.registerVideoOverlay = function (dotNetRef) {
+    window.K7._videoOverlayRef = dotNetRef;
+    window.K7._skipNextEscape = false;
+
+    // Auto-focus popover items when a MudBlazor popover opens during video playback
+    if (window.K7._popoverObserver) window.K7._popoverObserver.disconnect();
+
+    window.K7._popoverObserver = new MutationObserver(function (mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+            var target = mutations[i].target;
+            if (!target.classList) continue;
+            if (target.classList.contains('mud-popover') && target.classList.contains('mud-popover-open')) {
+                if (target.contains(document.activeElement)) continue;
+                (function (popover) {
+                    var attempts = 5;
+                    function tryFocus() {
+                        var items = Array.from(popover.querySelectorAll('.mud-menu-item, .mud-list-item')).filter(function (el) {
+                            return el.offsetParent !== null;
+                        });
+                        if (items.length > 0) {
+                            items[0].focus();
+                        } else if (--attempts > 0) {
+                            setTimeout(tryFocus, 50);
+                        }
+                    }
+                    setTimeout(tryFocus, 50);
+                })(target);
+            }
+        }
+    });
+
+    window.K7._popoverObserver.observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class']
+    });
+};
+
+window.K7.unregisterVideoOverlay = function () {
+    window.K7._videoOverlayRef = null;
+    if (window.K7._popoverObserver) {
+        window.K7._popoverObserver.disconnect();
+        window.K7._popoverObserver = null;
     }
 };
