@@ -10,6 +10,8 @@ public partial class BrightnessService : IBrightnessService
     private float _originalBrightness = -1f;
 #pragma warning restore CS0414
 
+    public bool SupportsNativeBrightness => true;
+
     public double Brightness => _brightness;
 
     public partial void SetBrightness(double brightness);

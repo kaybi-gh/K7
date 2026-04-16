@@ -80,6 +80,7 @@ public static partial class MauiProgram
 
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
         builder.Services.AddSingleton<IBrightnessService, BrightnessService>();
+        builder.Services.AddSingleton<IVolumeService, VolumeService>();
         builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
         builder.Services.AddSingleton<IPlayerService, PlayerService>();
         builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();

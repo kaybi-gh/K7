@@ -4,6 +4,8 @@ namespace K7.Clients.Web.Services;
 
 public class BrightnessService : IBrightnessService
 {
+    public bool SupportsNativeBrightness => false;
+
     public double Brightness { get; private set; } = 1.0;
 
     public void SetBrightness(double brightness)
