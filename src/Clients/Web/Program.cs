@@ -41,6 +41,7 @@ builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddSingleton<IDeviceService, DeviceService>();
+builder.Services.AddSingleton<IBrightnessService, BrightnessService>();
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddSingleton<IStreamUriService, StreamUriService>();
 builder.Services.AddScoped<IFeatureAccessService, FeatureAccessService>();
