@@ -100,6 +100,7 @@ public partial class Sidebar
         SidebarService.IsOpenOnChange -= StateHasChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
+        JSRuntime.InvokeVoidAsync("SpatialNavigation.setSidebarCallback", null);
         _dotNetRef?.Dispose();
     }
 

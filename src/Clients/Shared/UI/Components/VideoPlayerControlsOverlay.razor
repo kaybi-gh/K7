@@ -9,22 +9,23 @@
 @inject IPlayerService PlayerService
 @inject IDeviceService DeviceService
 @inject IBrightnessService BrightnessService
+@inject IVolumeService VolumeService
 @inject IStringLocalizer<VideoPlayerControlsOverlay> L
 
 <div class="video-controls-overlay" tabindex="0" @ref="_overlayRef"
      @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap"
-     @ontouchstart="OnTouchStart" @ontouchstart:preventDefault
-     @ontouchmove="OnTouchMove" @ontouchmove:preventDefault
-     @ontouchend="OnTouchEnd" @ontouchend:preventDefault
+     @ontouchstart="OnTouchStart"
+     @ontouchmove="OnTouchMove" @ontouchmove:preventDefault="@_swipeGestureActive"
+     @ontouchend="OnTouchEnd"
      @onkeydown="OnKeyDown" @onkeydown:preventDefault="@_preventKeyDefault" @onkeydown:stopPropagation
      @onfocusin="OnFocusIn"
      style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
 
-    <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+    <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <MudIconButton Icon="@Icons.Material.Outlined.Close" Color="Color.Inherit" OnClick="OnCloseButtonClick" />
     </div>
 
-    <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+    <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <MudStack Row="true" StretchItems="StretchItems.Middle" AlignItems="AlignItems.Center" Style="width:100%">
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudToggleIconButton Icon="@Icons.Material.Outlined.Pause"
@@ -272,11 +273,13 @@
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
+                // Menu/submenu escape is handled by JS (spatial-navigation.js capture handler).
                 if (_isMenuOpen)
                 {
-                    _ = CloseMenu();
+                    _preventKeyDefault = false;
+                    return;
                 }
-                else if (_showOverlay)
+                if (_showOverlay)
                 {
                     _showOverlay = false;
                     _overlayVisibleTimer?.Stop();
@@ -298,6 +301,14 @@
                 ToggleFullscreen();
                 ResetOverlayTimeout();
                 return;
+        }
+
+        // When menu is open, JS handles arrow/Enter navigation inside popovers.
+        // Don't interfere from Blazor side.
+        if (_isMenuOpen)
+        {
+            _preventKeyDefault = false;
+            return;
         }
 
         if (!_showOverlay)
@@ -512,17 +523,31 @@
             var delta = -dy / 300.0;
             if (_swipeSide == SwipeSide.Right)
             {
-                var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
-                PlayerService.SetVolume(newVolume);
-                _hudIcon = Icons.Material.Filled.VolumeUp;
-                _hudText = $"{(int)Math.Round(newVolume * 100)}%";
-                _swipeBarPercent = newVolume * 100;
+                if (VolumeService.SupportsNativeVolume)
+                {
+                    var newVolume = Math.Clamp(VolumeService.Volume + delta, 0, 1);
+                    VolumeService.SetVolume(newVolume);
+                    _hudIcon = Icons.Material.Filled.VolumeUp;
+                    _hudText = $"{(int)Math.Round(newVolume * 100)}%";
+                    _swipeBarPercent = VolumeService.Volume * 100;
+                }
+                else
+                {
+                    var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
+                    PlayerService.SetVolume(newVolume);
+                    _hudIcon = Icons.Material.Filled.VolumeUp;
+                    _hudText = $"{(int)Math.Round(newVolume * 100)}%";
+                    _swipeBarPercent = newVolume * 100;
+                }
             }
             else
             {
                 var newBrightness = Math.Clamp(BrightnessService.Brightness + delta, 0, 1);
                 BrightnessService.SetBrightness(newBrightness);
-                _brightnessOverlayOpacity = 1.0 - newBrightness;
+                if (!BrightnessService.SupportsNativeBrightness)
+                {
+                    _brightnessOverlayOpacity = 1.0 - newBrightness;
+                }
                 _hudIcon = Icons.Material.Filled.BrightnessHigh;
                 _hudText = $"{(int)Math.Round(newBrightness * 100)}%";
                 _swipeBarPercent = newBrightness * 100;

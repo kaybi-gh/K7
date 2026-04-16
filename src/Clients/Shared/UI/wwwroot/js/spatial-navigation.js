@@ -176,7 +176,11 @@ var SpatialNavigation = (function () {
 
     function notifySidebar(open) {
         if (_sidebarCallback) {
-            _sidebarCallback.invokeMethodAsync('SetSidebarOpen', open);
+            try {
+                _sidebarCallback.invokeMethodAsync('SetSidebarOpen', open);
+            } catch (e) {
+                _sidebarCallback = null;
+            }
         }
     }
 
@@ -291,10 +295,17 @@ var SpatialNavigation = (function () {
             }
             var openPopovers = document.querySelectorAll('.mud-popover-open');
             if (openPopovers.length > 1) {
-                // Multiple popovers: let MudBlazor close the deepest submenu natively
+                // Multiple popovers: close the submenu containing focus, then focus parent
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                var parentPopover = openPopovers[openPopovers.length - 2];
+                // Find the parent popover (the one that does NOT contain activeElement)
+                var parentPopover = null;
+                for (var pi = 0; pi < openPopovers.length; pi++) {
+                    if (!openPopovers[pi].contains(document.activeElement)) {
+                        parentPopover = openPopovers[pi];
+                        break;
+                    }
+                }
                 window.K7._skipNextEscape = true;
                 var synth = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true });
                 (document.activeElement || document.body).dispatchEvent(synth);
@@ -322,21 +333,10 @@ var SpatialNavigation = (function () {
             var popovers = document.querySelectorAll('.mud-popover-open');
             for (var p = 0; p < popovers.length; p++) {
                 if (popovers[p].contains(active)) {
-                    var popoverCountBefore = popovers.length;
                     active.click();
                     e.preventDefault();
                     e.stopImmediatePropagation();
-                    // If a new submenu opened, focus its first item
-                    setTimeout(function () {
-                        var newPopovers = document.querySelectorAll('.mud-popover-open');
-                        if (newPopovers.length > popoverCountBefore) {
-                            var newest = newPopovers[newPopovers.length - 1];
-                            var items = Array.from(newest.querySelectorAll('.mud-menu-item, .mud-list-item')).filter(function(el) {
-                                return el.offsetParent !== null;
-                            });
-                            if (items.length > 0) items[0].focus();
-                        }
-                    }, 100);
+                    // MutationObserver handles focusing the new submenu if one opens
                     return;
                 }
             }
@@ -350,9 +350,15 @@ var SpatialNavigation = (function () {
         // But if the video player overlay is active, we help navigate within the popover
         if (document.querySelector('.mud-popover-open')) {
             if (document.querySelector('.video-controls-overlay')) {
-                // Navigate within the topmost popover
+                // Navigate within the popover that contains the focused element
                 var allPopovers = document.querySelectorAll('.mud-popover-open');
-                var popover = allPopovers[allPopovers.length - 1];
+                var popover = null;
+                for (var pi = 0; pi < allPopovers.length; pi++) {
+                    if (allPopovers[pi].contains(active)) {
+                        popover = allPopovers[pi];
+                        break;
+                    }
+                }
                 if (popover) {
                     var items = Array.from(popover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) {
                         return el.offsetParent !== null;
