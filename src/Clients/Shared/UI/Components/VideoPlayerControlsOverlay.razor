@@ -59,7 +59,7 @@
                     </MudItem>
                 }
 
-                <span>@FormatTime(_isSeeking ? _seekTarget : PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
+                <span class="time-display">@FormatTime(_isSeeking ? _seekTarget : PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
             </MudStack>
 
             <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />

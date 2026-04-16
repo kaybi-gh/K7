@@ -149,6 +149,20 @@
         border-radius: 0.3rem;
     }
 
+::deep .controls-bar .mud-button-root:focus-visible,
+::deep .controls-bar .mud-icon-button:focus-visible,
+::deep .controls-bar .mud-toggle-button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.time-display {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-width: max-content;
+}
+
 .volume-slider-popover {
     padding: 0;
     border-radius: 12px;
