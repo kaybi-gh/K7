@@ -15,6 +15,7 @@
      @onkeydown="OnKeyDown" @onkeydown:preventDefault="@_preventKeyDefault" @onkeydown:stopPropagation
      @onfocusin="OnFocusIn"
      style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
+
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <MudIconButton Icon="@Icons.Material.Outlined.Close" Color="Color.Inherit" OnClick="OnCloseButtonClick" />
     </div>
@@ -53,7 +54,7 @@
                     </MudItem>
                 }
 
-                <span>@FormatTime(PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
+                <span>@FormatTime(_isSeeking ? _seekTarget : PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
             </MudStack>
 
             <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />
@@ -124,6 +125,14 @@
     </div>
 </div>
 
+@if (_hudText is not null)
+{
+    <div class="hud-indicator">
+        <MudIcon Icon="@_hudIcon" Size="Size.Large" />
+        <span>@_hudText</span>
+    </div>
+}
+
 @code {
     [Parameter] public string? PosterImage { get; set; }
     [Parameter] public string? ThumbnailsSource { get; set; }
@@ -140,7 +149,15 @@
     private bool _isVolumeSliderVisible = false;
     private bool _preventKeyDefault = true;
     private Timer? _overlayVisibleTimer;
+    private Timer? _seekDebounceTimer;
+    private Timer? _hudTimer;
+    private double _seekTarget;
+    private double _seekOffset;
+    private bool _isSeeking;
+    private string? _hudText;
+    private string _hudIcon = Icons.Material.Filled.FastForward;
     private ElementReference _overlayRef;
+    private DotNetObjectReference<VideoPlayerControlsOverlay>? _dotNetRef;
     private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
@@ -162,16 +179,12 @@
     {
         _deviceType = await DeviceService.GetDeviceTypeAsync();
         _overlayVisibleTimer = new Timer(_overlayTimeout);
-        _overlayVisibleTimer.Elapsed += async (_, e) =>
-        {
-            _showOverlay = false;
-            await InvokeAsync(async () =>
-            {
-                StateHasChanged();
-                await _overlayRef.FocusAsync();
-            });
-        };
+        _overlayVisibleTimer.Elapsed += OnOverlayTimerElapsed;
         _overlayVisibleTimer.Start();
+        _seekDebounceTimer = new Timer(300) { AutoReset = false };
+        _seekDebounceTimer.Elapsed += OnSeekDebounceElapsed;
+        _hudTimer = new Timer(800) { AutoReset = false };
+        _hudTimer.Elapsed += OnHudTimerElapsed;
         PlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
         PlayerService.IsMutedChanged += OnIsMutedChanged;
         PlayerService.VolumeChanged += OnVolumeChanged;
@@ -192,6 +205,8 @@
     {
         if (firstRender)
         {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("K7.registerVideoOverlay", _dotNetRef);
             await _overlayRef.FocusAsync();
         }
     }
@@ -207,16 +222,24 @@
                 TogglePlayPause();
                 ResetOverlayTimeout();
                 return;
-            case "Escape" or "BrowserBack" or "GoBack" or "MediaStop":
+            case "Escape" or "BrowserBack" or "GoBack":
                 if (_isMenuOpen)
                 {
-                    _isMenuOpen = false;
-                    StateHasChanged();
+                    _ = CloseMenu();
+                }
+                else if (_showOverlay)
+                {
+                    _showOverlay = false;
+                    _overlayVisibleTimer?.Stop();
+                    _ = _overlayRef.FocusAsync();
                 }
                 else
                 {
                     OnCloseButtonClick();
                 }
+                return;
+            case "MediaStop":
+                OnCloseButtonClick();
                 return;
             case "KeyM":
                 ToggleIsMuted();
@@ -239,20 +262,16 @@
                     _ = FocusByDirectionAsync("first");
                     return;
                 case "ArrowLeft":
-                    PlayerService.Seek(Math.Max(0, PlayerService.CurrentTime - 10));
-                    ResetOverlayTimeout();
+                    AccumulateSeek(-10);
                     return;
                 case "ArrowRight":
-                    PlayerService.Seek(Math.Min(PlayerService.Duration, PlayerService.CurrentTime + 10));
-                    ResetOverlayTimeout();
+                    AccumulateSeek(10);
                     return;
                 case "ArrowUp":
-                    PlayerService.SetVolume(Math.Min(1, PlayerService.Volume + 0.1));
-                    ResetOverlayTimeout();
+                    AdjustVolume(0.1);
                     return;
                 case "ArrowDown":
-                    PlayerService.SetVolume(Math.Max(0, PlayerService.Volume - 0.1));
-                    ResetOverlayTimeout();
+                    AdjustVolume(-0.1);
                     return;
             }
         }
@@ -280,6 +299,86 @@
     {
         await Task.Yield();
         await JSRuntime.InvokeVoidAsync("K7.focusDirection", _overlayRef, direction);
+    }
+
+    private void AccumulateSeek(double offset)
+    {
+        if (!_isSeeking)
+        {
+            _seekTarget = PlayerService.CurrentTime;
+            _seekOffset = 0;
+        }
+        _seekOffset += offset;
+        _seekTarget = Math.Clamp(PlayerService.CurrentTime + _seekOffset, 0, PlayerService.Duration);
+        _isSeeking = true;
+        _hudIcon = _seekOffset >= 0 ? Icons.Material.Filled.FastForward : Icons.Material.Filled.FastRewind;
+        ShowHud($"{(_seekOffset >= 0 ? "+" : "")}{(int)_seekOffset}s");
+        _seekDebounceTimer?.Stop();
+        _seekDebounceTimer?.Start();
+    }
+
+    private void AdjustVolume(double delta)
+    {
+        var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
+        PlayerService.SetVolume(newVolume);
+        _hudIcon = delta > 0 ? Icons.Material.Filled.VolumeUp : Icons.Material.Filled.VolumeDown;
+        ShowHud($"{(int)Math.Round(newVolume * 100)}%");
+    }
+
+    private void ShowHud(string text)
+    {
+        _hudText = text;
+        _hudTimer?.Stop();
+        _hudTimer?.Start();
+    }
+
+    private void OnHudTimerElapsed(object? sender, ElapsedEventArgs args)
+    {
+        InvokeAsync(() =>
+        {
+            _hudText = null;
+            StateHasChanged();
+        });
+    }
+
+    private async void OnOverlayTimerElapsed(object? sender, ElapsedEventArgs args)
+    {
+        await InvokeAsync(async () =>
+        {
+            try
+            {
+                if (_isMenuOpen || _isSeeking) return;
+                var focusInChild = await JSRuntime.InvokeAsync<bool>("K7.isFocusInOverlayChild", _overlayRef);
+                if (focusInChild) return;
+                _showOverlay = false;
+                StateHasChanged();
+                await _overlayRef.FocusAsync();
+            }
+            catch (ObjectDisposedException) { }
+            catch (JSException) { }
+        });
+    }
+
+    private void OnSeekDebounceElapsed(object? sender, ElapsedEventArgs args)
+    {
+        InvokeAsync(() =>
+        {
+            PlayerService.Seek(_seekTarget);
+            _isSeeking = false;
+            _seekOffset = 0;
+            StateHasChanged();
+        });
+    }
+
+    [JSInvokable]
+    public async Task CloseMenu()
+    {
+        await Task.Delay(1);
+        _isMenuOpen = false;
+        await InvokeAsync(StateHasChanged);
+        await Task.Yield();
+        await _overlayRef.FocusAsync();
+        ResetOverlayTimeout(TimeSpan.FromSeconds(5));
     }
 
     public void ResetOverlayTimeout(TimeSpan? timeout = null)
@@ -522,6 +621,11 @@
     public async ValueTask DisposeAsync()
     {
         _overlayVisibleTimer?.Dispose();
+        _seekDebounceTimer?.Dispose();
+        _hudTimer?.Dispose();
+        _dotNetRef?.Dispose();
+        try { await JSRuntime.InvokeVoidAsync("K7.unregisterVideoOverlay"); }
+        catch (JSException) { }
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         PlayerService.IsMutedChanged -= OnIsMutedChanged;
         PlayerService.VolumeChanged -= OnVolumeChanged;
