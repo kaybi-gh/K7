@@ -15,6 +15,7 @@ public record GetDiagnosticItemsQuery : IRequest<PaginatedList<DiagnosticItemDto
     public Guid? LibraryId { get; init; }
     public DiagnosticEntityType? EntityType { get; init; }
     public DiagnosticIssue? Issue { get; init; }
+    public IReadOnlyCollection<DiagnosticIssue>? Issues { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 20;
 }
@@ -45,6 +46,10 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         if (request.Issue.HasValue)
         {
             items = items.Where(i => i.Issues.Contains(request.Issue.Value)).ToList();
+        }
+        else if (request.Issues is { Count: > 0 })
+        {
+            items = items.Where(i => i.Issues.Any(iss => request.Issues.Contains(iss))).ToList();
         }
 
         items = [.. items.OrderByDescending(i => i.Severity).ThenBy(i => i.EntityName)];
