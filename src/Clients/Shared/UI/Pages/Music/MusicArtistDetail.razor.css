@@ -16,6 +16,11 @@
     z-index: 0;
 }
 
+.artist-detail-page > .grid {
+    position: relative;
+    z-index: 1;
+}
+
 ::deep .artist-portrait {
     max-width: 200px;
     border-radius: 50%;

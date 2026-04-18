@@ -28,10 +28,10 @@
   <data name="AriaUserAccess" xml:space="preserve"><value>User access</value></data>
   <data name="NewLibraryTitle" xml:space="preserve"><value>New library</value></data>
   <data name="IndexStarted" xml:space="preserve"><value>Indexing of '{0}' started.</value></data>
-  <data name="AccessTitle" xml:space="preserve"><value>Access — {0}</value></data>
+  <data name="AccessTitle" xml:space="preserve"><value>Access - {0}</value></data>
   <data name="AriaEdit" xml:space="preserve"><value>Edit</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Delete</value></data>
-  <data name="EditTitle" xml:space="preserve"><value>Edit — {0}</value></data>
+  <data name="EditTitle" xml:space="preserve"><value>Edit - {0}</value></data>
   <data name="LibraryUpdated" xml:space="preserve"><value>Library updated.</value></data>
   <data name="DeleteDialogTitle" xml:space="preserve"><value>Delete library</value></data>
   <data name="DeleteDialogMessage" xml:space="preserve"><value>Are you sure you want to delete the library '{0}'? This action cannot be undone.</value></data>

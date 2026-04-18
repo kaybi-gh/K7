@@ -8,55 +8,55 @@
     <Authorized>
         <PageTitle>@L["PageTitle"]</PageTitle>
 
-        <MudText Typo="Typo.h4" Class="mb-4">@L["PageTitle"]</MudText>
+        <h4>@L["PageTitle"]</h4>
 
-        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true"
+        <K7Tabs
                  ActivePanelIndex="@_activePanelIndex" ActivePanelIndexChanged="OnActivePanelIndexChanged">
-            <MudTabPanel Text="@L["TabGeneral"]" Icon="@Icons.Material.Filled.Settings">
+            <K7TabPanel Text="@L["TabGeneral"]" Icon="gear">
                 <AdminGeneralPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabLibraries"]" Icon="@Icons.Material.Filled.VideoLibrary">
+            <K7TabPanel Text="@L["TabLibraries"]" Icon="video-camera">
                 <AdminLibrariesPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabUsers"]" Icon="@Icons.Material.Filled.People">
+            <K7TabPanel Text="@L["TabUsers"]" Icon="users">
                 <AdminUsersPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabDevices"]" Icon="@Icons.Material.Filled.Devices">
+            <K7TabPanel Text="@L["TabDevices"]" Icon="devices">
                 <AdminDevicesPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabRestrictions"]" Icon="@Icons.Material.Filled.Shield">
+            <K7TabPanel Text="@L["TabRestrictions"]" Icon="shield">
                 <AdminRestrictionsPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabAuthentication"]" Icon="@Icons.Material.Filled.Security">
+            <K7TabPanel Text="@L["TabAuthentication"]" Icon="shield">
                 <AdminAuthenticationPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabBackgroundTasks"]" Icon="@Icons.Material.Filled.Queue">
+            <K7TabPanel Text="@L["TabBackgroundTasks"]" Icon="queue">
                 <AdminBackgroundTasksPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabDiagnostics"]" Icon="@Icons.Material.Filled.MonitorHeart">
+            <K7TabPanel Text="@L["TabDiagnostics"]" Icon="heartbeat">
                 <AdminDiagnosticsPanel />
-            </MudTabPanel>
+            </K7TabPanel>
 
-            <MudTabPanel Text="@L["TabActiveStreams"]" Icon="@Icons.Material.Filled.LiveTv">
+            <K7TabPanel Text="@L["TabActiveStreams"]" Icon="broadcast">
                 <AdminActiveStreamsPanel />
-            </MudTabPanel>
-        </MudTabs>
+            </K7TabPanel>
+        </K7Tabs>
     </Authorized>
     <NotAuthorized>
-        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-16">
-            <MudStack AlignItems="AlignItems.Center" Spacing="4">
-                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" />
-                <MudText Typo="Typo.h5">@S["AccessDenied"]</MudText>
-                <MudText Typo="Typo.body1" Color="Color.Secondary">@S["NoPermission"]</MudText>
-                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">@S["GoToHome"]</MudButton>
-            </MudStack>
-        </MudContainer>
+        <div class="container">
+            <div class="d-flex flex-col">
+                <K7Icon Name="lock" Size="lg" Color="warning" />
+                <h5>@S["AccessDenied"]</h5>
+                <p Color="secondary">@S["NoPermission"]</p>
+                <K7Button Href="/" Variant="filled" Color="primary">@S["GoToHome"]</K7Button>
+            </div>
+        </div>
     </NotAuthorized>
 </AuthorizeView>

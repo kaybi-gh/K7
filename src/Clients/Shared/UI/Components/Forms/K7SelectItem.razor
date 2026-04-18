@@ -1,0 +1,14 @@
+@namespace K7.Clients.Shared.UI.Components.Forms
+@typeparam TValue
+
+<option value="@ValueStr" selected="@_isSelected">@ChildContent</option>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public TValue? Value { get; set; }
+
+    [CascadingParameter] private K7Select<TValue>? ParentSelect { get; set; }
+
+    private bool _isSelected => ParentSelect?.Value?.Equals(Value) == true;
+    private string ValueStr => Value?.ToString() ?? "";
+}

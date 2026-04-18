@@ -1,6 +1,5 @@
 using K7.Shared.Dtos.Restrictions;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
@@ -8,7 +7,7 @@ public partial class AdminUserRestrictionProfileDialog
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
 
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter] public Guid? CurrentProfileId { get; set; }
 
@@ -33,7 +32,7 @@ public partial class AdminUserRestrictionProfileDialog
         }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 
-    private void Submit() => MudDialog.Close(DialogResult.Ok(_selectedProfileId));
+    private void Submit() => Dialog.Close(K7DialogResult.Ok(_selectedProfileId));
 }

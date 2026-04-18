@@ -1,18 +1,18 @@
-﻿<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly">
+<Router AppAssembly="@typeof(Utils.ISharedPagesPointer).Assembly">
     <Found Context="routeData">
         <CascadingAuthenticationState>
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
                 <NotAuthorized>
                     @if (context.User.Identity?.IsAuthenticated == true)
                     {
-                        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-16">
-                            <MudStack AlignItems="AlignItems.Center" Spacing="4">
-                                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Warning" />
-                                <MudText Typo="Typo.h5">Access denied</MudText>
-                                <MudText Typo="Typo.body1" Color="Color.Secondary">You don't have permission to access this page.</MudText>
-                                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Go to Home</MudButton>
-                            </MudStack>
-                        </MudContainer>
+                        <div class="container">
+                            <div class="d-flex flex-col">
+                                <K7Icon Name="lock" Size="lg" Color="warning" />
+                                <h5>Access denied</h5>
+                                <p Color="secondary">You don't have permission to access this page.</p>
+                                <K7Button Href="/" Variant="filled" Color="primary">Go to Home</K7Button>
+                            </div>
+                        </div>
                     }
                     else
                     {

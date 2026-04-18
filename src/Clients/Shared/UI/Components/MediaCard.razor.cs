@@ -30,7 +30,7 @@ public partial class MediaCard
 
     private string PlaceholderIcon => Variant switch
     {
-        MediaCardVariant.Cover => Icons.Material.Outlined.Album,
-        _ => Icons.Material.Outlined.Movie
+        MediaCardVariant.Cover => "vinyl-record",
+        _ => "film-slate"
     };
 }

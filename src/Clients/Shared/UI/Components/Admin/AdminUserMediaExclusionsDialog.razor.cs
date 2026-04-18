@@ -2,7 +2,6 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
@@ -11,7 +10,7 @@ public partial class AdminUserMediaExclusionsDialog
     [Inject] private IMediaService K7ServerService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
 
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
     [Parameter] public List<Guid> ExcludedMediaIds { get; set; } = [];
 
     private bool _loading = true;
@@ -55,9 +54,9 @@ public partial class AdminUserMediaExclusionsDialog
         _excludedMedias.Remove(media);
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 
-    private void Submit() => MudDialog.Close(DialogResult.Ok(_excludedMedias.Select(m => m.Id).ToList()));
+    private void Submit() => Dialog.Close(K7DialogResult.Ok(_excludedMedias.Select(m => m.Id).ToList()));
 
     private sealed record ExcludedMediaItem(Guid Id, string? Title, string? PosterUrl);
 }

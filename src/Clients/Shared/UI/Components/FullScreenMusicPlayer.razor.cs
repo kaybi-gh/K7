@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
@@ -8,8 +8,7 @@ using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
-using MudBlazor;
-using MudBlazor.Services;
+using Microsoft.JSInterop;
 using K7.Clients.Shared.UI;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -19,6 +18,7 @@ public enum FullScreenView { Player, Lyrics, Queue }
 public partial class FullScreenMusicPlayer : IDisposable
 {
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
     private ElementReference _seekBarRef;
     private bool _isDragging;
     private FullScreenView _view;
@@ -36,22 +36,22 @@ public partial class FullScreenMusicPlayer : IDisposable
         : null;
 
     private string PlayPauseIcon => Audio.PlaybackState == PlaybackState.Playing
-        ? Icons.Material.Filled.Pause
-        : Icons.Material.Filled.PlayArrow;
+        ? "pause"
+        : "play";
 
-    private string ShuffleIcon => Icons.Material.Filled.Shuffle;
+    private string ShuffleIcon => "shuffle";
 
     private string RepeatIcon => Audio.Repeat switch
     {
-        RepeatMode.One => Icons.Material.Filled.RepeatOne,
-        _ => Icons.Material.Filled.Repeat
+        RepeatMode.One => "repeat-once",
+        _ => "repeat"
     };
 
     private string VolumeIcon => Audio.IsMuted || Audio.Volume <= 0
-        ? Icons.Material.Filled.VolumeOff
+        ? "speaker-x"
         : Audio.Volume < 0.5
-            ? Icons.Material.Filled.VolumeDown
-            : Icons.Material.Filled.VolumeUp;
+            ? "speaker-low"
+            : "speaker-high";
 
     protected override void OnInitialized()
     {
@@ -278,7 +278,7 @@ public partial class FullScreenMusicPlayer : IDisposable
 
     private async Task SeekToPosition(MouseEventArgs e)
     {
-        var bounds = await _seekBarRef.MudGetBoundingClientRectAsync();
+        var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", _seekBarRef);
         if (bounds.Width <= 0 || Audio.Duration <= 0) return;
 
         var percent = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);

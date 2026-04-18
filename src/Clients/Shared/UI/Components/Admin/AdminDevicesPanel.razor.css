@@ -1,4 +1,4 @@
-::deep .current-device {
-    border-color: var(--mud-palette-primary);
+﻿::deep .current-device {
+    border-color: var(--color-accent);
     border-width: 2px;
 }

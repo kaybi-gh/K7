@@ -1,0 +1,27 @@
+@using K7.Clients.Shared.UI.Components.Complex
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+
+<div class="k7-dialog-content">
+    <p>@Message</p>
+</div>
+<div class="k7-dialog-actions">
+    @if (!string.IsNullOrEmpty(CancelText))
+    {
+        <K7Button OnClick="@(() => Dialog.Close(K7DialogResult.Cancel()))">@CancelText</K7Button>
+    }
+    @if (!string.IsNullOrEmpty(NoText))
+    {
+        <K7Button OnClick="@(() => Dialog.Close(K7DialogResult.Ok<bool?>(false)))">@NoText</K7Button>
+    }
+    <K7Button Color="primary" Variant="filled" OnClick="@(() => Dialog.Close(K7DialogResult.Ok<bool?>(true)))">@YesText</K7Button>
+</div>
+
+@code {
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
+
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public string YesText { get; set; } = "OK";
+    [Parameter] public string? NoText { get; set; }
+    [Parameter] public string? CancelText { get; set; }
+}

@@ -1,0 +1,17 @@
+@namespace K7.Clients.Shared.UI.Components.Base
+
+<button class="k7-btn k7-btn--@Variant @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
+        type="@Type"
+        disabled="@Disabled"
+        @onclick="OnClick"
+        @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(StartIcon))
+    {
+        <i class="ph ph-@StartIcon"></i>
+    }
+    @ChildContent
+    @if (!string.IsNullOrEmpty(EndIcon))
+    {
+        <i class="ph ph-@EndIcon"></i>
+    }
+</button>

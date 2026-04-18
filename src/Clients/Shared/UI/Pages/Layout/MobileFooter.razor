@@ -9,91 +9,134 @@
 @inject IStringLocalizer<MobileFooter> L
 
 <div class="mobile-footer">
-    <MudAppBar Style="z-index:10;" Bottom="true" Fixed="true" Dense="false" Elevation="1">
-        <MudStack Row="true" Style="width:100%;" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-            <div class="mobile-footer-button">
-                <MudIconButton Href="/" Size="Size.Medium" Icon="@Icons.Material.Filled.Home" Color="Color.Inherit" />
-            </div>
-            <div class="mobile-footer-button">
-                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.VideoLibrary" OnClick="ToggleLibraryDrawer" Color="Color.Inherit" />
-            </div>
-            <div class="application-logo">
-                <MudIconButton Href="/" Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.Rounded.Cyclone" />
-            </div>
-            <div class="mobile-footer-button">
-                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Filled.MusicNote" OnClick="ToggleMusicDrawer" Color="Color.Inherit" />
-            </div>
-            <div class="mobile-footer-button">
-                <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Outlined.Menu" OnClick="ToggleMenuDrawer" Color="Color.Inherit" />
-            </div>
-        </MudStack>
-    </MudAppBar>
+    <div class="mobile-footer-bar">
+        <a href="/" class="mobile-footer-btn" title="@L["Home"]">
+            <K7Icon Name="house" />
+        </a>
+        <button class="mobile-footer-btn" @onclick="ToggleLibraryDrawer" title="@L["Libraries"]">
+            <K7Icon Name="video-camera" />
+        </button>
+        <a href="/" class="mobile-footer-btn mobile-footer-btn--logo" title="K7">
+            <K7Icon Name="hurricane" Size="K7IconSize.Large" />
+        </a>
+        <button class="mobile-footer-btn" @onclick="ToggleMusicDrawer" title="@L["Music"]">
+            <K7Icon Name="music-notes" />
+        </button>
+        <button class="mobile-footer-btn" @onclick="ToggleMenuDrawer" title="@L["Menu"]">
+            <K7Icon Name="list" />
+        </button>
+    </div>
+</div>
 
-    <MudDrawer @bind-Open="_libraryDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">@L["Libraries"]</MudText>
-        </MudDrawerHeader>
-        <MudNavMenu>
-            @foreach (var library in _libraries)
-            {
-                <MudNavLink @key="library.Id" Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)" OnClick="CloseDrawers">@library.Title</MudNavLink>
-            }
-        </MudNavMenu>
-    </MudDrawer>
+@if (IsAnyDrawerOpen)
+{
+    <div class="bottom-sheet-backdrop open" @onclick="CloseDrawers"></div>
+}
 
-    <MudDrawer @bind-Open="_musicDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">@L["Music"]</MudText>
-        </MudDrawerHeader>
-        <MudNavMenu>
-            <MudNavLink Href="/music/artists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person" OnClick="CloseDrawers">@L["Artists"]</MudNavLink>
-            <MudNavLink Href="/music/albums" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Album" OnClick="CloseDrawers">@L["Albums"]</MudNavLink>
-            <MudNavLink Href="/music/tracks" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AudioFile" OnClick="CloseDrawers">@L["Tracks"]</MudNavLink>
-            <AuthorizeView Roles="User,Administrator">
-                <MudNavLink Href="/playlists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.QueueMusic" OnClick="CloseDrawers">@L["Playlists"]</MudNavLink>
-            </AuthorizeView>
-            <MudNavLink Href="/music/radio" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Radio" OnClick="CloseDrawers">@L["Radio"]</MudNavLink>
-            <AuthorizeView Roles="User,Administrator">
-                <MudNavLink Href="/music/stats" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.BarChart" OnClick="CloseDrawers">@L["Stats"]</MudNavLink>
-            </AuthorizeView>
-        </MudNavMenu>
-    </MudDrawer>
+<div class="bottom-sheet @(_libraryDrawerOpen ? "open" : "")">
+    <div class="bottom-sheet-header">
+        <span class="bottom-sheet-title">@L["Libraries"]</span>
+        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Name="x" /></button>
+    </div>
+    <nav class="bottom-sheet-nav">
+        @foreach (var library in _libraries)
+        {
+            <NavLink @key="library.Id" class="nav-link" href="@($"/library/{library.Id}")" @onclick="CloseDrawers">
+                <span class="nav-icon"><K7Icon Name="@GetLibraryIcon(library.MediaType)" /></span>
+                <span class="nav-label">@library.Title</span>
+            </NavLink>
+        }
+    </nav>
+</div>
 
-    <MudDrawer @bind-Open="_menuDrawerOpen" Height="100%" Width="100%" Anchor="Anchor.Bottom" Elevation="1" Variant="@DrawerVariant.Temporary">
-        <MudDrawerHeader>
-            <AuthorizeView>
-                <Authorized>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                        <MudBadge Dot="true" Color="@_badgeColor" Overlap="true" Bordered="true" BadgeClass="connection-badge" title="@_badgeTitle">
-                            <MudAvatar Color="Color.Primary">@context.User.Identity?.Name?[0]</MudAvatar>
-                        </MudBadge>
-                        <MudText Typo="Typo.h6">@context.User.Identity?.Name</MudText>
-                    </MudStack>
-                </Authorized>
-                <NotAuthorized>
-                    <MudText Typo="Typo.h6">@L["Menu"]</MudText>
-                </NotAuthorized>
-            </AuthorizeView>
-        </MudDrawerHeader>
-        <MudNavMenu>
-            <AuthorizeView>
-                <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings" OnClick="CloseDrawers">@L["Settings"]</MudNavLink>
-            </AuthorizeView>
-            <AuthorizeView Roles="Administrator">
-                <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AdminPanelSettings" OnClick="CloseDrawers">@L["Admin"]</MudNavLink>
-            </AuthorizeView>
-            <AuthorizeView>
-                <Authorized>
-                    @if (DeviceService.GetClientType() != ClientType.Web)
-                    {
-                        <MudNavLink Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser">@L["SwitchUser"]</MudNavLink>
-                    }
-                    <MudNavLink Icon="@Icons.Material.Filled.Logout" OnClick="Logout">@L["Logout"]</MudNavLink>
-                </Authorized>
-                <NotAuthorized>
-                    <MudNavLink Icon="@Icons.Material.Filled.Login" OnClick="Login">@L["Login"]</MudNavLink>
-                </NotAuthorized>
-            </AuthorizeView>
-        </MudNavMenu>
-    </MudDrawer>
+<div class="bottom-sheet @(_musicDrawerOpen ? "open" : "")">
+    <div class="bottom-sheet-header">
+        <span class="bottom-sheet-title">@L["Music"]</span>
+        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Name="x" /></button>
+    </div>
+    <nav class="bottom-sheet-nav">
+        <NavLink class="nav-link" href="/music/artists" @onclick="CloseDrawers">
+            <span class="nav-icon"><K7Icon Name="user" /></span>
+            <span class="nav-label">@L["Artists"]</span>
+        </NavLink>
+        <NavLink class="nav-link" href="/music/albums" @onclick="CloseDrawers">
+            <span class="nav-icon"><K7Icon Name="vinyl-record" /></span>
+            <span class="nav-label">@L["Albums"]</span>
+        </NavLink>
+        <NavLink class="nav-link" href="/music/tracks" @onclick="CloseDrawers">
+            <span class="nav-icon"><K7Icon Name="music-note" /></span>
+            <span class="nav-label">@L["Tracks"]</span>
+        </NavLink>
+        <AuthorizeView Roles="User,Administrator">
+            <NavLink class="nav-link" href="/playlists" @onclick="CloseDrawers">
+                <span class="nav-icon"><K7Icon Name="queue" /></span>
+                <span class="nav-label">@L["Playlists"]</span>
+            </NavLink>
+        </AuthorizeView>
+        <NavLink class="nav-link" href="/music/radio" @onclick="CloseDrawers">
+            <span class="nav-icon"><K7Icon Name="radio" /></span>
+            <span class="nav-label">@L["Radio"]</span>
+        </NavLink>
+        <AuthorizeView Roles="User,Administrator">
+            <NavLink class="nav-link" href="/music/stats" @onclick="CloseDrawers">
+                <span class="nav-icon"><K7Icon Name="chart-bar" /></span>
+                <span class="nav-label">@L["Stats"]</span>
+            </NavLink>
+        </AuthorizeView>
+    </nav>
+</div>
+
+<div class="bottom-sheet @(_menuDrawerOpen ? "open" : "")">
+    <div class="bottom-sheet-header">
+        <AuthorizeView>
+            <Authorized>
+                <div style="display:flex;align-items:center;gap:var(--space-3)">
+                    <div class="avatar">
+                        @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
+                        <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
+                    </div>
+                    <span class="bottom-sheet-title">@context.User.Identity?.Name</span>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <span class="bottom-sheet-title">@L["Menu"]</span>
+            </NotAuthorized>
+        </AuthorizeView>
+        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Name="x" /></button>
+    </div>
+    <nav class="bottom-sheet-nav">
+        <AuthorizeView>
+            <NavLink class="nav-link" href="/settings" @onclick="CloseDrawers">
+                <span class="nav-icon"><K7Icon Name="gear" /></span>
+                <span class="nav-label">@L["Settings"]</span>
+            </NavLink>
+        </AuthorizeView>
+        <AuthorizeView Roles="Administrator">
+            <NavLink class="nav-link" href="/admin" @onclick="CloseDrawers">
+                <span class="nav-icon"><K7Icon Name="shield-check" /></span>
+                <span class="nav-label">@L["Admin"]</span>
+            </NavLink>
+        </AuthorizeView>
+        <AuthorizeView>
+            <Authorized>
+                @if (DeviceService.GetClientType() != ClientType.Web)
+                {
+                    <button class="nav-link" style="width:100%;background:transparent;border:none;font:inherit;text-align:left;cursor:pointer" @onclick="SwitchUser">
+                        <span class="nav-icon"><K7Icon Name="user-switch" /></span>
+                        <span class="nav-label">@L["SwitchUser"]</span>
+                    </button>
+                }
+                <button class="nav-link" style="width:100%;background:transparent;border:none;font:inherit;text-align:left;cursor:pointer;color:var(--color-error)" @onclick="Logout">
+                    <span class="nav-icon"><K7Icon Name="sign-out" /></span>
+                    <span class="nav-label">@L["Logout"]</span>
+                </button>
+            </Authorized>
+            <NotAuthorized>
+                <button class="nav-link" style="width:100%;background:transparent;border:none;font:inherit;text-align:left;cursor:pointer" @onclick="Login">
+                    <span class="nav-icon"><K7Icon Name="sign-in" /></span>
+                    <span class="nav-label">@L["Login"]</span>
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
 </div>

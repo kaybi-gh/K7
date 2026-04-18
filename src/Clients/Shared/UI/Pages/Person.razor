@@ -1,4 +1,4 @@
-﻿@page "/persons/{Id}"
+@page "/persons/{Id}"
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
@@ -6,7 +6,6 @@
 @implements IDisposable
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
-@inject IDialogService DialogService
 @inject IStringLocalizer<Person> L
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@_person?.Name</PageTitle>
@@ -14,9 +13,9 @@
 @if (_loading)
 {
     <div class="person-page">
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-            <MudProgressCircular Indeterminate="true" />
-        </MudStack>
+        <div class="d-flex flex-col pa-16">
+            <K7Spinner />
+        </div>
     </div>
 }
 else if (_person is not null)
@@ -44,46 +43,46 @@ else if (_person is not null)
                     else
                     {
                         <div class="person-portrait-placeholder">
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size: 64px; opacity: 0.3;" />
+                            <K7Icon Name="user" Style="font-size: 64px; opacity: 0.3;" />
                         </div>
                     }
                 </div>
 
                 <div class="person-info">
-                    <MudText Typo="Typo.h3" Class="person-name">@_person.Name</MudText>
+                    <h3>@_person.Name</h3>
 
-                    <MudStack Row="true" Spacing="4" Wrap="Wrap.Wrap" Class="mt-3">
+                    <div class="d-flex mt-3">
                         @if (_person.Birthday.HasValue)
                         {
-                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="@Icons.Material.Outlined.Cake" Size="Size.Small" Style="opacity:0.55" />
-                                <MudText Typo="Typo.body2">@_person.Birthday.Value.ToString("d MMMM yyyy")</MudText>
+                            <div class="d-flex">
+                                <K7Icon Name="cake" Size="sm" Style="opacity:0.55" />
+                                <p class="text-sm">@_person.Birthday.Value.ToString("d MMMM yyyy")</p>
                                 @if (_person.Deathday is null)
                                 {
-                                    <MudText Typo="Typo.body2" Style="opacity:0.6;">(@Age(_person.Birthday.Value) @L["YearsOld"])</MudText>
+                                    <p class="text-sm" Style="opacity:0.6;">(@Age(_person.Birthday.Value) @L["YearsOld"])</p>
                                 }
-                            </MudStack>
+                            </div>
                         }
                         @if (_person.Deathday.HasValue)
                         {
-                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                                <MudText Typo="Typo.body2" Style="opacity:0.5;">†</MudText>
-                                <MudText Typo="Typo.body2">@_person.Deathday.Value.ToString("d MMMM yyyy")</MudText>
-                            </MudStack>
+                            <div class="d-flex">
+                                <p class="text-sm" Style="opacity:0.5;">†</p>
+                                <p class="text-sm">@_person.Deathday.Value.ToString("d MMMM yyyy")</p>
+                            </div>
                         }
                         @if (!string.IsNullOrEmpty(_person.BirthPlace))
                         {
-                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                                <MudIcon Icon="@Icons.Material.Outlined.Place" Size="Size.Small" Style="opacity:0.55" />
-                                <MudText Typo="Typo.body2">@_person.BirthPlace</MudText>
-                            </MudStack>
+                            <div class="d-flex">
+                                <K7Icon Name="map-pin" Size="sm" Style="opacity:0.55" />
+                                <p class="text-sm">@_person.BirthPlace</p>
+                            </div>
                         }
-                    </MudStack>
+                    </div>
 
                     @if (!string.IsNullOrEmpty(_person.Biography))
                     {
                         <div class="person-bio overview-clickable" tabindex="0" @onclick="OpenBioDialogAsync" @onkeydown="HandleBioKeyDown">
-                            <MudText Typo="Typo.body1" Style="opacity: 0.85; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">@_person.Biography</MudText>
+                            <p Style="opacity: 0.85; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">@_person.Biography</p>
                         </div>
                     }
                 </div>

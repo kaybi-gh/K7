@@ -1,13 +1,11 @@
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class IndexedFilesDialog
 {
-    [CascadingParameter]
-    IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter]
     public required MediaDto Media { get; set; }
@@ -17,7 +15,7 @@ public partial class IndexedFilesDialog
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        Dialog.Cancel();
     }
 
     private async Task ReIdentifyFile(Guid fileId)
@@ -26,6 +24,6 @@ public partial class IndexedFilesDialog
         {
             await OnReIdentifyFile.InvokeAsync(fileId);
         }
-        MudDialog.Close(DialogResult.Ok(true));
+        Dialog.Close(K7DialogResult.Ok(true));
     }
 }

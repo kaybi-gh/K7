@@ -1,4 +1,4 @@
-using K7.Clients.Shared.UI.Components.Dialogs;
+﻿using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -6,7 +6,6 @@ using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -18,11 +17,9 @@ public partial class PlaylistDetail
     [Inject]
     private IAudioPlayerService Audio { get; set; } = default!;
 
-    [Inject]
-    private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
-    [Inject]
-    private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     [Inject]
     private NavigationManager NavigationManager { get; set; } = default!;
@@ -103,7 +100,7 @@ public partial class PlaylistDetail
         }
     }
 
-    private async Task OnTrackClick(TableRowClickEventArgs<PlaylistItemViewModel> args)
+    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.Complex.TableRowClickEventArgs<PlaylistItemViewModel> args)
     {
         var track = args.Item;
         if (track is null) return;
@@ -152,7 +149,7 @@ public partial class PlaylistDetail
         }
         catch
         {
-            Snackbar.Add(L["DeleteError"], Severity.Error);
+            Snackbar.Add(L["DeleteError"], K7Severity.Error);
         }
     }
 
@@ -160,14 +157,14 @@ public partial class PlaylistDetail
     {
         if (_playlist is null) return;
 
-        var parameters = new DialogParameters<EditPlaylistDialog>
+        var parameters = new K7DialogParameters<EditPlaylistDialog>
         {
             { x => x.PlaylistId, _playlist.Id },
             { x => x.Title, _playlist.Title },
             { x => x.Description, _playlist.Description }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.EditPlaylistDialog>(L["EditDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -190,12 +187,12 @@ public partial class PlaylistDetail
             try
             {
                 await K7ServerService.DeletePlaylistAsync(Guid.Parse(Id));
-                Snackbar.Add(L["DeleteSuccess"], Severity.Success);
+                Snackbar.Add(L["DeleteSuccess"], K7Severity.Success);
                 NavigationManager.NavigateTo("/playlists");
             }
             catch
             {
-                Snackbar.Add(L["DeleteError"], Severity.Error);
+                Snackbar.Add(L["DeleteError"], K7Severity.Error);
             }
         }
     }

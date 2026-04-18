@@ -22,7 +22,7 @@
   <data name="Header" xml:space="preserve"><value>Smart Playlist</value></data>
   <data name="Evaluating" xml:space="preserve"><value>Évaluation…</value></data>
   <data name="Reevaluate" xml:space="preserve"><value>Réévaluer</value></data>
-  <data name="NoResults" xml:space="preserve"><value>Aucun résultat — modifiez les règles ou réévaluez</value></data>
+  <data name="NoResults" xml:space="preserve"><value>Aucun résultat - modifiez les règles ou réévaluez</value></data>
   <data name="ReevaluateSuccess" xml:space="preserve"><value>Smart playlist réévaluée</value></data>
   <data name="ReevaluateError" xml:space="preserve"><value>Erreur lors de l'évaluation</value></data>
   <data name="EditDialogTitle" xml:space="preserve"><value>Modifier la smart playlist</value></data>

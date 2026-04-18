@@ -1,0 +1,22 @@
+@namespace K7.Clients.Shared.UI.Components.Base
+
+<img class="k7-img @(ObjectFit == "cover" ? "k7-img--cover" : ObjectFit == "contain" ? "k7-img--contain" : ObjectFit == "scale-down" ? "k7-img--scale-down" : "") @Class"
+     src="@Src"
+     alt="@Alt"
+     @attributes="SizeAttributes"
+     loading="@Loading"
+     @attributes="AdditionalAttributes" />
+
+@code {
+    private Dictionary<string, object?> SizeAttributes
+    {
+        get
+        {
+            var d = new Dictionary<string, object?>();
+            if (Width > 0) d["width"] = Width;
+            if (Height > 0) d["height"] = Height;
+            if (!string.IsNullOrEmpty(Style)) d["style"] = Style;
+            return d;
+        }
+    }
+}

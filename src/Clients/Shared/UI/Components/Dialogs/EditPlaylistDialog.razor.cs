@@ -1,16 +1,14 @@
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class EditPlaylistDialog
 {
     [Inject] private IPlaylistService K7ServerService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter]
     public Guid PlaylistId { get; set; }
@@ -23,7 +21,7 @@ public partial class EditPlaylistDialog
 
     private bool _isSubmitting;
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 
     private async Task SubmitAsync()
     {
@@ -38,12 +36,12 @@ public partial class EditPlaylistDialog
                 Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim()
             });
 
-            Snackbar.Add(L["Updated"], Severity.Success);
-            MudDialog.Close(DialogResult.Ok(true));
+            Snackbar.Add(L["Updated"], K7Severity.Success);
+            Dialog.Close(K7DialogResult.Ok(true));
         }
         catch
         {
-            Snackbar.Add(L["Error"], Severity.Error);
+            Snackbar.Add(L["Error"], K7Severity.Error);
         }
         finally
         {

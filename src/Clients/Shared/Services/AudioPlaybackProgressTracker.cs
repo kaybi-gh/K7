@@ -102,7 +102,7 @@ public class AudioPlaybackProgressTracker : IDisposable
         }
         catch
         {
-            // Silent — fire and forget
+            // Silent - fire and forget
         }
     }
 

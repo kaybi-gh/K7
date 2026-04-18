@@ -12,52 +12,50 @@
 @inject IStringLocalizer<Movie> L
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@_movie?.Title</PageTitle>
-<MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
-
 @if (isLoading)
 {
     <div class="hero-page-stack">
-        <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd">
-            <MudSkeleton Animation="Animation.Wave" Height="150px" Width="300px" />
+        <div class="d-flex flex-col pa-10" style="height: 100%;">
+            <K7Skeleton Width="300px" />
             
-            <MudStack Row="true">
-                <MudSkeleton Animation="Animation.Wave" Height="30px" Width="80px" />
-                <MudSkeleton Animation="Animation.Wave" Height="30px" Width="80px" />
-                <MudSkeleton Animation="Animation.Wave" Height="30px" Width="80px" />
-            </MudStack>
+            <div class="d-flex">
+                <K7Skeleton Width="80px" />
+                <K7Skeleton Width="80px" />
+                <K7Skeleton Width="80px" />
+            </div>
             
-            <MudStack Row="true" AlignItems="AlignItems.Center">
-                <MudSkeleton Animation="Animation.Wave" Height="20px" Width="50px" />
-                <MudText>|</MudText>
-                <MudSkeleton Animation="Animation.Wave" Height="20px" Width="100px" />
-            </MudStack>
+            <div class="d-flex align-center">
+                <K7Skeleton Width="50px" />
+                <span>|</span>
+                <K7Skeleton Width="100px" />
+            </div>
             
-            <MudStack Class="pa-10" AlignItems="AlignItems.Center">
-                <MudSkeleton Animation="Animation.Wave" Height="30px" Width="100px" />
-                <MudSkeleton Animation="Animation.Wave" Height="20px" Width="600px" />
-                <MudSkeleton Animation="Animation.Wave" Height="20px" Width="500px" />
-                <MudSkeleton Animation="Animation.Wave" Height="20px" Width="550px" />
-            </MudStack>
+            <div class="d-flex flex-col pa-10">
+                <K7Skeleton Width="100px" />
+                <K7Skeleton Width="600px" />
+                <K7Skeleton Width="500px" />
+                <K7Skeleton Width="550px" />
+            </div>
             
-            <MudStack Row="true">
-                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Wave" Height="36px" Width="100px" />
-                <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="40px" Width="40px" />
-                <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="40px" Width="40px" />
-                <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="40px" Width="40px" />
-                <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="40px" Width="40px" />
-            </MudStack>
-            <MudIcon Style="position: absolute; left: 50%; top: 90vh;" Size="Size.Medium" Icon="@Icons.Material.Filled.KeyboardArrowDown" />
-        </MudStack>
+            <div class="d-flex">
+                <K7Skeleton Width="100px" />
+                <K7Skeleton Shape="circle" />
+                <K7Skeleton Shape="circle" />
+                <K7Skeleton Shape="circle" />
+                <K7Skeleton Shape="circle" />
+            </div>
+            <K7Icon Style="position: absolute; left: 50%; top: 90vh;" Size="md" Name="caret-down" />
+        </div>
     </div>
     <div>
-        <MudStack AlignItems="AlignItems.Center" Class="px-10">
-            <MudStack Style="width: 100%;">
-                <MudSkeleton Animation="Animation.Wave" Height="50px" Width="100%" />
-                <MudSkeleton Animation="Animation.Wave" Height="50px" Width="100%" />
-            </MudStack>
-        </MudStack>
-        <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0" Class="mt-6">
-            <MudItem xs="12" sm="12" lg="12">
+        <div class="d-flex flex-col px-10">
+            <div class="d-flex flex-col" style="width: 100%;">
+                <K7Skeleton Width="100%" />
+                <K7Skeleton Width="100%" />
+            </div>
+        </div>
+        <div class="grid">
+            <div>
                 <Carousel Skeleton="true" Title="@L["CastingAndCrew"]">
                     @for (int i = 0; i < 10; i++)
                     {
@@ -66,97 +64,96 @@
                         </CarouselItem>
                     }
                 </Carousel>
-            </MudItem>
-        </MudGrid>
+            </div>
+        </div>
     </div>
 }
 else
 {
     @if (_movie != null)
     {
+        <div class="background-image" style="--background-picture: url(@apiClient.GetAbsoluteUri(apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri)" />
         <div class="hero-page-stack">
-            <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Start" Justify="Justify.FlexEnd">
-                <div class="background-image" style="--background-picture: url(@apiClient.GetAbsoluteUri(apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri)" />
+            <div class="d-flex flex-col pa-10">
                 @if (apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is string logoUri)
                 {
-                    <MudImage Style="max-width: 80vw;" Height="200" ObjectFit="ObjectFit.ScaleDown" Src="@logoUri"></MudImage>
+                    <K7Image Style="max-height: 180px; max-width: 500px;" ObjectFit="scale-down" Src="@logoUri"></K7Image>
                 }
                 else
                 {
-                    <MudText Typo="Typo.h2" Style="font-weight: 800; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">@_movie.Title?.ToUpper()</MudText>  
+                    <h2 Style="font-weight: 800; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">@_movie.Title?.ToUpper()</h2>  
                 }
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Wrap="Wrap.Wrap">
+                <div class="d-flex align-center">
                     @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
                     {
-                        <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Star" Label="true" Color="Color.Primary" Variant="Variant.Filled" Style="font-weight: 700;">@externalRating.ToString("N1")</MudChip>
+                        <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
                     }
-                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                    <div class="d-flex">
                         @foreach (var genre in _movie.Genres ?? [])
                         {
-                            <MudChip T="string" Label="true" Variant="Variant.Text" Size="Size.Small" Style="opacity: 0.9; font-weight: 600;">@genre</MudChip>
+                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
                         }
-                    </MudStack>
-                    <MudText Typo="Typo.caption" Style="opacity: 0.4;">|</MudText>
-                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    </div>
+                    <span class="text-caption" Style="opacity: 0.4;">|</span>
+                    <div class="d-flex">
                         @if (_movie.ReleaseDate.HasValue)
                         {
-                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@_movie.ReleaseDate.Value.Year</MudText>
+                            <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@_movie.ReleaseDate.Value.Year</p>
                         }
                         @if (_movie.ReleaseDate.HasValue && _movie.IndexedFiles != null && _movie.IndexedFiles.Any() && _movie.IndexedFiles.First().FileMetadata is VideoFileMetadataDto)
                         {
-                            <MudText Typo="Typo.body2" Style="opacity: 0.5;">&bull;</MudText>
+                            <p class="text-sm" Style="opacity: 0.5;">&bull;</p>
                         }
                         @if (_movie.IndexedFiles != null && _movie.IndexedFiles.Any() && _movie.IndexedFiles.First().FileMetadata is VideoFileMetadataDto vMetaDuration)
                         {
-                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@string.Format(S["DurationHoursMinutes"], (int)vMetaDuration.Duration.TotalHours, vMetaDuration.Duration.Minutes)</MudText>
+                            <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@string.Format(S["DurationHoursMinutes"], (int)vMetaDuration.Duration.TotalHours, vMetaDuration.Duration.Minutes)</p>
                         }
-                    </MudStack>
-                </MudStack>
+                    </div>
+                </div>
                 
                 @if (!string.IsNullOrWhiteSpace(_movie.TagLine))
                 {
-                    <MudText Typo="Typo.subtitle1" Class="mt-2" Style="font-style: italic; opacity: 0.8; font-weight: 500;">
+                    <p class="text-subtitle1 mt-2" Style="font-style: italic; opacity: 0.8; font-weight: 500;">
                         "@_movie.TagLine"
-                    </MudText>
+                    </p>
                 }
 
-                <MudStack Class="py-3 overview-clickable" Style="max-width: 800px;" tabindex="0" @onclick="OpenSynopsisDialogAsync" @onkeydown="HandleOverviewKeyDown">
-                    <MudText Typo="Typo.body1" Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem;">
+                <div class="d-flex flex-col py-3 overview-clickable" style="max-width: 800px;" tabindex="0" @onclick="OpenSynopsisDialogAsync" @onkeydown="HandleOverviewKeyDown">
+                    <p Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem;">
                         @_movie.Overview
-                    </MudText>
-                </MudStack>
+                    </p>
+                </div>
 
-                <MudStack Row="true" data-nav-row Class="mt-4" Spacing="3" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
-                    <MudButton Disabled="@(_movie.IndexedFiles == null || !_movie.IndexedFiles.Any())" 
-                               Variant="Variant.Filled" 
-                               StartIcon="@Icons.Material.Filled.PlayArrow" 
-                               Color="Color.Primary" 
-                               Size="Size.Large"
-                               DropShadow="false"
+                <div class="d-flex data-nav-row mt-4">
+                    <K7Button Disabled="@(_movie.IndexedFiles == null || !_movie.IndexedFiles.Any())" 
+                               Variant="filled" 
+                               StartIcon="play" 
+                               Color="primary" 
+                               Size="lg"
                                Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
-                               OnClick="PlayAsync">@S["Play"]</MudButton>   
+                               OnClick="PlayAsync">@S["Play"]</K7Button>   
                                
-                    <MudIconButton Icon="@Icons.Material.Filled.Tune" aria-label="playback-options" OnClick="OpenPlaybackOptionsAsync"></MudIconButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer"></MudIconButton>
+                    <button type="button" class="k7-icon-btn" @onclick="OpenPlaybackOptionsAsync" aria-label="playback-options"><i class="ph ph-sliders"></i></button>
+                    <button type="button" class="k7-icon-btn" aria-label="trailer"><i class="ph ph-film-slate"></i></button>
                     
                     <AuthorizeView Roles="User,Administrator">
-                        <MudIconButton Icon="@Icons.Material.Filled.CheckCircleOutline" aria-label="mark-as-shown"></MudIconButton>
+                        <button type="button" class="k7-icon-btn" aria-label="mark-as-shown"><i class="ph ph-check-circle"></i></button>
                     </AuthorizeView>
 
-                    <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" ListClass="pa-2">
+                    <K7Menu Icon="dots-three" AriaLabel="more-actions">
                         <AuthorizeView Roles="Administrator">
-                            <MudMenuItem Icon="@Icons.Material.Filled.FindReplace" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Refresh" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</MudMenuItem>
+                            <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
+                            <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                         </AuthorizeView>
-                        <MudMenuItem Icon="@Icons.Material.Filled.FolderZip" OnClick="OpenIndexedFilesDialogAsync">@L["IndexedVersions"]</MudMenuItem>
-                    </MudMenu>
-                </MudStack>
-                <MudIcon Style="position: absolute; left: 50%; top: 90vh;" Size="Size.Medium" Icon="@Icons.Material.Filled.KeyboardArrowDown" />
-            </MudStack>
+                        <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@L["IndexedVersions"]</K7MenuItem>
+                    </K7Menu>
+                </div>
+                <K7Icon Style="position: absolute; left: 50%; top: 90vh;" Size="md" Name="caret-down" />
+            </div>
         </div>
         <div>
-            <MudGrid Justify="Justify.SpaceEvenly" Style="max-width:100%;" Spacing="0">
-                <MudItem xs="12" sm="12" lg="12">
+            <div class="grid">
+                <div>
                     <Carousel Title="@L["CastingAndCrew"]">
                         @foreach (var cast in (_movie.PersonRoles ?? []).Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
                         {
@@ -165,8 +162,8 @@ else
                             </CarouselItem>
                         }
                     </Carousel>
-                </MudItem>
-            </MudGrid>
+                </div>
+            </div>
         </div>
     }
 }

@@ -1,11 +1,11 @@
 .playlist-card:hover,
 .playlist-card:focus-visible {
-    border-color: var(--mud-palette-primary);
+    border-color: var(--color-accent);
     transition: border-color 0.2s;
 }
 
 .playlist-card:focus-visible {
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 

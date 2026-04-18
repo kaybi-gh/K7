@@ -1,28 +1,28 @@
-﻿@inject IStringLocalizer<AdminUsersPanel> L
+@inject IStringLocalizer<AdminUsersPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
-    <MudText Typo="Typo.h6">@L["Title"]</MudText>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+<div class="d-flex align-center justify-between mb-4">
+    <h6>@L["Title"]</h6>
+    <K7Button Variant="filled" Color="primary" StartIcon="user-plus"
                OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
         @L["CreateUserTitle"]
-    </MudButton>
-</MudStack>
+    </K7Button>
+</div>
 
 @if (_isLoading)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    <K7ProgressBar Indeterminate="true" />
 }
 else if (_users.Count == 0)
 {
-    <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
-        <MudIcon Icon="@Icons.Material.Outlined.People" Size="Size.Large" Color="Color.Secondary" />
-        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">@L["Empty"]</MudText>
-    </MudPaper>
+    <div class="surface pa-8 d-flex flex-column align-center">
+        <K7Icon Name="users" Size="lg" Color="secondary" />
+        <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
+    </div>
 }
 else
 {
-    <MudSimpleTable Dense="true" Bordered="true" Hover="true">
+    <table class="k7-table k7-table--dense">
         <thead>
             <tr>
                 <th>@L["HeaderUser"]</th>
@@ -37,58 +37,49 @@ else
             {
                 <tr style="@(!user.IsActive ? "opacity: 0.5;" : "")">
                     <td>
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body1">@(user.UserName ?? "—")</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@(user.Email ?? "—")</MudText>
-                        </MudStack>
+                        <div class="d-flex flex-col">
+                            <p>@(user.UserName ?? "-")</p>
+                            <span class="text-caption" Color="secondary">@(user.Email ?? "-")</span>
+                        </div>
                     </td>
                     <td>
                         @if (user.IsGuest)
                         {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Default">@S["Guest"]</MudChip>
+                            <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
                         }
                         else
                         {
-                            <MudSelect T="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
-                                       Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
-                                <MudSelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</MudSelectItem>
-                                <MudSelectItem Value="@Roles.User">@L["RoleUser"]</MudSelectItem>
-                            </MudSelect>
+                            <K7Select TValue="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
+                                       Variant="outlined">
+                                <K7SelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</K7SelectItem>
+                                <K7SelectItem Value="@Roles.User">@L["RoleUser"]</K7SelectItem>
+                            </K7Select>
                         }
                     </td>
                     <td>
-                        <MudSwitch T="bool" Value="@user.IsActive"
-                                   ValueChanged="@(v => OnToggleActive(user, v))"
-                                   Color="Color.Success" />
+                        <K7Switch Value="@user.IsActive"
+                                   ValueChanged="@(v => OnToggleActive(user, v))" />
                     </td>
                     <td>@user.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>
-                        <MudStack Row="true" Spacing="1">
+                        <div class="d-flex">
                             @if (!user.IsGuest)
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Default"
-                                               OnClick="@(() => OpenCapabilitiesDialog(user))" aria-label="@L["AriaCapabilities"]" />
+                                <button type="button" class="k7-icon-btn" @onclick="@(() => OpenCapabilitiesDialog(user))" aria-label="@L["AriaCapabilities"]"><i class="ph ph-sliders"></i></button>
                             }
-                            <MudIconButton Icon="@Icons.Material.Filled.VideoLibrary" Size="Size.Small" Color="Color.Default"
-                                           OnClick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="@L["AriaLibraries"]" />
-                            <MudIconButton Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" Color="Color.Default"
-                                           OnClick="@(() => OpenMediaExclusionsDialog(user))" aria-label="@L["AriaHiddenMedia"]" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Shield" Size="Size.Small"
-                                           Color="@(user.ContentRestrictionProfileId.HasValue ? Color.Warning : Color.Default)"
-                                           OnClick="@(() => OpenRestrictionProfileDialog(user))" aria-label="@L["AriaRestrictionProfile"]" />
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="@L["AriaLibraries"]"><i class="ph ph-video-camera"></i></button>
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenMediaExclusionsDialog(user))" aria-label="@L["AriaHiddenMedia"]"><i class="ph ph-eye-slash"></i></button>
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenRestrictionProfileDialog(user))" aria-label="@L["AriaRestrictionProfile"]"><i class="ph ph-shield"></i></button>
                             @if (!user.IsGuest && user.Id != _currentUserId)
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Password" Size="Size.Small" Color="Color.Default"
-                                               OnClick="@(() => OpenResetPasswordDialog(user))" aria-label="@L["AriaResetPassword"]" />
-                                <MudIconButton Icon="@Icons.Material.Filled.MergeType" Size="Size.Small" Color="Color.Default"
-                                               OnClick="@(() => OpenMergeUserDialog(user))" aria-label="@L["AriaMerge"]" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                               OnClick="@(() => ConfirmDelete(user))" aria-label="@L["AriaDelete"]" />
+                                <button type="button" class="k7-icon-btn" @onclick="@(() => OpenResetPasswordDialog(user))" aria-label="@L["AriaResetPassword"]"><i class="ph ph-key"></i></button>
+                                <button type="button" class="k7-icon-btn" @onclick="@(() => OpenMergeUserDialog(user))" aria-label="@L["AriaMerge"]"><i class="ph ph-git-merge"></i></button>
+                                <button type="button" class="k7-icon-btn" @onclick="@(() => ConfirmDelete(user))" aria-label="@L["AriaDelete"]"><i class="ph ph-trash"></i></button>
                             }
-                        </MudStack>
+                        </div>
                     </td>
                 </tr>
             }
         </tbody>
-    </MudSimpleTable>
+    </table>
 }

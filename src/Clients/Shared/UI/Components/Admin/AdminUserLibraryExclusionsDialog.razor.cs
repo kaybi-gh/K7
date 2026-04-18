@@ -1,6 +1,5 @@
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
@@ -8,7 +7,7 @@ public partial class AdminUserLibraryExclusionsDialog
 {
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
 
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
     [Parameter] public List<Guid> ExcludedLibraryIds { get; set; } = [];
 
     private bool _loading = true;
@@ -37,6 +36,6 @@ public partial class AdminUserLibraryExclusionsDialog
             _excludedIds.Remove(libraryId);
     }
 
-    private void Cancel() => MudDialog.Cancel();
-    private void Submit() => MudDialog.Close(DialogResult.Ok(_excludedIds.ToList()));
+    private void Cancel() => Dialog.Cancel();
+    private void Submit() => Dialog.Close(K7DialogResult.Ok(_excludedIds.ToList()));
 }

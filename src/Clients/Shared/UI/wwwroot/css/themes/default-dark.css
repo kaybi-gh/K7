@@ -1,0 +1,45 @@
+/* K7 Default Dark Theme */
+:root,
+[data-theme="default-dark"] {
+    color-scheme: dark;
+
+    /* Surface colors */
+    --color-bg:            #212121;
+    --color-surface:       #282A2D;
+    --color-surface-2:     #313438;
+    --color-surface-hover: rgba(255,255,255,.06);
+    --color-drawer:        #0C0C0C;
+    --color-bg-gray:       #1C1C1C;
+
+    /* Accent */
+    --color-accent:        #E5A00D;
+    --color-accent-hover:  #f0b030;
+    --color-accent-fg:     #000000;
+
+    /* Text */
+    --color-text:          #FFFFFF;
+    --color-text-secondary:#AAAAAA;
+    --color-text-disabled: #666666;
+    --color-text-on-accent:#000000;
+
+    /* Feedback */
+    --color-success:       #4DB288;
+    --color-error:         #CF6679;
+    --color-warning:       #E5A00D;
+    --color-info:          #4DA8CF;
+
+    /* Borders */
+    --color-border:        #3A3C40;
+    --color-border-subtle: rgba(255,255,255,.08);
+
+    /* Focus ring */
+    --color-focus:         #E5A00D;
+    --focus-ring:          0 0 0 2px var(--color-focus);
+
+    /* Overlay */
+    --color-overlay:       rgba(0,0,0,.72);
+
+    /* Scrollbar */
+    --scrollbar-thumb:     #3A3C40;
+    --scrollbar-track:     transparent;
+}

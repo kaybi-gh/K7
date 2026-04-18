@@ -1,4 +1,4 @@
-@using K7.Clients.Shared.Models
+﻿@using K7.Clients.Shared.Models
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
 @using Microsoft.JSInterop
@@ -17,123 +17,129 @@
      @ontouchstart="OnTouchStart"
      @ontouchmove="OnTouchMove" @ontouchmove:preventDefault="@_swipeGestureActive"
      @ontouchend="OnTouchEnd"
-     @onkeydown="OnKeyDown" @onkeydown:preventDefault="@_preventKeyDefault" @onkeydown:stopPropagation
+     @onkeydown="OnKeyDown" @onkeydown:stopPropagation
      @onfocusin="OnFocusIn"
      style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
 
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
-        <MudIconButton Icon="@Icons.Material.Outlined.Close" Color="Color.Inherit" OnClick="OnCloseButtonClick" />
+        <button class="k7-icon-btn" type="button" @onclick="OnCloseButtonClick" aria-label="Close"><i class="ph ph-x"></i></button>
     </div>
 
     <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
-        <MudStack Row="true" StretchItems="StretchItems.Middle" AlignItems="AlignItems.Center" Style="width:100%">
-            <MudStack Row="true" AlignItems="AlignItems.Center">
-                <MudToggleIconButton Icon="@Icons.Material.Outlined.Pause"
-                ToggledIcon="@Icons.Material.Outlined.PlayArrow" Color="Color.Inherit"
-                Toggled="PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing"
-                ToggledChanged="TogglePlayPause" />
+        <div style="width:100%; display:flex; align-items:center; gap:0.5rem;">
+            <div style="display:flex; align-items:center; flex-shrink:0;">
+                <button type="button" class="k7-icon-btn" @onclick="TogglePlayPause" aria-label="">
+                    <i class="ph ph-@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? "play" : "pause")"></i>
+                </button>
 
                 @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
                 {
-                    <MudItem>
-                        <MudIconButton Icon="@GetVolumeIcon()" Color="Color.Inherit" OnClick="ToggleIsMuted" @onmouseover="OnVolumeButtonMouseOver" @onmouseout="OnVolumeButtonMouseOut" />
-                        <MudPopover Class="volume-slider-popover"
-                        Open="@_isVolumeSliderVisible"
-                        @onmouseover="OnVolumeSliderMouseOver"
-                        @onmouseout="OnVolumeSliderMouseOut"
-                        AnchorOrigin="Origin.TopLeft"
-                        TransformOrigin="Origin.BottomLeft"
-                        Paper="false"
-                        Style="z-index: 100005">
-                            <div Class="volume-slider-container">
-                                <MudSlider T="double"
-                                Min="0"
-                                Max="1"
-                                Step="0.01"
-                                Value="@PlayerService.Volume"
-                                ValueChanged="PlayerService.SetVolume"
-                                Immediate="true"
-                                Class="volume-slider" />
+                    <div class="volume-control" @onmouseover="OnVolumeSliderMouseOver" @onmouseout="OnVolumeSliderMouseOut">
+                        <button class="k7-icon-btn" type="button" @onclick="ToggleIsMuted" aria-label="Volume"><i class="ph ph-@GetVolumeIcon()"></i></button>
+                        @if (_isVolumeSliderVisible)
+                        {
+                            <div class="volume-slider-popover">
+                                <div class="volume-slider-container">
+                                    <K7Slider TValue="double"
+                                    Step="0.01"
+                                    Value="@PlayerService.Volume"
+                                    ValueChanged="PlayerService.SetVolume"
+                                    Class="volume-slider" />
+                                </div>
                             </div>
-                        </MudPopover>
-                    </MudItem>
+                        }
+                    </div>
                 }
 
                 <span class="time-display">@FormatTime(_isSeeking ? _seekTarget : PlayerService.CurrentTime) / @FormatTime(PlayerService.Duration)</span>
-            </MudStack>
+            </div>
 
-            <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />
+            <div style="flex:1; min-width:0;">
+                <SeekBar IsVisible=@(_showOverlay || _isMenuOpen) OnDragChanged="OnSeekBarDragChanged" ThumbnailsUri="@(string.IsNullOrEmpty(ThumbnailsSource) ? null : new Uri(ThumbnailsSource, UriKind.RelativeOrAbsolute))" />
+            </div>
 
-            <MudStack Row="true" AlignItems="AlignItems.Center">
-                <MudMenu Icon="@Icons.Material.Outlined.Settings" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomRight"
-                @bind-Open="_isMenuOpen" Color="Color.Inherit">
-                    <MudMenu Label="@L["Audio"]" StartIcon="@Icons.Material.Outlined.Audiotrack">
-                        @foreach (var track in PlayerService.AudioTracks)
+            <div style="display:flex; align-items:center; flex-shrink:0;">
+                <K7Menu Icon="gear" Class="k7-menu--upward"
+                @bind-Open="_isMenuOpen" Color="inherit">
+                        @if (PlayerService.AudioTracks.Count > 1)
                         {
-                            <MudMenuItem OnClick="@(() => OnAudioTrackSelected(track))"
-                                         Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? Icons.Material.Filled.CheckCircle : null)">
-                                @($"{track.Language} - {track.Name} ({track.Codec} {track.ChannelLayout})")
-                            </MudMenuItem>
+                        <K7Menu Label="@L["Audio"]" StartIcon="circle">
+                            @foreach (var track in PlayerService.AudioTracks)
+                            {
+                                <K7MenuItem OnClick="@(() => OnAudioTrackSelected(track))"
+                                             Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
+                                    @($"{track.Language} - {track.Name} ({track.Codec} {track.ChannelLayout})")
+                                </K7MenuItem>
+                            }
+                        </K7Menu>
                         }
-                    </MudMenu>
 
-                    <MudMenu Label="@L["Subtitles"]" StartIcon="@Icons.Material.Outlined.Subtitles">
-                        <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
-                                     Icon="@(PlayerService.SelectedSubtitleTrack is null ? Icons.Material.Filled.CheckCircle : null)">
-                            @L["SubtitlesOff"]
-                        </MudMenuItem> @* TODO - Maybe change the way disabling titles is done *@
-                        @foreach (var track in PlayerService.SubtitleTracks)
+                        @if (PlayerService.SubtitleTracks.Count > 0)
                         {
-                            <MudMenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
-                                         Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? Icons.Material.Filled.CheckCircle : null)">
-                                @($"{track.Language} - {track.Name}{(track.IsForced ? L["ForcedSuffix"] : "")} ({track.Codec})")
-                            </MudMenuItem> // TODO - Maybe use only the track name
+                        <K7Menu Label="@L["Subtitles"]" StartIcon="circle">
+                            <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
+                                         Icon="@(PlayerService.SelectedSubtitleTrack is null ? "check-circle" : null)">
+                                @L["SubtitlesOff"]
+                            </K7MenuItem>
+                            @foreach (var track in PlayerService.SubtitleTracks)
+                            {
+                                <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
+                                             Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? "check-circle" : null)">
+                                    @($"{track.Language} - {track.Name}{(track.IsForced ? L["ForcedSuffix"] : "")} ({track.Codec})")
+                                </K7MenuItem>
+                            }
+                        </K7Menu>
                         }
-                    </MudMenu>
-                    <MudMenu Label="@L["Quality"]" StartIcon="@Icons.Material.Outlined.Tune">
-                        @foreach (var quality in PlayerService.AvailableQualities)
-                        {
-                            <MudMenuItem OnClick="@(() => OnQualitySelected(quality))"
-                                         Icon="@(PlayerService.SelectedQuality == quality ? Icons.Material.Filled.CheckCircle : null)">
-                                @quality.Label
-                            </MudMenuItem>
-                        }
-                    </MudMenu>
 
-                    <MudMenu Label="@L["Speed"]" StartIcon="@Icons.Material.Outlined.Speed">
-                        @foreach (var speed in _playbackSpeedOptions)
+                        @if (PlayerService.AvailableQualities.Count > 1)
                         {
-                            <MudMenuItem OnClick="@(() => OnSpeedSelected(speed))"
-                                         Icon="@(IsCurrentSpeed(speed) ? Icons.Material.Filled.CheckCircle : null)">
-                                @(speed == 1.0 ? L["SpeedNormal"] : $"{speed}x")
-                            </MudMenuItem>
+                        <K7Menu Label="@L["Quality"]" StartIcon="sliders-horizontal">
+                            @foreach (var quality in PlayerService.AvailableQualities)
+                            {
+                                <K7MenuItem OnClick="@(() => OnQualitySelected(quality))"
+                                             Icon="@(PlayerService.SelectedQuality == quality ? "check-circle" : null)">
+                                    @quality.Label
+                                </K7MenuItem>
+                            }
+                        </K7Menu>
                         }
-                    </MudMenu>
 
-                    <MudMenu Label="@L["AspectRatio"]" StartIcon="@Icons.Material.Outlined.AspectRatio">
-                        @foreach (var mode in _aspectRatioOptions)
-                        {
-                            <MudMenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
-                                         Icon="@(PlayerService.AspectRatio == mode ? Icons.Material.Filled.CheckCircle : null)">
-                                @GetAspectRatioLabel(mode)
-                            </MudMenuItem>
-                        }
-                    </MudMenu>
-                </MudMenu>
+                        <K7Menu Label="@L["Speed"]" StartIcon="circle">
+                            @foreach (var speed in _playbackSpeedOptions)
+                            {
+                                <K7MenuItem OnClick="@(() => OnSpeedSelected(speed))"
+                                             Icon="@(IsCurrentSpeed(speed) ? "check-circle" : null)">
+                                    @(speed == 1.0 ? L["SpeedNormal"] : $"{speed}x")
+                                </K7MenuItem>
+                            }
+                        </K7Menu>
 
-                @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
-                {
-                    <MudToggleIconButton Icon="@Icons.Material.Filled.Fullscreen" ToggledIcon="@Icons.Material.Filled.FullscreenExit" Color="Color.Inherit" Toggled="PlayerService.IsFullScreen" ToggledChanged="ToggleFullscreen" />
-                }
-            </MudStack>
-        </MudStack>
+                        <K7Menu Label="@L["AspectRatio"]" StartIcon="circle">
+                            @foreach (var mode in _aspectRatioOptions)
+                            {
+                                <K7MenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
+                                             Icon="@(PlayerService.AspectRatio == mode ? "check-circle" : null)">
+                                    @GetAspectRatioLabel(mode)
+                                </K7MenuItem>
+                            }
+                        </K7Menu>
+                    </K7Menu>
+
+                    @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
+                    {
+                        <button class="k7-icon-btn" type="button" @onclick="ToggleFullscreen" aria-label="">
+                            <i class="ph ph-@(PlayerService.IsFullScreen ? "corners-in" : "corners-out")"></i>
+                        </button>
+                    }
+                </div>
+        </div>
     </div>
 </div>
 
 @if (_hudText is not null)
 {
     <div class="hud-indicator">
-        <MudIcon Icon="@_hudIcon" Size="Size.Large" />
+        <K7Icon Name="@_hudIcon" Size="lg" />
         <span>@_hudText</span>
     </div>
 }
@@ -151,7 +157,7 @@
 @if (_swipeGestureActive)
 {
     <div class="swipe-indicator @(_swipeSide == SwipeSide.Left ? "left" : "right")">
-        <MudIcon Icon="@_hudIcon" Size="Size.Large" />
+        <K7Icon Name="@_hudIcon" Size="lg" />
         <div class="swipe-bar-container">
             <div class="swipe-bar-fill" style="height: @(_swipeBarPercent.ToString(CultureInfo.InvariantCulture))%" />
         </div>
@@ -173,7 +179,6 @@
     private bool _isMouseOverVolumeButton = false;
     private bool _isMouseOverVolumeSlider = false;
     private bool _isVolumeSliderVisible = false;
-    private bool _preventKeyDefault = true;
     private Timer? _overlayVisibleTimer;
     private Timer? _seekDebounceTimer;
     private Timer? _hudTimer;
@@ -181,7 +186,7 @@
     private double _seekOffset;
     private bool _isSeeking;
     private string? _hudText;
-    private string _hudIcon = Icons.Material.Filled.FastForward;
+    private string _hudIcon = "fast-forward";
     private ElementReference _overlayRef;
     private DotNetObjectReference<VideoPlayerControlsOverlay>? _dotNetRef;
     private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
@@ -263,22 +268,21 @@
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
-        _preventKeyDefault = true;
+        // preventDefault is handled in JS capture phase (spatial-navigation.js)
+        // to avoid Blazor render-cycle lag blocking Enter click synthesis on MAUI.
+        // Android TV WebView sends empty Code for remote keys; fall back to Key.
+        var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
 
         // Global shortcuts - always active
-        switch (e.Code)
+        switch (code)
         {
-            case "Space" or "MediaPlayPause":
+            case "Space" or " " or "MediaPlayPause":
                 TogglePlayPause();
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
                 // Menu/submenu escape is handled by JS (spatial-navigation.js capture handler).
-                if (_isMenuOpen)
-                {
-                    _preventKeyDefault = false;
-                    return;
-                }
+                if (_isMenuOpen) return;
                 if (_showOverlay)
                 {
                     _showOverlay = false;
@@ -293,28 +297,23 @@
             case "MediaStop":
                 OnCloseButtonClick();
                 return;
-            case "KeyM":
+            case "KeyM" or "m" or "M":
                 ToggleIsMuted();
                 ResetOverlayTimeout();
                 return;
-            case "KeyF":
+            case "KeyF" or "f" or "F":
                 ToggleFullscreen();
                 ResetOverlayTimeout();
                 return;
         }
 
         // When menu is open, JS handles arrow/Enter navigation inside popovers.
-        // Don't interfere from Blazor side.
-        if (_isMenuOpen)
-        {
-            _preventKeyDefault = false;
-            return;
-        }
+        if (_isMenuOpen) return;
 
         if (!_showOverlay)
         {
             // Overlay hidden: arrows control playback
-            switch (e.Code)
+            switch (code)
             {
                 case "Enter":
                     _showOverlay = true;
@@ -338,7 +337,7 @@
         else
         {
             // Overlay visible: arrows navigate between focusable controls
-            switch (e.Code)
+            switch (code)
             {
                 case "ArrowLeft" or "ArrowUp":
                     _ = FocusByDirectionAsync("prev");
@@ -350,9 +349,6 @@
                     return;
             }
         }
-
-        // Unhandled key: let browser handle it
-        _preventKeyDefault = false;
     }
 
     private async Task FocusByDirectionAsync(string direction)
@@ -371,7 +367,7 @@
         _seekOffset += offset;
         _seekTarget = Math.Clamp(PlayerService.CurrentTime + _seekOffset, 0, PlayerService.Duration);
         _isSeeking = true;
-        _hudIcon = _seekOffset >= 0 ? Icons.Material.Filled.FastForward : Icons.Material.Filled.FastRewind;
+        _hudIcon = _seekOffset >= 0 ? "fast-forward" : "rewind";
         ShowHud($"{(_seekOffset >= 0 ? "+" : "")}{(int)_seekOffset}s");
         _seekDebounceTimer?.Stop();
         _seekDebounceTimer?.Start();
@@ -381,7 +377,7 @@
     {
         var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
         PlayerService.SetVolume(newVolume);
-        _hudIcon = delta > 0 ? Icons.Material.Filled.VolumeUp : Icons.Material.Filled.VolumeDown;
+        _hudIcon = delta > 0 ? "speaker-high" : "speaker-low";
         ShowHud($"{(int)Math.Round(newVolume * 100)}%");
     }
 
@@ -527,7 +523,7 @@
                 {
                     var newVolume = Math.Clamp(VolumeService.Volume + delta, 0, 1);
                     VolumeService.SetVolume(newVolume);
-                    _hudIcon = Icons.Material.Filled.VolumeUp;
+                    _hudIcon = "speaker-high";
                     _hudText = $"{(int)Math.Round(newVolume * 100)}%";
                     _swipeBarPercent = VolumeService.Volume * 100;
                 }
@@ -535,7 +531,7 @@
                 {
                     var newVolume = Math.Clamp(PlayerService.Volume + delta, 0, 1);
                     PlayerService.SetVolume(newVolume);
-                    _hudIcon = Icons.Material.Filled.VolumeUp;
+                    _hudIcon = "speaker-high";
                     _hudText = $"{(int)Math.Round(newVolume * 100)}%";
                     _swipeBarPercent = newVolume * 100;
                 }
@@ -548,7 +544,7 @@
                 {
                     _brightnessOverlayOpacity = 1.0 - newBrightness;
                 }
-                _hudIcon = Icons.Material.Filled.BrightnessHigh;
+                _hudIcon = "sun";
                 _hudText = $"{(int)Math.Round(newBrightness * 100)}%";
                 _swipeBarPercent = newBrightness * 100;
             }
@@ -603,7 +599,7 @@
         _doubleTapSeekCount++;
         var seekStep = isRightHalf ? 10.0 : -10.0;
         _doubleTapSide = isRightHalf ? "right" : "left";
-        _hudIcon = isRightHalf ? Icons.Material.Filled.FastForward : Icons.Material.Filled.FastRewind;
+        _hudIcon = isRightHalf ? "fast-forward" : "rewind";
         ShowHud($"{(seekStep > 0 ? "+" : "")}{(int)(seekStep * _doubleTapSeekCount)}s");
 
         var target = Math.Clamp(PlayerService.CurrentTime + seekStep, 0, PlayerService.Duration);
@@ -802,15 +798,15 @@
     {
         if (PlayerService.IsMuted)
         {
-            return Icons.Material.Filled.VolumeOff;
+            return "speaker-x";
         }
 
         return PlayerService.Volume switch
         {
-            0 => Icons.Material.Filled.VolumeMute,
-            < 0.5d => Icons.Material.Filled.VolumeDown,
-            >= 0.5d => Icons.Material.Filled.VolumeUp,
-            _ => Icons.Material.Filled.VolumeMute
+            0 => "speaker-none",
+            < 0.5d => "speaker-low",
+            >= 0.5d => "speaker-high",
+            _ => "speaker-none"
         };
     }
 

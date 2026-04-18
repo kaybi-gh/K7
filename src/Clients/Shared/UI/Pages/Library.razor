@@ -19,15 +19,12 @@
         <span>@string.Format(L["ItemCount"], MediaCards.Count)</span>
         @if (_availableMediaTypes.Count > 1)
         {
-            <MudChipSet T="MediaType" SelectionMode="SelectionMode.SingleSelection" SelectedValue="_selectedMediaType" SelectedValueChanged="OnMediaTypeFilterChanged" CheckMark="false">
-                @foreach (var mt in _availableMediaTypes)
-                {
-                    <MudChip T="MediaType" Value="@mt" Variant="@(_selectedMediaType.Equals(mt) ? Variant.Filled : Variant.Text)" Color="Color.Primary" Text="@GetMediaTypeLabel(mt)" />
-                }
-            </MudChipSet>
+            @foreach (var mt in _availableMediaTypes)
+            {
+                var mediaType = mt;
+                <K7Chip Value="@mt" Variant="@(_selectedMediaType.Equals(mt) ? "filled" : "outlined")" Color="primary" Text="@GetMediaTypeLabel(mt)" OnClick="() => OnMediaTypeFilterChanged(mediaType)" />
+            }
         }
-        <MudIconButton Icon="@Icons.Material.Outlined.SortByAlpha" />
-        <MudIconButton Icon="@Icons.Material.Outlined.FilterList" />
     </ToolbarContent>
     <GridTemplate Context="item">
         <MediaCard Model="item" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
@@ -42,15 +39,15 @@
                 <div class="library-table-title">
                     @if (!string.IsNullOrEmpty(item.PictureUrl))
                     {
-                        <MudImage Src="@item.PictureUrl" Alt="@item.Title" Width="40" Height="60" ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
+                        <K7Image Src="@item.PictureUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
                     }
-                    <MudText Typo="Typo.body2">@item.Title</MudText>
+                    <p class="text-sm">@item.Title</p>
                 </div>
             </td>
             <td>
                 @if (item.Watched)
                 {
-                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                    <K7Icon Name="check-circle" Color="success" Size="sm" />
                 }
             </td>
         </tr>
@@ -59,18 +56,18 @@
         <a href="@GetItemHref(item)" class="library-list-item">
             @if (!string.IsNullOrEmpty(item.PictureUrl))
             {
-                <MudImage Src="@item.PictureUrl" Alt="@item.Title" Width="40" Height="60" ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
+                <K7Image Src="@item.PictureUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
             }
             <div class="library-list-info">
-                <MudText Typo="Typo.body1">@item.Title</MudText>
+                <p>@item.Title</p>
                 @if (!string.IsNullOrEmpty(item.AdditionalInformations))
                 {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.AdditionalInformations</MudText>
+                    <span class="text-caption" Color="secondary">@item.AdditionalInformations</span>
                 }
             </div>
             @if (item.Watched)
             {
-                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                <K7Icon Name="check-circle" Color="success" Size="sm" />
             }
         </a>
     </ListTemplate>

@@ -2,13 +2,12 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class PlaybackOptionsDialog
 {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter] public required MovieDto Movie { get; set; }
     [Parameter] public Guid? InitialFileId { get; set; }
@@ -45,7 +44,7 @@ public partial class PlaybackOptionsDialog
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        Dialog.Cancel();
     }
 
     private void Play()
@@ -56,7 +55,7 @@ public partial class PlaybackOptionsDialog
             AudioTrack = SelectedAudioTrack,
             SubtitleTrack = SelectedSubtitleTrack
         };
-        MudDialog.Close(DialogResult.Ok(result));
+        Dialog.Close(K7DialogResult.Ok(result));
     }
 }
 

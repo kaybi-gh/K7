@@ -1,4 +1,4 @@
-@using K7.Shared
+﻿@using K7.Shared
 
 @if (_lines.Count > 0)
 {
@@ -35,7 +35,7 @@ else if (!string.IsNullOrWhiteSpace(PlainTextLyrics))
 else
 {
     <div class="no-lyrics">
-        <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
+        <K7Icon Name="music-note" Style="font-size: 48px; opacity: 0.3;" />
         <span>Aucune parole disponible</span>
     </div>
 }

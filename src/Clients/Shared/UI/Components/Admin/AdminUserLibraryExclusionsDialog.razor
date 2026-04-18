@@ -1,30 +1,27 @@
-﻿
-<MudDialog>
-    <DialogContent>
+
+<div class="k7-dialog-content">
         @if (_loading)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <K7ProgressBar Indeterminate="true" />
         }
         else
         {
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            <p class="text-sm mb-3" Color="secondary">
                 Décochez les librairies auxquelles l'utilisateur ne doit pas avoir accès.
-            </MudText>
-            <MudStack Spacing="1">
+            </p>
+            <div class="d-flex flex-col">
                 @foreach (var library in _libraries)
                 {
                     var excluded = _excludedIds.Contains(library.Id);
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                        <MudText Typo="Typo.body2">@library.Title</MudText>
-                        <MudSwitch T="bool" Value="@(!excluded)" ValueChanged="@(v => ToggleExclusion(library.Id, !v))"
-                                   Color="Color.Primary" />
-                    </MudStack>
+                    <div class="d-flex align-center justify-between">
+                        <p class="text-sm">@library.Title</p>
+                        <K7Switch Value="@(!excluded)" ValueChanged="@(v => ToggleExclusion(library.Id, !v))" />
+                    </div>
                 }
-            </MudStack>
+            </div>
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Enregistrer</MudButton>
-    </DialogActions>
-</MudDialog>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">Annuler</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit">Enregistrer</K7Button>
+    </div>

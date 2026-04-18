@@ -5,68 +5,66 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height:80vh;">
-    <MudStack Spacing="6" AlignItems="AlignItems.Center" Style="width:100%; max-width:700px;">
-        <MudText Typo="Typo.h4">@L["PageTitle"]</MudText>
+<div class="container">
+    <div class="d-flex flex-col" style="width:100%; max-width:700px;">
+        <h4>@L["PageTitle"]</h4>
 
         @if (_loading)
         {
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            <K7Spinner />
         }
         else if (_error is not null)
         {
-            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+            <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2" Style="width:100%;">
                 @_error
-            </MudAlert>
+            </K7Alert>
         }
 
-        <MudGrid Justify="Justify.Center" Spacing="4" data-nav-grid="true">
+        <div class="grid">
             @foreach (var user in _users)
             {
-                <MudItem @key="user.IdentityUserId">
-                    <MudStack AlignItems="AlignItems.Center" Spacing="2"
-                              tabindex="0" role="button"
-                              @onclick="() => SelectUserAsync(user)"
-                              @onkeydown="(e) => OnUserKeyDown(e, user)"
-                              Class="cursor-pointer pa-4 rounded-lg select-user-card"
-                              Style="min-width: 120px;">
-                        <MudAvatar Size="Size.Large" Color="Color.Primary"
+                <div>
+                    <div class="d-flex flex-col cursor-pointer pa-4 rounded-lg select-user-card"
+                         tabindex="0" role="button"
+                         @onclick="() => SelectUserAsync(user)"
+                         @onkeydown="(e) => OnUserKeyDown(e, user)"
+                         style="min-width: 120px;">
+                        <K7Avatar Size="lg" Color="primary"
                                    Style="width:80px; height:80px; font-size:2rem;">
                             @GetInitials(user.UserName)
-                        </MudAvatar>
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Justify="Justify.Center">
-                            <MudText Typo="Typo.body1" Align="Align.Center">@user.UserName</MudText>
+                        </K7Avatar>
+                        <div class="d-flex align-center">
+                            <p>@user.UserName</p>
                             @if (user.PinHash is not null)
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Secondary" />
+                                <K7Icon Name="lock" Size="sm" Color="secondary" />
                             }
-                        </MudStack>
-                    </MudStack>
-                </MudItem>
+                        </div>
+                    </div>
+                </div>
             }
 
-            <MudItem>
-                <MudStack AlignItems="AlignItems.Center" Spacing="2"
-                          tabindex="0" role="button"
-                          @onclick="AddUserAsync"
-                          @onkeydown="OnAddUserKeyDown"
-                          Class="cursor-pointer pa-4 rounded-lg select-user-card"
-                          Style="min-width: 120px;">
-                    <MudAvatar Size="Size.Large" Color="Color.Default"
+            <div>
+                <div class="d-flex flex-col cursor-pointer pa-4 rounded-lg select-user-card"
+                     tabindex="0" role="button"
+                     @onclick="AddUserAsync"
+                     @onkeydown="OnAddUserKeyDown"
+                     style="min-width: 120px;">
+                    <K7Avatar Size="lg" Color="default"
                                Style="width:80px; height:80px; font-size:2rem;">
-                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Large" />
-                    </MudAvatar>
-                    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">@L["AddServer"]</MudText>
-                </MudStack>
-            </MudItem>
-        </MudGrid>
+                        <K7Icon Name="plus" Size="lg" />
+                    </K7Avatar>
+                    <p>@L["AddServer"]</p>
+                </div>
+            </div>
+        </div>
 
         @if (_users.Count > 0)
         {
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-4">
-                <MudSwitch T="bool" Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
-                           Color="Color.Primary" Label="@L["SingleUserMode"]" />
-            </MudStack>
+            <div class="d-flex align-center mt-4">
+                <K7Switch Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
+                           Label="@L["SingleUserMode"]" />
+            </div>
         }
-    </MudStack>
-</MudContainer>
+    </div>
+</div>

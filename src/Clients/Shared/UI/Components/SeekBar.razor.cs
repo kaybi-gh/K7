@@ -1,15 +1,14 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
-using MudBlazor.Services;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
+public partial class SeekBar : IAsyncDisposable
 {
     [Inject] private IPlayerService PlayerService { get; set; } = default!;
-    [Inject] private IBrowserViewportService BrowserViewportService { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private ElementReference SeekBarRef;
     private bool IsHovering;
@@ -54,7 +53,7 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
         {
             if (SeekBarWidth <= 0)
             {
-                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", SeekBarRef);
                 SeekBarWidth = bounds.Width;
                 SeekBarLeft = bounds.Left;
             }
@@ -72,7 +71,7 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
 
         if (SeekBarWidth <= 0)
         {
-            var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+            var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", SeekBarRef);
             SeekBarWidth = bounds.Width;
             SeekBarLeft = bounds.Left;
         }
@@ -95,7 +94,7 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
         {
             if (SeekBarWidth <= 0)
             {
-                var bounds = await SeekBarRef.MudGetBoundingClientRectAsync();
+                var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", SeekBarRef);
                 SeekBarWidth = bounds.Width;
                 SeekBarLeft = bounds.Left;
             }
@@ -126,10 +125,12 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
     private void OnKeyDown(KeyboardEventArgs e)
     {
         _preventKeyDefault = true;
+        // Android TV WebView sends empty Code for remote keys; fall back to Key
+        var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
 
         if (_isScrubbing)
         {
-            switch (e.Code)
+            switch (code)
             {
                 case "ArrowLeft":
                     _scrubRepeatCount++;
@@ -165,7 +166,7 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
         }
         else
         {
-            switch (e.Code)
+            switch (code)
             {
                 case "Enter":
                     _isScrubbing = true;
@@ -263,35 +264,13 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
         InvokeAsync(StateHasChanged);
     }
 
-    Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
-
-    ResizeOptions IBrowserViewportObserver.ResizeOptions { get; } = new()
-    {
-        ReportRate = 50,
-        NotifyOnBreakpointOnly = false
-    };
-
-    Task IBrowserViewportObserver.NotifyBrowserViewportChangeAsync(BrowserViewportEventArgs browserViewportEventArgs)
-    {
-        SeekBarWidth = 0;
-        return Task.CompletedTask;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await BrowserViewportService.SubscribeAsync(this);
-        }
-    }
-
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         _scrubDecayTimer?.Dispose();
         PlayerService.DurationChanged -= OnDurationChanged;
         PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
         PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;
-        await BrowserViewportService.UnsubscribeAsync(this);
+        return ValueTask.CompletedTask;
     }
 
     public class Chapter
@@ -300,3 +279,5 @@ public partial class SeekBar : IAsyncDisposable, IBrowserViewportObserver
         public double Start { get; set; }
     }
 }
+
+internal sealed record BoundingRect(double Left, double Top, double Width, double Height);

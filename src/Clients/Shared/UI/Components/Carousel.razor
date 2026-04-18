@@ -1,23 +1,23 @@
-<MudStack>
+<div class="d-flex flex-col">
     <div data-carousel @ref="_root">
-        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="ml-4">
+        <div class="d-flex justify-between ml-4">
             @if (Skeleton)
             {
-                <MudSkeleton Animation="Animation.Wave" Height="50px" Width="330px" Class="rounded-lg" />
+                <K7Skeleton Shape="text" Width="330px" />
             }
             else
             {
-                <MudText Typo="Typo.h6">@Title</MudText>
+                <h6>@Title</h6>
             }
-            <MudStack Row="true">
-                <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Class="py-0 pr-3" aria-hidden="true" data-carousel-prev tabindex="-1" />
-                <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Class="py-0 pl-3" aria-hidden="true" data-carousel-next tabindex="-1" />
-            </MudStack>
-        </MudStack>
+            <div class="d-flex">
+                <button type="button" class="k7-icon-btn py-0 pr-3" aria-hidden="true" data-carousel-prev tabindex="-1"><i class="ph ph-caret-left"></i></button>
+                <button type="button" class="k7-icon-btn py-0 pl-3" aria-hidden="true" data-carousel-next tabindex="-1"><i class="ph ph-caret-right"></i></button>
+            </div>
+        </div>
         <div class="carousel-viewport" data-carousel-viewport>
             <div class="carousel-container">
                 @ChildContent
             </div>
         </div>
     </div>
-</MudStack>
+</div>

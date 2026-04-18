@@ -1,11 +1,9 @@
-﻿<MudDialog>
-    <DialogContent>
-        <MudText>
+﻿<div class="k7-dialog-content">
+        <span>
             Voulez-vous vraiment supprimer <strong>@DisplayName</strong> ? Cette action est irréversible.
-        </MudText>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
-        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="Confirm">Supprimer</MudButton>
-    </DialogActions>
-</MudDialog>
+        </span>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">Annuler</K7Button>
+        <K7Button Color="error" Variant="filled" OnClick="Confirm">Supprimer</K7Button>
+    </div>

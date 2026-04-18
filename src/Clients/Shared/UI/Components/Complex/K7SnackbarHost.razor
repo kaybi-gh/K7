@@ -1,0 +1,15 @@
+@namespace K7.Clients.Shared.UI.Components.Complex
+@implements IDisposable
+
+<div class="k7-snackbar-host" aria-live="polite" aria-atomic="false">
+    @foreach (var msg in _messages)
+    {
+        <div class="k7-toast k7-toast--@msg.Severity.ToString().ToLower()" @key="msg.Id" role="alert">
+            <i class="ph ph-@GetIcon(msg.Severity)"></i>
+            <span class="k7-toast-msg">@msg.Message</span>
+            <button class="k7-toast-close" type="button" aria-label="Dismiss" @onclick="() => Remove(msg)">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+    }
+</div>

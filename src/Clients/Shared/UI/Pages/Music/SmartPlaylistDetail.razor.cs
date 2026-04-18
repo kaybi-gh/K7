@@ -1,11 +1,10 @@
-using K7.Clients.Shared.UI.Components.Dialogs;
+﻿using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -13,8 +12,8 @@ public partial class SmartPlaylistDetail
 {
     [Parameter] public required string Id { get; set; }
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 
     private SmartPlaylistDto? _smartPlaylist;
@@ -81,7 +80,7 @@ public partial class SmartPlaylistDetail
         }
     }
 
-    private async Task OnTrackClick(TableRowClickEventArgs<SmartPlaylistItemViewModel> args)
+    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.Complex.TableRowClickEventArgs<SmartPlaylistItemViewModel> args)
     {
         var track = args.Item;
         if (track is null) return;
@@ -120,9 +119,9 @@ public partial class SmartPlaylistDetail
             await K7ServerService.EvaluateSmartPlaylistAsync(Guid.Parse(Id));
             _smartPlaylist = await K7ServerService.GetSmartPlaylistAsync(Guid.Parse(Id));
             await LoadItemsAsync();
-            Snackbar.Add(L["ReevaluateSuccess"], Severity.Success);
+            Snackbar.Add(L["ReevaluateSuccess"], K7Severity.Success);
         }
-        catch { Snackbar.Add(L["ReevaluateError"], Severity.Error); }
+        catch { Snackbar.Add(L["ReevaluateError"], K7Severity.Error); }
         finally
         {
             _evaluating = false;
@@ -133,7 +132,7 @@ public partial class SmartPlaylistDetail
     private async Task OpenEditDialog()
     {
         if (_smartPlaylist is null) return;
-        var parameters = new DialogParameters<SmartPlaylistDialog>
+        var parameters = new K7DialogParameters<SmartPlaylistDialog>
         {
             { x => x.SmartPlaylistId, _smartPlaylist.Id },
             { x => x.InitialTitle, _smartPlaylist.Title },
@@ -145,7 +144,7 @@ public partial class SmartPlaylistDetail
             { x => x.InitialOrderBy, _smartPlaylist.OrderBy },
             { x => x.InitialOrderDescending, _smartPlaylist.OrderDescending }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>(L["EditDialogTitle"], parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false })
@@ -165,10 +164,10 @@ public partial class SmartPlaylistDetail
             try
             {
                 await K7ServerService.DeleteSmartPlaylistAsync(Guid.Parse(Id));
-                Snackbar.Add(L["DeleteSuccess"], Severity.Success);
+                Snackbar.Add(L["DeleteSuccess"], K7Severity.Success);
                 NavigationManager.NavigateTo("/playlists");
             }
-            catch { Snackbar.Add(L["DeleteError"], Severity.Error); }
+            catch { Snackbar.Add(L["DeleteError"], K7Severity.Error); }
         }
     }
 

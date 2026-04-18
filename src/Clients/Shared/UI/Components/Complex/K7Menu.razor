@@ -1,0 +1,40 @@
+@namespace K7.Clients.Shared.UI.Components.Complex
+
+<div class="k7-menu @(_open ? "k7-menu--open" : "") @Class" @ref="_root" @onfocusout="OnFocusOut">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <button type="button"
+                class="k7-icon-btn @(string.IsNullOrEmpty(Size) ? "" : $"k7-icon-btn--{Size}")"
+                aria-label="@AriaLabel"
+                aria-haspopup="true"
+                aria-expanded="@_open"
+                @onclick="Toggle"
+                @onclick:stopPropagation="true">
+            <i class="ph ph-@Icon"></i>
+        </button>
+    }
+    else
+    {
+        <button type="button"
+                class="k7-btn k7-btn--@Variant @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(string.IsNullOrEmpty(Size) ? "" : $"k7-btn--{Size}")"
+                aria-haspopup="true"
+                aria-expanded="@_open"
+                @onclick="Toggle"
+                @onclick:stopPropagation="true">
+            @if (!string.IsNullOrEmpty(StartIcon))
+            {
+                <i class="ph ph-@StartIcon"></i>
+            }
+            @Label
+            @if (!string.IsNullOrEmpty(EndIcon))
+            {
+                <i class="ph ph-@EndIcon"></i>
+            }
+        </button>
+    }
+    <div class="k7-menu-dropdown" role="menu" @onclick:stopPropagation="true">
+        <CascadingValue Value="this" IsFixed="true">
+            @ChildContent
+        </CascadingValue>
+    </div>
+</div>

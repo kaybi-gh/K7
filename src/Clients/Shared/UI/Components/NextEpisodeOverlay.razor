@@ -8,44 +8,44 @@
             <div class="next-episode-center">
                 @if (_stillUrl is not null)
                 {
-                    <MudImage Src="@_stillUrl"
+                    <K7Image Src="@_stillUrl"
                               Alt="@_nextEpisode.Title"
                               Class="next-episode-still"
-                              ObjectFit="ObjectFit.Cover" />
+                              ObjectFit="cover" />
                 }
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="next-episode-label">
+                <span class="text-caption next-episode-label" Color="secondary">
                     @L["NextEpisode"]
-                </MudText>
-                <MudText Typo="Typo.h5" Class="next-episode-title">
+                </span>
+                <h5>
                     S@(_nextEpisode.SeasonNumber.ToString("D2"))E@(_nextEpisode.EpisodeNumber.ToString("D2"))
                     @if (!string.IsNullOrEmpty(_nextEpisode.Title))
                     {
                         <span> &mdash; @_nextEpisode.Title</span>
                     }
-                </MudText>
+                </h5>
 
                 @if (_countdownSeconds > 0)
                 {
-                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">
+                    <p class="mt-2" Color="secondary">
                         @string.Format(L["AutoPlayIn"], _countdownSeconds)
-                    </MudText>
+                    </p>
                 }
 
-                <MudStack Row="true" Spacing="3" Class="mt-4">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.PlayArrow"
-                               Size="Size.Large"
+                <div class="d-flex mt-4">
+                    <K7Button Variant="filled"
+                               Color="primary"
+                               StartIcon="play"
+                               Size="lg"
                                OnClick="PlayNextAsync">
                         @L["PlayNow"]
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Size="Size.Large"
+                    </K7Button>
+                    <K7Button Variant="outlined"
+                               Size="lg"
                                OnClick="Dismiss"
                                Style="color: white; border-color: rgba(255,255,255,0.3);">
                         @L["Dismiss"]
-                    </MudButton>
-                </MudStack>
+                    </K7Button>
+                </div>
             </div>
         </div>
     </div>

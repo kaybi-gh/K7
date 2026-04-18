@@ -2,14 +2,20 @@
     position: relative;
 }
 
+.person-page > *:not(.person-backdrops) {
+    position: relative;
+    z-index: 1;
+}
+
 .person-backdrops {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
-    z-index: -1;
+    z-index: 0;
     overflow: hidden;
+    pointer-events: none;
 }
 
 .person-backdrop {
@@ -62,7 +68,7 @@
     width: 260px;
     height: 390px;
     border-radius: 12px;
-    background: var(--mud-palette-surface);
+    background: var(--color-surface);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -92,7 +98,7 @@
 .person-bio:hover,
 .person-bio:focus-visible {
     opacity: 0.8;
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 

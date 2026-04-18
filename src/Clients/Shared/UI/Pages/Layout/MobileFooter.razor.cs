@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.SignalR.Client;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Layout;
 
@@ -15,7 +14,7 @@ public partial class MobileFooter : IDisposable
     private bool _musicDrawerOpen;
     private bool _menuDrawerOpen;
     private List<LibraryDto> _libraries = [];
-    private Color _badgeColor = Color.Default;
+    private string _badgeClass = "offline";
     private string _badgeTitle = string.Empty;
 
     [Inject] private NavigationManager Nav { get; set; } = default!;
@@ -94,10 +93,10 @@ public partial class MobileFooter : IDisposable
 
     private void UpdateBadge(HubConnectionState state)
     {
-        (_badgeColor, _badgeTitle) = state switch
+        (_badgeClass, _badgeTitle) = state switch
         {
-            HubConnectionState.Connected => (Color.Success, L["Connected"]),
-            _ => (Color.Default, L["Reconnecting"])
+            HubConnectionState.Connected => ("connected", L["Connected"]),
+            _ => ("offline", L["Reconnecting"])
         };
     }
 
@@ -125,10 +124,10 @@ public partial class MobileFooter : IDisposable
 
     private static string GetLibraryIcon(LibraryMediaType mediaType) => mediaType switch
     {
-        LibraryMediaType.Movie => Icons.Material.Filled.Theaters,
-        LibraryMediaType.Serie => Icons.Material.Filled.Tv,
-        LibraryMediaType.Music => Icons.Material.Filled.MusicNote,
-        _ => Icons.Material.Filled.Folder
+        LibraryMediaType.Movie => "film-strip",
+        LibraryMediaType.Serie => "television",
+        LibraryMediaType.Music => "music-notes",
+        _ => "folder"
     };
 
     private void SwitchUser()

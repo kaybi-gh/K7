@@ -5,7 +5,6 @@ using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -26,11 +25,11 @@ public partial class Settings
     private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
     [Parameter] public string? Tab { get; set; }
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     protected override void OnInitialized()
     {
         ThemeService.ThemeOnChange += StateHasChanged;
-        ThemeService.DarkModeEnabledOnChange += StateHasChanged;
     }
 
     protected override void OnParametersSet()
@@ -80,12 +79,10 @@ public partial class Settings
     public void Dispose()
     {
         ThemeService.ThemeOnChange -= StateHasChanged;
-        ThemeService.DarkModeEnabledOnChange -= StateHasChanged;
     }
 
     private void ToggleDrawerVariant()
     {
-        ThemeService.ToggleDarkMode();
         StateHasChanged();
     }
 
@@ -97,7 +94,7 @@ public partial class Settings
         }
         catch
         {
-            // Best effort — server may be unreachable
+            // Best effort - server may be unreachable
         }
 
         await JSRuntime.InvokeVoidAsync("blazorCulture.set", culture);
@@ -192,14 +189,14 @@ public partial class Settings
 
     private async Task<string?> ShowPinDialog(string title)
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<PinDialog>(title, options);
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<PinDialog>(title, null, options);
         var result = await dialog.Result;
 
-        if (result is null || result.Canceled || result.Data is not string enteredPin)
+        if (result is null || result.Canceled)
             return null;
 
-        return enteredPin;
+        return result.Data as string;
     }
 
     private void ClearPinMessages()

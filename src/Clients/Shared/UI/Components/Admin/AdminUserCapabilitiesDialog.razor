@@ -1,33 +1,29 @@
-﻿
-<MudDialog>
-    <DialogContent>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+
+<div class="k7-dialog-content">
+        <p class="text-sm mb-3" Color="secondary">
             Rôle actuel : <strong>@GetRoleLabel(Role)</strong>. Les cases cochées par défaut sont héritées du rôle.
-        </MudText>
-        <MudStack Spacing="1">
+        </p>
+        <div class="d-flex flex-col">
             @foreach (var capability in Enum.GetValues<Capability>())
             {
                 var defaultEnabled = _defaultCaps.Contains(capability);
                 var hasOverride = Overrides.ContainsKey(capability);
                 var effectiveValue = hasOverride ? Overrides[capability] : defaultEnabled;
 
-                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudText Typo="Typo.body2">@GetCapabilityLabel(capability)</MudText>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <div class="d-flex align-center justify-between">
+                    <p class="text-sm">@GetCapabilityLabel(capability)</p>
+                    <div class="d-flex align-center">
                         @if (hasOverride)
                         {
-                            <MudIconButton Icon="@Icons.Material.Filled.Undo" Size="Size.Small" Color="Color.Secondary"
-                                           OnClick="@(() => RemoveOverride(capability))" aria-label="@S["Reset"]" />
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => RemoveOverride(capability))" aria-label="remove override"><i class="ph ph-x-circle"></i></button>
                         }
-                        <MudSwitch T="bool" Value="@effectiveValue" ValueChanged="@(v => SetOverride(capability, v, defaultEnabled))"
-                                   Color="@(hasOverride ? Color.Warning : Color.Primary)" />
-                    </MudStack>
-                </MudStack>
+                        <K7Switch Value="@effectiveValue" ValueChanged="@(v => SetOverride(capability, v, defaultEnabled))" />
+                    </div>
+                </div>
             }
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Enregistrer</MudButton>
-    </DialogActions>
-</MudDialog>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit">Enregistrer</K7Button>
+    </div>

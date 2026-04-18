@@ -1,4 +1,4 @@
-using K7.Clients.Shared.Mappings;
+﻿using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
@@ -19,8 +19,8 @@ public partial class Home : IDisposable
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     private bool isLoading { get; set; } = true;
     private bool _canTrackProgress;
@@ -218,28 +218,28 @@ public partial class Home : IDisposable
         try
         {
             var excluded = await UserAdminService.ToggleMediaExclusionAsync(Guid.Parse(model.Id));
-            Snackbar.Add(excluded ? string.Format(S["Hidden"], model.Title) : string.Format(S["Unhidden"], model.Title), Severity.Success);
+            Snackbar.Add(excluded ? string.Format(S["Hidden"], model.Title) : string.Format(S["Unhidden"], model.Title), K7Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 
     private async Task ExcludeForOthers(MediaCardViewModel model)
     {
-        var parameters = new DialogParameters<ExcludeMediaForUsersDialog>
+        var parameters = new K7DialogParameters<ExcludeMediaForUsersDialog>
         {
             { x => x.MediaId, Guid.Parse(model.Id) },
             { x => x.MediaTitle, model.Title }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<ExcludeMediaForUsersDialog>(S["HideForUser"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
         {
-            Snackbar.Add(S["ExclusionsUpdated"], Severity.Success);
+            Snackbar.Add(S["ExclusionsUpdated"], K7Severity.Success);
         }
     }
 }

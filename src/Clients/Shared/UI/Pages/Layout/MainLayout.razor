@@ -1,7 +1,8 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Localization
 @inject ThemeService ThemeService
+@inject SidebarService SidebarService
 @inject K7.Clients.Shared.Services.K7HubClient K7HubClient
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -11,75 +12,48 @@
 @inject IK7ServerService K7ServerService
 @inject IStringLocalizer<MainLayout> L
 
-<MudThemeProvider Theme="@ThemeService.ThemeWrapper.Theme" IsDarkMode=@ThemeService.DarkModeEnabled />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MediaPlayer />
-<MiniMusicPlayer />
-<FullScreenMusicPlayer />
+<div class="app-shell @(_sidebarOpen ? "sidebar-open" : "")">
+    @if (_showOverlay)
+    {
+        <div class="reconnection-overlay">
+            <svg class="loading-progress" style="width:4rem;height:4rem;margin:0">
+                <circle r="40%" cx="50%" cy="50%" />
+                <circle r="40%" cx="50%" cy="50%" />
+            </svg>
+            <p class="mt-4" style="font-size:var(--text-lg);font-weight:600">@L["Reconnecting"]</p>
+            <p class="mt-2" style="color:var(--color-text-secondary)">@L["ReconnectingDescription"]</p>
+        </div>
+    }
 
-<MudBreakpointProvider>
-    <MudHidden Breakpoint="Breakpoint.SmAndUp">
-        <MudLayout Class="mobile-layout">
-            @if (_showOverlay)
-            {
-                <div class="reconnection-overlay">
-                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-                    <MudText Typo="Typo.h6" Class="mt-4">@L["Reconnecting"]</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["ReconnectingDescription"]</MudText>
-                </div>
-            }
-            <MudMainContent>
-                <ErrorBoundary @ref="_errorBoundary">
-                    <ChildContent>
-                        @Body
-                    </ChildContent>
-                    <ErrorContent>
-                        <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex flex-column align-center justify-center" Style="min-height: 60vh;">
-                            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" />
-                            <MudText Typo="Typo.h6" Class="mt-4">@L["UnexpectedError"]</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["UnexpectedErrorDescription"]</MudText>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="Recover">@L["Retry"]</MudButton>
-                        </MudContainer>
-                    </ErrorContent>
-                </ErrorBoundary>
-            </MudMainContent>
-            <MobileFooter />
-        </MudLayout>
-    </MudHidden>
+    <Sidebar />
 
-    <MudHidden Breakpoint="Breakpoint.Xs">
-        <MudLayout>
-            @if (_showOverlay)
-            {
-                <div class="reconnection-overlay">
-                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-                    <MudText Typo="Typo.h6" Class="mt-4">@L["Reconnecting"]</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["ReconnectingDescription"]</MudText>
+    <main class="app-main">
+        <MediaPlayer />
+        <MiniMusicPlayer />
+        <FullScreenMusicPlayer />
+        <ErrorBoundary @ref="_errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent>
+                <div class="error-state">
+                    <K7Icon Name="warning-circle" Size="xl" class="error-icon" />
+                    <p style="font-size:var(--text-lg);font-weight:600">@L["UnexpectedError"]</p>
+                    <p style="color:var(--color-text-secondary)">@L["UnexpectedErrorDescription"]</p>
+                    <button class="btn btn--primary mt-4" @onclick="Recover">@L["Retry"]</button>
                 </div>
-            }
-            <Sidebar />
-            <MudMainContent>
-                <ErrorBoundary @ref="_errorBoundary">
-                    <ChildContent>
-                        @Body
-                    </ChildContent>
-                    <ErrorContent>
-                        <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex flex-column align-center justify-center" Style="min-height: 60vh;">
-                            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" />
-                            <MudText Typo="Typo.h6" Class="mt-4">@L["UnexpectedError"]</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@L["UnexpectedErrorDescription"]</MudText>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="Recover">@L["Retry"]</MudButton>
-                        </MudContainer>
-                    </ErrorContent>
-                </ErrorBoundary>
-            </MudMainContent>
-        </MudLayout>
-    </MudHidden>
-</MudBreakpointProvider>
+            </ErrorContent>
+        </ErrorBoundary>
+    </main>
+
+    <MobileFooter />
+</div>
+
+<K7DialogHost />
+<K7SnackbarHost />
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">&#x2715;</span>
 </div>

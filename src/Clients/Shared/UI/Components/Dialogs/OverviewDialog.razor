@@ -2,11 +2,9 @@
 @using K7.Clients.Shared.UI.Pages
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
-        <MudText Typo="Typo.body1" Style="white-space: pre-wrap;">@ContentText</MudText>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">@ButtonText</MudButton>
-    </DialogActions>
-</MudDialog>
+<div class="k7-dialog-content">
+        <p Style="white-space: pre-wrap;">@ContentText</p>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel" Variant="text">@ButtonText</K7Button>
+    </div>

@@ -1,15 +1,15 @@
-.summary-card {
+﻿.summary-card {
     padding: 20px 24px;
     transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .summary-card:hover {
-    border-color: var(--mud-palette-primary);
+    border-color: var(--color-accent);
     background-color: rgba(255, 255, 255, 0.03);
 }
 
 .summary-card-active {
-    border-color: var(--mud-palette-primary);
+    border-color: var(--color-accent);
     border-width: 2px;
     background-color: rgba(229, 160, 13, 0.06);
 }

@@ -1,11 +1,11 @@
-.album-card-link {
+﻿.album-card-link {
     text-decoration: none;
     color: inherit;
     border-radius: 8px;
 }
 
 .album-card-link:focus-visible {
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 
@@ -21,7 +21,7 @@
 
 .album-card:hover,
 .album-card-link:focus-visible .album-card {
-    background: var(--mud-palette-action-default-hover);
+    background: var(--color-surface-hover);
 }
 
 ::deep .album-cover {
@@ -32,7 +32,7 @@
     width: 160px;
     height: 160px;
     border-radius: 8px;
-    background: var(--mud-palette-background-gray);
+    background: var(--color-bg-gray);
     display: flex;
     align-items: center;
     justify-content: center;

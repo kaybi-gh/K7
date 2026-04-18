@@ -11,95 +11,129 @@
 @inject IJSRuntime JSRuntime
 @inject IStringLocalizer<Sidebar> L
 
-<MudDrawer @bind-Open="@SidebarService.IsOpen" Fixed="true" Elevation="0" Breakpoint="Breakpoint.Xs" Variant="DrawerVariant.Mini" data-nav-column="sidebar">
-    <MudStack AlignItems="AlignItems.Center">
-        <MudToggleIconButton @bind-Toggled="@SidebarService.IsOpen"
-            Icon="@Icons.Material.Filled.Menu" title="@(SidebarService.IsOpen ? "Off" : "On")"
-            ToggledIcon="@Icons.Material.Filled.Close" />
-        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-4">
-            <MudIcon Color="Color.Primary" Size="Size.Large" Icon="@Icons.Material.TwoTone.Cyclone" />
-            @if (SidebarService.IsOpen)
-            {
-                <MudText Color="Color.Primary" Typo="Typo.h6">K7</MudText>
-            }
-        </MudStack>
-        <MudStack Row="true" AlignItems="AlignItems.Center">
-            @if (SidebarService.IsOpen)
-            {
-                <MudTextField Class="sidebar-search-bar mx-4" UnderLine="false" Label="@L["Search"]" DebounceInterval="500" OnDebounceIntervalElapsed="Search" @bind-Value="@_debouncedText" Variant="Variant.Filled" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Primary" />
-            }
-            else
-            {
-                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Search" />
-            }
-        </MudStack>
-    </MudStack>
-    <MudNavMenu Bordered="true" Style="width: 100%;">
-        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">@L["Home"]</MudNavLink>
+<aside class="sidebar @(SidebarService.IsOpen ? "open" : "")" data-nav-column="sidebar">
+    <div class="sidebar-header">
+        <button class="sidebar-toggle btn-icon" @onclick="ToggleSidebar" title="@(SidebarService.IsOpen ? L["Collapse"] : L["Expand"])">
+            <K7Icon Name="@(SidebarService.IsOpen ? "x" : "list")" />
+        </button>
+        <a href="/" class="sidebar-logo">
+            <K7Icon Name="hurricane" Size="K7IconSize.Large" />
+            <span class="sidebar-logo-text">K7</span>
+        </a>
+        @if (SidebarService.IsOpen)
+        {
+            <div class="sidebar-search px-2" style="width:100%">
+                <input class="sidebar-search-input"
+                       type="search"
+                       placeholder="@L["Search"]"
+                       value="@_debouncedText"
+                       @oninput="OnSearchInput" />
+            </div>
+        }
+        else
+        {
+            <button class="btn-icon btn-icon--accent" @onclick="OpenSearch" title="@L["Search"]">
+                <K7Icon Name="magnifying-glass" />
+            </button>
+        }
+    </div>
+
+    <nav class="sidebar-nav">
+        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+            <span class="nav-icon"><K7Icon Name="house" /></span>
+            <span class="nav-label">@L["Home"]</span>
+        </NavLink>
         @foreach (var library in _libraries)
         {
-            <MudNavLink @key="library.Id" Href="@($"/library/{library.Id}")" Match="NavLinkMatch.All" Icon="@GetLibraryIcon(library.MediaType)">@library.Title</MudNavLink>
+            <NavLink @key="library.Id" class="nav-link" href="@($"/library/{library.Id}")" Match="NavLinkMatch.All">
+                <span class="nav-icon"><K7Icon Name="@GetLibraryIcon(library.MediaType)" /></span>
+                <span class="nav-label">@library.Title</span>
+            </NavLink>
         }
-        <MudNavGroup Title="@L["Music"]" Icon="@Icons.Material.Filled.MusicNote" Expanded="false">
-            <MudNavLink Href="/music/artists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person">@L["Artists"]</MudNavLink>
-            <MudNavLink Href="/music/albums" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Album">@L["Albums"]</MudNavLink>
-            <MudNavLink Href="/music/tracks" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AudioFile">@L["Tracks"]</MudNavLink>
-            <AuthorizeView Roles="User,Administrator">
-                <MudNavLink Href="/playlists" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.QueueMusic">@L["Playlists"]</MudNavLink>
-            </AuthorizeView>
-            <MudNavLink Href="/music/radio" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Radio">@L["Radio"]</MudNavLink>
-            <AuthorizeView Roles="User,Administrator">
-                <MudNavLink Href="/music/stats" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.BarChart">@L["Stats"]</MudNavLink>
-            </AuthorizeView>
 
-        </MudNavGroup>
-    </MudNavMenu>
-    <MudSpacer />
-    <MudNavMenu Bordered="true" Style="width: 100%;">
+        <details class="nav-group">
+            <summary class="nav-group-toggle">
+                <span class="nav-icon"><K7Icon Name="music-notes" /></span>
+                <span class="nav-label">@L["Music"]</span>
+                <K7Icon Name="caret-down" class="nav-group-arrow" />
+            </summary>
+            <div class="nav-group-items">
+                <NavLink class="nav-link" href="/music/artists" Match="NavLinkMatch.All">
+                    <span class="nav-icon"><K7Icon Name="user" /></span>
+                    <span class="nav-label">@L["Artists"]</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/music/albums" Match="NavLinkMatch.All">
+                    <span class="nav-icon"><K7Icon Name="vinyl-record" /></span>
+                    <span class="nav-label">@L["Albums"]</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/music/tracks" Match="NavLinkMatch.All">
+                    <span class="nav-icon"><K7Icon Name="music-note" /></span>
+                    <span class="nav-label">@L["Tracks"]</span>
+                </NavLink>
+                <AuthorizeView Roles="User,Administrator">
+                    <NavLink class="nav-link" href="/playlists" Match="NavLinkMatch.All">
+                        <span class="nav-icon"><K7Icon Name="queue" /></span>
+                        <span class="nav-label">@L["Playlists"]</span>
+                    </NavLink>
+                </AuthorizeView>
+                <NavLink class="nav-link" href="/music/radio" Match="NavLinkMatch.All">
+                    <span class="nav-icon"><K7Icon Name="radio" /></span>
+                    <span class="nav-label">@L["Radio"]</span>
+                </NavLink>
+                <AuthorizeView Roles="User,Administrator">
+                    <NavLink class="nav-link" href="/music/stats" Match="NavLinkMatch.All">
+                        <span class="nav-icon"><K7Icon Name="chart-bar" /></span>
+                        <span class="nav-label">@L["Stats"]</span>
+                    </NavLink>
+                </AuthorizeView>
+            </div>
+        </details>
+    </nav>
+
+    <nav class="sidebar-nav" style="flex: none">
         <AuthorizeView>
-            <MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">@L["Settings"]</MudNavLink>
+            <NavLink class="nav-link" href="/settings" Match="NavLinkMatch.All">
+                <span class="nav-icon"><K7Icon Name="gear" /></span>
+                <span class="nav-label">@L["Settings"]</span>
+            </NavLink>
         </AuthorizeView>
         <AuthorizeView Roles="Administrator">
-            <MudNavLink Href="/admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AdminPanelSettings">@L["Admin"]</MudNavLink>
+            <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
+                <span class="nav-icon"><K7Icon Name="shield-check" /></span>
+                <span class="nav-label">@L["Admin"]</span>
+            </NavLink>
         </AuthorizeView>
-    </MudNavMenu>
+    </nav>
 
-    <AuthorizeView>
-        <Authorized>
-            @if (!SidebarService.IsOpen)
-            {
-                <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
-                    <MudBadge Dot="true" Color="@_badgeColor" Overlap="true" Bordered="true" BadgeClass="connection-badge" title="@_badgeTitle">
-                        <MudAvatar Color="Color.Primary">K</MudAvatar>
-                    </MudBadge>
-                </MudStack>
-            }
-            else
-            {
-                <MudPaper Class="px-8 py-4 ma-4">
-                    <MudStack Row="true">
-                        <MudBadge Dot="true" Color="@_badgeColor" Overlap="true" Bordered="true" BadgeClass="connection-badge" title="@_badgeTitle">
-                            <MudAvatar Color="Color.Primary">K</MudAvatar>
-                        </MudBadge>
-                        <MudStack Justify="Justify.Center" Spacing="0">
-                            <MudText Typo="Typo.body1">@context.User.Identity?.Name</MudText>
-                            <MudStack Row="true" Spacing="1">
-                                @if (DeviceService.GetClientType() != ClientType.Web)
-                                {
-                                    <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.SwitchAccount" OnClick="SwitchUser" title="@L["SwitchUser"]" />
-                                }
-                                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Logout" OnClick="Logout" title="@L["Logout"]" />
-                            </MudStack>
-                        </MudStack>
-                    </MudStack>
-                </MudPaper>
-            }
-        </Authorized>
-        <NotAuthorized>
-            <MudStack Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="py-4">
-                <MudIconButton Color="Color.Primary" Icon="@Icons.Material.Filled.Login" OnClick="Login" />
-            </MudStack>
-        </NotAuthorized>
-    </AuthorizeView>
-    
-</MudDrawer>
+    <div class="sidebar-footer">
+        <AuthorizeView>
+            <Authorized>
+                <div class="sidebar-user">
+                    <div class="avatar" title="@context.User.Identity?.Name">
+                        @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
+                        <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
+                    </div>
+                    <div class="sidebar-user-info">
+                        <p class="sidebar-user-name">@context.User.Identity?.Name</p>
+                        <div class="sidebar-user-actions">
+                            @if (DeviceService.GetClientType() != ClientType.Web)
+                            {
+                                <button class="btn-icon btn-icon--accent" @onclick="SwitchUser" title="@L["SwitchUser"]">
+                                    <K7Icon Name="user-switch" />
+                                </button>
+                            }
+                            <button class="btn-icon" @onclick="Logout" title="@L["Logout"]">
+                                <K7Icon Name="sign-out" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <button class="btn-icon btn-icon--accent" @onclick="Login" title="@L["Login"]">
+                    <K7Icon Name="sign-in" />
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</aside>

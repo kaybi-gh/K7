@@ -1,61 +1,59 @@
-﻿
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="3">
-            <MudTextField @bind-Value="Name" Label="Nom" Required="true" Variant="Variant.Outlined" />
-            <MudTextField @bind-Value="Description" Label="Description" Variant="Variant.Outlined" Lines="2" />
 
-            <MudSelect T="RestrictionMatchCondition" @bind-Value="MatchCondition" Label="Condition"
-                       Variant="Variant.Outlined" Dense="true">
-                <MudSelectItem Value="RestrictionMatchCondition.Any">Au moins une règle (OU)</MudSelectItem>
-                <MudSelectItem Value="RestrictionMatchCondition.All">Toutes les règles (ET)</MudSelectItem>
-            </MudSelect>
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col">
+            <K7TextField @bind-Value="Name" Label="Nom" Required="true" Variant="outlined" />
+            <K7TextField @bind-Value="Description" Label="Description" Variant="outlined" Lines="2" />
 
-            <MudText Typo="Typo.subtitle2" Class="mt-2">Règles (contenu correspondant sera masqué)</MudText>
+            <K7Select TValue="RestrictionMatchCondition" @bind-Value="MatchCondition" Label="Condition"
+                       Variant="outlined">
+                <K7SelectItem Value="RestrictionMatchCondition.Any">Au moins une règle (OU)</K7SelectItem>
+                <K7SelectItem Value="RestrictionMatchCondition.All">Toutes les règles (ET)</K7SelectItem>
+            </K7Select>
+
+            <p class="text-subtitle2 mt-2">Règles (contenu correspondant sera masqué)</p>
 
             @for (var i = 0; i < Rules.Count; i++)
             {
                 var index = i;
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <MudSelect T="RestrictionField" Value="Rules[index].Field"
+                <div class="d-flex align-center">
+                    <K7Select TValue="RestrictionField" Value="Rules[index].Field"
                                ValueChanged="@(v => OnFieldChanged(index, v))"
-                               Label="Champ" Variant="Variant.Outlined" Dense="true" Style="min-width: 140px;">
-                        <MudSelectItem Value="RestrictionField.Genre">Genre</MudSelectItem>
-                        <MudSelectItem Value="RestrictionField.ContentRating">Classification</MudSelectItem>
-                        <MudSelectItem Value="RestrictionField.ReleaseYear">Année de sortie</MudSelectItem>
-                    </MudSelect>
+                               Label="Champ" Variant="outlined" Style="min-width: 140px;">
+                        <K7SelectItem Value="RestrictionField.Genre">Genre</K7SelectItem>
+                        <K7SelectItem Value="RestrictionField.ContentRating">Classification</K7SelectItem>
+                        <K7SelectItem Value="RestrictionField.ReleaseYear">Année de sortie</K7SelectItem>
+                    </K7Select>
 
-                    <MudSelect T="RestrictionOperator" @bind-Value="Rules[index].Operator"
-                               Label="Opérateur" Variant="Variant.Outlined" Dense="true" Style="min-width: 160px;">
+                    <K7Select TValue="RestrictionOperator" @bind-Value="Rules[index].Operator"
+                               Label="Opérateur" Variant="outlined" Style="min-width: 160px;">
                         @foreach (var op in GetOperatorsForField(Rules[index].Field))
                         {
-                            <MudSelectItem Value="op">@FormatOperator(op)</MudSelectItem>
+                            <K7SelectItem Value="op">@FormatOperator(op)</K7SelectItem>
                         }
-                    </MudSelect>
+                    </K7Select>
 
                     @if (Rules[index].Operator is not RestrictionOperator.IsEmpty and not RestrictionOperator.IsNotEmpty)
                     {
-                        <MudTextField @bind-Value="Rules[index].Value" Label="Valeur"
-                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        <K7TextField @bind-Value="Rules[index].Value" Label="Valeur"
+                                      Variant="outlined" />
                     }
 
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error"
-                                   OnClick="@(() => Rules.RemoveAt(index))" />
-                </MudStack>
+                    <button type="button" class="k7-icon-btn" Name="x" Size="sm" Color="error"
+                                   OnClick="@(() => Rules.RemoveAt(index))" ></button>
+                </div>
             }
 
-            <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Text" Color="Color.Primary"
+            <K7Button StartIcon="plus" Variant="text" Color="primary"
                        OnClick="AddRule" Class="align-self-start">
                 Ajouter une règle
-            </MudButton>
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+            </K7Button>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">Annuler</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit"
                    Disabled="@(string.IsNullOrWhiteSpace(Name) || Rules.Count == 0 || _saving)">
-            @if (_saving) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            @if (_saving) { <K7Spinner Size="sm" /> }
             Enregistrer
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

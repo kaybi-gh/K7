@@ -1,14 +1,13 @@
 @inject IStringLocalizer<BackgroundTaskDetailDialog> L
 
-<MudDialog>
-    <DialogContent>
+<div class="k7-dialog-content">
         @if (Task.ErrorDetails is not null)
         {
-            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3" NoIcon="false">
-                <MudText Typo="Typo.body2" Style="white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">@Task.ErrorDetails</MudText>
-            </MudAlert>
+            <K7Alert Severity="K7Severity.Error" Class="mb-3" NoIcon="false">
+                <p class="text-sm" Style="white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">@Task.ErrorDetails</p>
+            </K7Alert>
         }
-        <MudSimpleTable Dense="true" Bordered="true">
+        <table class="k7-table k7-table--dense">
             <tbody>
                 <tr>
                     <td><strong>@L["Name"]</strong></td>
@@ -17,7 +16,7 @@
                 <tr>
                     <td><strong>@L["Status"]</strong></td>
                     <td>
-                        <MudChip T="string" Size="Size.Small" Color="@BackgroundTaskStatusHelper.GetColor(Task.Status)">@Task.Status</MudChip>
+                        <K7Chip Size="sm" Color="@BackgroundTaskStatusHelper.GetColor(Task.Status)">@Task.Status</K7Chip>
                     </td>
                 </tr>
                 <tr>
@@ -28,7 +27,7 @@
                 {
                     <tr>
                         <td><strong>@L["ConcurrencyGroup"]</strong></td>
-                        <td><MudChip T="string" Size="Size.Small" Color="Color.Default">@Task.ConcurrencyGroup</MudChip></td>
+                        <td><K7Chip Size="sm" Color="default">@Task.ConcurrencyGroup</K7Chip></td>
                     </tr>
                 }
                 <tr>
@@ -82,9 +81,8 @@
                     </tr>
                 }
             </tbody>
-        </MudSimpleTable>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Close">@L["Close"]</MudButton>
-    </DialogActions>
-</MudDialog>
+        </table>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Close">@L["Close"]</K7Button>
+    </div>

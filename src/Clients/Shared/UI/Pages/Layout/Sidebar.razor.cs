@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Layout;
 
@@ -14,9 +13,10 @@ public partial class Sidebar
     [Inject] private K7HubClient HubClient { get; set; } = default!;
 
     private string _debouncedText = "";
+    private Timer? _debounceTimer;
     private DotNetObjectReference<Sidebar>? _dotNetRef;
     private List<LibraryDto> _libraries = [];
-    private Color _badgeColor = Color.Default;
+    private string _badgeClass = "offline";
     private string _badgeTitle = string.Empty;
 
     protected override void OnInitialized()
@@ -55,10 +55,10 @@ public partial class Sidebar
 
     private static string GetLibraryIcon(LibraryMediaType mediaType) => mediaType switch
     {
-        LibraryMediaType.Movie => Icons.Material.Filled.Theaters,
-        LibraryMediaType.Serie => Icons.Material.Filled.Tv,
-        LibraryMediaType.Music => Icons.Material.Filled.MusicNote,
-        _ => Icons.Material.Filled.Folder
+        LibraryMediaType.Movie => "film-strip",
+        LibraryMediaType.Serie => "television",
+        LibraryMediaType.Music => "music-notes",
+        _ => "folder"
     };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -80,6 +80,11 @@ public partial class Sidebar
         }
     }
 
+    private void ToggleSidebar()
+    {
+        SidebarService.IsOpen = !SidebarService.IsOpen;
+    }
+
     private void OnConnectionStateChanged(HubConnectionState state)
     {
         UpdateBadge(state);
@@ -88,10 +93,10 @@ public partial class Sidebar
 
     private void UpdateBadge(HubConnectionState state)
     {
-        (_badgeColor, _badgeTitle) = state switch
+        (_badgeClass, _badgeTitle) = state switch
         {
-            HubConnectionState.Connected => (Color.Success, L["Connected"]),
-            _ => (Color.Default, L["Reconnecting"])
+            HubConnectionState.Connected => ("connected", L["Connected"]),
+            _ => ("offline", L["Reconnecting"])
         };
     }
 
@@ -101,12 +106,28 @@ public partial class Sidebar
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         JSRuntime.InvokeVoidAsync("SpatialNavigation.setSidebarCallback", null);
+        _debounceTimer?.Dispose();
         _dotNetRef?.Dispose();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        _debouncedText = e.Value?.ToString() ?? "";
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(_ =>
+        {
+            InvokeAsync(Search);
+        }, null, 500, Timeout.Infinite);
     }
 
     private void Search()
     {
         
+    }
+
+    private void OpenSearch()
+    {
+        SidebarService.IsOpen = true;
     }
 
     private async Task Login()

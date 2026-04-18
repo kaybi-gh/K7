@@ -1,38 +1,35 @@
 @inject IStringLocalizer<CreatePlaylistDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="4" Class="mt-2">
-            <MudTextField @bind-Value="_title"
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col mt-2">
+            <K7TextField @bind-Value="_title"
                           Label="@L["NameLabel"]"
-                          Variant="Variant.Outlined"
+                          Variant="outlined"
                           Required="true"
                           RequiredError="@L["NameRequired"]"
-                          MaxLength="200"
-                          Immediate="true" />
-            <MudTextField @bind-Value="_description"
+                          MaxLength="200" />
+            <K7TextField @bind-Value="_description"
                           Label="@L["DescriptionOptional"]"
-                          Variant="Variant.Outlined"
+                          Variant="outlined"
                           Lines="3"
                           MaxLength="2000" />
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary"
-                   Variant="Variant.Filled"
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary"
+                   Variant="filled"
                    OnClick="SubmitAsync"
                    Disabled="@(string.IsNullOrWhiteSpace(_title) || _isSubmitting)">
             @if (_isSubmitting)
             {
-                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                <MudText Class="ms-2">@L["Creating"]</MudText>
+                <K7Spinner Size="sm" />
+                <span>@L["Creating"]</span>
             }
             else
             {
-                <MudText>@S["Create"]</MudText>
+                <span>@S["Create"]</span>
             }
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

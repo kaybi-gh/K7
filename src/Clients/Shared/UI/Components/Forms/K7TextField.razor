@@ -1,0 +1,57 @@
+@namespace K7.Clients.Shared.UI.Components.Forms
+@typeparam TValue
+
+<div class="k7-field @Class" style="@(string.IsNullOrEmpty(Style) ? null : Style)">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="k7-label @(Required ? "k7-label--required" : "")" for="@_id">@Label</label>
+    }
+    @if (Lines > 1)
+    {
+        <textarea id="@_id"
+                  class="k7-textarea @(_hasError ? "k7-input--error" : "")"
+                  placeholder="@Placeholder"
+                  disabled="@Disabled"
+                  readonly="@ReadOnly"
+                  rows="@Lines"
+                  maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
+                  value="@Value"
+                  @oninput="OnInput"
+                  @onchange="OnChange"></textarea>
+    }
+    else
+    {
+        <div class="k7-input-wrap">
+            <input id="@_id"
+                   class="k7-input @(_hasError ? "k7-input--error" : "") @(!string.IsNullOrEmpty(AdornmentName) ? "k7-input--has-adornment" : "")"
+                   type="@Type"
+                   placeholder="@Placeholder"
+                   disabled="@Disabled"
+                   readonly="@ReadOnly"
+                   maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
+                   value="@Value"
+                   @oninput="OnInput"
+                   @onchange="OnChange" />
+            @if (!string.IsNullOrEmpty(AdornmentName))
+            {
+                <button type="button" class="k7-input-adornment" @onclick="OnAdornmentClick" tabindex="-1">
+                    <i class="ph ph-@AdornmentName"></i>
+                </button>
+            }
+            @if (Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString()))
+            {
+                <button type="button" class="k7-input-adornment" @onclick="ClearAsync" tabindex="-1" aria-label="clear">
+                    <i class="ph ph-x"></i>
+                </button>
+            }
+        </div>
+    }
+    @if (_hasError)
+    {
+        <span class="k7-field-error">@_errorText</span>
+    }
+    else if (!string.IsNullOrEmpty(HelperText))
+    {
+        <span class="k7-field-helper">@HelperText</span>
+    }
+</div>

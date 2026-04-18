@@ -1,73 +1,73 @@
-﻿@inject IStringLocalizer<AdminAuthenticationPanel> L
+@inject IStringLocalizer<AdminAuthenticationPanel> L
 @inject IStringLocalizer<SharedResource> S
 
 @if (_isLoading)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    <K7ProgressBar Indeterminate="true" />
 }
 else if (_authInfo is not null)
 {
-    <MudStack Spacing="4" Class="pa-4">
-        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true" NoIcon="true">
+    <div class="d-flex flex-col pa-4">
+        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
             @L["ConfigInfo"]
-        </MudAlert>
+        </K7Alert>
 
-        <MudText Typo="Typo.h6">@L["LocalAuthTitle"]</MudText>
-        <MudSimpleTable Elevation="0" Dense="true" Outlined="true">
+        <h6>@L["LocalAuthTitle"]</h6>
+        <table class="k7-table k7-table--dense">
             <tbody>
                 <tr>
-                    <td style="width: 300px;"><MudText Typo="Typo.body2">@L["LocalSignin"]</MudText></td>
+                    <td style="width: 300px;"><p class="text-sm">@L["LocalSignin"]</p></td>
                     <td>
-                        <MudChip T="string" Size="Size.Small" Color="@(_authInfo.LocalSignInEnabled ? Color.Success : Color.Default)">
+                        <K7Chip Size="sm" Color="@(_authInfo.LocalSignInEnabled ? "success" : "default")">
                             @(_authInfo.LocalSignInEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
-                        </MudChip>
+                        </K7Chip>
                     </td>
                 </tr>
                 <tr>
-                    <td><MudText Typo="Typo.body2">@L["LocalRegistration"]</MudText></td>
+                    <td><p class="text-sm">@L["LocalRegistration"]</p></td>
                     <td>
-                        <MudChip T="string" Size="Size.Small" Color="@(_authInfo.LocalRegistrationEnabled ? Color.Success : Color.Default)">
+                        <K7Chip Size="sm" Color="@(_authInfo.LocalRegistrationEnabled ? "success" : "default")">
                             @(_authInfo.LocalRegistrationEnabled ? S["EnabledFeminine"] : S["DisabledFeminine"])
-                        </MudChip>
+                        </K7Chip>
                     </td>
                 </tr>
             </tbody>
-        </MudSimpleTable>
+        </table>
 
-        <MudText Typo="Typo.h6">@L["OidcTitle"]</MudText>
-        <MudSimpleTable Elevation="0" Dense="true" Outlined="true">
+        <h6>@L["OidcTitle"]</h6>
+        <table class="k7-table k7-table--dense">
             <tbody>
                 <tr>
-                    <td style="width: 300px;"><MudText Typo="Typo.body2">@L["Oidc"]</MudText></td>
+                    <td style="width: 300px;"><p class="text-sm">@L["Oidc"]</p></td>
                     <td>
-                        <MudChip T="string" Size="Size.Small" Color="@(_authInfo.OidcEnabled ? Color.Success : Color.Default)">
+                        <K7Chip Size="sm" Color="@(_authInfo.OidcEnabled ? "success" : "default")">
                             @(_authInfo.OidcEnabled ? S["Enabled"] : S["Disabled"])
-                        </MudChip>
+                        </K7Chip>
                     </td>
                 </tr>
                 @if (_authInfo.OidcEnabled)
                 {
                     <tr>
-                        <td><MudText Typo="Typo.body2">@L["Provider"]</MudText></td>
-                        <td><MudText Typo="Typo.body2">@_authInfo.OidcDisplayName</MudText></td>
+                        <td><p class="text-sm">@L["Provider"]</p></td>
+                        <td><p class="text-sm">@_authInfo.OidcDisplayName</p></td>
                     </tr>
                     <tr>
-                        <td><MudText Typo="Typo.body2">@L["AutoAccountCreation"]</MudText></td>
+                        <td><p class="text-sm">@L["AutoAccountCreation"]</p></td>
                         <td>
-                            <MudChip T="string" Size="Size.Small" Color="@(_authInfo.OidcAutomaticAccountCreation ? Color.Success : Color.Default)">
+                            <K7Chip Size="sm" Color="@(_authInfo.OidcAutomaticAccountCreation ? "success" : "default")">
                                 @(_authInfo.OidcAutomaticAccountCreation ? S["EnabledFeminine"] : S["DisabledFeminine"])
-                            </MudChip>
+                            </K7Chip>
                         </td>
                     </tr>
                 }
             </tbody>
-        </MudSimpleTable>
+        </table>
 
         @if (!_authInfo.LocalSignInEnabled && _authInfo.OidcEnabled)
         {
-            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="true">
+            <K7Alert Severity="K7Severity.Warning" Variant="outlined">
                 @L["LocalSigninDisabledWarning"]
-            </MudAlert>
+            </K7Alert>
         }
-    </MudStack>
+    </div>
 }

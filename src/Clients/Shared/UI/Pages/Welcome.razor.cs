@@ -16,7 +16,7 @@ public partial class Welcome : IDisposable
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
-    private MudBlazor.MudButton? _signInButton;
+    private K7.Clients.Shared.UI.Components.Base.K7Button? _signInButton;
     private bool _loading;
     private bool _guestEnabled;
     private bool _isTv;
@@ -71,7 +71,7 @@ public partial class Welcome : IDisposable
     {
         if (firstRender && _signInButton is not null)
         {
-            await JSRuntime.InvokeVoidAsync("eval", "document.querySelector('.mud-button-filled')?.focus()");
+            await JSRuntime.InvokeVoidAsync("eval", "document.querySelector('.k7-btn')?.focus()");
         }
     }
 

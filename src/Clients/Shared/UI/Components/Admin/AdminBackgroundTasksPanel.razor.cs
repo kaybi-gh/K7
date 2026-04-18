@@ -1,8 +1,7 @@
-using K7.Server.Domain.Enums;
+﻿using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
@@ -19,16 +18,17 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     ];
 
     [Inject] private IBackgroundTaskService BackgroundTaskService { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
 
     private PaginatedListDto<BackgroundTaskDto>? _tasks;
     private BackgroundTaskSettingsDto? _settings;
     private BackgroundTaskSummaryDto? _summary;
+#pragma warning disable CS0414
     private bool _isLoadingTasks = true;
     private bool _isSavingSettings;
-    private bool _settingsDrawerOpen;
+#pragma warning restore CS0414
     private BackgroundTaskStatus? _selectedStatus;
     private string? _selectedTaskType;
     private int _pageNumber = 1;
@@ -80,7 +80,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         catch
         {
             _tasks = null;
-            Snackbar.Add(S["LoadError"], Severity.Error);
+            Snackbar.Add(S["LoadError"], K7Severity.Error);
         }
         finally
         {
@@ -136,7 +136,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
                 ConcurrencyLimits = _concurrencyLimits
             };
             await BackgroundTaskService.UpdateSettingsAsync(request, _cts.Token);
-            Snackbar.Add(L["SettingsSaved"], Severity.Success);
+            Snackbar.Add(L["SettingsSaved"], K7Severity.Success);
             await LoadSettingsAsync(initial: true);
         }
         catch (OperationCanceledException)
@@ -145,7 +145,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
@@ -196,12 +196,30 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
     private static string GetStatusIcon(BackgroundTaskStatus status) => status switch
     {
-        BackgroundTaskStatus.Pending => Icons.Material.Filled.Schedule,
-        BackgroundTaskStatus.InProgress => Icons.Material.Filled.PlayCircle,
-        BackgroundTaskStatus.WaitingForRetry => Icons.Material.Filled.Replay,
-        BackgroundTaskStatus.Completed => Icons.Material.Filled.CheckCircle,
-        BackgroundTaskStatus.Failed => Icons.Material.Filled.Cancel,
-        _ => Icons.Material.Filled.Circle
+        BackgroundTaskStatus.Pending => "clock",
+        BackgroundTaskStatus.InProgress => "play-circle",
+        BackgroundTaskStatus.WaitingForRetry => "arrow-clockwise",
+        BackgroundTaskStatus.Completed => "check-circle",
+        BackgroundTaskStatus.Failed => "x-circle",
+        _ => "circle"
+    };
+
+    private static string GetStatusIconStyle(BackgroundTaskStatus status) => status switch
+    {
+        BackgroundTaskStatus.InProgress => "color: var(--color-info);",
+        BackgroundTaskStatus.Completed => "color: var(--color-success);",
+        BackgroundTaskStatus.Failed => "color: var(--color-error);",
+        BackgroundTaskStatus.WaitingForRetry => "color: var(--color-warning);",
+        _ => "color: var(--color-text-muted);"
+    };
+
+    private static string GetStatusTextStyle(BackgroundTaskStatus status) => status switch
+    {
+        BackgroundTaskStatus.InProgress => "color: var(--color-info);",
+        BackgroundTaskStatus.Completed => "color: var(--color-success);",
+        BackgroundTaskStatus.Failed => "color: var(--color-error);",
+        BackgroundTaskStatus.WaitingForRetry => "color: var(--color-warning);",
+        _ => ""
     };
 
     private string FormatRelativeTime(DateTimeOffset dateTime)
@@ -226,12 +244,12 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
     private async Task OpenDetailDialog(BackgroundTaskDto task)
     {
-        var parameters = new DialogParameters<Dialogs.BackgroundTaskDetailDialog>
+        var parameters = new K7DialogParameters<Dialogs.BackgroundTaskDetailDialog>
         {
             { x => x.Task, task }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<Dialogs.BackgroundTaskDetailDialog>(task.Name, parameters, options);
     }
 
@@ -249,7 +267,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         try
         {
             await BackgroundTaskService.DeleteBackgroundTaskAsync(task.Id, _cts.Token);
-            Snackbar.Add(L["TaskDeleted"], Severity.Success);
+            Snackbar.Add(L["TaskDeleted"], K7Severity.Success);
             await Task.WhenAll(LoadTasksAsync(), LoadSummaryAsync());
         }
         catch (OperationCanceledException)
@@ -258,7 +276,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 }

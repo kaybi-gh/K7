@@ -2,17 +2,15 @@ using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class ReIdentifyDialog
 {
     [Inject] private IMediaService K7ServerService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter]
     public Guid? IndexedFileId { get; set; }
@@ -54,7 +52,7 @@ public partial class ReIdentifyDialog
     {
         if (string.IsNullOrWhiteSpace(_searchQuery) && string.IsNullOrWhiteSpace(_searchProviderId))
         {
-            Snackbar.Add(L["EnterTitleOrId"], Severity.Warning);
+            Snackbar.Add(L["EnterTitleOrId"], K7Severity.Warning);
             return;
         }
 
@@ -69,7 +67,7 @@ public partial class ReIdentifyDialog
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(L["SearchError"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(L["SearchError"], ex.Message), K7Severity.Error);
         }
         finally
         {
@@ -106,15 +104,15 @@ public partial class ReIdentifyDialog
                 await K7ServerService.ReidentifyIndexedFileAsync(IndexedFileId.Value, request);
             }
 
-            MudDialog.Close(DialogResult.Ok(true));
+            Dialog.Close(K7DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(L["ReidentifyError"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(L["ReidentifyError"], ex.Message), K7Severity.Error);
             _isSubmitting = false;
             StateHasChanged();
         }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 }

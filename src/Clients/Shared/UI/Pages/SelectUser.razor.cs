@@ -1,8 +1,7 @@
-using K7.Server.Domain.Enums;
+﻿using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -12,7 +11,7 @@ public partial class SelectUser
     [Inject] private ICustomAuthenticationStateProvider AuthService { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     private List<LocalUser> _users = [];
     private bool _singleUserMode;
@@ -73,11 +72,11 @@ public partial class SelectUser
 
     private async Task<bool> PromptPinAsync(LocalUser user)
     {
-        var parameters = new DialogParameters<K7.Clients.Shared.UI.Components.Dialogs.PinDialog>
+        var parameters = new K7DialogParameters<K7.Clients.Shared.UI.Components.Dialogs.PinDialog>
         {
             { x => x.UserName, user.UserName }
         };
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true };
         var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.PinDialog>(L["EnterPin"], parameters, options);
         var result = await dialog.Result;
 

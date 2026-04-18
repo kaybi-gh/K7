@@ -1,0 +1,14 @@
+@namespace K7.Clients.Shared.UI.Components.Forms
+@typeparam TValue
+
+<div class="k7-slider-wrap @Class">
+    <input type="range"
+           class="k7-range"
+           min="@Min"
+           max="@Max"
+           step="@Step"
+           value="@Value"
+           disabled="@Disabled"
+           @oninput="OnInput"
+           @onchange="OnChange" />
+</div>

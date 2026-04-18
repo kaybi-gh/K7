@@ -1,7 +1,6 @@
-using K7.Server.Domain.Enums;
+﻿using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Restrictions;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
@@ -9,7 +8,7 @@ public partial class AdminRestrictedMediasDialog
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
 
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter] public Guid ProfileId { get; set; }
     [Parameter] public string ProfileName { get; set; } = "";
@@ -42,5 +41,5 @@ public partial class AdminRestrictedMediasDialog
         _ => type.ToString()
     };
 
-    private void Close() => MudDialog.Cancel();
+    private void Close() => Dialog.Cancel();
 }

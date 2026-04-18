@@ -1,79 +1,77 @@
 @inject IStringLocalizer<ReIdentifyDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="4">
-            <MudTextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" OnAdornmentClick="SearchAsync" OnKeyDown="HandleKeyDown" />
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col">
+            <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" Adornment="end" AdornmentName="magnifying-glass" OnAdornmentClick="SearchAsync" OnKeyDown="HandleKeyDown" />
             
-            <MudStack Row="true" Spacing="4">
-                <MudNumericField @bind-Value="_searchYear" Label="@L["YearOptionalLabel"]" Variant="Variant.Outlined" Clearable="true" />
-                <MudTextField @bind-Value="_searchProviderId" Label="@L["ProviderIdLabel"]" Variant="Variant.Outlined" Clearable="true" />
-            </MudStack>
+            <div class="d-flex">
+                <K7TextField Type="number" @bind-Value="_searchYear" Label="@L["YearOptionalLabel"]" Variant="outlined" Clearable="true" />
+                <K7TextField @bind-Value="_searchProviderId" Label="@L["ProviderIdLabel"]" Variant="outlined" Clearable="true" />
+            </div>
             
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SearchAsync" Disabled="_isSearching">
+            <K7Button Variant="filled" Color="primary" OnClick="SearchAsync" Disabled="_isSearching">
                 @if (_isSearching)
                 {
-                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                    <MudText Class="ms-2">@L["Searching"]</MudText>
+                    <K7Spinner Size="sm" />
+                    <span>@L["Searching"]</span>
                 }
                 else
                 {
-                    <MudText>@L["SearchButton"]</MudText>
+                    <span>@L["SearchButton"]</span>
                 }
-            </MudButton>
+            </K7Button>
 
             @if (_results != null)
             {
                 if (!_results.Any())
                 {
-                    <MudText Color="Color.Warning">@L["NoResults"]</MudText>
+                    <span Color="warning">@L["NoResults"]</span>
                 }
                 else
                 {
-                    <MudList T="MetadataSearchResult" SelectionMode="SelectionMode.SingleSelection" @bind-SelectedValue="_selectedResult" Style="max-height: 400px; overflow-y: auto;">
+                    <ul class="k7-list">
                         @foreach (var result in _results)
                         {
-                            <MudListItem Value="result">
-                                <MudGrid>
-                                    <MudItem xs="3">
+                            <li Value="result">
+                                <div class="grid">
+                                    <div>
                                         @if (!string.IsNullOrEmpty(result.PosterUrl))
                                         {
-                                            <MudImage Src="@result.PosterUrl" ObjectFit="ObjectFit.Cover" Height="100" Width="70" Elevation="25" Class="rounded-lg" loading="lazy" />
+                                            <K7Image Src="@result.PosterUrl" ObjectFit="cover" Width="70" Class="rounded-lg" loading="lazy" />
                                         }
                                         else
                                         {
-                                            <MudPaper Height="100px" Width="70px" Class="d-flex align-center justify-center rounded-lg">
-                                                <MudIcon Icon="@Icons.Material.Filled.ImageNotSupported" />
-                                            </MudPaper>
+                                            <div class="surface d-flex align-center justify-center rounded-lg">
+                                                <K7Icon Name="circle" />
+                                            </div>
                                         }
-                                    </MudItem>
-                                    <MudItem xs="9">
-                                        <MudStack Spacing="0">
-                                            <MudText Typo="Typo.subtitle1"><b>@result.Title</b> @(result.Year.HasValue ? $"({result.Year})" : "")</MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@string.Format(L["ProviderAndId"], result.Provider, result.ExternalId)</MudText>
-                                            <MudText Typo="Typo.body2" Style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">@result.Overview</MudText>
-                                        </MudStack>
-                                    </MudItem>
-                                </MudGrid>
-                            </MudListItem>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex flex-col">
+                                            <p class="text-subtitle1"><b>@result.Title</b> @(result.Year.HasValue ? $"({result.Year})" : "")</p>
+                                            <span class="text-caption" Color="secondary">@string.Format(L["ProviderAndId"], result.Provider, result.ExternalId)</span>
+                                            <p class="text-sm" Style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">@result.Overview</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
                         }
-                    </MudList>
+                    </ul>
                 }
             }
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="@(_selectedResult == null || _isSubmitting)">
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync" Disabled="@(_selectedResult == null || _isSubmitting)">
             @if (_isSubmitting)
             {
-                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <K7Spinner Size="sm" />
             }
             else
             {
-                <MudText>@S["Confirm"]</MudText>
+                <span>@S["Confirm"]</span>
             }
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

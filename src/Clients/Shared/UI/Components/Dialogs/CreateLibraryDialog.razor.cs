@@ -3,18 +3,16 @@ using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class CreateLibraryDialog
 {
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     private int _activeStep;
     private LibraryMediaType _selectedMediaType;
@@ -46,15 +44,15 @@ public partial class CreateLibraryDialog
     private string GetMediaTypeCardClass(LibraryMediaType type)
     {
         return _mediaTypeSelected && _selectedMediaType == type
-            ? "border-4 mud-border-primary"
+            ? "border-4 border-accent"
             : "";
     }
 
-    private Color GetMediaTypeColor(LibraryMediaType type)
+    private string GetMediaTypeColor(LibraryMediaType type)
     {
         return _mediaTypeSelected && _selectedMediaType == type
-            ? Color.Primary
-            : Color.Default;
+            ? "primary"
+            : "default";
     }
 
     private string GetMediaTypeLabel(LibraryMediaType type) => type switch
@@ -86,14 +84,13 @@ public partial class CreateLibraryDialog
 
     private async Task BrowseFolderAsync()
     {
-        var parameters = new DialogParameters<FolderBrowserDialog>
+        var parameters = new K7DialogParameters<FolderBrowserDialog>
         {
             { x => x.InitialPath, string.IsNullOrWhiteSpace(_rootPath) ? null : _rootPath }
         };
 
-        var options = new DialogOptions
-        {
-            MaxWidth = MaxWidth.Small,
+        var options = new K7DialogOptions {
+            MaxWidth = K7DialogMaxWidth.Small,
             FullWidth = true,
             CloseOnEscapeKey = true
         };
@@ -124,16 +121,16 @@ public partial class CreateLibraryDialog
             };
 
             await K7ServerService.CreateLibraryAsync(request);
-            Snackbar.Add(string.Format(L["Success"], _title), Severity.Success);
-            MudDialog.Close(DialogResult.Ok(true));
+            Snackbar.Add(string.Format(L["Success"], _title), K7Severity.Success);
+            Dialog.Close(K7DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(L["Error"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(L["Error"], ex.Message), K7Severity.Error);
             _isSubmitting = false;
             StateHasChanged();
         }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 }

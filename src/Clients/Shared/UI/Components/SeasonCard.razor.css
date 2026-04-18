@@ -1,4 +1,4 @@
-.season-card {
+﻿.season-card {
     cursor: pointer;
     width: 140px;
 }
@@ -15,7 +15,7 @@
 }
 
 .season-card:focus-visible {
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 
@@ -29,7 +29,7 @@
     width: 140px;
     height: 210px;
     border-radius: 8px;
-    background: var(--mud-palette-surface);
+    background: var(--color-surface);
     display: flex;
     align-items: center;
     justify-content: center;

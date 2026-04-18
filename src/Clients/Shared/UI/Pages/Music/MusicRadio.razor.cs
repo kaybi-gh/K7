@@ -1,11 +1,10 @@
-using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
 
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 
@@ -22,16 +21,16 @@ public partial class MusicRadio
 
     private static readonly List<RadioTypeInfo> _radioTypes =
     [
-        new("Découverte", "Morceaux que vous n'avez jamais écoutés, proches de vos goûts.", MusicRadioType.Discovery, Icons.Material.Filled.Explore, Color.Info),
-        new("Similaire", "Morceaux au son proche de ce que vous écoutez.", MusicRadioType.Sonic, Icons.Material.Filled.GraphicEq, Color.Primary),
-        new("Tempo", "Un mix basé sur le BPM de vos morceaux préférés.", MusicRadioType.Tempo, Icons.Material.Filled.Speed, Color.Warning),
-        new("Time Capsule", "Redécouvrez ce que vous écoutiez il y a un an.", MusicRadioType.TimeCapsule, Icons.Material.Filled.History, Color.Secondary),
-        new("Nouveautés", "Les derniers morceaux ajoutés à votre bibliothèque.", MusicRadioType.RecentlyAdded, Icons.Material.Filled.NewReleases, Color.Success),
-        new("Artiste", "Un mix centré sur un artiste et ses proches.", MusicRadioType.Artist, Icons.Material.Filled.Person, Color.Tertiary),
-        new("Mood : Chill", "Ambiance détendue et calme.", MusicRadioType.Mood, Icons.Material.Filled.SelfImprovement, Color.Info, "chill"),
-        new("Mood : Énergique", "Des morceaux qui bougent.", MusicRadioType.Mood, Icons.Material.Filled.ElectricBolt, Color.Error, "energetic"),
-        new("Mood : Happy", "De la bonne humeur.", MusicRadioType.Mood, Icons.Material.Filled.SentimentVerySatisfied, Color.Warning, "happy"),
-        new("Mood : Focus", "Concentration et productivité.", MusicRadioType.Mood, Icons.Material.Filled.Psychology, Color.Primary, "focus"),
+        new("Découverte", "Morceaux que vous n'avez jamais écoutés, proches de vos goûts.", MusicRadioType.Discovery, "compass", "info"),
+        new("Similaire", "Morceaux au son proche de ce que vous écoutez.", MusicRadioType.Sonic, "waves", "primary"),
+        new("Tempo", "Un mix basé sur le BPM de vos morceaux préférés.", MusicRadioType.Tempo, "gauge", "warning"),
+        new("Time Capsule", "Redécouvrez ce que vous écoutiez il y a un an.", MusicRadioType.TimeCapsule, "clock-clockwise", "secondary"),
+        new("Nouveautés", "Les derniers morceaux ajoutés à votre bibliothèque.", MusicRadioType.RecentlyAdded, "sparkle", "success"),
+        new("Artiste", "Un mix centré sur un artiste et ses proches.", MusicRadioType.Artist, "user", "tertiary"),
+        new("Mood : Chill", "Ambiance détendue et calme.", MusicRadioType.Mood, "peace", "info", "chill"),
+        new("Mood : Énergique", "Des morceaux qui bougent.", MusicRadioType.Mood, "lightning", "error", "energetic"),
+        new("Mood : Happy", "De la bonne humeur.", MusicRadioType.Mood, "smiley", "warning", "happy"),
+        new("Mood : Focus", "Concentration et productivité.", MusicRadioType.Mood, "brain", "primary", "focus"),
     ];
 
     private async Task PlayRadioAsync(RadioTypeInfo radio)
@@ -72,7 +71,7 @@ public partial class MusicRadio
         }
     }
 
-    private async Task OnTrackClick(TableRowClickEventArgs<TrackViewModel> args)
+    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.Complex.TableRowClickEventArgs<TrackViewModel> args)
     {
         var track = args.Item;
         if (track is null) return;
@@ -162,6 +161,6 @@ public partial class MusicRadio
         string Description,
         MusicRadioType Type,
         string Icon,
-        Color Color,
+        string Color,
         string? MoodPreset = null);
 }

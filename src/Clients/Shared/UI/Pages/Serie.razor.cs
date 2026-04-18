@@ -1,16 +1,15 @@
-using K7.Server.Domain.Enums;
+﻿using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
 
 public partial class Serie
 {
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Parameter]
     public required string Id { get; set; }
 
@@ -72,20 +71,20 @@ public partial class Serie
     {
         if (_serie is null) return;
 
-        var parameters = new DialogParameters<ReIdentifyDialog>
+        var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.MediaId, _serie.Id },
             { x => x.InitialSearchQuery, _serie.Title },
             { x => x.MediaType, K7.Server.Domain.Enums.MediaType.Serie }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
         var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyMediaDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
         {
-            Snackbar.Add(L["ReIdentifyMediaSent"], Severity.Success);
+            Snackbar.Add(L["ReIdentifyMediaSent"], K7Severity.Success);
             NavigationManager.NavigateTo("/");
         }
     }
@@ -97,11 +96,11 @@ public partial class Serie
         try
         {
             await k7ServerService.RefreshMediaMetadataAsync(_serie.Id);
-            Snackbar.Add(L["RefreshMetadataSent"], Severity.Success);
+            Snackbar.Add(L["RefreshMetadataSent"], K7Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 }
