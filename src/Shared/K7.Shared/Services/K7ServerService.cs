@@ -590,7 +590,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<LibraryHealthSummaryDto>>("api/diagnostics/summary", _serializerOptions, cancellationToken) ?? [];
     }
 
-    public async Task<PaginatedListDto<DiagnosticItemDto>> GetDiagnosticItemsAsync(Guid? libraryId = null, DiagnosticEntityType? entityType = null, DiagnosticIssue? issue = null, int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<DiagnosticItemDto>> GetDiagnosticItemsAsync(Guid? libraryId = null, DiagnosticEntityType? entityType = null, DiagnosticIssue? issue = null, IReadOnlyCollection<DiagnosticIssue>? issues = null, int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var uri = $"api/diagnostics/items?pageNumber={pageNumber}&pageSize={pageSize}";
         if (libraryId.HasValue)
@@ -599,6 +599,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
             uri += $"&entityType={entityType.Value}";
         if (issue.HasValue)
             uri += $"&issue={issue.Value}";
+        if (issues is { Count: > 0 })
+            foreach (var i in issues)
+                uri += $"&issue={i}";
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<DiagnosticItemDto>>(uri, _serializerOptions, cancellationToken) ?? new PaginatedListDto<DiagnosticItemDto>();
     }
 
