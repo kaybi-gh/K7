@@ -9,7 +9,7 @@ using K7.Shared.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
-using MudBlazor.Services;
+
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -17,7 +17,6 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();
 
-builder.Services.AddMudServices();
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
 builder.Services.AddHttpClient<K7ServerService>(httpClient =>
@@ -55,6 +54,11 @@ builder.Services.AddSingleton<K7HubClient>();
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
 builder.Services.AddSingleton<ILocalUserService, StubbedLocalUserService>();
+
+builder.Services.AddSingleton<K7DialogService>();
+builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
+builder.Services.AddSingleton<K7SnackbarService>();
+builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
 
 builder.Services.AddHttpClient("BackendAPI", client =>
 {

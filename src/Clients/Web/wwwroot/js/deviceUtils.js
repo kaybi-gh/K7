@@ -128,7 +128,7 @@ window.getHdrSupport = async function () {
 
         return hdrCheck.supported;
     } catch (e) {
-        console.error("HDR detection failed:", e);
+        console.warn("HDR detection failed:", e);
         return false;
     }
 };
