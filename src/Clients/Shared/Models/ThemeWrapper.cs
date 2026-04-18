@@ -1,10 +1,6 @@
-using MudBlazor;
+namespace K7.Clients.Shared.Models;
 
-namespace K7.Clients.Shared.Models
+public sealed record ThemeDefinition(string Name, string CssDataAttribute)
 {
-    public class ThemeWrapper(string name, MudTheme theme)
-    {
-        public string Name { get; set; } = name;
-        public MudTheme Theme { get; set; } = theme;
-    }
+    public string? CustomCss { get; init; }
 }
