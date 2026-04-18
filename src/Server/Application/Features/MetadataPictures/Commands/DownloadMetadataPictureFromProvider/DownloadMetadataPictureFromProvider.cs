@@ -65,7 +65,7 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 
             var isSvg = string.Equals(originalExtension, ".svg", StringComparison.OrdinalIgnoreCase);
 
-            // Convert to WebP (skip for SVGs — ffmpeg cannot decode them)
+            // Convert to WebP (skip for SVGs - ffmpeg cannot decode them)
             if (isSvg)
             {
                 entity.LocalPath = tempFilePath;

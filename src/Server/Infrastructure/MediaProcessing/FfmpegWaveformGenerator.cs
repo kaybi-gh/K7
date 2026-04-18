@@ -67,7 +67,7 @@ public class FfmpegWaveformGenerator(
             var start = (int)(i * samplesPerPeak);
             var end = Math.Min((int)((i + 1) * samplesPerPeak), samples.Length);
 
-            // RMS (Root Mean Square) — represents perceived loudness, not transient spikes
+            // RMS (Root Mean Square) - represents perceived loudness, not transient spikes
             double sumSquares = 0;
             var count = end - start;
             for (var j = start; j < end; j++)

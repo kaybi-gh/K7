@@ -32,7 +32,7 @@ public class AudioAnalysis : BaseAuditableEntity
     // Typical values: -14 LUFS (streaming target), -6 LUFS (very loud master).
     public double? LoudnessLufs { get; set; }
 
-    // Loudness range in LU — how much dynamic variation the track has.
+    // Loudness range in LU - how much dynamic variation the track has.
     // Low (< 5 LU) = compressed/loud, High (> 10 LU) = dynamic/classical.
     public double? LoudnessRange { get; set; }
 

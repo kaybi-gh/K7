@@ -257,7 +257,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(library.MetadataProviderName);
         var (serie, _, providerExternalId) = await FindOrCreateSerieAsync(firstIdentification, metadataProvider, cancellationToken);
 
-        // Load the full season+episode tree once — no more per-episode lazy loads
+        // Load the full season+episode tree once - no more per-episode lazy loads
         await _context.Entry(serie).Collection(s => s.Seasons)
             .Query()
             .Include(s => s.Episodes)

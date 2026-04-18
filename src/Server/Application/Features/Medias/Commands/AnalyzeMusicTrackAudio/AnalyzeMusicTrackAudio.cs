@@ -42,7 +42,7 @@ public class AnalyzeMusicTrackAudioCommandHandler(
             return;
         }
 
-        // Essentia analysis (optional — may not be installed)
+        // Essentia analysis (optional - may not be installed)
         var analysis = await audioAnalyzer.AnalyzeAsync(filePath, cancellationToken);
 
         // Waveform peaks via ffmpeg (always available)

@@ -19,7 +19,7 @@ public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavio
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // Client cancelled the HTTP request — expected behavior, don't log as error
+            // Client cancelled the HTTP request - expected behavior, don't log as error
             throw;
         }
         catch (Exception ex)

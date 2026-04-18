@@ -79,7 +79,7 @@ k7-import --source <source> --source-api-key <key> --k7-url <url> [options]
 | `--include` | Data types to import: `history`, `ratings`, `playlists` (default: all, repeatable) |
 | `--spotify-data-dir` | Path to Spotify extended streaming history export folder (for full listen history) |
 | `--user-mapping` | Map a source user to an existing K7 user (format: `sourceUser:k7User`, repeatable) |
-| `--only-match-existing` | Only import data for media that already exists in K7 — skip virtual media creation for unmatched items |
+| `--only-match-existing` | Only import data for media that already exists in K7 - skip virtual media creation for unmatched items |
 | `--fetch-metadata` | Fetch rich metadata (posters, descriptions, etc.) for newly created media |
 | `--playcount-mode` | Play count merge strategy: `additive` (sum) or `max` (highest wins). Default: `additive` |
 | `--rating-mode` | Rating conflict strategy: `keep` (keep existing) or `overwrite`. Default: `keep` |
@@ -198,7 +198,7 @@ k7-import -s spotify --k7-url http://localhost:5000 \
 
 ## Virtual Media Creation
 
-By default, unmatched source items are created as **virtual media** in K7 — lightweight entities without physical media files. This ensures all watch history, ratings, and play counts are preserved, even if K7 doesn't have the corresponding media files yet.
+By default, unmatched source items are created as **virtual media** in K7 - lightweight entities without physical media files. This ensures all watch history, ratings, and play counts are preserved, even if K7 doesn't have the corresponding media files yet.
 
 Virtual media can later be enriched with metadata or linked to real media files when they become available.
 
