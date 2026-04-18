@@ -12,22 +12,17 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
+<h3 class="auth-section-title">@L["Title"]</h3>
 
 <StatusMessage />
 
-<MudAlert Severity="Severity.Warning" Variant="Variant.Text">
-    @L["Warning"]
-</MudAlert>
+<div class="auth-alert auth-alert--warning" style="margin-bottom:1rem;">@L["Warning"]</div>
 
-<MudText Typo="Typo.body2" Class="my-4">
-    @L["Info"]
-</MudText>
+<p class="auth-hint" style="margin-bottom:1rem;">@L["Info"]</p>
 
 <form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
     <AntiforgeryToken />
-
-    <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["ResetKey"]</MudStaticButton>
+    <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["ResetKey"]</button>
 </form>
 
 @code {

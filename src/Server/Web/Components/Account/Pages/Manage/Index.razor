@@ -12,26 +12,25 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
+<h3 class="auth-section-title">@L["Title"]</h3>
 
 <StatusMessage />
 
 <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
     <DataAnnotationsValidator />
 
-    <MudGrid>
-        <MudItem md="12">
-            <MudStaticTextField Value="@username" Label="@L["Username"]" Disabled="true" Placeholder="@L["UsernamePlaceholder"]" />
-        </MudItem>
-        <MudItem md="12">
-            <MudStaticTextField For="@(() => Input!.PhoneNumber)" @bind-Value="Input!.PhoneNumber"
-                                Label="@L["PhoneNumber"]" HelperText="@L["PhoneNumberHelp"]"
-                                UserAttributes="@(new() { { "autocomplete", "tel-national" } } )" />
-        </MudItem>
-        <MudItem md="12">
-            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["Save"]</MudStaticButton>
-        </MudItem>
-    </MudGrid>
+    <div class="auth-form-stack">
+        <div class="auth-form-field">
+            <label>@L["Username"]</label>
+            <input type="text" class="auth-input" value="@username" disabled />
+        </div>
+        <div class="auth-form-field">
+            <label>@L["PhoneNumber"]</label>
+            <InputText @bind-Value="Input!.PhoneNumber" type="text" class="auth-input" autocomplete="tel-national" />
+            <ValidationMessage For="@(() => Input!.PhoneNumber)" class="auth-validation" />
+        </div>
+        <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["Save"]</button>
+    </div>
 </EditForm>
 
 @code {

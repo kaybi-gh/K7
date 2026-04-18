@@ -22,51 +22,51 @@
 }
 else
 {
-    <MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
+    <h3 class="auth-section-title">@L["Title"]</h3>
 
     <StatusMessage Message="@message" />
 
-    <MudText Typo="Typo.body1" GutterBottom="true">@L["Step1"]</MudText>
+    <p>@L["Step1"]</p>
 
     <ol class="list">
         <li>
-            <MudText Typo="Typo.body2">
+            <p class="auth-hint">
                 Download a two-factor authenticator app like Microsoft Authenticator for
-                <MudLink Target="_blank" Href="https://go.microsoft.com/fwlink/?Linkid=825072">Android</MudLink> and
-                <MudLink Target="_blank" Href="https://go.microsoft.com/fwlink/?Linkid=825073">iOS</MudLink> or
+                <a target="_blank" href="https://go.microsoft.com/fwlink/?Linkid=825072">Android</a> and
+                <a target="_blank" href="https://go.microsoft.com/fwlink/?Linkid=825073">iOS</a> or
                 Google Authenticator for
-                <MudLink Target="_blank" Href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">Android</MudLink> and
-                <MudLink Target="_blank" Href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8">iOS</MudLink>.
-            </MudText>
+                <a target="_blank" href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">Android</a> and
+                <a target="_blank" href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8">iOS</a>.
+            </p>
         </li>
         <li>
-            <MudText Typo="Typo.body2">
+            <p class="auth-hint">
                 @L["Step2"]
-            </MudText>
+            </p>
 
-            <MudAlert Variant="Variant.Text" Severity="Severity.Info" Icon="@Icons.Material.Filled.Key">@sharedKey</MudAlert>
+            <div class="auth-alert auth-alert--info">@sharedKey</div>
 
-            <MudText Typo="Typo.body2">
-                Learn how to <MudLink Target="_blank" Href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</MudLink>.
-            </MudText>
+            <p class="auth-hint">
+                Learn how to <a target="_blank" href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</a>.
+            </p>
 
             <div data-url="@authenticatorUri"></div>
         </li>
         <li>
-            <MudText Typo="Typo.body2">
+            <p class="auth-hint">
                 @L["Step3"]
-            </MudText>
+            </p>
 
             <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post">
                 <DataAnnotationsValidator />
-                <MudGrid>
-                    <MudItem md="12">
-                        <MudStaticTextField @bind-Value="@Input!.Code" For="@(() => Input!.Code)" Label="@L["VerificationCode"]" HelperText="@L["VerificationCodeHelp"]" />
-                    </MudItem>
-                    <MudItem md="12">
-                        <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["Verify"]</MudStaticButton>
-                    </MudItem>
-                </MudGrid>
+                <div class="auth-form-stack">
+                    <div class="auth-form-field">
+                        <label>@L["VerificationCode"]</label>
+                        <InputText @bind-Value="@Input!.Code" type="text" class="auth-input" />
+                        <ValidationMessage For="@(() => Input!.Code)" class="auth-validation" />
+                    </div>
+                    <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["Verify"]</button>
+                </div>
             </EditForm>
         </li>
     </ol>

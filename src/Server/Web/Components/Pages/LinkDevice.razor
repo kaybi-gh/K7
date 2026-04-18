@@ -8,53 +8,40 @@
 
 <PageTitle>@L["PageTitle"] - K7</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
-    <MudPaper Class="pa-8" Elevation="4">
-        <MudStack Spacing="4" AlignItems="AlignItems.Center">
-            <MudIcon Icon="@Icons.Material.Outlined.Devices" Size="Size.Large" Color="Color.Primary" />
-            <MudText Typo="Typo.h5">@L["Title"]</MudText>
+<div class="auth-card">
+    <div class="auth-card-header">
+        <i class="ph ph-devices auth-icon auth-icon--primary"></i>
+        <h2 class="auth-title">@L["Title"]</h2>
+    </div>
+    <div class="auth-card-body">
+        @if (_approved)
+        {
+            <div class="auth-alert auth-alert--success" style="width:100%;">@L["DeviceAuthorized"]</div>
+        }
+        else if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="auth-alert auth-alert--error" style="width:100%;">@L["InvalidCode"]</div>
+        }
 
-            @if (_approved)
-            {
-                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
-                    @L["DeviceAuthorized"]
-                </MudAlert>
-            }
-            else if (!string.IsNullOrEmpty(_error))
-            {
-                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
-                    @L["InvalidCode"]
-                </MudAlert>
-            }
+        @if (!_approved)
+        {
+            <p class="auth-hint" style="margin-bottom:1rem;">@L["EnterCode"]</p>
+            <hr class="auth-divider" />
 
-            @if (!_approved)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
-                    @L["EnterCode"]
-                </MudText>
+            <form method="post" action="/connect/verify" id="link-form" style="width:100%;" data-enhance="false">
+                <input type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
+                <div class="auth-form-stack" style="align-items:center;">
+                    <div style="display:flex; align-items:center; gap:6px; justify-content:center; width:100%;">
+                        <input type="text" class="code-segment auth-input" style="width:80px;text-align:center;" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart1"]" />
+                        <span style="font-size:1rem; color:var(--color-text-secondary);">-</span>
+                        <input type="text" class="code-segment auth-input" style="width:80px;text-align:center;" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart2"]" />
+                        <span style="font-size:1rem; color:var(--color-text-secondary);">-</span>
+                        <input type="text" class="code-segment auth-input" style="width:80px;text-align:center;" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
+                    </div>
 
-                <MudDivider Class="my-2" Style="width:100%;" />
-
-                <form method="post" action="/connect/verify" id="link-form" style="width:100%;" data-enhance="false">
-                    <input type="hidden" name="user_code" id="user-code-hidden" value="@_userCode" />
-                    <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                        <div style="display:flex; align-items:center; gap:6px; justify-content:center; width:100%;">
-                            <input type="text" class="code-segment" data-idx="0" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart1"]" />
-                            <span style="font-size:1rem; color:var(--mud-palette-text-secondary);">—</span>
-                            <input type="text" class="code-segment" data-idx="1" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart2"]" />
-                            <span style="font-size:1rem; color:var(--mud-palette-text-secondary);">—</span>
-                            <input type="text" class="code-segment" data-idx="2" maxlength="4" inputmode="numeric" autocomplete="off" aria-label="@L["CodePart3"]" />
-                        </div>
-
-                        <MudStaticButton Variant="Variant.Filled"
-                                         Color="Color.Primary"
-                                         Size="Size.Large"
-                                         FullWidth="true"
-                                         FormAction="FormAction.Submit">
-                            @L["AuthorizeDevice"]
-                        </MudStaticButton>
-                    </MudStack>
-                </form>
+                    <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["AuthorizeDevice"]</button>
+                </div>
+            </form>
 
                 <script>
                     (function () {
@@ -107,9 +94,8 @@
                     })();
                 </script>
             }
-        </MudStack>
-    </MudPaper>
-</MudContainer>
+    </div>
+</div>
 
 @code {
     private string? _userCode;

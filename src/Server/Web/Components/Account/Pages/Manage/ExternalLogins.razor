@@ -48,7 +48,7 @@
 @if (otherLogins?.Count > 0)
 {
     <h4>@L["AddService"]</h4>
-    <MudDivider />
+    <hr class="auth-divider" />
     <form class="form-horizontal" action="Account/Manage/LinkExternalLogin" method="post">
         <AntiforgeryToken />
         <div>

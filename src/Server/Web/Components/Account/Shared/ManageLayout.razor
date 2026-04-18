@@ -3,14 +3,15 @@
 
 @inject IStringLocalizer<ManageLayout> L
 
-<MudText Typo="Typo.h3" GutterBottom="true">@L["Title"]</MudText>
-
-<MudGrid>
-    <MudItem xs="12" md="5">
-        <MudText Typo="Typo.h6" GutterBottom="true">@L["Subtitle"]</MudText>
-        <ManageNavMenu />
-    </MudItem>
-    <MudItem xs="12" md="7">
-        @Body
-    </MudItem>
-</MudGrid>
+<div class="manage-layout">
+    <h1>@L["Title"]</h1>
+    <div class="manage-grid">
+        <div>
+            <h2>@L["Subtitle"]</h2>
+            <ManageNavMenu />
+        </div>
+        <div>
+            @Body
+        </div>
+    </div>
+</div>

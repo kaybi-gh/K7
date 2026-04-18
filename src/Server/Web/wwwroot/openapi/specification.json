@@ -3185,7 +3185,7 @@
         "operationId": "GetDiagnosticItems",
         "parameters": [
           {
-            "name": "LibraryId",
+            "name": "libraryId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -3193,43 +3193,46 @@
             }
           },
           {
-            "name": "EntityType",
+            "name": "entityType",
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/DiagnosticEntityType"
             }
           },
           {
-            "name": "Issue",
+            "name": "issue",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/DiagnosticIssue"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/DiagnosticIssue"
+              }
             }
           },
           {
-            "name": "PageNumber",
+            "name": "pageNumber",
             "in": "query",
-            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
                 "integer",
                 "string"
               ],
-              "format": "int32"
+              "format": "int32",
+              "default": 1
             }
           },
           {
-            "name": "PageSize",
+            "name": "pageSize",
             "in": "query",
-            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
                 "integer",
                 "string"
               ],
-              "format": "int32"
+              "format": "int32",
+              "default": 20
             }
           }
         ],

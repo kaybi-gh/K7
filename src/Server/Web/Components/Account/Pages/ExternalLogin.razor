@@ -21,9 +21,9 @@
 <PageTitle>@L["PageTitle"]</PageTitle>
 
 <StatusMessage Message="@message" />
-<MudText Typo="Typo.h4">@L["Title"]</MudText>
-<MudText Typo="Typo.h5">@L["AssociateAccount", ProviderDisplayName ?? ""]</MudText>
-<MudDivider />
+<h2 class="auth-heading">@L["Title"]</h2>
+<h3 class="auth-section-title">@L["AssociateAccount", ProviderDisplayName ?? ""]</h3>
+<hr class="auth-divider" />
 
 <div  class="alert alert-info">
     @L["AuthSuccess", ProviderDisplayName ?? ""]

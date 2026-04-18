@@ -13,30 +13,28 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
+<h3 class="auth-section-title">@L["Title"]</h3>
 
 <StatusMessage Message="@message" />
 
-<MudAlert Severity="Severity.Error" Variant="Variant.Text">
+<div class="auth-alert auth-alert--error">
     @L["Warning"]
-</MudAlert>
+</div>
 
 <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
     <DataAnnotationsValidator />
 
-    <MudGrid>
+    <div class="auth-form-stack">
         @if (requirePassword)
         {
-            <MudItem md="12">
-                <MudStaticTextField For="@(() => Input!.Password)" @bind-Value="Input!.Password" InputType="InputType.Password"
-                                    Label="@L["Password"]" Placeholder="@L["PasswordPlaceholder"]" HelperText="@L["PasswordHelp"]"
-                                    UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } } )" />
-            </MudItem>
+            <div class="auth-form-field">
+                <label>@L["Password"]</label>
+                <InputText @bind-Value="Input!.Password" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="current-password" aria-required="true" />
+                <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
+            </div>
         }
-        <MudItem md="12">
-            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["DeleteAccount"]</MudStaticButton>
-        </MudItem>
-    </MudGrid>
+        <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["DeleteAccount"]</button>
+    </div>
 </EditForm>
 
 @code {

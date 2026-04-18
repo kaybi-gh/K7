@@ -5,7 +5,6 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Web.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
-using MudBlazor.Services;
 using Serilog;
 using K7.Server.Web.Components.Account;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -102,7 +101,6 @@ public static class DependencyInjection
             .AddInteractiveWebAssemblyComponents()
             .AddAuthenticationStateSerialization(options => options.SerializeAllClaims = true);
         services.AddLocalization(options => options.ResourcesPath = "Resources");
-        services.AddMudServices();
         services.AddScoped<ThemeService>();
 
         // Customise default API behaviour
