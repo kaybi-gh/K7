@@ -53,6 +53,68 @@ return storage.hero ? "found" : "not found";
 
 ---
 
+## Page Navigation is Asynchronous
+
+`openPage()` (or any page-switch call) is **async in the Penpot plugin**. If you create shapes immediately after switching pages in the same code call, they will land on the **previous** page because the switch hasn't committed yet.
+
+**Rule: always open the target page at the END of a call, not the beginning.**
+The next call will then start already on the correct page.
+
+```js
+// WRONG - shapes created before the page switch lands
+penpot.openPage(targetPage);
+const board = penpot.createBoard(); // lands on the OLD page
+
+// RIGHT - switch at the end so the next call starts on the right page
+const board = penpot.createBoard(); // runs on current (already correct) page
+// ... all modifications ...
+penpot.openPage(nextTargetPage); // set up for the NEXT call
+return "done";
+```
+
+Multi-page workflow pattern:
+
+```js
+// Call 1: create on Page A, end by opening Page B
+// (assume we're already on Page A from a previous call or initial state)
+const boardA = penpot.createBoard();
+// ... populate boardA ...
+penpot.openPage(pageB); // ready for next call
+return "page A done";
+
+// Call 2: now we're on Page B
+const boardB = penpot.createBoard();
+// ... populate boardB ...
+penpot.openPage(pageC);
+return "page B done";
+```
+
+---
+
+## Code <-> Penpot Fidelity Rules
+
+### Code -> Penpot
+
+When translating Blazor components to Penpot designs:
+
+- **Read all CSS before starting**: load `app.css`, every relevant `.razor.css` scoped file, and any global CSS. Never invent or guess values - use only what the code actually defines.
+- **Use exact tokens**: colors, spacing, font sizes, border radii must come from the CSS variables and classes actually present in the codebase (`--color-*`, `--spacing-*`, etc.).
+- **Reflect component structure**: when a Blazor component exists (e.g. `MediaCard`, `Sidebar`, `MiniMusicPlayer`), create a **Penpot component** (board marked as component/asset) to match it - not just a flat frame.
+- **Respect scoped CSS scope**: a `.razor.css` file applies only to that component - don't apply its rules to unrelated shapes.
+- **Preserve layout semantics**: if the code uses flexbox with `gap: 12px`, reproduce that with a flex layout board with `rowGap = 12` - don't manually space children.
+
+### Penpot -> Code
+
+When generating Blazor/CSS from a Penpot design:
+
+- **Read the design first**: use `penpot.generateStyle` and `penpot.generateMarkup` to extract values - never eyeball or estimate.
+- **Use existing K7 tokens**: if a color or spacing in the design matches a K7 CSS variable, use the variable - don't hardcode the raw hex.
+- **Map Penpot components to Blazor components**: a Penpot component/asset corresponds to a Blazor component file - generate a `.razor` + `.razor.css` triad.
+- **Scoped CSS only**: generated styles go in the component's `.razor.css` file, not in global CSS, unless the design explicitly shows it as a global/shared style.
+- **Never invent interactions**: if the design doesn't show a hover state or animation, don't add one.
+
+---
+
 ## Critical Gotchas
 
 ### Read-only vs writable properties
