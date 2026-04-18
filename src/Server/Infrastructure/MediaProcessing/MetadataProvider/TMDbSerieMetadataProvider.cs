@@ -147,6 +147,11 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             extraMethods: TvSeasonMethods.Images | TvSeasonMethods.ExternalIds,
             cancellationToken: cancellationToken);
 
+        if (season is null)
+        {
+            throw new InvalidOperationException($"TMDb returned null for series {tmdbId} season {seasonNumber}.");
+        }
+
         var pictures = new List<MetadataPicture>();
         if (!string.IsNullOrEmpty(season.PosterPath))
         {
