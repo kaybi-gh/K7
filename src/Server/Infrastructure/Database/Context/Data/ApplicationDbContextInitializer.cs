@@ -98,7 +98,7 @@ public class ApplicationDbContextInitializer(
         var admins = await userManager.GetUsersInRoleAsync(Roles.Administrator);
         if (admins.Count > 0)
         {
-            logger.LogInformation("Existing administrator found — marking setup as completed.");
+            logger.LogInformation("Existing administrator found - marking setup as completed.");
             await settingsService.SetAsync(ServerSettingKeys.SetupCompleted, true);
         }
     }
@@ -114,7 +114,7 @@ public class ApplicationDbContextInitializer(
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             return;
 
-        logger.LogInformation("K7_ADMIN_EMAIL and K7_ADMIN_PASSWORD detected — completing setup automatically.");
+        logger.LogInformation("K7_ADMIN_EMAIL and K7_ADMIN_PASSWORD detected - completing setup automatically.");
         var result = await setupService.CompleteSetupAsync(email, password);
 
         if (!result.Succeeded)
