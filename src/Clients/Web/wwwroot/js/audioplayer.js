@@ -264,7 +264,7 @@ window.audioSetCrossfadeDuration = function (seconds) {
 window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
     const duration = fadeDuration !== undefined && fadeDuration > 0 ? fadeDuration : audioState.crossfadeDuration;
     if (duration <= 0 || !audioState.element) {
-        // No crossfade — just change source directly
+        // No crossfade - just change source directly
         audioChangeSource(nextSrc, nextMimeType);
         return;
     }
@@ -307,7 +307,7 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
             // Re-attach events to new element
             attachEventsToElement(nextEl, audioState.dotNetRef);
 
-            // New element is already playing — notify .NET
+            // New element is already playing - notify .NET
             if (!nextEl.paused && audioState.dotNetRef) {
                 notifyPlaybackState(audioState.dotNetRef, 'playing');
             }
