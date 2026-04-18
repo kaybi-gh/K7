@@ -19,7 +19,7 @@
                               ShouldShowPlaybackControls="False"
                               InputTransparent="True" ZIndex="1"/>
 
-        <!-- Native MediaElement (audio — hidden, background-capable) -->
+        <!-- Native MediaElement (audio - hidden, background-capable) -->
         <toolkit:MediaElement x:Name="NativeAudioPlayer"
                               IsVisible="False"
                               ShouldAutoPlay="False"

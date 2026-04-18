@@ -95,7 +95,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
     <PackageReference Include="Microsoft.Maui.Essentials" />
-    <PackageReference Include="MudBlazor" />
     <PackageReference Include="OpenIddict.Client.SystemIntegration" />
     <PackageReference Include="OpenIddict.Client.SystemNetHttp" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" />
