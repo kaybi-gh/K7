@@ -1,0 +1,301 @@
+/* Auth & account pages - server-side SSR forms */
+
+/* --- Layout --- */
+.auth-layout {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: var(--color-background);
+}
+
+.auth-card {
+    width: min(440px, 100%);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 12px);
+    overflow: hidden;
+}
+
+.auth-card-header {
+    padding: 1.5rem 2rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    text-align: center;
+}
+
+.auth-card-body {
+    padding: 1.5rem 2rem;
+}
+
+.auth-card-footer {
+    padding: 1rem 2rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* --- Typography --- */
+.auth-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text-primary);
+}
+
+.auth-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.auth-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+}
+
+.auth-hint {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin: 0;
+}
+
+/* --- Form stack --- */
+.auth-form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.auth-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.auth-form-field label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.auth-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-surface-variant, var(--color-surface));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    color: var(--color-text-primary);
+    font-size: 0.9375rem;
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.auth-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.auth-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.auth-input-row {
+    position: relative;
+    display: flex;
+}
+
+.auth-input-row .auth-input {
+    padding-right: 2.5rem;
+}
+
+.auth-input-row .auth-input-action {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+}
+
+.auth-validation {
+    font-size: 0.75rem;
+    color: var(--color-error, #e53e3e);
+}
+
+/* Toggle (checkbox replacement) */
+.auth-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+}
+
+.auth-toggle input[type="checkbox"] {
+    accent-color: var(--color-primary);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* --- Links --- */
+.auth-link {
+    font-size: 0.8125rem;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}
+
+/* --- Divider --- */
+.auth-divider {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 0.5rem 0;
+    width: 100%;
+}
+
+/* "or continue with" separator */
+.auth-or {
+    width: 100%;
+    text-align: center;
+    position: relative;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    margin: 0.5rem 0;
+}
+
+.auth-or::before,
+.auth-or::after {
+    position: absolute;
+    content: "";
+    top: 50%;
+    width: 32%;
+    border-top: 1px solid var(--color-border);
+}
+
+.auth-or::before { left: 0; }
+.auth-or::after  { right: 0; }
+
+/* --- Alerts --- */
+.auth-alert {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md, 8px);
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+}
+
+.auth-alert--error {
+    color: var(--color-error, #c53030);
+    background: color-mix(in srgb, var(--color-error, #e53e3e) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-error, #e53e3e) 30%, transparent);
+}
+
+.auth-alert--success {
+    color: var(--color-success, #276749);
+    background: color-mix(in srgb, var(--color-success, #48bb78) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success, #48bb78) 30%, transparent);
+}
+
+.auth-alert--info {
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.auth-alert--warning {
+    color: var(--color-warning, #b7791f);
+    background: color-mix(in srgb, var(--color-warning, #ecc94b) 15%, transparent);
+    border-color: color-mix(in srgb, var(--color-warning, #ecc94b) 35%, transparent);
+}
+
+/* --- Icon --- */
+.auth-icon {
+    font-size: 2.5rem;
+}
+
+.auth-icon--error { color: var(--color-error, #e53e3e); }
+.auth-icon--success { color: var(--color-success, #48bb78); }
+.auth-icon--primary { color: var(--color-primary); }
+
+/* --- Manage layout --- */
+.manage-layout {
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.manage-layout h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.manage-layout h2 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.manage-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .manage-grid { grid-template-columns: 1fr; }
+}
+
+/* --- Manage nav --- */
+.manage-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.manage-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md, 8px);
+    font-size: 0.9375rem;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.manage-nav-link:hover {
+    background: var(--color-surface-hover, rgba(255,255,255,0.06));
+}
+
+.manage-nav-link.active {
+    background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+    color: var(--color-primary);
+}
+
+.manage-nav-link i {
+    font-size: 1.125rem;
+    flex-shrink: 0;
+}

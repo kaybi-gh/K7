@@ -6,9 +6,9 @@
     <title>K7</title>
     <base href="/" />
 
-    <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
-    <link rel="stylesheet" href="@Assets["K7.Server.Web.styles.css"]" />
     <link rel="stylesheet" href="@Assets["_content/K7.Clients.Shared.UI/app.css"]" />
+    <link rel="stylesheet" href="@Assets["K7.Server.Web.styles.css"]" />
+    <link rel="stylesheet" href="@Assets["css/auth.css"]" />
     <link rel="stylesheet" href="@Assets["dist/video.js/video-js.min.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="@Assets["_content/K7.Clients.Shared.UI/assets/favicon.png"]" />
@@ -26,9 +26,8 @@
     </div>
     <Routes @rendermode="PageRenderMode" />
 
+    <script src="@Assets["_content/K7.Clients.Shared.UI/js/theme.js"]"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
-    <script src="@Assets["_content/Extensions.MudBlazor.StaticInput/NavigationObserver.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/embla-carousel/embla-carousel.umd.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/spatial-navigation.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/qrcodejs/qrcode.min.js"]"></script>
