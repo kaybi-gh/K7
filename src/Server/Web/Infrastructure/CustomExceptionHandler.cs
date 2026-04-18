@@ -1,4 +1,5 @@
-﻿using K7.Server.Application.Common.Exceptions;
+﻿using Ardalis.GuardClauses;
+using K7.Server.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
