@@ -6,37 +6,34 @@ namespace K7.Clients.Shared.Services;
 public class ThemeService
 {
     public event Action? ThemeOnChange;
-    private ThemeWrapper? _themeWrapper;
-    public ThemeWrapper ThemeWrapper
+
+    private ThemeDefinition _theme = Themes.DefaultDark;
+    public ThemeDefinition Theme
     {
-        get => _themeWrapper ?? Themes.Plex;
+        get => _theme;
         set
         {
-            if (_themeWrapper != value)
+            if (_theme != value)
             {
-                _themeWrapper = value;
+                _theme = value;
                 ThemeOnChange?.Invoke();
             }
         }
     }
 
-    public event Action? DarkModeEnabledOnChange;
-    private bool? _darkModeEnabled;
-    public bool DarkModeEnabled
+    public event Action? CustomCssOnChange;
+
+    private string? _customCss;
+    public string? CustomCss
     {
-        get => _darkModeEnabled ?? true;
+        get => _customCss;
         set
         {
-            if (_darkModeEnabled != value)
+            if (_customCss != value)
             {
-                _darkModeEnabled = value;
-                DarkModeEnabledOnChange?.Invoke();
+                _customCss = value;
+                CustomCssOnChange?.Invoke();
             }
         }
-    }
-
-    public void ToggleDarkMode()
-    {
-        DarkModeEnabled = !DarkModeEnabled;
     }
 }
