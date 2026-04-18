@@ -4,20 +4,20 @@
 
 K7 follows **Clean Architecture** with strict dependency direction: Domain → Application → Infrastructure → Web.
 
-- **Domain** — Entities, value objects, enums, events, interfaces. Zero dependencies.
-- **Application** — Use cases via CQRS (MediatR), FluentValidation, domain event handlers.
-- **Infrastructure** — EF Core (Postgres + Sqlite), file system, media processing.
-- **Web** — ASP.NET Core host, Minimal API endpoints, SignalR hub.
-- **Clients** — Blazor WebAssembly + MAUI Blazor Hybrid, sharing components/pages/services.
+- **Domain** - Entities, value objects, enums, events, interfaces. Zero dependencies.
+- **Application** - Use cases via CQRS (MediatR), FluentValidation, domain event handlers.
+- **Infrastructure** - EF Core (Postgres + Sqlite), file system, media processing.
+- **Web** - ASP.NET Core host, Minimal API endpoints, SignalR hub.
+- **Clients** - Blazor WebAssembly + MAUI Blazor Hybrid, sharing components/pages/services.
 
 For the full breakdown, see [`docs/SolutionArchitecture.md`](docs/SolutionArchitecture.md).
 
 ## Prerequisites
 
-- **.NET SDK 10.0+** — `dotnet --version`
-- **Docker** — for Aspire (Postgres, pgAdmin) or the Docker launch profile
-- **ffmpeg** — media processing (installed automatically in DevContainer/Docker)
-- **Essentia** — audio analysis, Linux-only, optional (soft-fails if missing)
+- **.NET SDK 10.0+** - `dotnet --version`
+- **Docker** - for Aspire (Postgres, pgAdmin) or the Docker launch profile
+- **ffmpeg** - media processing (installed automatically in DevContainer/Docker)
+- **Essentia** - audio analysis, Linux-only, optional (soft-fails if missing)
 
 ## Developer setup
 
@@ -25,12 +25,12 @@ K7.Server.Web targets Linux at runtime (Essentia is a precompiled static binary 
 
 ### DevContainer (recommended on Windows)
 
-The simplest path — everything pre-installed (SDK, ffmpeg, Essentia, docker-in-docker):
+The simplest path - everything pre-installed (SDK, ffmpeg, Essentia, docker-in-docker):
 
 1. Open the repo in VS Code → accept **"Reopen in Container"**
 2. Run Aspire: `dotnet run --project src/Shared/Aspire/AppHost`
 
-### Visual Studio — Docker profile (Windows + Essentia)
+### Visual Studio - Docker profile (Windows + Essentia)
 
 Full Essentia support with VS debugger:
 
@@ -38,7 +38,7 @@ Full Essentia support with VS debugger:
    ```bash
    dotnet run --project src/Shared/Aspire/AppHost
    ```
-   Stop with Ctrl+C — the database containers stay alive.
+   Stop with Ctrl+C - the database containers stay alive.
 2. Select the **Docker** launch profile → F5
 
 The `dev` Dockerfile stage provides the SDK + ffmpeg + Essentia. Postgres is reached via `host.docker.internal:5432` (pinned port, same `postgres`/`postgres` credentials).
@@ -108,7 +108,7 @@ Enforced via [`.editorconfig`](.editorconfig) at the repository root. Key rules:
 - File-scoped namespaces (enforced as warning).
 - Private fields: `_camelCase`. No `s_` prefix.
 - Explicit accessibility modifiers on all members.
-- Always forward `CancellationToken` — last parameter, `= default` on public methods.
+- Always forward `CancellationToken` - last parameter, `= default` on public methods.
 - Structured logging only: `_logger.LogX("message {Param}", param)`. Never use `$""` interpolation.
 
 Run `dotnet format` to auto-fix formatting issues. Full conventions: [`docs/CodingConventions.md`](docs/CodingConventions.md).
@@ -117,11 +117,11 @@ Run `dotnet format` to auto-fix formatting issues. Full conventions: [`docs/Codi
 
 A typical server feature requires three files and an endpoint:
 
-1. **Command + Handler** — `src/Server/Application/Features/{Feature}/Commands/{Name}/{Name}.cs`
+1. **Command + Handler** - `src/Server/Application/Features/{Feature}/Commands/{Name}/{Name}.cs`
    - `record {Name}Command : IRequest<TResponse>` + `{Name}CommandHandler : IRequestHandler<...>` in the **same file**.
-2. **Validator** — `{Name}CommandValidator.cs` alongside the command. Uses FluentValidation `AbstractValidator<T>`.
-3. **Endpoint** — `src/Server/Web/Endpoints/{Feature}/{Name}.cs`. Thin — delegate to `ISender`.
-4. *(Optional)* **Domain event handler** — `Features/{Feature}/EventHandlers/{EventName}EventHandler.cs`.
+2. **Validator** - `{Name}CommandValidator.cs` alongside the command. Uses FluentValidation `AbstractValidator<T>`.
+3. **Endpoint** - `src/Server/Web/Endpoints/{Feature}/{Name}.cs`. Thin - delegate to `ISender`.
+4. *(Optional)* **Domain event handler** - `Features/{Feature}/EventHandlers/{EventName}EventHandler.cs`.
 
 Error handling is exception-based: throw `NotFoundException`, `ValidationException`, or `ForbiddenAccessException`. The `CustomExceptionHandler` middleware maps them to `ProblemDetails`.
 

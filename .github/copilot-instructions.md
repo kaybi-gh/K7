@@ -1,4 +1,4 @@
-# K7 — Copilot Instructions
+# K7 - Copilot Instructions
 
 K7 is a self-hosted media server (music, movies, TV shows). .NET 10, C# 14, `TreatWarningsAsErrors`, nullable enabled, implicit usings, file-scoped namespaces.
 
@@ -38,7 +38,7 @@ No `Result<T>` wrapper pattern.
 
 - **DI**: Each layer has a `DependencyInjection.cs` with `AddXxxServices()` extension methods.
 - **DTO mapping**: Extension methods in `Application/Common/Mappings/` (e.g., `entity.ToLibraryDto()`). No AutoMapper.
-- **Endpoints**: Minimal API in `Server/Web/Endpoints/`, grouped by feature, thin — delegate to `ISender`.
+- **Endpoints**: Minimal API in `Server/Web/Endpoints/`, grouped by feature, thin; delegate to `ISender`.
 - **Logging**: Always structured (`_logger.LogX("message {Param}", param)`). Never use string interpolation (`$""`).
 - **Database**: EF Core multi-provider (Postgres + Sqlite). Never call `BuildServiceProvider()` during DI registration.
 - **Domain entities**: Inherit `BaseEntity`, raise events via `AddDomainEvent()`.
@@ -53,6 +53,7 @@ No `Result<T>` wrapper pattern.
 - Always forward `CancellationToken`. Last parameter. Public methods: `CancellationToken cancellationToken = default`.
 - Prefer pattern matching (`is null`, `is not null`) over `== null`.
 - Prefer `field` keyword (C# 14) over manual backing fields in properties.
+- No em dashes (`-`), curly quotes, ellipsis (`…`), or other non-ASCII punctuation in code, comments, or documentation. Use plain ASCII: `-`, `...`, `"`, `'`.
 
 ## Git Conventions
 

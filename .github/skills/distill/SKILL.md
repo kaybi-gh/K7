@@ -9,7 +9,7 @@ Remove unnecessary complexity from designs, revealing the essential elements and
 
 ## MANDATORY PREPARATION
 
-Invoke /frontend-design — it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding — if no design context exists yet, you MUST run /teach-impeccable first.
+Invoke /frontend-design - it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding - if no design context exists yet, you MUST run /teach-impeccable first.
 
 ---
 
@@ -61,7 +61,7 @@ Systematically remove complexity across these dimensions:
 - **Reduce color palette**: Use 1-2 colors plus neutrals, not 5-7 colors
 - **Limit typography**: One font family, 3-4 sizes maximum, 2-3 weights
 - **Remove decorations**: Eliminate borders, shadows, backgrounds that don't serve hierarchy or function
-- **Flatten structure**: Reduce nesting, remove unnecessary containers—never nest cards inside cards
+- **Flatten structure**: Reduce nesting, remove unnecessary containers-never nest cards inside cards
 - **Remove unnecessary cards**: Cards aren't needed for basic layout; use spacing and alignment instead
 - **Consistent spacing**: Use one spacing scale, remove arbitrary gaps
 

@@ -72,4 +72,4 @@ dotnet ef migrations add <Name> \
 
 ## Domain Event Dispatch
 
-`DispatchDomainEventsInterceptor` fires domain events during `SaveChangesAsync`. This is already wired — no manual dispatch needed.
+`DispatchDomainEventsInterceptor` fires domain events during `SaveChangesAsync`. This is already wired; no manual dispatch needed.
