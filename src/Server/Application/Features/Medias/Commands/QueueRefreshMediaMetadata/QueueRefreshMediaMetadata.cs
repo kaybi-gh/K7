@@ -23,22 +23,12 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
     {
         var media = await context.Medias
             .Include(m => m.ExternalIds)
-            .Include(m => m.IndexedFiles)
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
         Guard.Against.NotFound(request.MediaId, media);
 
-        var libraryId = media.IndexedFiles?.FirstOrDefault()?.LibraryId;
-        Guard.Against.NotFound(request.MediaId, libraryId, $"Media {request.MediaId} has no associated library.");
-
-        var library = await context.Libraries.FindAsync([libraryId.Value], cancellationToken);
-        Guard.Against.NotFound(libraryId.Value, library);
-
-        var providerName = library.MetadataProviderName;
-        Guard.Against.NullOrEmpty(providerName, nameof(providerName), $"Library '{library.Title}' has no metadata provider configured.");
-
-        var externalId = media.ExternalIds?.FirstOrDefault(e => e.ProviderName == providerName);
-        Guard.Against.NotFound(request.MediaId, externalId, $"Media has no external ID for provider '{providerName}'.");
+        var externalId = media.ExternalIds?.FirstOrDefault();
+        Guard.Against.NotFound(request.MediaId, externalId, $"Media {request.MediaId} has no external ID.");
 
         await sender.Send(new CreateBackgroundTaskCommand
         {
@@ -46,7 +36,7 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
             {
                 MediaId = media.Id,
                 MetadataProviderExternalId = externalId.Value,
-                MetadataProviderName = providerName,
+                MetadataProviderName = externalId.ProviderName,
                 Language = "fr",
                 FallbackLanguage = "en"
             },
@@ -54,7 +44,7 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
             MaxAttempts = 1,
-            ConcurrencyGroup = providerName
+            ConcurrencyGroup = externalId.ProviderName
         }, cancellationToken);
     }
 }
