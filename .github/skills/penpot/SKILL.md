@@ -115,6 +115,17 @@ When generating Blazor/CSS from a Penpot design:
 
 ---
 
+## Icons
+
+K7 uses **Phosphor Icons** exclusively - the same library is available as an asset in this Penpot project.
+
+- Always use Phosphor icons from the Penpot asset library; never draw custom icon shapes.
+- Match the weight used in the code: K7 defaults to the regular weight (`ph-*` classes without suffix). Use `ph-bold` / `ph-fill` variants only if the code explicitly does.
+- When going code -> Penpot: look up the icon name in the source (e.g. `ph ph-devices`) and find the matching component in the Penpot Phosphor library.
+- When going Penpot -> code: note the exact icon component name from the Penpot asset panel and use the corresponding `ph ph-<name>` class in the Blazor markup.
+
+---
+
 ## Critical Gotchas
 
 ### Read-only vs writable properties
