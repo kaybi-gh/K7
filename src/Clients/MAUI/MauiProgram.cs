@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
-using MudBlazor.Services;
 using CommunityToolkit.Maui;
 using K7.Clients.MAUI.Interfaces;
 using K7.Shared.Interfaces;
@@ -55,7 +54,6 @@ public static partial class MauiProgram
 #endif
         });
 
-        builder.Services.AddMudServices();
         builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
         builder.Services.ConfigurePlatformServices();
 
@@ -91,6 +89,11 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<K7HubClient>();
         builder.Services.AddSingleton<PlaybackProgressTracker>();
         builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
+
+        builder.Services.AddSingleton<K7DialogService>();
+        builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
+        builder.Services.AddSingleton<K7SnackbarService>();
+        builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
 
         var serverUrl = Preferences.Get(PreferenceKeys.K7_SERVER_URL, null);
         ConfigureOpenIddict(builder.Services, serverUrl);
