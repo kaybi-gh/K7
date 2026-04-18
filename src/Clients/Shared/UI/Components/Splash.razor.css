@@ -1,5 +1,5 @@
-.splash {
-    background-color: var(--mud-palette-overlay-dark);
+﻿.splash {
+    background-color: var(--color-overlay);
     position: fixed;
     cursor: wait;
     top: 0;

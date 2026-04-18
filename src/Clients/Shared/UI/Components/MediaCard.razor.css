@@ -1,4 +1,4 @@
-.media-card {
+﻿.media-card {
     width: 100%;
     min-width: 0;
     container-type: inline-size;
@@ -7,8 +7,13 @@
 .media-card-container {
     position: relative;
     overflow: hidden;
-    border-radius: var(--mud-default-borderradius);
+    border-radius: var(--radius-sm);
     width: 100%;
+}
+
+.media-card-container ::deep .k7-skeleton {
+    position: absolute;
+    inset: 0;
 }
 
 .media-card--poster .media-card-container {
@@ -46,14 +51,14 @@
 .media-card-container:hover .media-card-watched,
 .media-card-link:focus-visible .media-card-watched {
     display: flex;
-    background-color: var(--mud-palette-overlay-dark);
+    background-color: var(--color-overlay);
 }
 
 .media-card-watched {
     position: absolute;
     top: 0;
     right: 0;
-    background-color: var(--mud-palette-overlay-dark);
+    background-color: var(--color-overlay);
     display: flex;
     border-radius: 0 0 0 5px;
 }
@@ -70,12 +75,13 @@
 .media-card-progress-bar {
     width: 100%;
     position: absolute;
+    bottom: 0;
 }
 
 .media-card-overlay {
-    background-color: var(--mud-palette-overlay-dark);
+    background-color: var(--color-overlay);
     position: absolute;
-    border: 1px solid var(--mud-palette-primary);
+    border: 1px solid var(--color-accent);
     display: none;
     top: 0;
     left: 0;
@@ -87,7 +93,7 @@
     pointer-events: none;
 }
 
-::deep .media-card-overlay .mud-fab {
+::deep .media-card-overlay .k7-fab {
     pointer-events: auto;
 }
 
@@ -104,7 +110,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--mud-palette-background-gray);
+    background: var(--color-bg-gray);
 }
 
 .media-card-footer {
@@ -114,7 +120,6 @@
 ::deep .media-card-title {
     width: 100%;
     text-align: center;
-    white-space: nowrap;
     overflow: hidden;
 }
 
@@ -127,12 +132,19 @@
 }
 
 .media-card-title-inner {
-    display: inline-block;
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
     will-change: transform;
 }
 
 .media-card:hover .media-card-title-inner,
 .media-card:focus-within .media-card-title-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
     animation: media-card-title-scroll 3s linear 0.5s infinite alternate;
 }
 

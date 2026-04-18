@@ -1,48 +1,45 @@
 @inject IStringLocalizer<AddToPlaylistDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
+<div class="k7-dialog-content">
         @if (_loading)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <K7ProgressBar Indeterminate="true" />
         }
         else if (_playlists.Count == 0)
         {
-            <MudStack AlignItems="AlignItems.Center" Class="pa-4">
-                <MudText Typo="Typo.body1" Color="Color.Secondary">@L["Empty"]</MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateNewPlaylist">
+            <div class="d-flex flex-col pa-4">
+                <p Color="secondary">@L["Empty"]</p>
+                <K7Button Variant="filled" Color="primary" OnClick="CreateNewPlaylist">
                     @L["CreatePlaylist"]
-                </MudButton>
-            </MudStack>
+                </K7Button>
+            </div>
         }
         else
         {
-            <MudList T="LitePlaylistDto" Dense="true" Class="py-0">
+            <ul class="k7-list">
                 @foreach (var playlist in _playlists)
                 {
-                    <MudListItem T="LitePlaylistDto" OnClick="() => SelectPlaylist(playlist)">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                            <MudIcon Icon="@Icons.Material.Filled.QueueMusic" Color="Color.Primary" />
-                            <MudStack Spacing="0">
-                                <MudText>@playlist.Title</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@string.Format(L["TrackCount"], playlist.ItemCount)</MudText>
-                            </MudStack>
-                        </MudStack>
-                    </MudListItem>
+                    <li T="LitePlaylistDto" OnClick="() => SelectPlaylist(playlist)">
+                        <div class="d-flex align-center">
+                            <K7Icon Name="queue" Color="primary" />
+                            <div class="d-flex flex-col">
+                                <span>@playlist.Title</span>
+                                <span class="text-caption" Color="secondary">@string.Format(L["TrackCount"], playlist.ItemCount)</span>
+                            </div>
+                        </div>
+                    </li>
                 }
-            </MudList>
-            <MudDivider Class="my-2" />
-            <MudButton Variant="Variant.Text"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="CreateNewPlaylist"
-                       FullWidth="true">
+            </ul>
+            <hr class="k7-divider my-2" />
+            <K7Button Variant="text"
+                       Color="primary"
+                       StartIcon="plus"
+                       OnClick="CreateNewPlaylist">
                 @L["NewPlaylist"]
-            </MudButton>
+            </K7Button>
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-    </DialogActions>
-</MudDialog>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    </div>

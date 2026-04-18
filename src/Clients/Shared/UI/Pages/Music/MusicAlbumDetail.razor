@@ -1,4 +1,4 @@
-@page "/music/albums/{Id}"
+﻿@page "/music/albums/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
 @inject IMediaService k7ServerService
@@ -19,72 +19,72 @@
             <div class="album-header-cover">
                 @if (_coverUrl is not null)
                 {
-                    <MudImage Src="@_coverUrl"
+                    <K7Image Src="@_coverUrl"
                               Alt="@_album.Title"
                               Class="album-detail-cover"
-                              ObjectFit="ObjectFit.Cover" />
+                              ObjectFit="cover" />
                 }
                 else
                 {
                     <div class="album-detail-cover-placeholder">
-                        <MudIcon Icon="@Icons.Material.Outlined.Album"
+                        <K7Icon Name="vinyl-record"
                                  Style="font-size: 64px; opacity: 0.3;" />
                     </div>
                 }
             </div>
 
             <div class="album-header-info">
-                <MudText Typo="Typo.overline">@L["AlbumType"]</MudText>
-                <MudText Typo="Typo.h4" Class="album-detail-title">@_album.Title</MudText>
+                <p class="text-overline">@L["AlbumType"]</p>
+                <h4 class="album-detail-title">@_album.Title</h4>
 
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                <div class="d-flex align-center mt-1">
                     @foreach (var artist in _artists)
                     {
                         <a href="@($"/music/artists/{artist.PersonId}")" class="album-artist-link">
-                            <MudText Typo="Typo.subtitle1" Color="Color.Primary">@artist.Name</MudText>
+                            <p class="text-subtitle1" Color="primary">@artist.Name</p>
                         </a>
                     }
-                </MudStack>
+                </div>
 
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                <div class="d-flex align-center mt-1">
                     @if (_album.ReleaseDate.HasValue)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_album.ReleaseDate.Value.Year</MudText>
+                        <p class="text-sm" Color="secondary">@_album.ReleaseDate.Value.Year</p>
                     }
                     @if (_trackCount > 0)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@string.Format(L["TrackCount"], _trackCount)</MudText>
+                        <p class="text-sm" Color="secondary">@string.Format(L["TrackCount"], _trackCount)</p>
                     }
                     @if (_totalDuration > 0)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">· @FormatTotalDuration(_totalDuration)</MudText>
+                        <p class="text-sm" Color="secondary">· @FormatTotalDuration(_totalDuration)</p>
                     }
-                </MudStack>
+                </div>
 
                 @if (_album.Genres?.Any() == true)
                 {
-                    <MudStack Row="true" Spacing="1" Class="mt-2" Wrap="Wrap.Wrap">
+                    <div class="d-flex mt-2">
                         @foreach (var genre in _album.Genres)
                         {
-                            <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@genre</MudChip>
+                            <K7Chip Variant="outlined" Size="sm">@genre</K7Chip>
                         }
-                    </MudStack>
+                    </div>
                 }
 
-                <MudStack Row="true" Spacing="2" Class="mt-3">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.PlayArrow"
+                <div class="d-flex mt-3">
+                    <K7Button Variant="filled"
+                               Color="primary"
+                               StartIcon="play"
                                OnClick="PlayAll">
                         @S["PlayAll"]
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Shuffle"
+                    </K7Button>
+                    <K7Button Variant="outlined"
+                               Color="primary"
+                               StartIcon="shuffle"
                                OnClick="ShuffleAll">
                         @S["Shuffle"]
-                    </MudButton>
-                </MudStack>
+                    </K7Button>
+                </div>
             </div>
         </div>
 
@@ -93,75 +93,72 @@
             {
                 @if (_tracksByDisc.Count > 1)
                 {
-                    <MudText Typo="Typo.subtitle1" Class="disc-header">@string.Format(L["DiscHeader"], discGroup.Key)</MudText>
+                    <p class="text-subtitle1 disc-header">@string.Format(L["DiscHeader"], discGroup.Key)</p>
                 }
 
-                <MudTable Items="discGroup.Value"
-                          Dense="true"
-                          Hover="true"
-                          Elevation="0"
-                          T="TrackViewModel"
-                          OnRowClick="OnTrackClick"
+                <K7Table Items="discGroup.Value"
+                          TItem="TrackViewModel"
+                          OnRowClick="@(args => OnTrackClick(args))"
                           RowClass="cursor-pointer">
                     <HeaderContent>
-                        <MudTh Style="width: 50px;">#</MudTh>
-                        <MudTh>@S["Title"]</MudTh>
-                        <MudTh Style="width: 100px; text-align: right;">
-                            <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
-                        </MudTh>
-                        <MudTh Style="width: 130px;"></MudTh>
-                        <MudTh Style="width: 50px;"></MudTh>
+                        <th Style="width: 50px;">#</th>
+                        <th>@S["Title"]</th>
+                        <th Style="width: 100px; text-align: right;">
+                            <K7Icon Name="clock" Size="sm" />
+                        </th>
+                        <th Style="width: 130px;"></th>
+                        <th Style="width: 50px;"></th>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd>
+                        <td>
                             @if (context.IsPlaying)
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.Equalizer"
-                                         Size="Size.Small"
-                                         Color="Color.Primary" />
+                                <K7Icon Name="equalizer"
+                                         Size="sm"
+                                         Color="primary" />
                             }
                             else
                             {
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@context.TrackNumber</MudText>
+                                <p class="text-sm" Color="secondary">@context.TrackNumber</p>
                             }
-                        </MudTd>
-                        <MudTd>
-                            <MudStack Spacing="0">
-                                <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">
+                        </td>
+                        <td>
+                            <div class="d-flex flex-col">
+                                <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
                                     @context.Title
-                                </MudText>
+                                </span>
                                 @if (!string.IsNullOrEmpty(context.ArtistName))
                                 {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ArtistName</MudText>
+                                    <span class="text-caption" Color="secondary">@context.ArtistName</span>
                                 }
-                            </MudStack>
-                        </MudTd>
-                        <MudTd Style="text-align: right;">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
-                        </MudTd>
-                        <MudTd>
-                            <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.Id" Value="context.UserRating" Size="Size.Small" />
-                        </MudTd>
-                        <MudTd>
+                            </div>
+                        </td>
+                        <td Style="text-align: right;">
+                            <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
+                        </td>
+                        <td>
+                            <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
+                        </td>
+                        <td>
                             <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
-                        </MudTd>
+                        </td>
                     </RowTemplate>
-                </MudTable>
+                </K7Table>
             }
         </div>
 
         @if (!string.IsNullOrEmpty(_album.Overview))
         {
             <div class="album-overview">
-                <MudText Typo="Typo.subtitle1" Class="mb-2">@S["About"]</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">@_album.Overview</MudText>
+                <p class="text-subtitle1 mb-2">@S["About"]</p>
+                <p class="text-sm" Color="secondary">@_album.Overview</p>
             </div>
         }
     </div>
 }
 else if (_loading)
 {
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudProgressCircular Indeterminate="true" />
-    </MudStack>
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
 }

@@ -1,11 +1,10 @@
-using K7.Clients.Shared.Models;
+﻿using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Persons;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -22,6 +21,8 @@ public partial class Person : IDisposable
     private bool _loading = true;
     private int _activeBackdropIndex;
     private Timer? _backdropTimer;
+
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,12 +123,10 @@ public partial class Person : IDisposable
     private Task OpenBioDialogAsync()
     {
         if (_person is null || string.IsNullOrWhiteSpace(_person.Biography)) return Task.CompletedTask;
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var parameters = new DialogParameters
-        {
-            { "ContentText", _person.Biography },
-            { "ButtonText", S["Cancel"].Value }
-        };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
+        var parameters = new K7DialogParameters();
+        parameters["ContentText"] = _person.Biography;
+        parameters["ButtonText"] = S["Cancel"].Value;
         return DialogService.ShowAsync<OverviewDialog>(_person.Name ?? string.Empty, parameters, options);
     }
 

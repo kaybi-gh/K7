@@ -44,7 +44,7 @@ public static class DeviceInitializer
         }
         catch (HttpRequestException)
         {
-            // Not authenticated yet — device will be initialized after login
+            // Not authenticated yet - device will be initialized after login
         }
     }
 

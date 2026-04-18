@@ -12,60 +12,57 @@
               DefaultSpacing="6"
               GridItemAspectRatio="1.4f">
     <ToolbarContent>
-        <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
-        <MudSpacer />
-        <MudTextField T="string"
+        <h5>@L["PageTitle"]</h5>
+        <div class="flex-1"></div>
+        <K7TextField TValue="string"
                       @bind-Value="_searchText"
                       Placeholder="@L["SearchPlaceholder"]"
-                      Variant="Variant.Outlined"
-                      Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search"
-                      Immediate="true"
+                      Variant="outlined"
+                      Adornment="start"
+                      AdornmentName="magnifying-glass"
                       DebounceInterval="400"
                       OnDebounceIntervalElapsed="OnSearchChanged"
-                      Margin="Margin.Dense"
                       Style="max-width: 300px;" />
     </ToolbarContent>
     <LoadingContent>
-        <MudGrid Style="max-width:100%;" Spacing="6" Justify="Justify.FlexStart" Class="pa-4">
+        <div class="grid">
             @for (var i = 0; i < 12; i++)
             {
-                <MudItem>
-                    <MudPaper Style="width: 160px;" Elevation="0">
-                        <MudSkeleton SkeletonType="SkeletonType.Circle" Width="160px" Height="160px" />
-                        <MudSkeleton Width="80%" Class="mt-2 mx-auto" />
-                    </MudPaper>
-                </MudItem>
+                <div>
+                    <div class="surface">
+                        <K7Skeleton Shape="circle" />
+                        <K7Skeleton />
+                    </div>
+                </div>
             }
-        </MudGrid>
+        </div>
     </LoadingContent>
     <EmptyContent>
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-            <MudIcon Icon="@Icons.Material.Outlined.PersonSearch" Style="font-size: 64px; opacity: 0.3;" />
-            <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
-        </MudStack>
+        <div class="d-flex flex-col pa-16">
+            <K7Icon Name=""user"Search" Style="font-size: 64px; opacity: 0.3;" />
+            <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
+        </div>
     </EmptyContent>
     <GridTemplate Context="artist">
         <a href="@($"/music/artists/{artist.Id}")" class="artist-card-link">
-            <MudPaper Class="artist-card" Elevation="0">
+            <div class="surface artist-card">
                 @if (artist.PortraitUrl is not null)
                 {
-                    <MudImage Src="@artist.PortraitUrl"
+                    <K7Image Src="@artist.PortraitUrl"
                               Alt="@artist.Name"
-                              Width="160" Height="160"
-                              ObjectFit="ObjectFit.Cover"
+                              Width="160"
+                              ObjectFit="cover"
                               Class="artist-avatar"
                               loading="lazy" />
                 }
                 else
                 {
-                    <MudAvatar Style="width: 160px; height: 160px; font-size: 48px;"
-                               Color="Color.Dark">
+                    <K7Avatar Style="width: 160px; height: 160px; font-size: 48px;">
                         @(artist.Name?[..1].ToUpperInvariant())
-                    </MudAvatar>
+                    </K7Avatar>
                 }
-                <MudText Typo="Typo.subtitle2" Align="Align.Center" Class="mt-2 artist-name">@artist.Name</MudText>
-            </MudPaper>
+                <p class="text-subtitle2 mt-2 artist-name text-center">@artist.Name</p>
+            </div>
         </a>
     </GridTemplate>
 </BrowseView>

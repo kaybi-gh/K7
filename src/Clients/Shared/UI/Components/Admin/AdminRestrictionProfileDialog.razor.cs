@@ -1,16 +1,15 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
 public partial class AdminRestrictionProfileDialog
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter] public bool IsNew { get; set; } = true;
     [Parameter] public Guid? ProfileId { get; set; }
@@ -74,7 +73,7 @@ public partial class AdminRestrictionProfileDialog
         _ => op.ToString()
     };
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 
     private async Task Submit()
     {
@@ -97,7 +96,7 @@ public partial class AdminRestrictionProfileDialog
                     MatchCondition = MatchCondition,
                     Rules = rules
                 });
-                Snackbar.Add("Profil créé.", Severity.Success);
+                Snackbar.Add("Profil créé.", K7Severity.Success);
             }
             else
             {
@@ -108,13 +107,13 @@ public partial class AdminRestrictionProfileDialog
                     MatchCondition = MatchCondition,
                     Rules = rules
                 });
-                Snackbar.Add("Profil mis à jour.", Severity.Success);
+                Snackbar.Add("Profil mis à jour.", K7Severity.Success);
             }
-            MudDialog.Close(DialogResult.Ok(true));
+            Dialog.Close(K7DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", Severity.Error);
+            Snackbar.Add($"Erreur : {ex.Message}", K7Severity.Error);
         }
         finally
         {

@@ -1,4 +1,4 @@
-.synced-lyrics {
+﻿.synced-lyrics {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -35,14 +35,14 @@
 }
 
 .lyrics-line:focus-visible {
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 
 .lyrics-line-active {
     opacity: 1;
     font-size: 1.35rem;
-    color: var(--mud-palette-primary);
+    color: var(--color-accent);
     transform: scale(1.05);
 }
 

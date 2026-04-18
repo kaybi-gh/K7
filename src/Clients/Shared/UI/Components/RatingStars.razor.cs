@@ -1,7 +1,6 @@
-using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -17,7 +16,7 @@ public partial class RatingStars
     public EventCallback<int?> ValueChanged { get; set; }
 
     [Parameter]
-    public Size Size { get; set; } = Size.Small;
+    public string Size { get; set; } = "sm";
 
     private bool _canRate;
 
@@ -27,12 +26,6 @@ public partial class RatingStars
     {
         _canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
     }
-
-    private string GetStarIcon(int star) =>
-        star <= StarCount ? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder;
-
-    private Color GetStarColor(int star) =>
-        star <= StarCount ? Color.Warning : Color.Default;
 
     private async Task OnStarClick(int star)
     {
@@ -53,7 +46,7 @@ public partial class RatingStars
         }
         catch
         {
-            // Silently fail — optimistic UI
+            // Silently fail - optimistic UI
         }
     }
 }

@@ -3,13 +3,12 @@ using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
 public partial class AdminUserCapabilitiesDialog
 {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Parameter] public string UserName { get; set; } = "";
     [Parameter] public string Role { get; set; } = Roles.User;
@@ -36,8 +35,8 @@ public partial class AdminUserCapabilitiesDialog
         Overrides.Remove(capability);
     }
 
-    private void Cancel() => MudDialog.Cancel();
-    private void Submit() => MudDialog.Close(DialogResult.Ok(Overrides));
+    private void Cancel() => Dialog.Cancel();
+    private void Submit() => Dialog.Close(K7DialogResult.Ok(Overrides));
 
     private static string GetRoleLabel(string role) => role switch
     {

@@ -14,6 +14,20 @@ var SpatialNavigation = (function () {
 
     var FOCUSABLE = 'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]):not([data-carousel-prev]):not([data-carousel-next]), input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [tabindex="0"]';
 
+    // Returns the focusable buttons that are direct items of a .k7-menu-dropdown,
+    // excluding any buttons that live inside a nested child .k7-menu-dropdown.
+    function getDirectDropdownItems(dropdown) {
+        var all = Array.from(dropdown.querySelectorAll('button:not([disabled])'));
+        return all.filter(function (el) {
+            var p = el.parentElement;
+            while (p && p !== dropdown) {
+                if (p.classList.contains('k7-menu-dropdown')) return false;
+                p = p.parentElement;
+            }
+            return true;
+        });
+    }
+
     function getRows() {
         return Array.from(document.querySelectorAll('[data-nav-row], [data-carousel], [data-nav-grid]'));
     }
@@ -88,7 +102,7 @@ var SpatialNavigation = (function () {
         
         if (allContainers.length > 0 && container === allContainers[0]) {
             // Remonter tout en haut de la page
-            var mainContent = document.querySelector('.mud-main-content');
+            var mainContent = document.querySelector('.app-main');
             if (mainContent) {
                 mainContent.scrollTo({ top: 0, behavior: 'smooth' });
             }
@@ -287,92 +301,148 @@ var SpatialNavigation = (function () {
             }
         }
 
-        // Video overlay: Escape closes only the topmost popover (submenu first, then parent menu)
-        if (key === 'Escape' && document.querySelector('.video-controls-overlay')) {
+        // Video overlay: Escape/Back closes the deepest open K7 menu level
+        var isEscapeKey = key === 'Escape' || key === 'GoBack' || key === 'BrowserBack';
+        if (isEscapeKey && document.querySelector('.video-controls-overlay')) {
+            // If a dialog is open, let Blazor handle it
+            if (document.querySelector('.k7-dialog-backdrop')) return;
             if (window.K7._skipNextEscape) {
                 window.K7._skipNextEscape = false;
                 return;
             }
-            var openPopovers = document.querySelectorAll('.mud-popover-open');
-            if (openPopovers.length > 1) {
-                // Multiple popovers: close the submenu containing focus, then focus parent
+            var openMenus = Array.from(document.querySelectorAll('.k7-menu--open'));
+            if (openMenus.length > 0) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                // Find the parent popover (the one that does NOT contain activeElement)
-                var parentPopover = null;
-                for (var pi = 0; pi < openPopovers.length; pi++) {
-                    if (!openPopovers[pi].contains(document.activeElement)) {
-                        parentPopover = openPopovers[pi];
-                        break;
+                if (openMenus.length > 1) {
+                    // A sub-menu is open: close only the deepest level and return focus to its trigger
+                    var deepestMenu = openMenus[openMenus.length - 1];
+                    var subTrigger = deepestMenu.querySelector(':scope > button');
+                    if (subTrigger) {
+                        subTrigger.click(); // toggles it closed
+                        setTimeout(function() { subTrigger.focus(); }, 50);
+                    }
+                } else {
+                    // Only the root menu is open: close all via Blazor
+                    if (window.K7._videoOverlayRef) {
+                        window.K7._videoOverlayRef.invokeMethodAsync('CloseMenu');
                     }
                 }
-                window.K7._skipNextEscape = true;
-                var synth = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true });
-                (document.activeElement || document.body).dispatchEvent(synth);
-                // Focus first item in the parent popover after MudBlazor closes the submenu
-                setTimeout(function () {
-                    if (parentPopover) {
-                        var parentItems = Array.from(parentPopover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) { return el.offsetParent !== null; });
-                        if (parentItems.length > 0) parentItems[0].focus();
-                    }
-                }, 50);
                 return;
             }
-            if (openPopovers.length === 1 && window.K7._videoOverlayRef) {
-                window.K7._videoOverlayRef.invokeMethodAsync('CloseMenu');
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                return;
-            }
-            // No popover: let event propagate to overlay's Blazor handler
+            // No menu open: prevent default, let Blazor handler manage
+            e.preventDefault();
             return;
         }
 
-        // Video overlay: Enter activates focused popover item (MudMenuItem is <li>, not <button>)
+        // Video overlay: Enter activates focused K7 menu item
         if (key === 'Enter' && document.querySelector('.video-controls-overlay')) {
-            var popovers = document.querySelectorAll('.mud-popover-open');
-            for (var p = 0; p < popovers.length; p++) {
-                if (popovers[p].contains(active)) {
+            var openMenus = Array.from(document.querySelectorAll('.k7-menu--open'));
+            for (var p = 0; p < openMenus.length; p++) {
+                var dropdown = openMenus[p].querySelector('.k7-menu-dropdown');
+                if (dropdown && dropdown.contains(active)) {
+                    var prevOpenCount = document.querySelectorAll('.k7-menu--open').length;
                     active.click();
                     e.preventDefault();
                     e.stopImmediatePropagation();
-                    // MutationObserver handles focusing the new submenu if one opens
+                    // If this click opened a sub-menu, focus its first item
+                    setTimeout(function() {
+                        var newOpenMenus = Array.from(document.querySelectorAll('.k7-menu--open'));
+                        if (newOpenMenus.length > prevOpenCount) {
+                            var deepest = newOpenMenus[newOpenMenus.length - 1];
+                            var subDd = deepest.querySelector(':scope > .k7-menu-dropdown');
+                            if (subDd) {
+                                var first = getDirectDropdownItems(subDd)[0];
+                                if (first) first.focus();
+                            }
+                        }
+                    }, 150);
+                    return;
+                }
+            }
+            // No popover open: explicitly click the focused button/interactive element.
+            // MAUI Android TV WebView doesn't synthesize click from Enter after
+            // programmatic focus (focusDirection), so we must do it manually.
+            // But when focus is on the overlay container itself, prevent click synthesis
+            // to avoid OnOverlayTap immediately undoing what the Blazor handler did.
+            if (active && active.classList.contains('video-controls-overlay')) {
+                e.preventDefault();
+                return;
+            }
+            if (active && active.closest('.video-controls-overlay') && !active.closest('.seekbar-container')) {
+                var tag = (active.tagName || '').toLowerCase();
+                if (tag === 'button' || tag === 'a' || active.getAttribute('role') === 'button'
+                    || active.classList.contains('k7-menu-item')) {
+                    var prevOpenCount = document.querySelectorAll('.k7-menu--open').length;
+                    active.click();
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    // After clicking a button that may open a menu, wait for Blazor to re-render
+                    // then focus the first item of the newly opened (deepest) dropdown.
+                    setTimeout(function() {
+                        var newOpenMenus = Array.from(document.querySelectorAll('.k7-menu--open'));
+                        if (newOpenMenus.length > prevOpenCount) {
+                            var deepest = newOpenMenus[newOpenMenus.length - 1];
+                            var dropdown = deepest.querySelector(':scope > .k7-menu-dropdown');
+                            if (dropdown) {
+                                var first = getDirectDropdownItems(dropdown)[0];
+                                if (first) first.focus();
+                            }
+                        }
+                    }, 150);
                     return;
                 }
             }
         }
 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) === -1) {
+            if (key === ' ' && document.querySelector('.video-controls-overlay')) {
+                e.preventDefault();
+            }
             return;
         }
 
-        // If a dropdown or popover is open, let MudBlazor handle navigation inside it
-        // But if the video player overlay is active, we help navigate within the popover
-        if (document.querySelector('.mud-popover-open')) {
+        // If a K7 menu is open, navigate within it
+        if (document.querySelector('.k7-menu--open')) {
             if (document.querySelector('.video-controls-overlay')) {
-                // Navigate within the popover that contains the focused element
-                var allPopovers = document.querySelectorAll('.mud-popover-open');
-                var popover = null;
-                for (var pi = 0; pi < allPopovers.length; pi++) {
-                    if (allPopovers[pi].contains(active)) {
-                        popover = allPopovers[pi];
+                var openMenus = Array.from(document.querySelectorAll('.k7-menu--open'));
+
+                // Find the deepest open dropdown that directly contains the active element.
+                var activeDropdown = null;
+                var activeMenuRoot = null;
+                for (var pi = openMenus.length - 1; pi >= 0; pi--) {
+                    var dd = openMenus[pi].querySelector(':scope > .k7-menu-dropdown');
+                    if (dd && dd.contains(active)) {
+                        activeDropdown = dd;
+                        activeMenuRoot = openMenus[pi];
                         break;
                     }
                 }
-                if (popover) {
-                    var items = Array.from(popover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) {
-                        return el.offsetParent !== null;
-                    });
-                    if (items.length > 0) {
-                        var idx = items.indexOf(active);
-                        var target = null;
-                        if (key === 'ArrowDown' || key === 'ArrowRight') {
-                            target = idx < items.length - 1 ? items[idx + 1] : items[0];
-                        } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
-                            target = idx > 0 ? items[idx - 1] : items[items.length - 1];
-                        }
-                        if (target) {
-                            target.focus();
+
+                if (activeDropdown) {
+                    var items = getDirectDropdownItems(activeDropdown);
+                    var idx = items.indexOf(active);
+
+                    // ArrowUp / ArrowDown: move within the current dropdown level
+                    var target = null;
+                    if (key === 'ArrowDown') {
+                        target = idx < items.length - 1 ? items[idx + 1] : items[0];
+                    } else if (key === 'ArrowUp') {
+                        target = idx > 0 ? items[idx - 1] : items[items.length - 1];
+                    }
+                    if (target) {
+                        target.focus();
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                    }
+                } else if (key === 'ArrowDown' || key === 'ArrowUp') {
+                    // Menu is open but focus is not inside any dropdown (e.g. still on trigger).
+                    var deepest = openMenus[openMenus.length - 1];
+                    var deepestDropdown = deepest.querySelector(':scope > .k7-menu-dropdown');
+                    if (deepestDropdown) {
+                        var first = getDirectDropdownItems(deepestDropdown)[0];
+                        if (first) {
+                            first.focus();
                             e.preventDefault();
                             e.stopImmediatePropagation();
                         }
@@ -382,8 +452,10 @@ var SpatialNavigation = (function () {
             return;
         }
 
-        // If the video player overlay is active, let its own keyboard handler manage navigation
+        // If the video player overlay is active, prevent arrow default (scrolling)
+        // but let Blazor handle the key logic
         if (document.querySelector('.video-controls-overlay')) {
+            e.preventDefault();
             return;
         }
 
@@ -402,19 +474,19 @@ var SpatialNavigation = (function () {
         }
 
         // If a dialog is open, constrain navigation inside it
-        var openDialogs = document.querySelectorAll('.mud-dialog');
+        var openDialogs = document.querySelectorAll('.k7-dialog-backdrop');
         if (openDialogs.length > 0) {
-            var activeDialog = openDialogs[openDialogs.length - 1]; // top overlay
+            var activeDialog = openDialogs[openDialogs.length - 1].querySelector('.k7-dialog-paper');
             handleDialogNavigation(e, activeDialog, key);
             return;
         }
 
         // Don't navigate behind other non-dialog overlays (if any)
-        if (document.querySelector('.mud-overlay-dialog') && openDialogs.length === 0) return;
+        if (document.querySelector('.k7-dialog-backdrop') && openDialogs.length === 0) return;
 
         var active = document.activeElement;
         if (!active || active === document.body) {
-            // Nothing focused — focus first content element (not sidebar)
+            // Nothing focused - focus first content element (not sidebar)
             var contentItems = getAllFocusables().filter(function (el) { return !isInColumn(el); });
             if (contentItems.length > 0) {
                 focusAndScroll(contentItems[0]);
@@ -467,7 +539,7 @@ var SpatialNavigation = (function () {
     function jumpToContent(sidebarEl) {
         var rows = getRows();
         if (rows.length === 0) {
-            // No rows — jump to first non-sidebar focusable
+            // No rows - jump to first non-sidebar focusable
             var all = getAllFocusables().filter(function (el) { return !isInColumn(el); });
             if (all.length > 0) focusAndScroll(all[0]);
             return;
@@ -504,8 +576,8 @@ var SpatialNavigation = (function () {
     function jumpToSidebar(contentEl) {
         var col = getColumn();
         if (!col) return false;
-        // Target only nav links, not hamburger/search/avatar buttons
-        var navLinks = Array.from(col.querySelectorAll('.mud-nav-link'));
+        // Target only nav links in the sidebar
+        var navLinks = Array.from(col.querySelectorAll('.nav-link'));
         if (navLinks.length === 0) return false;
         var refRect = getRect(contentEl);
         var best = findClosestVertically(navLinks, refRect);
@@ -631,7 +703,7 @@ var SpatialNavigation = (function () {
         }
 
         if (currentRowIndex === -1) {
-            // Active is outside any row — find nearest row in direction
+            // Active is outside any row - find nearest row in direction
             var activeRect = getRect(active);
             var bestRow = null;
             var bestDist = Infinity;
@@ -695,7 +767,7 @@ var SpatialNavigation = (function () {
 
         var targetRowIndex = down ? currentRowIndex + 1 : currentRowIndex - 1;
         if (targetRowIndex < 0 || targetRowIndex >= rows.length) {
-            // At edge — find non-row focusables above/below
+            // At edge - find non-row focusables above/below
             var outsideFocusables = getAllFocusables().filter(function (el) {
                 return !findContainingRow(el) && !isInColumn(el);
             });
@@ -738,33 +810,18 @@ var SpatialNavigation = (function () {
 
     function handleBackNavigation(e) {
         var key = e.key;
-        // Only Backspace and remote Back buttons navigate back
-        // Escape is left to MudBlazor for closing dialogs/popups
+        // Backspace and remote Back buttons navigate back
+        // Escape is left to Blazor for closing dialogs/popups
         if (key !== 'Backspace' && key !== 'GoBack' && key !== 'XF86Back') return;
 
         // Don't intercept in form fields
         var tag = (document.activeElement && document.activeElement.tagName || '').toLowerCase();
         if (tag === 'input' || tag === 'textarea') return;
 
-        // Video overlay with menu open: close only submenu, or parent menu
+        // Video overlay with menu open: close the open K7 menu
         if (document.querySelector('.video-controls-overlay') && window.K7._videoOverlayRef) {
-            var openPopovers = document.querySelectorAll('.mud-popover-open');
-            if (openPopovers.length > 1) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                var parentPopover = openPopovers[openPopovers.length - 2];
-                window.K7._skipNextEscape = true;
-                var synth = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true });
-                (document.activeElement || document.body).dispatchEvent(synth);
-                setTimeout(function () {
-                    if (parentPopover) {
-                        var parentItems = Array.from(parentPopover.querySelectorAll('.mud-menu-item, .mud-list-item, button:not([disabled])')).filter(function(el) { return el.offsetParent !== null; });
-                        if (parentItems.length > 0) parentItems[0].focus();
-                    }
-                }, 50);
-                return;
-            }
-            if (openPopovers.length === 1) {
+            var openMenus = document.querySelectorAll('.k7-menu--open');
+            if (openMenus.length > 0) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 window.K7._videoOverlayRef.invokeMethodAsync('CloseMenu');
@@ -864,19 +921,20 @@ window.K7.registerVideoOverlay = function (dotNetRef) {
     window.K7._videoOverlayRef = dotNetRef;
     window.K7._skipNextEscape = false;
 
-    // Auto-focus popover items when a MudBlazor popover opens during video playback
+    // Auto-focus popover items when a K7 menu opens during video playback
     if (window.K7._popoverObserver) window.K7._popoverObserver.disconnect();
 
     window.K7._popoverObserver = new MutationObserver(function (mutations) {
         for (var i = 0; i < mutations.length; i++) {
             var target = mutations[i].target;
             if (!target.classList) continue;
-            if (target.classList.contains('mud-popover') && target.classList.contains('mud-popover-open')) {
-                if (target.contains(document.activeElement)) continue;
-                (function (popover) {
+            if (target.classList.contains('k7-menu') && target.classList.contains('k7-menu--open')) {
+                var dropdown = target.querySelector('.k7-menu-dropdown');
+                if (!dropdown || target.contains(document.activeElement)) continue;
+                (function (menu) {
                     var attempts = 5;
                     function tryFocus() {
-                        var items = Array.from(popover.querySelectorAll('.mud-menu-item, .mud-list-item')).filter(function (el) {
+                        var items = Array.from(menu.querySelectorAll('.k7-menu-item')).filter(function (el) {
                             return el.offsetParent !== null;
                         });
                         if (items.length > 0) {
@@ -886,7 +944,7 @@ window.K7.registerVideoOverlay = function (dotNetRef) {
                         }
                     }
                     setTimeout(tryFocus, 50);
-                })(target);
+                })(dropdown);
             }
         }
     });

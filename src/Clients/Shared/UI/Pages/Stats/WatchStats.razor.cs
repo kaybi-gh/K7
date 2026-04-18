@@ -1,5 +1,4 @@
-using K7.Shared.Dtos;
-using MudBlazor;
+﻿using K7.Shared.Dtos;
 
 namespace K7.Clients.Shared.UI.Pages.Stats;
 
@@ -11,11 +10,11 @@ public partial class WatchStats : IDisposable
     private string _selectedMediaType = "";
     private Timer? _debounceTimer;
 
-    private List<ChartSeries<double>> _playsOverTimeSeries = [];
+    private List<(string Name, double[] Data)> _playsOverTimeSeries = [];
     private string[] _playsOverTimeLabels = [];
-    private List<ChartSeries<double>> _hourSeries = [];
+    private List<(string Name, double[] Data)> _hourSeries = [];
     private string[] _hourLabels = [];
-    private List<ChartSeries<double>> _dowSeries = [];
+    private List<(string Name, double[] Data)> _dowSeries = [];
     private string[] _dowLabels = [];
 
     protected override async Task OnInitializedAsync()
@@ -80,7 +79,7 @@ public partial class WatchStats : IDisposable
             _playsOverTimeLabels = _stats.PlaysOverTime.Select(p => p.Date.ToString("MM/dd")).ToArray();
             _playsOverTimeSeries =
             [
-                new() { Name = "Plays", Data = new(_stats.PlaysOverTime.Select(p => (double)p.Count).ToArray()) }
+                ("Plays", _stats.PlaysOverTime.Select(p => (double)p.Count).ToArray())
             ];
         }
 
@@ -89,7 +88,7 @@ public partial class WatchStats : IDisposable
             _hourLabels = _stats.PlaysByHourOfDay.Select(p => p.Hour.ToString()).ToArray();
             _hourSeries =
             [
-                new() { Name = "Plays", Data = new(_stats.PlaysByHourOfDay.Select(p => (double)p.Count).ToArray()) }
+                ("Plays", _stats.PlaysByHourOfDay.Select(p => (double)p.Count).ToArray())
             ];
         }
 
@@ -98,7 +97,7 @@ public partial class WatchStats : IDisposable
             _dowLabels = _stats.PlaysByDayOfWeek.Select(p => p.Name[..3]).ToArray();
             _dowSeries =
             [
-                new() { Name = "Plays", Data = new(_stats.PlaysByDayOfWeek.Select(p => (double)p.Count).ToArray()) }
+                ("Plays", _stats.PlaysByDayOfWeek.Select(p => (double)p.Count).ToArray())
             ];
         }
     }

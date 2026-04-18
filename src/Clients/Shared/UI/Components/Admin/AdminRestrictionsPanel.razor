@@ -1,78 +1,75 @@
-﻿@inject IStringLocalizer<AdminRestrictionsPanel> L
+@inject IStringLocalizer<AdminRestrictionsPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
-    <MudText Typo="Typo.h6">@L["Title"]</MudText>
-    <MudStack Row="true" Spacing="2">
-        <MudMenu Label="@L["CreateFromTemplate"]" Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Secondary"
-                 Variant="Variant.Outlined" EndIcon="@Icons.Material.Filled.KeyboardArrowDown">
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">@L["TemplateChildFriendly"]</MudMenuItem>
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">@L["TemplateFamily12"]</MudMenuItem>
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">@L["TemplateTeen16"]</MudMenuItem>
-            <MudMenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">@L["TemplateNoHorror"]</MudMenuItem>
-        </MudMenu>
-        <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary"
-                   OnClick="OpenCreateDialog">@L["CreateProfile"]</MudButton>
-    </MudStack>
-</MudStack>
+<div class="d-flex align-center justify-between mb-4">
+    <h6>@L["Title"]</h6>
+    <div class="d-flex">
+        <K7Menu Label="@L["CreateFromTemplate"]" Icon="sparkle" Color="secondary"
+                 Variant="outlined" EndIcon="caret-down">
+            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">@L["TemplateChildFriendly"]</K7MenuItem>
+            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">@L["TemplateFamily12"]</K7MenuItem>
+            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">@L["TemplateTeen16"]</K7MenuItem>
+            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">@L["TemplateNoHorror"]</K7MenuItem>
+        </K7Menu>
+        <K7Button StartIcon="plus" Variant="filled" Color="primary"
+                   OnClick="OpenCreateDialog">@L["CreateProfile"]</K7Button>
+    </div>
+</div>
 
 @if (_loading)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    <K7ProgressBar Indeterminate="true" />
 }
 else if (_profiles.Count == 0)
 {
-    <MudPaper Class="pa-8 d-flex flex-column align-center" Elevation="0">
-        <MudIcon Icon="@Icons.Material.Outlined.Shield" Size="Size.Large" Color="Color.Secondary" />
-        <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-4">@L["Empty"]</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">
+    <div class="surface pa-8 d-flex flex-column align-center">
+        <K7Icon Name="prohibition" Size="lg" Color="secondary" />
+        <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
+        <p class="text-sm mt-2"  Color="secondary" >
             @L["EmptyDescription"]
-        </MudText>
-    </MudPaper>
+        </p>
+    </div>
 }
 else
 {
-    <MudGrid>
+    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4);">
         @foreach (var profile in _profiles)
         {
-            <MudItem @key="profile.Id" xs="12" sm="6" md="4">
-                <MudCard Elevation="2">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@profile.Name</MudText>
+            <div>
+                <div class="k7-card">
+                    <div class="k7-card-header">
+                        <div class="k7-card-header-content">
+                            <h6>@profile.Name</h6>
                             @if (!string.IsNullOrEmpty(profile.Description))
                             {
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@profile.Description</MudText>
+                                <p class="text-sm" Color="secondary">@profile.Description</p>
                             }
-                        </CardHeaderContent>
-                        <CardHeaderActions>
-                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Primary"
-                                           OnClick="@(() => PreviewRestrictedMedias(profile))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
-                                           OnClick="@(() => OpenEditDialog(profile))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                           OnClick="@(() => ConfirmDelete(profile))" />
-                        </CardHeaderActions>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudStack Spacing="1">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        </div>
+                        <div class="k7-card-header-actions">
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => PreviewRestrictedMedias(profile))" aria-label="preview"><i class="ph ph-eye"></i></button>
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenEditDialog(profile))" aria-label="edit"><i class="ph ph-pencil"></i></button>
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => ConfirmDelete(profile))" aria-label="delete"><i class="ph ph-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="k7-card-content">
+                        <div class="d-flex flex-col">
+                            <span class="text-caption" Color="secondary">
                                 @L["ConditionPrefix"] @(profile.MatchCondition == RestrictionMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
-                            </MudText>
+                            </span>
                             @foreach (var rule in profile.Rules)
                             {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Default">
+                                <K7Chip Size="sm" Color="default">
                                     @FormatRule(rule)
-                                </MudChip>
+                                </K7Chip>
                             }
-                            <MudText Typo="Typo.caption" Class="mt-2">
-                                <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Class="mr-1" />
+                            <span class="text-caption mt-2">
+                                <K7Icon Name="users" Size="sm" Class="mr-1" />
                                 @string.Format(L["AttachedUsers"], profile.UserCount)
-                            </MudText>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
-    </MudGrid>
+    </div>
 }

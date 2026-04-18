@@ -1,22 +1,20 @@
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class CreatePlaylistDialog
 {
     [Inject] private IPlaylistService K7ServerService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     private string _title = "";
     private string? _description;
     private bool _isSubmitting;
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 
     private async Task SubmitAsync()
     {
@@ -31,12 +29,12 @@ public partial class CreatePlaylistDialog
                 Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim()
             });
 
-            Snackbar.Add(L["Created"], Severity.Success);
-            MudDialog.Close(DialogResult.Ok(id));
+            Snackbar.Add(L["Created"], K7Severity.Success);
+            Dialog.Close(K7DialogResult.Ok(id));
         }
         catch
         {
-            Snackbar.Add(L["Error"], Severity.Error);
+            Snackbar.Add(L["Error"], K7Severity.Error);
         }
         finally
         {

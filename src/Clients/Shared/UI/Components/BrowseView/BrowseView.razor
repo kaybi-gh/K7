@@ -13,17 +13,12 @@
                 @foreach (var mode in _availableModes)
                 {
                     var m = mode;
-                    <MudIconButton Icon="@GetModeIcon(m)"
-                                   Color="@(m == _currentMode ? Color.Primary : Color.Default)"
-                                   Size="Size.Small"
-                                   OnClick="() => SetViewModeAsync(m)" />
+                    <button class="k7-icon-btn" type="button" @onclick="() => SetViewModeAsync(m)" aria-label="@GetModeIcon(m)"><i class="ph ph-@GetModeIcon(m)"></i></button>
                 }
             }
             @if (_currentMode is BrowseViewMode.Grid)
             {
-                <MudIconButton Icon="@Icons.Material.Outlined.Tune"
-                               Size="Size.Small"
-                               OnClick="() => _settingsOpen = !_settingsOpen" />
+                <button class="k7-icon-btn" type="button" @onclick="() => _settingsOpen = !_settingsOpen" aria-label="settings"><i class="ph ph-sliders-horizontal"></i></button>
             }
         </div>
     </div>
@@ -31,14 +26,12 @@
     @if (_settingsOpen && _currentMode is BrowseViewMode.Grid)
     {
         <div class="browse-view-settings">
-            <MudSlider T="int" Value="_itemWidth" ValueChanged="OnItemWidthChanged"
-                       Min="100" Max="300" Step="10" Color="Color.Primary" Class="mx-4">
+            <K7Slider TValue="int" Value="_itemWidth" ValueChanged="OnItemWidthChanged" Step="10" Color="primary" Class="mx-4">
                 @S["ItemSize"]: @_itemWidth px
-            </MudSlider>
-            <MudSlider T="int" Value="_spacing" ValueChanged="OnSpacingChanged"
-                       Min="0" Max="24" Step="2" Color="Color.Primary" Class="mx-4">
+            </K7Slider>
+            <K7Slider TValue="int" Value="_spacing" ValueChanged="OnSpacingChanged" Step="2" Color="primary" Class="mx-4">
                 @S["Spacing"]: @_spacing px
-            </MudSlider>
+            </K7Slider>
         </div>
     }
 
@@ -50,9 +43,9 @@
         }
         else
         {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-                <MudProgressCircular Indeterminate="true" />
-            </MudStack>
+            <div class="d-flex flex-col pa-16">
+                <K7Spinner />
+            </div>
         }
     }
     else if (Items is null || Items.Count == 0)
@@ -63,9 +56,9 @@
         }
         else
         {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-                <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Style="font-size: 64px; opacity: 0.3;" />
-            </MudStack>
+            <div class="d-flex flex-col pa-16">
+                <K7Icon Name=""magnifying-glass"Off" Style="font-size: 64px; opacity: 0.3;" />
+            </div>
         }
     }
     else

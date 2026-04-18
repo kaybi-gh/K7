@@ -4,16 +4,16 @@
 {
     <div class="media-card @VariantClass">
         <div class="media-card-container">
-            <MudSkeleton Animation="Animation.Wave" SkeletonType="SkeletonType.Rectangle" Class="rounded-lg" Height="100%" Width="100%" />
+            <K7Skeleton />
         </div>
 
         @if (FooterVisible)
         {
             <div class="media-card-footer">
-                <MudStack AlignItems="AlignItems.Center" Spacing="0">
-                    <MudSkeleton Animation="Animation.Wave" Height="100%" Width="80%" />
-                    <MudSkeleton Animation="Animation.Wave" Height="100%" Width="50%" />
-                </MudStack>
+                <div class="d-flex flex-col">
+                    <K7Skeleton Shape="text" Width="80%" />
+                    <K7Skeleton Shape="text" Width="50%" />
+                </div>
             </div>
         }
     </div>
@@ -25,40 +25,40 @@ else
             <a class="media-card-link" href="@Href">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
-                    <MudImage Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Elevation="1" Fluid="true" ObjectFit="ObjectFit.Cover" loading="lazy" />
+                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Fluid="true" ObjectFit="cover" loading="lazy" />
                 }
                 else
                 {
                     <div class="media-card-placeholder rounded-lg">
-                        <MudIcon Icon="@PlaceholderIcon" Style="font-size: 48px; opacity: 0.3;" />
+                        <K7Icon Name="@PlaceholderIcon" Style="font-size: 48px; opacity: 0.3;" />
                     </div>
                 }
 
                 @if (WatchedStatusEnabled && Model.Watched)
                 {
                     <div class="media-card-watched">
-                        <MudIcon Size="Size.Small" class="ma-1" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" />
+                        <K7Icon Size="sm" class="ma-1" Color="success" Name="check-circle" />
                     </div>
                 }
 
                 @if (Model.GroupCount > 1)
                 {
                     <div class="media-card-group-count">
-                        <MudChip Size="Size.Small" T="int" Color="Color.Dark" Variant="MudBlazor.Variant.Filled">@Model.GroupCount</MudChip>
+                        <K7Chip Size="sm" Color="dark" Variant="filled">@Model.GroupCount</K7Chip>
                     </div>
                 }
 
                 @if (ProgressEnabled && !ProgressBarIsHidden())
                 {
                     <div class="media-card-progress-bar">
-                        <MudProgressLinear Size="Size.Small" Rounded="true" Color="Color.Primary" Value="@Model.Progress" />
+                        <K7ProgressBar Value="@Model.Progress" />
                     </div>
                 }
 
                 @if (OverlayEnabled)
                 {
                     <div class="media-card-overlay">
-                        <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" tabindex="-1" />
+                        <button type="button" class="k7-fab" aria-label="Play"><i class="ph ph-play"></i></button>
                     </div>
                 }
             </a>
@@ -66,13 +66,13 @@ else
             @if (ExcludeMenuEnabled)
             {
                 <div class="media-card-menu">
-                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Primary" Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                        <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="OnExcludeForSelf">@L["HideForMe"]</MudMenuItem>
+                    <K7Menu Icon="dots-three-vertical" Color="primary">
+                        <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
                         @if (IsAdmin)
                         {
-                            <MudMenuItem Icon="@Icons.Material.Filled.PeopleAlt" OnClick="OnExcludeForOthers">@L["HideForUser"]</MudMenuItem>
+                            <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
                         }
-                    </MudMenu>
+                    </K7Menu>
                 </div>
             }
         </div>
@@ -80,10 +80,10 @@ else
         @if (FooterVisible)
         {
             <div class="media-card-footer">
-                <MudStack AlignItems="AlignItems.Center" Spacing="0">
-                    <MudText Class="media-card-title" Typo="Typo.body2"><span class="media-card-title-inner">@Model.Title</span></MudText>
-                    <MudText Class="media-card-subtitle" Typo="Typo.caption">@Model.AdditionalInformations</MudText>
-                </MudStack>
+                <div class="d-flex flex-col">
+                    <span class="media-card-title"><span class="media-card-title-inner">@Model.Title</span></span>
+                    <span class="media-card-subtitle">@Model.AdditionalInformations</span>
+                </div>
             </div>
         }
     </div>

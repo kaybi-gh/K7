@@ -1,9 +1,8 @@
-using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Devices;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
@@ -11,7 +10,7 @@ public partial class AdminDevicesPanel
 {
     [Inject] private IDeviceApiService K7ServerService { get; set; } = default!;
     [Inject] private IDeviceStorageService DeviceStorageService { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     private bool _isLoading = true;
     private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? _devices;
@@ -59,11 +58,11 @@ public partial class AdminDevicesPanel
 
     private static string GetDeviceIcon(DeviceType deviceType) => deviceType switch
     {
-        DeviceType.Desktop => Icons.Material.Filled.Computer,
-        DeviceType.Phone => Icons.Material.Filled.PhoneAndroid,
-        DeviceType.Tablet => Icons.Material.Filled.Tablet,
-        DeviceType.TV => Icons.Material.Filled.Tv,
-        DeviceType.Watch => Icons.Material.Filled.Watch,
-        _ => Icons.Material.Filled.DevicesOther
+        DeviceType.Desktop => "desktop",
+        DeviceType.Phone => "device-mobile",
+        DeviceType.Tablet => "device-tablet",
+        DeviceType.TV => "television",
+        DeviceType.Watch => "watch",
+        _ => "devices"
     };
 }

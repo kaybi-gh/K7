@@ -1,21 +1,21 @@
-.episode-item {
+﻿.episode-item {
     border-radius: 8px;
-    background: var(--mud-palette-surface);
+    background: var(--color-surface);
     cursor: pointer;
 }
 
 .episode-item:hover,
 .episode-item:focus-visible {
-    background: var(--mud-palette-background-gray);
+    background: var(--color-bg-gray);
 }
 
 .episode-item:focus-visible {
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: -2px;
 }
 
 .episode-item--expanded {
-    background: var(--mud-palette-background-gray);
+    background: var(--color-bg-gray);
 }
 
 .episode-item-main {
@@ -36,7 +36,7 @@
     width: 160px;
     height: 90px;
     border-radius: 6px;
-    background: var(--mud-palette-background);
+    background: var(--color-bg);
     display: flex;
     align-items: center;
     justify-content: center;

@@ -2,56 +2,53 @@
 @inject IStringLocalizer<MergeUserDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="4" Class="mt-2">
-            <MudAlert Severity="Severity.Warning" Dense="true">
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col mt-2">
+            <K7Alert Severity="K7Severity.Warning">
                 @L["Warning"]
-            </MudAlert>
+            </K7Alert>
 
-            <MudText Typo="Typo.body1">
+            <p>
                 @string.Format(L["Description"], SourceDisplayName)
-            </MudText>
+            </p>
 
-            <MudSelect T="Guid?" @bind-Value="_targetUserId" Label="@L["TargetUser"]" Variant="Variant.Outlined"
-                       Required="true" RequiredError="@L["TargetUserRequired"]">
+            <K7Select TValue="Guid?" @bind-Value="_targetUserId" Label="@L["TargetUser"]" Variant="outlined">
                 @foreach (var user in _availableTargets)
                 {
-                    <MudSelectItem T="Guid?" Value="@user.Id">@(user.UserName ?? user.Email ?? user.Id.ToString())</MudSelectItem>
+                    <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.UserName ?? user.Email ?? user.Id.ToString())</K7SelectItem>
                 }
-            </MudSelect>
+            </K7Select>
 
-            <MudDivider />
-            <MudText Typo="Typo.subtitle2">@L["MergeStrategyTitle"]</MudText>
+            <hr class="k7-divider" />
+            <p class="text-subtitle2">@L["MergeStrategyTitle"]</p>
 
-            <MudSelect T="PlayCountMergeMode" @bind-Value="_playCountMode" Label="@L["PlayCount"]"
-                       Variant="Variant.Outlined" Dense="true">
-                <MudSelectItem Value="PlayCountMergeMode.Additive">@L["PlayCountAdditive"]</MudSelectItem>
-                <MudSelectItem Value="PlayCountMergeMode.Max">@L["PlayCountMax"]</MudSelectItem>
-            </MudSelect>
+            <K7Select TValue="PlayCountMergeMode" @bind-Value="_playCountMode" Label="@L["PlayCount"]"
+                       Variant="outlined">
+                <K7SelectItem Value="PlayCountMergeMode.Additive">@L["PlayCountAdditive"]</K7SelectItem>
+                <K7SelectItem Value="PlayCountMergeMode.Max">@L["PlayCountMax"]</K7SelectItem>
+            </K7Select>
 
-            <MudSelect T="RatingConflictMode" @bind-Value="_ratingMode" Label="@L["RatingConflict"]"
-                       Variant="Variant.Outlined" Dense="true">
-                <MudSelectItem Value="RatingConflictMode.KeepExisting">@L["RatingKeepExisting"]</MudSelectItem>
-                <MudSelectItem Value="RatingConflictMode.Overwrite">@L["RatingOverwrite"]</MudSelectItem>
-            </MudSelect>
+            <K7Select TValue="RatingConflictMode" @bind-Value="_ratingMode" Label="@L["RatingConflict"]"
+                       Variant="outlined">
+                <K7SelectItem Value="RatingConflictMode.KeepExisting">@L["RatingKeepExisting"]</K7SelectItem>
+                <K7SelectItem Value="RatingConflictMode.Overwrite">@L["RatingOverwrite"]</K7SelectItem>
+            </K7Select>
 
-            <MudSelect T="ProgressConflictMode" @bind-Value="_progressMode" Label="@L["ProgressConflict"]"
-                       Variant="Variant.Outlined" Dense="true">
-                <MudSelectItem Value="ProgressConflictMode.MostRecent">@L["ProgressMostRecent"]</MudSelectItem>
-                <MudSelectItem Value="ProgressConflictMode.AlwaysOverwrite">@L["ProgressAlwaysOverwrite"]</MudSelectItem>
-            </MudSelect>
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
-        <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="Submit"
+            <K7Select TValue="ProgressConflictMode" @bind-Value="_progressMode" Label="@L["ProgressConflict"]"
+                       Variant="outlined">
+                <K7SelectItem Value="ProgressConflictMode.MostRecent">@L["ProgressMostRecent"]</K7SelectItem>
+                <K7SelectItem Value="ProgressConflictMode.AlwaysOverwrite">@L["ProgressAlwaysOverwrite"]</K7SelectItem>
+            </K7Select>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+        <K7Button Color="warning" Variant="filled" OnClick="Submit"
                    Disabled="@(!_targetUserId.HasValue || _isSubmitting)">
             @if (_isSubmitting)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <K7Spinner Size="sm" />
             }
             @L["Merge"]
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

@@ -2,28 +2,28 @@
 @inject IMediaService K7ServerService
 @inject IK7ServerService ApiClient
 @inject IFeatureAccessService FeatureAccess
-@inject ISnackbar Snackbar
-@inject IDialogService DialogService
+@inject IK7Snackbar Snackbar
+@inject IK7DialogService DialogService
 @inject IStringLocalizer<TrackContextMenu> L
 @inject IStringLocalizer<SharedResource> S
 
 <span @onclick:stopPropagation="true">
-    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
-        <MudMenuItem Icon="@Icons.Material.Filled.PlaylistPlay" OnClick="PlayNext">@L["PlayNext"]</MudMenuItem>
-        <MudMenuItem Icon="@Icons.Material.Filled.QueueMusic" OnClick="AddToQueue">@L["AddToQueue"]</MudMenuItem>
+    <K7Menu Icon="dots-three-vertical" Size="sm">
+        <K7MenuItem Icon="play-circle" OnClick="PlayNext">@L["PlayNext"]</K7MenuItem>
+        <K7MenuItem Icon="queue" OnClick="AddToQueue">@L["AddToQueue"]</K7MenuItem>
         @if (_canCreatePlaylist)
         {
-            <MudDivider />
-            <MudMenuItem Icon="@Icons.Material.Filled.PlaylistAdd" OnClick="AddToPlaylist">@L["AddToPlaylist"]</MudMenuItem>
+            <hr class="k7-divider" />
+            <K7MenuItem Icon="plus-circle" OnClick="AddToPlaylist">@L["AddToPlaylist"]</K7MenuItem>
         }
         @if (!string.IsNullOrEmpty(Track.Artist))
         {
-            <MudDivider />
-            <MudMenuItem Icon="@Icons.Material.Filled.Radio" OnClick="RadioArtist">@string.Format(L["RadioArtist"], Track.Artist)</MudMenuItem>
+            <hr class="k7-divider" />
+            <K7MenuItem Icon="radio" OnClick="RadioArtist">@string.Format(L["RadioArtist"], Track.Artist)</K7MenuItem>
         }
         @if (!string.IsNullOrEmpty(Track.Genre))
         {
-            <MudMenuItem Icon="@Icons.Material.Filled.Sensors" OnClick="RadioGenre">@string.Format(L["RadioGenre"], Track.Genre)</MudMenuItem>
+            <K7MenuItem Icon="broadcast" OnClick="RadioGenre">@string.Format(L["RadioGenre"], Track.Genre)</K7MenuItem>
         }
-    </MudMenu>
+    </K7Menu>
 </span>

@@ -5,137 +5,137 @@
 @implements IDisposable
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
-</MudStack>
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["PageTitle"]</h5>
+</div>
 
 @if (_loading)
 {
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudProgressCircular Indeterminate="true" />
-    </MudStack>
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
 }
 else if (_stats is null)
 {
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudIcon Icon="@Icons.Material.Outlined.BarChart" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["NoData"]</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary">Écoutez de la musique pour voir apparaître vos statistiques.</MudText>
-    </MudStack>
+    <div class="d-flex flex-col pa-16">
+        <K7Icon Name="chart-bar" Style="font-size: 64px; opacity: 0.3;" />
+        <h6 Color="default" Style="opacity: 0.5;">@L["NoData"]</h6>
+        <p class="text-sm" Color="secondary">Écoutez de la musique pour voir apparaître vos statistiques.</p>
+    </div>
 }
 else
 {
     <div class="pa-4">
-        <MudGrid Spacing="4" Class="mb-6">
-            <MudItem xs="12" sm="4">
-                <MudPaper Class="pa-4" Elevation="0" Outlined="true">
-                    <MudStack AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.Headphones" Size="Size.Large" Color="Color.Primary" />
-                        <MudText Typo="Typo.h4" Color="Color.Primary">@_stats.TotalListeningHours h</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Temps d'écoute</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="12" sm="4">
-                <MudPaper Class="pa-4" Elevation="0" Outlined="true">
-                    <MudStack AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.PlayCircle" Size="Size.Large" Color="Color.Primary" />
-                        <MudText Typo="Typo.h4" Color="Color.Primary">@_stats.TotalCompletedPlays</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Écoutes complètes</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
-            <MudItem xs="12" sm="4">
-                <MudPaper Class="pa-4" Elevation="0" Outlined="true">
-                    <MudStack AlignItems="AlignItems.Center" Spacing="1">
-                        <MudIcon Icon="@Icons.Material.Filled.LibraryMusic" Size="Size.Large" Color="Color.Primary" />
-                        <MudText Typo="Typo.h4" Color="Color.Primary">@_stats.UniqueTracksPlayed</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Morceaux différents</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
+        <div class="grid">
+            <div>
+                <div class="surface pa-4">
+                    <div class="d-flex flex-col">
+                        <K7Icon Name="circle" Size="lg" Color="primary" />
+                        <h4 Color="primary">@_stats.TotalListeningHours h</h4>
+                        <p class="text-sm" Color="secondary">Temps d'écoute</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="surface pa-4">
+                    <div class="d-flex flex-col">
+                        <K7Icon Name="play-circle" Size="lg" Color="primary" />
+                        <h4 Color="primary">@_stats.TotalCompletedPlays</h4>
+                        <p class="text-sm" Color="secondary">Écoutes complètes</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="surface pa-4">
+                    <div class="d-flex flex-col">
+                        <K7Icon Name="music-notes" Size="lg" Color="primary" />
+                        <h4 Color="primary">@_stats.UniqueTracksPlayed</h4>
+                        <p class="text-sm" Color="secondary">Morceaux différents</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <MudGrid Spacing="4">
+        <div class="grid">
             @if (_stats.TopArtists.Count > 0)
             {
-                <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopArtists"]</MudText>
-                    <MudList T="string" Dense="true">
+                <div>
+                    <h6>@L["TopArtists"]</h6>
+                    <ul class="k7-list">
                         @foreach (var (artist, index) in _stats.TopArtists.Select((a, i) => (a, i)))
                         {
-                            <MudListItem T="string">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width: 24px;">@(index + 1).</MudText>
-                                    <MudText>@artist.Name</MudText>
-                                    <MudSpacer />
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@artist.PlayCount écoutes</MudChip>
-                                </MudStack>
-                            </MudListItem>
+                            <li>
+                                <div class="d-flex align-center">
+                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
+                                    <span>@artist.Name</span>
+                                    <div class="flex-1"></div>
+                                    <K7Chip Size="sm" Color="primary" Variant="outlined">@artist.PlayCount écoutes</K7Chip>
+                                </div>
+                            </li>
                         }
-                    </MudList>
-                </MudItem>
+                    </ul>
+                </div>
             }
 
             @if (_stats.TopAlbums.Count > 0)
             {
-                <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopAlbums"]</MudText>
-                    <MudList T="string" Dense="true">
+                <div>
+                    <h6>@L["TopAlbums"]</h6>
+                    <ul class="k7-list">
                         @foreach (var (album, index) in _stats.TopAlbums.Select((a, i) => (a, i)))
                         {
-                            <MudListItem T="string">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width: 24px;">@(index + 1).</MudText>
-                                    <MudText>@album.Name</MudText>
-                                    <MudSpacer />
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@album.PlayCount écoutes</MudChip>
-                                </MudStack>
-                            </MudListItem>
+                            <li>
+                                <div class="d-flex align-center">
+                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
+                                    <span>@album.Name</span>
+                                    <div class="flex-1"></div>
+                                    <K7Chip Size="sm" Color="primary" Variant="outlined">@album.PlayCount écoutes</K7Chip>
+                                </div>
+                            </li>
                         }
-                    </MudList>
-                </MudItem>
+                    </ul>
+                </div>
             }
 
             @if (_stats.TopTracks.Count > 0)
             {
-                <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopTracks"]</MudText>
-                    <MudList T="string" Dense="true">
+                <div>
+                    <h6>@L["TopTracks"]</h6>
+                    <ul class="k7-list">
                         @foreach (var (track, index) in _stats.TopTracks.Select((t, i) => (t, i)))
                         {
-                            <MudListItem T="string">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width: 24px;">@(index + 1).</MudText>
-                                    <MudText>@track.Name</MudText>
-                                    <MudSpacer />
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@track.PlayCount écoutes</MudChip>
-                                </MudStack>
-                            </MudListItem>
+                            <li>
+                                <div class="d-flex align-center">
+                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
+                                    <span>@track.Name</span>
+                                    <div class="flex-1"></div>
+                                    <K7Chip Size="sm" Color="primary" Variant="outlined">@track.PlayCount écoutes</K7Chip>
+                                </div>
+                            </li>
                         }
-                    </MudList>
-                </MudItem>
+                    </ul>
+                </div>
             }
 
             @if (_stats.TopGenres.Count > 0)
             {
-                <MudItem xs="12" md="6">
-                    <MudText Typo="Typo.h6" Class="mb-2">@L["TopGenres"]</MudText>
-                    <MudList T="string" Dense="true">
+                <div>
+                    <h6>@L["TopGenres"]</h6>
+                    <ul class="k7-list">
                         @foreach (var (genre, index) in _stats.TopGenres.Select((g, i) => (g, i)))
                         {
-                            <MudListItem T="string">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width: 24px;">@(index + 1).</MudText>
-                                    <MudText>@genre.Genre</MudText>
-                                    <MudSpacer />
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">@genre.PlayCount écoutes</MudChip>
-                                </MudStack>
-                            </MudListItem>
+                            <li>
+                                <div class="d-flex align-center">
+                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
+                                    <span>@genre.Genre</span>
+                                    <div class="flex-1"></div>
+                                    <K7Chip Size="sm" Color="secondary" Variant="outlined">@genre.PlayCount écoutes</K7Chip>
+                                </div>
+                            </li>
                         }
-                    </MudList>
-                </MudItem>
+                    </ul>
+                </div>
             }
-        </MudGrid>
+        </div>
     </div>
 }

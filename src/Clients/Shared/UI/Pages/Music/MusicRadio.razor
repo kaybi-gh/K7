@@ -7,111 +7,108 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
-</MudStack>
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["PageTitle"]</h5>
+</div>
 
 <div class="pa-4">
-    <MudGrid Spacing="4" data-nav-grid="true">
+    <div class="grid">
         @foreach (var radio in _radioTypes)
         {
-            <MudItem xs="12" sm="6" md="4" lg="3">
-                <MudCard Class="radio-card" Elevation="0" Outlined="true" tabindex="0" @onclick="() => PlayRadioAsync(radio)" @onkeydown="(e) => OnRadioKeyDown(e, radio)">
-                    <MudCardContent Class="radio-card-content">
-                        <MudIcon Icon="@radio.Icon" Style="font-size: 48px;" Color="@radio.Color" />
-                        <MudText Typo="Typo.h6" Class="mt-2">@radio.Title</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@radio.Description</MudText>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+            <div>
+                <div class="k7-card radio-card" Outlined="true" tabindex="0" @onclick="() => PlayRadioAsync(radio)" @onkeydown="(e) => OnRadioKeyDown(e, radio)">
+                    <div class="radio-card-content">
+                        <K7Icon Name="@radio.Icon" Style="font-size: 48px;" Color="@radio.Color" />
+                        <h6>@radio.Title</h6>
+                        <p class="text-sm" Color="secondary">@radio.Description</p>
+                    </div>
+                </div>
+            </div>
         }
-    </MudGrid>
+    </div>
 
     @if (_selectedRadio is not null)
     {
-        <MudDivider Class="my-6" />
+        <hr class="k7-divider my-6" />
 
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-4">
-            <MudIcon Icon="@_selectedRadio.Icon" Color="@_selectedRadio.Color" />
-            <MudText Typo="Typo.h6">@_selectedRadio.Title</MudText>
+        <div class="d-flex align-center mb-4">
+            <K7Icon Name="@_selectedRadio.Icon" Color="@_selectedRadio.Color" />
+            <h6>@_selectedRadio.Title</h6>
             @if (!_loading)
             {
-                <MudSpacer />
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Refresh"
+                <div class="flex-1"></div>
+                <K7Button Variant="outlined"
+                           Color="primary"
+                           StartIcon="arrow-clockwise"
                            OnClick="() => PlayRadioAsync(_selectedRadio)"
-                           Size="Size.Small">
+                           Size="sm">
                     Rafraîchir
-                </MudButton>
+                </K7Button>
             }
-        </MudStack>
+        </div>
 
         @if (_loading)
         {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-8">
-                <MudProgressCircular Indeterminate="true" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Generating"]</MudText>
-            </MudStack>
+            <div class="d-flex flex-col pa-8">
+                <K7Spinner />
+                <p class="text-sm" Color="secondary">@L["Generating"]</p>
+            </div>
         }
         else if (_tracks.Count == 0)
         {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-8">
-                <MudIcon Icon="@Icons.Material.Outlined.MusicOff" Style="font-size: 48px; opacity: 0.3;" />
-                <MudText Typo="Typo.body1" Color="Color.Secondary">@L["NotEnoughData"]</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["ListenMoreHint"]</MudText>
-            </MudStack>
+            <div class="d-flex flex-col pa-8">
+                <K7Icon Name="circle" Style="font-size: 48px; opacity: 0.3;" />
+                <p Color="secondary">@L["NotEnoughData"]</p>
+                <p class="text-sm" Color="secondary">@L["ListenMoreHint"]</p>
+            </div>
         }
         else
         {
-            <MudTable Items="_tracks"
-                      Dense="true"
-                      Hover="true"
-                      Elevation="0"
-                      T="TrackViewModel"
-                      OnRowClick="OnTrackClick"
+            <K7Table Items="_tracks"
+                      TItem="TrackViewModel"
+                      OnRowClick="@(args => OnTrackClick(args))"
                       RowClass="cursor-pointer">
                 <HeaderContent>
-                    <MudTh Style="width: 50px;"></MudTh>
-                    <MudTh>@S["Title"]</MudTh>
-                    <MudTh>Album</MudTh>
-                    <MudTh Style="width: 100px; text-align: right;">
-                        <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
-                    </MudTh>
+                    <th Style="width: 50px;"></th>
+                    <th>@S["Title"]</th>
+                    <th>Album</th>
+                    <th Style="width: 100px; text-align: right;">
+                        <K7Icon Name="clock" Size="sm" />
+                    </th>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd>
+                    <td>
                         @if (context.CoverUrl is not null)
                         {
-                            <MudImage Src="@context.CoverUrl" Width="36" Height="36" ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
+                            <K7Image Src="@context.CoverUrl" Width="36" ObjectFit="cover" Class="rounded" loading="lazy" />
                         }
                         else
                         {
-                            <MudIcon Icon="@Icons.Material.Outlined.MusicNote" />
+                            <K7Icon Name="music-note" />
                         }
-                    </MudTd>
-                    <MudTd>
-                        <MudStack Spacing="0">
-                            <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">
+                    </td>
+                    <td>
+                        <div class="d-flex flex-col">
+                            <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
                                 @context.Title
-                            </MudText>
+                            </span>
                             @if (!string.IsNullOrEmpty(context.ArtistName))
                             {
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ArtistName</MudText>
+                                <span class="text-caption" Color="secondary">@context.ArtistName</span>
                             }
-                        </MudStack>
-                    </MudTd>
-                    <MudTd>
+                        </div>
+                    </td>
+                    <td>
                         @if (!string.IsNullOrEmpty(context.AlbumTitle))
                         {
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText>
+                            <p class="text-sm" Color="secondary">@context.AlbumTitle</p>
                         }
-                    </MudTd>
-                    <MudTd Style="text-align: right;">
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
-                    </MudTd>
+                    </td>
+                    <td Style="text-align: right;">
+                        <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
+                    </td>
                 </RowTemplate>
-            </MudTable>
+            </K7Table>
         }
     }
 </div>

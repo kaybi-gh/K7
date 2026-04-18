@@ -1,0 +1,17 @@
+@namespace K7.Clients.Shared.UI.Components.Base
+
+@if (Shape == "circle")
+{
+    <span class="k7-skeleton k7-skeleton--circle @Class"
+          style="width: @Width; height: @Height;"></span>
+}
+else if (Shape == "text")
+{
+    <span class="k7-skeleton k7-skeleton--text @Class"
+          style="@(string.IsNullOrEmpty(Width) ? string.Empty : $"width:{Width};") @(string.IsNullOrEmpty(Height) ? string.Empty : $"height:{Height};")"></span>
+}
+else
+{
+    <span class="k7-skeleton @Class"
+          style="display:block; @(string.IsNullOrEmpty(Width) ? string.Empty : $"width:{Width};") @(string.IsNullOrEmpty(Height) ? string.Empty : $"height:{Height};")"></span>
+}

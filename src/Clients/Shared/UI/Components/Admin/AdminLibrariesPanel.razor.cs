@@ -2,15 +2,14 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
 public partial class AdminLibrariesPanel
 {
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<LibraryDto>? _libraries;
@@ -39,14 +38,13 @@ public partial class AdminLibrariesPanel
 
     private async Task OpenCreateDialog()
     {
-        var options = new DialogOptions
-        {
-            MaxWidth = MaxWidth.Medium,
+        var options = new K7DialogOptions {
+            MaxWidth = K7DialogMaxWidth.Medium,
             FullWidth = true,
             CloseOnEscapeKey = true
         };
 
-        var dialog = await DialogService.ShowAsync<Dialogs.CreateLibraryDialog>(L["NewLibraryTitle"], options);
+        var dialog = await DialogService.ShowAsync<Dialogs.CreateLibraryDialog>(L["NewLibraryTitle"], null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -57,10 +55,10 @@ public partial class AdminLibrariesPanel
 
     private static string GetMediaTypeIcon(LibraryMediaType type) => type switch
     {
-        LibraryMediaType.Movie => Icons.Material.Filled.Theaters,
-        LibraryMediaType.Serie => Icons.Material.Filled.Tv,
-        LibraryMediaType.Music => Icons.Material.Filled.MusicNote,
-        _ => Icons.Material.Filled.Folder
+        LibraryMediaType.Movie => "film-strip",
+        LibraryMediaType.Serie => "television",
+        LibraryMediaType.Music => "music-note",
+        _ => "folder"
     };
 
     private string GetMediaTypeLabel(LibraryMediaType type) => type switch
@@ -76,22 +74,22 @@ public partial class AdminLibrariesPanel
         try
         {
             await K7ServerService.IndexLibraryFilesAsync(library.Id);
-            Snackbar.Add(string.Format(L["IndexStarted"], library.Title), Severity.Success);
+            Snackbar.Add(string.Format(L["IndexStarted"], library.Title), K7Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 
     private async Task OpenUsersDialog(LibraryDto library)
     {
-        var parameters = new DialogParameters<AdminLibraryUsersDialog>
+        var parameters = new K7DialogParameters<AdminLibraryUsersDialog>
         {
             { x => x.LibraryId, library.Id }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<AdminLibraryUsersDialog>(string.Format(L["AccessTitle"], library.Title), parameters, options);
     }
 
@@ -99,7 +97,7 @@ public partial class AdminLibrariesPanel
     {
         var providers = await K7ServerService.GetMetadataProvidersAsync(library.MediaType);
 
-        var parameters = new DialogParameters<Dialogs.EditLibraryDialog>
+        var parameters = new K7DialogParameters<Dialogs.EditLibraryDialog>
         {
             { x => x.Title, library.Title },
             { x => x.AvailableProviders, providers },
@@ -107,7 +105,7 @@ public partial class AdminLibrariesPanel
             { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<Dialogs.EditLibraryDialog>(string.Format(L["EditTitle"], library.Title), parameters, options);
         var result = await dialog.Result;
 
@@ -120,7 +118,7 @@ public partial class AdminLibrariesPanel
             }
             catch (Exception ex)
             {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }
@@ -139,12 +137,12 @@ public partial class AdminLibrariesPanel
         try
         {
             await K7ServerService.DeleteLibraryAsync(library.Id);
-            Snackbar.Add(string.Format(L["DeleteSuccess"], library.Title), Severity.Success);
+            Snackbar.Add(string.Format(L["DeleteSuccess"], library.Title), K7Severity.Success);
             await LoadLibraries();
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 }

@@ -1,52 +1,52 @@
-@using K7.Shared.Dtos.Entities.PersonRoles
+﻿@using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Shared.Interfaces
 @inject IK7ServerService k7ServerService
 
 @if (Skeleton)
 {
-    <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
-        <MudSkeleton SkeletonType="SkeletonType.Circle" Animation="Animation.Wave" Height="150px" Width="150px" />
+    <div class="d-flex flex-col">
+        <K7Skeleton Shape="circle" />
 
         <div class="person-text">
-            <MudStack Class="person-text" Spacing=" 0" Row="false" AlignItems="AlignItems.Center">
-                <MudSkeleton Animation="Animation.Wave" Height="100%" Width="80px" />
-                <MudSkeleton Animation="Animation.Wave" Height="100%" Width="50px" />
-            </MudStack>
+            <div class="d-flex flex-col">
+                <K7Skeleton Width="80px" />
+                <K7Skeleton Width="50px" />
+            </div>
         </div>
-    </MudStack>
+    </div>
 }
 else
 {
     <a class="personrole-item-link" href="@("/persons/" + LitePersonRoleDto.Person!.Id)">
-        <MudStack Spacing="0" Row="false" AlignItems="AlignItems.Center">
-            <MudAvatar Style="height:150px; width:150px;">
+        <div class="d-flex flex-col">
+            <K7Avatar Style="height:150px; width:150px;">
                 @if (LitePersonRoleDto.PortraitPicture is not null)
                 {
-                    <MudImage Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="ObjectFit.Cover" loading="lazy" />
+                    <K7Image Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="cover" loading="lazy" />
                 }
                 else if (LitePersonRoleDto.Person?.PortraitPicture is not null)
                 {
-                    <MudImage Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.Person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="ObjectFit.Cover" loading="lazy" />
+                    <K7Image Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.Person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="cover" loading="lazy" />
                 }
                 else
                 {
-                    <MudImage Src="_content/K7.Clients.Shared.UI/images/person-placeholder.png" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="ObjectFit.Cover" loading="lazy" />
+                    <K7Image Src="_content/K7.Clients.Shared.UI/images/person-placeholder.png" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="cover" loading="lazy" />
                 }
-            </MudAvatar>
+            </K7Avatar>
 
             <div class="person-text">
-                <MudStack Class="person-text" Spacing=" 0" Row="false" AlignItems="AlignItems.Center">
-                    <MudText Class="person-text mt-2" Typo="Typo.caption ">@LitePersonRoleDto.Person.Name</MudText>
+                <div class="d-flex flex-col person-text">
+                    <span class="person-text mt-2">@LitePersonRoleDto.Person.Name</span>
                     @if (LitePersonRoleDto is LiteCrewMemberDto liteCrewMemberDto)
                     {
-                        <MudText Class="person-text" Typo="Typo.subtitle2">@liteCrewMemberDto.Department / @liteCrewMemberDto.Job</MudText>
+                <span class="text-caption color-secondary">@liteCrewMemberDto.Department / @liteCrewMemberDto.Job</span>
                     }
                     else if (LitePersonRoleDto is LiteActorDto liteActorDto)
                     {
-                        <MudText Class="person-text" Typo="Typo.subtitle2">@liteActorDto.CharacterName</MudText>
+                <span class="text-caption color-secondary">@liteActorDto.CharacterName</span>
                     }
-                </MudStack>
+                </div>
             </div>
-        </MudStack>
+        </div>
     </a>
 }

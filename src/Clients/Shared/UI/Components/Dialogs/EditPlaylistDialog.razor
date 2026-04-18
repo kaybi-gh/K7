@@ -1,38 +1,35 @@
 @inject IStringLocalizer<EditPlaylistDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="4" Class="mt-2">
-            <MudTextField @bind-Value="Title"
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col mt-2">
+            <K7TextField @bind-Value="Title"
                           Label="@L["NameLabel"]"
-                          Variant="Variant.Outlined"
+                          Variant="outlined"
                           Required="true"
                           RequiredError="@L["NameRequired"]"
-                          MaxLength="200"
-                          Immediate="true" />
-            <MudTextField @bind-Value="Description"
+                          MaxLength="200" />
+            <K7TextField @bind-Value="Description"
                           Label="@L["DescriptionOptional"]"
-                          Variant="Variant.Outlined"
+                          Variant="outlined"
                           Lines="3"
                           MaxLength="2000" />
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary"
-                   Variant="Variant.Filled"
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary"
+                   Variant="filled"
                    OnClick="SubmitAsync"
                    Disabled="@(string.IsNullOrWhiteSpace(Title) || _isSubmitting)">
             @if (_isSubmitting)
             {
-                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                <MudText Class="ms-2">@L["Saving"]</MudText>
+                <K7Spinner Size="sm" />
+                <span>@L["Saving"]</span>
             }
             else
             {
-                <MudText>@S["Save"]</MudText>
+                <span>@S["Save"]</span>
             }
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

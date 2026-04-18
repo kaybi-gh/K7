@@ -14,9 +14,9 @@
 @if (_loading)
 {
     <div class="serie-page">
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-            <MudProgressCircular Indeterminate="true" />
-        </MudStack>
+        <div class="d-flex flex-col pa-16">
+            <K7Spinner />
+        </div>
     </div>
 }
 else if (_serie is not null)
@@ -28,89 +28,87 @@ else if (_serie is not null)
         }
 
         <div class="serie-hero">
-            <MudStack Class="pa-10" Style="height: 100%;" AlignItems="AlignItems.Start" Justify="Justify.FlexEnd">
+            <div class="d-flex flex-col pa-10" style="height: 100%; justify-content: flex-end;">
                 @if (_logoUrl is not null)
                 {
                     <img src="@_logoUrl" alt="@_serie.Title" style="height: 180px; max-width: 80vw; object-fit: scale-down; object-position: left center;" />
                 }
                 else
                 {
-                    <MudText Typo="Typo.h2" Class="serie-title">@_serie.Title?.ToUpper()</MudText>
+                    <h2>@_serie.Title?.ToUpper()</h2>
                 }
 
-                <MudStack Row="true" Breakpoint="Breakpoint.Xs" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap" StretchItems="StretchItems.All" Class="serie-meta">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Wrap="Wrap.Wrap">
+                <div class="d-flex serie-meta">
+                    <div class="d-flex align-center">
                         @if (_serie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
                         {
-                            <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Star" Label="true" Color="Color.Primary" Variant="Variant.Filled" Style="font-weight: 700;">@externalRating.ToString("N1")</MudChip>
+                            <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
                         }
                         @if (!string.IsNullOrEmpty(_serie.ContentRating))
                         {
-                            <MudChip T="string" Label="true" Variant="Variant.Outlined" Size="Size.Small">@_serie.ContentRating</MudChip>
+                            <K7Chip Variant="outlined" Size="sm">@_serie.ContentRating</K7Chip>
                         }
-                    </MudStack>
+                    </div>
 
-                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                    <div class="d-flex">
                         @foreach (var genre in _serie.Genres ?? [])
                         {
-                            <MudChip T="string" Label="true" Variant="Variant.Text" Size="Size.Small" Style="opacity: 0.9; font-weight: 600;">@genre</MudChip>
+                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
                         }
-                    </MudStack>
+                    </div>
 
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+                    <div class="d-flex align-center">
                         @if (_serie.ReleaseDate.HasValue)
                         {
-                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@_serie.ReleaseDate.Value.Year</MudText>
+                            <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@_serie.ReleaseDate.Value.Year</p>
                         }
                         @if (!string.IsNullOrEmpty(_serie.Status))
                         {
-                            <MudText Typo="Typo.body2" Style="opacity: 0.5;">&bull;</MudText>
-                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@_serie.Status</MudText>
+                            <p class="text-sm" Style="opacity: 0.5;">&bull;</p>
+                            <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@_serie.Status</p>
                         }
                         @if (!string.IsNullOrEmpty(_serie.Network))
                         {
-                            <MudText Typo="Typo.body2" Style="opacity: 0.5;">&bull;</MudText>
-                            <MudText Typo="Typo.body2" Style="opacity: 0.9; font-weight: 600;">@_serie.Network</MudText>
+                            <p class="text-sm" Style="opacity: 0.5;">&bull;</p>
+                            <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@_serie.Network</p>
                         }
-                    </MudStack>
-                </MudStack>
+                    </div>
+                </div>
 
                 @if (!string.IsNullOrEmpty(_serie.Overview))
                 {
-                    <MudText Typo="Typo.body1" Class="mt-2" Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem; max-width: 800px;">
+                    <p Class="mt-2" Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem; max-width: 800px;">
                         @_serie.Overview
-                    </MudText>
+                    </p>
                 }
 
-                <MudStack Row="true" data-nav-row Class="mt-4 serie-actions" Spacing="3" AlignItems="AlignItems.Center" StretchItems="StretchItems.All" Breakpoint="Breakpoint.Xs">
-                    <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" StretchItems="StretchItems.All" Class="serie-actions-primary">
-                        <MudButton Disabled="@(_seasons.Count == 0)"
-                                   Variant="Variant.Filled"
-                                   StartIcon="@Icons.Material.Filled.PlayArrow"
-                                   Color="Color.Primary"
-                                   Size="Size.Large"
-                                   DropShadow="false"
-                                   FullWidth="true"
+                <div class="d-flex data-nav-row mt-4 serie-actions">
+                    <div class="d-flex serie-actions-primary">
+                        <K7Button Disabled="@(_seasons.Count == 0)"
+                                   Variant="filled"
+                                   StartIcon="play"
+                                   Color="primary"
+                                   Size="lg"
                                    Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
-                                   OnClick="WatchAsync">@S["Play"]</MudButton>
-                    </MudStack>
+                                   OnClick="WatchAsync">@S["Play"]</K7Button>
+                    </div>
 
-                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.Center">
-                        <MudIconButton Icon="@Icons.Material.Filled.LocalMovies" aria-label="trailer" />
+                    <div class="d-flex">
+<button type="button" class="k7-icon-btn" aria-label="trailer"><i class="ph ph-film-clapper"></i></button>
 
-                        <AuthorizeView Roles="User,Administrator">
-                            <MudIconButton Icon="@Icons.Material.Filled.CheckCircleOutline" aria-label="mark-as-watched" />
+                            <AuthorizeView Roles="User,Administrator">
+                                <button type="button" class="k7-icon-btn" aria-label="mark-as-watched"><i class="ph ph-check-circle"></i></button>
                         </AuthorizeView>
 
-                        <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" aria-label="more-actions" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" ListClass="pa-2">
+                        <K7Menu Icon="dots-three" AriaLabel="more-actions">
                             <AuthorizeView Roles="Administrator">
-                                <MudMenuItem Icon="@Icons.Material.Filled.FindReplace" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Filled.Refresh" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</MudMenuItem>
+                                <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
+                                <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
                             </AuthorizeView>
-                        </MudMenu>
-                    </MudStack>
-                </MudStack>
-            </MudStack>
+                        </K7Menu>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @if (_seasons.Count > 0)

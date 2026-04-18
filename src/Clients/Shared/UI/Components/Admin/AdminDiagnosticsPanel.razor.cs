@@ -1,8 +1,7 @@
-using K7.Server.Domain.Enums;
+﻿using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Diagnostics;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
@@ -10,7 +9,7 @@ public partial class AdminDiagnosticsPanel
 {
     [Inject] private IDiagnosticsService DiagnosticsService { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private List<LibraryHealthSummaryDto>? _summaries;
     private PaginatedListDto<DiagnosticItemDto>? _items;
@@ -51,7 +50,7 @@ public partial class AdminDiagnosticsPanel
         catch
         {
             _summaries = null;
-            Snackbar.Add(S["LoadError"], Severity.Error);
+            Snackbar.Add(S["LoadError"], K7Severity.Error);
         }
         finally
         {
@@ -78,8 +77,9 @@ public partial class AdminDiagnosticsPanel
         _selectedItems.Clear();
         try
         {
+            var severityIssues = GetSeverityIssues(_selectedSeverity);
             _items = await DiagnosticsService.GetDiagnosticItemsAsync(
-                _filterLibraryId, _filterEntityType, _filterIssue, _pageNumber);
+                _filterLibraryId, _filterEntityType, _filterIssue, severityIssues, _pageNumber);
         }
         catch
         {
@@ -90,6 +90,14 @@ public partial class AdminDiagnosticsPanel
             _isLoadingItems = false;
         }
     }
+
+    private static IReadOnlyCollection<DiagnosticIssue>? GetSeverityIssues(string? severity) => severity switch
+    {
+        "error" => [DiagnosticIssue.OrphanFile, DiagnosticIssue.MissingFiles, DiagnosticIssue.MissingFileMetadata],
+        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.StaleMetadata],
+        "info" => [DiagnosticIssue.MissingAudioAnalysis],
+        _ => null
+    };
 
     private async Task DrillDown(Guid libraryId, DiagnosticEntityType? entityType = null, DiagnosticIssue? issue = null)
     {
@@ -160,16 +168,30 @@ public partial class AdminDiagnosticsPanel
         await LoadItemsAsync();
     }
 
+    private Task PreviousPage()
+    {
+        if (_pageNumber > 1)
+            return OnPageChanged(_pageNumber - 1);
+        return Task.CompletedTask;
+    }
+
+    private Task NextPage()
+    {
+        if (_pageNumber < (_items?.TotalPages ?? 1))
+            return OnPageChanged(_pageNumber + 1);
+        return Task.CompletedTask;
+    }
+
     private async Task FixItemAsync(Guid entityId, DiagnosticFixAction action)
     {
         try
         {
             await DiagnosticsService.FixDiagnosticItemsAsync([entityId], action);
-            Snackbar.Add(L["FixQueued"], Severity.Success);
+            Snackbar.Add(L["FixQueued"], K7Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 
@@ -183,13 +205,13 @@ public partial class AdminDiagnosticsPanel
         {
             var ids = _selectedItems.Select(i => i.EntityId).ToList();
             var result = await DiagnosticsService.FixDiagnosticItemsAsync(ids, action.Value);
-            Snackbar.Add(string.Format(L["BulkFixQueued"], result), Severity.Success);
+            Snackbar.Add(string.Format(L["BulkFixQueued"], result), K7Severity.Success);
             _selectedItems.Clear();
             await LoadItemsAsync();
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
@@ -267,11 +289,11 @@ public partial class AdminDiagnosticsPanel
         _ => issue.ToString()
     };
 
-    private static Color GetIssueColor(DiagnosticIssue issue) => issue switch
+    private static string GetIssueColor(DiagnosticIssue issue) => issue switch
     {
         DiagnosticIssue.OrphanFile or DiagnosticIssue.MissingFiles or DiagnosticIssue.MissingFileMetadata
-            => Color.Error,
-        DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis => Color.Info,
-        _ => Color.Warning
+            => "error",
+        DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis => "info",
+        _ => "warning"
     };
 }

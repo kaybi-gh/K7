@@ -1,11 +1,10 @@
-using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
-using MudBlazor;
-using MudBlazor.Services;
+using Microsoft.JSInterop;
 using K7.Clients.Shared.UI;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -15,6 +14,7 @@ public partial class MiniMusicPlayer : IDisposable
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
     [Inject] private SidebarService SidebarService { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private ElementReference _progressBarRef;
     private bool _isDragging;
@@ -23,22 +23,22 @@ public partial class MiniMusicPlayer : IDisposable
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
 
     private string PlayPauseIcon => Audio.PlaybackState == PlaybackState.Playing
-        ? Icons.Material.Filled.Pause
-        : Icons.Material.Filled.PlayArrow;
+        ? "pause"
+        : "play";
 
-    private string ShuffleIcon => Icons.Material.Filled.Shuffle;
+    private string ShuffleIcon => "shuffle";
 
     private string RepeatIcon => Audio.Repeat switch
     {
-        RepeatMode.One => Icons.Material.Filled.RepeatOne,
-        _ => Icons.Material.Filled.Repeat
+        RepeatMode.One => "repeat-once",
+        _ => "repeat"
     };
 
     private string VolumeIcon => Audio.IsMuted || Audio.Volume <= 0
-        ? Icons.Material.Filled.VolumeOff
+        ? "speaker-x"
         : Audio.Volume < 0.5
-            ? Icons.Material.Filled.VolumeDown
-            : Icons.Material.Filled.VolumeUp;
+            ? "speaker-low"
+            : "speaker-high";
 
     protected override void OnInitialized()
     {
@@ -123,7 +123,7 @@ public partial class MiniMusicPlayer : IDisposable
 
     private async Task SeekToPosition(MouseEventArgs e)
     {
-        var bounds = await _progressBarRef.MudGetBoundingClientRectAsync();
+        var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", _progressBarRef);
         if (bounds.Width <= 0 || Audio.Duration <= 0) return;
 
         var percent = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);

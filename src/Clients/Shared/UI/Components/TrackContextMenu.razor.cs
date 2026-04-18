@@ -1,10 +1,9 @@
-using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -23,22 +22,22 @@ public partial class TrackContextMenu
     private void PlayNext()
     {
         Audio.AddToQueueNext(Track);
-        Snackbar.Add(string.Format(L["PlayNextSnackbar"], Track.Title), Severity.Info);
+        Snackbar.Add(string.Format(L["PlayNextSnackbar"], Track.Title), K7Severity.Info);
     }
 
     private void AddToQueue()
     {
         Audio.AddToQueue(Track);
-        Snackbar.Add(string.Format(L["AddedToQueueSnackbar"], Track.Title), Severity.Info);
+        Snackbar.Add(string.Format(L["AddedToQueueSnackbar"], Track.Title), K7Severity.Info);
     }
 
     private async Task AddToPlaylist()
     {
-        var parameters = new DialogParameters<Dialogs.AddToPlaylistDialog>
+        var parameters = new K7DialogParameters<Dialogs.AddToPlaylistDialog>
         {
             { x => x.MediaId, Track.MediaId }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<Dialogs.AddToPlaylistDialog>(L["AddToPlaylistTitle"], parameters, options);
     }
 
@@ -63,7 +62,7 @@ public partial class TrackContextMenu
         {
             if (!Audio.Shuffle) Audio.ToggleShuffle();
             await Audio.PlayTracksAsync(tracks, 0);
-            Snackbar.Add(string.Format(L["RadioArtistSnackbar"], Track.Artist), Severity.Info);
+            Snackbar.Add(string.Format(L["RadioArtistSnackbar"], Track.Artist), K7Severity.Info);
         }
     }
 
@@ -88,7 +87,7 @@ public partial class TrackContextMenu
         {
             if (!Audio.Shuffle) Audio.ToggleShuffle();
             await Audio.PlayTracksAsync(tracks, 0);
-            Snackbar.Add(string.Format(L["RadioGenreSnackbar"], Track.Genre), Severity.Info);
+            Snackbar.Add(string.Format(L["RadioGenreSnackbar"], Track.Genre), K7Severity.Info);
         }
     }
 

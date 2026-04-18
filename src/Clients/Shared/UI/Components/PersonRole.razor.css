@@ -1,4 +1,4 @@
-.person-text {
+﻿.person-text {
     max-width: 150px;
 }
 
@@ -11,9 +11,9 @@
     outline: none !important;
 }
 
-.personrole-item-link:hover ::deep .mud-avatar,
-.personrole-item-link:focus-visible ::deep .mud-avatar {
-    outline: 2px solid var(--mud-palette-primary);
+.personrole-item-link:hover ::deep .k7-avatar,
+.personrole-item-link:focus-visible ::deep .k7-avatar {
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 

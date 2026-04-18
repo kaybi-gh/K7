@@ -1,0 +1,25 @@
+@namespace K7.Clients.Shared.UI.Components.Complex
+@typeparam TItem
+
+<div class="k7-table-wrap @Class">
+    <table class="k7-table @(Dense ? "k7-table--dense" : "") @(Hover ? "k7-table--hover" : "")">
+        @if (HeaderContent is not null)
+        {
+            <thead>
+                <tr>@HeaderContent</tr>
+            </thead>
+        }
+        <tbody>
+            @if (Items is not null)
+            {
+                @foreach (var item in Items)
+                {
+                    var localItem = item;
+                    <tr class="@RowClass" @onclick="() => OnRowClick.InvokeAsync(new TableRowClickEventArgs<TItem> { Item = localItem })">
+                        @RowTemplate?.Invoke(localItem)
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

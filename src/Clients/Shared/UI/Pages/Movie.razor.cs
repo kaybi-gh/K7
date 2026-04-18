@@ -1,4 +1,4 @@
-using K7.Clients.Shared.Models;
+﻿using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
@@ -8,15 +8,14 @@ using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages;
 
 public partial class Movie
 {
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
@@ -24,7 +23,6 @@ public partial class Movie
     private bool isLoading { get; set; } = true;
     private static MovieDto? _movie;
     private static MediaCardViewModel? _mediaCard;
-    private bool _isSmallDevice;
     private bool _overviewExpanded;
     private IndexedFileDto? _selectedFile;
     private AudioFileTrackDto? _selectedAudioFileTrack;
@@ -57,13 +55,8 @@ public partial class Movie
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("SpatialNavigation.focusFirst", "[data-nav-row] .mud-button-root");
+            await JSRuntime.InvokeVoidAsync("SpatialNavigation.focusFirst", "[data-nav-row] .k7-btn");
         }
-    }
-
-    private void ScreenResized(Breakpoint breakpoint)
-    {
-        _isSmallDevice = breakpoint == Breakpoint.Xs;
     }
 
     private void ToggleOverview()
@@ -114,13 +107,13 @@ public partial class Movie
     {
         if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any()) return;
 
-        var parameters = new DialogParameters<PlaybackOptionsDialog>
+        var parameters = new K7DialogParameters<PlaybackOptionsDialog>
         {
             { x => x.Movie, _movie },
             { x => x.InitialFileId, _selectedFile?.Id }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
         
         // I use localizer from the dialog to avoid injecting it here just for the title
         var title = _movie.IndexedFiles.Count > 1 ? L["IndexedVersions"] : L["AudioTrack"]; // Fallbacks until we can rely on PlaybackOptionsDialog.resx properly.
@@ -141,38 +134,38 @@ public partial class Movie
     {
         if (_movie == null) return;
 
-        var parameters = new DialogParameters<ReIdentifyDialog>
+        var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.MediaId, _movie.Id },
             { x => x.InitialSearchQuery, _movie.Title }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
         var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyMediaDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add(L["ReIdentifyMediaSent"], Severity.Success);
+            Snackbar.Add(L["ReIdentifyMediaSent"], K7Severity.Success);
             NavigationManager.NavigateTo("/");
         }
     }
 
     private async Task OpenFileReIdentifyDialogAsync(Guid indexedFileId)
     {
-        var parameters = new DialogParameters<ReIdentifyDialog>
+        var parameters = new K7DialogParameters<ReIdentifyDialog>
         {
             { x => x.IndexedFileId, indexedFileId },
             { x => x.InitialSearchQuery, _movie?.Title }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
         var dialog = await DialogService.ShowAsync<ReIdentifyDialog>(L["ReIdentifyFileDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add(L["ReIdentifyFileSent"], Severity.Success);
+            Snackbar.Add(L["ReIdentifyFileSent"], K7Severity.Success);
             NavigationManager.NavigateTo("/");
         }
     }
@@ -181,13 +174,13 @@ public partial class Movie
     {
         if (_movie == null) return;
 
-        var parameters = new DialogParameters<IndexedFilesDialog>
+        var parameters = new K7DialogParameters<IndexedFilesDialog>
         {
             { x => x.Media, _movie },
             { x => x.OnReIdentifyFile, EventCallback.Factory.Create<Guid>(this, OpenFileReIdentifyDialogAsync) }
         };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
         await DialogService.ShowAsync<IndexedFilesDialog>(L["IndexedVersions"], parameters, options);
     }
 
@@ -195,8 +188,8 @@ public partial class Movie
     {
         if (_movie == null || string.IsNullOrWhiteSpace(_movie.Overview)) return Task.CompletedTask;
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var parameters = new DialogParameters
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
+        var parameters = new K7DialogParameters
         {
             { "ContentText", _movie.Overview },
             { "ButtonText", S["Cancel"].Value }
@@ -211,11 +204,11 @@ public partial class Movie
         try
         {
             await k7ServerService.RefreshMediaMetadataAsync(_movie.Id);
-            Snackbar.Add(L["RefreshMetadataSent"], Severity.Success);
+            Snackbar.Add(L["RefreshMetadataSent"], K7Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 }

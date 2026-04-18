@@ -1,0 +1,101 @@
+﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+
+namespace K7.Clients.Shared.UI.Components.Complex;
+
+public partial class K7DialogHost : IDisposable
+{
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+
+    private readonly List<K7DialogEntry> _dialogs = [];
+
+    protected override void OnInitialized()
+    {
+        if (DialogService is K7DialogService svc)
+            svc.OnShow += HandleShow;
+    }
+
+    private async Task<IK7DialogReference> HandleShow(K7DialogRequest request)
+    {
+        var entry = new K7DialogEntry(request, () => InvokeAsync(StateHasChanged));
+        _dialogs.Add(entry);
+        await InvokeAsync(StateHasChanged);
+        return entry;
+    }
+
+    private void OnBackdropClick(K7DialogEntry entry)
+    {
+        if (entry.Options?.BackdropClick != false)
+            entry.Cancel();
+    }
+
+    private void OnBackdropKeyDown(KeyboardEventArgs e, K7DialogEntry entry)
+    {
+        if (e.Key == "Escape" && entry.Options?.CloseOnEscapeKey != false)
+            entry.Cancel();
+    }
+
+    private static string GetSizeClass(K7DialogMaxWidth? maxWidth) => maxWidth switch
+    {
+        K7DialogMaxWidth.ExtraExtraSmall or K7DialogMaxWidth.ExtraSmall => "k7-dialog--xs",
+        K7DialogMaxWidth.Small => "k7-dialog--sm",
+        K7DialogMaxWidth.Medium => "k7-dialog--md",
+        K7DialogMaxWidth.Large => "k7-dialog--lg",
+        K7DialogMaxWidth.ExtraLarge => "k7-dialog--xl",
+        _ => "k7-dialog--sm"
+    };
+
+    public void Dispose()
+    {
+        if (DialogService is K7DialogService svc)
+            svc.OnShow -= HandleShow;
+    }
+}
+
+internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference
+{
+    private readonly TaskCompletionSource<K7DialogResult> _tcs = new();
+    private readonly Func<Task> _stateChanged;
+    private readonly List<K7DialogEntry> _owner;
+
+    public Guid Id { get; } = Guid.NewGuid();
+    public Type Type { get; }
+    public string Title { get; private set; }
+    public K7DialogOptions? Options { get; }
+    public Dictionary<string, object?> ComponentParameters { get; }
+
+    public Task<K7DialogResult> Result => _tcs.Task;
+
+    public K7DialogEntry(K7DialogRequest request, Func<Task> stateChanged)
+    {
+        Type = request.Type;
+        Title = request.Title;
+        Options = request.Options;
+        _stateChanged = stateChanged;
+        _owner = [];
+
+        ComponentParameters = request.Parameters?.ToDictionary()
+            .ToDictionary(k => k.Key, v => v.Value)
+            ?? [];
+    }
+
+    void IK7DialogInstance.SetTitle(string title) { Title = title; }
+    void IK7DialogInstance.Close() => CloseWith(K7DialogResult.Ok());
+    void IK7DialogInstance.Close(K7DialogResult result) => CloseWith(result);
+    void IK7DialogInstance.Cancel() => Cancel();
+
+    void IK7DialogReference.Close(K7DialogResult result) => CloseWith(result);
+    void IK7DialogReference.Cancel() => Cancel();
+
+    public void Cancel() => CloseWith(K7DialogResult.Cancel());
+
+    private void CloseWith(K7DialogResult result)
+    {
+        if (_tcs.Task.IsCompleted) return;
+        _tcs.TrySetResult(result);
+        _ = _stateChanged();
+    }
+}

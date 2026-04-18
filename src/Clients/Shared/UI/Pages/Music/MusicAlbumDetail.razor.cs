@@ -1,10 +1,9 @@
-using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -100,7 +99,7 @@ public partial class MusicAlbumDetail
         }
     }
 
-    private async Task OnTrackClick(TableRowClickEventArgs<TrackViewModel> args)
+    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.Complex.TableRowClickEventArgs<TrackViewModel> args)
     {
         var track = args.Item;
         if (track is null) return;

@@ -2,7 +2,6 @@
     --background-picture: url("");
 }
 
-::deep p.mud-typography.mud-typography-body1.overview-collapsed,
 .overview-collapsed,
 ::deep .overview-collapsed,
 ::deep .overview-container .overview-collapsed {
@@ -12,9 +11,9 @@
     -webkit-line-clamp: 2;
 }
 
-.mud-drawer-close-mini-xs-left .background {
+.app-shell:not(.sidebar-open) .background {
     position: absolute;
-    width: calc(100vw - var(--mud-drawer-width-mini-left));
+    width: calc(100vw - var(--sidebar-width-mini));
     height: 100vh;
     background: var(--background-picture);
     z-index: -1;
@@ -24,10 +23,10 @@
     background-repeat: no-repeat;
 }
 
-.mud-drawer-close-mini-xs-left .background:before {
+.app-shell:not(.sidebar-open) .background:before {
     content: '';
-    /*background-image: linear-gradient(to top, var(--mud-palette-background) 0%, var(--mud-palette-background) 50%, rgba(255,255,255,0) 125%);*/
-    background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--mud-palette-background) 60%, var(--mud-palette-background) 100%);
+    /*background-image: linear-gradient(to top, var(--color-bg) 0%, var(--color-bg) 50%, rgba(255,255,255,0) 125%);*/
+    background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--color-bg) 60%, var(--color-bg) 100%);
     position: absolute;
     height: 100vh;
     right: 0;
@@ -35,9 +34,9 @@
     left: 0;
 }
 
-.mud-drawer-open-mini-xs-left .background {
+.app-shell.sidebar-open .background {
     position: absolute;
-    width: calc(100vw - var(--mud-drawer-width-left));
+    width: calc(100vw - var(--sidebar-width-open));
     height: 100vh;
     background: var(--background-picture);
     z-index: -1;
@@ -47,10 +46,10 @@
     background-repeat: no-repeat;
 }
 
-.mud-drawer-open-mini-xs-left .background:before {
+.app-shell.sidebar-open .background:before {
     content: '';
-    /*background-image: linear-gradient(to top, var(--mud-palette-background) 0%, var(--mud-palette-background) 50%, rgba(255,255,255,0) 125%);*/
-    background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--mud-palette-background) 60%, var(--mud-palette-background) 100%);
+    /*background-image: linear-gradient(to top, var(--color-bg) 0%, var(--color-bg) 50%, rgba(255,255,255,0) 125%);*/
+    background-image: radial-gradient(at top, rgba(255,255,255,0) 0%, var(--color-bg) 60%, var(--color-bg) 100%);
     position: absolute;
     height: 100vh;
     right: 0;
@@ -59,16 +58,15 @@
 }
 
 .background-image {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     height: 100vh;
-    z-index: -1;
+    z-index: 0;
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
     background-image: var(--background-picture);
     mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
@@ -80,7 +78,7 @@
     position: absolute;
     width: 100%;
     height: 35vh;
-    margin-bottom: var(--mud-appbar-height);
+    margin-bottom: var(--mobile-footer-height);
     background: var(--background-picture);
     z-index: -1;
     top: 0;
@@ -91,7 +89,7 @@
 
 .mobile-layout .background:before {
     content: '';
-    background-image: linear-gradient(to top, var(--mud-palette-background) 0%, rgba(255,255,255,0) 125%);
+    background-image: linear-gradient(to top, var(--color-bg) 0%, rgba(255,255,255,0) 125%);
     position: absolute;
     height: 35vh;
     right: 0;
@@ -103,6 +101,11 @@
     height: 100vh;
     width: fit-content;
     max-width: 50vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    z-index: 1;
 }
 
 .mobile-layout .hero-page-stack {

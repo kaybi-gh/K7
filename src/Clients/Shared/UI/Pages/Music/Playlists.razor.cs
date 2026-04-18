@@ -5,7 +5,6 @@ using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -13,6 +12,9 @@ public partial class Playlists
 {
     private List<LitePlaylistDto> _playlists = [];
     private bool _loading = true;
+
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -29,8 +31,8 @@ public partial class Playlists
 
     private async Task OpenCreatePlaylistDialog()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<CreatePlaylistDialog>("Nouvelle playlist", options);
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<CreatePlaylistDialog>("Nouvelle playlist", null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
@@ -39,8 +41,8 @@ public partial class Playlists
 
     private async Task OpenCreateSmartPlaylistDialog()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>("Nouvelle smart playlist", options);
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>("Nouvelle smart playlist", null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: Guid id })
@@ -61,7 +63,7 @@ public partial class Playlists
         }
         catch
         {
-            Snackbar.Add("Erreur lors de la création", Severity.Error);
+            Snackbar.Add("Erreur lors de la création", K7Severity.Error);
         }
     }
 

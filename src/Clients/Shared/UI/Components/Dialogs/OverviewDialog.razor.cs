@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.Components;
-using MudBlazor;
+﻿using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class OverviewDialog
 {
-    [CascadingParameter]
-    IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter]
     public string ContentText { get; set; } = string.Empty;
@@ -16,6 +14,6 @@ public partial class OverviewDialog
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        Dialog.Cancel();
     }
 }

@@ -6,12 +6,13 @@
 }
 
 .background-image {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
-    z-index: -1;
+    z-index: 0;
+    pointer-events: none;
     background-image: var(--background-picture);
     background-size: cover;
     background-position: center top;

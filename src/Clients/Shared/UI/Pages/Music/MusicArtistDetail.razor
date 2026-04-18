@@ -1,12 +1,10 @@
-@page "/music/artists/{Id}"
+﻿@page "/music/artists/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject IStringLocalizer<MusicArtistDetail> L
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@_person?.Name</PageTitle>
-<MudBreakpointProvider OnBreakpointChanged="ScreenResized" />
-
 @if (_person is not null)
 {
     <div class="artist-detail-page">
@@ -15,50 +13,49 @@
             <div class="artist-hero-bg" style="background-image: url('@_portraitUrl')"></div>
         }
 
-        <MudGrid Justify="Justify.SpaceEvenly" Style="max-width: 100%; position: relative;" Spacing="0">
-            <MudItem xs="12" sm="4" lg="2">
-                <MudStack AlignItems="AlignItems.Center" Class="pa-4">
+        <div class="grid">
+            <div>
+                <div class="d-flex flex-col pa-4">
                     @if (_portraitUrl is not null)
                     {
-                        <MudImage Src="@_portraitUrl"
+                        <K7Image Src="@_portraitUrl"
                                   Alt="@_person.Name"
                                   Class="artist-portrait"
                                   Fluid="true"
-                                  ObjectFit="ObjectFit.Cover" />
+                                  ObjectFit="cover" />
                     }
                     else
                     {
-                        <MudAvatar Style="width: 200px; height: 200px; font-size: 64px;"
-                                   Color="Color.Dark">
+                        <K7Avatar Style="width: 200px; height: 200px; font-size: 64px;">
                             @(_person.Name?[..1].ToUpperInvariant())
-                        </MudAvatar>
+                        </K7Avatar>
                     }
-                </MudStack>
-            </MudItem>
-            <MudItem xs="12" sm="8" lg="10">
-                <MudStack AlignItems="@(_isSmallDevice ? AlignItems.Center : AlignItems.Start)" Class="pa-4">
-                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                        <MudText Typo="Typo.h4">@_person.Name</MudText>
-                        <MudIconButton Icon="@Icons.Material.Filled.Person" Href="@($"/persons/{_person.Id}")" Size="Size.Small" title="@L["ViewPerson"]" />
-                    </MudStack>
+                </div>
+            </div>
+            <div>
+                <div class="d-flex flex-col pa-4">
+                    <div class="d-flex">
+                        <h4>@_person.Name</h4>
+                        <button type="button" class="k7-icon-btn" Name="user" Href="@($"/persons/{_person.Id}")" Size="sm" title="@L["ViewPerson"]" ></button>
+                    </div>
                     @if (!string.IsNullOrEmpty(_person.Biography))
                     {
                         <div class="overview-container">
-                            <MudText Class="@(_overviewExpanded ? "" : "overview-collapsed")">@_person.Biography</MudText>
+                            <span class="@(_overviewExpanded ? "overview-expanded" : "overview-collapsed")">@_person.Biography</span>
                         </div>
-                        <MudButton Variant="Variant.Text"
-                                   Size="Size.Small"
-                                   EndIcon="@(_overviewExpanded ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)"
+                        <K7Button Variant="text"
+                                   Size="sm"
+                                   EndIcon="@(_overviewExpanded ? "caret-up" : "caret-down")"
                                    OnClick="() => _overviewExpanded = !_overviewExpanded">
                             @(_overviewExpanded ? L["ShowLess"] : L["ShowMore"])
-                        </MudButton>
+                        </K7Button>
                     }
-                </MudStack>
-            </MudItem>
+                </div>
+            </div>
 
             @if (_albums.Count > 0)
             {
-                <MudItem xs="12">
+                <div>
                     <Carousel Title="@L["AlbumsSection"]">
                         @foreach (var album in _albums)
                         {
@@ -67,56 +64,53 @@
                             </CarouselItem>
                         }
                     </Carousel>
-                </MudItem>
+                </div>
             }
 
             @if (_tracks.Count > 0)
             {
-                <MudItem xs="12" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-2">@L["TracksSection"]</MudText>
-                    <MudTable Items="_tracks"
-                              Dense="true"
-                              Hover="true"
-                              Elevation="0"
-                              T="TrackViewModel"
-                              OnRowClick="OnTrackClick"
+                <div>
+                    <h6>@L["TracksSection"]</h6>
+                    <K7Table Items="_tracks"
+                              TItem="TrackViewModel"
+                              OnRowClick="@(args => OnTrackClick(args))"
                               RowClass="cursor-pointer">
                         <HeaderContent>
-                            <MudTh Style="width: 40px;">#</MudTh>
-                            <MudTh>@S["Title"]</MudTh>
-                            <MudTh>Album</MudTh>
-                            <MudTh Style="width: 80px;">@S["Duration"]</MudTh>
+                            <th Style="width: 40px;">#</th>
+                            <th>@S["Title"]</th>
+                            <th>Album</th>
+                            <th Style="width: 80px;">@S["Duration"]</th>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd>
+                            <td>
                                 @if (context.IsPlaying)
                                 {
-                                    <MudIcon Icon="@Icons.Material.Filled.Equalizer" Size="Size.Small" Color="Color.Primary" />
+                                    <K7Icon Name="equalizer" Size="sm" Color="primary" />
                                 }
                                 else
                                 {
                                     @context.TrackNumber
                                 }
-                            </MudTd>
-                            <MudTd>
-                                <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">@context.Title</MudText>
-                            </MudTd>
-                            <MudTd>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText>
-                            </MudTd>
-                            <MudTd>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
-                            </MudTd>
+                            </td>
+                            <td>
+                                <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
+                            </td>
+                            <td>
+                                <p class="text-sm" Color="secondary">@context.AlbumTitle</p>
+                            </td>
+                            <td>
+                                <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
+                            </td>
                         </RowTemplate>
-                    </MudTable>
-                </MudItem>
+                    </K7Table>
+                </div>
             }
-        </MudGrid>
+        </div>
     </div>
 }
 else if (_loading)
 {
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudProgressCircular Indeterminate="true" />
-    </MudStack>
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
 }

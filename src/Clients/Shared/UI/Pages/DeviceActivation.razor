@@ -5,81 +5,81 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height:80vh;">
-    <MudPaper Class="pa-4 pa-sm-8" Elevation="4" Style="width:100%; max-width:600px;">
-        <MudStack Spacing="4" AlignItems="AlignItems.Center">
-            <MudIcon Icon="@Icons.Material.Outlined.Tv" Size="Size.Large" Color="Color.Primary" />
-            <MudText Typo="Typo.h5" Align="Align.Center">@L["Title"]</MudText>
+<div class="container">
+    <div class="surface pa-4 pa-sm-8">
+        <div class="d-flex flex-col">
+            <K7Icon Name="television" Size="lg" Color="primary" />
+            <h5 class="text-center">@L["Title"]</h5>
 
             @if (_loading)
             {
-                <MudStack AlignItems="AlignItems.Center" Spacing="2">
-                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Activating"]</MudText>
-                </MudStack>
+                <div class="d-flex flex-col">
+                    <K7Spinner />
+                    <p class="text-sm color-secondary">@L["Activating"]</p>
+                </div>
             }
             else if (_error is not null)
             {
-                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2" Style="width:100%;">
                     @_error
-                </MudAlert>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartDeviceCodeFlowAsync">
+                </K7Alert>
+                <K7Button Variant="filled" Color="primary" OnClick="StartDeviceCodeFlowAsync">
                     @L["Activate"]
-                </MudButton>
+                </K7Button>
             }
             else if (_authorized)
             {
-                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                <K7Alert Severity="K7Severity.Success" Variant="filled" Class="mt-2" Style="width:100%;">
                     @L["ActivationSuccess"]
-                </MudAlert>
+                </K7Alert>
             }
             else if (_deviceCode is not null)
             {
-                <MudDivider Class="my-2" Style="width:100%;" />
+                <hr class="k7-divider my-2" />
 
-                <MudGrid Justify="Justify.Center" Spacing="4">
-                    <MudItem xs="12" sm="6">
-                        <MudStack Spacing="2" AlignItems="AlignItems.Center">
-                            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                <div class="grid">
+                    <div>
+                        <div class="d-flex flex-col">
+                            <p class="text-center color-secondary">
                                 @L["Instructions"]
-                            </MudText>
-                            <MudText Typo="Typo.h6" Color="Color.Primary" Align="Align.Center">
+                            </p>
+                            <h6 class="text-center color-primary">
                                 @_displayUri
-                            </MudText>
+                            </h6>
 
-                            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center" Class="mt-4">
+                            <p class="mt-4 text-center color-secondary">
                                 @L["CodeLabel"]
-                            </MudText>
-                            <MudPaper Class="pa-3" Elevation="0" Style="background: var(--mud-palette-surface); border-radius: 8px; width:100%;">
-                                <MudText Typo="Typo.h4" Align="Align.Center"
-                                         Style="letter-spacing:0.2em; font-weight:bold;">
+                            </p>
+                            <div class="surface pa-3">
+                                <h4 class="text-center"
+                                         style="letter-spacing:0.2em; font-weight:bold;">
                                     @_deviceCode.UserCode
-                                </MudText>
-                            </MudPaper>
-                        </MudStack>
-                    </MudItem>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
 
-                    <MudItem xs="12" sm="1" Class="d-flex align-center justify-center">
-                        <MudText Typo="Typo.h6" Color="Color.Secondary">OR</MudText>
-                    </MudItem>
+                    <div>
+                        <h6 class="color-secondary">OR</h6>
+                    </div>
 
-                    <MudItem xs="12" sm="5">
-                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
-                            <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
+                    <div>
+                        <div class="d-flex flex-col">
+                            <p class="text-center color-secondary">
                                 @L["ScanQrCode"]
-                            </MudText>
+                            </p>
                             <div id="device-qr" style="background:white; padding:12px; border-radius:8px; display:inline-block;"></div>
-                        </MudStack>
-                    </MudItem>
-                </MudGrid>
+                        </div>
+                    </div>
+                </div>
 
-                <MudDivider Class="my-2" Style="width:100%;" />
+                <hr class="k7-divider my-2" />
 
-                <MudStack AlignItems="AlignItems.Center" Spacing="2" Style="width:100%;">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Style="width:100%;" />
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@L["Activating"]</MudText>
-                </MudStack>
+                <div class="d-flex flex-col" style="width:100%;">
+                    <K7ProgressBar Indeterminate="true" />
+                    <p class="text-sm color-secondary">@L["Activating"]</p>
+                </div>
             }
-        </MudStack>
-    </MudPaper>
-</MudContainer>
+        </div>
+    </div>
+</div>

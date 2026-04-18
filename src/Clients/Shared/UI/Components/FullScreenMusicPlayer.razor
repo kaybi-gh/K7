@@ -15,17 +15,10 @@
 
         <div class="fullscreen-player-content" @onclick:stopPropagation="true">
             <div class="fullscreen-player-header">
-                <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown"
-                               Color="Color.Inherit"
-                               aria-label="@S["Close"]"
-                               OnClick="Close" />
+                <button type="button" class="k7-icon-btn" @onclick="Close" aria-label="@S["Close"]"><i class="ph ph-caret-down"></i></button>
                 <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
-                <MudIconButton Icon="@Icons.Material.Filled.Lyrics"
-                               Color="@(_view == FullScreenView.Lyrics ? Color.Primary : Color.Inherit)"
-                               OnClick="ToggleLyrics" />
-                <MudIconButton Icon="@Icons.Material.Filled.QueueMusic"
-                               Color="@(_view == FullScreenView.Queue ? Color.Primary : Color.Inherit)"
-                               OnClick="ToggleQueue" />
+                <button type="button" class="k7-icon-btn" style="@(_view == FullScreenView.Lyrics ? "color: var(--color-accent);" : "")" @onclick="ToggleLyrics" aria-label="Lyrics"><i class="ph ph-text-align-left"></i></button>
+                <button type="button" class="k7-icon-btn" style="@(_view == FullScreenView.Queue ? "color: var(--color-accent);" : "")" @onclick="ToggleQueue" aria-label="Queue"><i class="ph ph-queue"></i></button>
             </div>
 
             @if (_view == FullScreenView.Player)
@@ -33,15 +26,15 @@
                 <div class="fullscreen-player-artwork">
                     @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
                     {
-                        <MudImage Src="@Audio.CurrentTrack.CoverUrl"
-                                  Alt="@($"{Audio.CurrentTrack.Title} — {Audio.CurrentTrack.Artist}")"
-                                  ObjectFit="ObjectFit.Cover"
+                        <K7Image Src="@Audio.CurrentTrack.CoverUrl"
+                                  Alt="@($"{Audio.CurrentTrack.Title} - {Audio.CurrentTrack.Artist}")"
+                                  ObjectFit="cover"
                                   Class="artwork-image" />
                     }
                     else
                     {
                         <div class="artwork-placeholder">
-                            <MudIcon Icon="@Icons.Material.Outlined.MusicNote"
+                            <K7Icon Name="music-note"
                                      Style="font-size: 96px;" />
                         </div>
                     }
@@ -58,7 +51,7 @@
                         MediaId="Audio.CurrentTrack.MediaId"
                         Value="Audio.CurrentTrack.UserRating"
                         ValueChanged="OnRatingChanged"
-                        Size="Size.Medium" />
+                        Size="md" />
                 </div>
 
                 <div class="fullscreen-player-seek">
@@ -103,42 +96,22 @@
                 </div>
 
                 <div class="fullscreen-player-controls">
-                    <MudIconButton Icon="@ShuffleIcon"
-                                   Size="Size.Small"
-                                   Color="@(Audio.Shuffle ? Color.Primary : Color.Inherit)"
-                                   OnClick="Audio.ToggleShuffle" />
+                    <button class="k7-icon-btn" type="button" @onclick="Audio.ToggleShuffle" aria-label="shuffle"><i class="ph ph-@ShuffleIcon"></i></button>
 
-                    <MudIconButton Icon="@Icons.Material.Filled.SkipPrevious"
-                                   Size="Size.Medium"
-                                   Color="Color.Inherit"
-                                   OnClick="OnPrevious" />
+                    <button type="button" class="k7-icon-btn" @onclick="OnPrevious" aria-label="Previous"><i class="ph ph-skip-back"></i></button>
 
-                    <MudFab StartIcon="@PlayPauseIcon"
-                            Size="Size.Large"
-                            Color="Color.Primary"
-                            OnClick="TogglePlayPause" />
+                    <button type="button" class="k7-fab k7-fab--lg" @onclick="TogglePlayPause" aria-label="Play/Pause"><i class="ph ph-@PlayPauseIcon"></i></button>
 
-                    <MudIconButton Icon="@Icons.Material.Filled.SkipNext"
-                                   Size="Size.Medium"
-                                   Color="Color.Inherit"
-                                   OnClick="OnNext" />
+                    <button type="button" class="k7-icon-btn" @onclick="OnNext" aria-label="Next"><i class="ph ph-skip-forward"></i></button>
 
-                    <MudIconButton Icon="@RepeatIcon"
-                                   Size="Size.Small"
-                                   Color="@(Audio.Repeat != RepeatMode.Off ? Color.Primary : Color.Inherit)"
-                                   OnClick="Audio.CycleRepeatMode" />
+                    <button class="k7-icon-btn" type="button" @onclick="Audio.CycleRepeatMode" aria-label="repeat"><i class="ph ph-@RepeatIcon"></i></button>
                 </div>
 
                 <div class="fullscreen-player-volume">
-                    <MudIconButton Icon="@VolumeIcon"
-                                   Size="Size.Small"
-                                   Color="Color.Inherit"
-                                   OnClick="ToggleMute" />
-                    <MudSlider T="double"
+                    <button class="k7-icon-btn" type="button" @onclick="ToggleMute" aria-label="mute"><i class="ph ph-@VolumeIcon"></i></button>
+                    <K7Slider TValue="double"
                                Value="Audio.Volume"
-                               ValueChanged="OnVolumeChanged"
-                               Min="0" Max="1" Step="0.01"
-                               Immediate="true"
+                               ValueChanged="OnVolumeChanged" Step="0.01"
                                Class="fullscreen-volume-slider" />
                 </div>
             }
@@ -170,9 +143,9 @@
                                 <div class="queue-item-index">
                                     @if (isCurrent)
                                     {
-                                        <MudIcon Icon="@Icons.Material.Filled.Equalizer"
-                                                 Size="Size.Small"
-                                                 Color="Color.Primary" />
+                                        <K7Icon Name="equalizer"
+                                                 Size="sm"
+                                                 Color="primary" />
                                     }
                                     else
                                     {
@@ -181,16 +154,16 @@
                                 </div>
                                 @if (!string.IsNullOrEmpty(track.CoverUrl))
                                 {
-                                    <MudImage Src="@track.CoverUrl"
+                                    <K7Image Src="@track.CoverUrl"
                                               Alt="Cover"
-                                              Width="40" Height="40"
-                                              ObjectFit="ObjectFit.Cover"
+                                              Width="40"
+                                              ObjectFit="cover"
                                               Class="queue-item-cover"
                                               loading="lazy" />
                                 }
                                 else
                                 {
-                                    <MudIcon Icon="@Icons.Material.Outlined.MusicNote"
+                                    <K7Icon Name="music-note"
                                              Class="queue-item-cover-placeholder" />
                                 }
                                 <div class="queue-item-info">
@@ -198,11 +171,9 @@
                                     <span class="queue-item-artist">@track.Artist</span>
                                 </div>
                                 <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
-                                <MudIconButton Icon="@Icons.Material.Filled.Close"
-                                               Size="Size.Small"
-                                               Color="Color.Inherit"
-                                               OnClick="() => Audio.RemoveFromQueue(index)"
-                                               Class="queue-item-remove" />
+                                <button type="button" class="k7-icon-btn queue-item-remove" @onclick="@(() => Audio.RemoveFromQueue(index))">
+                                    <i class="ph ph-x"></i>
+                                </button>
                             </div>
                         }
                     </div>

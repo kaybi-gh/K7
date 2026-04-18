@@ -1,30 +1,28 @@
-﻿
-<MudDialog>
-    <TitleContent>Profil de restriction</TitleContent>
-    <DialogContent>
+
+<!--Profil de restriction-->
+    <div class="k7-dialog-content">
         @if (_isLoading)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <K7ProgressBar Indeterminate="true" />
         }
         else
         {
-            <MudSelect T="Guid?" @bind-Value="_selectedProfileId" Label="Profil de restriction"
-                       Variant="Variant.Outlined" Clearable="true" AnchorOrigin="Origin.BottomCenter">
+            <K7Select TValue="Guid?" @bind-Value="_selectedProfileId" Label="Profil de restriction"
+                       Variant="outlined" Clearable="true">
                 @foreach (var profile in _profiles)
                 {
-                    <MudSelectItem T="Guid?" Value="@profile.Id">
+                    <K7SelectItem TValue="Guid?" Value="@profile.Id">
                         @profile.Name
                         @if (!string.IsNullOrWhiteSpace(profile.Description))
                         {
-                            <MudText Typo="Typo.caption" Color="Color.Secondary"> — @profile.Description</MudText>
+                            <span class="text-caption" Color="secondary"> - @profile.Description</span>
                         }
-                    </MudSelectItem>
+                    </K7SelectItem>
                 }
-            </MudSelect>
+            </K7Select>
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="_isLoading">Valider</MudButton>
-    </DialogActions>
-</MudDialog>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">Annuler</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_isLoading">Valider</K7Button>
+    </div>

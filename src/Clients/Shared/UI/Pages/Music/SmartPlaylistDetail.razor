@@ -12,137 +12,137 @@
         <div class="playlist-header">
             <div class="playlist-header-cover">
                 <div class="playlist-cover-placeholder-large">
-                    <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Style="font-size: 64px; opacity: 0.3;" />
+                    <K7Icon Name="sparkle" Style="font-size: 64px; opacity: 0.3;" />
                 </div>
             </div>
             <div class="playlist-header-info">
-                <MudText Typo="Typo.overline">@L["Header"]</MudText>
-                <MudText Typo="Typo.h4">@_smartPlaylist.Title</MudText>
+                <p class="text-overline">@L["Header"]</p>
+                <h4>@_smartPlaylist.Title</h4>
 
                 @if (!string.IsNullOrEmpty(_smartPlaylist.Description))
                 {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1">@_smartPlaylist.Description</MudText>
+                    <p class="text-sm mt-1" Color="secondary">@_smartPlaylist.Description</p>
                 }
 
-                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="mt-1">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <div class="d-flex mt-1">
+                    <p class="text-sm" Color="secondary">
                         @_smartPlaylist.Rules.Count règle@(_smartPlaylist.Rules.Count > 1 ? "s" : "")
                         · @_smartPlaylist.ItemCount @S["Tracks"]
-                    </MudText>
+                    </p>
                     @if (_smartPlaylist.LastEvaluatedAt.HasValue)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        <p class="text-sm" Color="secondary">
                             · Évalué @FormatRelativeTime(_smartPlaylist.LastEvaluatedAt.Value)
-                        </MudText>
+                        </p>
                     }
-                </MudStack>
+                </div>
 
-                <MudStack Row="true" Spacing="2" Class="mt-3">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.PlayArrow"
+                <div class="d-flex mt-3">
+                    <K7Button Variant="filled" Color="primary"
+                               StartIcon="play"
                                OnClick="PlayAll" Disabled="@(_items.Count == 0)">
                         @S["PlayAll"]
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Shuffle"
+                    </K7Button>
+                    <K7Button Variant="outlined" Color="primary"
+                               StartIcon="shuffle"
                                OnClick="ShuffleAll" Disabled="@(_items.Count == 0)">
                         @S["Shuffle"]
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary"
-                               StartIcon="@Icons.Material.Filled.Refresh"
+                    </K7Button>
+                    <K7Button Variant="outlined" Color="secondary"
+                               StartIcon="arrow-clockwise"
                                OnClick="EvaluateAsync" Disabled="_evaluating">
                         @if (_evaluating)
                         {
-                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-1" />
+                            <K7Spinner Size="sm" />
                             <text>@L["Evaluating"]</text>
                         }
                         else
                         {
                             <text>@L["Reevaluate"]</text>
                         }
-                    </MudButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" OnClick="OpenEditDialog" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="ConfirmDelete" />
-                </MudStack>
+                    </K7Button>
+                    <button type="button" class="k7-icon-btn" @onclick="OpenEditDialog"><i class="ph ph-pencil"></i></button>
+                    <button type="button" class="k7-icon-btn" @onclick="ConfirmDelete"><i class="ph ph-trash"></i></button>
+                </div>
             </div>
         </div>
 
         @if (!string.IsNullOrEmpty(_rulesDescription))
         {
-            <MudPaper Outlined="true" Class="ma-4 pa-3">
-                <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="2">
-                    <MudIcon Icon="@Icons.Material.Filled.FilterList" Size="Size.Small" Color="Color.Secondary" />
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_rulesDescription</MudText>
-                </MudStack>
-            </MudPaper>
+            <div class="surface ma-4 pa-3">
+                <div class="d-flex">
+                    <K7Icon Name="funnel" Size="sm" Color="secondary" />
+                    <p class="text-sm" Color="secondary">@_rulesDescription</p>
+                </div>
+            </div>
         }
 
         @if (_loadingItems)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-4" />
+            <K7ProgressBar Indeterminate="true" />
         }
         else if (_items.Count == 0)
         {
-            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-                <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
-                <MudText Typo="Typo.body1" Color="Color.Secondary">@L["NoResults"]</MudText>
-            </MudStack>
+            <div class="d-flex flex-col pa-16">
+                <K7Icon Name="music-note" Style="font-size: 48px; opacity: 0.3;" />
+                <p Color="secondary">@L["NoResults"]</p>
+            </div>
         }
         else
         {
             <div class="playlist-tracklist">
-                <MudTable Items="_items" Dense="true" Hover="true" Elevation="0"
-                          T="SmartPlaylistItemViewModel" OnRowClick="OnTrackClick" RowClass="cursor-pointer">
+                <K7Table Items="_items"
+                          TItem="SmartPlaylistItemViewModel" OnRowClick="@(args => OnTrackClick(args))" RowClass="cursor-pointer">
                     <HeaderContent>
-                        <MudTh Style="width: 50px;">#</MudTh>
-                        <MudTh>@S["Title"]</MudTh>
-                        <MudTh>@S["Artist"]</MudTh>
-                        <MudTh>@S["Album"]</MudTh>
-                        <MudTh Style="width: 80px;"><MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" /></MudTh>
-                        <MudTh Style="width: 130px;"></MudTh>
-                        <MudTh Style="width: 50px;"></MudTh>
+                        <th Style="width: 50px;">#</th>
+                        <th>@S["Title"]</th>
+                        <th>@S["Artist"]</th>
+                        <th>@S["Album"]</th>
+                        <th Style="width: 80px;"><K7Icon Name="clock" Size="sm" /></th>
+                        <th Style="width: 130px;"></th>
+                        <th Style="width: 50px;"></th>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd>
+                        <td>
                             @if (context.IsPlaying)
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.Equalizer" Size="Size.Small" Color="Color.Primary" />
+                                <K7Icon Name="equalizer" Size="sm" Color="primary" />
                             }
                             else
                             {
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@(context.Order + 1)</MudText>
+                                <p class="text-sm" Color="secondary">@(context.Order + 1)</p>
                             }
-                        </MudTd>
-                        <MudTd>
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        </td>
+                        <td>
+                            <div class="d-flex align-center">
                                 @if (context.CoverUrl is not null)
                                 {
-                                    <MudImage Src="@context.CoverUrl" Width="36" Height="36"
-                                              ObjectFit="ObjectFit.Cover" Class="rounded" loading="lazy" />
+                                    <K7Image Src="@context.CoverUrl" Width="36"
+                                              ObjectFit="cover" Class="rounded" loading="lazy" />
                                 }
-                                <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">
+                                <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
                                     @context.Title
-                                </MudText>
-                            </MudStack>
-                        </MudTd>
-                        <MudTd><MudText Typo="Typo.body2" Color="Color.Secondary">@context.ArtistName</MudText></MudTd>
-                        <MudTd><MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText></MudTd>
-                        <MudTd><MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText></MudTd>
-                        <MudTd>
-                            <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="Size.Small" />
-                        </MudTd>
-                        <MudTd>
+                                </span>
+                            </div>
+                        </td>
+                        <td><p class="text-sm" Color="secondary">@context.ArtistName</p></td>
+                        <td><p class="text-sm" Color="secondary">@context.AlbumTitle</p></td>
+                        <td><p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p></td>
+                        <td>
+                            <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="sm" />
+                        </td>
+                        <td>
                             <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
-                        </MudTd>
+                        </td>
                     </RowTemplate>
-                </MudTable>
+                </K7Table>
             </div>
         }
     </div>
 }
 else if (_loading)
 {
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudProgressCircular Indeterminate="true" />
-    </MudStack>
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
 }

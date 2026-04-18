@@ -1,49 +1,47 @@
-@using K7.Shared.Dtos.Entities.Medias
+﻿@using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.Metadatas.Files
 @using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<PlaybackOptionsDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="4" data-nav-col>
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col data-nav-col">
             @if (Movie.IndexedFiles != null && Movie.IndexedFiles.Count > 1)
             {
-                <MudSelect T="IndexedFileDto" @bind-Value="SelectedFile" Label="@L["File"]" Variant="Variant.Filled" FullWidth="true" ToStringFunc="@(f => f?.Name)">
+                <K7Select TValue="IndexedFileDto" @bind-Value="SelectedFile" Label="@L["File"]" Variant="filled" ToStringFunc="@(f => f?.Name)">
                     @foreach (var file in Movie.IndexedFiles)
                     {
-                        <MudSelectItem Value="@file">@file.Name</MudSelectItem>
+                        <K7SelectItem Value="@file">@file.Name</K7SelectItem>
                     }
-                </MudSelect>
+                </K7Select>
             }
 
             @if (videoMetadata != null)
             {
-                <MudSelect T="AudioFileTrackDto" @bind-Value="SelectedAudioTrack" Label="@L["AudioTrack"]" Variant="Variant.Filled" FullWidth="true">
+                <K7Select TValue="AudioFileTrackDto" @bind-Value="SelectedAudioTrack" Label="@L["AudioTrack"]" Variant="filled">
                     @if (videoMetadata.AudioTracks != null)
                     {
                         @foreach (var track in videoMetadata.AudioTracks)
                         {
-                            <MudSelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</MudSelectItem>
+                            <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</K7SelectItem>
                         }
                     }
-                </MudSelect>
+                </K7Select>
 
-                <MudSelect T="SubtitleFileTrackDto" @bind-Value="SelectedSubtitleTrack" Label="@L["SubtitleTrack"]" Variant="Variant.Filled" FullWidth="true" Clearable="true">
+                <K7Select TValue="SubtitleFileTrackDto" @bind-Value="SelectedSubtitleTrack" Label="@L["SubtitleTrack"]" Variant="filled" Clearable="true">
                     @if (videoMetadata.SubtitleTracks != null)
                     {
                         @foreach (var track in videoMetadata.SubtitleTracks)
                         {
-                            <MudSelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec}")</MudSelectItem>
+                            <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec}")</K7SelectItem>
                         }
                     }
-                </MudSelect>
+                </K7Select>
             }
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Play" Class="mx-2">@S["Play"]</MudButton>
-    </DialogActions>
-</MudDialog>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Play" Class="mx-2">@S["Play"]</K7Button>
+    </div>

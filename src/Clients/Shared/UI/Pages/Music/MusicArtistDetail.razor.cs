@@ -1,10 +1,9 @@
-using K7.Clients.Shared.Interfaces;
+﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -21,7 +20,6 @@ public partial class MusicArtistDetail
     private List<MediaCardViewModel> _albums = [];
     private List<TrackViewModel> _tracks = [];
     private bool _loading = true;
-    private bool _isSmallDevice;
     private bool _overviewExpanded;
 
     protected override async Task OnParametersSetAsync()
@@ -82,12 +80,7 @@ public partial class MusicArtistDetail
         _loading = false;
     }
 
-    private void ScreenResized(Breakpoint breakpoint)
-    {
-        _isSmallDevice = breakpoint == Breakpoint.Xs;
-    }
-
-    private async Task OnTrackClick(TableRowClickEventArgs<TrackViewModel> args)
+    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.Complex.TableRowClickEventArgs<TrackViewModel> args)
     {
         var track = args.Item;
         if (track is null) return;

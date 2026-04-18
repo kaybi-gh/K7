@@ -1,40 +1,37 @@
 @inject IStringLocalizer<ExcludeMediaForUsersDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
+<div class="k7-dialog-content">
         @if (_loading)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <K7ProgressBar Indeterminate="true" />
         }
         else
         {
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            <p class="text-sm mb-3" Color="secondary">
                 @string.Format(L["SelectUsers"], MediaTitle)
-            </MudText>
-            <MudStack Spacing="1">
+            </p>
+            <div class="d-flex flex-col">
                 @foreach (var entry in _userStates)
                 {
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body2">@(entry.User.UserName ?? entry.User.Email ?? "—")</MudText>
+                    <div class="d-flex align-center justify-between">
+                        <div class="d-flex flex-col">
+                            <p class="text-sm">@(entry.User.UserName ?? entry.User.Email ?? "-")</p>
                             @if (entry.User.IsGuest)
                             {
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@S["Guest"]</MudText>
+                                <span class="text-caption" Color="secondary">@S["Guest"]</span>
                             }
-                        </MudStack>
-                        <MudSwitch T="bool" Value="@entry.Excluded" ValueChanged="@(v => entry.Excluded = v)"
-                                   Color="Color.Error" />
-                    </MudStack>
+                        </div>
+                        <K7Switch Value="@entry.Excluded" ValueChanged="@(v => entry.Excluded = v)" />
+                    </div>
                 }
-            </MudStack>
+            </div>
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="_saving">
-            @if (_saving) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_saving">
+            @if (_saving) { <K7Spinner Size="sm" /> }
             @S["Save"]
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

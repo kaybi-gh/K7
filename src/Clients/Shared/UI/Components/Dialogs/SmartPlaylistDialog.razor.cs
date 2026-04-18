@@ -2,13 +2,12 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class SmartPlaylistDialog
 {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter] public Guid? SmartPlaylistId { get; set; }
     [Parameter] public string? InitialTitle { get; set; }
@@ -69,7 +68,7 @@ public partial class SmartPlaylistDialog
         _rules[index].Value = null;
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 
     private async Task SubmitAsync()
     {
@@ -97,8 +96,8 @@ public partial class SmartPlaylistDialog
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
                 });
-                Snackbar.Add(L["Updated"], Severity.Success);
-                MudDialog.Close(DialogResult.Ok(SmartPlaylistId!.Value));
+                Snackbar.Add(L["Updated"], K7Severity.Success);
+                Dialog.Close(K7DialogResult.Ok(SmartPlaylistId!.Value));
             }
             else
             {
@@ -113,11 +112,11 @@ public partial class SmartPlaylistDialog
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
                 });
-                Snackbar.Add(L["Created"], Severity.Success);
-                MudDialog.Close(DialogResult.Ok(id));
+                Snackbar.Add(L["Created"], K7Severity.Success);
+                Dialog.Close(K7DialogResult.Ok(id));
             }
         }
-        catch { Snackbar.Add(L["SaveError"], Severity.Error); }
+        catch { Snackbar.Add(L["SaveError"], K7Severity.Error); }
         finally { _isSubmitting = false; }
     }
 

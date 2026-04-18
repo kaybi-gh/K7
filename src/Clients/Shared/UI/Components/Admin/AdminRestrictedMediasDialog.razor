@@ -1,21 +1,20 @@
-﻿
-<MudDialog>
-    <TitleContent>Médias restreints — @ProfileName</TitleContent>
-    <DialogContent>
+
+<!--Médias restreints - @ProfileName-->
+    <div class="k7-dialog-content">
         @if (_loading)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <K7ProgressBar Indeterminate="true" />
         }
         else if (_medias.Count == 0)
         {
-            <MudText Typo="Typo.body1" Color="Color.Secondary">Aucun média ne correspond aux règles de ce profil.</MudText>
+            <p Color="secondary">Aucun média ne correspond aux règles de ce profil.</p>
         }
         else
         {
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            <p class="text-sm mb-3"  Color="secondary" >
                 @_medias.Count média(s) masqué(s) par ce profil@(_medias.Count >= 200 ? " (limité à 200)" : "").
-            </MudText>
-            <MudSimpleTable Dense="true" Hover="true" Bordered="true" Style="max-height: 400px; overflow-y: auto;">
+            </p>
+            <table class="k7-table k7-table--dense">
                 <thead>
                     <tr>
                         <th>Titre</th>
@@ -27,16 +26,15 @@
                     @foreach (var media in _medias)
                     {
                         <tr>
-                            <td>@(media.Title ?? "—")</td>
-                            <td><MudChip T="string" Size="Size.Small" Color="Color.Default">@FormatType(media.Type)</MudChip></td>
-                            <td>@(media.ReleaseYear?.ToString() ?? "—")</td>
+                            <td>@(media.Title ?? "-")</td>
+                            <td><K7Chip Size="sm" Color="default">@FormatType(media.Type)</K7Chip></td>
+                            <td>@(media.ReleaseYear?.ToString() ?? "-")</td>
                         </tr>
                     }
                 </tbody>
-            </MudSimpleTable>
+            </table>
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Close">Fermer</MudButton>
-    </DialogActions>
-</MudDialog>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Close">Fermer</K7Button>
+    </div>

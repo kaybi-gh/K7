@@ -1,16 +1,14 @@
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class FolderBrowserDialog
 {
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter]
     public string? InitialPath { get; set; }
@@ -43,7 +41,7 @@ public partial class FolderBrowserDialog
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
@@ -85,9 +83,9 @@ public partial class FolderBrowserDialog
         var selectedPath = GetSelectedPath();
         if (!string.IsNullOrEmpty(selectedPath))
         {
-            MudDialog.Close(DialogResult.Ok(selectedPath));
+            Dialog.Close(K7DialogResult.Ok(selectedPath));
         }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 }

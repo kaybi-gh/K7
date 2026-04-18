@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
 public partial class ConfirmDeleteUserDialog
 {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
     [Parameter] public string DisplayName { get; set; } = "";
 
-    private void Cancel() => MudDialog.Cancel();
-    private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
+    private void Cancel() => Dialog.Cancel();
+    private void Confirm() => Dialog.Close(K7DialogResult.Ok(true));
 }

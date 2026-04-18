@@ -1,53 +1,51 @@
 @inject IStringLocalizer<FolderBrowserDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="2">
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col">
             @* Current path display + parent navigation *@
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Disabled="@string.IsNullOrEmpty(_currentPath)" OnClick="NavigateUp" Size="Size.Small" />
-                <MudTextField @bind-Value="_currentPath" Label="@L["PathLabel"]" Variant="Variant.Outlined" ReadOnly="true" />
-            </MudStack>
+            <div class="d-flex align-center">
+                <button type="button" class="k7-icon-btn" @onclick="NavigateUp" aria-label="navigate up"><i class="ph ph-arrow-up"></i></button>
+                <K7TextField @bind-Value="_currentPath" Label="@L["PathLabel"]" Variant="outlined" ReadOnly="true" />
+            </div>
 
             @if (_isLoading)
             {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                <K7ProgressBar Indeterminate="true" />
             }
 
             @* Directory list *@
-            <MudList T="DirectoryEntryDto" Style="max-height: 400px; overflow-y: auto;" Dense="true" SelectionMode="SelectionMode.SingleSelection" @bind-SelectedValue="_selectedEntry">
+            <ul class="k7-list">
                 @if (_directories != null)
                 {
                     @foreach (var dir in _directories)
                     {
-                        <MudListItem Value="dir" OnClick="() => SelectDirectory(dir)">
-                            <ChildContent>
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                    <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Warning" Size="Size.Small" />
-                                    <MudText Style="flex: 1;">@dir.Name</MudText>
-                                    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" OnClick="() => NavigateInto(dir)" />
-                                </MudStack>
-                            </ChildContent>
-                        </MudListItem>
+                        <li Value="dir" OnClick="() => SelectDirectory(dir)">
+                            
+                                <div class="d-flex align-center">
+                                    <K7Icon Name="folder" Color="warning" Size="sm" />
+                                    <span Style="flex: 1;">@dir.Name</span>
+                                    <button type="button" class="k7-icon-btn" @onclick="() => NavigateInto(dir)" aria-label="navigate into"><i class="ph ph-caret-right"></i></button>
+                                </div>
+                            
+                        </li>
                     }
 
                     @if (_directories.Count == 0)
                     {
-                        <MudListItem Value="@((DirectoryEntryDto?)null)">
-                            <ChildContent>
-                                <MudText Color="Color.Secondary" Typo="Typo.body2">@L["NoSubfolders"]</MudText>
-                            </ChildContent>
-                        </MudListItem>
+                        <li Value="@((DirectoryEntryDto?)null)">
+                            
+                                <span Color="secondary" Typo="Typo.body2">@L["NoSubfolders"]</span>
+                            
+                        </li>
                     }
                 }
-            </MudList>
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Confirm" Disabled="@string.IsNullOrEmpty(GetSelectedPath())">
+            </ul>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Confirm" Disabled="@string.IsNullOrEmpty(GetSelectedPath())">
             @L["SelectFolder"]
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

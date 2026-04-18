@@ -7,10 +7,7 @@
         @for (int i = 1; i <= 5; i++)
         {
             var star = i;
-            <MudIconButton Icon="@GetStarIcon(star)"
-                           Color="@GetStarColor(star)"
-                           Size="@Size"
-                           OnClick="() => OnStarClick(star)" />
+            <button class="k7-icon-btn @(star <= StarCount ? "star--selected" : "")" type="button" @onclick="() => OnStarClick(star)" aria-label=""><i class="ph ph-star"></i></button>
         }
     </span>
 }

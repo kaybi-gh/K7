@@ -5,15 +5,14 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
 public partial class AdminUsersPanel
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<UserDto> _users = [];
@@ -51,12 +50,12 @@ public partial class AdminUsersPanel
         try
         {
             await K7ServerService.UpdateUserRoleAsync(user.Id, new UpdateUserRoleRequest { Role = newRole });
-            Snackbar.Add(string.Format(L["RoleUpdated"], user.UserName), Severity.Success);
+            Snackbar.Add(string.Format(L["RoleUpdated"], user.UserName), K7Severity.Success);
             await LoadData();
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 
@@ -66,12 +65,12 @@ public partial class AdminUsersPanel
         {
             await K7ServerService.ToggleUserActiveAsync(user.Id, isActive);
             var label = user.UserName ?? user.Email;
-            Snackbar.Add(isActive ? string.Format(L["UserActivated"], label) : string.Format(L["UserDeactivated"], label), Severity.Success);
+            Snackbar.Add(isActive ? string.Format(L["UserActivated"], label) : string.Format(L["UserDeactivated"], label), K7Severity.Success);
             await LoadData();
         }
         catch (Exception ex)
         {
-            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
 
@@ -83,14 +82,14 @@ public partial class AdminUsersPanel
         var overrides = user.CapabilityOverrides
             .ToDictionary(o => o.Capability, o => o.Enabled);
 
-        var parameters = new DialogParameters<AdminUserCapabilitiesDialog>
+        var parameters = new K7DialogParameters<AdminUserCapabilitiesDialog>
         {
             { x => x.UserName, user.UserName ?? user.Email ?? "" },
             { x => x.Role, user.Role },
             { x => x.Overrides, overrides }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<AdminUserCapabilitiesDialog>(L["CapabilitiesTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -106,23 +105,23 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.UpdateUserCapabilitiesAsync(user.Id, request);
-                Snackbar.Add(L["CapabilitiesUpdated"], Severity.Success);
+                Snackbar.Add(L["CapabilitiesUpdated"], K7Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }
 
     private async Task ConfirmDelete(UserDto user)
     {
-        var parameters = new DialogParameters<ConfirmDeleteUserDialog>
+        var parameters = new K7DialogParameters<ConfirmDeleteUserDialog>
         {
             { x => x.DisplayName, user.UserName ?? user.Email ?? L["DeleteFallbackName"] }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>(L["DeleteUserTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -131,24 +130,24 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.DeleteUserAsync(user.Id);
-                Snackbar.Add(L["UserDeleted"], Severity.Success);
+                Snackbar.Add(L["UserDeleted"], K7Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }
 
     private async Task OpenLibraryExclusionsDialog(UserDto user)
     {
-        var parameters = new DialogParameters<AdminUserLibraryExclusionsDialog>
+        var parameters = new K7DialogParameters<AdminUserLibraryExclusionsDialog>
         {
             { x => x.ExcludedLibraryIds, user.ExcludedLibraryIds }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<AdminUserLibraryExclusionsDialog>(L["LibraryAccessTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -162,24 +161,24 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.UpdateUserLibraryExclusionsAsync(user.Id, request);
-                Snackbar.Add(L["LibraryAccessUpdated"], Severity.Success);
+                Snackbar.Add(L["LibraryAccessUpdated"], K7Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }
 
     private async Task OpenMediaExclusionsDialog(UserDto user)
     {
-        var parameters = new DialogParameters<AdminUserMediaExclusionsDialog>
+        var parameters = new K7DialogParameters<AdminUserMediaExclusionsDialog>
         {
             { x => x.ExcludedMediaIds, user.ExcludedMediaIds }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<AdminUserMediaExclusionsDialog>(L["HiddenMediaTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -193,24 +192,24 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.UpdateUserMediaExclusionsAsync(user.Id, request);
-                Snackbar.Add(L["HiddenMediaUpdated"], Severity.Success);
+                Snackbar.Add(L["HiddenMediaUpdated"], K7Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }
 
     private async Task OpenRestrictionProfileDialog(UserDto user)
     {
-        var parameters = new DialogParameters<AdminUserRestrictionProfileDialog>
+        var parameters = new K7DialogParameters<AdminUserRestrictionProfileDialog>
         {
             { x => x.CurrentProfileId, user.ContentRestrictionProfileId }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<AdminUserRestrictionProfileDialog>(L["RestrictionProfileTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -220,62 +219,62 @@ public partial class AdminUsersPanel
             try
             {
                 await K7ServerService.AssignContentRestrictionProfileAsync(user.Id, profileId);
-                Snackbar.Add(L["RestrictionProfileUpdated"], Severity.Success);
+                Snackbar.Add(L["RestrictionProfileUpdated"], K7Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }
 
     private async Task OpenCreateUserDialog()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<CreateUserDialog>(L["CreateUserTitle"], options);
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<CreateUserDialog>(L["CreateUserTitle"], null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: UserDto createdUser })
         {
-            Snackbar.Add(string.Format(L["UserCreated"], createdUser.UserName), Severity.Success);
+            Snackbar.Add(string.Format(L["UserCreated"], createdUser.UserName), K7Severity.Success);
             await LoadData();
         }
     }
 
     private async Task OpenMergeUserDialog(UserDto user)
     {
-        var parameters = new DialogParameters<MergeUserDialog>
+        var parameters = new K7DialogParameters<MergeUserDialog>
         {
             { x => x.SourceUser, user },
             { x => x.AllUsers, _users }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<MergeUserDialog>(L["MergeUserTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
         {
-            Snackbar.Add(L["UserMerged"], Severity.Success);
+            Snackbar.Add(L["UserMerged"], K7Severity.Success);
             await LoadData();
         }
     }
 
     private async Task OpenResetPasswordDialog(UserDto user)
     {
-        var parameters = new DialogParameters<ResetPasswordDialog>
+        var parameters = new K7DialogParameters<ResetPasswordDialog>
         {
             { x => x.User, user }
         };
 
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<ResetPasswordDialog>(L["ResetPasswordTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
         {
-            Snackbar.Add(string.Format(L["PasswordReset"], user.UserName), Severity.Success);
+            Snackbar.Add(string.Format(L["PasswordReset"], user.UserName), K7Severity.Success);
         }
     }
 }

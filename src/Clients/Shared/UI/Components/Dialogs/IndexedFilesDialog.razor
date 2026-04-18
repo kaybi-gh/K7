@@ -6,39 +6,38 @@
 @inject IStringLocalizer<SharedResource> S
 @inject IStringLocalizer<IndexedFilesDialog> L
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="4">
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col">
             @foreach (var file in Media.IndexedFiles ?? [])
             {
                 var vMeta = file.FileMetadata as VideoFileMetadataDto;
-                <MudPaper Class="pa-4" Outlined="true">
-                    <MudStack Spacing="2">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                            <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@file.Name</MudText>
-                            <MudIconButton Icon="@Icons.Material.Filled.FindReplace" Size="Size.Small" OnClick="@(() => ReIdentifyFile(file.Id))" />
-                        </MudStack>
+                <div class="surface pa-4">
+                    <div class="d-flex flex-col">
+                        <div class="d-flex align-center justify-between">
+                            <p class="text-subtitle1" Style="font-weight: 600;">@file.Name</p>
+                            <button type="button" class="k7-icon-btn" @onclick="@(() => ReIdentifyFile(file.Id))" aria-label="re-identify"><i class="ph ph-magnifying-glass"></i></button>
+                        </div>
 
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="word-break: break-all;">@file.Path</MudText>
+                        <span class="text-caption" Color="secondary" Style="word-break: break-all;">@file.Path</span>
 
-                        <MudStack Row="true" Spacing="3" Wrap="Wrap.Wrap">
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@file.Extension</MudChip>
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@($"{file.Size / (1024 * 1024):N0} MB")</MudChip>
+                        <div class="d-flex">
+                            <K7Chip Size="sm" Variant="outlined">@file.Extension</K7Chip>
+                            <K7Chip Size="sm" Variant="outlined">@($"{file.Size / (1024 * 1024):N0} MB")</K7Chip>
                             @if (vMeta != null)
                             {
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@vMeta.Container</MudChip>
-                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">@vMeta.VideoResolution</MudChip>
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@string.Format(S["DurationHoursMinutes"], (int)vMeta.Duration.TotalHours, vMeta.Duration.Minutes)</MudChip>
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@($"{vMeta.VideoBitrate / 1000} kbps")</MudChip>
+                                <K7Chip Size="sm" Variant="outlined">@vMeta.Container</K7Chip>
+                                <K7Chip Size="sm" Color="primary" Variant="filled">@vMeta.VideoResolution</K7Chip>
+                                <K7Chip Size="sm" Variant="outlined">@string.Format(S["DurationHoursMinutes"], (int)vMeta.Duration.TotalHours, vMeta.Duration.Minutes)</K7Chip>
+                                <K7Chip Size="sm" Variant="outlined">@($"{vMeta.VideoBitrate / 1000} kbps")</K7Chip>
                             }
-                        </MudStack>
+                        </div>
 
                         @if (vMeta != null)
                         {
                             @if (vMeta.VideoTracks.Count > 0)
                             {
-                                <MudText Typo="Typo.body2" Style="font-weight: 600;" Class="mt-2">@L["VideoTracks"]</MudText>
-                                <MudSimpleTable Dense="true" Bordered="true" Style="overflow-x: auto;">
+                                <p class="text-sm mt-2"  Style="font-weight: 600;" >@L["VideoTracks"]</p>
+                                <table class="k7-table k7-table--dense">
                                     <thead>
                                         <tr>
                                             <th>#</th>
@@ -62,13 +61,13 @@
                                             </tr>
                                         }
                                     </tbody>
-                                </MudSimpleTable>
+                                </table>
                             }
 
                             @if (vMeta.AudioTracks.Count > 0)
                             {
-                                <MudText Typo="Typo.body2" Style="font-weight: 600;" Class="mt-2">@L["AudioTracks"]</MudText>
-                                <MudSimpleTable Dense="true" Bordered="true" Style="overflow-x: auto;">
+                                <p class="text-sm mt-2"  Style="font-weight: 600;" >@L["AudioTracks"]</p>
+                                <table class="k7-table k7-table--dense">
                                     <thead>
                                         <tr>
                                             <th>#</th>
@@ -92,13 +91,13 @@
                                             </tr>
                                         }
                                     </tbody>
-                                </MudSimpleTable>
+                                </table>
                             }
 
                             @if (vMeta.SubtitleTracks.Count > 0)
                             {
-                                <MudText Typo="Typo.body2" Style="font-weight: 600;" Class="mt-2">@L["SubtitleTracks"]</MudText>
-                                <MudSimpleTable Dense="true" Bordered="true" Style="overflow-x: auto;">
+                                <p class="text-sm mt-2"  Style="font-weight: 600;" >@L["SubtitleTracks"]</p>
+                                <table class="k7-table k7-table--dense">
                                     <thead>
                                         <tr>
                                             <th>#</th>
@@ -120,15 +119,14 @@
                                             </tr>
                                         }
                                     </tbody>
-                                </MudSimpleTable>
+                                </table>
                             }
                         }
-                    </MudStack>
-                </MudPaper>
+                    </div>
+                </div>
             }
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">@S["Cancel"]</MudButton>
-    </DialogActions>
-</MudDialog>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel" Variant="text">@S["Cancel"]</K7Button>
+    </div>

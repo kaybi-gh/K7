@@ -15,9 +15,9 @@
 @if (_loading)
 {
     <div class="season-page">
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-            <MudProgressCircular Indeterminate="true" />
-        </MudStack>
+        <div class="d-flex flex-col pa-16">
+            <K7Spinner />
+        </div>
     </div>
 }
 else if (_season is not null)
@@ -32,46 +32,46 @@ else if (_season is not null)
             <div class="season-header-info">
                 @if (_logoUrl is not null)
                 {
-                    <MudImage Style="max-width: 60vw; max-height: 120px;" ObjectFit="ObjectFit.ScaleDown" Src="@_logoUrl" Alt="@_season.SerieTitle" />
+                    <K7Image Style="max-width: 60vw; max-height: 120px;" ObjectFit="scale-down" Src="@_logoUrl" Alt="@_season.SerieTitle" />
                 }
                 else
                 {
-                    <MudText Typo="Typo.h3" Class="season-serie-title">@_season.SerieTitle?.ToUpper()</MudText>
+                    <h3>@_season.SerieTitle?.ToUpper()</h3>
                 }
-                <MudButton Variant="Variant.Text"
-                           StartIcon="@Icons.Material.Filled.ChevronLeft"
-                           Color="Color.Primary"
+                <K7Button Variant="text"
+                           StartIcon="caret-left"
+                           Color="primary"
                            Href="@($"/series/{SerieId}")"
                            Class="px-0">
                     @L["BackToSerie"]
-                </MudButton>
-                <MudText Typo="Typo.h4" Class="season-title">
+                </K7Button>
+                <h4>
                     @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
-                </MudText>
+                </h4>
 
                 @if (!string.IsNullOrEmpty(_season.Overview))
                 {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2" Style="max-width: 700px;">@_season.Overview</MudText>
+                    <p class="text-sm mt-2" Color="secondary" Style="max-width: 700px;">@_season.Overview</p>
                 }
 
-                <MudStack Row="true" Spacing="2" Class="mt-2">
+                <div class="d-flex mt-2">
                     @if (_previousSeasonNumber is not null)
                     {
-                        <MudButton Variant="Variant.Text"
-                                   StartIcon="@Icons.Material.Filled.ChevronLeft"
+                        <K7Button Variant="text"
+                                   StartIcon="caret-left"
                                    OnClick="GoToPreviousSeason">
                             @L["PreviousSeason"]
-                        </MudButton>
+                        </K7Button>
                     }
                     @if (_nextSeasonNumber is not null)
                     {
-                        <MudButton Variant="Variant.Text"
-                                   EndIcon="@Icons.Material.Filled.ChevronRight"
+                        <K7Button Variant="text"
+                                   EndIcon="caret-right"
                                    OnClick="GoToNextSeason">
                             @L["NextSeason"]
-                        </MudButton>
+                        </K7Button>
                     }
-                </MudStack>
+                </div>
             </div>
         </div>
 

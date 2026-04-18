@@ -1,40 +1,37 @@
-﻿
-<MudDialog>
-    <DialogContent>
+
+<div class="k7-dialog-content">
         @if (_loading)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <K7ProgressBar Indeterminate="true" />
         }
         else if (_users.Count == 0)
         {
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Aucun utilisateur.</MudText>
+            <p class="text-sm" Color="secondary">Aucun utilisateur.</p>
         }
         else
         {
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+            <p class="text-sm mb-3" Color="secondary">
                 Activez ou désactivez l'accès à cette librairie pour chaque utilisateur.
-            </MudText>
-            <MudStack Spacing="1">
+            </p>
+            <div class="d-flex flex-col">
                 @foreach (var user in _users)
                 {
                     var hasAccess = !_excludedUserIds.Contains(user.Id);
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body2">@(user.UserName ?? user.Email ?? "—")</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@user.Role</MudText>
-                        </MudStack>
-                        <MudSwitch T="bool" Value="@hasAccess" ValueChanged="@(v => ToggleAccess(user.Id, v))"
-                                   Color="Color.Primary" />
-                    </MudStack>
+                    <div class="d-flex align-center justify-between">
+                        <div class="d-flex flex-col">
+                            <p class="text-sm">@(user.UserName ?? user.Email ?? "-")</p>
+                            <span class="text-caption" Color="secondary">@user.Role</span>
+                        </div>
+                        <K7Switch Value="@hasAccess" ValueChanged="@(v => ToggleAccess(user.Id, v))" />
+                    </div>
                 }
-            </MudStack>
+            </div>
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Annuler</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="_saving">
-            @if (_saving) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">Annuler</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_saving">
+            @if (_saving) { <K7Spinner Size="sm" /> }
             Enregistrer
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

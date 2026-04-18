@@ -1,4 +1,4 @@
-using K7.Clients.Shared.Enums;
+﻿using K7.Clients.Shared.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -187,10 +187,10 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     private static string GetModeIcon(BrowseViewMode mode) => mode switch
     {
-        BrowseViewMode.Grid => Icons.Material.Outlined.GridView,
-        BrowseViewMode.Table => Icons.Material.Outlined.TableRows,
-        BrowseViewMode.List => Icons.Material.Outlined.ViewList,
-        _ => Icons.Material.Outlined.GridView
+        BrowseViewMode.Grid => "squares-four",
+        BrowseViewMode.Table => "rows",
+        BrowseViewMode.List => "list-bullets",
+        _ => "squares-four"
     };
 
     public async ValueTask DisposeAsync()

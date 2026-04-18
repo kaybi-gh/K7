@@ -5,97 +5,86 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudStack Row="true" Style="width: 100%" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4">
-    <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
-    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-        <MudTextField T="string"
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["PageTitle"]</h5>
+    <div class="d-flex align-center">
+        <K7TextField TValue="string"
                       @bind-Value="_searchText"
                       Placeholder="@L["SearchPlaceholder"]"
-                      Variant="Variant.Outlined"
-                      Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search"
-                      Immediate="true"
+                      Variant="outlined"
+                      Adornment="start"
+                      AdornmentName="magnifying-glass"
                       DebounceInterval="400"
                       OnDebounceIntervalElapsed="OnSearchChanged"
-                      Margin="Margin.Dense"
                       Style="max-width: 300px;" />
-    </MudStack>
-</MudStack>
+    </div>
+</div>
 
 @if (_loading)
 {
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudProgressCircular Indeterminate="true" />
-    </MudStack>
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
 }
 else if (_tracks.Count == 0)
 {
-    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-        <MudIcon Icon="@Icons.Material.Outlined.MusicNote" Style="font-size: 64px; opacity: 0.3;" />
-        <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
-    </MudStack>
+    <div class="d-flex flex-col pa-16">
+        <K7Icon Name="music-note" Style="font-size: 64px; opacity: 0.3;" />
+        <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
+    </div>
 }
 else
 {
     <div class="pa-4">
-        <MudTable Items="_tracks"
-                  Dense="true"
-                  Hover="true"
-                  Elevation="0"
-                  T="TrackViewModel"
-                  OnRowClick="OnTrackClick"
-                  RowClass="cursor-pointer"
-                  FixedHeader="true"
-                  Height="calc(100vh - 220px)">
+        <K7Table Items="_tracks"
+                  TItem="TrackViewModel"
+                  OnRowClick="@(args => OnTrackClick(args))"
+                  RowClass="cursor-pointer">
             <HeaderContent>
-                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.Title)">@S["Title"]</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.ArtistName ?? string.Empty)">@S["Artist"]</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.AlbumTitle ?? string.Empty)">@S["Album"]</MudTableSortLabel></MudTh>
-                <MudTh Style="width: 80px;">
-                    <MudTableSortLabel SortBy="new Func<TrackViewModel, object>(x => x.Duration)">
-                        <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Size="Size.Small" />
-                    </MudTableSortLabel>
-                </MudTh>
-                <MudTh Style="width: 130px;"></MudTh>
-                <MudTh Style="width: 50px;"></MudTh>
+                <th>@S["Title"]</th>
+                <th>@S["Artist"]</th>
+                <th>@S["Album"]</th>
+                <th style="width: 80px;"><K7Icon Name="clock" Size="sm" /></th>
+                <th style="width: 130px;"></th>
+                <th style="width: 50px;"></th>
             </HeaderContent>
             <RowTemplate>
-                <MudTd>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <td>
+                    <div class="d-flex align-center">
                         @if (context.IsPlaying)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.Equalizer" Size="Size.Small" Color="Color.Primary" />
+                            <K7Icon Name="equalizer" Size="sm" Color="primary" />
                         }
-                        <MudText Style="@(context.IsPlaying ? "color: var(--mud-palette-primary);" : "")">@context.Title</MudText>
-                    </MudStack>
-                </MudTd>
-                <MudTd>
+                        <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
+                    </div>
+                </td>
+                <td>
                     @if (context.ArtistPersonId.HasValue)
                     {
                         <a href="@($"/music/artists/{context.ArtistPersonId}")" class="track-link" @onclick:stopPropagation="true">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.ArtistName</MudText>
+                            <p class="text-sm" Color="secondary">@context.ArtistName</p>
                         </a>
                     }
                     else
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.ArtistName</MudText>
+                        <p class="text-sm" Color="secondary">@context.ArtistName</p>
                     }
-                </MudTd>
-                <MudTd>
+                </td>
+                <td>
                     <a href="@($"/music/albums/{context.AlbumId}")" class="track-link" @onclick:stopPropagation="true">
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.AlbumTitle</MudText>
+                        <p class="text-sm" Color="secondary">@context.AlbumTitle</p>
                     </a>
-                </MudTd>
-                <MudTd>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">@FormatTime(context.Duration)</MudText>
-                </MudTd>
-                <MudTd>
-                    <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.Id" Value="context.UserRating" Size="Size.Small" />
-                </MudTd>
-                <MudTd>
+                </td>
+                <td>
+                    <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
+                </td>
+                <td>
+                    <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
+                </td>
+                <td>
                     <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
-                </MudTd>
+                </td>
             </RowTemplate>
-        </MudTable>
+        </K7Table>
     </div>
 }

@@ -1,17 +1,15 @@
 using K7.Shared.Dtos.Entities.Playlists;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
 public partial class AddToPlaylistDialog
 {
     [Inject] private IPlaylistService K7ServerService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
-    [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     [Parameter]
     public Guid MediaId { get; set; }
@@ -37,19 +35,19 @@ public partial class AddToPlaylistDialog
         try
         {
             await K7ServerService.AddPlaylistItemAsync(playlist.Id, MediaId);
-            Snackbar.Add(string.Format(L["AddedToPlaylist"], playlist.Title), Severity.Success);
-            MudDialog.Close(DialogResult.Ok(playlist.Id));
+            Snackbar.Add(string.Format(L["AddedToPlaylist"], playlist.Title), K7Severity.Success);
+            Dialog.Close(K7DialogResult.Ok(playlist.Id));
         }
         catch
         {
-            Snackbar.Add(L["AddError"], Severity.Error);
+            Snackbar.Add(L["AddError"], K7Severity.Error);
         }
     }
 
     private async Task CreateNewPlaylist()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<CreatePlaylistDialog>(L["NewPlaylistTitle"], options);
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<CreatePlaylistDialog>(L["NewPlaylistTitle"], null, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false, Data: Guid newId })
@@ -57,13 +55,13 @@ public partial class AddToPlaylistDialog
             try
             {
                 await K7ServerService.AddPlaylistItemAsync(newId, MediaId);
-                Snackbar.Add(L["AddedToNewPlaylist"], Severity.Success);
-                MudDialog.Close(DialogResult.Ok(newId));
+                Snackbar.Add(L["AddedToNewPlaylist"], K7Severity.Success);
+                Dialog.Close(K7DialogResult.Ok(newId));
             }
             catch
             {
-                Snackbar.Add(L["CreatedButAddFailed"], Severity.Warning);
-                MudDialog.Close(DialogResult.Ok(newId));
+                Snackbar.Add(L["CreatedButAddFailed"], K7Severity.Warning);
+                Dialog.Close(K7DialogResult.Ok(newId));
             }
         }
         else
@@ -72,5 +70,5 @@ public partial class AddToPlaylistDialog
         }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private void Cancel() => Dialog.Cancel();
 }

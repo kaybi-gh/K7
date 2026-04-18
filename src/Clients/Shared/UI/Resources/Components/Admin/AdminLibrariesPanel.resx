@@ -28,10 +28,10 @@
   <data name="AriaUserAccess" xml:space="preserve"><value>Accès utilisateurs</value></data>
   <data name="NewLibraryTitle" xml:space="preserve"><value>Nouvelle librairie</value></data>
   <data name="IndexStarted" xml:space="preserve"><value>Indexation de « {0} » lancée.</value></data>
-  <data name="AccessTitle" xml:space="preserve"><value>Accès — {0}</value></data>
+  <data name="AccessTitle" xml:space="preserve"><value>Accès - {0}</value></data>
   <data name="AriaEdit" xml:space="preserve"><value>Modifier</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="EditTitle" xml:space="preserve"><value>Modifier — {0}</value></data>
+  <data name="EditTitle" xml:space="preserve"><value>Modifier - {0}</value></data>
   <data name="LibraryUpdated" xml:space="preserve"><value>Librairie mise à jour.</value></data>
   <data name="DeleteDialogTitle" xml:space="preserve"><value>Supprimer la librairie</value></data>
   <data name="DeleteDialogMessage" xml:space="preserve"><value>Êtes-vous sûr de vouloir supprimer la librairie « {0} » ? Cette action est irréversible.</value></data>

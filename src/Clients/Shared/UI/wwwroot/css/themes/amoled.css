@@ -1,0 +1,34 @@
+/* K7 AMOLED Theme */
+[data-theme="amoled"] {
+    color-scheme: dark;
+
+    --color-bg:            #000000;
+    --color-surface:       #0A0A0A;
+    --color-surface-2:     #141414;    --color-surface-hover: rgba(255,255,255,.05);    --color-drawer:        #000000;
+    --color-bg-gray:       #050505;
+
+    --color-accent:        #E5A00D;
+    --color-accent-hover:  #f0b030;
+    --color-accent-fg:     #000000;
+
+    --color-text:          #FFFFFF;
+    --color-text-secondary:#888888;
+    --color-text-disabled: #444444;
+    --color-text-on-accent:#000000;
+
+    --color-success:       #4DB288;
+    --color-error:         #CF6679;
+    --color-warning:       #E5A00D;
+    --color-info:          #4DA8CF;
+
+    --color-border:        #1C1C1C;
+    --color-border-subtle: rgba(255,255,255,.05);
+
+    --color-focus:         #E5A00D;
+    --focus-ring:          0 0 0 2px var(--color-focus);
+
+    --color-overlay:       rgba(0,0,0,.88);
+
+    --scrollbar-thumb:     #1C1C1C;
+    --scrollbar-track:     transparent;
+}

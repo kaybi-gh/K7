@@ -1,74 +1,70 @@
-﻿@inject IStringLocalizer<AdminDevicesPanel> L
+@inject IStringLocalizer<AdminDevicesPanel> L
 
 @if (_isLoading)
 {
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    <K7ProgressBar Indeterminate="true" />
 }
 else if (_devices is null || _devices.TotalCount == 0)
 {
-    <MudStack AlignItems="AlignItems.Center" Class="pa-8">
-        <MudIcon Icon="@Icons.Material.Filled.DevicesOther" Size="Size.Large" Color="Color.Secondary" />
-        <MudText Typo="Typo.body1" Color="Color.Secondary">@L["NoDevices"]</MudText>
-    </MudStack>
+    <div class="d-flex flex-col pa-8">
+        <K7Icon Name="monitor-play" Size="lg" Color="secondary" />
+        <p Color="secondary">@L["NoDevices"]</p>
+    </div>
 }
 else
 {
-    <MudStack Spacing="3" Class="pa-4">
-        <MudText Typo="Typo.body2" Color="Color.Secondary">
+    <div class="d-flex flex-col pa-4">
+        <p class="text-sm" Color="secondary">
             @(string.Format(L["DeviceCount"], _devices.TotalCount))
-        </MudText>
+        </p>
 
         @foreach (var device in _devices.Items!)
         {
             var isCurrent = IsCurrentDevice(device);
 
-            <MudCard Elevation="0" Outlined="true" Class="@(isCurrent ? "current-device" : "")">
-                <MudCardContent>
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                        <MudIcon Icon="@GetDeviceIcon(device.DeviceType)" Size="Size.Large" Color="@(isCurrent ? Color.Primary : Color.Default)" />
+            <div class="k7-card k7-card--outlined @(isCurrent ? "current-device" : "")">
+                <div class="k7-card-content">
+                    <div class="d-flex align-center">
+                        <K7Icon Name="@GetDeviceIcon(device.DeviceType)" Size="lg" Color="@(isCurrent ? "primary" : "default")" />
 
-                        <MudStack Spacing="0" Style="flex: 1;">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                <MudText Typo="Typo.subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</MudText>
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@device.ClientType</MudChip>
+                        <div class="d-flex flex-col" style="flex: 1;">
+                            <div class="d-flex align-center">
+                                <p class="text-subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</p>
+                                <K7Chip Size="sm" Variant="outlined" Color="default">@device.ClientType</K7Chip>
                                 @if (isCurrent)
                                 {
-                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary">@L["ThisDevice"]</MudChip>
+                                    <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisDevice"]</K7Chip>
                                 }
-                            </MudStack>
+                            </div>
 
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            <p class="text-sm" Color="secondary">
                                 @device.OperatingSystem @device.OperatingSystemVersion
                                 @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
                                 {
-                                    <text> — @($"{device.DisplayWidth:0}×{device.DisplayHeight:0}")</text>
+                                    <text> - @($"{device.DisplayWidth:0}×{device.DisplayHeight:0}")</text>
                                 }
-                            </MudText>
-                        </MudStack>
+                            </p>
+                        </div>
 
-                        <MudStack Spacing="0" AlignItems="AlignItems.End">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@L["LastSeen"]</MudText>
-                            <MudText Typo="Typo.body2">@device.LastSeen.LocalDateTime.ToString("g")</MudText>
-                        </MudStack>
+                        <div class="d-flex flex-col">
+                            <span class="text-caption" Color="secondary">@L["LastSeen"]</span>
+                            <p class="text-sm">@device.LastSeen.LocalDateTime.ToString("g")</p>
+                        </div>
 
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error"
-                                       Size="Size.Small"
-                                       title="@L["DeleteDevice"]"
-                                       OnClick="@(() => DeleteDeviceAsync(device))" />
-                    </MudStack>
+                        <button type="button" class="k7-icon-btn" @onclick="@(() => DeleteDeviceAsync(device))" aria-label="@L["DeleteDevice"]"><i class="ph ph-trash"></i></button>
+                    </div>
 
                     @if (device.Users.Count > 0)
                     {
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-2">
-                            <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Secondary" />
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        <div class="d-flex align-center mt-2">
+                            <K7Icon Name="users" Size="sm" Color="secondary" />
+                            <span class="text-caption" Color="secondary">
                                 @(string.Format(L["UserCount"], device.Users.Count))
-                            </MudText>
-                        </MudStack>
+                            </span>
+                        </div>
                     }
-                </MudCardContent>
-            </MudCard>
+                </div>
+            </div>
         }
-    </MudStack>
+    </div>
 }

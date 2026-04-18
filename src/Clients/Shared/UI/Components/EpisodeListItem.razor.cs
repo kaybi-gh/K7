@@ -1,8 +1,7 @@
-using K7.Shared.Dtos.Entities.Medias;
+﻿using K7.Shared.Dtos.Entities.Medias;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -10,7 +9,7 @@ public partial class EpisodeListItem
 {
     [Inject] private IMediaService K7ServerService { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public required LiteSerieEpisodeDto Episode { get; set; }
@@ -62,11 +61,11 @@ public partial class EpisodeListItem
     private async Task OpenIndexedFilesDialogAsync()
     {
         if (_fullEpisode is null) return;
-        var parameters = new DialogParameters<IndexedFilesDialog>
+        var parameters = new K7DialogParameters<IndexedFilesDialog>
         {
             { x => x.Media, _fullEpisode }
         };
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
         await DialogService.ShowAsync<IndexedFilesDialog>(S["IndexedVersions"], parameters, options);
     }
 }

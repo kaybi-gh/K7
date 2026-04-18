@@ -7,7 +7,7 @@
 @if (PlayerService.IsVisible)
 {
     @* On Windows Native, the WebView2 is opaque (WinUI3 bug) so the MediaElement
-       is placed in front with native controls — no Blazor overlay needed. *@
+       is placed in front with native controls - no Blazor overlay needed. *@
     var useNativeControls = DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Native
         && System.OperatingSystem.IsWindows();
 

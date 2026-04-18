@@ -1,30 +1,26 @@
 @inject IStringLocalizer<EditLibraryDialog> L
 
-<MudDialog>
-    <DialogContent>
-        <MudStack Spacing="4">
-            <MudTextField @bind-Value="Title" Label="@L["TitleLabel"]" Variant="Variant.Outlined"
+<div class="k7-dialog-content">
+        <div class="d-flex flex-col">
+            <K7TextField @bind-Value="Title" Label="@L["TitleLabel"]" Variant="outlined"
                           Required="true" RequiredError="@L["TitleRequired"]" />
 
-            <MudSelect T="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="Variant.Outlined"
-                       Required="true" RequiredError="@L["ProviderRequired"]">
+            <K7Select TValue="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
                 @foreach (var provider in AvailableProviders)
                 {
-                    <MudSelectItem T="string" Value="@provider.ProviderName">@provider.ProviderName</MudSelectItem>
+                    <K7SelectItem TValue="string" Value="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
                 }
-            </MudSelect>
+            </K7Select>
 
-            <MudNumericField T="int?" @bind-Value="MetadataRefreshIntervalDays"
-                             Label="@L["MetadataRefreshLabel"]" Variant="Variant.Outlined"
-                             Min="0" Max="365"
+            <K7TextField TValue="int?" Type="number" @bind-Value="MetadataRefreshIntervalDays"
+                             Label="@L["MetadataRefreshLabel"]" Variant="outlined"
                              HelperText="@L["MetadataRefreshHelper"]" />
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@L["Cancel"]</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit"
                    Disabled="@(!CanSubmit)">
             @L["Save"]
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        </K7Button>
+    </div>

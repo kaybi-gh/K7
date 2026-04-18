@@ -1,16 +1,15 @@
-using K7.Server.Domain.Enums;
+﻿using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
 
 namespace K7.Clients.Shared.UI.Components.Admin;
 
 public partial class AdminRestrictionsPanel
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
-    [Inject] private IDialogService DialogService { get; set; } = default!;
-    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private bool _loading = true;
     private List<ContentRestrictionProfileDto> _profiles = [];
@@ -39,7 +38,7 @@ public partial class AdminRestrictionsPanel
 
     private async Task OpenCreateDialog()
     {
-        var parameters = new DialogParameters<AdminRestrictionProfileDialog>
+        var parameters = new K7DialogParameters<AdminRestrictionProfileDialog>
         {
             { x => x.IsNew, true }
         };
@@ -48,7 +47,7 @@ public partial class AdminRestrictionsPanel
 
     private async Task OpenEditDialog(ContentRestrictionProfileDto profile)
     {
-        var parameters = new DialogParameters<AdminRestrictionProfileDialog>
+        var parameters = new K7DialogParameters<AdminRestrictionProfileDialog>
         {
             { x => x.IsNew, false },
             { x => x.ProfileId, profile.Id },
@@ -67,7 +66,7 @@ public partial class AdminRestrictionsPanel
 
     private async Task CreateFromTemplate(TemplateDefinition template)
     {
-        var parameters = new DialogParameters<AdminRestrictionProfileDialog>
+        var parameters = new K7DialogParameters<AdminRestrictionProfileDialog>
         {
             { x => x.IsNew, true },
             { x => x.Name, L[template.Name] },
@@ -83,9 +82,9 @@ public partial class AdminRestrictionsPanel
         await ShowDialog(parameters);
     }
 
-    private async Task ShowDialog(DialogParameters<AdminRestrictionProfileDialog> parameters)
+    private async Task ShowDialog(K7DialogParameters<AdminRestrictionProfileDialog> parameters)
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<AdminRestrictionProfileDialog>(L["ProfileTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -95,22 +94,22 @@ public partial class AdminRestrictionsPanel
 
     private async Task PreviewRestrictedMedias(ContentRestrictionProfileDto profile)
     {
-        var parameters = new DialogParameters<AdminRestrictedMediasDialog>
+        var parameters = new K7DialogParameters<AdminRestrictedMediasDialog>
         {
             { x => x.ProfileId, profile.Id },
             { x => x.ProfileName, profile.Name }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<AdminRestrictedMediasDialog>(L["RestrictedMediaTitle"], parameters, options);
     }
 
     private async Task ConfirmDelete(ContentRestrictionProfileDto profile)
     {
-        var parameters = new DialogParameters<ConfirmDeleteUserDialog>
+        var parameters = new K7DialogParameters<ConfirmDeleteUserDialog>
         {
             { x => x.DisplayName, profile.Name }
         };
-        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<ConfirmDeleteUserDialog>(L["DeleteProfileTitle"], parameters, options);
         var result = await dialog.Result;
 
@@ -119,12 +118,12 @@ public partial class AdminRestrictionsPanel
             try
             {
                 await K7ServerService.DeleteContentRestrictionProfileAsync(profile.Id);
-                Snackbar.Add(L["ProfileDeleted"], Severity.Success);
+                Snackbar.Add(L["ProfileDeleted"], K7Severity.Success);
                 await LoadData();
             }
             catch (Exception ex)
             {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), Severity.Error);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }

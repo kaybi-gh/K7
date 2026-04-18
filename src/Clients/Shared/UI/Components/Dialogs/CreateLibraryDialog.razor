@@ -1,88 +1,89 @@
 @inject IStringLocalizer<CreateLibraryDialog> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudDialog>
-    <DialogContent>
+<div class="k7-dialog-content">
         @* Step indicators *@
-        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center" Class="mb-6">
-            <MudChip T="string" Color="@(_activeStep >= 0 ? Color.Primary : Color.Default)" Size="Size.Small">@L["Step1"]</MudChip>
-            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
-            <MudChip T="string" Color="@(_activeStep >= 1 ? Color.Primary : Color.Default)" Size="Size.Small">@L["Step2"]</MudChip>
-            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
-            <MudChip T="string" Color="@(_activeStep >= 2 ? Color.Primary : Color.Default)" Size="Size.Small">@L["Step3"]</MudChip>
-        </MudStack>
+        <div class="d-flex mb-6">
+            <K7Chip Color="@(_activeStep >= 0 ? "primary" : "default")" Size="sm">@L["Step1"]</K7Chip>
+            <K7Icon Name="caret-right" Size="sm" />
+            <K7Chip Color="@(_activeStep >= 1 ? "primary" : "default")" Size="sm">@L["Step2"]</K7Chip>
+            <K7Icon Name="caret-right" Size="sm" />
+            <K7Chip Color="@(_activeStep >= 2 ? "primary" : "default")" Size="sm">@L["Step3"]</K7Chip>
+        </div>
 
         @* Step 1: Choose media type *@
         @if (_activeStep == 0)
         {
-            <MudText Typo="Typo.h6" Class="mb-4">@L["SelectContentType"]</MudText>
-            <MudGrid Spacing="4" Justify="Justify.Center">
-                <MudItem xs="12" sm="4">
-                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Movie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Movie)">
-                        <MudCardContent Class="d-flex flex-column align-center pa-6">
-                            <MudIcon Icon="@Icons.Material.Filled.Theaters" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
-                            <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeMovies"]</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["MovieDescription"]</MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Serie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Serie)">
-                        <MudCardContent Class="d-flex flex-column align-center pa-6">
-                            <MudIcon Icon="@Icons.Material.Filled.Tv" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
-                            <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeSeries"]</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["SeriesDescription"]</MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudCard Outlined="true" Class="@GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Music)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Music)">
-                        <MudCardContent Class="d-flex flex-column align-center pa-6">
-                            <MudIcon Icon="@Icons.Material.Filled.MusicNote" Size="Size.Large" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
-                            <MudText Typo="Typo.h6" Class="mt-2">@S["MediaTypeMusic"]</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["MusicDescription"]</MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            </MudGrid>
+            <h6>@L["SelectContentType"]</h6>
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: var(--space-3);">
+                <div>
+                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Movie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Movie)">
+                        <div class="d-flex flex-column align-center pa-6">
+                            <K7Icon Name="film-strip" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
+                            <h6>@S["MediaTypeMovies"]</h6>
+                            <p class="text-sm" Color="secondary">@L["MovieDescription"]</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Serie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Serie)">
+                        <div class="d-flex flex-column align-center pa-6">
+                            <K7Icon Name="television" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
+                            <h6>@S["MediaTypeSeries"]</h6>
+                            <p class="text-sm" Color="secondary">@L["SeriesDescription"]</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Music)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Music)">
+                        <div class="d-flex flex-column align-center pa-6">
+                            <K7Icon Name="music-note" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
+                            <h6>@S["MediaTypeMusic"]</h6>
+                            <p class="text-sm" Color="secondary">@L["MusicDescription"]</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
 
         @* Step 2: Name and path *@
         @if (_activeStep == 1)
         {
-            <MudStack Spacing="4" Class="mt-2">
-                <MudTextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="Variant.Outlined"
+            <div class="d-flex flex-col mt-2">
+                <K7TextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="outlined"
                               Required="true" RequiredError="@L["NameRequired"]"
                               Placeholder="@L["NamePlaceholder"]" />
 
-                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
-                    <MudTextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="Variant.Outlined"
+                <div class="d-flex">
+                    <K7TextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="outlined"
                                   Required="true" RequiredError="@L["PathRequired"]"
                                   Placeholder="@L["PathPlaceholder"]"
                                   HelperText="@L["PathHelper"]"
                                   Style="flex: 1;" />
-                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="BrowseFolderAsync" Class="mb-6">
+                    <K7Button Variant="outlined" StartIcon="folder" OnClick="BrowseFolderAsync" Class="mb-6">
                         @L["Browse"]
-                    </MudButton>
-                </MudStack>
+                    </K7Button>
+                </div>
 
-                <MudSelect T="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="Variant.Outlined"
-                           Required="true" RequiredError="@L["ProviderRequired"]">
+                <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
                     @foreach (var provider in _availableProviders)
                     {
-                        <MudSelectItem T="string" Value="@provider.ProviderName">@provider.ProviderName</MudSelectItem>
+                        <K7SelectItem TValue="string" Value="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
                     }
-                </MudSelect>
+                </K7Select>
 
-                <MudCheckBox @bind-Value="_triggerIndexing" Label="@L["AutoIndex"]" Color="Color.Primary" />
-            </MudStack>
+                <div class="d-flex align-center mt-2">
+                    <K7Switch @bind-Value="_triggerIndexing" />
+                    <label class="text-sm ml-2">@L["AutoIndex"]</label>
+                </div>
+            </div>
         }
 
         @* Step 3: Summary *@
         @if (_activeStep == 2)
         {
-            <MudText Typo="Typo.h6" Class="mb-4">@L["SummaryTitle"]</MudText>
-            <MudSimpleTable Dense="true" Bordered="true" Class="mb-4">
+            <h6>@L["SummaryTitle"]</h6>
+            <table class="k7-table k7-table--dense">
                 <tbody>
                     <tr>
                         <td><strong>@S["Name"]</strong></td>
@@ -91,7 +92,7 @@
                     <tr>
                         <td><strong>@S["Type"]</strong></td>
                         <td>
-                            <MudChip T="string" Color="Color.Primary" Size="Size.Small">@GetMediaTypeLabel(_selectedMediaType)</MudChip>
+                            <K7Chip Color="primary" Size="sm">@GetMediaTypeLabel(_selectedMediaType)</K7Chip>
                         </td>
                     </tr>
                     <tr>
@@ -107,37 +108,36 @@
                         <td>@(_triggerIndexing ? S["Yes"] : S["No"])</td>
                     </tr>
                 </tbody>
-            </MudSimpleTable>
+            </table>
 
             @if (_isSubmitting)
             {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                <K7ProgressBar Indeterminate="true" />
             }
         }
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">@S["Cancel"]</MudButton>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
         @if (_activeStep > 0)
         {
-            <MudButton OnClick="PreviousStep" Variant="Variant.Outlined">@S["Previous"]</MudButton>
+            <K7Button OnClick="PreviousStep" Variant="outlined">@S["Previous"]</K7Button>
         }
         @if (_activeStep < 2)
         {
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="NextStep" Disabled="!CanAdvance()">@S["Next"]</MudButton>
+            <K7Button Color="primary" Variant="filled" OnClick="NextStep" Disabled="!CanAdvance()">@S["Next"]</K7Button>
         }
         else
         {
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SubmitAsync" Disabled="_isSubmitting">
+            <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync" Disabled="_isSubmitting">
                 @if (_isSubmitting)
                 {
-                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                    <MudText Class="ms-2">@L["Creating"]</MudText>
+                    <K7Spinner Size="sm" />
+                    <span>@L["Creating"]</span>
                 }
                 else
                 {
-                    <MudText>@L["Submit"]</MudText>
+                    <span>@L["Submit"]</span>
                 }
-            </MudButton>
+            </K7Button>
         }
-    </DialogActions>
-</MudDialog>
+    </div>

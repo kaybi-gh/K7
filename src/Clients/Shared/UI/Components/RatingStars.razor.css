@@ -1,0 +1,23 @@
+.rating-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.rating-stars .k7-icon-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.rating-stars .k7-icon-btn:hover {
+    color: var(--color-warning, #f59e0b);
+    transform: scale(1.15);
+    background: transparent;
+}
+
+.rating-stars .star--selected {
+    color: var(--color-warning, #f59e0b);
+}

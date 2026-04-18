@@ -2,8 +2,6 @@
 @using K7.Shared.Dtos.Entities.Playlists
 @inject IPlaylistService K7ServerService
 @inject IK7ServerService ApiClient
-@inject IDialogService DialogService
-@inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<Playlists> L
 @inject IStringLocalizer<SharedResource> S
@@ -17,58 +15,58 @@
               DefaultSpacing="8"
               GridItemAspectRatio="1.3f">
     <ToolbarContent>
-        <MudText Typo="Typo.h5">@L["PageTitle"]</MudText>
-        <MudSpacer />
-        <MudMenu Label="@L["Presets"]" Variant="Variant.Outlined" Color="Color.Primary"
-                 StartIcon="@Icons.Material.Filled.Lightbulb" Dense="true">
-            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.MostPlayed)">@L["PresetMostPlayed"]</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.NeverPlayed)">@L["PresetNeverPlayed"]</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.HighlyRated)">@L["PresetHighlyRated"]</MudMenuItem>
-            <MudMenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">@L["PresetRecentlyPlayed"]</MudMenuItem>
-        </MudMenu>
-        <MudMenu Label="@L["NewMenu"]" Variant="Variant.Filled" Color="Color.Primary"
-                 StartIcon="@Icons.Material.Filled.Add" Dense="true">
-            <MudMenuItem Icon="@Icons.Material.Filled.QueueMusic" OnClick="OpenCreatePlaylistDialog">Playlist</MudMenuItem>
-            <MudMenuItem Icon="@Icons.Material.Filled.AutoAwesome" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</MudMenuItem>
-        </MudMenu>
+        <h5>@L["PageTitle"]</h5>
+        <div class="flex-1"></div>
+        <K7Menu Label="@L["Presets"]" Variant="outlined" Color="primary"
+                 StartIcon="lightbulb">
+            <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</K7MenuItem>
+            <K7MenuItem OnClick="() => CreatePreset(Preset.MostPlayed)">@L["PresetMostPlayed"]</K7MenuItem>
+            <K7MenuItem OnClick="() => CreatePreset(Preset.NeverPlayed)">@L["PresetNeverPlayed"]</K7MenuItem>
+            <K7MenuItem OnClick="() => CreatePreset(Preset.HighlyRated)">@L["PresetHighlyRated"]</K7MenuItem>
+            <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">@L["PresetRecentlyPlayed"]</K7MenuItem>
+        </K7Menu>
+        <K7Menu Label="@L["NewMenu"]" Variant="filled" Color="primary"
+                 StartIcon="plus">
+            <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
+            <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+        </K7Menu>
     </ToolbarContent>
     <EmptyContent>
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pa-16">
-            <MudIcon Icon="@Icons.Material.Outlined.QueueMusic" Style="font-size: 64px; opacity: 0.3;" />
-            <MudText Typo="Typo.h6" Color="Color.Default" Style="opacity: 0.5;">@L["None"]</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">@L["EmptyHint"]</MudText>
-        </MudStack>
+        <div class="d-flex flex-col pa-16">
+            <K7Icon Name="music-notes-simple" Style="font-size: 64px; opacity: 0.3;" />
+            <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
+            <p class="text-sm" Color="secondary">@L["EmptyHint"]</p>
+        </div>
     </EmptyContent>
     <GridTemplate Context="playlist">
-        <MudCard Outlined="true" Class="playlist-card" tabindex="0" @onclick="() => GoToPlaylist(playlist)" @onkeydown="(e) => OnPlaylistKeyDown(e, playlist)" Style="cursor: pointer;">
-            <MudCardContent>
-                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+        <div class="k7-card k7-card--outlined playlist-card" tabindex="0" @onclick="() => GoToPlaylist(playlist)" @onkeydown="(e) => OnPlaylistKeyDown(e, playlist)" Style="cursor: pointer;">
+            <div class="k7-card-content">
+                <div class="d-flex flex-col">
                     @if (playlist.CoverPicture is not null)
                     {
-                        <MudImage Src="@GetCoverUrl(playlist)"
-                                  Width="120" Height="120"
-                                  ObjectFit="ObjectFit.Cover"
+                        <K7Image Src="@GetCoverUrl(playlist)"
+                                  Width="120"
+                                  ObjectFit="cover"
                                   Class="rounded"
                                   loading="lazy" />
                     }
                     else
                     {
                         <div class="playlist-cover-placeholder">
-                            <MudIcon Icon="@(playlist.IsSmartPlaylist ? Icons.Material.Filled.AutoAwesome : Icons.Material.Filled.QueueMusic)"
+                            <K7Icon Name="@(playlist.IsSmartPlaylist ? "sparkle" : "music-notes-simple")"
                                      Style="font-size: 48px; opacity: 0.3;" />
                         </div>
                     }
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="playlist-title">@playlist.Title</MudText>
+                    <div class="d-flex align-center">
+                        <p class="text-subtitle1 playlist-title text-center">@playlist.Title</p>
                         @if (playlist.IsSmartPlaylist)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Color="Color.Secondary" />
+                            <K7Icon Name="sparkle" Size="sm" Color="secondary" />
                         }
-                    </MudStack>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">@playlist.ItemCount @S["Tracks"]</MudText>
-                </MudStack>
-            </MudCardContent>
-        </MudCard>
+                    </div>
+                    <span class="text-caption" Color="secondary">@playlist.ItemCount @S["Tracks"]</span>
+                </div>
+            </div>
+        </div>
     </GridTemplate>
 </BrowseView>

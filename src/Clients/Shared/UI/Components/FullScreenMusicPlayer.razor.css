@@ -1,4 +1,4 @@
-.fullscreen-player {
+﻿.fullscreen-player {
     position: fixed;
     inset: 0;
     z-index: 1200;
@@ -156,7 +156,7 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: var(--mud-palette-primary);
+    background: var(--color-accent);
     transition: width 0.1s linear;
 }
 
@@ -175,7 +175,7 @@
 }
 
 .seek-bar:focus-visible {
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 
@@ -195,7 +195,7 @@
 }
 
 .seek-current {
-    background: var(--mud-palette-primary);
+    background: var(--color-accent);
 }
 
 .seek-thumb {
@@ -204,7 +204,7 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: var(--mud-palette-primary);
+    background: var(--color-accent);
     transform: translate(-50%, -50%);
     pointer-events: none;
     opacity: 0;
@@ -299,7 +299,7 @@
 }
 
 .queue-item:focus-visible {
-    outline: 2px solid var(--mud-palette-primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: -2px;
 }
 
@@ -351,7 +351,7 @@
 }
 
 .queue-item-current .queue-item-title {
-    color: var(--mud-palette-primary);
+    color: var(--color-accent);
 }
 
 .queue-item-artist {

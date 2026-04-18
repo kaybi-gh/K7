@@ -1,217 +1,85 @@
+﻿@using K7.Server.Domain.Enums
 @implements IDisposable
 @inject IStringLocalizer<AdminBackgroundTasksPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<MudStack Spacing="4">
-    @* Summary cards *@
+<div class="d-flex flex-col" style="gap: var(--space-4);">
     <div aria-live="polite">
         @if (_summary is not null)
         {
-            <MudGrid Spacing="2">
-                <MudItem xs="6" sm="4" md="2">
-                    <MudPaper Class="@($"pa-3 cursor-pointer summary-card {(_selectedStatus is null ? "summary-card-active" : "")}")"
-                              Outlined="true" @onclick="@(() => OnStatusFilterChanged(null))">
-                        <MudText Typo="Typo.h5">@_summary.TotalCount</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["FilterAll"]</MudText>
-                    </MudPaper>
-                </MudItem>
+            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-2);">
+                <div class="surface cursor-pointer summary-card" @onclick="@(() => OnStatusFilterChanged(null))">
+                    <h5>@_summary.TotalCount</h5>
+                    <span class="text-caption" style="color: var(--color-text-muted);">@L["FilterAll"]</span>
+                </div>
                 @foreach (var status in _allStatuses)
                 {
                     var count = _summary.StatusCounts.FirstOrDefault(s => s.Status == status)?.Count ?? 0;
-                    <MudItem xs="6" sm="4" md="2">
-                        <MudPaper Class="@($"pa-3 cursor-pointer summary-card {(_selectedStatus == status ? "summary-card-active" : "")}")"
-                                  Outlined="true" @onclick="@(() => OnStatusFilterChanged(status))">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                <MudIcon Icon="@GetStatusIcon(status)" Size="Size.Small" Color="@BackgroundTaskStatusHelper.GetColor(status)" />
-                                <MudText Typo="Typo.h5">@count</MudText>
-                            </MudStack>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@GetStatusLabel(status)</MudText>
-                        </MudPaper>
-                    </MudItem>
+                    <div class="surface cursor-pointer summary-card" @onclick="@(() => OnStatusFilterChanged(status))">
+                        <div class="d-flex align-center" style="gap: var(--space-2);">
+                            <K7Icon Name="@GetStatusIcon(status)" Size="sm" />
+                            <h5>@count</h5>
+                        </div>
+                        <span class="text-caption" style="color: var(--color-text-muted);">@GetStatusLabel(status)</span>
+                    </div>
                 }
-            </MudGrid>
+            </div>
         }
     </div>
 
-    @* Task list *@
-    <MudPaper Class="pa-4" Outlined="true">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
-            <MudText Typo="Typo.h6">@L["TasksTitle"]</MudText>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                <MudIconButton Icon="@Icons.Material.Filled.Refresh" OnClick="LoadTasksAsync"
-                               Size="Size.Small" Color="Color.Primary" aria-label="@L["Refresh"]" />
-                <MudIconButton Icon="@Icons.Material.Filled.Settings" OnClick="@(() => _settingsDrawerOpen = true)"
-                               Size="Size.Small" Color="Color.Default" aria-label="@L["SettingsTitle"]" />
-            </MudStack>
-        </MudStack>
-
-        @* Task type filter *@
-        @if (_selectedTaskType is not null)
+    @if (_tasks is not null)
+    {
+        @if (_tasks.Items is null || _tasks.Items.Count == 0)
         {
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-2">
-                <MudChip T="string" Size="Size.Small" Color="Color.Primary" OnClose="@(() => OnTaskTypeFilterChanged(null))">
-                    @GetTaskTypeLabel(_selectedTaskType)
-                </MudChip>
-            </MudStack>
-        }
-
-        <div aria-live="polite">
-            @if (_isLoadingTasks)
-            {
-                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-            }
-            else if (_tasks?.Items is null or { Count: 0 })
-            {
-                <MudText Color="Color.Secondary" Typo="Typo.body2" Class="pa-4 text-center">@L["NoTasks"]</MudText>
-            }
-            else
-            {
-                <MudTable Items="_tasks.Items" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
-                    <HeaderContent>
-                        <MudTh>
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                <MudText>@L["ColName"]</MudText>
-                                <MudMenu Icon="@Icons.Material.Filled.FilterList" Size="Size.Small" Dense="true"
-                                         Color="@(_selectedTaskType is not null ? Color.Primary : Color.Default)"
-                                         aria-label="@L["FilterByType"]">
-                                    <MudMenuItem OnClick="@(() => OnTaskTypeFilterChanged(null))">
-                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="min-width: 200px;">
-                                            <MudText Typo="Typo.body2" Style="@(_selectedTaskType is null ? "font-weight: 600;" : "")">@L["AllTypes"]</MudText>
-                                            @if (_summary is not null)
-                                            {
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary">@_summary.TotalCount</MudText>
-                                            }
-                                        </MudStack>
-                                    </MudMenuItem>
-                                    <MudDivider />
-                                    @if (_summary?.TaskTypeCounts is not null)
-                                    {
-                                        @foreach (var type in _summary.TaskTypeCounts)
-                                        {
-                                            var typeName = type.TaskName;
-                                            <MudMenuItem OnClick="@(() => OnTaskTypeFilterChanged(typeName))">
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="min-width: 200px;">
-                                                    <MudText Typo="Typo.body2" Style="@(_selectedTaskType == typeName ? "font-weight: 600;" : "")">@GetTaskTypeLabel(typeName)</MudText>
-                                                    <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">@type.Count</MudChip>
-                                                </MudStack>
-                                            </MudMenuItem>
-                                        }
-                                    }
-                                </MudMenu>
-                            </MudStack>
-                        </MudTh>
-                        <MudTh>@L["ColStatus"]</MudTh>
-                        <MudTh>@L["ColDate"]</MudTh>
-                        <MudTh>@L["ColPriority"]</MudTh>
-                        <MudTh>@L["ColDuration"]</MudTh>
-                        <MudTh>@L["ColGroup"]</MudTh>
-                        <MudTh>@L["ColAttempts"]</MudTh>
-                        <MudTh></MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="@L["ColName"]">
-                            <MudStack Spacing="0">
-                                <MudText Typo="Typo.body2">@GetTaskTypeLabel(context.Name)</MudText>
-                                @if (context.TargetEntityType is not null)
-                                {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.TargetEntityType</MudText>
-                                }
-                            </MudStack>
-                        </MudTd>
-                        <MudTd DataLabel="@L["ColStatus"]">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                <MudIcon Icon="@GetStatusIcon(context.Status)" Size="Size.Small"
-                                         Color="@BackgroundTaskStatusHelper.GetColor(context.Status)" />
-                                <MudText Typo="Typo.body2">@GetStatusLabel(context.Status)</MudText>
-                                @if (context.Status == BackgroundTaskStatus.Failed && context.ErrorDetails is not null)
-                                {
-                                    <MudTooltip Text="@context.ErrorDetails" Placement="Placement.Top">
-                                        <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Small" Color="Color.Error" />
-                                    </MudTooltip>
-                                }
-                            </MudStack>
-                        </MudTd>
-                        <MudTd DataLabel="@L["ColDate"]">
-                            <MudTooltip Text="@(context.LastModified.ToLocalTime().ToString("g"))">
-                                <MudText Typo="Typo.body2">@FormatRelativeTime(context.LastModified)</MudText>
-                            </MudTooltip>
-                        </MudTd>
-                        <MudTd DataLabel="@L["ColPriority"]">@context.Priority</MudTd>
-                        <MudTd DataLabel="@L["ColDuration"]">
-                            @if (context.Duration is not null)
-                            {
-                                <MudText Typo="Typo.body2">@FormatDuration(context.Duration.Value)</MudText>
-                            }
-                        </MudTd>
-                        <MudTd DataLabel="@L["ColGroup"]">
-                            @if (context.ConcurrencyGroup is not null)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Default">@context.ConcurrencyGroup</MudChip>
-                            }
-                        </MudTd>
-                        <MudTd DataLabel="@L["ColAttempts"]">@context.AttemptCount / @context.MaxAttempts</MudTd>
-                        <MudTd Class="actions-cell">
-                            <MudIconButton Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Default"
-                                           OnClick="@(() => OpenDetailDialog(context))" aria-label="@L["AriaDetail"]" />
-                            @if (context.Status is BackgroundTaskStatus.Completed or BackgroundTaskStatus.Failed)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
-                                               OnClick="@(() => DeleteTaskAsync(context))" aria-label="@L["AriaDelete"]" />
-                            }
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-
-                <MudStack Row="true" Justify="Justify.Center" Class="mt-3">
-                    <MudPagination Count="@(_tasks.TotalPages ?? 1)" Selected="_pageNumber"
-                                   SelectedChanged="OnPageChanged" Color="Color.Primary" />
-                </MudStack>
-            }
-        </div>
-    </MudPaper>
-</MudStack>
-
-@* Settings drawer *@
-<MudDrawer @bind-Open="_settingsDrawerOpen" Anchor="Anchor.End" Elevation="1" Variant="DrawerVariant.Temporary" Width="380px">
-    <MudDrawerHeader>
-        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width: 100%;">
-            <MudText Typo="Typo.h6">@L["SettingsTitle"]</MudText>
-            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
-                           OnClick="@(() => _settingsDrawerOpen = false)" />
-        </MudStack>
-    </MudDrawerHeader>
-    <MudStack Spacing="3" Class="pa-4">
-        @if (_settings is null)
-        {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <div class="surface pa-8 d-flex flex-column align-center">
+                <K7Icon Name="check-circle" Size="lg" Color="secondary" />
+                <p class="text-sm mt-2" style="color: var(--color-text-muted);">@L["NoTasks"]</p>
+            </div>
         }
         else
         {
-            <MudNumericField T="int" @bind-Value="_workerCount" Label="@L["WorkerCountLabel"]"
-                             Min="1" Max="32" Variant="Variant.Outlined" />
-
-            @if (_settings.ConcurrencyGroups.Count > 0)
-            {
-                <MudText Typo="Typo.subtitle2">@L["ConcurrencyGroupsTitle"]</MudText>
-                @foreach (var group in _settings.ConcurrencyGroups)
-                {
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="flex-wrap">
-                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@group.Name</MudChip>
-                        <MudNumericField T="int" Value="@GetGroupLimit(group.Name)"
-                                         ValueChanged="@(v => SetGroupLimit(group.Name, v))"
-                                         Min="0" Max="32" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                         Label="@L["GroupLimit"]" Style="max-width: 120px;" />
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            @group.ActiveCount @L["GroupActive"]
-                        </MudText>
-                    </MudStack>
-                }
-            }
-
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettingsAsync"
-                       Disabled="_isSavingSettings" StartIcon="@Icons.Material.Filled.Save" FullWidth="true">
-                @L["Save"]
-            </MudButton>
+            <div class="k7-table-wrap">
+                <table class="k7-table k7-table--dense">
+                    <thead>
+                        <tr>
+                            <th>@L["ColName"]</th>
+                            <th>@L["ColStatus"]</th>
+                            <th>@L["ColAttempts"]</th>
+                            <th>@L["ColDate"]</th>
+                            <th>@L["ColDuration"]</th>
+                            <th>@L["ColGroup"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var task in _tasks.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="text-sm">@GetTaskTypeLabel(task.Name)</span>
+                                    @if (!string.IsNullOrEmpty(task.ErrorDetails))
+                                    {
+                                        <p class="text-caption" style="color: var(--color-error);">@task.ErrorDetails</p>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex align-center" style="gap: var(--space-1);">
+                                        <K7Icon Name="@GetStatusIcon(task.Status)" Size="sm" Style="@GetStatusIconStyle(task.Status)" />
+                                        <span class="text-sm" style="@GetStatusTextStyle(task.Status)">@GetStatusLabel(task.Status)</span>
+                                    </div>
+                                </td>
+                                <td class="text-sm">@task.AttemptCount / @task.MaxAttempts</td>
+                                <td class="text-sm">@FormatRelativeTime(task.Created)</td>
+                                <td class="text-sm">@(task.Duration.HasValue ? FormatDuration(task.Duration.Value) : "-")</td>
+                                <td class="text-sm">@(task.ConcurrencyGroup ?? "-")</td>
+                                <td>
+                                    <button type="button" class="k7-icon-btn" @onclick="@(() => OpenDetailDialog(task))" aria-label="detail"><i class="ph ph-info"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
-    </MudStack>
-</MudDrawer>
+    }
+</div>

@@ -1,4 +1,4 @@
-﻿@page "/sign-in"
+@page "/sign-in"
 @layout Layout.EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @inject IStringLocalizer<Welcome> L
@@ -6,53 +6,50 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height:80vh;">
-    <MudPaper Class="pa-8" Elevation="4" Style="width:100%; max-width:480px;">
-        <MudStack Spacing="4" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">K7</MudText>
-            <MudText Typo="Typo.body1" Color="Color.Secondary">
+<div class="container">
+    <div class="surface pa-8">
+        <div class="d-flex flex-col">
+            <h4>K7</h4>
+            <p Color="secondary">
                 @L["WelcomeHeading"]
-            </MudText>
+            </p>
 
-            <MudDivider Class="my-2" Style="width:100%;" />
+            <hr class="k7-divider my-2" />
 
             @if (_loading)
             {
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary">@L["SignInPrompt"]</MudText>
+                <K7Spinner />
+                <p class="text-sm" Color="secondary">@L["SignInPrompt"]</p>
             }
             else if (_error is not null)
             {
-                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
+                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2" Style="width:100%;">
                     @_error
-                </MudAlert>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
-                           FullWidth="true" OnClick="SignInAsync">
+                </K7Alert>
+                <K7Button Variant="filled" Color="primary" Size="lg" OnClick="SignInAsync">
                     @S["TryAgain"]
-                </MudButton>
+                </K7Button>
             }
             else
             {
                 @if (_serverInfoError is not null)
                 {
-                    <MudAlert Severity="Severity.Warning" Variant="Variant.Text" Dense="true" Class="mt-2" Style="width:100%;">
+                    <K7Alert Severity="K7Severity.Warning" Variant="text" Class="mt-2" Style="width:100%;">
                         @_serverInfoError
-                    </MudAlert>
+                    </K7Alert>
                 }
 
-                <MudButton @ref="_signInButton" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
-                           FullWidth="true" OnClick="SignInAsync">
+                <K7Button @ref="_signInButton" Variant="filled" Color="primary" Size="lg" OnClick="SignInAsync">
                     @S["SignIn"]
-                </MudButton>
+                </K7Button>
 
                 @if (_guestEnabled)
                 {
-                    <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Large"
-                               FullWidth="true" OnClick="ContinueAsGuestAsync">
+                    <K7Button Variant="outlined" Color="default" Size="lg" OnClick="ContinueAsGuestAsync">
                         @S["Guest"]
-                    </MudButton>
+                    </K7Button>
                 }
             }
-        </MudStack>
-    </MudPaper>
-</MudContainer>
+        </div>
+    </div>
+</div>
