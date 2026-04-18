@@ -115,6 +115,21 @@ When generating Blazor/CSS from a Penpot design:
 
 ---
 
+## Typography
+
+K7 uses two fonts - both are available in this Penpot project:
+
+| Font | Weights available | Role |
+|---|---|---|
+| **Epilogue** | 700, 900 | Headings, display text |
+| **Manrope** | 400, 500, 700 | Body, UI labels, captions |
+
+- Always use Epilogue for headings and Manrope for body/UI text - never substitute with Inter, Roboto, or system fonts.
+- When going code -> Penpot: match the weight exactly to what the CSS specifies (`font-weight: 700` = Bold in Penpot).
+- When going Penpot -> code: output `font-family: 'Epilogue'` or `font-family: 'Manrope'` - the fonts are self-hosted via libman and loaded through `app.css`.
+
+---
+
 ## Icons
 
 K7 uses **Phosphor Icons** exclusively - the same library is available as an asset in this Penpot project.
