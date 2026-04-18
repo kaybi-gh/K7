@@ -91,6 +91,6 @@ public class BackgroundTaskQueueTests
             _queue.Enqueue(Guid.NewGuid());
         }
 
-        // Assert — no exception thrown, channel is unbounded
+        // Assert - no exception thrown, channel is unbounded
     }
 }

@@ -286,7 +286,7 @@ public class FileIndexer : IFileIndexer
         }
         catch
         {
-            // Tag reading failure is non-fatal — directory-based identification remains
+            // Tag reading failure is non-fatal - directory-based identification remains
         }
     }
 }

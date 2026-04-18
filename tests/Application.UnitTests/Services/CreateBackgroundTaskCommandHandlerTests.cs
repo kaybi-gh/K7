@@ -90,7 +90,7 @@ public class CreateBackgroundTaskCommandHandlerTests
         // Act
         await _handler.Handle(command, CancellationToken.None);
 
-        // Assert — should use FullName not AssemblyQualifiedName
+        // Assert - should use FullName not AssemblyQualifiedName
         _context.BackgroundTasks.Received(1).Add(Arg.Is<BackgroundTask>(t =>
             !t.RequestType.Contains("Version=")
             && t.RequestType.Contains("DeleteBackgroundTaskCommand")

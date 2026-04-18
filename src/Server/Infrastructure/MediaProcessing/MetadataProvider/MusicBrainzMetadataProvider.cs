@@ -232,7 +232,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         }
         catch
         {
-            // Cover art not available — not an error
+            // Cover art not available - not an error
         }
         return null;
     }

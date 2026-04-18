@@ -309,7 +309,7 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             {
                 targetResolution = requestedQuality.Value;
                 playlistQuality = requestedQuality.Value.Name;
-                // Downscaling requires transcoding — force h264 if no codec was specified
+                // Downscaling requires transcoding - force h264 if no codec was specified
                 effectiveVideoCodec ??= "h264";
             }
         }

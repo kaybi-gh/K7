@@ -174,7 +174,7 @@ public class TranscodeJobManager : ITranscodeJobManager
         await job.FfmpegStartLock.WaitAsync(cancellationToken);
         try
         {
-            // Re-check after acquiring lock — another request may have already started FFmpeg
+            // Re-check after acquiring lock - another request may have already started FFmpeg
             segmentExists = File.Exists(segmentPath);
             if (segmentExists)
             {

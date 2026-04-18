@@ -158,7 +158,7 @@ public static class IndexedFileExtensions
 
             if (sxxExxMatch.Groups["multiEp"].Success)
             {
-                // Multi-episode detected — only take the first episode, as per plan
+                // Multi-episode detected - only take the first episode, as per plan
             }
 
             indexedFile.Identification = new MediaIdentification(cleanedSeriesTitle)

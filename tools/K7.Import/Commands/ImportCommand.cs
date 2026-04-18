@@ -26,13 +26,13 @@ public sealed class ImportCommand
         var includeOption = new Option<string[]>("--include") { Description = "Data types to import: history, ratings, playlists (default: all)", AllowMultipleArgumentsPerToken = true };
         var spotifyDataDirOption = new Option<string>("--spotify-data-dir") { Description = "Path to Spotify extended streaming history export folder (JSON files)" };
         var userMappingOption = new Option<string[]>("--user-mapping") { Description = "Map source user to K7 user (format: sourceUser:k7User)", AllowMultipleArgumentsPerToken = true };
-        var onlyMatchExistingOption = new Option<bool>("--only-match-existing") { Description = "Only import data for media that already exists in K7 — skip virtual media creation for unmatched items" };
+        var onlyMatchExistingOption = new Option<bool>("--only-match-existing") { Description = "Only import data for media that already exists in K7 - skip virtual media creation for unmatched items" };
         var fetchMetadataOption = new Option<bool>("--fetch-metadata") { Description = "Fetch rich metadata (posters, descriptions, etc.) for newly created media" };
         var playcountModeOption = new Option<string>("--playcount-mode") { Description = "PlayCount merge strategy: additive or max (default: additive)", DefaultValueFactory = _ => "additive" };
         var ratingModeOption = new Option<string>("--rating-mode") { Description = "Rating conflict strategy: keep or overwrite (default: keep)", DefaultValueFactory = _ => "keep" };
         var progressModeOption = new Option<string>("--progress-mode") { Description = "Progress conflict strategy: recent or overwrite (default: recent)", DefaultValueFactory = _ => "recent" };
 
-        var command = new RootCommand("K7 Import Tool — Import media data from Plex, Jellyfin, Tautulli, Tracearr, or Spotify into K7");
+        var command = new RootCommand("K7 Import Tool - Import media data from Plex, Jellyfin, Tautulli, Tracearr, or Spotify into K7");
         command.Add(sourceOption);
         command.Add(sourceUrlOption);
         command.Add(sourceApiKeyOption);
@@ -382,7 +382,7 @@ public sealed class ImportCommand
 
         if (dryRun)
         {
-            AnsiConsole.MarkupLine("\n[yellow bold]DRY RUN — no changes were applied.[/]");
+            AnsiConsole.MarkupLine("\n[yellow bold]DRY RUN - no changes were applied.[/]");
         }
     }
 
