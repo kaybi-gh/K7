@@ -19,7 +19,7 @@ Both `Clients/Web` (Blazor WASM) and `Clients/MAUI` (Blazor Hybrid) reference th
 
 ## Component Authoring
 
-Use the **triad pattern** — up to three files per component:
+Use the **triad pattern** (up to three files per component):
 
 ```
 MyComponent.razor       ← Markup
@@ -45,34 +45,30 @@ public partial class MyComponent : ComponentBase
 - New **client services** → `Clients/Shared/Services/`
 - **MAUI-specific** code (platform APIs, native services) → `Clients/MAUI/` only
 
-## MudBlazor
+## K7 Component System
 
-MudBlazor is the current UI component framework. When building reusable K7-specific components, **wrap MudBlazor** rather than using it directly in pages:
+K7 has its own component library under `Clients/Shared/UI/Components/`. Use K7 components directly in pages; do not use third-party UI frameworks in pages.
+
+When building new reusable components, wrap K7 primitives:
 
 ```razor
 @* Good: K7-specific wrapper component *@
 <K7MediaCard Title="@Media.Title" ImageUrl="@Media.PosterUrl" />
 
-@* Avoid: MudBlazor directly in every page *@
-<MudCard Class="ma-4">
-    <MudCardMedia Image="@Media.PosterUrl" />
-    <MudCardContent><MudText>@Media.Title</MudText></MudCardContent>
-</MudCard>
+@* Avoid: third-party components directly in pages *@
 ```
-
-This future-proofs against a potential framework swap.
 
 ## Theming
 
 - Use `ThemeService` and `Themes.cs` for theme definitions.
-- Never hardcode colors — use MudBlazor theme tokens or CSS variables.
-- Theme providers are centralized in `CustomMudProviders.razor`.
+- Never hardcode colors; use CSS variables.
+- Theme providers are centralized in `App.razor`.
 
 ## CSS Conventions
 
 - Prefer **scoped CSS** (`.razor.css`) over global styles.
 - Use **CSS variables** for theming values.
-- No inline styles (`style="..."`) — use CSS classes.
+- No inline styles (`style="..."`) ; use CSS classes.
 - If custom CSS is needed outside scoped files, place it in the relevant project's `wwwroot/` folder.
 
 ## Localization and Translations

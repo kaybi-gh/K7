@@ -7,11 +7,11 @@ user-invocable: true
 
 ## MANDATORY PREPARATION
 
-Invoke /frontend-design — it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding — if no design context exists yet, you MUST run /teach-impeccable first. Additionally gather: what the interface is trying to accomplish.
+Invoke /frontend-design - it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding - if no design context exists yet, you MUST run /teach-impeccable first. Additionally gather: what the interface is trying to accomplish.
 
 ---
 
-Conduct a holistic design critique, evaluating whether the interface actually works — not just technically, but as a designed experience. Think like a design director giving feedback.
+Conduct a holistic design critique, evaluating whether the interface actually works - not just technically, but as a designed experience. Think like a design director giving feedback.
 
 ## Phase 1: Design Critique
 
@@ -21,7 +21,7 @@ Evaluate the interface across these dimensions:
 
 **This is the most important check.** Does this look like every other AI-generated interface from 2024-2025?
 
-Review the design against ALL the **DON'T** guidelines in the frontend-design skill — they are the fingerprints of AI-generated work. Check for the AI color palette, gradient text, dark mode with glowing accents, glassmorphism, hero metric layouts, identical card grids, generic fonts, and all other tells.
+Review the design against ALL the **DON'T** guidelines in the frontend-design skill - they are the fingerprints of AI-generated work. Check for the AI color palette, gradient text, dark mode with glowing accents, glassmorphism, hero metric layouts, identical card grids, generic fonts, and all other tells.
 
 **The test**: If you showed this to someone and said "AI made this," would they believe you immediately? If yes, that's the problem.
 
@@ -35,7 +35,7 @@ Review the design against ALL the **DON'T** guidelines in the frontend-design sk
 > *Consult [cognitive-load](reference/cognitive-load.md) for the working memory rule and 8-item checklist*
 - Is the structure intuitive? Would a new user understand the organization?
 - Is related content grouped logically?
-- Are there too many choices at once? Count visible options at each decision point — if >4, flag it
+- Are there too many choices at once? Count visible options at each decision point - if >4, flag it
 - Is the navigation clear and predictable?
 - **Progressive disclosure**: Is complexity revealed only when needed, or dumped on the user upfront?
 - **Run the 8-item cognitive load checklist** from the reference. Report failure count: 0-1 = low (good), 2-3 = moderate, 4+ = critical.
@@ -43,7 +43,7 @@ Review the design against ALL the **DON'T** guidelines in the frontend-design sk
 ### 4. Emotional Journey
 - What emotion does this interface evoke? Is that intentional?
 - Does it match the brand personality?
-- Does it feel trustworthy, approachable, premium, playful — whatever it should feel?
+- Does it feel trustworthy, approachable, premium, playful - whatever it should feel?
 - Would the target user feel "this is for me"?
 - **Peak-end rule**: Is the most intense moment positive? Does the experience end well (confirmation, celebration, clear next step)?
 - **Emotional valleys**: Check for onboarding frustration, error cliffs, feature discovery gaps, or anxiety spikes at high-stakes moments (payment, delete, commit)
@@ -71,7 +71,7 @@ Review the design against ALL the **DON'T** guidelines in the frontend-design sk
 - Is color used to communicate, not just decorate?
 - Does the palette feel cohesive?
 - Are accent colors drawing attention to the right things?
-- Does it work for colorblind users? (not just technically — does meaning still come through?)
+- Does it work for colorblind users? (not just technically - does meaning still come through?)
 
 ### 9. States & Edge Cases
 - Empty states: Do they guide users toward action, or just say "nothing here"?
@@ -114,7 +114,7 @@ Be honest with scores. A 4 means genuinely excellent. Most real interfaces score
 **Start here.** Pass/fail: Does this look AI-generated? List specific tells from the skill's Anti-Patterns section. Be brutally honest.
 
 ### Overall Impression
-A brief gut reaction — what works, what doesn't, and the single biggest opportunity.
+A brief gut reaction - what works, what doesn't, and the single biggest opportunity.
 
 ### What's Working
 Highlight 2-3 things done well. Be specific about why they work.
@@ -139,24 +139,24 @@ For each selected persona, walk through the primary user action and list specifi
 
 **Jordan (First-Timer)**: Icon-only nav in sidebar. Technical jargon in error messages ("404 Not Found"). No visible help. Warning: Will abandon at step 2.
 
-Be specific — name the exact elements and interactions that fail each persona. Don't write generic persona descriptions; write what broke for them.
+Be specific - name the exact elements and interactions that fail each persona. Don't write generic persona descriptions; write what broke for them.
 
 ### Minor Observations
 Quick notes on smaller issues worth addressing.
 
 **Remember**:
-- Be direct — vague feedback wastes everyone's time
-- Be specific — "the submit button" not "some elements"
+- Be direct - vague feedback wastes everyone's time
+- Be specific - "the submit button" not "some elements"
 - Say what's wrong AND why it matters to users
 - Give concrete suggestions, not just "consider exploring..."
-- Prioritize ruthlessly — if everything is important, nothing is
-- Don't soften criticism — developers need honest feedback to ship great design
+- Prioritize ruthlessly - if everything is important, nothing is
+- Don't soften criticism - developers need honest feedback to ship great design
 
 ## Phase 3: Ask the User
 
 **After presenting findings**, use targeted questions based on what was actually found. ask the user directly to clarify what you cannot infer. These answers will shape the action plan.
 
-Ask questions along these lines (adapt to the specific findings — do NOT ask generic questions):
+Ask questions along these lines (adapt to the specific findings - do NOT ask generic questions):
 
 1. **Priority direction**: Based on the issues found, ask which category matters most to the user right now. For example: "I found problems with visual hierarchy, color usage, and information overload. Which area should we tackle first?" Offer the top 2-3 issue categories as options.
 
@@ -164,11 +164,11 @@ Ask questions along these lines (adapt to the specific findings — do NOT ask g
 
 3. **Scope**: Ask how much the user wants to take on. For example: "I found N issues. Want to address everything, or focus on the top 3?" Offer scope options like "Top 3 only", "All issues", "Critical issues only".
 
-4. **Constraints** (optional — only ask if relevant): If the findings touch many areas, ask if anything is off-limits. For example: "Should any sections stay as-is?" This prevents the plan from touching things the user considers done.
+4. **Constraints** (optional - only ask if relevant): If the findings touch many areas, ask if anything is off-limits. For example: "Should any sections stay as-is?" This prevents the plan from touching things the user considers done.
 
 **Rules for questions**:
-- Every question must reference specific findings from Phase 2 — never ask generic "who is your audience?" questions
-- Keep it to 2-4 questions maximum — respect the user's time
+- Every question must reference specific findings from Phase 2 - never ask generic "who is your audience?" questions
+- Keep it to 2-4 questions maximum - respect the user's time
 - Offer concrete options, not open-ended prompts
 - If findings are straightforward (e.g., only 1-2 clear issues), skip questions and go directly to Phase 4
 
@@ -180,8 +180,8 @@ Ask questions along these lines (adapt to the specific findings — do NOT ask g
 
 List recommended commands in priority order, based on the user's answers:
 
-1. **`/command-name`** — Brief description of what to fix (specific context from critique findings)
-2. **`/command-name`** — Brief description (specific context)
+1. **`/command-name`** - Brief description of what to fix (specific context from critique findings)
+2. **`/command-name`** - Brief description (specific context)
 
 **Rules for recommendations**:
 - Only recommend commands from: /adapt, /animate, /arrange, /audit, /bolder, /clarify, /colorize, /critique, /delight, /distill, /extract, /harden, /normalize, /onboard, /optimize, /overdrive, /polish, /quieter, /typeset

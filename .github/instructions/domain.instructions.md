@@ -6,7 +6,7 @@ applyTo: "src/Server/Domain/**"
 
 ## Core Principle
 
-The Domain layer has **zero dependencies** on other projects. It defines the business model — entities, value objects, enums, events, constants, and interfaces.
+The Domain layer has **zero dependencies** on other projects. It defines the business model: entities, value objects, enums, events, constants, and interfaces.
 
 ## Entities
 

@@ -6,9 +6,9 @@ applyTo: "tests/**"
 
 ## Stack
 
-- **NUnit** — test framework
-- **FluentAssertions** — assertion library
-- **NSubstitute** — mocking
+- **NUnit** - test framework
+- **FluentAssertions** - assertion library
+- **NSubstitute** - mocking
 
 ## Test Project Structure
 
@@ -20,7 +20,7 @@ applyTo: "tests/**"
 | `Infrastructure.IntegrationTests` | Database, file system, media processing | Infrastructure, Domain |
 | `Tests.Helpers` | Shared fixtures, factories, sample data | All test projects |
 
-## Test Structure — Arrange / Act / Assert
+## Test Structure - Arrange / Act / Assert
 
 ```csharp
 // Good: Clear AAA structure

@@ -63,7 +63,7 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
 }
 
 // Avoid: Separate files for request and handler
-// Avoid: Returning Result<T> wrappers — throw typed exceptions instead
+// Avoid: Returning Result<T> wrappers; throw typed exceptions instead
 ```
 
 ## Query Pattern
@@ -102,7 +102,7 @@ public class CreateLibraryCommandValidator : AbstractValidator<CreateLibraryComm
 }
 ```
 
-The `ValidationBehaviour` pipeline intercepts validation failures and throws `ValidationException` — no manual validation in handlers.
+The `ValidationBehaviour` pipeline intercepts validation failures and throws `ValidationException`; no manual validation in handlers.
 
 ## Error Handling
 

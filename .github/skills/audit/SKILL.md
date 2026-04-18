@@ -7,11 +7,11 @@ user-invocable: true
 
 ## MANDATORY PREPARATION
 
-Invoke /frontend-design — it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding — if no design context exists yet, you MUST run /teach-impeccable first.
+Invoke /frontend-design - it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding - if no design context exists yet, you MUST run /teach-impeccable first.
 
 ---
 
-Run systematic **technical** quality checks and generate a comprehensive report. Don't fix issues — document them for other commands to address.
+Run systematic **technical** quality checks and generate a comprehensive report. Don't fix issues - document them for other commands to address.
 
 This is a code-level audit, not a design critique. Check what's measurable and verifiable in the implementation.
 
@@ -96,10 +96,10 @@ Check against ALL the **DON'T** guidelines in the frontend-design skill. Look fo
 ### Detailed Findings by Severity
 
 Tag every issue with **P0-P3 severity**:
-- **P0 Blocking**: Prevents task completion — fix immediately
-- **P1 Major**: Significant difficulty or WCAG AA violation — fix before release
-- **P2 Minor**: Annoyance, workaround exists — fix in next pass
-- **P3 Polish**: Nice-to-fix, no real user impact — fix if time permits
+- **P0 Blocking**: Prevents task completion - fix immediately
+- **P1 Major**: Significant difficulty or WCAG AA violation - fix before release
+- **P2 Minor**: Annoyance, workaround exists - fix in next pass
+- **P3 Polish**: Nice-to-fix, no real user impact - fix if time permits
 
 For each issue, document:
 - **[P?] Issue name**
@@ -118,14 +118,14 @@ Identify recurring problems that indicate systemic gaps rather than one-off mist
 
 ### Positive Findings
 
-Note what's working well — good practices to maintain and replicate.
+Note what's working well - good practices to maintain and replicate.
 
 ## Recommended Actions
 
 List recommended commands in priority order (P0 first, then P1, then P2):
 
-1. **[P?] `/command-name`** — Brief description (specific context from audit findings)
-2. **[P?] `/command-name`** — Brief description (specific context)
+1. **[P?] `/command-name`** - Brief description (specific context from audit findings)
+2. **[P?] `/command-name`** - Brief description (specific context)
 
 **Rules**: Only recommend commands from: /adapt, /animate, /arrange, /audit, /bolder, /clarify, /colorize, /critique, /delight, /distill, /extract, /harden, /normalize, /onboard, /optimize, /overdrive, /polish, /quieter, /typeset. Map findings to the most appropriate command. End with `/polish` as the final step if any fixes were recommended.
 
