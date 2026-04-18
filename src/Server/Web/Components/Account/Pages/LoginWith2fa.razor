@@ -13,7 +13,7 @@
 <PageTitle>@L["PageTitle"]</PageTitle>
 
 <h1>@L["Title"]</h1>
-<MudDivider />
+<hr class="auth-divider" />
 <StatusMessage Message="@message" />
 <p>@L["Prompt"]</p>
 <div class="row">
@@ -42,7 +42,7 @@
 </div>
 <p>
     @L["NoAccess"]
-    <a class="mud-link mud-primary-text mud-link-underline-hover" href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">@L["UseRecoveryCode"]</a>.
+    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">@L["UseRecoveryCode"]</a>.
 </p>
 
 @code {

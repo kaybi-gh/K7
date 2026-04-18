@@ -12,73 +12,56 @@
 
 <PageTitle>@L["PageTitle"] - K7</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
-    <MudPaper Class="pa-8" Elevation="4">
-        <MudStack Spacing="4">
-            <MudText Typo="Typo.h4" Align="Align.Center">@L["WelcomeTitle"]</MudText>
-            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                @L["CreateAdmin"]
-            </MudText>
+<div class="auth-card">
+    <div class="auth-card-header">
+        <h1 class="auth-title">@L["WelcomeTitle"]</h1>
+        <p class="auth-subtitle">@L["CreateAdmin"]</p>
+    </div>
+    <div class="auth-card-body">
+        <hr class="auth-divider" />
 
-            <MudDivider Class="my-2" />
+        @if (!string.IsNullOrEmpty(_statusMessage))
+        {
+            <div class="auth-alert auth-alert--error" style="margin-bottom:1rem;">@_statusMessage</div>
+        }
 
-            @if (!string.IsNullOrEmpty(_statusMessage))
-            {
-                <MudAlert Severity="Severity.Error" Dense="true">@_statusMessage</MudAlert>
-            }
+        <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="auth-alert auth-alert--error" role="alert" />
+            <div class="auth-form-stack">
+                <div class="auth-form-field">
+                    <label>@L["Email"]</label>
+                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input" placeholder="@L["EmailPlaceholder"]" autocomplete="email" aria-required="true" />
+                    <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
+                </div>
 
-            <EditForm Model="Input" method="post" OnValidSubmit="OnSubmitAsync" FormName="setup">
-                <DataAnnotationsValidator />
-                <ValidationSummary class="mud-alert mud-alert-text-error" role="alert" />
-                <MudStack Spacing="3">
-                    <MudStaticTextField For="@(() => Input!.Email)"
-                                        @bind-Value="Input!.Email"
-                                        Label="@L["Email"]"
-                                        Placeholder="@L["EmailPlaceholder"]"
-                                        InputType="InputType.Email"
-                                        UserAttributes="@(new() { { "autocomplete", "email" }, { "aria-required", "true" } })" />
+                <div class="auth-form-field">
+                    <label>@L["Password"]</label>
+                    <div class="auth-input-row">
+                        <InputText @bind-Value="Input!.Password" id="pw-setup" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+                        <button type="button" class="auth-input-action" onclick="togglePw('pw-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
+                    </div>
+                    <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
+                </div>
 
-                    <MudStaticTextField For="@(() => Input!.Password)"
-                                        @bind-Value="Input!.Password"
-                                        Label="@L["Password"]"
-                                        Placeholder="@L["PasswordPlaceholder"]"
-                                        InputType="InputType.Password"
-                                        Adornment="Adornment.End"
-                                        AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
-                                        AdornmentClickFunction="togglePasswordVisibility"
-                                        AdornmentAriaLabel="@L["ShowPassword"]"
-                                        UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } })" />
+                <div class="auth-form-field">
+                    <label>@L["ConfirmPassword"]</label>
+                    <div class="auth-input-row">
+                        <InputText @bind-Value="Input!.ConfirmPassword" id="pw-confirm-setup" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+                        <button type="button" class="auth-input-action" onclick="togglePw('pw-confirm-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
+                    </div>
+                    <ValidationMessage For="@(() => Input!.ConfirmPassword)" class="auth-validation" />
+                </div>
 
-                    <MudStaticTextField For="@(() => Input!.ConfirmPassword)"
-                                        @bind-Value="Input!.ConfirmPassword"
-                                        Label="@L["ConfirmPassword"]"
-                                        Placeholder="@L["PasswordPlaceholder"]"
-                                        InputType="InputType.Password"
-                                        Adornment="Adornment.End"
-                                        AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
-                                        AdornmentClickFunction="togglePasswordVisibility"
-                                        AdornmentAriaLabel="@L["ShowPassword"]"
-                                        UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } })" />
-
-                    <MudStaticButton Variant="Variant.Filled"
-                                     Color="Color.Primary"
-                                     Size="Size.Large"
-                                     FullWidth="true"
-                                     FormAction="FormAction.Submit">
-                        @L["CompleteSetup"]
-                    </MudStaticButton>
-                </MudStack>
-            </EditForm>
-        </MudStack>
-    </MudPaper>
-</MudContainer>
+                <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["CompleteSetup"]</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
 
 <script>
-    function togglePasswordVisibility(inputElement, button) {
-        if (inputElement.type === 'password') {
-            inputElement.type = 'text';
-        } else {
-            inputElement.type = 'password';
-        }
+    function togglePw(id) {
+        var el = document.getElementById(id);
+        if (el) el.type = el.type === 'password' ? 'text' : 'password';
     }
 </script>

@@ -15,25 +15,23 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h3" GutterBottom="true">@L["Title"]</MudText>
+<h2 class="auth-heading">@L["Title"]</h2>
 
-<MudText Typo="Typo.body1" GutterBottom="true">@L["EnterEmail"]</MudText>
+<p>@L["EnterEmail"]</p>
 
 <StatusMessage Message="@message" />
 
 <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
     <DataAnnotationsValidator />
 
-    <MudGrid>
-        <MudItem md="12">
-            <MudStaticTextField For="@(() => Input!.Email)" @bind-Value="Input!.Email"
-                                Label="@L["Email"]" Placeholder="@L["EmailPlaceholder"]"
-                                UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } } )" />
-        </MudItem>
-        <MudItem md="12">
-            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["Resend"]</MudStaticButton>
-        </MudItem>
-    </MudGrid>
+    <div class="auth-form-stack">
+        <div class="auth-form-field">
+            <label>@L["Email"]</label>
+            <InputText @bind-Value="Input!.Email" type="email" class="auth-input" placeholder="@(L["EmailPlaceholder"])" autocomplete="username" aria-required="true" />
+            <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
+        </div>
+        <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["Resend"]</button>
+    </div>
 </EditForm>
 
 @code {

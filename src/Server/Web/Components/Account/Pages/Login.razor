@@ -18,136 +18,84 @@
 
 <StatusMessage Message="@errorMessage" />
 
-<MudStack Style="width: 100vw; height: 100vh;" AlignItems="AlignItems.Center" Justify="Justify.Center">
-    <MudCard Style="width: min(420px, 100%)" Outlined="true">
-        <MudCardHeader>
-            <MudStack AlignItems="AlignItems.Center" Style="width: 100%;" Spacing="0">
-                <MudText Typo="Typo.h6" Class="mt-5">@L["WelcomeBack"]</MudText>
-                <MudText Typo="Typo.caption">@L["SignInPrompt"]</MudText>
-            </MudStack>
-        </MudCardHeader>
-        <MudCardContent>
-            <MudStack>
-                @if (AuthConfig.Value.Local.SignInEnabled)
-                {
-                    <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
-                        <DataAnnotationsValidator />
-                        <MudStack>
-                            <MudStaticTextField InputType="InputType.Email"
-                                                For="@(() => Input!.Email)"
-                                                @bind-Value="Input!.Email"
-                                                Label="@L["Email"]"
-                                                Placeholder="@L["EmailPlaceholder"]"
-                                                UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } })" />
-
-                            <MudStaticTextField InputType="InputType.Password"
-                                                For="@(() => Input.Password)"
-                                                @bind-Value="Input.Password"
-                                                Label="@L["Password"]"
-                                                Placeholder="@L["PasswordPlaceholder"]"
-                                                UserAttributes="@(new() { { "autocomplete", "current-password" }, { "aria-required", "true" } })"
-                                                Adornment="Adornment.End"
-                                                AdornmentIcon="@Icons.Material.Outlined.VisibilityOff"
-                                                AdornmentClickFunction="togglePasswordVisibility"
-                                                AdornmentAriaLabel="@L["ShowPassword"]" />
-
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                <MudStaticSwitch For="@(() => Input.RememberMe)"
-                                                 @bind-Value="Input.RememberMe"
-                                                 Size="Size.Small"
-                                                 Color="Color.Primary"
-                                                 Typo="Typo.caption"
-                                                 Label="@L["RememberMe"]"/>
-
-                                <MudLink Href="Account/ForgotPassword"
-                                         Typo="Typo.caption">
-                                    @L["ForgotPassword"]
-                                </MudLink>
-                            </MudStack>
-
-                            <MudStaticButton Variant="Variant.Filled"
-                                             Color="Color.Primary"
-                                             Size="Size.Small"
-                                             FullWidth="true"
-                                             FormAction="FormAction.Submit">
-                                @L["SignIn"]
-                            </MudStaticButton>
-                        </MudStack>
-                    </EditForm>
-                    <MudStack AlignItems="AlignItems.Center">
-                        <MudText Class="continue-with" Typo="Typo.caption">@L["OrContinueWith"]</MudText>
-                        <ExternalLoginPicker />
-                    </MudStack>
-                }
-                else
-                {
-                    <ExternalLoginPicker />
-                }
-                <MudDivider Class="mt-3" />
-            </MudStack>
-        </MudCardContent>
+<div class="auth-card">
+    <div class="auth-card-header">
+        <h1 class="auth-title">@L["WelcomeBack"]</h1>
+        <p class="auth-subtitle">@L["SignInPrompt"]</p>
+    </div>
+    <div class="auth-card-body">
         @if (AuthConfig.Value.Local.SignInEnabled)
         {
-            <MudCardActions>
-                <MudStack Spacing="2" Style="width: 100%" AlignItems="AlignItems.Center">
-                    @if (AuthConfig.Value.Local.RegistrationEnabled)
-                    {
-                        <MudStack Row="true" Spacing="1">
-                            <MudText Typo="Typo.caption">@L["NoAccount"]</MudText>
-                            <MudLink Href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"
-                                     Typo="Typo.caption">
-                                @L["SignUp"]
-                            </MudLink>
-                        </MudStack>
-                    }
-                    <MudLink Href="Account/ResendEmailConfirmation"
-                             Typo="Typo.caption">
-                        @L["ResendEmailConfirmation"]
-                    </MudLink>
-                </MudStack>
-            </MudCardActions>
-        }
-    </MudCard>
-</MudStack>
+            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                <DataAnnotationsValidator />
+                <div class="auth-form-stack">
+                    <div class="auth-form-field">
+                        <label>@L["Email"]</label>
+                        <InputText @bind-Value="Input!.Email" type="email" class="auth-input" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" />
+                        <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
+                    </div>
 
-<style>
-    .continue-with {
-        width: 100%;
-        text-align: center;
-        position: relative;
+                    <div class="auth-form-field">
+                        <label>@L["Password"]</label>
+                        <div class="auth-input-row">
+                            <InputText @bind-Value="Input.Password" id="pw-login" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="current-password" aria-required="true" />
+                            <button type="button" class="auth-input-action" onclick="togglePwLogin()" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
+                        </div>
+                        <ValidationMessage For="@(() => Input.Password)" class="auth-validation" />
+                    </div>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <label class="auth-toggle">
+                            <InputCheckbox @bind-Value="Input.RememberMe" />
+                            <span>@L["RememberMe"]</span>
+                        </label>
+                        <a href="Account/ForgotPassword" class="auth-link">@L["ForgotPassword"]</a>
+                    </div>
+
+                    <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["SignIn"]</button>
+                </div>
+            </EditForm>
+
+            <p class="auth-or">@L["OrContinueWith"]</p>
+            <ExternalLoginPicker />
+        }
+        else
+        {
+            <ExternalLoginPicker />
+        }
+        <hr class="auth-divider" style="margin-top:1rem;" />
+    </div>
+    @if (AuthConfig.Value.Local.SignInEnabled)
+    {
+        <div class="auth-card-footer">
+            @if (AuthConfig.Value.Local.RegistrationEnabled)
+            {
+                <span class="auth-caption">
+                    @L["NoAccount"]
+                    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link">@L["SignUp"]</a>
+                </span>
+            }
+            <a href="Account/ResendEmailConfirmation" class="auth-link">@L["ResendEmailConfirmation"]</a>
+        </div>
     }
-
-        .continue-with::before,
-        .continue-with::after {
-            position: absolute;
-            content: "";
-            left: 0;
-            width: 32%;
-            border-top: 1px solid var(--mud-palette-divider);
-            top: 50%;
-        }
-
-        .continue-with::after {
-            left: unset;
-            right: 0;
-        }
-</style>
+</div>
 
 <script>
-    let timeoutId;
-
-    function togglePasswordVisibility(inputElement, button) {
-        if (inputElement.type === 'password') {
-            inputElement.type = 'text';
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(function () {
-                inputElement.type = 'password';
-            }, 5000);
-        } else {
-            inputElement.type = 'password';
-            clearTimeout(timeoutId);
-        }
-    }
+    (function () {
+        var timeoutId;
+        window.togglePwLogin = function () {
+            var el = document.getElementById('pw-login');
+            if (!el) return;
+            if (el.type === 'password') {
+                el.type = 'text';
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(function () { el.type = 'password'; }, 5000);
+            } else {
+                el.type = 'password';
+                clearTimeout(timeoutId);
+            }
+        };
+    })();
 </script>
 
 @code {

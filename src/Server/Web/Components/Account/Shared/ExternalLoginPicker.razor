@@ -1,8 +1,6 @@
 ﻿@using K7.Server.Infrastructure.Database.Context.Identity
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
-@using MudBlazor
-@using MudBlazor.StaticInput
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
@@ -12,19 +10,14 @@
     <form class="form-horizontal" action="Account/PerformExternalLogin" method="post" style="width: 100%;">
         <AntiforgeryToken />
         <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-        <MudStack AlignItems="AlignItems.Center" Style="width: 100%;" Spacing="2">
+        <div class="auth-form-stack">
             @foreach (var provider in externalLogins)
             {
-                <MudStaticButton Variant="Variant.Outlined"
-                                 Size="Size.Small"
-                                 FullWidth="true"
-                                 name="provider"
-                                 value="@provider.Name"
-                                 type="submit">
+                <button class="k7-btn k7-btn--outlined" style="width:100%;" name="provider" value="@provider.Name" type="submit">
                     @provider.DisplayName
-                </MudStaticButton>
+                </button>
             }
-        </MudStack>
+        </div>
     </form>
 }
 

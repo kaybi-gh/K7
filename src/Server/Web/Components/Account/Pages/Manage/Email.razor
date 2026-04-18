@@ -15,7 +15,7 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h6" GutterBottom="true">@L["Title"]</MudText>
+<h3 class="auth-section-title">@L["Title"]</h3>
 
 <StatusMessage Message="@message" />
 
@@ -25,32 +25,32 @@
 <EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post">
     <DataAnnotationsValidator />
 
-    <MudGrid>
+    <div class="auth-form-stack">
 
         @if (isEmailConfirmed)
         {
-            <MudItem md="12">
-                <MudStaticTextField Value="@email" Label="@L["Email"]" Placeholder="@L["EmailPlaceholder"]" Disabled="true" AdornmentIcon="Icons.Material.Filled.Check" AdornmentColor="Color.Success" />
-            </MudItem>
+            <div class="auth-form-field">
+                <label>@L["Email"]</label>
+                <input type="text" class="auth-input" value="@email" disabled />
+            </div>
         }
         else
         {
-            <MudItem md="12">
-                <MudStaticTextField Value="@email" Label="@L["Email"]" Placeholder="@L["EmailPlaceholder"]" Disabled="true" />
-            </MudItem>
-            <MudItem md="12">
-                <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["SendVerification"]</MudStaticButton>
-            </MudItem>
+            <div class="auth-form-field">
+                <label>@L["Email"]</label>
+                <input type="text" class="auth-input" value="@email" disabled />
+            </div>
+            <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["SendVerification"]</button>
         }
 
-        <MudItem md="12">
-            <MudStaticTextField @bind-Value="@Input.NewEmail" For="@(() => Input.NewEmail)" UserAttributes="@(new() { { "autocomplete", "email" }, { "aria-required", "true" } } )" Label="@L["NewEmail"]" HelperText="@L["NewEmailHelp"]" />
-        </MudItem>
+        <div class="auth-form-field">
+            <label>@L["NewEmail"]</label>
+            <InputText @bind-Value="@Input.NewEmail" type="email" class="auth-input" autocomplete="email" aria-required="true" />
+            <ValidationMessage For="@(() => Input.NewEmail)" class="auth-validation" />
+        </div>
 
-        <MudItem md="12">
-            <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["ChangeEmail"]</MudStaticButton>
-        </MudItem>
-    </MudGrid>
+        <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["ChangeEmail"]</button>
+    </div>
 </EditForm>
 
 @code {

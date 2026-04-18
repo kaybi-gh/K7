@@ -15,42 +15,27 @@
 
 <PageTitle>@L["PageTitle"] - K7</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
-    <MudPaper Class="pa-8" Elevation="4">
-        <MudStack Spacing="4" AlignItems="AlignItems.Center">
-            <MudText Typo="Typo.h4">K7</MudText>
-            <MudText Typo="Typo.body1" Color="Color.Secondary">
-                @L["ChooseHow"]
-            </MudText>
+<div class="auth-card">
+    <div class="auth-card-header">
+        <h1 class="auth-title">K7</h1>
+        <p class="auth-subtitle">@L["ChooseHow"]</p>
+    </div>
+    <div class="auth-card-body">
+        <hr class="auth-divider" />
+        <div class="auth-form-stack">
+            <a href="@_loginUrl" style="text-decoration:none;">
+                <button class="k7-btn k7-btn--filled" style="width:100%;">@L["SignIn"]</button>
+            </a>
 
-            <MudDivider Class="my-2" Style="width:100%;" />
-
-            <MudStack Spacing="2" Style="width:100%;">
-                <MudLink Href="@_loginUrl" Style="text-decoration:none;">
-                    <MudStaticButton Variant="Variant.Filled"
-                                     Color="Color.Primary"
-                                     Size="Size.Large"
-                                     FullWidth="true">
-                        @L["SignIn"]
-                    </MudStaticButton>
-                </MudLink>
-
-                @if (_guestEnabled)
-                {
-                    <EditForm Model="_guestModel" method="post" OnValidSubmit="ContinueAsGuest" FormName="guest">
-                        <MudStaticButton Variant="Variant.Outlined"
-                                         Color="Color.Default"
-                                         Size="Size.Large"
-                                         FullWidth="true"
-                                         FormAction="FormAction.Submit">
-                            @L["ContinueAsGuest"]
-                        </MudStaticButton>
-                    </EditForm>
-                }
-            </MudStack>
-        </MudStack>
-    </MudPaper>
-</MudContainer>
+            @if (_guestEnabled)
+            {
+                <EditForm Model="_guestModel" method="post" OnValidSubmit="ContinueAsGuest" FormName="guest">
+                    <button type="submit" class="k7-btn k7-btn--outlined" style="width:100%;">@L["ContinueAsGuest"]</button>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
 
 @code {
     private bool _guestEnabled;

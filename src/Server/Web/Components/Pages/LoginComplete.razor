@@ -5,28 +5,24 @@
 
 <PageTitle>@L["PageTitle"] - K7</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
-    <MudPaper Class="pa-8" Elevation="4">
-        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+<div class="auth-card">
+    <div class="auth-card-body">
+        <div class="auth-form-stack" style="align-items:center;">
             @if (_isError)
             {
-                <MudIcon Icon="@Icons.Material.Outlined.Error" Size="Size.Large" Color="Color.Error" />
-                <MudText Typo="Typo.h5">@_title</MudText>
-                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
-                    @_message
-                </MudAlert>
+                <i class="ph ph-x-circle auth-icon auth-icon--error"></i>
+                <h2 class="auth-title">@_title</h2>
+                <div class="auth-alert auth-alert--error" style="width:100%;">@_message</div>
             }
             else
             {
-                <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Size="Size.Large" Color="Color.Success" />
-                <MudText Typo="Typo.h5">@_title</MudText>
-                <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="mt-2" Style="width:100%;">
-                    @_message
-                </MudAlert>
+                <i class="ph ph-check-circle auth-icon auth-icon--success"></i>
+                <h2 class="auth-title">@_title</h2>
+                <div class="auth-alert auth-alert--success" style="width:100%;">@_message</div>
             }
-        </MudStack>
-    </MudPaper>
-</MudContainer>
+        </div>
+    </div>
+</div>
 
 @code {
     [SupplyParameterFromQuery(Name = "status")]

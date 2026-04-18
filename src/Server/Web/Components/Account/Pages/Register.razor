@@ -25,43 +25,36 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<MudText Typo="Typo.h3" GutterBottom="true">@L["Title"]</MudText>
+<h2 class="auth-heading">@L["Title"]</h2>
 
-<MudGrid>
-    <MudItem xs="12" md="6">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
+<StatusMessage Message="@Message" />
+<EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+    <DataAnnotationsValidator />
 
-            <MudText Typo="Typo.body1" GutterBottom="true">@L["CreateAccount"]</MudText>
+    <p>@L["CreateAccount"]</p>
 
-            <MudGrid>
-                <MudItem md="12">
-                    <MudStaticTextField For="@(() => Input!.Email)" @bind-Value="Input!.Email"
-                                        Label="@L["Email"]" Placeholder="@L["EmailPlaceholder"]"
-                                        UserAttributes="@(new() { { "autocomplete", "username" }, { "aria-required", "true" } } )" />
-                </MudItem>
-                <MudItem md="12">
-                    <MudStaticTextField For="@(() => Input!.Password)" @bind-Value="Input!.Password"
-                                        Label="@L["Password"]" InputType="InputType.Password" Placeholder="@L["PasswordPlaceholder"]"
-                                        UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } } )" />
-                </MudItem>
-                <MudItem md="12">
-                    <MudStaticTextField For="@(() => Input!.ConfirmPassword)" @bind-Value="Input!.ConfirmPassword"
-                                        Label="@L["ConfirmPassword"]" InputType="InputType.Password" Placeholder="@L["ConfirmPasswordPlaceholder"]"
-                                        UserAttributes="@(new() { { "autocomplete", "new-password" }, { "aria-required", "true" } } )" />
-                </MudItem>
-                <MudItem md="12">
-                    <MudStaticButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" FormAction="FormAction.Submit">@L["Register"]</MudStaticButton>
-                </MudItem>
-            </MudGrid>
-        </EditForm>
-    </MudItem>
-    <MudItem md="6">
-        <MudText Typo="Typo.body1" GutterBottom="true">@L["ExternalRegister"]</MudText>
-        <ExternalLoginPicker />
-    </MudItem>
-</MudGrid>
+    <div class="auth-form-stack">
+        <div class="auth-form-field">
+            <label>@L["Email"]</label>
+            <InputText @bind-Value="Input!.Email" type="email" class="auth-input" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" />
+            <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
+        </div>
+        <div class="auth-form-field">
+            <label>@L["Password"]</label>
+            <InputText @bind-Value="Input!.Password" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+            <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
+        </div>
+        <div class="auth-form-field">
+            <label>@L["ConfirmPassword"]</label>
+            <InputText @bind-Value="Input!.ConfirmPassword" type="password" class="auth-input" placeholder="@L["ConfirmPasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+            <ValidationMessage For="@(() => Input!.ConfirmPassword)" class="auth-validation" />
+        </div>
+        <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["Register"]</button>
+    </div>
+</EditForm>
+
+<p>@L["ExternalRegister"]</p>
+<ExternalLoginPicker />
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;

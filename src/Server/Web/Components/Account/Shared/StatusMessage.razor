@@ -1,8 +1,8 @@
 ﻿@if (!string.IsNullOrEmpty(DisplayMessage))
 {
-    var severity = DisplayMessage.StartsWith("Error") ? Severity.Error : Severity.Success;
-
-    <MudAlert Variant="Variant.Outlined" Severity="@severity">@DisplayMessage</MudAlert>
+    var isError = DisplayMessage.StartsWith("Error");
+    var alertClass = isError ? "auth-alert auth-alert--error" : "auth-alert auth-alert--success";
+    <div class="@alertClass">@DisplayMessage</div>
 }
 
 @code {
