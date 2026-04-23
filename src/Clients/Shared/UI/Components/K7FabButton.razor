@@ -1,0 +1,36 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+@if (!string.IsNullOrEmpty(Href))
+{
+    <a href="@Href"
+       class="k7-fab @(Size == "sm" ? "k7-fab--sm" : Size == "lg" ? "k7-fab--lg" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-fab--{Color}" : "") @Class"
+       aria-label="@AriaLabel"
+       @attributes="AdditionalAttributes">
+        @if (ChildContent is not null)
+        {
+            @ChildContent
+        }
+        else if (!string.IsNullOrEmpty(Icon))
+        {
+            <i class="ph ph-@Icon"></i>
+        }
+    </a>
+}
+else
+{
+    <button type="@Type"
+            class="k7-fab @(Size == "sm" ? "k7-fab--sm" : Size == "lg" ? "k7-fab--lg" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-fab--{Color}" : "") @Class"
+            disabled="@Disabled"
+            aria-label="@AriaLabel"
+            @onclick="OnClick"
+            @attributes="AdditionalAttributes">
+        @if (ChildContent is not null)
+        {
+            @ChildContent
+        }
+        else if (!string.IsNullOrEmpty(Icon))
+        {
+            <i class="ph ph-@Icon"></i>
+        }
+    </button>
+}

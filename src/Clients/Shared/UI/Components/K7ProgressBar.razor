@@ -1,0 +1,5 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-progress @(Indeterminate ? "k7-progress--indeterminate" : "") @Class">
+    <div class="k7-progress-bar" style="width: @(Indeterminate ? "50" : Value.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+</div>

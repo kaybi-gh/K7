@@ -132,10 +132,10 @@
                             <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
                         </td>
                         <td>
-                            <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="sm" />
+                            <RatingStars MediaId="context.MediaId" Value="context.UserRating" Size="sm" />
                         </td>
                         <td>
-                            <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
+                            <TrackContextMenu Track="BuildQueueItem(context)" />
                         </td>
                         <td>
                             <span @onclick:stopPropagation="true">

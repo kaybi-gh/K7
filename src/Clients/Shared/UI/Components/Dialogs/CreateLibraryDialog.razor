@@ -1,13 +1,13 @@
-@inject IStringLocalizer<CreateLibraryDialog> L
+﻿@inject IStringLocalizer<CreateLibraryDialog> L
 @inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
         @* Step indicators *@
         <div class="d-flex mb-6">
             <K7Chip Color="@(_activeStep >= 0 ? "primary" : "default")" Size="sm">@L["Step1"]</K7Chip>
-            <K7Icon Name="caret-right" Size="sm" />
+            <K7Icon Name="@Phosphor.CaretRight" Size="sm" />
             <K7Chip Color="@(_activeStep >= 1 ? "primary" : "default")" Size="sm">@L["Step2"]</K7Chip>
-            <K7Icon Name="caret-right" Size="sm" />
+            <K7Icon Name="@Phosphor.CaretRight" Size="sm" />
             <K7Chip Color="@(_activeStep >= 2 ? "primary" : "default")" Size="sm">@L["Step3"]</K7Chip>
         </div>
 
@@ -19,7 +19,7 @@
                 <div>
                     <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Movie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Movie)">
                         <div class="d-flex flex-column align-center pa-6">
-                            <K7Icon Name="film-strip" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
+                            <K7Icon Name="@Phosphor.FilmStrip" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
                             <h6>@S["MediaTypeMovies"]</h6>
                             <p class="text-sm" Color="secondary">@L["MovieDescription"]</p>
                         </div>
@@ -28,7 +28,7 @@
                 <div>
                     <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Serie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Serie)">
                         <div class="d-flex flex-column align-center pa-6">
-                            <K7Icon Name="television" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
+                            <K7Icon Name="@Phosphor.Television" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
                             <h6>@S["MediaTypeSeries"]</h6>
                             <p class="text-sm" Color="secondary">@L["SeriesDescription"]</p>
                         </div>
@@ -37,7 +37,7 @@
                 <div>
                     <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Music)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Music)">
                         <div class="d-flex flex-column align-center pa-6">
-                            <K7Icon Name="music-note" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
+                            <K7Icon Name="@Phosphor.MusicNote" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
                             <h6>@S["MediaTypeMusic"]</h6>
                             <p class="text-sm" Color="secondary">@L["MusicDescription"]</p>
                         </div>

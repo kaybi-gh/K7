@@ -1,0 +1,27 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+<i class="@CssClass" aria-hidden="true" @attributes="AdditionalAttributes"></i>
+
+@code {
+    [Parameter] public string Name { get; set; } = "";
+    [Parameter] public string Size { get; set; } = "";
+    [Parameter] public string Color { get; set; } = "";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string CssClass
+    {
+        get
+        {
+            var sizeClass = Size switch
+            {
+                "sm" or "small" => "k7-icon--sm",
+                "lg" or "large" => "k7-icon--lg",
+                "xl" or "xlarge" => "k7-icon--xl",
+                _ => ""
+            };
+            var colorStyle = string.IsNullOrEmpty(Color) ? "" : $"color-{Color}";
+            return string.Join(" ", new[] { Name, "k7-icon", sizeClass, colorStyle, Class }.Where(s => !string.IsNullOrEmpty(s)));
+        }
+    }
+}

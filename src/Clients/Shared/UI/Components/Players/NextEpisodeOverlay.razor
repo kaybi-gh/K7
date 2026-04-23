@@ -1,0 +1,88 @@
+@using K7.Shared.Dtos.Entities.Medias
+@inject IStringLocalizer<NextEpisodeOverlay> L
+
+@{
+    var nextEp = DemoEpisode ?? ((_visible && _nextEpisode is not null) ? _nextEpisode : null);
+    var nextStillUrl = DemoStillUrl ?? _stillUrl;
+    var currentEp = DemoCurrentEpisode ?? _currentEpisode;
+    var currentStillUrl = DemoCurrentStillUrl ?? _currentStillUrl;
+    var countdown = DemoCountdown > 0 ? DemoCountdown : _countdownSeconds;
+}
+
+@if (nextEp is not null || currentEp is not null)
+{
+    <div class="nep-overlay">
+        <div class="nep-cards">
+
+            <div class="nep-card">
+                <div class="nep-card-still" style="@(currentStillUrl is not null ? $"background-image: url('{currentStillUrl}')" : "")">
+                    @if (currentStillUrl is null)
+                    {
+                        <div class="nep-card-still-placeholder">
+                            <i class="ph ph-film-slate"></i>
+                        </div>
+                    }
+                    <button class="nep-action-btn" type="button" @onclick="ReplayAsync">
+                        <i class="ph ph-arrow-counter-clockwise"></i>
+                        <span>@L["Replay"]</span>
+                    </button>
+                </div>
+                @if (currentEp is not null)
+                {
+                    <div class="nep-card-info">
+                        <span class="nep-card-badge">@L["CurrentEpisode"]</span>
+                        <span class="nep-card-title">
+                            S@(currentEp.SeasonNumber.ToString("D2"))E@(currentEp.EpisodeNumber.ToString("D2"))
+                            @if (!string.IsNullOrEmpty(currentEp.Title))
+                            {
+                                <span> &mdash; @currentEp.Title</span>
+                            }
+                        </span>
+                    </div>
+                }
+            </div>
+
+            <div class="nep-card nep-card--next @(nextEp is null ? "nep-card--empty" : "")">
+                @if (nextEp is not null)
+                {
+                    <div class="nep-card-still" style="@(nextStillUrl is not null ? $"background-image: url('{nextStillUrl}')" : "")">
+                        @if (nextStillUrl is null)
+                        {
+                            <div class="nep-card-still-placeholder">
+                                <i class="ph ph-film-slate"></i>
+                            </div>
+                        }
+                        @if (countdown > 0)
+                        {
+                            <div class="nep-countdown">@string.Format(L["AutoPlayIn"], countdown)</div>
+                        }
+                        <button class="nep-action-btn nep-action-btn--primary" type="button" @onclick="PlayNextAsync">
+                            <i class="ph ph-play"></i>
+                            <span>@L["PlayNow"]</span>
+                        </button>
+                    </div>
+                    <div class="nep-card-info">
+                        <span class="nep-card-badge nep-card-badge--accent">@L["NextEpisode"]</span>
+                        <span class="nep-card-title">
+                            S@(nextEp.SeasonNumber.ToString("D2"))E@(nextEp.EpisodeNumber.ToString("D2"))
+                            @if (!string.IsNullOrEmpty(nextEp.Title))
+                            {
+                                <span> &mdash; @nextEp.Title</span>
+                            }
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="nep-card-empty-state">
+                        <i class="ph ph-check-circle"></i>
+                        <span>@L["NoMoreEpisodes"]</span>
+                    </div>
+                }
+            </div>
+
+        </div>
+
+        <button class="nep-dismiss-btn" type="button" @onclick="Dismiss">@L["Dismiss"]</button>
+    </div>
+}

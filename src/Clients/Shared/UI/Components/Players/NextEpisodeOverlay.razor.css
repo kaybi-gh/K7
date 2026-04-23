@@ -1,0 +1,193 @@
+.nep-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 100001;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.88);
+    animation: nep-fade-in 0.35s var(--ease-out);
+}
+
+.nep-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 860px;
+    padding: 0 24px;
+}
+
+.nep-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Still */
+.nep-card-still {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #111;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nep-card-still::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    transition: background var(--duration-normal) var(--ease-out);
+    pointer-events: none;
+}
+
+.nep-card-still:hover::after {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.nep-card-still-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: rgba(255, 255, 255, 0.15);
+}
+
+/* Action buttons on the still */
+.nep-action-btn {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    border-radius: var(--radius-full);
+    color: white;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    padding: 10px 22px;
+    cursor: pointer;
+    transition: background var(--duration-fast), transform var(--duration-fast);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    white-space: nowrap;
+}
+
+.nep-action-btn i {
+    font-size: 1.15rem;
+}
+
+.nep-action-btn:hover {
+    background: rgba(255, 255, 255, 0.26);
+    transform: scale(1.04);
+}
+
+.nep-action-btn--primary {
+    background: var(--color-accent);
+    border-color: transparent;
+}
+
+.nep-action-btn--primary:hover {
+    background: var(--color-accent);
+    filter: brightness(1.12);
+    transform: scale(1.04);
+}
+
+/* Countdown badge */
+.nep-countdown {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 2;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: white;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: var(--radius-full);
+    padding: 3px 10px;
+    letter-spacing: 0.04em;
+}
+
+/* Card metadata */
+.nep-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0 2px;
+}
+
+.nep-card-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.nep-card-badge--accent {
+    color: var(--color-accent);
+}
+
+.nep-card-title {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Empty state (no next episode) */
+.nep-card--empty .nep-card-still {
+    border: 2px dashed rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.nep-card-empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: var(--text-sm);
+}
+
+.nep-card-empty-state i {
+    font-size: 2rem;
+}
+
+/* Dismiss button */
+.nep-dismiss-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: var(--text-sm);
+    padding: 7px 24px;
+    cursor: pointer;
+    transition: border-color var(--duration-fast), color var(--duration-fast);
+}
+
+.nep-dismiss-btn:hover {
+    border-color: rgba(255, 255, 255, 0.45);
+    color: white;
+}
+
+@keyframes nep-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}

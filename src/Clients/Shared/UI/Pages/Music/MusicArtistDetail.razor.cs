@@ -80,7 +80,7 @@ public partial class MusicArtistDetail
         _loading = false;
     }
 
-    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.Complex.TableRowClickEventArgs<TrackViewModel> args)
+    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<TrackViewModel> args)
     {
         var track = args.Item;
         if (track is null) return;

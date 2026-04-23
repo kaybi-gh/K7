@@ -1,0 +1,9 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-alert k7-alert--@Severity.ToString().ToLower() @Class" role="alert">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <i class="ph ph-@Icon"></i>
+    }
+    <div>@ChildContent</div>
+</div>

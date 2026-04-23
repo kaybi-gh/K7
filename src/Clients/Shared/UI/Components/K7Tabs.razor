@@ -1,0 +1,25 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-tabs @Class">
+    <div class="k7-tab-list" role="tablist">
+        @foreach (var panel in _panels)
+        {
+            <button class="k7-tab-btn"
+                    type="button"
+                    role="tab"
+                    aria-selected="@(_activeIndex == _panels.IndexOf(panel))"
+                    @onclick="() => Activate(panel)">
+                @if (!string.IsNullOrEmpty(panel.Icon))
+                {
+                    <i class="ph ph-@panel.Icon"></i>
+                }
+                @panel.Text
+            </button>
+        }
+    </div>
+    <div class="k7-tab-panels">
+        <CascadingValue Value="this" IsFixed="true">
+            @ChildContent
+        </CascadingValue>
+    </div>
+</div>

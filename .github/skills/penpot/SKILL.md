@@ -320,6 +320,245 @@ return "cloned";
 
 ---
 
+## Variant Components
+
+### Naming convention
+
+Penpot parses variant properties directly from the board name using the format `Property=Value, Property2=Value2`.
+
+```
+K7Button / Variant=primary, State=default
+K7Button / Variant=primary, State=hover
+K7Button / Variant=primary, State=disabled
+```
+
+- The prefix before ` / ` becomes the component group name.
+- Each `Property=Value` pair maps to a variant property.
+- A property with exactly two values named `yes/no`, `true/false`, or `on/off` renders as a **boolean toggle** in the inspector instead of a dropdown.
+
+### Discovering variant structure
+
+```js
+// Check all VariantContainers on the current page
+const page = penpot.currentPage;
+const shapes = page.findShapes();
+const vcs = shapes.filter(s => s.isVariantContainer && s.isVariantContainer());
+return vcs.map(vc => ({
+  name: vc.name,
+  children: Array.from(vc.children).length,
+  x: Math.round(vc.x),
+  y: Math.round(vc.y)
+}));
+```
+
+```js
+// Read all variant property values for a component group
+const local = penpot.library.local;
+const comp = local.components.find(c => c.name === "K7Button" && c.isVariant && c.isVariant());
+const vg = comp.variants; // VariantGroup
+return {
+  properties: vg.properties,
+  allVariants: vg.variantComponents().map(v => v.variantProps)
+};
+```
+
+### VariantGroup API
+
+`comp.variants` returns a `VariantGroup` object with these **own properties** (not visible in `Object.keys` - they are on the JS prototype, use `Object.getOwnPropertyNames`):
+
+| Property / Method | Description |
+|---|---|
+| `vg.properties` | Array of property name strings, e.g. `["Variant", "State"]` |
+| `vg.variantComponents()` | **Function** - call it to get the array of all variant `LibraryComponent` objects |
+| `vg.addVariant()` | Duplicates the current component into a new variant (auto-named `Value N`) |
+| `vg.addProperty(name)` | Adds a new property to all variants (value defaults to `Value 1`) |
+| `vg.renameProperty(index, newName)` | Renames property at 0-based index - use **index**, not the old name |
+| `vg.removeProperty(index)` | Removes a property by index |
+
+### Individual variant API (`LibraryVariantComponent`)
+
+```js
+const allV = vg.variantComponents(); // always call, never iterate vg.variants directly
+const v = allV[0];
+
+v.variantProps          // { "Variant": "primary", "State": "default" }
+v.setVariantProperty(propIndex, value) // set value by 0-based property index
+v.mainInstance()        // returns the canvas VariantHead board for direct styling
+v.remove()              // removes this variant and its canvas board
+v.addVariant()          // same as vg.addVariant(), duplicates this variant
+```
+
+**Critical**: `vg.variantComponents` is a **function**, not a property. Always call `vg.variantComponents()`.
+
+### Renaming existing `Property 1` to a semantic name
+
+After `combineAsVariants()`, all groups start with generic `Property 1`. Rename it before adding new variants:
+
+```js
+const vg = comp.variants;
+vg.renameProperty(0, "Variant"); // use index 0, NOT the string "Property 1"
+vg.renameProperty(1, "State");
+```
+
+### Styling variant canvas boards
+
+The name setter on VariantHead boards silently fails - always style via `v.mainInstance()`:
+
+```js
+const local = penpot.library.local;
+const comp = local.components.find(c => c.name === "K7Button" && c.isVariant && c.isVariant());
+const vg = comp.variants;
+for (const v of vg.variantComponents()) {
+  const board = v.mainInstance(); // returns the canvas VariantHead shape
+  if (!board) continue;
+
+  // Set fill
+  board.fills = [{ fillColor: "#E5A00D", fillOpacity: 1 }];
+
+  // Set opacity (disabled state)
+  board.opacity = 0.45;
+
+  // Set stroke (focused state)
+  board.strokes = [{ strokeColor: "#E5A00D", strokeWidth: 1.5, strokeStyle: "solid", strokeAlignment: "inner", strokeOpacity: 1 }];
+}
+```
+
+Alternatively, read canvas children from the VC shape directly using their index. Fills/opacity setters DO work when accessed via `vc.children` array - the issue only affects orphaned clone references:
+
+```js
+const vc = shapes.find(s => s.name === "K7Button" && s.isVariantContainer && s.isVariantContainer());
+const children = Array.from(vc.children);
+children[6].fills = [{ fillColor: "#FCB00E", fillOpacity: 1 }]; // works
+children[6].opacity = 0.45; // works
+```
+
+### Converting a standalone component to a variant
+
+Use `comp.transformInVariant()` on the `LibraryComponent`. This creates a VariantContainer with a single variant named `Value 1`.
+
+```js
+const local = penpot.library.local;
+const comp = local.components.find(c => c.name === "K7Select");
+comp.transformInVariant(); // now comp.isVariant() === true
+
+const vg = comp.variants;
+vg.renameProperty(0, "State");           // rename generic property
+comp.setVariantProperty(0, "default");   // set initial value
+
+// Add more variants
+comp.addVariant(); // returns empty - but variant IS created
+// Get it from variantComponents()
+const allV = vg.variantComponents();
+allV[1].setVariantProperty(0, "focused");
+allV[2].setVariantProperty(0, "error");
+allV[3].setVariantProperty(0, "disabled");
+```
+
+### Creating a new multi-property variant component from scratch
+
+```js
+// 1. Create the first board
+const board = penpot.createBoard();
+board.name = "K7ToggleButton";
+board.x = 9;
+board.y = 6000;
+board.resize(120, 36);
+board.borderRadius = 8;
+board.fills = [{ fillColor: "#E5A00D", fillOpacity: 1 }];
+
+// Add a text label
+const label = penpot.createText("Label");
+label.fontFamily = "sourcesanspro";
+label.fontSize = 14;
+label.fills = [{ fillColor: "#000000", fillOpacity: 1 }];
+board.appendChild(label);
+
+// 2. Register as a component - use createComponent([shape]) (array, not bare shape)
+const local = penpot.library.local;
+const comp = local.createComponent([board]); // correct: array of shapes
+
+// 3. Transform to variant and configure properties
+comp.transformInVariant();
+const vg = comp.variants;
+vg.renameProperty(0, "Selected");
+vg.addProperty("State");       // adds "Property 2", rename it:
+vg.renameProperty(1, "State");
+
+// 4. Set initial variant values
+comp.setVariantProperty(0, "yes");     // Selected=yes
+comp.setVariantProperty(1, "default"); // State=default
+
+// 5. Add remaining variants
+comp.addVariant(); // creates Selected=yes, State=Value 2 - fix with setVariantProperty
+const allV = vg.variantComponents();
+allV[1].setVariantProperty(0, "yes");
+allV[1].setVariantProperty(1, "hover");
+// ... repeat for all combinations
+
+// 6. Style each canvas board via mainInstance()
+for (const v of vg.variantComponents()) {
+  const inst = v.mainInstance();
+  inst.fills = [...];
+  inst.opacity = v.variantProps.State === "disabled" ? 0.45 : 1;
+}
+```
+
+### Removing unwanted variants
+
+`addVariant()` creates one variant per call but does not return a useful reference. Always fetch the result via `vg.variantComponents()` after the call. Remove extras with `v.remove()`:
+
+```js
+const allV = vg.variantComponents();
+// Remove any variant with a generic auto-assigned value
+const bad = allV.find(v => Object.values(v.variantProps).some(val => val.startsWith("Value ")));
+if (bad) bad.remove();
+```
+
+### Combine multiple boards as variants
+
+`shape.combineAsVariants(ids[])` requires that the boards are already registered as components AND share the same component name prefix (the part before ` / `). Use `transformInVariant` + `addVariant` instead for programmatic workflows - it is more reliable.
+
+---
+
+## Library Components
+
+### Creating library components programmatically
+
+Use `penpot.library.local.createComponent(shapes[])` to register boards as reusable library components.
+The method exists on the `Library` interface but is NOT visible in `Object.keys()` enumeration (it is on the prototype).
+
+```js
+// Register a single board as a component
+const board = penpotUtils.findShape(s => s.name === "K7Button / primary", page.root);
+const comp = penpot.library.local.createComponent([board]);
+// comp.id, comp.name are now available
+
+// Register all top-level boards on the current page as components
+const page = penpot.currentPage;
+const shapes = page.findShapes();
+const topLevelBoards = shapes.filter(s =>
+  s.type === "board" &&
+  s.parent &&
+  s.parent.name === "Root Frame" &&
+  s.name !== "Root Frame"
+);
+const local = penpot.library.local;
+const created = [];
+for (const board of topLevelBoards) {
+  const comp = local.createComponent([board]);
+  created.push(board.name);
+}
+return { count: created.length, names: created };
+```
+
+Key facts:
+- `createComponent([board])` takes an **array of shapes** that form the component contents.
+- Top-level boards have `shape.parent.name === "Root Frame"` (the root frame is itself a board named "Root Frame").
+- After creation, components appear in **Assets → Local library → Components** in the Penpot UI.
+- Verify with `penpot.library.local.components.length`.
+
+---
+
 ## Don'ts
 
 - **Never log data you also return** - it duplicates output and wastes context.
