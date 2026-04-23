@@ -23,4 +23,7 @@
   <data name="AutoPlayIn" xml:space="preserve"><value>Lecture auto dans {0}s</value></data>
   <data name="PlayNow" xml:space="preserve"><value>Lire maintenant</value></data>
   <data name="Dismiss" xml:space="preserve"><value>Fermer</value></data>
+  <data name="Replay" xml:space="preserve"><value>Regarder a nouveau</value></data>
+  <data name="CurrentEpisode" xml:space="preserve"><value>Episode regarde</value></data>
+  <data name="NoMoreEpisodes" xml:space="preserve"><value>Plus d'episodes</value></data>
 </root>
