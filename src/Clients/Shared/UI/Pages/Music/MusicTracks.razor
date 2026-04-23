@@ -29,7 +29,7 @@
 else if (_tracks.Count == 0)
 {
     <div class="d-flex flex-col pa-16">
-        <K7Icon Name="music-note" Style="font-size: 64px; opacity: 0.3;" />
+        <K7Icon Name="@Phosphor.MusicNote" Style="font-size: 64px; opacity: 0.3;" />
         <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
     </div>
 }
@@ -44,7 +44,7 @@ else
                 <th>@S["Title"]</th>
                 <th>@S["Artist"]</th>
                 <th>@S["Album"]</th>
-                <th style="width: 80px;"><K7Icon Name="clock" Size="sm" /></th>
+                <th style="width: 80px;"><K7Icon Name="@Phosphor.Clock" Size="sm" /></th>
                 <th style="width: 130px;"></th>
                 <th style="width: 50px;"></th>
             </HeaderContent>
@@ -53,7 +53,7 @@ else
                     <div class="d-flex align-center">
                         @if (context.IsPlaying)
                         {
-                            <K7Icon Name="equalizer" Size="sm" Color="primary" />
+                            <K7Icon Name="@Phosphor.Equalizer" Size="sm" Color="primary" />
                         }
                         <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
                     </div>
@@ -79,10 +79,10 @@ else
                     <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
                 </td>
                 <td>
-                    <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
+                    <RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
                 </td>
                 <td>
-                    <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
+                    <TrackContextMenu Track="BuildQueueItem(context)" />
                 </td>
             </RowTemplate>
         </K7Table>

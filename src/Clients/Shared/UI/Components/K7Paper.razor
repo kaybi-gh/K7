@@ -1,0 +1,7 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-paper @(Elevation > 0 ? $"k7-paper--e{Math.Min(Elevation, 4)}" : "") @(Outlined ? "k7-paper--outlined" : "") @(Square ? "k7-paper--square" : "") @Class"
+     style="@Style"
+     @attributes="AdditionalAttributes">
+    @ChildContent
+</div>

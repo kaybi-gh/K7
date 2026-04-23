@@ -1,0 +1,13 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+<span class="k7-avatar @(Size == "sm" ? "k7-avatar--sm" : Size == "lg" ? "k7-avatar--lg" : Size == "xl" ? "k7-avatar--xl" : "") @Class"
+      style="@(string.IsNullOrEmpty(Style) ? null : Style)">
+    @if (!string.IsNullOrEmpty(Image))
+    {
+        <img src="@Image" alt="@Alt" />
+    }
+    else
+    {
+        @ChildContent
+    }
+</span>

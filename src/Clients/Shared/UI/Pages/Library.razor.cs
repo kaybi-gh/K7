@@ -1,4 +1,4 @@
-using K7.Clients.Shared.Mappings;
+﻿using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;

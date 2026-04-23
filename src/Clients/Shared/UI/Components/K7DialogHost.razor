@@ -1,0 +1,29 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+@implements IDisposable
+
+@foreach (var entry in _dialogs.Where(d => !d.Result.IsCompleted))
+{
+    <div class="k7-dialog-backdrop"
+         @key="entry.Id"
+         @onclick="() => OnBackdropClick(entry)"
+         @onkeydown="(e) => OnBackdropKeyDown(e, entry)">
+        <div class="k7-dialog-paper @GetSizeClass(entry.Options?.MaxWidth) @(entry.Options?.FullWidth == true ? "k7-dialog--full" : "")"
+             @onclick:stopPropagation="true">
+            <div class="k7-dialog-header">
+                <h6 class="k7-dialog-title">@entry.Title</h6>
+                @if (entry.Options?.CloseButton != false)
+                {
+                    <button class="k7-icon-btn k7-icon-btn--sm"
+                            type="button"
+                            aria-label="Close"
+                            @onclick="() => entry.Cancel()">
+                        <i class="ph ph-x"></i>
+                    </button>
+                }
+            </div>
+            <CascadingValue Value="@((IK7DialogInstance)entry)" IsFixed="true">
+                <DynamicComponent Type="entry.Type" Parameters="entry.ComponentParameters" />
+            </CascadingValue>
+        </div>
+    </div>
+}

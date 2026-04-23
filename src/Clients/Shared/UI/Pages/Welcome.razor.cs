@@ -1,4 +1,4 @@
-using K7.Server.Domain.Enums;
+﻿using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
@@ -16,7 +16,7 @@ public partial class Welcome : IDisposable
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
-    private K7.Clients.Shared.UI.Components.Base.K7Button? _signInButton;
+    private K7.Clients.Shared.UI.Components.K7Button? _signInButton;
     private bool _loading;
     private bool _guestEnabled;
     private bool _isTv;

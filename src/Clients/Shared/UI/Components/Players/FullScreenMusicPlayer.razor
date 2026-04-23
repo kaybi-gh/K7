@@ -1,0 +1,186 @@
+@inject IAudioPlayerService Audio
+@inject IMediaService Server
+
+@if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
+{
+    <div class="fullscreen-player"
+         style="@DominantColorStyle"
+         @onclick="OnBackdropClick">
+        @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+        {
+            <div class="fullscreen-player-bg"
+                 style="background-image: url('@Audio.CurrentTrack.CoverUrl')">
+            </div>
+        }
+
+        <div class="fullscreen-player-content" @onclick:stopPropagation="true">
+            <div class="fullscreen-player-header">
+                <button type="button" class="k7-icon-btn" @onclick="Close" aria-label="@S["Close"]"><i class="ph ph-caret-down"></i></button>
+                <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
+                <button type="button" class="k7-icon-btn" style="@(_view == FullScreenView.Lyrics ? "color: var(--color-accent);" : "")" @onclick="ToggleLyrics" aria-label="Lyrics"><i class="ph ph-text-align-left"></i></button>
+                <button type="button" class="k7-icon-btn" style="@(_view == FullScreenView.Queue ? "color: var(--color-accent);" : "")" @onclick="ToggleQueue" aria-label="Queue"><i class="ph ph-queue"></i></button>
+            </div>
+
+            @if (_view == FullScreenView.Player)
+            {
+                <div class="fullscreen-player-artwork">
+                    @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+                    {
+                        <K7Image Src="@Audio.CurrentTrack.CoverUrl"
+                                  Alt="@($"{Audio.CurrentTrack.Title} - {Audio.CurrentTrack.Artist}")"
+                                  ObjectFit="cover"
+                                  Class="artwork-image" />
+                    }
+                    else
+                    {
+                        <div class="artwork-placeholder">
+                            <K7Icon Name="@Phosphor.MusicNote"
+                                     Style="font-size: 96px;" />
+                        </div>
+                    }
+                </div>
+
+                <div class="fullscreen-player-info">
+                    <span class="fullscreen-player-title">@Audio.CurrentTrack.Title</span>
+                    <span class="fullscreen-player-artist">@Audio.CurrentTrack.Artist</span>
+                    @if (!string.IsNullOrEmpty(Audio.CurrentTrack.AlbumTitle))
+                    {
+                        <span class="fullscreen-player-album">@Audio.CurrentTrack.AlbumTitle</span>
+                    }
+                    <RatingStars
+                        MediaId="Audio.CurrentTrack.MediaId"
+                        Value="Audio.CurrentTrack.UserRating"
+                        ValueChanged="OnRatingChanged"
+                        Size="md" />
+                </div>
+
+                <div class="fullscreen-player-seek">
+                    @if (_waveformMaskStyle is not null)
+                    {
+                        <div class="waveform-container" style="@_waveformMaskStyle"
+                             tabindex="0" role="slider"
+                             aria-label="@S["SeekBar"]"
+                             aria-valuemin="0" aria-valuemax="100"
+                             aria-valuenow="@((int)CurrentPercent)"
+                             @ref="_seekBarRef"
+                             @onclick="OnSeekClick"
+                             @onkeydown="OnSeekKeyDown"
+                             @onpointerdown="OnSeekPointerDown"
+                             @onpointermove="OnSeekPointerMove"
+                             @onpointerup="OnSeekPointerUp">
+                            <div class="waveform-bg"></div>
+                            <div class="waveform-progress" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="seek-bar" @ref="_seekBarRef"
+                             tabindex="0" role="slider"
+                             aria-label="@S["SeekBar"]"
+                             aria-valuemin="0" aria-valuemax="100"
+                             aria-valuenow="@((int)CurrentPercent)"
+                             @onclick="OnSeekClick"
+                             @onkeydown="OnSeekKeyDown"
+                             @onpointerdown="OnSeekPointerDown"
+                             @onpointermove="OnSeekPointerMove"
+                             @onpointerup="OnSeekPointerUp">
+                            <div class="seek-buffered" style="width: @(BufferedPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="seek-current" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="seek-thumb" style="left: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                    }
+                    <div class="seek-times">
+                        <span>@FormatTime(Audio.CurrentTime)</span>
+                        <span>@FormatTime(Audio.Duration)</span>
+                    </div>
+                </div>
+
+                <div class="fullscreen-player-controls">
+                    <button class="k7-icon-btn" type="button" @onclick="Audio.ToggleShuffle" aria-label="shuffle"><i class="ph ph-@ShuffleIcon"></i></button>
+
+                    <button type="button" class="k7-icon-btn" @onclick="OnPrevious" aria-label="Previous"><i class="ph ph-skip-back"></i></button>
+
+                    <button type="button" class="k7-fab k7-fab--lg" @onclick="TogglePlayPause" aria-label="Play/Pause"><i class="ph ph-@PlayPauseIcon"></i></button>
+
+                    <button type="button" class="k7-icon-btn" @onclick="OnNext" aria-label="Next"><i class="ph ph-skip-forward"></i></button>
+
+                    <button class="k7-icon-btn" type="button" @onclick="Audio.CycleRepeatMode" aria-label="repeat"><i class="ph ph-@RepeatIcon"></i></button>
+                </div>
+
+                <div class="fullscreen-player-volume">
+                    <button class="k7-icon-btn" type="button" @onclick="ToggleMute" aria-label="mute"><i class="ph ph-@VolumeIcon"></i></button>
+                    <K7Slider TValue="double"
+                               Value="Audio.Volume"
+                               Min="0" Max="1"
+                               Immediate="true"
+                               ValueChanged="OnVolumeChanged" Step="0.01"
+                               Class="fullscreen-volume-slider" />
+                </div>
+            }
+            else if (_view == FullScreenView.Lyrics)
+            {
+                <SyncedLyricsDisplay LyricsLrc="@_lyricsLrc"
+                                     PlainTextLyrics="@_lyrics"
+                                     CurrentTime="Audio.CurrentTime"
+                                     SeekRequested="OnLyricsSeek" />
+            }
+            else
+            {
+                <div class="fullscreen-player-queue">
+                    <div class="queue-header">
+                        <span class="queue-title">File d'attente</span>
+                        <span class="queue-count">@Audio.Queue.Count morceaux</span>
+                    </div>
+                    <div class="queue-list">
+                        @for (var i = 0; i < Audio.Queue.Count; i++)
+                        {
+                            var index = i;
+                            var track = Audio.Queue[i];
+                            var isCurrent = i == Audio.CurrentIndex;
+
+                            <div class="queue-item @(isCurrent ? "queue-item-current" : "")"
+                                 tabindex="0" role="button"
+                                 @onclick="() => PlayFromQueue(index)"
+                                 @onkeydown="(e) => OnQueueItemKeyDown(e, index)">
+                                <div class="queue-item-index">
+                                    @if (isCurrent)
+                                    {
+                                        <K7Icon Name="@Phosphor.Equalizer"
+                                                 Size="sm"
+                                                 Color="primary" />
+                                    }
+                                    else
+                                    {
+                                        <span>@(i + 1)</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(track.CoverUrl))
+                                {
+                                    <K7Image Src="@track.CoverUrl"
+                                              Alt="Cover"
+                                              Width="40"
+                                              ObjectFit="cover"
+                                              Class="queue-item-cover"
+                                              loading="lazy" />
+                                }
+                                else
+                                {
+                                    <K7Icon Name="@Phosphor.MusicNote"
+                                             Class="queue-item-cover-placeholder" />
+                                }
+                                <div class="queue-item-info">
+                                    <span class="queue-item-title">@track.Title</span>
+                                    <span class="queue-item-artist">@track.Artist</span>
+                                </div>
+                                <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
+                                <button type="button" class="k7-icon-btn queue-item-remove" @onclick="@(() => Audio.RemoveFromQueue(index))">
+                                    <i class="ph ph-x"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

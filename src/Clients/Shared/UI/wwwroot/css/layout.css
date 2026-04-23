@@ -9,10 +9,9 @@
     line-height: 1;
 }
 
-.k7-icon--small  { font-size: 1rem; }
-.k7-icon--medium { font-size: 1.5rem; }
-.k7-icon--large  { font-size: 2rem; }
-.k7-icon--xlarge { font-size: 3rem; }
+.k7-icon--sm { font-size: 1rem; }
+.k7-icon--lg { font-size: 2rem; }
+.k7-icon--xl { font-size: 3rem; }
 
 /* ============================================================
    App shell - CSS Grid layout

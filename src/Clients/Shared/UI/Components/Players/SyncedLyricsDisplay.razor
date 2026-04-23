@@ -1,0 +1,41 @@
+﻿@using K7.Shared
+
+@if (_lines.Count > 0)
+{
+    <div class="synced-lyrics">
+        @for (var i = 0; i < _lines.Count; i++)
+        {
+            var idx = i;
+            var isActive = i == _activeIndex;
+            var isPast = i < _activeIndex;
+
+            <div class="lyrics-line @(isActive ? "lyrics-line-active" : "") @(isPast ? "lyrics-line-past" : "")"
+                 tabindex="0" role="button"
+                 @ref="_lineRefs[idx]"
+                 @onclick="() => OnLineClick(idx)"
+                 @onkeydown="(e) => OnLineKeyDown(e, idx)">
+                @if (string.IsNullOrEmpty(_lines[idx].Text))
+                {
+                    <span class="lyrics-interlude">♪</span>
+                }
+                else
+                {
+                    @_lines[idx].Text
+                }
+            </div>
+        }
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(PlainTextLyrics))
+{
+    <div class="plain-lyrics">
+        @PlainTextLyrics
+    </div>
+}
+else
+{
+    <div class="no-lyrics">
+        <K7Icon Name="@Phosphor.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
+        <span>Aucune parole disponible</span>
+    </div>
+}

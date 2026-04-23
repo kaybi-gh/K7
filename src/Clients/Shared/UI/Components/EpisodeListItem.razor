@@ -15,7 +15,7 @@
             else
             {
                 <div class="episode-still-placeholder">
-                    <K7Icon Name="circle" Style="font-size: 24px; opacity: 0.3;" />
+                    <K7Icon Name="@Phosphor.Circle" Style="font-size: 24px; opacity: 0.3;" />
                 </div>
             }
             @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
@@ -30,7 +30,7 @@
                 <p class="text-subtitle2">@(Episode.Title ?? S["Untitled"])</p>
                 @if (Episode.UserState?.IsCompleted == true)
                 {
-                    <K7Icon Name="check-circle" Color="success" Size="sm" />
+                    <K7Icon Name="@Phosphor.CheckCircle" Color="success" Size="sm" />
                 }
             </div>
             <div class="d-flex">

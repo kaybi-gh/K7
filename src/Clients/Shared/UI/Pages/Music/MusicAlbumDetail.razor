@@ -1,4 +1,4 @@
-﻿@page "/music/albums/{Id}"
+@page "/music/albums/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
 @inject IMediaService k7ServerService
@@ -57,7 +57,7 @@
                     }
                     @if (_totalDuration > 0)
                     {
-                        <p class="text-sm" Color="secondary">· @FormatTotalDuration(_totalDuration)</p>
+                        <p class="text-sm" Color="secondary">� @FormatTotalDuration(_totalDuration)</p>
                     }
                 </div>
 
@@ -137,10 +137,10 @@
                             <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
                         </td>
                         <td>
-                            <K7.Clients.Shared.UI.Components.RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
+                            <RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
                         </td>
                         <td>
-                            <K7.Clients.Shared.UI.Components.TrackContextMenu Track="BuildQueueItem(context)" />
+                            <TrackContextMenu Track="BuildQueueItem(context)" />
                         </td>
                     </RowTemplate>
                 </K7Table>

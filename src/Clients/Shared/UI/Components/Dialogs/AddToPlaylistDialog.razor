@@ -22,7 +22,7 @@
                 {
                     <li T="LitePlaylistDto" OnClick="() => SelectPlaylist(playlist)">
                         <div class="d-flex align-center">
-                            <K7Icon Name="queue" Color="primary" />
+                            <K7Icon Name="@Phosphor.Queue" Color="primary" />
                             <div class="d-flex flex-col">
                                 <span>@playlist.Title</span>
                                 <span class="text-caption" Color="secondary">@string.Format(L["TrackCount"], playlist.ItemCount)</span>

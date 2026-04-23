@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
@@ -13,7 +13,7 @@ public partial class PinDialog
     public string UserName { get; set; } = "";
 
     private string _pin = "";
-    private K7.Clients.Shared.UI.Components.Forms.K7TextField<string>? _pinField;
+    private K7.Clients.Shared.UI.Components.K7TextField<string>? _pinField;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

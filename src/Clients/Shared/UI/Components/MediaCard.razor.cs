@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -30,7 +30,7 @@ public partial class MediaCard
 
     private string PlaceholderIcon => Variant switch
     {
-        MediaCardVariant.Cover => "vinyl-record",
-        _ => "film-slate"
+        MediaCardVariant.Cover => Phosphor.VinylRecord,
+        _ => Phosphor.FilmSlate
     };
 }

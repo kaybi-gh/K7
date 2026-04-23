@@ -40,6 +40,23 @@
         "files/manrope-latin-500-normal.woff2",
         "files/manrope-latin-700-normal.woff2"
       ]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "@phosphor-icons/web@2.1.2",
+      "destination": "wwwroot/dist/phosphor-icons/",
+      "files": [
+        "src/fill/style.css",
+        "src/fill/Phosphor-Fill.woff2",
+        "src/bold/style.css",
+        "src/bold/Phosphor-Bold.woff2",
+        "src/thin/style.css",
+        "src/thin/Phosphor-Thin.woff2",
+        "src/light/style.css",
+        "src/light/Phosphor-Light.woff2",
+        "src/duotone/style.css",
+        "src/duotone/Phosphor-Duotone.woff2"
+      ]
     }
   ]
 }

@@ -1,0 +1,106 @@
+.k7-category-card {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 120px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    background: linear-gradient(to right, var(--card-gradient-start), var(--card-gradient-end));
+    transition: transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.k7-category-card:hover,
+.k7-category-card:focus-visible {
+    transform: scale(1.015);
+    box-shadow: var(--shadow-lg);
+    outline: none;
+}
+
+.k7-category-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.k7-category-card:active {
+    transform: scale(0.99);
+}
+
+/* Optional background image */
+.k7-category-card__bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.25;
+}
+
+/* Gradient overlay on top of image (or alone) */
+.k7-category-card__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, var(--card-gradient-start), var(--card-gradient-end));
+}
+
+/* Content row */
+.k7-category-card__body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 var(--space-6);
+    gap: var(--space-4);
+}
+
+.k7-category-card__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.k7-category-card__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: var(--font-extrabold);
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+    line-height: var(--leading-tight);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.k7-category-card__desc {
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Icon badge */
+.k7-category-card__icon-badge {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-lg);
+    background: var(--card-icon-color);
+    font-size: 1.5rem;
+    color: #ffffff;
+}

@@ -1,0 +1,88 @@
+@inject IStringLocalizer<BackgroundTaskDetailDialog> L
+
+<div class="k7-dialog-content">
+        @if (BackgroundTask.ErrorDetails is not null)
+        {
+            <K7Alert Severity="K7Severity.Error" Class="mb-3" NoIcon="false">
+                <p class="text-sm" Style="white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">@BackgroundTask.ErrorDetails</p>
+            </K7Alert>
+        }
+        <table class="k7-table k7-table--dense">
+            <tbody>
+                <tr>
+                    <td><strong>@L["Name"]</strong></td>
+                    <td>@BackgroundTask.Name</td>
+                </tr>
+                <tr>
+                    <td><strong>@L["Status"]</strong></td>
+                    <td>
+                        <K7Chip Size="sm" Color="@BackgroundTaskStatusHelper.GetColor(BackgroundTask.Status)">@BackgroundTask.Status</K7Chip>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>@L["Priority"]</strong></td>
+                    <td>@BackgroundTask.Priority</td>
+                </tr>
+                @if (BackgroundTask.ConcurrencyGroup is not null)
+                {
+                    <tr>
+                        <td><strong>@L["ConcurrencyGroup"]</strong></td>
+                        <td><K7Chip Size="sm" Color="default">@BackgroundTask.ConcurrencyGroup</K7Chip></td>
+                    </tr>
+                }
+                <tr>
+                    <td><strong>@L["Attempts"]</strong></td>
+                    <td>@BackgroundTask.AttemptCount / @BackgroundTask.MaxAttempts</td>
+                </tr>
+                <tr>
+                    <td><strong>@L["Timeout"]</strong></td>
+                    <td>@BackgroundTask.TimeoutSeconds s</td>
+                </tr>
+                @if (BackgroundTask.TargetEntityType is not null)
+                {
+                    <tr>
+                        <td><strong>@L["TargetType"]</strong></td>
+                        <td>@BackgroundTask.TargetEntityType</td>
+                    </tr>
+                }
+                @if (BackgroundTask.TargetEntityId is not null)
+                {
+                    <tr>
+                        <td><strong>@L["TargetId"]</strong></td>
+                        <td><code>@BackgroundTask.TargetEntityId</code></td>
+                    </tr>
+                }
+                @if (BackgroundTask.StartedAt is not null)
+                {
+                    <tr>
+                        <td><strong>@L["StartedAt"]</strong></td>
+                        <td>@BackgroundTask.StartedAt.Value.LocalDateTime.ToString("g")</td>
+                    </tr>
+                }
+                @if (BackgroundTask.CompletedAt is not null)
+                {
+                    <tr>
+                        <td><strong>@L["CompletedAt"]</strong></td>
+                        <td>@BackgroundTask.CompletedAt.Value.LocalDateTime.ToString("g")</td>
+                    </tr>
+                }
+                @if (BackgroundTask.Duration is not null)
+                {
+                    <tr>
+                        <td><strong>@L["Duration"]</strong></td>
+                        <td>@BackgroundTask.Duration.Value.ToString(@"hh\:mm\:ss")</td>
+                    </tr>
+                }
+                @if (BackgroundTask.NextRetryAfter is not null)
+                {
+                    <tr>
+                        <td><strong>@L["NextRetryAfter"]</strong></td>
+                        <td>@BackgroundTask.NextRetryAfter.Value.LocalDateTime.ToString("g")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Close">@L["Close"]</K7Button>
+    </div>

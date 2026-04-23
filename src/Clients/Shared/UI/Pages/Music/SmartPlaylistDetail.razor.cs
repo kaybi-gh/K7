@@ -80,7 +80,7 @@ public partial class SmartPlaylistDetail
         }
     }
 
-    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.Complex.TableRowClickEventArgs<SmartPlaylistItemViewModel> args)
+    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<SmartPlaylistItemViewModel> args)
     {
         var track = args.Item;
         if (track is null) return;

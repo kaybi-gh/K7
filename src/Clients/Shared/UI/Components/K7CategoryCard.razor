@@ -1,0 +1,31 @@
+﻿@namespace K7.Clients.Shared.UI.Components
+
+<button type="button"
+        class="k7-category-card @Class"
+        style="--card-gradient-start:@GradientStart;--card-gradient-end:@GradientEnd;--card-icon-color:@IconColor;@Style"
+        @onclick="OnClick"
+        @attributes="AdditionalAttributes">
+
+    @if (!string.IsNullOrEmpty(ImageUrl))
+    {
+        <div class="k7-category-card__bg" style="background-image:url('@ImageUrl')"></div>
+    }
+    <div class="k7-category-card__overlay"></div>
+
+    <div class="k7-category-card__body">
+        <div class="k7-category-card__text">
+            <span class="k7-category-card__title">@Title</span>
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <span class="k7-category-card__desc">@Description</span>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <div class="k7-category-card__icon-badge" aria-hidden="true">
+                <i class="ph ph-@Icon"></i>
+            </div>
+        }
+    </div>
+</button>
