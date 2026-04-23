@@ -1,0 +1,243 @@
+﻿@page "/dialogs"
+@inject IK7DialogService DialogService
+@inject IK7Snackbar Snackbar
+
+<PageTitle>Dialogs - K7 Design System</PageTitle>
+
+<div class="ds-page">
+    <header class="ds-page-header">
+        <h1>Dialogs</h1>
+        <p class="ds-lead">
+            All dialogs are opened via <code>IK7DialogService.ShowAsync&lt;TDialog&gt;</code>.
+            They render inside <code>K7DialogHost</code> in the layout.
+        </p>
+    </header>
+
+    <section id="message-box" class="ds-section">
+        <h2>K7MessageBoxDialog</h2>
+        <p class="ds-description">General-purpose message box. Supports optional Cancel and No buttons.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowMessageBox">OK only</K7Button>
+            <K7Button OnClick="ShowConfirmBox">Yes / No / Cancel</K7Button>
+        </div>
+    </section>
+
+    <section id="overview" class="ds-section">
+        <h2>OverviewDialog</h2>
+        <p class="ds-description">Simple text overview dialog with a single close button.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowOverviewDialog">Show overview</K7Button>
+        </div>
+    </section>
+
+    <section id="pin" class="ds-section">
+        <h2>PinDialog</h2>
+        <p class="ds-description">Numeric PIN entry dialog for per-user authentication.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowPinDialog">Enter PIN for user</K7Button>
+        </div>
+    </section>
+
+    <section id="create-playlist" class="ds-section">
+        <h2>CreatePlaylistDialog</h2>
+        <p class="ds-description">Creates a new playlist with a title and optional description.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowCreatePlaylistDialog">Create playlist</K7Button>
+        </div>
+    </section>
+
+    <section id="edit-playlist" class="ds-section">
+        <h2>EditPlaylistDialog</h2>
+        <p class="ds-description">Edits an existing playlist's title and description.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowEditPlaylistDialog">Edit playlist</K7Button>
+        </div>
+    </section>
+
+    <section id="create-library" class="ds-section">
+        <h2>CreateLibraryDialog</h2>
+        <p class="ds-description">Configures a new media library with a name, root folder, type, and metadata provider.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowCreateLibraryDialog">Create library</K7Button>
+        </div>
+    </section>
+
+    <section id="edit-library" class="ds-section">
+        <h2>EditLibraryDialog</h2>
+        <p class="ds-description">Edits an existing library's metadata provider settings.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowEditLibraryDialog">Edit library</K7Button>
+        </div>
+    </section>
+
+    <section id="smart-playlist" class="ds-section">
+        <h2>SmartPlaylistDialog</h2>
+        <p class="ds-description">Creates or edits a smart playlist with filter rules (genre, year, rating, etc.).</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowSmartPlaylistDialog">Create smart playlist</K7Button>
+        </div>
+    </section>
+
+    <section id="add-to-playlist" class="ds-section">
+        <h2>AddToPlaylistDialog</h2>
+        <p class="ds-description">Adds a media item to one of the user's existing playlists, or creates a new one.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowAddToPlaylistDialog">Add to playlist</K7Button>
+        </div>
+    </section>
+
+    <section id="folder-browser" class="ds-section">
+        <h2>FolderBrowserDialog</h2>
+        <p class="ds-description">Server-side filesystem browser for selecting a library root folder.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowFolderBrowserDialog">Browse folders</K7Button>
+        </div>
+    </section>
+
+    <section id="exclude-users" class="ds-section">
+        <h2>ExcludeMediaForUsersDialog</h2>
+        <p class="ds-description">Selects which users should be excluded from accessing a given media item.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowExcludeDialog">Exclude for users</K7Button>
+        </div>
+    </section>
+
+    <section id="re-identify" class="ds-section">
+        <h2>ReIdentifyDialog</h2>
+        <p class="ds-description">Searches external metadata providers to re-identify a media item.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowReIdentifyDialog">Re-identify media</K7Button>
+        </div>
+    </section>
+
+    <section id="playback-options" class="ds-section">
+        <h2>PlaybackOptionsDialog</h2>
+        <p class="ds-description">Selects the audio/subtitle tracks and playback file for a movie.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowPlaybackOptionsDialog">Playback options</K7Button>
+        </div>
+    </section>
+
+    <section id="indexed-files" class="ds-section">
+        <h2>IndexedFilesDialog</h2>
+        <p class="ds-description">Lists all indexed files for a media item with re-identify and removal actions.</p>
+        <div class="ds-preview ds-preview--bare">
+            <K7Button OnClick="ShowIndexedFilesDialog">Indexed files</K7Button>
+        </div>
+    </section>
+</div>
+
+@code {
+    private static readonly MovieDto _demoMovie = new() { Id = Guid.NewGuid(), Title = "Dune" };
+    private static readonly MovieDto _demoMediaForFiles = new() { Id = Guid.NewGuid(), Title = "Oppenheimer" };
+
+    private async Task ShowMessageBox()
+    {
+        var p = new K7DialogParameters<K7MessageBoxDialog>();
+        p.Add(x => x.Message, "This is a message box dialog with a single OK button.");
+        p.Add(x => x.YesText, "OK");
+        await DialogService.ShowAsync<K7MessageBoxDialog>("Information", p);
+    }
+
+    private async Task ShowConfirmBox()
+    {
+        var p = new K7DialogParameters<K7MessageBoxDialog>();
+        p.Add(x => x.Message, "Are you sure you want to delete this item? This action cannot be undone.");
+        p.Add(x => x.YesText, "Delete");
+        p.Add(x => x.NoText, "No");
+        p.Add(x => x.CancelText, "Cancel");
+        var reference = await DialogService.ShowAsync<K7MessageBoxDialog>("Confirm deletion", p);
+        var result = await reference.Result;
+        if (!result.Canceled && result.Data is bool confirmed)
+        {
+            Snackbar.Add(confirmed ? "Confirmed: Yes" : "Confirmed: No", K7Severity.Info);
+        }
+    }
+
+    private async Task ShowOverviewDialog()
+    {
+        var p = new K7DialogParameters<OverviewDialog>();
+        p.Add(x => x.ContentText, "Dune: Part Two is a 2024 epic science fiction film directed by Denis Villeneuve. It continues the story of Paul Atreides as he unites with the Fremen people of Arrakis.");
+        p.Add(x => x.ButtonText, "Close");
+        await DialogService.ShowAsync<OverviewDialog>("Overview", p);
+    }
+
+    private async Task ShowPinDialog()
+    {
+        var p = new K7DialogParameters<PinDialog>();
+        p.Add(x => x.UserName, "Alice");
+        await DialogService.ShowAsync<PinDialog>("Enter PIN", p);
+    }
+
+    private async Task ShowCreatePlaylistDialog()
+    {
+        await DialogService.ShowAsync<CreatePlaylistDialog>("New playlist");
+    }
+
+    private async Task ShowEditPlaylistDialog()
+    {
+        var p = new K7DialogParameters<EditPlaylistDialog>();
+        p.Add(x => x.PlaylistId, Guid.NewGuid());
+        await DialogService.ShowAsync<EditPlaylistDialog>("Edit playlist", p);
+    }
+
+    private async Task ShowCreateLibraryDialog()
+    {
+        await DialogService.ShowAsync<CreateLibraryDialog>("New library");
+    }
+
+    private async Task ShowEditLibraryDialog()
+    {
+        var p = new K7DialogParameters<EditLibraryDialog>();
+        p.Add(x => x.Title, "My Movies");
+        p.Add(x => x.AvailableProviders, []);
+        await DialogService.ShowAsync<EditLibraryDialog>("Edit library", p);
+    }
+
+    private async Task ShowSmartPlaylistDialog()
+    {
+        await DialogService.ShowAsync<SmartPlaylistDialog>("New smart playlist");
+    }
+
+    private async Task ShowAddToPlaylistDialog()
+    {
+        var p = new K7DialogParameters<AddToPlaylistDialog>();
+        p.Add(x => x.MediaId, _demoMovie.Id);
+        await DialogService.ShowAsync<AddToPlaylistDialog>("Add to playlist", p);
+    }
+
+    private async Task ShowFolderBrowserDialog()
+    {
+        await DialogService.ShowAsync<FolderBrowserDialog>("Browse folders");
+    }
+
+    private async Task ShowExcludeDialog()
+    {
+        var p = new K7DialogParameters<ExcludeMediaForUsersDialog>();
+        p.Add(x => x.MediaId, _demoMovie.Id);
+        p.Add(x => x.MediaTitle, _demoMovie.Title);
+        await DialogService.ShowAsync<ExcludeMediaForUsersDialog>("Exclude for users", p);
+    }
+
+    private async Task ShowReIdentifyDialog()
+    {
+        var p = new K7DialogParameters<ReIdentifyDialog>();
+        p.Add(x => x.MediaId, _demoMovie.Id);
+        p.Add(x => x.InitialSearchQuery, _demoMovie.Title);
+        await DialogService.ShowAsync<ReIdentifyDialog>("Re-identify", p);
+    }
+
+    private async Task ShowPlaybackOptionsDialog()
+    {
+        var p = new K7DialogParameters<PlaybackOptionsDialog>();
+        p.Add(x => x.Movie, _demoMovie);
+        await DialogService.ShowAsync<PlaybackOptionsDialog>("Playback options", p);
+    }
+
+    private async Task ShowIndexedFilesDialog()
+    {
+        var p = new K7DialogParameters<IndexedFilesDialog>();
+        p.Add(x => x.Media, _demoMediaForFiles);
+        await DialogService.ShowAsync<IndexedFilesDialog>("Indexed files", p);
+    }
+}

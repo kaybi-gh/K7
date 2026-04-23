@@ -1,0 +1,264 @@
+﻿@using K7.Shared.Dtos.Entities.Medias
+@implements IDisposable
+@page "/players"
+@inject K7.Clients.DesignSystem.Services.DemoPlayerService DemoPlayer
+@inject K7.Clients.DesignSystem.Mocks.MockAudioPlayerService MockAudio
+@inject IJSRuntime JS
+
+<PageTitle>Players - K7 Design System</PageTitle>
+
+<div class="ds-page">
+    <header class="ds-page-header">
+        <h1>Players</h1>
+        <p class="ds-lead">
+            Media player components. Cliquer sur une piste ci-dessous la charge dans le MiniMusicPlayer et le FullScreenMusicPlayer.
+            La progression est simulée (pas d'audio réel). Le VideoPlayer utilise un stream CDN.
+        </p>
+    </header>
+
+    <section id="demo-playlist" class="ds-section">
+        <h2>Demo Playlist</h2>
+        <p class="ds-description">Cliquer une piste pour la lancer dans les deux players. La progression avance automatiquement.</p>
+        <div class="ds-preview ds-preview--block">
+            @foreach (var (track, i) in _demoTracks.Select((t, i) => (t, i)))
+            {
+                var isCurrent = MockAudio.CurrentTrack?.IndexedFileId == track.IndexedFileId;
+                <div class="ds-track-row @(isCurrent ? "ds-track-row--active" : "")" @onclick="() => PlayTrack(i)">
+                    <K7Icon Name="@(isCurrent && MockAudio.PlaybackState == K7.Server.Domain.Enums.PlaybackState.Playing ? Phosphor.SpeakerHigh : Phosphor.MusicNote)" Size="sm" />
+                    <div class="ds-track-info">
+                        <span class="ds-track-title">@track.Title</span>
+                        <span class="ds-track-artist">@track.Artist — @track.AlbumTitle</span>
+                    </div>
+                    <span class="ds-track-duration">@TimeSpan.FromSeconds(track.Duration ?? 0).ToString(@"m\:ss")</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section id="seek-bar" class="ds-section">
+        <h2>SeekBar</h2>
+        <p class="ds-description">Barre de progression/seek utilisee dans le VideoPlayer. Se synchronise avec la playlist audio de demo ci-dessus.</p>
+        <div class="ds-preview ds-preview--block">
+            <SeekBar IsVisible="true" />
+        </div>
+    </section>
+
+    <section id="mini-music-player" class="ds-section">
+        <h2>MiniMusicPlayer</h2>
+        <p class="ds-description">Barre de lecture persistante. Le composant est agnostique de sa position — le layout est responsable du positionnement.</p>
+
+        <h3 class="ds-subsection-title">Desktop</h3>
+        <div class="ds-preview ds-preview--block">
+            <MiniMusicPlayer />
+        </div>
+
+        <h3 class="ds-subsection-title">Mobile (390px)</h3>
+        <p class="ds-description">Rendu dans un conteneur de 390px — le card flottant se declenche via container query.</p>
+        <div class="ds-preview ds-preview--block">
+            <div class="ds-mobile-preview-frame">
+                <MiniMusicPlayer />
+            </div>
+        </div>
+    </section>
+
+    <section id="audio-player" class="ds-section">
+        <h2>FullScreenMusicPlayer</h2>
+        <p class="ds-description">Overlay <code>position:fixed; inset:0</code>. Cliquer sur la pochette dans le MiniMusicPlayer ou utiliser le bouton ci-dessous pour l'ouvrir.</p>
+        @if (MockAudio.CurrentTrack is not null)
+        {
+            <K7Button OnClick="() => MockAudio.ToggleFullScreen()" Variant="K7ButtonVariant.Outlined">
+                @(MockAudio.IsFullScreenVisible ? "Fermer le player" : "Ouvrir le player plein ecran")
+            </K7Button>
+        }
+        else
+        {
+            <p class="ds-description">Lancer une piste depuis la playlist pour activer ce bouton.</p>
+        }
+    </section>
+
+    <section id="video-player" class="ds-section">
+        <h2>VideoPlayer</h2>
+        <p class="ds-description">Video player via Video.js. Cliquer "Play" charge Big Buck Bunny - utiliser le bouton play de l'overlay K7 ou les controles Video.js pour lancer la lecture.</p>
+        <div class="ds-preview ds-preview--block">
+            <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-4)">
+                <K7Button OnClick="ShowVideoPlayer" Variant="K7ButtonVariant.Filled">Play Big Buck Bunny</K7Button>
+                <K7Button OnClick="HideVideoPlayer" Variant="K7ButtonVariant.Outlined">Hide</K7Button>
+            </div>
+            <VideoPlayer />
+        </div>
+    </section>
+
+    <section id="track-context-menu" class="ds-section">
+        <h2>TrackContextMenu</h2>
+        <p class="ds-description">Context menu for audio tracks - queue, playlist, ratings, and metadata actions.</p>
+        <div class="ds-preview">
+            <TrackContextMenu Track="@_demoTracks[0]" />
+        </div>
+    </section>
+
+    <section id="synced-lyrics" class="ds-section">
+        <h2>SyncedLyricsDisplay</h2>
+        <p class="ds-description">Scrolling lyrics display with per-line seek. Parses LRC format and highlights the active line based on <code>CurrentTime</code>.</p>
+        <div class="ds-preview ds-preview--block" style="height:300px;overflow:hidden">
+            <SyncedLyricsDisplay LyricsLrc="@_demoLrc" CurrentTime="@_lyricsTime" SeekRequested="t => _lyricsTime = t" />
+        </div>
+        <div class="ds-preview" style="margin-top:var(--space-2)">
+            <K7Slider @bind-Value="_lyricsTimeSlider" Min="0" Max="60" Step="0.5" />
+        </div>
+    </section>
+
+    <section id="next-episode" class="ds-section">
+        <h2>NextEpisodeOverlay</h2>
+        <p class="ds-description">Countdown overlay affiché en fin d'épisode pour lancer le suivant. Passez <code>DemoEpisode</code> pour l'afficher sans session de lecture active.</p>
+        <div class="ds-preview ds-preview--block" style="position:relative;min-height:320px;overflow:hidden">
+            <NextEpisodeOverlay DemoEpisode="@_demoNextEpisode"
+                                DemoStillUrl="https://picsum.photos/seed/episode/800/450"
+                                DemoCountdown="12" />
+        </div>
+    </section>
+
+</div>
+
+@code {
+    private readonly LiteSerieEpisodeDto _demoNextEpisode = new()
+    {
+        Id = Guid.NewGuid(),
+        Title = "The One Where Nobody's Ready",
+        SeasonNumber = 3,
+        EpisodeNumber = 2,
+        SerieId = Guid.NewGuid(),
+        SerieTitle = "Breaking Bad",
+    };
+
+    private static readonly List<AudioQueueItem> _demoTracks =
+    [
+        new() { IndexedFileId = Guid.NewGuid(), MediaId = Guid.NewGuid(), Title = "Waltz Op. 64 No. 1 (Minute)",  Artist = "Frederic Chopin",     AlbumTitle = "Waltzes",              Duration = 144, CoverUrl = "https://picsum.photos/seed/chopin/200/200" },
+        new() { IndexedFileId = Guid.NewGuid(), MediaId = Guid.NewGuid(), Title = "Nocturne Op. 9 No. 2",         Artist = "Frederic Chopin",     AlbumTitle = "Nocturnes",            Duration = 264, CoverUrl = "https://picsum.photos/seed/nocturne/200/200" },
+        new() { IndexedFileId = Guid.NewGuid(), MediaId = Guid.NewGuid(), Title = "Fantasie Impromptu Op. 66",    Artist = "Frederic Chopin",     AlbumTitle = "Impromptus",           Duration = 327, CoverUrl = "https://picsum.photos/seed/impromptu/200/200" },
+        new() { IndexedFileId = Guid.NewGuid(), MediaId = Guid.NewGuid(), Title = "Waltz Op. 69 No. 1",           Artist = "Frederic Chopin",     AlbumTitle = "Waltzes",              Duration = 312, CoverUrl = "https://picsum.photos/seed/waltz69/200/200" },
+        new() { IndexedFileId = Guid.NewGuid(), MediaId = Guid.NewGuid(), Title = "Nocturne Op. 15 No. 1",        Artist = "Frederic Chopin",     AlbumTitle = "Nocturnes",            Duration = 282, CoverUrl = "https://picsum.photos/seed/nocturne15/200/200" },
+    ];
+
+    // CC0 recordings from archive.org/details/musopen-chopin
+    private static readonly string?[] _audioUrls =
+    [
+        "https://archive.org/download/musopen-chopin/Waltz%20Op.%2064%20no.%201%20in%20D%20flat%20major.mp3",
+        "https://archive.org/download/musopen-chopin/Nocturne%20Op.%209%20no.%202%20in%20E%20flat%20major.mp3",
+        "https://archive.org/download/musopen-chopin/Fantasie%20Impromptu%20Op.%2066.mp3",
+        "https://archive.org/download/musopen-chopin/Waltz%20Op.%2069%20no.%201%20in%20A%20flat%20major.mp3",
+        "https://archive.org/download/musopen-chopin/Nocturne%20Op.%2015%20no.%201%20In%20F%20major.mp3",
+    ];
+
+    private async Task ShowVideoPlayer()
+    {
+        // Routed through the local proxy (/demo/video) to avoid browser-side CDN 403s
+        await DemoPlayer.PlayFromUrlAsync("/demo/video", "video/mp4");
+    }
+
+    private async Task HideVideoPlayer() => await DemoPlayer.HideAsync();
+
+    protected override void OnInitialized()
+    {
+        MockAudio.CurrentTrackChanged += OnAudioStateChanged;
+        MockAudio.PlaybackStateChanged += OnPlaybackStateChangedHandler;
+        MockAudio.VolumeChanged += OnVolumeChangedHandler;
+        MockAudio.SeekRequested += OnSeekRequestedAsync;
+        MockAudio.CurrentTimeChanged += OnAudioTimeChanged;
+        MockAudio.DurationChanged += OnAudioDurationChanged;
+        MockAudio.IsFullScreenVisibleChanged += OnFullScreenChanged;
+    }
+
+    public void Dispose()
+    {
+        MockAudio.CurrentTrackChanged -= OnAudioStateChanged;
+        MockAudio.PlaybackStateChanged -= OnPlaybackStateChangedHandler;
+        MockAudio.VolumeChanged -= OnVolumeChangedHandler;
+        MockAudio.SeekRequested -= OnSeekRequestedAsync;
+        MockAudio.CurrentTimeChanged -= OnAudioTimeChanged;
+        MockAudio.DurationChanged -= OnAudioDurationChanged;
+        MockAudio.IsFullScreenVisibleChanged -= OnFullScreenChanged;
+    }
+
+    private bool _jsReady;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) _jsReady = true;
+        return Task.CompletedTask;
+    }
+
+    private void OnAudioStateChanged(AudioQueueItem? _) => InvokeAsync(StateHasChanged);
+
+    private async Task OnSeekRequestedAsync(double time)
+    {
+        if (_jsReady)
+            await JS.InvokeVoidAsync("K7Demo.seek", time);
+    }
+
+    private void OnAudioTimeChanged(double t) => DemoPlayer.FireAudioState(MockAudio.Duration, t, MockAudio.PlaybackState);
+    private void OnAudioDurationChanged(double d) => DemoPlayer.FireAudioState(d, MockAudio.CurrentTime, MockAudio.PlaybackState);
+    private void OnFullScreenChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnPlaybackStateChangedHandler(K7.Server.Domain.Enums.PlaybackState state)
+        => InvokeAsync(() => HandlePlaybackStateAsync(state));
+
+    private void OnVolumeChangedHandler(double v)
+        => InvokeAsync(() => _jsReady ? JS.InvokeVoidAsync("K7Demo.setVolume", v).AsTask() : Task.CompletedTask);
+
+    private async Task HandlePlaybackStateAsync(K7.Server.Domain.Enums.PlaybackState state)
+    {
+        StateHasChanged();
+        if (!_jsReady) return;
+        var url = GetCurrentAudioUrl();
+        switch (state)
+        {
+            case K7.Server.Domain.Enums.PlaybackState.Playing when url is not null:
+                await JS.InvokeVoidAsync("K7Demo.play", url);
+                break;
+            case K7.Server.Domain.Enums.PlaybackState.Paused:
+                await JS.InvokeVoidAsync("K7Demo.pause");
+                break;
+            case K7.Server.Domain.Enums.PlaybackState.Idle:
+                await JS.InvokeVoidAsync("K7Demo.stop");
+                break;
+        }
+    }
+
+    private string? GetCurrentAudioUrl()
+    {
+        var idx = MockAudio.CurrentIndex;
+        return idx >= 0 && idx < _audioUrls.Length ? _audioUrls[idx] : null;
+    }
+
+    private async Task PlayTrack(int index)
+    {
+        await MockAudio.PlayTracksAsync(_demoTracks, index);
+        // Call JS directly from the click handler - before the event chain - to stay within
+        // the browser's autoplay gesture window (Blazor Server round-trips add latency).
+        if (_jsReady && index < _audioUrls.Length && _audioUrls[index] is { } url)
+            await JS.InvokeVoidAsync("K7Demo.play", url);
+    }
+
+    private double _lyricsTime;
+
+    private double _lyricsTimeSlider
+    {
+        get => _lyricsTime;
+        set => _lyricsTime = value;
+    }
+
+    private const string _demoLrc = """
+        [00:00.00]Is this the real life?
+        [00:03.50]Is this just fantasy?
+        [00:07.20]Caught in a landslide, no escape from reality
+        [00:13.00]Open your eyes, look up to the skies and see
+        [00:18.50]I'm just a poor boy, I need no sympathy
+        [00:23.00]Because it's easy come, easy go, little high, little low
+        [00:29.50]Anywhere the wind blows doesn't really matter to me, to me
+        [00:36.00]Mama, just killed a man
+        [00:39.50]Put a gun against his head, pulled my trigger, now he's dead
+        [00:46.00]Mama, life had just begun
+        [00:50.00]But now I've gone and thrown it all away
+        [00:56.00]Mama, ooh, didn't mean to make you cry
+        """;
+}
