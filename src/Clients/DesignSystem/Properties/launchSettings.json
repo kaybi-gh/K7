@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "K7.Clients.DesignSystem": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:61567;http://localhost:61568"
+    }
+  }
+}

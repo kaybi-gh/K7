@@ -1,0 +1,117 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Nav
+
+@{
+    var page = new Uri(Nav.Uri).AbsolutePath.TrimStart('/').Split('/')[0] switch { "" => "index", var s => s };
+}
+
+<div class="ds-shell">
+    <nav class="ds-nav">
+        <div class="ds-nav-logo">
+            <K7Icon Name="@Phosphor.Hurricane" Size="lg" />
+            <span>K7 Design System</span>
+        </div>
+        <ul class="ds-nav-links">
+            <li><NavLink href="/" Match="NavLinkMatch.All"><K7Icon Name="@Phosphor.House" />Overview</NavLink></li>
+            <li><NavLink href="/tokens"><K7Icon Name="@Phosphor.Palette" />Tokens</NavLink></li>
+            <li><NavLink href="/components"><K7Icon Name="@Phosphor.SquaresFour" />Components</NavLink></li>
+            @if (page == "components")
+            {
+                <ul class="ds-nav-sub">
+                    <li><a href="/components#k7-alert">K7Alert</a></li>
+                    <li><a href="/components#k7-button">K7Button</a></li>
+                    <li><a href="/components#k7-chip">K7Chip</a></li>
+                    <li><a href="/components#k7-icon">K7Icon</a></li>
+                    <li><a href="/components#k7-avatar">K7Avatar</a></li>
+                    <li><a href="/components#k7-divider">K7Divider</a></li>
+                    <li><a href="/components#k7-progress-bar">K7ProgressBar</a></li>
+                    <li><a href="/components#k7-skeleton">K7Skeleton</a></li>
+                    <li><a href="/components#k7-spinner">K7Spinner</a></li>
+                    <li><a href="/components#k7-fab-button">K7FabButton</a></li>
+                    <li><a href="/components#k7-icon-button">K7IconButton</a></li>
+                    <li><a href="/components#k7-icon-toggle">K7IconToggleButton</a></li>
+                    <li><a href="/components#k7-paper">K7Paper</a></li>
+                    <li><a href="/components#k7-image">K7Image</a></li>
+                    <li><a href="/components#k7-textfield">K7TextField</a></li>
+                    <li><a href="/components#k7-select">K7Select</a></li>
+                    <li><a href="/components#k7-slider">K7Slider</a></li>
+                    <li><a href="/components#k7-switch">K7Switch</a></li>
+                    <li><a href="/components#k7-tabs">K7Tabs</a></li>
+                    <li><a href="/components#k7-expansion">K7ExpansionPanel</a></li>
+                    <li><a href="/components#k7-table">K7Table</a></li>
+                    <li><a href="/components#k7-menu">K7Menu</a></li>
+                    <li><a href="/components#k7-dialog">K7Dialog</a></li>
+                    <li><a href="/components#k7-snackbar">K7Snackbar</a></li>
+                    <li><a href="/components#k7-category-card">K7CategoryCard</a></li>
+                    <li><a href="/components#media-card">MediaCard</a></li>
+                    <li><a href="/components#carousel">Carousel</a></li>
+                    <li><a href="/components#season-card">SeasonCard</a></li>
+                    <li><a href="/components#rating-stars">RatingStars</a></li>
+                    <li><a href="/components#episode-list-item">EpisodeListItem</a></li>
+                    <li><a href="/components#person-role">PersonRole</a></li>
+                    <li><a href="/components#browse-view">BrowseView</a></li>
+                    <li><a href="/components#splash">Splash</a></li>
+                </ul>
+            }
+            <li><NavLink href="/players"><K7Icon Name="@Phosphor.PlayCircle" />Players</NavLink></li>
+            @if (page == "players")
+            {
+                <ul class="ds-nav-sub">
+                    <li><a href="/players#demo-playlist">Demo Playlist</a></li>
+                    <li><a href="/players#seek-bar">SeekBar</a></li>
+                    <li><a href="/players#mini-music-player">MiniMusicPlayer</a></li>
+                    <li><a href="/players#audio-player">FullScreenMusicPlayer</a></li>
+                    <li><a href="/players#video-player">VideoPlayer</a></li>
+                    <li><a href="/players#track-context-menu">TrackContextMenu</a></li>
+                    <li><a href="/players#synced-lyrics">SyncedLyricsDisplay</a></li>
+                    <li><a href="/players#next-episode">NextEpisodeOverlay</a></li>
+                </ul>
+            }
+            <li><NavLink href="/dialogs"><K7Icon Name="@Phosphor.Layout" />Dialogs</NavLink></li>
+            @if (page == "dialogs")
+            {
+                <ul class="ds-nav-sub">
+                    <li><a href="/dialogs#message-box">K7MessageBoxDialog</a></li>
+                    <li><a href="/dialogs#overview">OverviewDialog</a></li>
+                    <li><a href="/dialogs#pin">PinDialog</a></li>
+                    <li><a href="/dialogs#create-playlist">CreatePlaylistDialog</a></li>
+                    <li><a href="/dialogs#edit-playlist">EditPlaylistDialog</a></li>
+                    <li><a href="/dialogs#create-library">CreateLibraryDialog</a></li>
+                    <li><a href="/dialogs#edit-library">EditLibraryDialog</a></li>
+                    <li><a href="/dialogs#smart-playlist">SmartPlaylistDialog</a></li>
+                    <li><a href="/dialogs#add-to-playlist">AddToPlaylistDialog</a></li>
+                    <li><a href="/dialogs#folder-browser">FolderBrowserDialog</a></li>
+                    <li><a href="/dialogs#exclude-users">ExcludeMediaForUsersDialog</a></li>
+                    <li><a href="/dialogs#re-identify">ReIdentifyDialog</a></li>
+                    <li><a href="/dialogs#playback-options">PlaybackOptionsDialog</a></li>
+                    <li><a href="/dialogs#indexed-files">IndexedFilesDialog</a></li>
+                </ul>
+            }
+        </ul>
+    </nav>
+
+    <main class="ds-content">
+        <K7DialogHost />
+        <K7SnackbarHost />
+        <FullScreenMusicPlayer />
+        @Body
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+}

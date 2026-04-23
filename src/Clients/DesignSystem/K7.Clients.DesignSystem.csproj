@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>K7.Clients.DesignSystem</RootNamespace>
+    <AssemblyName>K7.Clients.DesignSystem</AssemblyName>
+    <UserSecretsId>K7-DesignSystem</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\K7.Clients.Shared.csproj" />
+    <ProjectReference Include="..\Shared\UI\K7.Clients.Shared.UI.csproj" />
+  </ItemGroup>
+
+</Project>
