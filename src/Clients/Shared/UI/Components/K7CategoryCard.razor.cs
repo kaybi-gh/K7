@@ -25,8 +25,23 @@ public partial class K7CategoryCard
     /// <summary>Optional background image URL. Displayed behind the gradient overlay.</summary>
     [Parameter] public string? ImageUrl { get; set; }
 
+    /// <summary>Optional hex color extracted from the cover image. Overrides gradient colors when provided.</summary>
+    [Parameter] public string? DominantColor { get; set; }
+
     [Parameter] public EventCallback OnClick { get; set; }
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string Style { get; set; } = "";
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string ComputedGradientStart => !string.IsNullOrEmpty(DominantColor)
+        ? $"{DominantColor}e0"
+        : GradientStart;
+
+    private string ComputedGradientEnd => !string.IsNullOrEmpty(DominantColor)
+        ? $"{DominantColor}40"
+        : GradientEnd;
+
+    private string ComputedColor => !string.IsNullOrEmpty(DominantColor)
+        ? DominantColor
+        : GradientStart;
 }
