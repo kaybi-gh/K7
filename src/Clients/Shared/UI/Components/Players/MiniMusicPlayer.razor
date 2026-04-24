@@ -40,9 +40,11 @@
 
             <div class="mini-player-center">
                 <div class="mini-player-controls">
+                    <button class="k7-icon-btn" type="button" @onclick="Audio.ToggleShuffle" aria-label=""><i class="ph ph-@ShuffleIcon"></i></button>
                     <button type="button" class="k7-icon-btn" @onclick="OnPrevious" aria-label="Previous"><i class="ph ph-skip-back"></i></button>
                     <button class="k7-icon-btn mini-player-play-btn" type="button" @onclick="TogglePlayPause" aria-label=""><i class="ph ph-@PlayPauseIcon"></i></button>
                     <button type="button" class="k7-icon-btn" @onclick="OnNext" aria-label="Next"><i class="ph ph-skip-forward"></i></button>
+                    <button class="k7-icon-btn" type="button" @onclick="Audio.CycleRepeatMode" aria-label=""><i class="ph ph-@RepeatIcon"></i></button>
                 </div>
             </div>
 
@@ -61,18 +63,18 @@
                 </div>
 
                 <div class="mini-player-secondary-controls">
-                    <button class="k7-icon-btn" type="button" @onclick="Audio.ToggleShuffle" aria-label=""><i class="ph ph-@ShuffleIcon"></i></button>
-                    <button class="k7-icon-btn" type="button" @onclick="Audio.CycleRepeatMode" aria-label=""><i class="ph ph-@RepeatIcon"></i></button>
-
                     <div class="mini-player-volume">
                         <button class="k7-icon-btn" type="button" @onclick="ToggleMute" aria-label=""><i class="ph ph-@VolumeIcon"></i></button>
-                        <K7Slider TValue="double"
-                                   Value="Audio.Volume"
-                                   Min="0" Max="1"
-                                   Immediate="true"
-                                   ValueChanged="OnVolumeChanged" Step="0.01"
-                                   Class="mini-player-volume-slider" />
+                        <div class="volume-popup">
+                            <K7Slider TValue="double"
+                                       Value="Audio.Volume"
+                                       Min="0" Max="1"
+                                       Immediate="true"
+                                       ValueChanged="OnVolumeChanged" Step="0.01"
+                                       Class="mini-player-volume-slider" />
+                        </div>
                     </div>
+                    <button class="k7-icon-btn" type="button" @onclick="Audio.ToggleFullScreen" aria-label=""><i class="ph ph-corners-out"></i></button>
                 </div>
             </div>
         </div>

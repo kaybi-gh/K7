@@ -1,0 +1,128 @@
+﻿@implements IDisposable
+@using K7.Shared.Dtos.Entities
+@using K7.Server.Domain.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="app-nav-backdrop @(IsAnyMenuOpen ? "open" : "")" @onclick="CloseAll"></div>
+
+<header class="app-nav">
+    <div class="app-nav-bar">
+        <a href="/" class="app-nav-logo" title="K7">
+            <K7Icon Name="@Phosphor.Hurricane" Size="lg" />
+            <span class="app-nav-logo-text">K7</span>
+        </a>
+
+        <NavLink class="app-nav-link app-nav-item--home" href="/" Match="NavLinkMatch.All">
+            <span class="app-nav-icon"><K7Icon Name="@Phosphor.House" /></span>
+            <span class="app-nav-label">@L["Home"]</span>
+        </NavLink>
+
+        <button class="app-nav-link app-nav-link--btn app-nav-item--explore @(_exploreOpen ? "active" : "")"
+                type="button" @onclick="ToggleExplore">
+            <span class="app-nav-icon"><K7Icon Name="@Phosphor.Compass" /></span>
+            <span class="app-nav-label">@L["Explore"]</span>
+        </button>
+
+        <NavLink class="app-nav-link app-nav-item--myspace" href="/my-space">
+            <span class="app-nav-icon"><K7Icon Name="@Phosphor.Heart" /></span>
+            <span class="app-nav-label">@L["MySpace"]</span>
+        </NavLink>
+
+        <div class="app-nav-spacer"></div>
+
+        <NavLink class="app-nav-link app-nav-item--search" href="/search">
+            <span class="app-nav-icon"><K7Icon Name="@Phosphor.MagnifyingGlass" /></span>
+            <span class="app-nav-label">@L["Search"]</span>
+        </NavLink>
+
+        <AuthorizeView>
+            <Authorized>
+                <button class="app-nav-link app-nav-link--btn app-nav-item--profile @(_profileMenuOpen ? "active" : "")"
+                        type="button" @onclick="ToggleProfile">
+                    <div class="avatar avatar--sm" title="@context.User.Identity?.Name">
+                        @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
+                        <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
+                    </div>
+                    <span class="app-nav-label app-nav-label--profile">@L["Profile"]</span>
+                </button>
+            </Authorized>
+            <NotAuthorized>
+                <button class="app-nav-link app-nav-link--btn app-nav-item--profile" type="button" @onclick="Login">
+                    <span class="app-nav-icon"><K7Icon Name="@Phosphor.UserCircle" /></span>
+                    <span class="app-nav-label">@L["Login"]</span>
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</header>
+
+<!-- Explore popover -->
+<div class="app-nav-popover app-nav-popover--explore @(_exploreOpen ? "open" : "")">
+    <div class="app-nav-popover-inner">
+        <div class="app-nav-popover-header">
+            <span class="app-nav-popover-title">@L["Explore"]</span>
+            <button class="btn-icon" type="button" @onclick="CloseAll"><K7Icon Name="@Phosphor.X" /></button>
+        </div>
+
+        <div class="app-nav-explore-grid">
+            @foreach (var library in _libraries)
+            {
+                var (gs, ge, ic) = GetLibraryCardColors(library.MediaType);
+                var icon = !string.IsNullOrEmpty(library.Icon) ? library.Icon : GetLibraryIconName(library.MediaType);
+                var imageUrl = library.CoverPictureId.HasValue ? $"/api/metadata-pictures/{library.CoverPictureId}?size=Medium" : null;
+                <K7CategoryCard @key="library.Id"
+                                Title="@library.Title"
+                                Description="@(library.Description ?? "")"
+                                Icon="@icon"
+                                GradientStart="@gs"
+                                GradientEnd="@ge"
+                                IconColor="@ic"
+                                ImageUrl="@imageUrl"
+                                DominantColor="@library.CoverDominantColor"
+                                OnClick="@(() => NavigateAndClose($"/library/{library.Id}"))" />
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Profile popover -->
+<AuthorizeView>
+    <Authorized>
+        <div class="app-nav-popover app-nav-popover--profile @(_profileMenuOpen ? "open" : "")">
+            <div class="app-nav-popover-inner">
+                <div class="app-nav-popover-user">
+                    <div class="avatar">
+                        @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
+                        <span class="connection-badge connection-badge--@_badgeClass"></span>
+                    </div>
+                    <div class="app-nav-popover-user-info">
+                        <span class="app-nav-popover-username">@context.User.Identity?.Name</span>
+                        <span class="app-nav-popover-status">@_badgeTitle</span>
+                    </div>
+                </div>
+                <hr class="app-nav-popover-divider" />
+                <NavLink class="nav-link" href="/settings" @onclick="CloseAll">
+                    <span class="nav-icon"><K7Icon Name="@Phosphor.Gear" /></span>
+                    <span class="nav-label">@L["Settings"]</span>
+                </NavLink>
+                <AuthorizeView Roles="Administrator" Context="adminCtx">
+                    <NavLink class="nav-link" href="/admin" @onclick="CloseAll">
+                        <span class="nav-icon"><K7Icon Name="@Phosphor.ShieldCheck" /></span>
+                        <span class="nav-label">@L["Admin"]</span>
+                    </NavLink>
+                </AuthorizeView>
+                @if (DeviceService.GetClientType() != ClientType.Web)
+                {
+                    <button class="nav-link app-nav-popover-btn" type="button" @onclick="SwitchUser">
+                        <span class="nav-icon"><K7Icon Name="@Phosphor.UserSwitch" /></span>
+                        <span class="nav-label">@L["SwitchUser"]</span>
+                    </button>
+                }
+                <button class="nav-link app-nav-popover-btn" type="button" @onclick="Logout">
+                    <span class="nav-icon"><K7Icon Name="@Phosphor.SignOut" /></span>
+                    <span class="nav-label">@L["Logout"]</span>
+                </button>
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>

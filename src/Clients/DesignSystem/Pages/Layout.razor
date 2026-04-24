@@ -1,0 +1,300 @@
+@page "/layout"
+
+<PageTitle>Layout - K7 Design System</PageTitle>
+
+<div class="ds-page">
+    <header class="ds-page-header">
+        <h1>Layout</h1>
+        <p class="ds-lead">Shell structure, navigation patterns, and breakpoint behaviour for desktop and mobile.</p>
+    </header>
+
+    <!-- Desktop -->
+    <section id="desktop" class="ds-section">
+        <h2>Desktop</h2>
+        <p class="ds-description">
+            Single-column shell: <code>AppNav</code> is a fixed top bar spanning the full width (<code>--nav-height</code>),
+            with a scrollable main content area below. The MiniMusicPlayer dock is pinned to the bottom of the viewport.
+        </p>
+
+        <div class="ds-layout-frame ds-layout-frame--desktop">
+            <div class="dsl-topnav">
+                <div class="dsl-topnav-logo"></div>
+                <div class="dsl-topnav-link dsl-topnav-link--active"></div>
+                <div class="dsl-topnav-link"></div>
+                <div class="dsl-topnav-link"></div>
+                <div class="dsl-topnav-link"></div>
+                <div class="dsl-topnav-spacer"></div>
+                <div class="dsl-topnav-link"></div>
+                <div class="dsl-topnav-avatar"></div>
+            </div>
+
+            <div class="dsl-main">
+                <div class="dsl-content">
+                    <div class="dsl-hero"></div>
+                    <div class="dsl-grid">
+                        <div class="dsl-card"></div>
+                        <div class="dsl-card"></div>
+                        <div class="dsl-card"></div>
+                        <div class="dsl-card"></div>
+                        <div class="dsl-card"></div>
+                    </div>
+                </div>
+
+                <div class="dsl-mini-player">
+                    <div class="dsl-mp-cover"></div>
+                    <div class="dsl-mp-info">
+                        <div class="dsl-mp-line dsl-mp-line--title"></div>
+                        <div class="dsl-mp-line dsl-mp-line--artist"></div>
+                    </div>
+                    <div class="dsl-mp-controls">
+                        <div class="dsl-mp-btn"></div>
+                        <div class="dsl-mp-btn dsl-mp-btn--play"></div>
+                        <div class="dsl-mp-btn"></div>
+                    </div>
+                    <div class="dsl-mp-right">
+                        <div class="dsl-mp-time"></div>
+                        <div class="dsl-mp-volume"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ds-layout-annotations">
+            <div class="ds-layout-annotation">
+                <span class="dsl-badge dsl-badge--nav">AppNav</span>
+                <span>Fixed top bar (<code>--nav-height: 56px</code>). Below <code>600px</code>: moves to bottom.</span>
+            </div>
+            <div class="ds-layout-annotation">
+                <span class="dsl-badge dsl-badge--main">Main</span>
+                <span>Full width below nav. Independently scrollable.</span>
+            </div>
+            <div class="ds-layout-annotation">
+                <span class="dsl-badge dsl-badge--player">MiniPlayer</span>
+                <span>Fixed dock at bottom, full viewport width.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin/Settings with SidebarLayout -->
+    <section id="sidebar-pages" class="ds-section">
+        <h2>Admin / Settings (with sidebar)</h2>
+        <p class="ds-description">
+            Pages using <code>AdminLayout</code> or <code>SettingsLayout</code> embed a <code>SidebarLayout</code>
+            component inside the main content area. The sidebar shows section navigation;
+            the content renders the active panel. On mobile the sidebar collapses to a horizontal scrollable tab strip.
+        </p>
+
+        <div class="ds-layout-frame ds-layout-frame--desktop">
+            <div class="dsl-topnav">
+                <div class="dsl-topnav-logo"></div>
+                <div class="dsl-topnav-link"></div>
+                <div class="dsl-topnav-link"></div>
+                <div class="dsl-topnav-spacer"></div>
+                <div class="dsl-topnav-link dsl-topnav-link--active"></div>
+                <div class="dsl-topnav-avatar"></div>
+            </div>
+
+            <div class="dsl-main dsl-main--row">
+                <div class="dsl-page-sidebar">
+                    <div class="dsl-page-sidebar-row dsl-page-sidebar-row--active">
+                        <div class="dsl-sidebar-icon"></div>
+                        <div class="dsl-sidebar-label"></div>
+                    </div>
+                    <div class="dsl-page-sidebar-row">
+                        <div class="dsl-sidebar-icon"></div>
+                        <div class="dsl-sidebar-label dsl-sidebar-label--short"></div>
+                    </div>
+                    <div class="dsl-page-sidebar-row">
+                        <div class="dsl-sidebar-icon"></div>
+                        <div class="dsl-sidebar-label"></div>
+                    </div>
+                    <div class="dsl-page-sidebar-row">
+                        <div class="dsl-sidebar-icon"></div>
+                        <div class="dsl-sidebar-label dsl-sidebar-label--short"></div>
+                    </div>
+                </div>
+
+                <div class="dsl-page-body">
+                    <div class="dsl-content">
+                        <div class="dsl-hero"></div>
+                        <div class="dsl-grid">
+                            <div class="dsl-card"></div>
+                            <div class="dsl-card"></div>
+                            <div class="dsl-card"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ds-layout-annotations">
+            <div class="ds-layout-annotation">
+                <span class="dsl-badge dsl-badge--nav">AppNav</span>
+                <span>Same top bar. Settings / Admin link is active.</span>
+            </div>
+            <div class="ds-layout-annotation">
+                <span class="dsl-badge dsl-badge--sidebar">Page sidebar</span>
+                <span>Section nav rendered by <code>SidebarLayout</code> (<code>--page-sidebar-width: 220px</code>).</span>
+            </div>
+            <div class="ds-layout-annotation">
+                <span class="dsl-badge dsl-badge--main">Content</span>
+                <span>Active panel via <code>@@Body</code> inside the layout component.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mobile -->
+    <section id="mobile" class="ds-section">
+        <h2>Mobile</h2>
+        <p class="ds-description">
+            Below <code>600px</code> the <code>AppNav</code> moves from top to bottom (fixed).
+            Main content uses full height with bottom padding to avoid overlap.
+            Bottom sheets slide up for Libraries, Music, and Menu drawers.
+            The MiniMusicPlayer floats above the nav bar as a card.
+        </p>
+
+        <div class="ds-layout-frames-row">
+            <!-- Normal state -->
+            <div class="ds-layout-frame-labeled">
+                <span class="ds-sub-heading">Default</span>
+                <div class="ds-layout-frame ds-layout-frame--mobile">
+                    <div class="dsl-mobile-status"></div>
+
+                    <div class="dsl-mobile-content">
+                        <div class="dsl-hero dsl-hero--sm"></div>
+                        <div class="dsl-grid dsl-grid--2col">
+                            <div class="dsl-card dsl-card--sm"></div>
+                            <div class="dsl-card dsl-card--sm"></div>
+                            <div class="dsl-card dsl-card--sm"></div>
+                            <div class="dsl-card dsl-card--sm"></div>
+                        </div>
+                    </div>
+
+                    <div class="dsl-mobile-mini-player">
+                        <div class="dsl-mp-cover dsl-mp-cover--sm"></div>
+                        <div class="dsl-mp-info">
+                            <div class="dsl-mp-line dsl-mp-line--title"></div>
+                            <div class="dsl-mp-line dsl-mp-line--artist"></div>
+                        </div>
+                        <div class="dsl-mp-controls">
+                            <div class="dsl-mp-btn dsl-mp-btn--play"></div>
+                            <div class="dsl-mp-btn"></div>
+                        </div>
+                    </div>
+
+                    <div class="dsl-mobile-footer">
+                        <div class="dsl-mf-btn"></div>
+                        <div class="dsl-mf-btn"></div>
+                        <div class="dsl-mf-btn dsl-mf-btn--logo"></div>
+                        <div class="dsl-mf-btn"></div>
+                        <div class="dsl-mf-btn"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom sheet open -->
+            <div class="ds-layout-frame-labeled">
+                <span class="ds-sub-heading">Bottom sheet open</span>
+                <div class="ds-layout-frame ds-layout-frame--mobile">
+                    <div class="dsl-mobile-status"></div>
+
+                    <div class="dsl-mobile-content dsl-mobile-content--dimmed">
+                        <div class="dsl-hero dsl-hero--sm"></div>
+                        <div class="dsl-grid dsl-grid--2col">
+                            <div class="dsl-card dsl-card--sm"></div>
+                            <div class="dsl-card dsl-card--sm"></div>
+                            <div class="dsl-card dsl-card--sm"></div>
+                            <div class="dsl-card dsl-card--sm"></div>
+                        </div>
+                    </div>
+
+                    <div class="dsl-mobile-sheet">
+                        <div class="dsl-sheet-handle"></div>
+                        <div class="dsl-sheet-header">
+                            <div class="dsl-sheet-title"></div>
+                        </div>
+                        <div class="dsl-sheet-item dsl-sheet-item--active"></div>
+                        <div class="dsl-sheet-item"></div>
+                        <div class="dsl-sheet-item"></div>
+                        <div class="dsl-sheet-item"></div>
+                    </div>
+
+                    <div class="dsl-mobile-footer">
+                        <div class="dsl-mf-btn"></div>
+                        <div class="dsl-mf-btn"></div>
+                        <div class="dsl-mf-btn dsl-mf-btn--logo"></div>
+                        <div class="dsl-mf-btn"></div>
+                        <div class="dsl-mf-btn"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Breakpoints table -->
+    <section id="breakpoints" class="ds-section">
+        <h2>Breakpoints</h2>
+        <table class="ds-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th>Behaviour change</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>xs</code></td>
+                    <td><code>&lt; 600px</code></td>
+                    <td>AppNav moves to bottom; main content uses full height with bottom padding</td>
+                </tr>
+                <tr>
+                    <td><code>sm</code></td>
+                    <td><code>600 - 899px</code></td>
+                    <td>AppNav top bar; per-library links hidden, only drawer buttons shown</td>
+                </tr>
+                <tr>
+                    <td><code>md</code></td>
+                    <td><code>900 - 1279px</code></td>
+                    <td>Full nav links visible. MiniPlayer: volume icon only</td>
+                </tr>
+                <tr>
+                    <td><code>lg</code></td>
+                    <td><code>1280px+</code></td>
+                    <td>Full layout. MiniPlayer shows rating stars</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- CSS variables -->
+    <section id="css-vars" class="ds-section">
+        <h2>CSS custom properties</h2>
+        <table class="ds-table">
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Default</th>
+                    <th>Usage</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>--nav-height</code></td>
+                    <td><code>56px</code></td>
+                    <td>AppNav bar height. Grid row on desktop; MiniPlayer bottom offset on mobile</td>
+                </tr>
+                <tr>
+                    <td><code>--page-sidebar-width</code></td>
+                    <td><code>220px</code></td>
+                    <td>Width of the section sidebar in AdminLayout / SettingsLayout</td>
+                </tr>
+                <tr>
+                    <td><code>--mini-player-height</code></td>
+                    <td><code>60px</code></td>
+                    <td>Height of the fixed MiniMusicPlayer bar</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</div>
