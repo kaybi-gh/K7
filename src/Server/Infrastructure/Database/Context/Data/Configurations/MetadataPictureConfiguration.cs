@@ -49,6 +49,13 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
 
+        builder
+            .HasOne(mp => mp.Library)
+            .WithOne(l => l.CoverPicture)
+            .HasForeignKey<MetadataPicture>(mp => mp.LibraryId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
         builder.Property(m => m.OriginalRemoteUri)
             .HasConversion(
                 v => v != null ? v.ToString() : null,

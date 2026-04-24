@@ -46,13 +46,21 @@
             </div>
         }
 
-        @* Step 2: Name and path *@
+        @* Step 2: Name, description, icon, path *@
         @if (_activeStep == 1)
         {
             <div class="d-flex flex-col mt-2">
                 <K7TextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="outlined"
                               Required="true" RequiredError="@L["NameRequired"]"
                               Placeholder="@L["NamePlaceholder"]" />
+
+                <K7TextField @bind-Value="_description" Label="@L["DescriptionLabel"]" Variant="outlined"
+                             HelperText="@L["DescriptionHelper"]" />
+
+                <div class="form-section">
+                    <label class="form-label">@L["IconLabel"]</label>
+                    <K7IconPicker @bind-Value="_icon" SearchPlaceholder="@(L["IconSearch"])" />
+                </div>
 
                 <div class="d-flex">
                     <K7TextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="outlined"

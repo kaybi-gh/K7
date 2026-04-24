@@ -27,4 +27,18 @@
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="MetadataRefreshLabel" xml:space="preserve"><value>Auto-refresh metadata (days)</value></data>
   <data name="MetadataRefreshHelper" xml:space="preserve"><value>0 or empty = disabled</value></data>
+  <data name="DescriptionLabel" xml:space="preserve"><value>Short description</value></data>
+  <data name="DescriptionHelper" xml:space="preserve"><value>Optional - displayed on the library card</value></data>
+  <data name="IconLabel" xml:space="preserve"><value>Icon</value></data>
+  <data name="IconSearch" xml:space="preserve"><value>Search an icon...</value></data>
+  <data name="IconNone" xml:space="preserve"><value>No icon</value></data>
+  <data name="IconChange" xml:space="preserve"><value>Choose</value></data>
+  <data name="CoverLabel" xml:space="preserve"><value>Cover image</value></data>
+  <data name="CoverFromMedia" xml:space="preserve"><value>Pick from library media</value></data>
+  <data name="CoverUpload" xml:space="preserve"><value>Upload a file</value></data>
+  <data name="UploadCover" xml:space="preserve"><value>Choose an image...</value></data>
+  <data name="RemoveCover" xml:space="preserve"><value>Remove</value></data>
+  <data name="CoverNone" xml:space="preserve"><value>No cover</value></data>
+  <data name="CoverChange" xml:space="preserve"><value>Choose</value></data>
+  <data name="NoPictures" xml:space="preserve"><value>No pictures available in this library</value></data>
 </root>

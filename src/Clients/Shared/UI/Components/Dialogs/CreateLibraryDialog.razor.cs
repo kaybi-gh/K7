@@ -18,6 +18,8 @@ public partial class CreateLibraryDialog
     private LibraryMediaType _selectedMediaType;
     private bool _mediaTypeSelected;
     private string _title = "";
+    private string? _description = null;
+    private string? _icon = null;
     private string _rootPath = "";
     private string _selectedProvider = "";
     private List<MetadataProviderInfoDto> _availableProviders = [];
@@ -117,7 +119,9 @@ public partial class CreateLibraryDialog
                 MediaType = _selectedMediaType,
                 RootPath = _rootPath.Trim(),
                 TriggerFileIndexingOnCreation = _triggerIndexing,
-                MetadataProviderName = _selectedProvider
+                MetadataProviderName = _selectedProvider,
+                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+                Icon = _icon
             };
 
             await K7ServerService.CreateLibraryAsync(request);

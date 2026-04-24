@@ -27,4 +27,18 @@
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
   <data name="MetadataRefreshLabel" xml:space="preserve"><value>Rafraichissement automatique (jours)</value></data>
   <data name="MetadataRefreshHelper" xml:space="preserve"><value>0 ou vide = desactivé</value></data>
+  <data name="DescriptionLabel" xml:space="preserve"><value>Description courte</value></data>
+  <data name="DescriptionHelper" xml:space="preserve"><value>Facultatif - affiché sur la card de la librairie</value></data>
+  <data name="IconLabel" xml:space="preserve"><value>Icône</value></data>
+  <data name="IconSearch" xml:space="preserve"><value>Rechercher une icône...</value></data>
+  <data name="IconNone" xml:space="preserve"><value>Aucune icône</value></data>
+  <data name="IconChange" xml:space="preserve"><value>Choisir</value></data>
+  <data name="CoverLabel" xml:space="preserve"><value>Image de couverture</value></data>
+  <data name="CoverFromMedia" xml:space="preserve"><value>Choisir parmi les médias</value></data>
+  <data name="CoverUpload" xml:space="preserve"><value>Importer un fichier</value></data>
+  <data name="UploadCover" xml:space="preserve"><value>Choisir une image...</value></data>
+  <data name="RemoveCover" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="CoverNone" xml:space="preserve"><value>Aucune couverture</value></data>
+  <data name="CoverChange" xml:space="preserve"><value>Choisir</value></data>
+  <data name="NoPictures" xml:space="preserve"><value>Aucune image disponible dans cette librairie</value></data>
 </root>

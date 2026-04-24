@@ -7,5 +7,7 @@ public enum MetadataPictureType
     Thumbnail = 3,
     Logo = 4,
     Portrait = 5,
-    Still = 6
+    Still = 6,
+    Cover = 7,
+    UserAvatar = 8
 }

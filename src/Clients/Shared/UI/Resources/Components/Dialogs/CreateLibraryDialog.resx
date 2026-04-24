@@ -44,5 +44,9 @@
   <data name="SelectFolderTitle" xml:space="preserve"><value>Sélectionner un dossier</value></data>
   <data name="ProviderLabel" xml:space="preserve"><value>Fournisseur de métadonnées</value></data>
   <data name="ProviderRequired" xml:space="preserve"><value>Le fournisseur de métadonnées est requis</value></data>
+  <data name="DescriptionLabel" xml:space="preserve"><value>Description courte</value></data>
+  <data name="DescriptionHelper" xml:space="preserve"><value>Facultatif - affiché sur la card de la librairie</value></data>
+  <data name="IconLabel" xml:space="preserve"><value>Icône</value></data>
+  <data name="IconSearch" xml:space="preserve"><value>Rechercher une icône...</value></data>
 </root>
 
