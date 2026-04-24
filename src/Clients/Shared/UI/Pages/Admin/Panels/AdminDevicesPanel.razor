@@ -1,3 +1,5 @@
+﻿@page "/admin/devices"
+@layout AdminLayout
 @inject IStringLocalizer<AdminDevicesPanel> L
 
 @if (_isLoading)
@@ -6,10 +8,10 @@
 }
 else if (_devices is null || _devices.TotalCount == 0)
 {
-    <div class="d-flex flex-col pa-8">
+    <K7Paper Class="d-flex flex-col pa-8">
         <K7Icon Name="monitor-play" Size="lg" Color="secondary" />
         <p Color="secondary">@L["NoDevices"]</p>
-    </div>
+    </K7Paper>
 }
 else
 {
@@ -22,7 +24,7 @@ else
         {
             var isCurrent = IsCurrentDevice(device);
 
-            <div class="k7-card k7-card--outlined @(isCurrent ? "current-device" : "")">
+            <K7Paper Outlined="true" Class="@(isCurrent ? "current-device" : "")">
                 <div class="k7-card-content">
                     <div class="d-flex align-center">
                         <K7Icon Name="@GetDeviceIcon(device.DeviceType)" Size="lg" Color="@(isCurrent ? "primary" : "default")" />
@@ -41,7 +43,7 @@ else
                                 @device.OperatingSystem @device.OperatingSystemVersion
                                 @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
                                 {
-                                    <text> - @($"{device.DisplayWidth:0}×{device.DisplayHeight:0}")</text>
+                                    <text> - @($"{device.DisplayWidth:0}Ã—{device.DisplayHeight:0}")</text>
                                 }
                             </p>
                         </div>
@@ -64,7 +66,7 @@ else
                         </div>
                     }
                 </div>
-            </div>
+            </K7Paper>
         }
     </div>
 }

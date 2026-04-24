@@ -1,0 +1,28 @@
+@inherits LayoutComponentBase
+@layout MainLayout
+@inject IStringLocalizer<SettingsLayout> L
+
+<SidebarLayout>
+    <SidebarContent>
+        <div class="page-sidebar-title">@L["Title"]</div>
+        <nav class="page-sidebar-nav">
+            <NavLink class="nav-link" href="/settings/general">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Gear" /></span>
+                <span class="nav-label">@L["General"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/settings/stats">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.ChartBar" /></span>
+                <span class="nav-label">@L["Stats"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/settings/history">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.ClockCounterClockwise" /></span>
+                <span class="nav-label">@L["History"]</span>
+            </NavLink>
+        </nav>
+    </SidebarContent>
+    <ChildContent>
+        <div class="page-content">
+            @Body
+        </div>
+    </ChildContent>
+</SidebarLayout>
