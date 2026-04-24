@@ -14,4 +14,7 @@ public interface ILibraryService
     Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default);
     Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default);
     Task<List<MetadataProviderInfoDto>> GetMetadataProvidersAsync(LibraryMediaType? mediaType = null, CancellationToken cancellationToken = default);
+    Task<Guid> UploadLibraryCoverAsync(Guid libraryId, Stream stream, string fileName, CancellationToken cancellationToken = default);
+    Task<Guid> SetLibraryCoverFromPictureAsync(Guid libraryId, Guid sourcePictureId, CancellationToken cancellationToken = default);
+    Task<List<LibraryPictureDto>> GetLibraryPicturesAsync(Guid libraryId, CancellationToken cancellationToken = default);
 }

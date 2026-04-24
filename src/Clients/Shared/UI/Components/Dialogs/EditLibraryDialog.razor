@@ -5,6 +5,9 @@
             <K7TextField @bind-Value="Title" Label="@L["TitleLabel"]" Variant="outlined"
                           Required="true" RequiredError="@L["TitleRequired"]" />
 
+            <K7TextField @bind-Value="Description" Label="@L["DescriptionLabel"]" Variant="outlined"
+                         HelperText="@L["DescriptionHelper"]" />
+
             <K7Select TValue="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
                 @foreach (var provider in AvailableProviders)
                 {
@@ -15,6 +18,48 @@
             <K7TextField TValue="int?" Type="number" @bind-Value="MetadataRefreshIntervalDays"
                              Label="@L["MetadataRefreshLabel"]" Variant="outlined"
                              HelperText="@L["MetadataRefreshHelper"]" />
+
+            <div class="picker-row">
+                <span class="picker-row__label">@L["IconLabel"]</span>
+                <div class="picker-row__value">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <i class="@Icon picker-row__icon-preview" aria-hidden="true"></i>
+                    }
+                    else
+                    {
+                        <span class="text-sm text-secondary">@L["IconNone"]</span>
+                    }
+                </div>
+                <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPicker">@L["IconChange"]</K7Button>
+            </div>
+
+            <div class="picker-row">
+                <span class="picker-row__label">@L["CoverLabel"]</span>
+                <div class="picker-row__value">
+                    @if (_pendingCover?.SourcePictureId.HasValue == true)
+                    {
+                        <img src="/api/metadata-pictures/@_pendingCover.SourcePictureId?size=Small" class="picker-row__cover-preview" alt="cover" />
+                    }
+                    else if (_pendingCover?.File is not null)
+                    {
+                        <span class="text-sm text-secondary">@_pendingCover.File.Name</span>
+                    }
+                    else if (_currentCoverPictureId.HasValue)
+                    {
+                        <img src="/api/metadata-pictures/@_currentCoverPictureId?size=Small" class="picker-row__cover-preview" alt="cover" />
+                    }
+                    else
+                    {
+                        <span class="text-sm text-secondary">@L["CoverNone"]</span>
+                    }
+                </div>
+                <K7Button Variant="outlined" Size="sm" OnClick="OpenCoverPicker">@L["CoverChange"]</K7Button>
+                @if (_currentCoverPictureId.HasValue || _pendingCover is not null)
+                {
+                    <K7Button Variant="text" Size="sm" OnClick="RemoveCover">@L["RemoveCover"]</K7Button>
+                }
+            </div>
         </div>
     </div>
     <div class="k7-dialog-actions">

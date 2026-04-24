@@ -17,6 +17,8 @@ public record CreateLibraryCommand : IRequest<Guid>
     public required string RootPath { get; init; }
     public required string MetadataProviderName { get; init; }
     public bool TriggerFileIndexingOnCreation { get; init; } = true;
+    public string? Description { get; init; }
+    public string? Icon { get; init; }
 }
 
 public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand, Guid>
@@ -38,7 +40,9 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
             Title = request.Title,
             MediaType = request.MediaType,
             RootPath = request.RootPath,
-            MetadataProviderName = request.MetadataProviderName
+            MetadataProviderName = request.MetadataProviderName,
+            Description = request.Description,
+            Icon = request.Icon
         };
 
         entity.AddDomainEvent(new LibraryCreatedEvent(entity));

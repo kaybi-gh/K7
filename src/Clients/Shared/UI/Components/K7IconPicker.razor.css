@@ -1,0 +1,99 @@
+.k7-icon-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.k7-icon-picker__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.k7-icon-picker__search {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text-1);
+    font-size: 0.85rem;
+    outline-offset: 2px;
+}
+
+.k7-icon-picker__search:focus {
+    outline: 2px solid var(--primary);
+}
+
+.k7-icon-picker__selected {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: var(--on-primary, #fff);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.k7-icon-picker__clear {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: var(--surface-1);
+    color: var(--text-2);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    line-height: 1;
+}
+
+.k7-icon-picker__clear:hover {
+    background: var(--surface-3);
+}
+
+.k7-icon-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.k7-icon-picker__item {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-1);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.k7-icon-picker__item:hover {
+    background: var(--surface-3);
+}
+
+.k7-icon-picker__item.selected {
+    background: var(--primary-container, color-mix(in srgb, var(--primary) 15%, transparent));
+    border-color: var(--primary);
+    color: var(--primary);
+}

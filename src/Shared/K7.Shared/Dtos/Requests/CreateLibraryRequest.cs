@@ -9,4 +9,6 @@ public sealed record CreateLibraryRequest
     public required string RootPath { get; init; }
     public required string MetadataProviderName { get; init; }
     public bool TriggerFileIndexingOnCreation { get; init; } = true;
+    public string? Description { get; init; }
+    public string? Icon { get; init; }
 }

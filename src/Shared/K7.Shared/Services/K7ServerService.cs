@@ -258,6 +258,28 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<Guid> UploadLibraryCoverAsync(Guid libraryId, Stream stream, string fileName, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StreamContent(stream), "file", fileName);
+        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/cover", content, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<Guid> SetLibraryCoverFromPictureAsync(Guid libraryId, Guid sourcePictureId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/cover?sourcePictureId={sourcePictureId}", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<List<LibraryPictureDto>> GetLibraryPicturesAsync(Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<LibraryPictureDto>>($"api/libraries/{libraryId}/pictures", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
     public async Task DeleteLibraryAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync($"api/libraries/{id}", cancellationToken);

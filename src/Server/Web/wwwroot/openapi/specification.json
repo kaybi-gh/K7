@@ -2194,6 +2194,40 @@
         }
       }
     },
+    "/api/libraries/{id}/pictures": {
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetLibraryPictures",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryPictureDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/libraries/{id}/index-files": {
       "post": {
         "tags": [
@@ -2205,6 +2239,38 @@
             "name": "id",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/libraries/{id}/cover": {
+      "post": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "UploadLibraryCover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourcePictureId",
+            "in": "query",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -4846,6 +4912,18 @@
           },
           "triggerFileIndexingOnCreation": {
             "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -5516,6 +5594,31 @@
               "string"
             ],
             "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coverPictureId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "coverDominantColor": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -5658,6 +5761,28 @@
       },
       "LibraryMediaType": {
         "type": "integer"
+      },
+      "LibraryPictureDto": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MetadataPictureType"
+          },
+          "dominantColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       },
       "LiteMediaDto": {
         "required": [
@@ -9599,6 +9724,18 @@
               "string"
             ],
             "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

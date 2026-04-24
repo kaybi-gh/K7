@@ -22,6 +22,8 @@ public class MetadataPicture : BaseAuditableEntity
     public BasePersonRole? PersonRole { get; set; }
     public Guid? PlaylistId { get; set; }
     public Playlist? Playlist { get; set; }
+    public Guid? LibraryId { get; set; }
+    public Library? Library { get; set; }
 
     public IList<MetadataPictureVariant> Variants { get; set; } = [];
 }
