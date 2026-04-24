@@ -9,7 +9,7 @@
     padding: 0;
     cursor: pointer;
     text-align: left;
-    background: linear-gradient(to right, var(--card-gradient-start), var(--card-gradient-end));
+    background: var(--card-gradient-start);
     transition: transform var(--duration-fast) var(--ease-out),
                 box-shadow var(--duration-fast) var(--ease-out);
 }
@@ -36,14 +36,23 @@
     inset: 0;
     background-size: cover;
     background-position: center;
-    opacity: 0.25;
+    opacity: 0.65;
 }
 
-/* Gradient overlay on top of image (or alone) */
+/* Gradient overlay — default: soft semi-transparent gradient */
 .k7-category-card__overlay {
     position: absolute;
     inset: 0;
     background: linear-gradient(to right, var(--card-gradient-start), var(--card-gradient-end));
+}
+
+/* Gradient overlay — when a solid dominant color is available */
+.k7-category-card.has-dominant-color .k7-category-card__overlay {
+    background: linear-gradient(to right,
+        var(--card-color) 0%,
+        var(--card-color) 50%,
+        color-mix(in srgb, var(--card-color) 50%, transparent) 80%,
+        color-mix(in srgb, var(--card-color) 10%, transparent) 100%);
 }
 
 /* Content row */
@@ -77,6 +86,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding-right: 10px;
 }
 
 .k7-category-card__desc {

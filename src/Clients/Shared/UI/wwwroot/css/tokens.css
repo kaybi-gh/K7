@@ -74,6 +74,7 @@
     --z-max:     9999;
 
     /* --- Layout --- */
+    --nav-height:          56px;
     --sidebar-width-mini:  56px;
     --sidebar-width-open:  240px;
     --mini-player-height:  60px;
