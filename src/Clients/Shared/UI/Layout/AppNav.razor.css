@@ -1,0 +1,421 @@
+﻿/* ============================================================
+   Backdrop
+   ============================================================ */
+.app-nav-backdrop {
+    position: fixed;
+    z-index: calc(var(--z-drawer) - 10);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--transition-normal), background var(--transition-normal);
+}
+
+.app-nav-backdrop.open {
+    pointer-events: all;
+}
+
+/* Desktop: covers area below nav bar, transparent (only intercepts clicks) */
+@media (min-width: 600px) {
+    .app-nav-backdrop {
+        inset: var(--nav-height) 0 0 0;
+    }
+}
+
+/* Mobile: covers content above bottom nav bar, with dim */
+@media (max-width: 599.98px) {
+    .app-nav-backdrop {
+        inset: 0 0 var(--nav-height) 0;
+    }
+    .app-nav-backdrop.open {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* ============================================================
+   App nav bar
+   ============================================================ */
+.app-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-drawer);
+    background: var(--color-drawer);
+    border-bottom: 1px solid var(--color-border);
+    height: var(--nav-height);
+}
+
+@media (min-width: 600px) {
+    .app-nav {
+        background: color-mix(in srgb, var(--color-drawer) 70%, transparent);
+        border-bottom-color: transparent;
+        backdrop-filter: blur(12px);
+    }
+}
+
+.app-nav-bar {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 var(--space-5);
+    gap: var(--space-1);
+}
+
+@media (min-width: 600px) {
+    .app-nav-bar {
+        gap: var(--space-2);
+    }
+
+    .app-nav-item--home,
+    .app-nav-item--explore,
+    .app-nav-item--myspace {
+        padding: var(--space-2) var(--space-4);
+    }
+}
+
+/* Logo */
+.app-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 700;
+    flex-shrink: 0;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+    margin-right: var(--space-3);
+    transition: background var(--transition-fast);
+}
+
+.app-nav-logo:hover {
+    background: var(--color-surface-hover);
+}
+
+.app-nav-logo-text {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+}
+
+/* Spacer */
+.app-nav-spacer {
+    flex: 1;
+}
+
+/* Base link */
+.app-nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--transition-fast), background var(--transition-fast);
+    min-height: 36px;
+    background: transparent;
+    border: none;
+    font-family: var(--font-body);
+}
+
+.app-nav-link:hover,
+.app-nav-link:focus-visible {
+    color: var(--color-text);
+    background: var(--color-surface-hover);
+}
+
+.app-nav-link.active,
+.app-nav-link.active:hover {
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.app-nav-icon {
+    flex-shrink: 0;
+    font-size: var(--text-xl);
+    display: flex;
+    align-items: center;
+}
+
+.app-nav-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-nav-label--profile {
+    max-width: 100px;
+}
+
+.avatar--sm {
+    width: 28px;
+    height: 28px;
+    font-size: var(--text-xs);
+}
+
+@media (min-width: 600px) {
+    .avatar--sm {
+        width: 34px;
+        height: 34px;
+        font-size: var(--text-sm);
+    }
+}
+
+/* Desktop: text-only for left nav items; icon-only for search/profile */
+@media (min-width: 600px) {
+    .app-nav-item--home .app-nav-icon,
+    .app-nav-item--explore .app-nav-icon,
+    .app-nav-item--myspace .app-nav-icon {
+        display: none;
+    }
+
+    .app-nav-item--search .app-nav-label,
+    .app-nav-label--profile {
+        display: none;
+    }
+}
+
+/* ============================================================
+   Popovers (explore + profile)
+   ============================================================ */
+.app-nav-popover {
+    position: fixed;
+    z-index: calc(var(--z-drawer) + 10);
+    visibility: hidden;
+}
+
+/* Desktop: dropdown below nav bar */
+@media (min-width: 600px) {
+    .app-nav-popover {
+        top: calc(var(--nav-height) + var(--space-2));
+        min-width: 240px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+        opacity: 0;
+        transform: translateY(-6px);
+        pointer-events: none;
+        transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
+    }
+
+    .app-nav-popover.open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
+        transform: translateY(0);
+    }
+
+    .app-nav-popover--explore {
+        left: var(--space-5);
+        max-width: 440px;
+        min-width: 320px;
+    }
+
+    .app-nav-popover--profile {
+        right: var(--space-5);
+    }
+
+    .app-nav-popover-inner {
+        padding: var(--space-2) 0;
+    }
+}
+
+/* Mobile: slide-up panel — fullscreen for explore, card for profile */
+@media (max-width: 599.98px) {
+    .app-nav-popover {
+        left: 0;
+        right: 0;
+        bottom: var(--nav-height);
+        max-height: 75dvh;
+        overflow-y: auto;
+        background: var(--color-surface);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        border-top: 1px solid var(--color-border);
+        opacity: 0;
+        transform: translateY(100%);
+        transition: transform var(--transition-normal), opacity var(--transition-normal), visibility var(--transition-normal);
+    }
+
+    /* Explore takes full height above the nav bar */
+    .app-nav-popover--explore {
+        top: 0;
+        max-height: none;
+        border-radius: 0;
+        border-top: none;
+        overflow-y: auto;
+    }
+
+    .app-nav-popover.open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .app-nav-popover-inner {
+        padding: var(--space-2) 0 var(--space-4);
+    }
+}
+
+/* Popover section headings */
+.app-nav-popover-section {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: var(--space-3) var(--space-4) var(--space-1);
+    margin: 0;
+}
+
+/* Header row with title + close button */
+.app-nav-popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4);
+    position: sticky;
+    top: 0;
+    background: var(--color-surface);
+    z-index: 1;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-2);
+}
+
+.app-nav-popover-title {
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+/* Library category card grid */
+.app-nav-explore-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4) var(--space-3);
+}
+
+.app-nav-explore-grid .k7-category-card {
+    width: 100%;
+}
+
+/* Nav label override for popovers (global .nav-label has max-width:0 from sidebar era) */
+.app-nav-popover .nav-label {
+    max-width: none;
+    overflow: visible;
+}
+
+/* Button reset for nav-link buttons inside popover */
+.app-nav-popover-btn {
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font-body);
+}
+
+/* Profile header */
+.app-nav-popover-user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-4) var(--space-3);
+}
+
+.app-nav-popover-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.app-nav-popover-username {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-nav-popover-status {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+}
+
+.app-nav-popover-divider {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 0 0 var(--space-1);
+}
+
+/* ============================================================
+   Mobile bottom nav
+   ============================================================ */
+@media (max-width: 599.98px) {
+    .app-nav {
+        top: auto;
+        bottom: 0;
+        border-top: 1px solid var(--color-border);
+        border-bottom: none;
+    }
+
+    .app-nav-bar {
+        justify-content: space-between;
+        padding: 0 var(--space-3);
+        gap: 0;
+    }
+
+    .app-nav-logo,
+    .app-nav-spacer {
+        display: none;
+    }
+
+    /* Reorder for mobile: Home, Explore, Search, My space, Profile */
+    .app-nav-item--home    { order: 1; }
+    .app-nav-item--explore { order: 2; }
+    .app-nav-item--search  { order: 3; }
+    .app-nav-item--myspace { order: 4; }
+    .app-nav-item--profile { order: 5; }
+
+    .app-nav-link {
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--space-1) var(--space-2);
+        min-height: var(--nav-height);
+        justify-content: center;
+        align-items: center;
+        border-radius: 0;
+    }
+
+    /* Show icons for all items on mobile */
+    .app-nav-item--home .app-nav-icon,
+    .app-nav-item--explore .app-nav-icon,
+    .app-nav-item--myspace .app-nav-icon {
+        display: flex;
+    }
+
+    .app-nav-icon {
+        font-size: var(--text-lg);
+    }
+
+    .app-nav-label {
+        font-size: 0.625rem;
+    }
+
+    /* Search and Profile labels visible on mobile */
+    .app-nav-item--search .app-nav-label {
+        display: block;
+    }
+
+    .app-nav-label--profile {
+        display: block;
+        max-width: none;
+    }
+}

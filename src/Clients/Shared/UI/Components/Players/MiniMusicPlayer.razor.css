@@ -1,8 +1,10 @@
 ﻿.music-mini-player {
     background: var(--color-surface);
-    border-top: 1px solid var(--color-border);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .mini-player-progress {
@@ -12,14 +14,16 @@
     cursor: pointer;
     flex-shrink: 0;
     touch-action: none;
+    transform-origin: top center;
+    transition: transform 150ms ease;
 }
 
-.mini-player-progress:hover,
-.mini-player-progress:focus-visible {
-    height: 6px;
+.mini-player-progress:hover {
+    transform: scaleY(1.5);
 }
 
 .mini-player-progress:focus-visible {
+    transform: scaleY(1.5);
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
@@ -70,6 +74,7 @@
     justify-content: flex-end;
     gap: 4px;
     min-width: 0;
+    overflow: visible;
 }
 
 .mini-player-track-info {
@@ -117,7 +122,10 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--color-text-secondary);
+    color: var(--color-accent);
+    font-weight: var(--font-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .mini-player-controls {
@@ -128,10 +136,13 @@
 }
 
 .mini-player-play-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-full);
-    background: var(--color-surface-2);
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    color: #111;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
 .mini-player-time {
@@ -160,38 +171,76 @@
 .mini-player-volume {
     display: flex;
     align-items: center;
-    gap: 2px;
+    position: relative;
 }
 
-::deep .mini-player-volume-slider {
-    width: 72px;
+.volume-popup {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    width: 36px;
+    height: 100px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
     overflow: hidden;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(4px);
+    transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.mini-player-volume:hover .volume-popup,
+.mini-player-volume:focus-within .volume-popup {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+::deep .mini-player-volume-slider .k7-slider-wrap {
+    position: absolute;
+    inset: 0;
+}
+
+::deep .mini-player-volume-slider .k7-range {
+    -webkit-appearance: none;
+    appearance: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 84px;
+    height: 4px;
+    margin: 0;
+    padding: 0;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-full);
+    cursor: pointer;
 }
 
 ::deep .mini-player-volume-slider .k7-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
     width: 12px;
     height: 12px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
 }
 
 ::deep .mini-player-volume-slider .k7-range::-moz-range-thumb {
     width: 12px;
     height: 12px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: none;
 }
 
-/* Palier 1 — < 1050px : slider volume retreci */
-@container (max-width: 1050px) {
-    ::deep .mini-player-volume-slider {
-        width: 48px;
-    }
-}
-
-/* Palier 2 — < 900px : rating cache, slider retire (icone mute seule) */
-@container (max-width: 900px) {
+/* Palier 1 — < 1280px : rating masque */
+@container (max-width: 1280px) {
     .mini-player-rating {
-        display: none;
-    }
-
-    ::deep .mini-player-volume-slider {
         display: none;
     }
 }
@@ -249,8 +298,10 @@
         flex: 1;
     }
 
-    /* Hide prev only — keep play/pause and next */
-    .mini-player-controls .k7-icon-btn:nth-child(1) {
+    /* Mobile: hide shuffle(1), prev(2), repeat(5) — keep play(3) and next(4) */
+    .mini-player-controls .k7-icon-btn:nth-child(1),
+    .mini-player-controls .k7-icon-btn:nth-child(2),
+    .mini-player-controls .k7-icon-btn:nth-child(5) {
         display: none;
     }
 
@@ -264,10 +315,12 @@
         font-size: 1.1rem;
     }
 
-    /* Thin progress bar */
+    /* Thin progress bar — not interactive on mobile */
     .mini-player-progress,
     .mini-player-progress:hover,
     .mini-player-progress:focus-visible {
         height: 3px;
+        cursor: default;
+        pointer-events: none;
     }
 }

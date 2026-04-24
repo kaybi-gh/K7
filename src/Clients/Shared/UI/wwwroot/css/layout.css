@@ -19,18 +19,14 @@
 
 .app-shell {
     display: grid;
-    grid-template-columns: var(--sidebar-width-mini) 1fr;
+    grid-template-columns: 1fr;
     grid-template-rows: 1fr;
     height: 100%;
     overflow: hidden;
 }
 
-.app-shell.sidebar-open {
-    grid-template-columns: var(--sidebar-width-open) 1fr;
-}
-
 .app-main {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1;
     overflow-y: auto;
     overflow-x: hidden;
@@ -38,56 +34,24 @@
     flex-direction: column;
     min-height: 0;
     position: relative;
+    padding-top: var(--nav-height);
 }
 
-/* Mobile */
-@media (max-width: 599px) {
+/* Mobile: nav is fixed at bottom, no grid row needed */
+@media (max-width: 599.98px) {
     .app-shell {
-        grid-template-columns: 1fr;
-        grid-template-rows: 1fr var(--mobile-footer-height);
-    }
-
-    .app-shell.sidebar-open {
-        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
     }
 
     .app-main {
-        grid-column: 1;
         grid-row: 1;
-    }
-
-    .sidebar {
-        display: none !important;
-    }
-
-    .mobile-footer {
-        display: flex !important;
-        grid-column: 1;
-        grid-row: 2;
+        padding-bottom: var(--nav-height);
     }
 }
 
 /* ============================================================
-   Sidebar
+   Sidebar (page-level sidebar used by AdminLayout, SettingsLayout)
    ============================================================ */
-
-.sidebar {
-    grid-column: 1;
-    grid-row: 1;
-    display: flex;
-    flex-direction: column;
-    background: var(--color-drawer);
-    overflow: hidden;
-    transition: width var(--transition-normal);
-    width: var(--sidebar-width-mini);
-    height: 100%;
-    position: relative;
-    z-index: 2;
-}
-
-.sidebar.open {
-    width: var(--sidebar-width-open);
-}
 
 .sidebar-header {
     display: flex;
@@ -226,6 +190,11 @@
     max-width: 200px;
 }
 
+.page-sidebar .nav-label {
+    max-width: none;
+    overflow: visible;
+}
+
 /* Nav group (collapsible) */
 .nav-group-toggle {
     display: flex;
@@ -353,16 +322,8 @@
 .connection-badge--offline    { background: var(--color-text-disabled); }
 
 /* ============================================================
-   Mobile footer
+   Mobile bottom nav (AppNav on mobile is fixed at bottom)
    ============================================================ */
-
-.mobile-footer {
-    display: none;
-    background: var(--color-drawer);
-    border-top: 1px solid var(--color-border);
-    height: var(--mobile-footer-height);
-    z-index: var(--z-header);
-}
 
 .mobile-footer-bar {
     display: flex;

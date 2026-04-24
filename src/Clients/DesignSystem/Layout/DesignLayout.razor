@@ -68,6 +68,17 @@
                     <li><a href="/players#next-episode">NextEpisodeOverlay</a></li>
                 </ul>
             }
+            <li><NavLink href="/layout"><K7Icon Name="@Phosphor.AppWindow" />Layout</NavLink></li>
+            @if (page == "layout")
+            {
+                <ul class="ds-nav-sub">
+                    <li><a href="/layout#desktop">Desktop</a></li>
+                    <li><a href="/layout#sidebar-open">Sidebar expanded</a></li>
+                    <li><a href="/layout#mobile">Mobile</a></li>
+                    <li><a href="/layout#breakpoints">Breakpoints</a></li>
+                    <li><a href="/layout#css-vars">CSS variables</a></li>
+                </ul>
+            }
             <li><NavLink href="/dialogs"><K7Icon Name="@Phosphor.Layout" />Dialogs</NavLink></li>
             @if (page == "dialogs")
             {

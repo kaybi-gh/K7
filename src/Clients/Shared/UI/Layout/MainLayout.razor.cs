@@ -18,16 +18,12 @@ public partial class MainLayout : IDisposable
 
     private ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
-    private bool _sidebarOpen;
     private Timer? _overlayTimer;
 
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
 
     protected override async Task OnInitializedAsync()
     {
-        _sidebarOpen = SidebarService.IsOpen;
-        SidebarService.IsOpenOnChange += OnSidebarStateChanged;
-
         ThemeService.ThemeOnChange += OnThemeChanged;
 
         if (DeviceService.GetClientType() == ClientType.Web)
@@ -78,21 +74,6 @@ public partial class MainLayout : IDisposable
         await InvokeAsync(StateHasChanged);
     }
 
-    private void OnSidebarStateChanged()
-    {
-        _sidebarOpen = SidebarService.IsOpen;
-        InvokeAsync(StateHasChanged);
-    }
-
-    internal void SetSidebarOpen(bool open)
-    {
-        if (_sidebarOpen != open)
-        {
-            _sidebarOpen = open;
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
     private void OnConnectionStateChanged(HubConnectionState state)
     {
         if (state == HubConnectionState.Connected)
@@ -114,7 +95,6 @@ public partial class MainLayout : IDisposable
 
     public void Dispose()
     {
-        SidebarService.IsOpenOnChange -= OnSidebarStateChanged;
         ThemeService.ThemeOnChange -= OnThemeChanged;
         K7HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         _overlayTimer?.Dispose();

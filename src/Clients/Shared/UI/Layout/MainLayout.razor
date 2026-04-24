@@ -12,7 +12,7 @@
 @inject IK7ServerService K7ServerService
 @inject IStringLocalizer<MainLayout> L
 
-<div class="app-shell @(_sidebarOpen ? "sidebar-open" : "")">
+<div class="app-shell">
     @if (_showOverlay)
     {
         <div class="reconnection-overlay">
@@ -25,11 +25,11 @@
         </div>
     }
 
-    <Sidebar />
+    <AppNav />
 
     <main class="app-main">
         <MediaPlayer />
-        <div class="mini-player-dock @(_sidebarOpen ? "sidebar-open" : "")">
+        <div class="mini-player-dock">
             <MiniMusicPlayer />
         </div>
         <FullScreenMusicPlayer />
@@ -47,8 +47,6 @@
             </ErrorContent>
         </ErrorBoundary>
     </main>
-
-    <MobileFooter />
 </div>
 
 <K7DialogHost />
