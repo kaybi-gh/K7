@@ -32,5 +32,7 @@ var server = builder.AddProject<K7_Server_Web>("k7-server")
         context.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = builder.Environment.EnvironmentName;
     })
     .WithArgs("--init-db");
+
+builder.AddProject<K7_Clients_DesignSystem>("k7-design-system");
     
 builder.Build().Run();
