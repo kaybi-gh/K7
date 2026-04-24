@@ -1,0 +1,52 @@
+@inherits LayoutComponentBase
+@layout MainLayout
+@inject IStringLocalizer<AdminLayout> L
+
+<SidebarLayout>
+    <SidebarContent>
+        <div class="page-sidebar-title">@L["Title"]</div>
+        <nav class="page-sidebar-nav">
+            <NavLink class="nav-link" href="/admin/general">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Gear" /></span>
+                <span class="nav-label">@L["General"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/libraries">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.VideoCamera" /></span>
+                <span class="nav-label">@L["Libraries"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/users">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Users" /></span>
+                <span class="nav-label">@L["Users"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/devices">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Devices" /></span>
+                <span class="nav-label">@L["Devices"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/restrictions">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Shield" /></span>
+                <span class="nav-label">@L["Restrictions"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/authentication">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Lock" /></span>
+                <span class="nav-label">@L["Authentication"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/background-tasks">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Queue" /></span>
+                <span class="nav-label">@L["BackgroundTasks"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/diagnostics">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Heartbeat" /></span>
+                <span class="nav-label">@L["Diagnostics"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="/admin/streams">
+                <span class="nav-icon"><K7Icon Name="@Phosphor.Broadcast" /></span>
+                <span class="nav-label">@L["ActiveStreams"]</span>
+            </NavLink>
+        </nav>
+    </SidebarContent>
+    <ChildContent>
+        <div class="page-content">
+            @Body
+        </div>
+    </ChildContent>
+</SidebarLayout>

@@ -101,7 +101,11 @@ public partial class AdminLibrariesPanel
 
         var parameters = new K7DialogParameters<EditLibraryDialog>
         {
+            { x => x.LibraryId, library.Id },
             { x => x.Title, library.Title },
+            { x => x.Description, library.Description },
+            { x => x.Icon, library.Icon },
+            { x => x.CoverPictureId, library.CoverPictureId },
             { x => x.AvailableProviders, providers },
             { x => x.SelectedProvider, library.MetadataProviderName },
             { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays }
@@ -111,17 +115,9 @@ public partial class AdminLibrariesPanel
         var dialog = await DialogService.ShowAsync<EditLibraryDialog>(string.Format(L["EditTitle"], library.Title), parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false, Data: UpdateLibraryRequest request })
+        if (result is { Canceled: false })
         {
-            try
-            {
-                await K7ServerService.UpdateLibraryAsync(library.Id, request);
-                await LoadLibraries();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
-            }
+            await LoadLibraries();
         }
     }
 

@@ -1,62 +1,13 @@
 @page "/admin"
 @page "/admin/{Tab}"
-@inject IStringLocalizer<Admin> L
-@inject IStringLocalizer<SharedResource> S
 @inject NavigationManager NavigationManager
 
-<AuthorizeView Roles="Administrator">
-    <Authorized>
-        <PageTitle>@L["PageTitle"]</PageTitle>
+@code {
+    [Parameter] public string? Tab { get; set; }
 
-        <h4>@L["PageTitle"]</h4>
-
-        <K7Tabs
-                 ActivePanelIndex="@_activePanelIndex" ActivePanelIndexChanged="OnActivePanelIndexChanged">
-            <K7TabPanel Text="@L["TabGeneral"]" Icon="gear">
-                <AdminGeneralPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabLibraries"]" Icon="video-camera">
-                <AdminLibrariesPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabUsers"]" Icon="users">
-                <AdminUsersPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabDevices"]" Icon="devices">
-                <AdminDevicesPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabRestrictions"]" Icon="shield">
-                <AdminRestrictionsPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabAuthentication"]" Icon="shield">
-                <AdminAuthenticationPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabBackgroundTasks"]" Icon="queue">
-                <AdminBackgroundTasksPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabDiagnostics"]" Icon="heartbeat">
-                <AdminDiagnosticsPanel />
-            </K7TabPanel>
-
-            <K7TabPanel Text="@L["TabActiveStreams"]" Icon="broadcast">
-                <AdminActiveStreamsPanel />
-            </K7TabPanel>
-        </K7Tabs>
-    </Authorized>
-    <NotAuthorized>
-        <div class="container">
-            <div class="d-flex flex-col">
-                <K7Icon Name="@Phosphor.Lock" Size="lg" Color="warning" />
-                <h5>@S["AccessDenied"]</h5>
-                <p Color="secondary">@S["NoPermission"]</p>
-                <K7Button Href="/" Variant="filled" Color="primary">@S["GoToHome"]</K7Button>
-            </div>
-        </div>
-    </NotAuthorized>
-</AuthorizeView>
+    protected override void OnParametersSet()
+    {
+        var target = string.IsNullOrEmpty(Tab) ? "/admin/general" : $"/admin/{Tab}";
+        NavigationManager.NavigateTo(target, replace: true);
+    }
+}
