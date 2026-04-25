@@ -15,7 +15,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
 
             modelBuilder.Entity("DeviceUser", b =>
                 {
@@ -298,6 +298,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Icon")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
@@ -478,6 +484,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("LibraryId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("LocalPath")
                         .HasColumnType("TEXT");
 
@@ -503,6 +512,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LibraryId")
+                        .IsUnique();
 
                     b.HasIndex("MediaId");
 
@@ -1161,6 +1173,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsAdminExcluded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsSelfExcluded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<Guid>("LibraryId")
                         .HasColumnType("TEXT");
 
@@ -1180,6 +1202,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsAdminExcluded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsSelfExcluded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid>("MediaId")
                         .HasColumnType("TEXT");
@@ -2310,6 +2342,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.MetadataPicture", b =>
                 {
+                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
+                        .WithOne("CoverPicture")
+                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
                         .WithMany("Pictures")
                         .HasForeignKey("MediaId");
@@ -2331,6 +2368,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .WithOne("Thumbnails")
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "VideoFileMetadataId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Library");
 
                     b.Navigation("Media");
 
@@ -2763,6 +2802,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Library", b =>
                 {
+                    b.Navigation("CoverPicture");
+
                     b.Navigation("IndexedFiles");
                 });
 

@@ -42,6 +42,18 @@ public class ServerSettingsService(IApplicationDbContext context) : IServerSetti
         await SetRawAsync(key.Name, serialized, cancellationToken);
     }
 
+    public async Task RemoveAsync<T>(SettingKey<T> key, CancellationToken cancellationToken = default)
+    {
+        var setting = await context.ServerSettings
+            .FirstOrDefaultAsync(s => s.Key == key.Name, cancellationToken);
+
+        if (setting is not null)
+        {
+            context.ServerSettings.Remove(setting);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     private async Task SetRawAsync(string keyName, string serialized, CancellationToken cancellationToken)
     {
         var setting = await context.ServerSettings
