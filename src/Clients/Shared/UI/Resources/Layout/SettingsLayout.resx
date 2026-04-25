@@ -23,4 +23,7 @@
   <data name="General" xml:space="preserve"><value>Général</value></data>
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="History" xml:space="preserve"><value>Historique</value></data>
+  <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="Home" xml:space="preserve"><value>Accueil</value></data>
+  <data name="Hidden" xml:space="preserve"><value>Masqués</value></data>
 </root>

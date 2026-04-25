@@ -53,5 +53,24 @@
   <data name="TabGeneral" xml:space="preserve"><value>General</value></data>
   <data name="TabStats" xml:space="preserve"><value>Statistics</value></data>
   <data name="TabHistory" xml:space="preserve"><value>History</value></data>
+  <data name="TabLibraries" xml:space="preserve"><value>Libraries</value></data>
+  <data name="TabHome" xml:space="preserve"><value>Home</value></data>
+  <data name="LibrariesPageTitle" xml:space="preserve"><value>Libraries</value></data>
+  <data name="LibrariesPageDescription" xml:space="preserve"><value>Choose which libraries to hide from your view.</value></data>
+  <data name="LibrariesPageEmpty" xml:space="preserve"><value>No libraries available.</value></data>
+  <data name="LibrariesSaveSuccess" xml:space="preserve"><value>Libraries updated.</value></data>
+  <data name="HomePageTitle" xml:space="preserve"><value>Home</value></data>
+  <data name="HomePageDescription" xml:space="preserve"><value>Your home page has been customized. Reset it to return to the default layout.</value></data>
+  <data name="HomePageDefaultDescription" xml:space="preserve"><value>You are using the server default layout.</value></data>
+  <data name="HomeResetLayout" xml:space="preserve"><value>Reset layout</value></data>
+  <data name="HomeResetSuccess" xml:space="preserve"><value>Layout reset.</value></data>
+  <data name="HomeSaveSuccess" xml:space="preserve"><value>Layout saved.</value></data>
+  <data name="MoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="PreviewTitle" xml:space="preserve"><value>Preview</value></data>
+  <data name="PreviewRefresh" xml:space="preserve"><value>Refresh preview</value></data>
+  <data name="HiddenPageTitle" xml:space="preserve"><value>Hidden media</value></data>
+  <data name="HiddenPageEmpty" xml:space="preserve"><value>You haven't hidden any media.</value></data>
+  <data name="Unhide" xml:space="preserve"><value>Unhide</value></data>
 </root>
 

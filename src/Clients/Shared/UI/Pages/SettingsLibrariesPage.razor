@@ -1,0 +1,34 @@
+@page "/settings/libraries"
+@layout SettingsLayout
+@inject IStringLocalizer<Settings> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@L["LibrariesPageTitle"]</PageTitle>
+
+<h4 class="mb-4">@L["LibrariesPageTitle"]</h4>
+
+<div class="pa-4">
+    <p class="text-sm mb-4">@L["LibrariesPageDescription"]</p>
+
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else if (_libraries.Count == 0)
+    {
+        <p class="text-sm">@L["LibrariesPageEmpty"]</p>
+    }
+    else
+    {
+        <div class="d-flex flex-col gap-2">
+            @foreach (var library in _libraries)
+            {
+                var selfExcluded = _selfExcludedIds.Contains(library.Id);
+                <div class="d-flex align-center justify-between">
+                    <span class="text-sm">@library.Title</span>
+                    <K7Switch Value="@(!selfExcluded)" ValueChanged="@(v => ToggleLibrary(library.Id, !v))" Disabled="@_saving" />
+                </div>
+            }
+        </div>
+    }
+</div>

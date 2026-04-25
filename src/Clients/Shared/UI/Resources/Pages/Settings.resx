@@ -53,5 +53,24 @@
   <data name="TabGeneral" xml:space="preserve"><value>Général</value></data>
   <data name="TabStats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="TabHistory" xml:space="preserve"><value>Historique</value></data>
+  <data name="TabLibraries" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="TabHome" xml:space="preserve"><value>Accueil</value></data>
+  <data name="LibrariesPageTitle" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="LibrariesPageDescription" xml:space="preserve"><value>Choisissez les bibliothèques à masquer de votre espace.</value></data>
+  <data name="LibrariesPageEmpty" xml:space="preserve"><value>Aucune bibliothèque disponible.</value></data>
+  <data name="LibrariesSaveSuccess" xml:space="preserve"><value>Bibliothèques mises à jour.</value></data>
+  <data name="HomePageTitle" xml:space="preserve"><value>Accueil</value></data>
+  <data name="HomePageDescription" xml:space="preserve"><value>Votre page d'accueil est personnalisée. Réinitialisez-la pour revenir à la disposition par défaut.</value></data>
+  <data name="HomePageDefaultDescription" xml:space="preserve"><value>Vous utilisez la disposition par défaut du serveur.</value></data>
+  <data name="HomeResetLayout" xml:space="preserve"><value>Réinitialiser la disposition</value></data>
+  <data name="HomeResetSuccess" xml:space="preserve"><value>Disposition réinitialisée.</value></data>
+  <data name="HomeSaveSuccess" xml:space="preserve"><value>Disposition enregistrée.</value></data>
+  <data name="MoveUp" xml:space="preserve"><value>Déplacer vers le haut</value></data>
+  <data name="MoveDown" xml:space="preserve"><value>Déplacer vers le bas</value></data>
+  <data name="PreviewTitle" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="PreviewRefresh" xml:space="preserve"><value>Actualiser l'aperçu</value></data>
+  <data name="HiddenPageTitle" xml:space="preserve"><value>Médias masqués</value></data>
+  <data name="HiddenPageEmpty" xml:space="preserve"><value>Vous n'avez masqué aucun média.</value></data>
+  <data name="Unhide" xml:space="preserve"><value>Démasquer</value></data>
 </root>
 

@@ -25,8 +25,8 @@ public partial class ExcludeMediaForUsersDialog
             _userStates = users.Select(u => new UserExclusionState
             {
                 User = u,
-                Excluded = u.ExcludedMediaIds.Contains(MediaId),
-                OriginalExcluded = u.ExcludedMediaIds.Contains(MediaId)
+                Excluded = u.MediaExclusions.Any(e => e.MediaId == MediaId && e.IsAdminExcluded),
+                OriginalExcluded = u.MediaExclusions.Any(e => e.MediaId == MediaId && e.IsAdminExcluded)
             }).ToList();
         }
         catch
@@ -46,7 +46,10 @@ public partial class ExcludeMediaForUsersDialog
             var modified = _userStates.Where(s => s.Excluded != s.OriginalExcluded).ToList();
             foreach (var entry in modified)
             {
-                var newExclusions = entry.User.ExcludedMediaIds.ToList();
+                var newExclusions = entry.User.MediaExclusions
+                    .Where(e => e.IsAdminExcluded)
+                    .Select(e => e.MediaId)
+                    .ToList();
                 if (entry.Excluded)
                     newExclusions.Add(MediaId);
                 else
