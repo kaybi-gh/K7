@@ -17,7 +17,7 @@
 @import url('./css/themes/amoled.css');
 
 /* 4. Phosphor Icons */
-@import url('./dist/phosphor-icons/regular/style.css');
+@import url('./dist/phosphor-icons/src/regular/style.css');
 @import url('./dist/phosphor-icons/src/fill/style.css');
 @import url('./dist/phosphor-icons/src/bold/style.css');
 @import url('./dist/phosphor-icons/src/thin/style.css');
