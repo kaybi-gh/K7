@@ -1,0 +1,109 @@
+@page "/search"
+@inject IStringLocalizer<SearchPage> L
+@inject IStringLocalizer<SharedResource> S
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.Persons
+@using K7.Shared.Dtos.Search
+@using K7.Server.Domain.Enums
+@using K7.Clients.Shared.Mappings
+@using K7.Clients.Shared.Models
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="search-page">
+    <div class="search-page__header">
+        <K7TextField @bind-Value="_query"
+                      Adornment="start"
+                      AdornmentName="@Phosphor.MagnifyingGlass"
+                      Placeholder="@L["TypeHint"]"
+                      Variant="outlined"
+                      Clearable="true"
+                      Class="search-page__input"
+                      DebounceInterval="300"
+                      OnDebounceIntervalElapsed="@((string? v) => OnQueryDebounced(v))" />
+    </div>
+
+    @if (string.IsNullOrWhiteSpace(_query) || _query.Length < 2)
+    {
+        <div class="search-page__empty">
+            <K7Icon Name="@Phosphor.MagnifyingGlass" Style="font-size: 64px; opacity: 0.2;" />
+            <p class="text-sm" Color="secondary">@L["EnterQuery"]</p>
+        </div>
+    }
+    else if (_loading)
+    {
+        <div class="search-page__loading">
+            <K7Spinner />
+            <p class="text-sm" Color="secondary">@L["Loading"]</p>
+        </div>
+    }
+    else if (_result is null || (_result.MediaResults.Count == 0 && _result.PersonResults.Count == 0 && _result.CharacterResults.Count == 0))
+    {
+        <div class="search-page__empty">
+            <K7Icon Name="@Phosphor.SmileyMeh" Style="font-size: 64px; opacity: 0.2;" />
+            <p class="text-sm" Color="secondary">@string.Format(L["NoResults"], _query)</p>
+        </div>
+    }
+    else
+    {
+        @if (_result.MediaResults.Count > 0)
+        {
+            <section class="search-section">
+                <h6 class="search-section__title">@L["Medias"]</h6>
+                <div class="search-media-row">
+                    @foreach (var media in _result.MediaResults)
+                    {
+                        var card = media.ToCardViewModel(ApiClient);
+                        @if (card is not null)
+                        {
+                            <div class="search-media-item">
+                                <MediaCard Model="card"
+                                            Variant="@GetVariant(card)"
+                                            Href="@GetMediaHref(media)"
+                                            FooterVisible="true"
+                                            OverlayEnabled="true" />
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+        }
+
+        @if (_result.PersonResults.Count > 0)
+        {
+            <section class="search-section">
+                <h6 class="search-section__title">@L["Persons"]</h6>
+                <div class="search-person-row">
+                    @foreach (var person in _result.PersonResults)
+                    {
+                        <a href="/persons/@person.Id" class="search-person-card">
+                            <K7Avatar Image="@GetPersonPictureUrl(person)"
+                                       Alt="@person.Name"
+                                       Size="lg" />
+                            <span class="search-person-card__name">@person.Name</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (_result.CharacterResults.Count > 0)
+        {
+            <section class="search-section">
+                <h6 class="search-section__title">@L["Characters"]</h6>
+                <div class="search-person-row">
+                    @foreach (var character in _result.CharacterResults)
+                    {
+                        <a href="/persons/@character.PersonId" class="search-person-card">
+                            <K7Avatar Image="@GetCharacterPictureUrl(character)"
+                                       Alt="@character.PersonName"
+                                       Size="lg" />
+                            <span class="search-person-card__name">@character.CharacterName</span>
+                            <span class="search-person-card__sub">@character.MediaTitle</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+    }
+</div>

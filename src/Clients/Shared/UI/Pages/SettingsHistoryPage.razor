@@ -1,7 +1,12 @@
 @page "/settings/history"
-@layout SettingsLayout
-@using K7.Clients.Shared.UI.Pages.Stats
+@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Settings> L
 
 <PageTitle>@L["TabHistory"]</PageTitle>
-<PlaybackHistory />
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo("/my-space/history", replace: true);
+    }
+}

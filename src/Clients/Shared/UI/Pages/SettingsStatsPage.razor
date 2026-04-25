@@ -1,7 +1,12 @@
 @page "/settings/stats"
-@layout SettingsLayout
-@using K7.Clients.Shared.UI.Pages.Stats
+@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Settings> L
 
 <PageTitle>@L["TabStats"]</PageTitle>
-<WatchStats />
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo("/my-space/stats", replace: true);
+    }
+}
