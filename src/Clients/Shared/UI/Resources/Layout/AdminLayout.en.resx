@@ -29,4 +29,5 @@
   <data name="BackgroundTasks" xml:space="preserve"><value>Background tasks</value></data>
   <data name="Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="ActiveStreams" xml:space="preserve"><value>Active streams</value></data>
+  <data name="HomeLayout" xml:space="preserve"><value>Home layout</value></data>
 </root>

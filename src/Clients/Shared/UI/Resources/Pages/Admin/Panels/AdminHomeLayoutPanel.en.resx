@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Home layout</value></data>
+  <data name="Description" xml:space="preserve"><value>Define the default home page layout for all users.</value></data>
+  <data name="NoCustomLayout" xml:space="preserve"><value>No custom layout configured. Built-in defaults are used.</value></data>
+  <data name="ResetToDefault" xml:space="preserve"><value>Reset to default</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Layout reset.</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Layout saved.</value></data>
+  <data name="MoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="AddRow" xml:space="preserve"><value>Add row</value></data>
+  <data name="EditRow" xml:space="preserve"><value>Edit row</value></data>
+  <data name="DeleteRow" xml:space="preserve"><value>Delete row</value></data>
+  <data name="PreviewTitle" xml:space="preserve"><value>Preview</value></data>
+  <data name="PreviewRefresh" xml:space="preserve"><value>Refresh preview</value></data>
+</root>

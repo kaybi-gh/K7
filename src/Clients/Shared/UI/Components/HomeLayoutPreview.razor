@@ -1,0 +1,35 @@
+@if (_rows.Count > 0)
+{
+    @if (_loading)
+    {
+        @for (int i = 0; i < _rows.Count; i++)
+        {
+            <Carousel Skeleton="true">
+                @for (int j = 0; j < 6; j++)
+                {
+                    <CarouselItem><MediaCard Skeleton="true" /></CarouselItem>
+                }
+            </Carousel>
+        }
+    }
+    else
+    {
+        @foreach (var (title, items) in _loaded)
+        {
+            @if (items.Count > 0)
+            {
+                <Carousel Title="@title">
+                    @foreach (var item in items)
+                    {
+                        <CarouselItem @key="item.Id">
+                            <MediaCard Model="@item"
+                                       Variant="@GetVariant(item)"
+                                       Href="#"
+                                       FooterVisible="true" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+            }
+        }
+    }
+}
