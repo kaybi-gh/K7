@@ -1,4 +1,5 @@
 ﻿using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Collections;
 using K7.Server.Application.Common.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -53,6 +54,13 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .HasOne(mp => mp.Library)
             .WithOne(l => l.CoverPicture)
             .HasForeignKey<MetadataPicture>(mp => mp.LibraryId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        builder
+            .HasOne(mp => mp.Collection)
+            .WithOne(c => c.CoverPicture)
+            .HasForeignKey<MetadataPicture>(mp => mp.CollectionId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
 

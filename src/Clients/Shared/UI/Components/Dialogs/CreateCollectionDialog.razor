@@ -1,0 +1,48 @@
+@inject IStringLocalizer<CreateCollectionDialog> L
+@inject IStringLocalizer<SharedResource> S
+@using K7.Server.Domain.Enums
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col mt-2">
+        <K7TextField @bind-Value="_title"
+                      Label="@L["NameLabel"]"
+                      Variant="outlined"
+                      Required="true"
+                      RequiredError="@L["NameRequired"]"
+                      MaxLength="200" />
+        <K7TextField @bind-Value="_description"
+                      Label="@L["DescriptionOptional"]"
+                      Variant="outlined"
+                      Lines="3"
+                      MaxLength="2000" />
+        <K7Select TValue="MediaType?" @bind-Value="_mediaType" Label="@L["MediaType"]"
+                   Variant="outlined"
+                   Clearable="true">
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)null)">@L["MediaTypeMixed"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.Movie)">@S["MediaTypeMovies"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.MusicAlbum)">@S["MediaTypeMusic"]</K7SelectItem>
+            <K7SelectItem TValue="MediaType?" Value="@((MediaType?)MediaType.Serie)">@S["MediaTypeSeries"]</K7SelectItem>
+        </K7Select>
+        <div class="d-flex align-center mt-2">
+            <K7Switch @bind-Value="_isPublic" />
+            <span class="ml-2">@L["IsPublic"]</span>
+        </div>
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary"
+               Variant="filled"
+               OnClick="SubmitAsync"
+               Disabled="@(string.IsNullOrWhiteSpace(_title) || _isSubmitting)">
+        @if (_isSubmitting)
+        {
+            <K7Spinner Size="sm" />
+            <span>@L["Creating"]</span>
+        }
+        else
+        {
+            <span>@S["Create"]</span>
+        }
+    </K7Button>
+</div>

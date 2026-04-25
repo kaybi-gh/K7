@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Medias;
+﻿using K7.Server.Domain.Entities.Collections;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
@@ -22,6 +23,8 @@ public class MetadataPicture : BaseAuditableEntity
     public BasePersonRole? PersonRole { get; set; }
     public Guid? PlaylistId { get; set; }
     public Playlist? Playlist { get; set; }
+    public Guid? CollectionId { get; set; }
+    public Collection? Collection { get; set; }
     public Guid? LibraryId { get; set; }
     public Library? Library { get; set; }
 
