@@ -1,7 +1,8 @@
-﻿using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -13,6 +14,7 @@ public partial class Home : IDisposable
 {
     [Inject] private IMediaService k7ServerService { get; set; } = default!;
     [Inject] private IK7ServerService apiClient { get; set; } = default!;
+    [Inject] private IUserPreferencesService PreferencesService { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
@@ -26,9 +28,9 @@ public partial class Home : IDisposable
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _isAdmin;
-    private readonly List<MediaCardViewModel> continueWatchingMedias = [];
-    private readonly List<MediaCardViewModel> recentlyAddedMedias = [];
-    private readonly List<MediaCardViewModel> recentlyReleasedMedias = [];
+    private List<(HomeRowConfigDto Config, List<MediaCardViewModel> Items)> _rows = [];
+    private List<MediaCardViewModel> _heroItems = [];
+    private int _activeHeroIndex;
     private Timer? _mediaAddedDebounce;
 
     protected override async Task OnInitializedAsync()
@@ -41,37 +43,42 @@ public partial class Home : IDisposable
 
         K7HubClient.MediaAdded += OnMediaAdded;
 
-        var tasks = new List<Task>();
-
-        if (_canTrackProgress)
+        HomeLayoutDto layout;
+        try
         {
-            K7HubClient.ProgressUpdated += OnProgressUpdated;
-            tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
-            {
-                ContinueWatching = true,
-                OrderBy = [MediaOrderingOption.LastInteractedDesc],
-                PageNumber = 1,
-                PageSize = 20
-            }, continueWatchingMedias));
+            layout = await PreferencesService.GetHomeLayoutAsync();
+        }
+        catch
+        {
+            layout = new HomeLayoutDto { Rows = [] };
         }
 
-        tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
-        {
-            OrderBy = [MediaOrderingOption.CreatedDesc],
-            PageNumber = 1,
-            PageSize = 50
-        }, recentlyAddedMedias, useParentTitle: true));
+        _rows = layout.Rows
+            .Where(r => r.IsVisible)
+            .OrderBy(r => r.Order)
+            .Select(r => (r, new List<MediaCardViewModel>()))
+            .ToList();
 
-        tasks.Add(LoadCarouselAsync(new GetMediasWithPaginationQuery
-        {
-            OrderBy = [MediaOrderingOption.ReleaseDateDesc],
-            PageNumber = 1,
-            PageSize = 50
-        }, recentlyReleasedMedias, useParentTitle: true));
+        if (_canTrackProgress)
+            K7HubClient.ProgressUpdated += OnProgressUpdated;
+
+        var tasks = _rows
+            .Where(r => !r.Config.ContinueWatching || _canTrackProgress)
+            .Select(r => LoadRowAsync(r.Config, r.Items))
+            .ToList();
 
         await Task.WhenAll(tasks);
 
         isLoading = false;
+        var heroRows = _rows.Where(r => r.Config.DisplayType == HomeRowDisplayType.Hero).ToList();
+        _heroItems = heroRows.Count > 0
+            ? heroRows.SelectMany(r => r.Items).Take(5).ToList()
+            : _rows
+                .Where(r => !r.Config.ContinueWatching)
+                .SelectMany(r => r.Items)
+                .Where(x => !string.IsNullOrEmpty(x.BackdropUrl))
+                .Take(5)
+                .ToList();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -87,13 +94,13 @@ public partial class Home : IDisposable
         var id = mediaId.ToString();
         var changed = false;
 
-        foreach (var list in new[] { continueWatchingMedias, recentlyAddedMedias, recentlyReleasedMedias })
+        foreach (var (_, items) in _rows)
         {
-            for (var i = 0; i < list.Count; i++)
+            for (var i = 0; i < items.Count; i++)
             {
-                if (list[i].Id == id)
+                if (items[i].Id == id)
                 {
-                    list[i] = list[i] with { Progress = progressPercentage, Watched = isCompleted };
+                    items[i] = items[i] with { Progress = progressPercentage, Watched = isCompleted };
                     changed = true;
                 }
             }
@@ -112,6 +119,11 @@ public partial class Home : IDisposable
         _mediaAddedDebounce?.Dispose();
     }
 
+    private void OnHeroActiveIndexChanged(int index)
+    {
+        _activeHeroIndex = index;
+    }
+
     private void OnMediaAdded(Guid mediaId, string? title, string mediaType)
     {
         _mediaAddedDebounce?.Dispose();
@@ -119,21 +131,38 @@ public partial class Home : IDisposable
         {
             await InvokeAsync(async () =>
             {
-                await RefreshRecentlyAddedAsync();
+                await RefreshNonContinueWatchingRowsAsync();
                 StateHasChanged();
             });
         }, null, 10000, Timeout.Infinite);
     }
 
-    private async Task RefreshRecentlyAddedAsync()
+    private async Task RefreshNonContinueWatchingRowsAsync()
     {
-        recentlyAddedMedias.Clear();
-        await LoadCarouselAsync(new GetMediasWithPaginationQuery
+        var tasks = _rows
+            .Where(r => !r.Config.ContinueWatching)
+            .Select(async r =>
+            {
+                r.Items.Clear();
+                await LoadRowAsync(r.Config, r.Items);
+            });
+
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task LoadRowAsync(HomeRowConfigDto config, List<MediaCardViewModel> target)
+    {
+        var query = new GetMediasWithPaginationQuery
         {
-            OrderBy = [MediaOrderingOption.CreatedDesc],
+            ContinueWatching = config.ContinueWatching ? true : null,
+            LibraryIds = config.LibraryIds?.ToArray(),
+            MediaTypes = config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
+            OrderBy = config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
             PageNumber = 1,
-            PageSize = 100
-        }, recentlyAddedMedias, useParentTitle: true);
+            PageSize = config.PageSize
+        };
+
+        await LoadCarouselAsync(query, target, useParentTitle: true);
     }
 
     private async Task LoadCarouselAsync(GetMediasWithPaginationQuery query, List<MediaCardViewModel> target, bool useParentTitle = false)
@@ -154,11 +183,13 @@ public partial class Home : IDisposable
                 return;
             }
 
-            // Smart grouping: episodes are aggregated per serie, then resolved to Episode/Season/Serie cards
+            // Smart grouping: episodes are aggregated per serie, tracks are aggregated per album
             var insertOrder = 0;
             var orderedCards = new List<(int Order, MediaCardViewModel Card)>();
             var serieInsertOrder = new Dictionary<string, int>();
             var serieEpisodes = new Dictionary<string, List<MediaCardViewModel>>();
+            var albumInsertOrder = new Dictionary<string, int>();
+            var albumTracks = new Dictionary<string, List<MediaCardViewModel>>();
 
             foreach (var item in mediasPage.Items)
             {
@@ -173,6 +204,16 @@ public partial class Home : IDisposable
                         serieEpisodes[vm.ParentId] = [];
                     }
                     serieEpisodes[vm.ParentId].Add(vm);
+                }
+                else if (vm.Kind == MediaCardKind.Cover && vm.ParentId is not null)
+                {
+                    // Track card showing album info — group by album
+                    if (!albumInsertOrder.ContainsKey(vm.ParentId))
+                    {
+                        albumInsertOrder[vm.ParentId] = insertOrder++;
+                        albumTracks[vm.ParentId] = [];
+                    }
+                    albumTracks[vm.ParentId].Add(vm);
                 }
                 else
                 {
@@ -190,6 +231,15 @@ public partial class Home : IDisposable
                         ? firstEp with { Kind = MediaCardKind.Season, GroupCount = episodes.Count, Watched = allWatched }
                         : firstEp with { Id = serieId, Kind = MediaCardKind.Serie, GroupCount = episodes.Count, Watched = allWatched };
                 orderedCards.Add((serieInsertOrder[serieId], card));
+            }
+
+            foreach (var (albumId, tracks) in albumTracks)
+            {
+                // Skip if a direct album card (LiteMusicAlbumDto) was already added
+                if (orderedCards.Any(c => c.Card.Id == albumId && c.Card.Kind == MediaCardKind.Cover))
+                    continue;
+                var firstTrack = tracks[0];
+                orderedCards.Add((albumInsertOrder[albumId], firstTrack with { Id = albumId }));
             }
 
             target.AddRange(orderedCards.OrderBy(x => x.Order).Select(x => x.Card));
@@ -219,6 +269,13 @@ public partial class Home : IDisposable
         {
             var excluded = await UserAdminService.ToggleMediaExclusionAsync(Guid.Parse(model.Id));
             Snackbar.Add(excluded ? string.Format(S["Hidden"], model.Title) : string.Format(S["Unhidden"], model.Title), K7Severity.Success);
+
+            if (excluded)
+            {
+                foreach (var (_, items) in _rows)
+                    items.RemoveAll(x => x.Id == model.Id || x.ParentId == model.Id);
+                _heroItems.RemoveAll(x => x.Id == model.Id || x.ParentId == model.Id);
+            }
         }
         catch (Exception ex)
         {
