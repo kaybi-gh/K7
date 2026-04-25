@@ -1,0 +1,48 @@
+@namespace K7.Clients.Shared.UI.Components
+
+@{
+    var fullBleedClass = FullBleed ? " hero-section--full-bleed" : "";
+}
+
+@if (Skeleton)
+{
+    <div class="hero-section@(fullBleedClass) hero-section--skeleton"></div>
+}
+else if (Items is { Count: > 0 })
+{
+    var item = Items[_activeIndex];
+
+    <section class="hero-section@(fullBleedClass)" @onmouseenter="Pause" @onmouseleave="Resume">
+
+        <div class="hero-content">
+            <h1 class="hero-title">@item.Title</h1>
+            @if (!string.IsNullOrEmpty(item.AdditionalInformations))
+            {
+                <p class="hero-subtitle">@item.AdditionalInformations</p>
+            }
+            <div class="hero-actions">
+                <a href="@GetHref(item)" class="k7-btn k7-btn--filled k7-btn--primary hero-play-btn">
+                    <i class="ph ph-play-circle"></i>
+                    @L["Play"]
+                </a>
+            </div>
+        </div>
+
+        @if (Items.Count > 1)
+        {
+            <div class="hero-dots" role="tablist" aria-label="@L["SlideIndicators"]">
+                @for (var i = 0; i < Items.Count; i++)
+                {
+                    var index = i;
+                    <button role="tab"
+                            type="button"
+                            class="hero-dot @(i == _activeIndex ? "hero-dot--active" : "")"
+                            aria-selected="@(i == _activeIndex)"
+                            aria-label="@string.Format(L["SlideN"], i + 1)"
+                            @onclick="() => GoTo(index)">
+                    </button>
+                }
+            </div>
+        }
+    </section>
+}

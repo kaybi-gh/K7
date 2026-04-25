@@ -6,4 +6,5 @@ public static class ServerSettingKeys
     public static readonly SettingKey<string> DefaultLanguage = new("DefaultLanguage", "en");
     public static readonly SettingKey<int> BackgroundTaskWorkerCount = new("BackgroundTaskWorkerCount", 3);
     public static readonly SettingKey<Dictionary<string, int>> BackgroundTaskConcurrencyLimits = new("BackgroundTaskConcurrencyLimits", new());
+    public static readonly SettingKey<string> HomeLayout = new("HomeLayout");
 }

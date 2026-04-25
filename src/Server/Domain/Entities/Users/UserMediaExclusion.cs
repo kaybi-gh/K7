@@ -6,4 +6,6 @@ public class UserMediaExclusion : BaseEntity
 {
     public Guid UserId { get; set; }
     public Guid MediaId { get; set; }
+    public bool IsAdminExcluded { get; set; }
+    public bool IsSelfExcluded { get; set; }
 }
