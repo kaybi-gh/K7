@@ -20,19 +20,22 @@ public class ToggleMediaExclusionCommandHandler(IApplicationDbContext context, I
 
         if (existing is not null)
         {
-            context.UserMediaExclusions.Remove(existing);
-            await context.SaveChangesAsync(cancellationToken);
-            return false;
+            existing.IsSelfExcluded = !existing.IsSelfExcluded;
+            if (!existing.IsAdminExcluded && !existing.IsSelfExcluded)
+                context.UserMediaExclusions.Remove(existing);
+        }
+        else
+        {
+            context.UserMediaExclusions.Add(new UserMediaExclusion
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                MediaId = request.MediaId,
+                IsSelfExcluded = true
+            });
         }
 
-        context.UserMediaExclusions.Add(new UserMediaExclusion
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            MediaId = request.MediaId
-        });
-
         await context.SaveChangesAsync(cancellationToken);
-        return true;
+        return existing is null || existing.IsSelfExcluded;
     }
 }

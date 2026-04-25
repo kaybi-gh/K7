@@ -1,29 +1,22 @@
 using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Security;
-using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
 
-namespace K7.Server.Application.Features.Users.Commands.UpdateUserLibraryExclusions;
+namespace K7.Server.Application.Features.Users.Commands.UpdateSelfLibraryExclusions;
 
-[Authorize(Roles = Roles.Administrator)]
-public record UpdateUserLibraryExclusionsCommand : IRequest
+public record UpdateSelfLibraryExclusionsCommand : IRequest
 {
-    public required Guid Id { get; init; }
     public required IReadOnlyList<Guid> ExcludedLibraryIds { get; init; }
 }
 
-public class UpdateUserLibraryExclusionsCommandHandler(IApplicationDbContext context)
-    : IRequestHandler<UpdateUserLibraryExclusionsCommand>
+public class UpdateSelfLibraryExclusionsCommandHandler(IApplicationDbContext context, IUser currentUser)
+    : IRequestHandler<UpdateSelfLibraryExclusionsCommand>
 {
-    public async Task Handle(UpdateUserLibraryExclusionsCommand request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateSelfLibraryExclusionsCommand request, CancellationToken cancellationToken)
     {
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
-
-        Guard.Against.NotFound(request.Id, user);
+        var userId = Guard.Against.Null(currentUser.Id);
 
         var existing = await context.UserLibraryExclusions
-            .Where(e => e.UserId == request.Id)
+            .Where(e => e.UserId == userId)
             .ToListAsync(cancellationToken);
 
         var existingDict = existing.ToDictionary(e => e.LibraryId);
@@ -33,24 +26,24 @@ public class UpdateUserLibraryExclusionsCommandHandler(IApplicationDbContext con
         {
             if (existingDict.TryGetValue(libraryId, out var row))
             {
-                row.IsAdminExcluded = true;
+                row.IsSelfExcluded = true;
             }
             else
             {
                 context.UserLibraryExclusions.Add(new UserLibraryExclusion
                 {
                     Id = Guid.NewGuid(),
-                    UserId = request.Id,
+                    UserId = userId,
                     LibraryId = libraryId,
-                    IsAdminExcluded = true
+                    IsSelfExcluded = true
                 });
             }
         }
 
         foreach (var row in existing.Where(e => !requestedSet.Contains(e.LibraryId)))
         {
-            row.IsAdminExcluded = false;
-            if (!row.IsSelfExcluded)
+            row.IsSelfExcluded = false;
+            if (!row.IsAdminExcluded)
                 context.UserLibraryExclusions.Remove(row);
         }
 
