@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -17,10 +16,10 @@ public class FeatureAccessService(AuthenticationStateProvider authStateProvider)
     public async Task<string?> GetRoleAsync()
     {
         var authState = await authStateProvider.GetAuthenticationStateAsync();
-        var roles = authState.User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToHashSet();
-        if (roles.Contains(Roles.Administrator)) return Roles.Administrator;
-        if (roles.Contains(Roles.User)) return Roles.User;
-        if (roles.Contains(Roles.Guest)) return Roles.Guest;
+        var user = authState.User;
+        if (user.IsInRole(Roles.Administrator)) return Roles.Administrator;
+        if (user.IsInRole(Roles.User)) return Roles.User;
+        if (user.IsInRole(Roles.Guest)) return Roles.Guest;
         return null;
     }
 }
