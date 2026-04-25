@@ -37,6 +37,13 @@
     }
     else
     {
+        @{
+            var hasAnyCarousel = _rows.Any(r =>
+                r.Items.Count > 0 &&
+                (!r.Config.ContinueWatching || _canTrackProgress) &&
+                r.Config.DisplayType != HomeRowDisplayType.Hero);
+        }
+
         @if (_heroItems.Count > 0)
         {
             <HeroSection Items="_heroItems" HrefProvider="GetHref" FullBleed="true"
@@ -49,6 +56,15 @@
             {
                 @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
             }
+        }
+
+        @if (_heroItems.Count == 0 && !hasAnyCarousel)
+        {
+            <div class="home-empty-state">
+                <K7Icon Name="@Phosphor.FilmSlate" Style="font-size: 64px; opacity: 0.2;" />
+                <p class="home-empty-state__title">@L["EmptyStateTitle"]</p>
+                <p class="home-empty-state__subtitle">@L["EmptyStateSubtitle"]</p>
+            </div>
         }
     }
 </div>
