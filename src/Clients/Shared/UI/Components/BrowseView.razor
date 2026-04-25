@@ -26,12 +26,10 @@
     @if (_settingsOpen && _currentMode is BrowseViewMode.Grid)
     {
         <div class="browse-view-settings">
-            <K7Slider TValue="int" Value="_itemWidth" ValueChanged="OnItemWidthChanged" Step="10" Color="primary" Class="mx-4">
-                @S["ItemSize"]: @_itemWidth px
-            </K7Slider>
-            <K7Slider TValue="int" Value="_spacing" ValueChanged="OnSpacingChanged" Step="2" Color="primary" Class="mx-4">
-                @S["Spacing"]: @_spacing px
-            </K7Slider>
+            <label class="browse-view-settings-label">@S["ItemSize"]: @_itemWidth px</label>
+            <K7Slider TValue="int" Value="_itemWidth" ValueChanged="OnItemWidthChanged" Step="10" Class="mx-4" />
+            <label class="browse-view-settings-label">@S["Spacing"]: @_spacing px</label>
+            <K7Slider TValue="int" Value="_spacing" ValueChanged="OnSpacingChanged" Step="2" Class="mx-4" />
         </div>
     }
 
