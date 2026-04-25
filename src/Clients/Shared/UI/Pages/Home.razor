@@ -37,12 +37,10 @@
     }
     else
     {
-        @{
-            var hasAnyCarousel = _rows.Any(r =>
-                r.Items.Count > 0 &&
-                (!r.Config.ContinueWatching || _canTrackProgress) &&
-                r.Config.DisplayType != HomeRowDisplayType.Hero);
-        }
+        var hasAnyCarousel = _rows.Any(r =>
+            r.Items.Count > 0 &&
+            (!r.Config.ContinueWatching || _canTrackProgress) &&
+            r.Config.DisplayType != HomeRowDisplayType.Hero);
 
         @if (_heroItems.Count > 0)
         {
