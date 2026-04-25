@@ -48,6 +48,8 @@ builder.Services.AddSingleton<IK7ServerService, MockK7ServerService>();
 builder.Services.AddSingleton<IMediaService, MockMediaService>();
 builder.Services.AddSingleton<ILibraryService, MockLibraryService>();
 builder.Services.AddSingleton<IPlaylistService, MockPlaylistService>();
+builder.Services.AddSingleton<ICollectionService, MockCollectionService>();
+builder.Services.AddSingleton<ISearchService, MockSearchService>();
 builder.Services.AddSingleton<IStreamingService, MockStreamingService>();
 builder.Services.AddSingleton<IDeviceApiService, MockDeviceApiService>();
 builder.Services.AddSingleton<IUserAdminService, MockUserAdminService>();
