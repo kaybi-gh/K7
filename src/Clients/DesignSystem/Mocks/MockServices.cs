@@ -365,6 +365,7 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task UpdateUserLibraryExclusionsAsync(Guid userId, UpdateUserLibraryExclusionsRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateUserMediaExclusionsAsync(Guid userId, UpdateUserMediaExclusionsRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<bool> ToggleMediaExclusionAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(false);
+    public Task<List<LiteMediaDto>> GetSelfMediaExclusionsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LiteMediaDto>());
     public Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ContentRestrictionProfileDto>> GetContentRestrictionProfilesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<ContentRestrictionProfileDto>());
     public Task<Guid> CreateContentRestrictionProfileAsync(CreateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
@@ -374,7 +375,7 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task<List<RestrictedMediaPreviewDto>> PreviewRestrictedMediasAsync(Guid profileId, CancellationToken cancellationToken = default) => Task.FromResult(new List<RestrictedMediaPreviewDto>());
     public Task<string?> GetUserLanguageAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task UpdateUserLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new UserDto { Id = Guid.Empty, UserName = null, Role = "Admin", Created = DateTimeOffset.UtcNow, IsActive = true, IsGuest = false, HasPin = false, CapabilityOverrides = [], ExcludedLibraryIds = [], ExcludedMediaIds = [] });
+    public Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new UserDto { Id = Guid.Empty, UserName = null, Role = "Admin", Created = DateTimeOffset.UtcNow, IsActive = true, IsGuest = false, HasPin = false, CapabilityOverrides = [], LibraryExclusions = [], MediaExclusions = [] });
     public Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
@@ -411,4 +412,21 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<List<MediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
+}
+
+public sealed class MockUserPreferencesService : IUserPreferencesService
+{
+    public Task<IReadOnlyList<Guid>> GetSelfLibraryExclusionsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Guid>>([]);
+    public Task UpdateSelfLibraryExclusionsAsync(K7.Shared.Dtos.Requests.UpdateSelfLibraryExclusionsRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
+    public Task UpdateHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public sealed class MockServerPreferencesService : IServerPreferencesService
+{
+    public Task<K7.Shared.Dtos.Home.HomeLayoutDto?> GetServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.Home.HomeLayoutDto?>(null);
+    public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetEffectiveServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
+    public Task UpdateServerHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

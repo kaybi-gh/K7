@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
 
-
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.Services.AddAuthorizationCore();
@@ -35,6 +34,8 @@ builder.Services.AddTransient<IRatingService>(sp => sp.GetRequiredService<K7Serv
 builder.Services.AddTransient<IServerInfoService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IBackgroundTaskService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IDiagnosticsService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IUserPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
 
 builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();
