@@ -15,10 +15,11 @@ using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.QueryBuilders;
+using K7.Shared.Dtos.Home;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -491,6 +492,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return result?.Excluded ?? false;
     }
 
+    public async Task<List<LiteMediaDto>> GetSelfMediaExclusionsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<LiteMediaDto>>("api/users/me/media-exclusions", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
     private sealed record ToggleExclusionResponse(bool Excluded);
 
     public async Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default)
@@ -633,5 +640,62 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         var response = await HttpClient.PostAsJsonAsync("api/diagnostics/fix", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<int>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetSelfLibraryExclusionsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<Guid>>("api/users/me/preferences/library-exclusions", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
+    public async Task UpdateSelfLibraryExclusionsAsync(UpdateSelfLibraryExclusionsRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/library-exclusions", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<HomeLayoutDto> GetHomeLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<HomeLayoutDto>("api/users/me/preferences/home-layout", _serializerOptions, cancellationToken);
+        return result!;
+    }
+
+    public async Task UpdateHomeLayoutAsync(HomeLayoutDto layout, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/home-layout", layout, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetHomeLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/home-layout", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<HomeLayoutDto?> GetServerHomeLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync("api/server/preferences/home-layout", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<HomeLayoutDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<HomeLayoutDto> GetEffectiveServerHomeLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<HomeLayoutDto>("api/server/preferences/home-layout/effective", _serializerOptions, cancellationToken);
+        return result ?? new HomeLayoutDto { Rows = [] };
+    }
+
+    public async Task UpdateServerHomeLayoutAsync(HomeLayoutDto layout, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/server/preferences/home-layout", layout, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/server/preferences/home-layout", cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 }

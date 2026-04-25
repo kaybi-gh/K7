@@ -17,4 +17,13 @@ public static class QueryBuilderHelper
 
         return string.IsNullOrEmpty(queryString) ? uri : $"{uri}?{queryString}";
     }
+
+    public static string AddQueryParameters(string uri, IEnumerable<KeyValuePair<string, string?>> queryParameters)
+    {
+        var queryString = string.Join("&", queryParameters
+            .Where(kv => !string.IsNullOrEmpty(kv.Value))
+            .Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value!)}"));
+
+        return string.IsNullOrEmpty(queryString) ? uri : $"{uri}?{queryString}";
+    }
 }

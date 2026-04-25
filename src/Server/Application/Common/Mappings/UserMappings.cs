@@ -26,10 +26,20 @@ public static class UserMappings
                     Capability = o.Capability,
                     Enabled = o.Enabled
                 }).ToList(),
-            ExcludedLibraryIds = domain.LibraryExclusions
-                .Select(e => e.LibraryId).ToList(),
-            ExcludedMediaIds = domain.MediaExclusions
-                .Select(e => e.MediaId).ToList(),
+            LibraryExclusions = domain.LibraryExclusions
+                .Select(e => new UserLibraryExclusionDto
+                {
+                    LibraryId = e.LibraryId,
+                    IsAdminExcluded = e.IsAdminExcluded,
+                    IsSelfExcluded = e.IsSelfExcluded
+                }).ToList(),
+            MediaExclusions = domain.MediaExclusions
+                .Select(e => new UserMediaExclusionDto
+                {
+                    MediaId = e.MediaId,
+                    IsAdminExcluded = e.IsAdminExcluded,
+                    IsSelfExcluded = e.IsSelfExcluded
+                }).ToList(),
             ContentRestrictionProfileId = domain.ContentRestrictionProfileId
         };
 

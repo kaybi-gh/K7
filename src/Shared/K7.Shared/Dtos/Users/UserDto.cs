@@ -15,8 +15,8 @@ public sealed record UserDto
     public required bool HasPin { get; init; }
     public string? PinHash { get; init; }
     public required IReadOnlyList<CapabilityOverrideDto> CapabilityOverrides { get; init; }
-    public required IReadOnlyList<Guid> ExcludedLibraryIds { get; init; }
-    public required IReadOnlyList<Guid> ExcludedMediaIds { get; init; }
+    public required IReadOnlyList<UserLibraryExclusionDto> LibraryExclusions { get; init; }
+    public required IReadOnlyList<UserMediaExclusionDto> MediaExclusions { get; init; }
     public Guid? ContentRestrictionProfileId { get; init; }
 }
 
