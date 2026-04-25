@@ -181,12 +181,104 @@
         }
       }
     },
+    "/api/users/me/preferences/home-layout": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUserHomeLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUserHomeLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserHomeLayout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeLayoutDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me": {
       "get": {
         "tags": [
           "Users"
         ],
         "operationId": "GetCurrentUser",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/preferences/library-exclusions": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSelfLibraryExclusions",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateSelfLibraryExclusions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSelfLibraryExclusionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/media-exclusions": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSelfMediaExclusions",
         "responses": {
           "200": {
             "description": "OK"
@@ -3914,6 +4006,51 @@
         }
       }
     },
+    "/api/server/preferences/home-layout": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "DeleteServerHomeLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetServerHomeLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateServerHomeLayout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeLayoutDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/streams": {
       "get": {
         "tags": [
@@ -4040,6 +4177,19 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/server/preferences/home-layout/effective": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetEffectiveServerHomeLayout",
         "responses": {
           "200": {
             "description": "OK"
@@ -5475,6 +5625,97 @@
             "format": "int32"
           }
         }
+      },
+      "HomeLayoutDto": {
+        "required": [
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeRowConfigDto"
+            }
+          }
+        }
+      },
+      "HomeRowConfigDto": {
+        "required": [
+          "id",
+          "title",
+          "displayType",
+          "pageSize",
+          "continueWatching",
+          "isVisible",
+          "order"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "displayType": {
+            "$ref": "#/components/schemas/HomeRowDisplayType"
+          },
+          "libraryIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "mediaTypes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MediaType"
+            }
+          },
+          "orderBy": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MediaOrderingOption"
+            }
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "continueWatching": {
+            "type": "boolean"
+          },
+          "isVisible": {
+            "type": "boolean"
+          },
+          "order": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "HomeRowDisplayType": {
+        "type": "integer"
       },
       "HourOfDayPointDto": {
         "type": "object",
@@ -7965,6 +8206,9 @@
           }
         }
       },
+      "MediaOrderingOption": {
+        "type": "integer"
+      },
       "MediaStateItem": {
         "required": [
           "mediaId"
@@ -9809,6 +10053,21 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "UpdateSelfLibraryExclusionsRequest": {
+        "required": [
+          "excludedLibraryIds"
+        ],
+        "type": "object",
+        "properties": {
+          "excludedLibraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
