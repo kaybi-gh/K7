@@ -3,30 +3,55 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-@if (isLoading)
-{
-    @for (int i = 0; i < 3; i++)
+<div class="home-page">
+    @if (_heroItems.Count > 0)
     {
-        <Carousel Skeleton="true">
-            @for (int j = 0; j < 10; j++)
+        <div class="home-bg" aria-hidden="true">
+            @foreach (var (item, i) in _heroItems.Select((x, idx) => (x, idx)))
             {
-                <CarouselItem>
-                    <MediaCard Skeleton="true" FooterVisible="true" />
-                </CarouselItem>
+                var src = item.BackdropUrl;
+                <div class="home-bg-img @(i == _activeHeroIndex ? "home-bg-img--active" : "")">
+                    @if (src is not null)
+                    {
+                        <img src="@src" alt="" loading="@(i == 0 ? "eager" : "lazy")" />
+                    }
+                </div>
             }
-        </Carousel>
-    }
-}
-else
-{
-    @if (_canTrackProgress && continueWatchingMedias.Count > 0)
-    {
-        @RenderCarousel(L["ContinueWatching"], continueWatchingMedias, true, true)
+        </div>
     }
 
-    @RenderCarousel(L["RecentlyAdded"], recentlyAddedMedias, _canTrackProgress, _canTrackProgress)
-    @RenderCarousel(L["RecentlyReleased"], recentlyReleasedMedias, _canTrackProgress, _canTrackProgress)
-}
+    @if (isLoading)
+    {
+        <HeroSection Skeleton="true" FullBleed="true" />
+        @for (int i = 0; i < 3; i++)
+        {
+            <Carousel Skeleton="true">
+                @for (int j = 0; j < 10; j++)
+                {
+                    <CarouselItem>
+                        <MediaCard Skeleton="true" FooterVisible="true" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
+    }
+    else
+    {
+        @if (_heroItems.Count > 0)
+        {
+            <HeroSection Items="_heroItems" HrefProvider="GetHref" FullBleed="true"
+                         OnActiveIndexChanged="OnHeroActiveIndexChanged" />
+        }
+
+        @foreach (var (row, items) in _rows)
+        {
+            @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress) && row.DisplayType != HomeRowDisplayType.Hero)
+            {
+                @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
+            }
+        }
+    }
+</div>
 
 @{ RenderFragment RenderCarousel(string title, List<MediaCardViewModel> items, bool progress, bool watched)
 {

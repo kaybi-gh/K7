@@ -38,6 +38,8 @@ public static class LiteMediaMappings
             ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
             ?? pictureSource?.FirstOrDefault();
 
+        var backdropPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+
         string? cardTitle;
         if (useParentTitle)
         {
@@ -67,6 +69,7 @@ public static class LiteMediaMappings
             Title = cardTitle,
             AdditionalInformations = item.ReleaseDate,
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+            BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
             SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1

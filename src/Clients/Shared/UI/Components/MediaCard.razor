@@ -34,7 +34,7 @@ else
                     </div>
                 }
 
-                @if (WatchedStatusEnabled && Model.Watched)
+                @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
                     <div class="media-card-watched">
                         <K7Icon Size="sm" class="ma-1" Color="success" Name="@Phosphor.CheckCircle" />

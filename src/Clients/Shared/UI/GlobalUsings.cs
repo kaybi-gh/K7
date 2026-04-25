@@ -10,5 +10,7 @@ global using K7.Shared.Dtos;
 global using K7.Shared.Dtos.Entities;
 global using K7.Shared.Dtos.Entities.Metadatas;
 global using K7.Shared.Dtos.Entities.Playlists;
+global using K7.Shared.Dtos.Requests;
+global using K7.Shared.Enums;
 global using K7.Shared.Interfaces;
 global using Microsoft.JSInterop;
