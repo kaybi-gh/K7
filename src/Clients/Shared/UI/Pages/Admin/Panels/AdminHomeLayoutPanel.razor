@@ -1,0 +1,82 @@
+@page "/admin/home-layout"
+@layout AdminLayout
+@inject IStringLocalizer<AdminHomeLayoutPanel> L
+@inject IStringLocalizer<SharedResource> S
+
+@if (_isLoading)
+{
+    <K7ProgressBar Indeterminate="true" />
+}
+else
+{
+    <div class="d-flex flex-col pa-4 gap-4">
+        <div class="d-flex align-center justify-between">
+            <div>
+                <h6 class="mb-1">@L["PageTitle"]</h6>
+                <p class="text-sm" Color="secondary">@L["Description"]</p>
+            </div>
+            <K7Button Color="primary" Variant="outlined" StartIcon="@Phosphor.Plus"
+                      OnClick="AddRow" Disabled="_saving">
+                @L["AddRow"]
+            </K7Button>
+        </div>
+
+        <div class="d-flex flex-col gap-2">
+            @foreach (var row in _rows)
+            {
+                var isFirst = _rows.IndexOf(row) == 0;
+                var isLast = _rows.IndexOf(row) == _rows.Count - 1;
+                <div class="surface pa-3 d-flex align-center justify-between gap-3">
+                    <div class="d-flex align-center gap-2">
+                        <div class="d-flex flex-col gap-1">
+                            <button type="button" class="k7-icon-btn" disabled="@isFirst"
+                                    @onclick="() => MoveUp(row)" aria-label="@L["MoveUp"]">
+                                <K7Icon Name="@Phosphor.ArrowUp" />
+                            </button>
+                            <button type="button" class="k7-icon-btn" disabled="@isLast"
+                                    @onclick="() => MoveDown(row)" aria-label="@L["MoveDown"]">
+                                <K7Icon Name="@Phosphor.ArrowDown" />
+                            </button>
+                        </div>
+                        <span class="text-sm">@row.Title</span>
+                    </div>
+                    <div class="d-flex align-center gap-2">
+                        <K7Switch Value="@row.IsVisible" ValueChanged="@(v => row.IsVisible = v)" />
+                        <button type="button" class="k7-icon-btn" @onclick="() => EditRow(row)"
+                                aria-label="@L["EditRow"]">
+                            <K7Icon Name="@Phosphor.PencilSimple" />
+                        </button>
+                        <button type="button" class="k7-icon-btn" @onclick="() => DeleteRow(row)"
+                                aria-label="@L["DeleteRow"]">
+                            <K7Icon Name="@Phosphor.Trash" />
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="d-flex justify-between">
+            <K7Button Color="secondary" Variant="outlined" OnClick="ResetLayout" Disabled="_saving">
+                @L["ResetToDefault"]
+            </K7Button>
+            <K7Button Color="primary" Variant="filled" OnClick="SaveLayout" Disabled="_saving">
+                @if (_saving) { <K7Spinner Size="sm" /> }
+                @S["Save"]
+            </K7Button>
+        </div>
+
+        <K7ExpansionPanel>
+            <TitleContent>@L["PreviewTitle"]</TitleContent>
+            <ChildContent>
+                <div class="d-flex justify-end mb-2">
+                    <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.ArrowClockwise"
+                              OnClick="RefreshPreviewAsync" Disabled="_previewLoading">
+                        @L["PreviewRefresh"]
+                    </K7Button>
+                </div>
+                <HomeLayoutPreview @ref="_preview" Rows="_rows" />
+            </ChildContent>
+        </K7ExpansionPanel>
+
+    </div>
+}

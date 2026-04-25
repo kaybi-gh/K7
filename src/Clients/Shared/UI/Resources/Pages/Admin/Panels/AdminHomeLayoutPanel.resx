@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Disposition de l'accueil</value></data>
+  <data name="Description" xml:space="preserve"><value>Définissez la disposition par défaut de la page d'accueil pour tous les utilisateurs.</value></data>
+  <data name="NoCustomLayout" xml:space="preserve"><value>Aucune disposition personnalisée. Les valeurs par défaut intégrées sont utilisées.</value></data>
+  <data name="ResetToDefault" xml:space="preserve"><value>Réinitialiser</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Disposition réinitialisée.</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Disposition enregistrée.</value></data>
+  <data name="MoveUp" xml:space="preserve"><value>Déplacer vers le haut</value></data>
+  <data name="MoveDown" xml:space="preserve"><value>Déplacer vers le bas</value></data>
+  <data name="AddRow" xml:space="preserve"><value>Ajouter une ligne</value></data>
+  <data name="EditRow" xml:space="preserve"><value>Modifier la ligne</value></data>
+  <data name="DeleteRow" xml:space="preserve"><value>Supprimer la ligne</value></data>
+  <data name="PreviewTitle" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="PreviewRefresh" xml:space="preserve"><value>Actualiser l'aperçu</value></data>
+</root>
