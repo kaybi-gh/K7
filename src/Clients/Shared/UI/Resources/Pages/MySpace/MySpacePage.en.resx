@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>My Space</value></data>
+  <data name="Playlists" xml:space="preserve"><value>My playlists</value></data>
+  <data name="PlaylistsDesc" xml:space="preserve"><value>Your personalized playlists</value></data>
+  <data name="Collections" xml:space="preserve"><value>My collections</value></data>
+  <data name="CollectionsDesc" xml:space="preserve"><value>Your curated lists of movies, series and albums</value></data>
+  <data name="Stats" xml:space="preserve"><value>My statistics</value></data>
+  <data name="StatsDesc" xml:space="preserve"><value>Your watch activity</value></data>
+  <data name="History" xml:space="preserve"><value>My history</value></data>
+  <data name="HistoryDesc" xml:space="preserve"><value>Your recent plays</value></data>
+  <data name="Downloads" xml:space="preserve"><value>My downloads</value></data>
+  <data name="DownloadsDesc" xml:space="preserve"><value>Content downloaded for offline use</value></data>
+</root>

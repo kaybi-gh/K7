@@ -1,0 +1,68 @@
+@page "/my-space/collections"
+@layout MySpaceLayout
+@using K7.Shared.Dtos.Entities.Collections
+@inject ICollectionService K7ServerService
+@inject IK7ServerService ApiClient
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<MySpaceCollectionsPage> L
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<BrowseView TItem="LiteCollectionDto"
+              Items="_collections"
+              Loading="_loading"
+              PersistenceKey="my-space-collections"
+              DefaultItemWidth="200"
+              DefaultSpacing="8"
+              GridItemAspectRatio="1.3f">
+    <ToolbarContent>
+        <h5>@L["PageTitle"]</h5>
+        <div class="flex-1"></div>
+        <K7Button Variant="filled" Color="primary" StartIcon="plus" OnClick="OpenCreateCollectionDialog">
+            @L["New"]
+        </K7Button>
+    </ToolbarContent>
+    <EmptyContent>
+        <div class="d-flex flex-col pa-16">
+            <K7Icon Name="@Phosphor.BookmarkSimple" Style="font-size: 64px; opacity: 0.3;" />
+            <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
+            <p class="text-sm" Color="secondary">@L["EmptyHint"]</p>
+        </div>
+    </EmptyContent>
+    <GridTemplate Context="collection">
+        <div class="k7-card k7-card--outlined collection-card" tabindex="0"
+             @onclick="() => GoToCollection(collection)"
+             @onkeydown="(e) => OnCollectionKeyDown(e, collection)"
+             Style="cursor: pointer;">
+            <div class="k7-card-content">
+                <div class="d-flex flex-col">
+                    @if (collection.CoverPicture is not null)
+                    {
+                        <K7Image Src="@GetCoverUrl(collection)"
+                                  Width="120"
+                                  ObjectFit="cover"
+                                  Class="rounded"
+                                  loading="lazy" />
+                    }
+                    else
+                    {
+                        <div class="playlist-cover-placeholder">
+                            <K7Icon Name="@Phosphor.BookmarkSimple"
+                                     Style="font-size: 48px; opacity: 0.3;" />
+                        </div>
+                    }
+                    <p class="text-subtitle1 playlist-title text-center">@collection.Title</p>
+                    <div class="d-flex align-center">
+                        <span class="text-caption" Color="secondary">
+                            @collection.ItemCount @L["Items"]
+                        </span>
+                        @if (collection.IsPublic)
+                        {
+                            <K7Chip Size="xs" Color="primary" Variant="outlined" Class="ml-1">@L["Public"]</K7Chip>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </GridTemplate>
+</BrowseView>

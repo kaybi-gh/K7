@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>My playlists</value></data>
+  <data name="All" xml:space="preserve"><value>All</value></data>
+  <data name="New" xml:space="preserve"><value>New playlist</value></data>
+  <data name="SmartPlaylist" xml:space="preserve"><value>Smart Playlist</value></data>
+  <data name="None" xml:space="preserve"><value>No playlists</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Create your first playlist to organize your media.</value></data>
+  <data name="Tracks" xml:space="preserve"><value>tracks</value></data>
+  <data name="Movies" xml:space="preserve"><value>movies</value></data>
+  <data name="Episodes" xml:space="preserve"><value>episodes</value></data>
+  <data name="Items" xml:space="preserve"><value>items</value></data>
+</root>

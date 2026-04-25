@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Mes collections</value></data>
+  <data name="All" xml:space="preserve"><value>Toutes</value></data>
+  <data name="New" xml:space="preserve"><value>Nouvelle collection</value></data>
+  <data name="None" xml:space="preserve"><value>Aucune collection</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Créez votre première collection pour regrouper des films, séries ou albums.</value></data>
+  <data name="Items" xml:space="preserve"><value>éléments</value></data>
+  <data name="Public" xml:space="preserve"><value>Public</value></data>
+  <data name="Private" xml:space="preserve"><value>Privé</value></data>
+</root>
