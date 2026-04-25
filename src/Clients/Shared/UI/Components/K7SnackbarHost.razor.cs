@@ -13,8 +13,7 @@ public partial class K7SnackbarHost : IDisposable
 
     protected override void OnInitialized()
     {
-        if (SnackbarService is K7SnackbarService svc)
-            svc.OnAdd += OnAdd;
+        SnackbarService.OnAdd += OnAdd;
     }
 
     private void OnAdd(K7SnackbarMessage msg)
@@ -47,7 +46,6 @@ public partial class K7SnackbarHost : IDisposable
 
     public void Dispose()
     {
-        if (SnackbarService is K7SnackbarService svc)
-            svc.OnAdd -= OnAdd;
+        SnackbarService.OnAdd -= OnAdd;
     }
 }
