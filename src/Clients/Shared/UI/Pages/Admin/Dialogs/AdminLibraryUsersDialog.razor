@@ -19,7 +19,13 @@
                     var hasAccess = !_excludedUserIds.Contains(user.Id);
                     <div class="d-flex align-center justify-between">
                         <div class="d-flex flex-col">
-                            <p class="text-sm">@(user.UserName ?? user.Email ?? "-")</p>
+                            <div class="d-flex align-center gap-1">
+                                <p class="text-sm">@(user.UserName ?? user.Email ?? "-")</p>
+                                @if (IsSelfExcluded(user))
+                                {
+                                    <K7Chip Size="sm" Color="secondary" Variant="outlined">auto</K7Chip>
+                                }
+                            </div>
                             <span class="text-caption" Color="secondary">@user.Role</span>
                         </div>
                         <K7Switch Value="@hasAccess" ValueChanged="@(v => ToggleAccess(user.Id, v))" />

@@ -146,7 +146,7 @@ public partial class AdminUsersPanel
     {
         var parameters = new K7DialogParameters<AdminUserLibraryExclusionsDialog>
         {
-            { x => x.ExcludedLibraryIds, user.ExcludedLibraryIds }
+            { x => x.ExcludedLibraryIds, user.LibraryExclusions.Where(e => e.IsAdminExcluded).Select(e => e.LibraryId).ToList() }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
@@ -177,7 +177,7 @@ public partial class AdminUsersPanel
     {
         var parameters = new K7DialogParameters<AdminUserMediaExclusionsDialog>
         {
-            { x => x.ExcludedMediaIds, user.ExcludedMediaIds }
+            { x => x.ExcludedMediaIds, user.MediaExclusions.Where(e => e.IsAdminExcluded).Select(e => e.MediaId).ToList() }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };

@@ -18,14 +18,19 @@ public partial class AdminLibraryUsersDialog
     private HashSet<Guid> _excludedUserIds = [];
     private Dictionary<Guid, List<Guid>> _originalExclusions = new();
 
+    protected bool IsSelfExcluded(UserDto user) =>
+        user.LibraryExclusions.Any(e => e.LibraryId == LibraryId && e.IsSelfExcluded);
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
             _users = await K7ServerService.GetUsersAsync();
-            _originalExclusions = _users.ToDictionary(u => u.Id, u => new List<Guid>(u.ExcludedLibraryIds));
+            _originalExclusions = _users.ToDictionary(
+                u => u.Id,
+                u => u.LibraryExclusions.Where(e => e.IsAdminExcluded).Select(e => e.LibraryId).ToList());
             _excludedUserIds = _users
-                .Where(u => u.ExcludedLibraryIds.Contains(LibraryId))
+                .Where(u => u.LibraryExclusions.Any(e => e.LibraryId == LibraryId && e.IsAdminExcluded))
                 .Select(u => u.Id)
                 .ToHashSet();
         }
