@@ -12,6 +12,8 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Dtos.Entities.Persons;
+using K7.Shared.Dtos.Search;
+using K7.Shared.Dtos.Entities.Collections;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Dtos.Restrictions;
@@ -323,7 +325,7 @@ public sealed class MockLibraryService : ILibraryService
 
 public sealed class MockPlaylistService : IPlaylistService
 {
-    public Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LitePlaylistDto>?>(null);
+    public Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LitePlaylistDto>?>(null);
     public Task<PlaylistDto?> GetPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PlaylistDto?>(null);
     public Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<PlaylistItemDto>?>(null);
     public Task<Guid> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
@@ -429,4 +431,21 @@ public sealed class MockServerPreferencesService : IServerPreferencesService
     public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetEffectiveServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
     public Task UpdateServerHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public sealed class MockCollectionService : ICollectionService
+{
+    public Task<PaginatedListDto<LiteCollectionDto>?> GetCollectionsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, bool? isPublic = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteCollectionDto>?>(new PaginatedListDto<LiteCollectionDto>());
+    public Task<CollectionDto?> GetCollectionAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<CollectionDto?>(null);
+    public Task<PaginatedListDto<CollectionItemDto>?> GetCollectionItemsAsync(Guid collectionId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<CollectionItemDto>?>(new PaginatedListDto<CollectionItemDto>());
+    public Task<Guid> CreateCollectionAsync(CreateCollectionRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
+    public Task UpdateCollectionAsync(Guid id, UpdateCollectionRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteCollectionAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<Guid> AddCollectionItemAsync(Guid collectionId, Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
+    public Task RemoveCollectionItemAsync(Guid collectionId, Guid itemId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public sealed class MockSearchService : ISearchService
+{
+    public Task<GlobalSearchResultDto?> GlobalSearchAsync(string q, int pageSize = 10, CancellationToken cancellationToken = default) => Task.FromResult<GlobalSearchResultDto?>(new GlobalSearchResultDto());
 }

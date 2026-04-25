@@ -12,6 +12,8 @@ using K7.Shared.Dtos.Entities.Metadatas;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Shared.Dtos.Entities.Persons;
+using K7.Shared.Dtos.Search;
+using K7.Shared.Dtos.Entities.Collections;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.QueryBuilders;
@@ -19,7 +21,7 @@ using K7.Shared.Dtos.Home;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -304,10 +306,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<DirectoryContentDto>(requestUri, _serializerOptions, cancellationToken);
     }
 
-    public async Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LitePlaylistDto>>(
-            $"api/playlists?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+        var url = $"api/playlists?pageNumber={pageNumber}&pageSize={pageSize}";
+        if (mediaType.HasValue)
+            url += $"&mediaType={(int)mediaType.Value}";
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LitePlaylistDto>>(url, _serializerOptions, cancellationToken);
     }
 
     public async Task<PlaylistDto?> GetPlaylistAsync(Guid id, CancellationToken cancellationToken = default)
@@ -387,6 +391,64 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var response = await HttpClient.PostAsync($"api/smart-playlists/{id}/evaluate", null, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<PaginatedListDto<LiteCollectionDto>?> GetCollectionsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, bool? isPublic = null, CancellationToken cancellationToken = default)
+    {
+        var url = $"api/collections?pageNumber={pageNumber}&pageSize={pageSize}";
+        if (mediaType.HasValue)
+            url += $"&mediaType={(int)mediaType.Value}";
+        if (isPublic.HasValue)
+            url += $"&isPublic={isPublic.Value}";
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteCollectionDto>>(url, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<CollectionDto?> GetCollectionAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<CollectionDto>($"api/collections/{id}", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<PaginatedListDto<CollectionItemDto>?> GetCollectionItemsAsync(Guid collectionId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<CollectionItemDto>>(
+            $"api/collections/{collectionId}/items?pageNumber={pageNumber}&pageSize={pageSize}", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<Guid> CreateCollectionAsync(CreateCollectionRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/collections", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateCollectionAsync(Guid id, UpdateCollectionRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/collections/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteCollectionAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/collections/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> AddCollectionItemAsync(Guid collectionId, Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/collections/{collectionId}/items", new { MediaId = mediaId }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task RemoveCollectionItemAsync(Guid collectionId, Guid itemId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/collections/{collectionId}/items/{itemId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<GlobalSearchResultDto?> GlobalSearchAsync(string q, int pageSize = 10, CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<GlobalSearchResultDto>($"api/search?q={Uri.EscapeDataString(q)}&pageSize={pageSize}", _serializerOptions, cancellationToken);
     }
 
     public async Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default)
