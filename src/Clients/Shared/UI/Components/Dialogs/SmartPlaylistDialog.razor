@@ -25,12 +25,12 @@
                     </K7Select>
                     <p class="text-subtitle2">@L["RulesSuffix"]</p>
                 </div>
-                <K7Select TValue="MediaType?" @bind-Value="_mediaType" Label="@L["MediaType"]"
+                <K7Select TValue="MediaType" @bind-Value="_mediaType" Label="@L["MediaType"]"
                            Variant="outlined"
-                           Clearable="true" Style="width: 180px;">
-                    <K7SelectItem TValue="MediaType?" Value="@((MediaType?)null)">@S["All"]</K7SelectItem>
-                    <K7SelectItem TValue="MediaType?" Value="MediaType.MusicTrack">@S["MediaTypeMusic"]</K7SelectItem>
-                    <K7SelectItem TValue="MediaType?" Value="MediaType.Movie">@S["MediaTypeMovies"]</K7SelectItem>
+                           Style="width: 180px;">
+                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack">@S["MediaTypeMusic"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.Movie">@S["MediaTypeMovies"]</K7SelectItem>
+                    <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode">@S["MediaTypeTVShows"]</K7SelectItem>
                 </K7Select>
             </div>
 

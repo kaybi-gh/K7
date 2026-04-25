@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Playlists.Commands.UpdatePlaylist;
@@ -8,6 +9,7 @@ public record UpdatePlaylistCommand : IRequest
     public required Guid Id { get; init; }
     public required string Title { get; init; }
     public string? Description { get; init; }
+    public required MediaType MediaType { get; init; }
 }
 
 public class UpdatePlaylistCommandHandler(IApplicationDbContext context, IUser currentUser)
@@ -22,6 +24,7 @@ public class UpdatePlaylistCommandHandler(IApplicationDbContext context, IUser c
 
         entity.Title = request.Title;
         entity.Description = request.Description;
+        entity.MediaType = request.MediaType;
 
         entity.AddDomainEvent(new PlaylistUpdatedEvent(entity));
         await context.SaveChangesAsync(cancellationToken);

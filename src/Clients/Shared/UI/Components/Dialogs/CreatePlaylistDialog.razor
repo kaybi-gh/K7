@@ -1,5 +1,6 @@
 @inject IStringLocalizer<CreatePlaylistDialog> L
 @inject IStringLocalizer<SharedResource> S
+@using K7.Server.Domain.Enums
 
 <div class="k7-dialog-content">
         <div class="d-flex flex-col mt-2">
@@ -14,6 +15,12 @@
                           Variant="outlined"
                           Lines="3"
                           MaxLength="2000" />
+            <K7Select TValue="MediaType" @bind-Value="_mediaType" Label="@L["MediaType"]"
+                       Variant="outlined">
+                <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack">@S["MediaTypeMusic"]</K7SelectItem>
+                <K7SelectItem TValue="MediaType" Value="MediaType.Movie">@S["MediaTypeMovies"]</K7SelectItem>
+                <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode">@S["MediaTypeTVShows"]</K7SelectItem>
+            </K7Select>
         </div>
     </div>
     <div class="k7-dialog-actions">

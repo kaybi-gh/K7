@@ -14,8 +14,7 @@ public static class SmartPlaylistEvaluator
         SmartPlaylist smartPlaylist,
         Guid userId)
     {
-        if (smartPlaylist.MediaType.HasValue)
-            query = query.Where(m => m.Type == smartPlaylist.MediaType.Value);
+        query = query.Where(m => m.Type == smartPlaylist.MediaType);
 
         if (smartPlaylist.Rules.Count == 0)
             return ApplyOrdering(query, smartPlaylist);

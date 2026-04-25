@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 
@@ -12,6 +13,7 @@ public partial class CreatePlaylistDialog
 
     private string _title = "";
     private string? _description;
+    private MediaType _mediaType = MediaType.MusicTrack;
     private bool _isSubmitting;
 
     private void Cancel() => Dialog.Cancel();
@@ -26,7 +28,8 @@ public partial class CreatePlaylistDialog
             var id = await K7ServerService.CreatePlaylistAsync(new CreatePlaylistRequest
             {
                 Title = _title.Trim(),
-                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim()
+                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+                MediaType = _mediaType
             });
 
             Snackbar.Add(L["Created"], K7Severity.Success);

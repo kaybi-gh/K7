@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
+using K7.Server.Application.Features.Playlists.Commands.CreatePlaylist;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Events;
 
@@ -21,6 +22,16 @@ public class AddPlaylistItemCommandHandler(IApplicationDbContext context, IUser 
             .FirstOrDefaultAsync(p => p.Id == request.PlaylistId && p.UserId == currentUser.Id!.Value, cancellationToken);
 
         Guard.Against.NotFound(request.PlaylistId, playlist);
+
+        var media = await context.Medias
+            .Where(m => m.Id == request.MediaId)
+            .Select(m => new { m.Id, m.Type })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        Guard.Against.NotFound(request.MediaId, media);
+
+        if (media.Type != playlist.MediaType)
+            throw new ValidationException($"Cannot add a media of type {media.Type} to a playlist of type {playlist.MediaType}.");
 
         var maxOrder = await context.PlaylistItems
             .Where(i => i.PlaylistId == request.PlaylistId)

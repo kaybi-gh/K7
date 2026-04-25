@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
@@ -6,7 +7,7 @@ namespace K7.Shared.Interfaces;
 
 public interface IPlaylistService
 {
-    Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default);
+    Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, CancellationToken cancellationToken = default);
     Task<PlaylistDto?> GetPlaylistAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default);
     Task<Guid> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default);
