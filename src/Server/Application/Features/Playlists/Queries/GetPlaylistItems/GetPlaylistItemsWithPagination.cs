@@ -47,11 +47,11 @@ public class GetPlaylistItemsWithPaginationQueryHandler(IApplicationDbContext co
         if (currentUser.Id is { } userId)
         {
             var excludedLibraryIds = context.UserLibraryExclusions
-                .Where(e => e.UserId == userId)
+                .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.LibraryId);
 
             var excludedMediaIds = context.UserMediaExclusions
-                .Where(e => e.UserId == userId)
+                .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.MediaId);
 
             query = query

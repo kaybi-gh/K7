@@ -33,7 +33,7 @@ public class GetPersonsQueryHandler(IApplicationDbContext context, IUser current
         if (currentUser.Id is { } userId)
         {
             var excludedLibraryIds = context.UserLibraryExclusions
-                .Where(e => e.UserId == userId)
+                .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.LibraryId);
 
             var roleFilter = request.RoleTypes;

@@ -39,7 +39,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (userId.HasValue)
         {
             var excludedLibraryIds = context.UserLibraryExclusions
-                .Where(e => e.UserId == userId.Value)
+                .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.LibraryId);
 
             filterQuery = filterQuery.Where(x =>
@@ -52,7 +52,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                             : !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
 
             var excludedMediaIds = context.UserMediaExclusions
-                .Where(e => e.UserId == userId.Value)
+                .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.MediaId);
 
             filterQuery = filterQuery.Where(x => !excludedMediaIds.Contains(x.Id));
@@ -158,10 +158,12 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (request.ContinueWatching == true && userId.HasValue)
         {
-            query = query.Where(x => x.UserMediaStates.Any(s =>
-                s.UserId == userId.Value
-                && !s.IsCompleted
-                && s.LastInteractedAt != null));
+            query = query.Where(x =>
+                !(x is MusicAlbum) && !(x is MusicTrack)
+                && x.UserMediaStates.Any(s =>
+                    s.UserId == userId.Value
+                    && !s.IsCompleted
+                    && s.LastInteractedAt != null));
         }
 
         if (request.PersonIds?.Length > 0)
