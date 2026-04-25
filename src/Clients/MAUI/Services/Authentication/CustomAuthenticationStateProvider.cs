@@ -74,7 +74,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                 Nonce = challenge.Nonce
             }));
 
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict"));
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
             if (!string.IsNullOrEmpty(result.BackchannelAccessToken))
             {
@@ -183,7 +183,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             ProviderName = "K7"
         });
 
-        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict"));
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
         if (!string.IsNullOrEmpty(result.AccessToken))
         {
@@ -281,7 +281,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                 ProviderName = "K7"
             });
 
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict"));
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity(result.Principal.Claims, "OpenIddict", Claims.Name, Claims.Role));
 
             if (!string.IsNullOrEmpty(result.AccessToken))
             {
