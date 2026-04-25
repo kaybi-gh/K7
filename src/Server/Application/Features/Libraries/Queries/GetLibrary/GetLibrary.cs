@@ -20,7 +20,7 @@ public class GetLibraryQueryHandler(IApplicationDbContext context, IUser current
         if (currentUser.Id is { } userId)
         {
             var excludedLibraryIds = context.UserLibraryExclusions
-                .Where(e => e.UserId == userId)
+                .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.LibraryId);
 
             query = query.Where(x => !excludedLibraryIds.Contains(x.Id));
