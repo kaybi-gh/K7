@@ -45,3 +45,26 @@
     object-fit: cover;
     object-position: center top;
 }
+
+.home-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 80px 16px;
+    text-align: center;
+    opacity: 0.6;
+}
+
+.home-empty-state__title {
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.home-empty-state__subtitle {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}

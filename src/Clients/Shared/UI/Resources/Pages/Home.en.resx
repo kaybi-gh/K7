@@ -25,5 +25,7 @@
   <data name="RecentlyReleased" xml:space="preserve"><value>Recently released</value></data>
   <data name="LastPlayed" xml:space="preserve"><value>Last played</value></data>
   <data name="HideForUserDialogTitle" xml:space="preserve"><value>Hide for a user</value></data>
+  <data name="EmptyStateTitle" xml:space="preserve"><value>Nothing to watch</value></data>
+  <data name="EmptyStateSubtitle" xml:space="preserve"><value>Your library is empty, or no content is accessible to you.</value></data>
 </root>
 
