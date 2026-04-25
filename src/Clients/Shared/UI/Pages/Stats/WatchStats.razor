@@ -6,22 +6,18 @@
 <div class="d-flex pa-4" style="width: 100%">
     <h5>@L["PageTitle"]</h5>
     <div class="d-flex">
-        
-            <K7Chip Value="@("week")" Variant="outlined">@L["Week"]</K7Chip>
-            <K7Chip Value="@("month")" Variant="outlined">@L["Month"]</K7Chip>
-            <K7Chip Value="@("year")" Variant="outlined">@L["Year"]</K7Chip>
-            <K7Chip Value="@("all")" Variant="outlined">@L["AllTime"]</K7Chip>
-        
+        <K7Chip Value="@("week")" Variant="@(_selectedPeriod == "week" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("week"))">@L["Week"]</K7Chip>
+        <K7Chip Value="@("month")" Variant="@(_selectedPeriod == "month" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("month"))">@L["Month"]</K7Chip>
+        <K7Chip Value="@("year")" Variant="@(_selectedPeriod == "year" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("year"))">@L["Year"]</K7Chip>
+        <K7Chip Value="@("all")" Variant="@(_selectedPeriod == "all" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("all"))">@L["AllTime"]</K7Chip>
     </div>
 </div>
 
 <div class="d-flex px-4 mb-4">
-    
-        <K7Chip Value="@("")" Variant="filled" Color="primary">@L["All"]</K7Chip>
-        <K7Chip Value="@("3")" Variant="outlined">@L["Music"]</K7Chip>
-        <K7Chip Value="@("1")" Variant="outlined">@L["Movies"]</K7Chip>
-        <K7Chip Value="@("5")" Variant="outlined">@L["TVShows"]</K7Chip>
-    
+    <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged(""))">@L["All"]</K7Chip>
+    <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("3"))">@L["Music"]</K7Chip>
+    <K7Chip Value="@("1")" Variant="@(_selectedMediaType == "1" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("1"))">@L["Movies"]</K7Chip>
+    <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("5"))">@L["TVShows"]</K7Chip>
 </div>
 
 @if (_loading)
@@ -74,7 +70,11 @@ else
         {
             <div class="surface pa-4 mb-6">
                 <h6>@L["PlaysOverTime"]</h6>
-                <div class="text-center text-sm pa-4" style="color:var(--color-text-secondary)">[Chart not available]</div>
+                <K7BarChart Values="@_playsOverTimeSeries.FirstOrDefault().Data"
+                              Labels="@_playsOverTimeLabels"
+                              Height="120"
+                              GapPercent="0.6"
+                              LabelFontSize="4" />
             </div>
         }
 
@@ -84,7 +84,11 @@ else
                 <div>
                     <div class="surface pa-4">
                         <h6>@L["ByHourOfDay"]</h6>
-                        <div class="text-center text-sm pa-4" style="color:var(--color-text-secondary)">[Chart not available]</div>
+                        <K7BarChart Values="@_hourSeries.FirstOrDefault().Data"
+                                      Labels="@_hourLabels"
+                                      Height="100"
+                                      GapPercent="0.4"
+                                      LabelFontSize="3.5" />
                     </div>
                 </div>
             }
@@ -93,7 +97,10 @@ else
                 <div>
                     <div class="surface pa-4">
                         <h6>@L["ByDayOfWeek"]</h6>
-                        <div class="text-center text-sm pa-4" style="color:var(--color-text-secondary)">[Chart not available]</div>
+                        <K7BarChart Values="@_dowSeries.FirstOrDefault().Data"
+                                      Labels="@_dowLabels"
+                                      Height="100"
+                                      GapPercent="2" />
                     </div>
                 </div>
             }

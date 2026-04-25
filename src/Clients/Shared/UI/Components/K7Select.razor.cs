@@ -29,7 +29,12 @@ public partial class K7Select<TValue>
         }
         try
         {
-            var val = (TValue?)System.Convert.ChangeType(raw, typeof(TValue));
+            var targetType = Nullable.GetUnderlyingType(typeof(TValue)) ?? typeof(TValue);
+            TValue? val;
+            if (targetType.IsEnum)
+                val = (TValue?)Enum.Parse(targetType, raw!);
+            else
+                val = (TValue?)System.Convert.ChangeType(raw, targetType);
             await ValueChanged.InvokeAsync(val);
         }
         catch { }
