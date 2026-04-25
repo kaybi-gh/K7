@@ -24,10 +24,10 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser) 
             .Select(m => new
             {
                 IsMediaExcluded = context.UserMediaExclusions
-                    .Any(e => e.UserId == userId && e.MediaId == mediaId),
+                    .Any(e => e.UserId == userId && e.MediaId == mediaId && (e.IsAdminExcluded || e.IsSelfExcluded)),
                 HasNonExcludedFile = !m.IndexedFiles.Any()
                     || m.IndexedFiles.Any(f => !context.UserLibraryExclusions
-                        .Any(e => e.UserId == userId && e.LibraryId == f.LibraryId))
+                        .Any(e => e.UserId == userId && e.LibraryId == f.LibraryId && (e.IsAdminExcluded || e.IsSelfExcluded)))
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -62,9 +62,9 @@ public class MediaAccessGuard(IApplicationDbContext context, IUser currentUser) 
             {
                 f.MediaId,
                 IsLibraryExcluded = context.UserLibraryExclusions
-                    .Any(e => e.UserId == userId && e.LibraryId == f.LibraryId),
+                    .Any(e => e.UserId == userId && e.LibraryId == f.LibraryId && (e.IsAdminExcluded || e.IsSelfExcluded)),
                 IsMediaExcluded = f.MediaId != null && context.UserMediaExclusions
-                    .Any(e => e.UserId == userId && e.MediaId == f.MediaId)
+                    .Any(e => e.UserId == userId && e.MediaId == f.MediaId && (e.IsAdminExcluded || e.IsSelfExcluded))
             })
             .FirstOrDefaultAsync(cancellationToken);
 
