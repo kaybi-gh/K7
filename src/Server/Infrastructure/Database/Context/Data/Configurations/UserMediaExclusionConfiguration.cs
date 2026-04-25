@@ -11,5 +11,8 @@ public class UserMediaExclusionConfiguration : IEntityTypeConfiguration<UserMedi
         builder
             .HasIndex(e => new { e.UserId, e.MediaId })
             .IsUnique();
+
+        builder.Property(e => e.IsAdminExcluded).HasDefaultValue(false);
+        builder.Property(e => e.IsSelfExcluded).HasDefaultValue(false);
     }
 }

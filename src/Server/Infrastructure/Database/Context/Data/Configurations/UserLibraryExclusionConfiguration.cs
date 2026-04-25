@@ -11,5 +11,8 @@ public class UserLibraryExclusionConfiguration : IEntityTypeConfiguration<UserLi
         builder
             .HasIndex(e => new { e.UserId, e.LibraryId })
             .IsUnique();
+
+        builder.Property(e => e.IsAdminExcluded).HasDefaultValue(false);
+        builder.Property(e => e.IsSelfExcluded).HasDefaultValue(false);
     }
 }
