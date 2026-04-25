@@ -181,7 +181,7 @@ public static partial class MauiProgram
 #else
                         RedirectUri = new Uri("http://localhost/", UriKind.Absolute),
 #endif
-                        Scopes = { Scopes.Email, Scopes.Profile, Scopes.OfflineAccess, "api" }
+                        Scopes = { Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess, "api" }
                     });
                 }
             });

@@ -23,6 +23,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly ILocalUserService _localUserService;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private bool _initialized;
+    private Task? _restoreTask;
 
     public CustomAuthenticationStateProvider(
         OpenIddictClientService openIddictClientService,
@@ -40,14 +41,18 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _localUserService = localUserService;
     }
 
-    public override Task<AuthenticationState> GetAuthenticationStateAsync()
+    public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         if (!_initialized)
         {
             _initialized = true;
-            TryRestoreSessionSync();
+            _restoreTask = TryRestoreSessionAsync();
         }
-        return Task.FromResult(new AuthenticationState(_currentUser));
+
+        if (_restoreTask is not null)
+            await _restoreTask;
+
+        return new AuthenticationState(_currentUser);
     }
 
     public async Task LoginAsync(CancellationToken cancellationToken = default)
@@ -203,35 +208,22 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
-    public async Task LogoutAsync(CancellationToken cancellationToken = default)
+    public Task LogoutAsync(CancellationToken cancellationToken = default)
     {
+        var identityUserId = _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
         ClearStoredTokens();
 
-        try
-        {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(30));
-
-            var result = await _openIddictClientService.SignOutInteractivelyAsync(new()
-            {
-                CancellationToken = timeout.Token,
-                ProviderName = "K7"
-            });
-
-            await _openIddictClientService.AuthenticateInteractivelyAsync(new()
-            {
-                CancellationToken = timeout.Token,
-                Nonce = result.Nonce
-            });
-        }
-        catch { }
+        if (!string.IsNullOrEmpty(identityUserId))
+            _localUserService.Remove(identityUserId);
 
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
+        return Task.CompletedTask;
     }
 
-    private void TryRestoreSessionSync()
+    private async Task TryRestoreSessionAsync()
     {
         if (!_localUserService.IsSingleUserMode)
             return;
@@ -242,7 +234,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
         try
         {
-            _ = RestoreUserInBackgroundAsync(lastUser);
+            await RestoreUserInBackgroundAsync(lastUser);
         }
         catch
         {
