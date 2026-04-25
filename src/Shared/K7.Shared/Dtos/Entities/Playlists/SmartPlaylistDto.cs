@@ -9,7 +9,7 @@ public sealed record SmartPlaylistDto
     public required string Title { get; init; }
     public string? Description { get; init; }
     public Guid UserId { get; init; }
-    public MediaType? MediaType { get; init; }
+    public MediaType MediaType { get; init; }
     public SmartPlaylistMatchCondition MatchCondition { get; init; }
     public IReadOnlyList<SmartPlaylistRuleDto> Rules { get; init; } = [];
     public int? Limit { get; init; }

@@ -95,6 +95,7 @@ public partial class Playlists
         {
             Title = "Ajouts récents",
             Description = "Médias ajoutés dans les 30 derniers jours",
+            MediaType = MediaType.MusicTrack,
             MatchCondition = SmartPlaylistMatchCondition.All,
             Rules = [new() { Field = SmartPlaylistField.DateAdded, Operator = SmartPlaylistOperator.InLast, Value = "30" }],
             OrderBy = SmartPlaylistOrderBy.DateAdded,
@@ -127,6 +128,7 @@ public partial class Playlists
         {
             Title = "Mieux notés",
             Description = "Morceaux notés 8 ou plus",
+            MediaType = MediaType.MusicTrack,
             MatchCondition = SmartPlaylistMatchCondition.All,
             Rules = [new() { Field = SmartPlaylistField.Rating, Operator = SmartPlaylistOperator.GreaterThanOrEqual, Value = "8" }],
             OrderBy = SmartPlaylistOrderBy.Rating,
@@ -137,12 +139,13 @@ public partial class Playlists
         {
             Title = "Écoutés récemment",
             Description = "Morceaux écoutés dans les 7 derniers jours",
+            MediaType = MediaType.MusicTrack,
             MatchCondition = SmartPlaylistMatchCondition.All,
             Rules = [new() { Field = SmartPlaylistField.LastPlayed, Operator = SmartPlaylistOperator.InLast, Value = "7" }],
             OrderBy = SmartPlaylistOrderBy.LastPlayed,
             OrderDescending = true
         },
-        _ => new() { Title = "Smart Playlist", Rules = [] }
+        _ => new() { Title = "Smart Playlist", MediaType = MediaType.MusicTrack, Rules = [] }
     };
 
     internal enum Preset { RecentlyAdded, MostPlayed, NeverPlayed, HighlyRated, RecentlyPlayed }

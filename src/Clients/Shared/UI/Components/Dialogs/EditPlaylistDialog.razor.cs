@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 
@@ -19,6 +20,9 @@ public partial class EditPlaylistDialog
     [Parameter]
     public string? Description { get; set; }
 
+    [Parameter]
+    public MediaType MediaType { get; set; } = MediaType.MusicTrack;
+
     private bool _isSubmitting;
 
     private void Cancel() => Dialog.Cancel();
@@ -33,7 +37,8 @@ public partial class EditPlaylistDialog
             await K7ServerService.UpdatePlaylistAsync(PlaylistId, new UpdatePlaylistRequest
             {
                 Title = Title.Trim(),
-                Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim()
+                Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim(),
+                MediaType = MediaType
             });
 
             Snackbar.Add(L["Updated"], K7Severity.Success);

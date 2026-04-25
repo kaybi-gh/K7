@@ -12,7 +12,7 @@ public partial class SmartPlaylistDialog
     [Parameter] public Guid? SmartPlaylistId { get; set; }
     [Parameter] public string? InitialTitle { get; set; }
     [Parameter] public string? InitialDescription { get; set; }
-    [Parameter] public MediaType? InitialMediaType { get; set; }
+    [Parameter] public MediaType InitialMediaType { get; set; } = MediaType.MusicTrack;
     [Parameter] public SmartPlaylistMatchCondition InitialMatchCondition { get; set; } = SmartPlaylistMatchCondition.All;
     [Parameter] public List<SmartPlaylistRuleDto>? InitialRules { get; set; }
     [Parameter] public int? InitialLimit { get; set; }
@@ -23,7 +23,7 @@ public partial class SmartPlaylistDialog
 
     private string _title = "";
     private string? _description;
-    private MediaType? _mediaType;
+    private MediaType _mediaType = MediaType.MusicTrack;
     private SmartPlaylistMatchCondition _matchCondition = SmartPlaylistMatchCondition.All;
     private List<RuleViewModel> _rules = [];
     private int? _limit;

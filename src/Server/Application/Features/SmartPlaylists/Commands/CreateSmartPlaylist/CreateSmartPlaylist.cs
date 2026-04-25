@@ -12,7 +12,7 @@ public record CreateSmartPlaylistCommand : IRequest<Guid>
 {
     public required string Title { get; init; }
     public string? Description { get; init; }
-    public MediaType? MediaType { get; init; }
+    public required MediaType MediaType { get; init; }
     public SmartPlaylistMatchCondition MatchCondition { get; init; }
     public IReadOnlyList<SmartPlaylistRuleCommand> Rules { get; init; } = [];
     public int? Limit { get; init; }
