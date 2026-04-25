@@ -46,6 +46,8 @@
       "library": "@phosphor-icons/web@2.1.2",
       "destination": "wwwroot/dist/phosphor-icons/",
       "files": [
+        "src/regular/style.css",
+        "src/regular/Phosphor.woff2",
         "src/fill/style.css",
         "src/fill/Phosphor-Fill.woff2",
         "src/bold/style.css",
