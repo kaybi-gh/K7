@@ -7,6 +7,7 @@ using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
@@ -51,6 +52,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<UserMediaState> UserMediaStates => Set<UserMediaState>();
     public DbSet<MediaPlaybackSession> MediaPlaybackSessions => Set<MediaPlaybackSession>();
     public DbSet<PlaybackSessionDetails> PlaybackSessionDetails => Set<PlaybackSessionDetails>();
+    public DbSet<Collection> Collections => Set<Collection>();
+    public DbSet<CollectionItem> CollectionItems => Set<CollectionItem>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<PlaylistItem> PlaylistItems => Set<PlaylistItem>();
     public DbSet<AudioAnalysis> AudioAnalysis => Set<AudioAnalysis>();

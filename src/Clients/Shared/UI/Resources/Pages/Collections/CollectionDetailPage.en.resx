@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Header" xml:space="preserve"><value>Collection</value></data>
+  <data name="NotFound" xml:space="preserve"><value>Collection not found</value></data>
+  <data name="Empty" xml:space="preserve"><value>This collection is empty</value></data>
+  <data name="Public" xml:space="preserve"><value>Public</value></data>
+  <data name="Private" xml:space="preserve"><value>Private</value></data>
+  <data name="Items" xml:space="preserve"><value>items</value></data>
+  <data name="DeleteConfirmTitle" xml:space="preserve"><value>Delete collection?</value></data>
+  <data name="DeleteConfirmMessage" xml:space="preserve"><value>This action cannot be undone.</value></data>
+  <data name="Deleted" xml:space="preserve"><value>Collection deleted</value></data>
+  <data name="DeleteError" xml:space="preserve"><value>Error deleting collection</value></data>
+</root>

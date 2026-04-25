@@ -5,6 +5,7 @@ using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
@@ -35,6 +36,8 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<UserMediaState> UserMediaStates { get; }
     DbSet<MediaPlaybackSession> MediaPlaybackSessions { get; }
     DbSet<PlaybackSessionDetails> PlaybackSessionDetails { get; }
+    DbSet<Collection> Collections { get; }
+    DbSet<CollectionItem> CollectionItems { get; }
     DbSet<Playlist> Playlists { get; }
     DbSet<PlaylistItem> PlaylistItems { get; }
     DbSet<AudioAnalysis> AudioAnalysis { get; }

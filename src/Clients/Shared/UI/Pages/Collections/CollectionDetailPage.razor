@@ -1,0 +1,105 @@
+@page "/collections/{Id}"
+@using K7.Clients.Shared.Models
+@using K7.Shared.Dtos.Entities.Collections
+@using K7.Server.Domain.Enums
+@inject ICollectionService K7ServerService
+@inject IK7ServerService ApiClient
+@inject IStringLocalizer<CollectionDetailPage> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@(_collection?.Title ?? L["Header"])</PageTitle>
+
+@if (_loading)
+{
+    <div class="d-flex flex-col pa-16 align-center">
+        <K7Spinner />
+    </div>
+}
+else if (_collection is null)
+{
+    <div class="d-flex flex-col pa-16 align-center">
+        <K7Icon Name="@Phosphor.BookmarkSimple" Style="font-size: 64px; opacity: 0.3;" />
+        <h6 Color="default" Style="opacity: 0.5;">@L["NotFound"]</h6>
+    </div>
+}
+else
+{
+    <div class="playlist-detail-page">
+        <div class="playlist-header">
+            <div class="playlist-header-cover">
+                @if (_coverUrl is not null)
+                {
+                    <K7Image Src="@_coverUrl"
+                              Alt="@_collection.Title"
+                              Width="180"
+                              ObjectFit="cover"
+                              Class="rounded" />
+                }
+                else
+                {
+                    <div class="playlist-cover-placeholder-large">
+                        <K7Icon Name="@Phosphor.BookmarkSimple" Style="font-size: 64px; opacity: 0.3;" />
+                    </div>
+                }
+            </div>
+
+            <div class="playlist-header-info">
+                <p class="text-overline">@L["Header"]</p>
+                <h4>@_collection.Title</h4>
+
+                @if (!string.IsNullOrEmpty(_collection.Description))
+                {
+                    <p class="text-sm mt-1" Color="secondary">@_collection.Description</p>
+                }
+
+                <p class="text-sm mt-1" Color="secondary">
+                    @_collection.ItemCount @L["Items"]
+                    <span class="ml-2">
+                        <K7Chip Size="xs" Variant="outlined">
+                            @(_collection.IsPublic ? L["Public"] : L["Private"])
+                        </K7Chip>
+                    </span>
+                </p>
+
+                <div class="d-flex mt-3">
+                    <button type="button" class="k7-icon-btn" @onclick="ConfirmDelete">
+                        <K7Icon Name="@Phosphor.Trash" Color="error" Size="sm" />
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <BrowseView TItem="MediaCardViewModel"
+                      Items="_items"
+                      Loading="_loadingItems"
+                      PersistenceKey="@($"collection-{Id}")"
+                      DefaultItemWidth="160"
+                      DefaultSpacing="6"
+                      GridItemAspectRatio="1.8f">
+            <EmptyContent>
+                <div class="d-flex flex-col pa-16 align-center">
+                    <K7Icon Name="@Phosphor.BookmarkSimple" Style="font-size: 48px; opacity: 0.3;" />
+                    <p Color="secondary">@L["Empty"]</p>
+                </div>
+            </EmptyContent>
+            <GridTemplate Context="item">
+                <MediaCard Model="item"
+                            Variant="@GetVariant(item)"
+                            Href="@GetItemHref(item)"
+                            FooterVisible="true"
+                            OverlayEnabled="true"
+                            ProgressEnabled="true"
+                            WatchedStatusEnabled="true" />
+            </GridTemplate>
+            <ListTemplate Context="item">
+                <a href="@GetItemHref(item)" class="library-list-item">
+                    @if (!string.IsNullOrEmpty(item.PictureUrl))
+                    {
+                        <K7Image Src="@item.PictureUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
+                    }
+                    <span class="library-list-item__title">@item.Title</span>
+                </a>
+            </ListTemplate>
+        </BrowseView>
+    </div>
+}
