@@ -1,3 +1,4 @@
+using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Users;
@@ -15,6 +16,7 @@ public interface IUserAdminService
     Task UpdateUserLibraryExclusionsAsync(Guid userId, UpdateUserLibraryExclusionsRequest request, CancellationToken cancellationToken = default);
     Task UpdateUserMediaExclusionsAsync(Guid userId, UpdateUserMediaExclusionsRequest request, CancellationToken cancellationToken = default);
     Task<bool> ToggleMediaExclusionAsync(Guid mediaId, CancellationToken cancellationToken = default);
+    Task<List<LiteMediaDto>> GetSelfMediaExclusionsAsync(CancellationToken cancellationToken = default);
     Task UpdateUserPinAsync(Guid userId, string? pin, CancellationToken cancellationToken = default);
     Task<List<ContentRestrictionProfileDto>> GetContentRestrictionProfilesAsync(CancellationToken cancellationToken = default);
     Task<Guid> CreateContentRestrictionProfileAsync(CreateContentRestrictionProfileRequest request, CancellationToken cancellationToken = default);

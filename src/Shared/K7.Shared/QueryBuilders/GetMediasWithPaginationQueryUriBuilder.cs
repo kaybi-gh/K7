@@ -10,45 +10,51 @@ public static class GetMediasWithPaginationQueryUriBuilder
 
     public static string Build(GetMediasWithPaginationQuery query)
     {
-        var queryParams = new Dictionary<string, string?>
+        var queryParams = new List<KeyValuePair<string, string?>>
         {
-            { nameof(query.PageNumber), $"{query.PageNumber}" },
-            { nameof(query.PageSize), $"{query.PageSize}" }
+            new(nameof(query.PageNumber), $"{query.PageNumber}"),
+            new(nameof(query.PageSize), $"{query.PageSize}")
         };
 
         if (query.LibraryIds?.Length > 0)
         {
-            queryParams.Add(nameof(query.LibraryIds), string.Join(",", query.LibraryIds));
+            foreach (var id in query.LibraryIds)
+                queryParams.Add(new(nameof(query.LibraryIds), id.ToString()));
         }
 
         if (query.Ids?.Length > 0)
         {
-            queryParams.Add(nameof(query.LibraryIds), string.Join(",", query.Ids));
+            foreach (var id in query.Ids)
+                queryParams.Add(new(nameof(query.Ids), id.ToString()));
         }
 
         if (query.MediaTypes?.Count > 0)
         {
-            queryParams.Add(nameof(query.MediaTypes), string.Join(",", query.MediaTypes));
+            foreach (var mt in query.MediaTypes)
+                queryParams.Add(new(nameof(query.MediaTypes), mt.ToString()));
         }
 
         if (query.OrderBy?.Count > 0)
         {
-            queryParams.Add(nameof(query.OrderBy), string.Join(",", query.OrderBy));
+            foreach (var o in query.OrderBy)
+                queryParams.Add(new(nameof(query.OrderBy), o.ToString()));
         }
 
         if (query.ContinueWatching.HasValue)
         {
-            queryParams.Add(nameof(query.ContinueWatching), $"{query.ContinueWatching.Value}");
+            queryParams.Add(new(nameof(query.ContinueWatching), $"{query.ContinueWatching.Value}"));
         }
 
         if (query.PersonIds?.Length > 0)
         {
-            queryParams.Add(nameof(query.PersonIds), string.Join(",", query.PersonIds));
+            foreach (var id in query.PersonIds)
+                queryParams.Add(new(nameof(query.PersonIds), id.ToString()));
         }
 
         if (query.Genres?.Length > 0)
         {
-            queryParams.Add(nameof(query.Genres), string.Join(",", query.Genres));
+            foreach (var g in query.Genres)
+                queryParams.Add(new(nameof(query.Genres), g));
         }
 
         return QueryBuilderHelper.AddQueryParameters(Route, queryParams);

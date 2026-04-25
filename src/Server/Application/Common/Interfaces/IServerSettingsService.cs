@@ -8,4 +8,5 @@ public interface IServerSettingsService
     Task SetAsync<T>(SettingKey<T> key, T value, CancellationToken cancellationToken = default);
     Task<object?> GetAsync(ISettingKey key, CancellationToken cancellationToken = default);
     Task SetAsync(ISettingKey key, object value, CancellationToken cancellationToken = default);
+    Task RemoveAsync<T>(SettingKey<T> key, CancellationToken cancellationToken = default);
 }
