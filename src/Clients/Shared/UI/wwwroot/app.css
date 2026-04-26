@@ -71,6 +71,36 @@ textarea[data-sn-editing="true"] {
 }
 
 /* ============================================================
+   Android TV / Leanback platform overrides
+   The Android handler injects "K7TV/1.0" into the WebView
+   user-agent and adjusts the WebView initial scale to
+   compensate for the TV's high pixel density. The .platform-tv
+   class is added on <html> by index.html before Blazor mounts.
+   ============================================================ */
+html.platform-tv {
+    /* Avoid hover side-effects on D-pad navigation */
+    cursor: none;
+}
+
+html.platform-tv *:hover {
+    /* Disable hover styles entirely on TV; focus drives the UI */
+    background-color: revert;
+}
+
+html.platform-tv :focus-visible {
+    /* Make focus very obvious for D-pad navigation at TV viewing distance */
+    outline: 3px solid var(--color-accent);
+    outline-offset: 3px;
+    box-shadow: var(--focus-ring), 0 0 0 6px rgba(0, 0, 0, 0.35);
+}
+
+@media (hover: none) {
+    html.platform-tv *:hover {
+        background-color: revert;
+    }
+}
+
+/* ============================================================
    Blazor error UI
    ============================================================ */
 #blazor-error-ui {
