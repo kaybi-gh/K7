@@ -153,16 +153,22 @@ html.platform-tv .k7-chip {
 
 /* -- Buttons ------------------------------------------------------------- */
 
+html.platform-tv .k7-btn {
+    font-size: var(--text-base);
+    min-height: 44px;
+    padding: var(--space-3) var(--space-5);
+}
+
 html.platform-tv .k7-btn--lg {
     font-size: var(--text-lg);
     min-height: 52px;
-    padding: var(--space-4) var(--space-8);
+    padding: var(--space-4) var(--space-8) !important;
 }
 
 html.platform-tv .k7-icon-btn {
-    width: 48px;
-    height: 48px;
-    font-size: 1.5rem;
+    width: 52px;
+    height: 52px;
+    font-size: 1.6rem;
 }
 
 /* -- Menus / dropdowns --------------------------------------------------- */
@@ -198,8 +204,13 @@ html.platform-tv .app-nav-popover-status {
 /* -- PersonRole avatar --------------------------------------------------- */
 
 html.platform-tv .personrole-item-link .k7-avatar {
-    width: 120px;
-    height: 120px;
+    /* Override inline style="height:150px; width:150px" on the component */
+    width: 180px !important;
+    height: 180px !important;
+}
+
+html.platform-tv .person-text {
+    max-width: 180px;
 }
 
 @media (hover: none) {
