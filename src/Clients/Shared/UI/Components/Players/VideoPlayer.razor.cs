@@ -96,7 +96,7 @@ public partial class VideoPlayer : IAsyncDisposable
         if (DeviceService.GetClientType() == ClientType.Native)
         {
             var method = PlayerService.IsVisible ? "add" : "remove";
-            _ = JSRuntime.InvokeVoidAsync("eval", $"document.body.classList.{method}('native-player-active')");
+            _ = JSRuntime.InvokeVoidAsync("eval", $"document.documentElement.classList.{method}('native-player-active'); document.body.classList.{method}('native-player-active')");
         }
     }
 
