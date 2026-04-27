@@ -19,6 +19,8 @@ public partial class MediaCard
     [Parameter] public EventCallback OnExcludeForSelf { get; set; }
     [Parameter] public EventCallback OnExcludeForOthers { get; set; }
 
+    private bool _menuOpen;
+
     private string VariantClass => Variant switch
     {
         MediaCardVariant.Cover => "media-card--cover",
@@ -26,7 +28,11 @@ public partial class MediaCard
         _ => "media-card--poster"
     };
 
-    private bool ProgressBarIsHidden() => Model.Progress == 0 || Model.Progress >= 100;
+    private bool ProgressBarIsHidden() => Model.Progress < 1 || Model.Progress >= 100;
+
+    private void OnContextMenu() => _menuOpen = true;
+
+    private void OnMenuOpenChanged(bool open) => _menuOpen = open;
 
     private string PlaceholderIcon => Variant switch
     {
