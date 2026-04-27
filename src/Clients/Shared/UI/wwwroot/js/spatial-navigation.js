@@ -912,6 +912,15 @@ window.K7.focusDirection = function (container, direction) {
     }
 };
 
+window.K7.focusFirstIn = function (element) {
+    if (!element) return;
+    var focusable = 'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), [tabindex="0"]';
+    var items = Array.from(element.querySelectorAll(focusable)).filter(function (el) {
+        return el.offsetParent !== null;
+    });
+    if (items.length > 0) items[0].focus();
+};
+
 window.K7.isFocusInOverlayChild = function (container) {
     if (!container || !document.activeElement) return false;
     return container.contains(document.activeElement) && document.activeElement !== container;
