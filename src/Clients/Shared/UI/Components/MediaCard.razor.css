@@ -102,6 +102,12 @@
     top: 0;
     right: 0;
     z-index: 2;
+    display: none;
+}
+
+.media-card-container:hover .media-card-menu,
+.media-card-container:focus-within .media-card-menu {
+    display: block;
 }
 
 .media-card-placeholder {
