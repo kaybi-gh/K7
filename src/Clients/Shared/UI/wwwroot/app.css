@@ -94,6 +94,114 @@ html.platform-tv :focus-visible {
     box-shadow: var(--focus-ring), 0 0 0 6px rgba(0, 0, 0, 0.35);
 }
 
+/* -- Typography bumps ---------------------------------------------------- */
+
+html.platform-tv h6 {
+    /* Carousel / shelf section titles */
+    font-size: var(--text-2xl);
+}
+
+html.platform-tv .overview-clickable p,
+html.platform-tv .serie-hero p {
+    /* Synopsis on Movie and Serie detail pages.
+       !important overrides the inline style="font-size:1.05rem". */
+    font-size: 1.3rem !important;
+}
+
+html.platform-tv .text-sm {
+    /* Metadata text (year, duration, dots, network) */
+    font-size: var(--text-base);
+}
+
+html.platform-tv .text-caption {
+    /* PersonRole character names, misc captions */
+    font-size: var(--text-sm);
+}
+
+html.platform-tv .person-text {
+    /* PersonRole actor names */
+    font-size: var(--text-base);
+}
+
+/* -- Top navbar ---------------------------------------------------------- */
+
+html.platform-tv .app-nav-link {
+    font-size: var(--text-base);
+    min-height: 44px;
+}
+
+html.platform-tv .app-nav-icon {
+    font-size: var(--text-2xl);
+}
+
+html.platform-tv .app-nav-logo-text {
+    font-size: var(--text-2xl);
+}
+
+html.platform-tv .avatar--sm {
+    width: 40px;
+    height: 40px;
+    font-size: var(--text-base);
+}
+
+/* -- Chips --------------------------------------------------------------- */
+
+html.platform-tv .k7-chip {
+    font-size: var(--text-sm);
+    padding: var(--space-1) var(--space-4);
+}
+
+/* -- Buttons ------------------------------------------------------------- */
+
+html.platform-tv .k7-btn--lg {
+    font-size: var(--text-lg);
+    min-height: 52px;
+    padding: var(--space-4) var(--space-8);
+}
+
+html.platform-tv .k7-icon-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+}
+
+/* -- Menus / dropdowns --------------------------------------------------- */
+
+html.platform-tv .k7-menu-item {
+    font-size: var(--text-base);
+    padding: var(--space-3) var(--space-5);
+}
+
+html.platform-tv .k7-menu-item i,
+html.platform-tv .k7-menu-item .ph {
+    font-size: 1.25rem;
+}
+
+/* -- Profile popover (avatar menu) --------------------------------------- */
+
+html.platform-tv .app-nav-popover .nav-link {
+    font-size: var(--text-base);
+}
+
+html.platform-tv .app-nav-popover .nav-icon {
+    font-size: var(--text-2xl);
+}
+
+html.platform-tv .app-nav-popover-username {
+    font-size: var(--text-base);
+}
+
+html.platform-tv .app-nav-popover-status {
+    font-size: var(--text-sm);
+}
+
+/* -- PersonRole avatar --------------------------------------------------- */
+
+html.platform-tv .personrole-item-link .k7-avatar {
+    width: 120px;
+    height: 120px;
+}
+
 @media (hover: none) {
     html.platform-tv *:hover {
         background-color: revert;
