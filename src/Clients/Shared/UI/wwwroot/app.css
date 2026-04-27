@@ -126,7 +126,7 @@ html.platform-tv .person-text {
 /* -- Top navbar ---------------------------------------------------------- */
 
 html.platform-tv .app-nav-link {
-    font-size: var(--text-base);
+    font-size: var(--text-xl);
     min-height: 44px;
 }
 
@@ -136,6 +136,12 @@ html.platform-tv .app-nav-icon {
 
 html.platform-tv .app-nav-logo-text {
     font-size: var(--text-2xl);
+}
+
+html.platform-tv .app-nav {
+    background: transparent;
+    border-bottom-color: transparent;
+    backdrop-filter: none;
 }
 
 html.platform-tv .avatar--sm {
@@ -212,6 +218,8 @@ html.platform-tv .personrole-item-link .k7-avatar {
 html.platform-tv .person-text {
     max-width: 180px;
 }
+
+html.platform-tv .media-card-menu { display: none !important; }
 
 @media (hover: none) {
     html.platform-tv *:hover {
