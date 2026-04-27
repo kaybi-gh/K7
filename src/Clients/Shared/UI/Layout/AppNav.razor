@@ -38,7 +38,7 @@
         <AuthorizeView>
             <Authorized>
                 <button class="app-nav-link app-nav-link--btn app-nav-item--profile @(_profileMenuOpen ? "active" : "")"
-                        type="button" @onclick="ToggleProfile">
+                        type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
                     <div class="avatar avatar--sm" title="@context.User.Identity?.Name">
                         @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
                         <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
@@ -88,7 +88,11 @@
 <!-- Profile popover -->
 <AuthorizeView>
     <Authorized>
-        <div class="app-nav-popover app-nav-popover--profile @(_profileMenuOpen ? "open" : "")">
+        <div class="app-nav-popover app-nav-popover--profile @(_profileMenuOpen ? "open" : "")"
+             @ref="_profilePopoverRef"
+             @onkeydown="OnProfileMenuKeyDown"
+             @onkeydown:stopPropagation="@_profileMenuOpen"
+             @onkeydown:preventDefault="@_preventPopoverKeyDefault">
             <div class="app-nav-popover-inner">
                 <div class="app-nav-popover-user">
                     <div class="avatar">

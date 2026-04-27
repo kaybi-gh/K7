@@ -43,6 +43,9 @@
     background: var(--color-drawer);
     border-bottom: 1px solid var(--color-border);
     height: var(--nav-height);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 @media (min-width: 600px) {

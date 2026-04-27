@@ -4,7 +4,9 @@ using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Layout;
 
@@ -12,11 +14,15 @@ public partial class AppNav : IDisposable
 {
     private bool _exploreOpen;
     private bool _profileMenuOpen;
+    private ElementReference _profilePopoverRef;
+    private ElementReference _profileButtonRef;
+    private bool _preventPopoverKeyDefault;
     private List<LibraryDto> _libraries = [];
     private string _badgeClass = "offline";
     private string _badgeTitle = string.Empty;
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private ICustomAuthenticationStateProvider CustomAuthenticationStateProvider { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
@@ -67,10 +73,55 @@ public partial class AppNav : IDisposable
         _profileMenuOpen = false;
     }
 
-    public void ToggleProfile()
+    public async Task ToggleProfile()
     {
         _profileMenuOpen = !_profileMenuOpen;
         _exploreOpen = false;
+        if (_profileMenuOpen)
+        {
+            StateHasChanged();
+            await Task.Yield();
+            try { await JS.InvokeVoidAsync("K7.focusFirstIn", _profilePopoverRef); }
+            catch (JSException) { }
+        }
+        else
+        {
+            StateHasChanged();
+            await Task.Yield();
+            try { await _profileButtonRef.FocusAsync(); }
+            catch { }
+        }
+    }
+
+    public async Task OnProfileMenuKeyDown(KeyboardEventArgs e)
+    {
+        _preventPopoverKeyDefault = false;
+        switch (e.Code)
+        {
+            case "Escape" or "BrowserBack" or "GoBack":
+                _preventPopoverKeyDefault = true;
+                CloseAll();
+                StateHasChanged();
+                await Task.Yield();
+                try { await _profileButtonRef.FocusAsync(); }
+                catch { }
+                break;
+            case "ArrowDown":
+                _preventPopoverKeyDefault = true;
+                try { await JS.InvokeVoidAsync("K7.focusDirection", _profilePopoverRef, "next"); }
+                catch (JSException) { }
+                break;
+            case "ArrowUp":
+                _preventPopoverKeyDefault = true;
+                try { await JS.InvokeVoidAsync("K7.focusDirection", _profilePopoverRef, "prev"); }
+                catch (JSException) { }
+                break;
+            case "Tab":
+                _preventPopoverKeyDefault = true;
+                try { await JS.InvokeVoidAsync("K7.focusDirection", _profilePopoverRef, e.ShiftKey ? "prev" : "next"); }
+                catch (JSException) { }
+                break;
+        }
     }
 
     public void CloseAll()
