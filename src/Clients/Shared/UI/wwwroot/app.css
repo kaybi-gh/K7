@@ -304,6 +304,7 @@ body.no-scroll {
     overflow: hidden;
 }
 
+html.native-player-active,
 body.native-player-active {
     background: transparent !important;
 }
