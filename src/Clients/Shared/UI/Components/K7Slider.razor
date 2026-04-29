@@ -1,14 +1,15 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
 
 <div class="k7-slider-wrap @Class">
     <input type="range"
-           class="k7-range"
+           class="k7-range focusable"
            min="@MinString"
            max="@MaxString"
            step="@StepString"
-           value="@ValueString"
+           value="@CurrentValueString"
            disabled="@Disabled"
+           data-sn-activatable
            @oninput="OnInput"
            @onchange="OnChange" />
 </div>

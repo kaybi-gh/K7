@@ -22,7 +22,7 @@ else
 {
     <div class="media-card @VariantClass">
         <div class="media-card-container">
-            <a class="media-card-link" href="@Href">
+            <a class="media-card-link focusable" href="@Href">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
                     <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Fluid="true" ObjectFit="cover" loading="lazy" />
@@ -37,7 +37,7 @@ else
                 @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
                     <div class="media-card-watched">
-                        <K7Icon Size="sm" class="ma-1" Color="success" Name="@Phosphor.CheckCircle" />
+                        <K7Icon Size="sm" class="ma-1" Color="success" Icon="@Phosphor.CheckCircle" />
                     </div>
                 }
 
@@ -58,7 +58,7 @@ else
                 @if (OverlayEnabled)
                 {
                     <div class="media-card-overlay">
-                        <button type="button" class="k7-fab" aria-label="Play"><i class="ph ph-play"></i></button>
+                        <K7FabButton AriaLabel="Play" Icon="@Phosphor.Play" />
                     </div>
                 }
             </a>
@@ -66,12 +66,17 @@ else
             @if (ExcludeMenuEnabled)
             {
                 <div class="media-card-menu">
-                    <K7Menu Icon="dots-three-vertical" Color="primary" Open="_menuOpen" OpenChanged="OnMenuOpenChanged">
-                        <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
-                        @if (IsAdmin)
-                        {
-                            <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
-                        }
+                    <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged">
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
+                            @if (IsAdmin)
+                            {
+                                <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
+                            }
+                        </ChildContent>
                     </K7Menu>
                 </div>
             }

@@ -1,9 +1,9 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 
 @if (!string.IsNullOrEmpty(Href))
 {
     <a href="@Href"
-       class="k7-icon-btn @(Size == "sm" ? "k7-icon-btn--sm" : Size == "lg" ? "k7-icon-btn--lg" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-icon-btn--{Color}" : "") @Class"
+       class="k7-icon-btn focusable @(Size == "sm" ? "k7-icon-btn--sm" : Size == "lg" ? "k7-icon-btn--lg" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-icon-btn--{Color}" : "") @Class"
        aria-label="@AriaLabel"
        @attributes="AdditionalAttributes">
         @if (ChildContent is not null)
@@ -12,14 +12,14 @@
         }
         else if (!string.IsNullOrEmpty(Icon))
         {
-            <i class="ph ph-@Icon"></i>
+            <K7Icon Icon="@Icon" />
         }
     </a>
 }
 else
 {
     <button type="@Type"
-            class="k7-icon-btn @(Size == "sm" ? "k7-icon-btn--sm" : Size == "lg" ? "k7-icon-btn--lg" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-icon-btn--{Color}" : "") @Class"
+            class="k7-icon-btn focusable @(Size == "sm" ? "k7-icon-btn--sm" : Size == "lg" ? "k7-icon-btn--lg" : "") @(!string.IsNullOrEmpty(Color) ? $"k7-icon-btn--{Color}" : "") @Class"
             disabled="@Disabled"
             aria-label="@AriaLabel"
             @onclick="OnClick"
@@ -30,7 +30,7 @@ else
         }
         else if (!string.IsNullOrEmpty(Icon))
         {
-            <i class="ph ph-@Icon"></i>
+            <K7Icon Icon="@Icon" />
         }
     </button>
 }

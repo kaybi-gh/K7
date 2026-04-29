@@ -1,7 +1,19 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
+@implements IDisposable
 
-<option value="@ValueStr" selected="@_isSelected">@ChildContent</option>
+<button type="button"
+        class="k7-select-option focusable @(_isSelected ? "k7-select-option--selected" : "")"
+        role="option"
+        aria-selected="@_isSelected"
+        @onclick="OnClick"
+        @onclick:stopPropagation="true">
+    @if (_isSelected)
+    {
+        <i class="ph ph-check"></i>
+    }
+    <span>@(ChildContent ?? (RenderFragment)(__builder => __builder.AddContent(0, _displayText)))</span>
+</button>
 
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
@@ -9,6 +21,25 @@
 
     [CascadingParameter] private K7Select<TValue>? ParentSelect { get; set; }
 
-    private bool _isSelected => ParentSelect?.Value?.Equals(Value) == true;
-    private string ValueStr => Value?.ToString() ?? "";
+    private bool _isSelected => ParentSelect?.IsSelected(Value) == true;
+    private string _displayText => Value?.ToString() ?? "";
+    private SelectItemRegistration<TValue>? _registration;
+
+    protected override void OnInitialized()
+    {
+        _registration = new SelectItemRegistration<TValue>(Value, _displayText);
+        ParentSelect?.RegisterItem(_registration);
+    }
+
+    private async Task OnClick()
+    {
+        if (ParentSelect is not null)
+            await ParentSelect.SelectValueAsync(Value);
+    }
+
+    public void Dispose()
+    {
+        if (_registration is not null)
+            ParentSelect?.UnregisterItem(_registration);
+    }
 }

@@ -1,13 +1,11 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 
-<button type="button"
-        class="k7-menu-item @Class"
-        role="menuitem"
-        disabled="@Disabled"
-        @onclick="OnItemClick">
-    @if (!string.IsNullOrEmpty(Icon))
-    {
-        <i class="ph ph-@Icon"></i>
-    }
-    @ChildContent
+<button type="button" class="k7-menu-item focusable @Class" role="menuitem" disabled="@Disabled" @onclick="OnItemClick">
+    <span class="k7-menu-item-icon">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <i class="ph ph-@Icon k7-icon k7-icon--md" aria-hidden="true"></i>
+        }
+    </span>
+    <span class="k7-menu-item-text">@ChildContent</span>
 </button>

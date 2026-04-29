@@ -21,10 +21,13 @@ else if (Items is { Count: > 0 })
                 <p class="hero-subtitle">@item.AdditionalInformations</p>
             }
             <div class="hero-actions">
-                <a href="@GetHref(item)" class="k7-btn k7-btn--filled k7-btn--primary hero-play-btn">
-                    <i class="ph ph-play-circle"></i>
-                    @L["Play"]
-                </a>
+                <K7Button Variant="filled"
+                          StartIcon="@Phosphor.Play"
+                          Color="primary"
+                          Size="lg"
+                          Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
+                          Href="@GetHref(item)">@L["Play"]
+                </K7Button>
             </div>
         </div>
 

@@ -16,7 +16,6 @@ public partial class K7CoverPickerDialog
     [Parameter] public string CancelText { get; set; } = "Cancel";
     [Parameter] public string ConfirmText { get; set; } = "Select";
 
-    private int _tab;
     private Guid? _selectedSourceId;
     private IBrowserFile? _file;
     private List<LibraryPictureDto> _pictures = [];
@@ -26,7 +25,7 @@ public partial class K7CoverPickerDialog
         _pictures = Pictures;
     }
 
-    private bool CanConfirm => _tab == 0 ? _selectedSourceId.HasValue : _file is not null;
+    private bool CanConfirm => _selectedSourceId.HasValue || _file is not null;
 
     private void OnFileSelected(InputFileChangeEventArgs e)
     {
@@ -36,9 +35,9 @@ public partial class K7CoverPickerDialog
 
     private void Confirm()
     {
-        var result = _tab == 0
-            ? new CoverPickerResult { SourcePictureId = _selectedSourceId }
-            : new CoverPickerResult { File = _file };
+        var result = _file is not null ?
+            new CoverPickerResult { File = _file }
+            : new CoverPickerResult { SourcePictureId = _selectedSourceId };
         Dialog.Close(K7DialogResult.Ok(result));
     }
 

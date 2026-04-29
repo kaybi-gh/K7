@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using Microsoft.AspNetCore.Components;
@@ -37,11 +37,11 @@ public partial class K7SnackbarHost : IDisposable
 
     private static string GetIcon(K7Severity severity) => severity switch
     {
-        K7Severity.Success => "check-circle",
-        K7Severity.Error => "warning-circle",
-        K7Severity.Warning => "warning",
-        K7Severity.Info => "info",
-        _ => "bell"
+        K7Severity.Success => Phosphor.CheckCircle,
+        K7Severity.Error => Phosphor.WarningCircle,
+        K7Severity.Warning => Phosphor.Warning,
+        K7Severity.Info => Phosphor.Info,
+        _ => Phosphor.Bell
     };
 
     public void Dispose()

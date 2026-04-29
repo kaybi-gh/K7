@@ -1,23 +1,30 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
 
 <div class="k7-field @Class" style="@(string.IsNullOrEmpty(Style) ? null : Style)">
     @if (!string.IsNullOrEmpty(Label))
     {
-        <label class="k7-label" for="@_id">@Label</label>
+        <label class="k7-label">@Label</label>
     }
-    <select id="@_id"
-            class="k7-select"
-            disabled="@Disabled"
-            @onchange="OnChange">
-        @if (Clearable && Value is null)
-        {
-            <option value="" selected>@(string.IsNullOrEmpty(Placeholder) ? "" : Placeholder)</option>
-        }
-        else if (Clearable)
-        {
-            <option value="">@(string.IsNullOrEmpty(Placeholder) ? "" : Placeholder)</option>
-        }
-        @ChildContent
-    </select>
+    @if (_open)
+    {
+        <div class="k7-backdrop" @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
+    }
+    <div class="k7-select-wrap @(_open ? "k7-select-wrap--open" : "")" @ref="_root">
+        <button type="button"
+                class="k7-select focusable"
+                disabled="@Disabled"
+                aria-haspopup="listbox"
+                aria-expanded="@_open"
+                @onclick="Toggle"
+                @onclick:stopPropagation="true">
+            <span class="k7-select-text">@DisplayText</span>
+            <K7Icon Icon="@Phosphor.CaretDown" Class="k7-select-icon"></K7Icon>
+        </button>
+        <div class="k7-select-dropdown" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true">
+            <CascadingValue Value="this" IsFixed="true">
+                @ChildContent
+            </CascadingValue>
+        </div>
+    </div>
 </div>

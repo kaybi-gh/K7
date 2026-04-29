@@ -5,28 +5,26 @@
         @if (!string.IsNullOrEmpty(Value))
         {
             <div class="k7-icon-picker__selected">
-                <i class="@Value" aria-hidden="true"></i>
-                <button type="button" class="k7-icon-picker__clear" @onclick="Clear" title="Remove">
-                    <i class="ph ph-x" aria-hidden="true"></i>
-                </button>
+                <K7Icon Icon="@Value" aria-hidden="true" />
+                <K7IconButton Class="k7-icon-picker__clear" OnClick="Clear" title="Remove" Icon="@Phosphor.X" />
             </div>
         }
-        <input type="text"
-               class="k7-icon-picker__search"
-               placeholder="@SearchPlaceholder"
-               value="@_search"
-               @oninput="OnSearchInput" />
+        <K7TextField
+            TValue="string"
+            Class="k7-icon-picker__search"
+            Placeholder="@SearchPlaceholder"
+            DebounceInterval="200"
+            OnDebounceIntervalElapsed="OnSearchInput" />
+ 
     </div>
     <div class="k7-icon-picker__grid">
         @foreach (var icon in FilteredIcons)
         {
-            var iconValue = icon.Value;
-            <button type="button"
-                    class="k7-icon-picker__item @(Value == iconValue ? "selected" : "")"
-                    @onclick="() => Select(iconValue)"
-                    title="@icon.DisplayName">
-                <i class="@iconValue" aria-hidden="true"></i>
-            </button>
+            <K7IconButton
+                Class="@("k7-icon-picker__item " + (Value == icon.Value ? "selected" : ""))"
+                Icon="@icon.Value"
+                OnClick="() => Select(icon.Value)"
+                title="@icon.DisplayName" />
         }
     </div>
 </div>

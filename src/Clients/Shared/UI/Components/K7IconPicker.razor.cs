@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 
@@ -26,13 +27,14 @@ public partial class K7IconPicker
         }
     }
 
-    private void OnSearchInput(ChangeEventArgs e)
+    private async Task OnSearchInput(string? text)
     {
-        _search = e.Value?.ToString() ?? "";
+        _search = text ?? "";
     }
 
     private async Task Select(string value)
     {
+        Debug.WriteLine(value);
         Value = value;
         await ValueChanged.InvokeAsync(value);
     }
@@ -46,17 +48,16 @@ public partial class K7IconPicker
 
     private static IReadOnlyList<IconEntry> LoadAllIcons()
     {
-        return typeof(Phosphor)
+        return [.. typeof(Phosphor)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
             .Where(f => f.IsLiteral && f.FieldType == typeof(string))
             .Select(f =>
             {
                 var cssValue = (string)f.GetRawConstantValue()!;
-                var displayName = cssValue.Replace("ph ph-", "");
+                var displayName = f.Name;
                 return new IconEntry(displayName, cssValue);
             })
-            .OrderBy(i => i.DisplayName)
-            .ToList();
+            .OrderBy(i => i.DisplayName)];
     }
 
     private sealed record IconEntry(string DisplayName, string Value);

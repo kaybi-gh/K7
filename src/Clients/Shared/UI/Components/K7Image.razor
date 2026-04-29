@@ -1,11 +1,11 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 
 <img class="k7-img @(ObjectFit == "cover" ? "k7-img--cover" : ObjectFit == "contain" ? "k7-img--contain" : ObjectFit == "scale-down" ? "k7-img--scale-down" : "") @Class"
      src="@Src"
      alt="@Alt"
      @attributes="SizeAttributes"
      loading="@Loading"
-     @attributes="AdditionalAttributes" />
+     @attributes="AdditionalAttributes" /> @* TODO - Fix*@
 
 @code {
     private Dictionary<string, object?> SizeAttributes

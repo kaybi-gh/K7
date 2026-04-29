@@ -1,9 +1,9 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 
 <i class="@CssClass" aria-hidden="true" @attributes="AdditionalAttributes"></i>
 
 @code {
-    [Parameter] public string Name { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = "";
     [Parameter] public string Size { get; set; } = "";
     [Parameter] public string Color { get; set; } = "";
     [Parameter] public string Class { get; set; } = "";
@@ -16,12 +16,13 @@
             var sizeClass = Size switch
             {
                 "sm" or "small" => "k7-icon--sm",
+                "md" or "medium" => "k7-icon--md",
                 "lg" or "large" => "k7-icon--lg",
                 "xl" or "xlarge" => "k7-icon--xl",
-                _ => ""
+                _ => "k7-icon--md",
             };
             var colorStyle = string.IsNullOrEmpty(Color) ? "" : $"color-{Color}";
-            return string.Join(" ", new[] { Name, "k7-icon", sizeClass, colorStyle, Class }.Where(s => !string.IsNullOrEmpty(s)));
+            return string.Join(" ", new[] { Icon, "k7-icon", sizeClass, colorStyle, Class }.Where(s => !string.IsNullOrEmpty(s)));
         }
     }
 }

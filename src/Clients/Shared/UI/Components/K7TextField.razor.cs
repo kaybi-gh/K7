@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -20,7 +20,7 @@ public partial class K7TextField<TValue> : IDisposable
     [Parameter] public string Variant { get; set; } = "outlined";
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string Adornment { get; set; } = "";
-    [Parameter] public string AdornmentName { get; set; } = "";
+    [Parameter] public string AdornmentIcon { get; set; } = "";
     [Parameter] public EventCallback OnAdornmentClick { get; set; }
     [Parameter] public int DebounceInterval { get; set; }
     [Parameter] public EventCallback<TValue?> OnDebounceIntervalElapsed { get; set; }

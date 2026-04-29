@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using K7.Clients.Shared.Interfaces;
+using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public partial class K7Select<TValue>
+public partial class K7Select<TValue> : IDisposable
 {
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public TValue? Value { get; set; }
     [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
@@ -17,26 +21,107 @@ public partial class K7Select<TValue>
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string Style { get; set; } = "";
 
-    private readonly string _id = $"k7sel-{Guid.NewGuid():N}";
+    private bool _open;
+    private ElementReference _root;
+    private ElementReference _dropdown;
+    private DotNetObjectReference<LayerCloseCallback>? _closeCallbackRef;
+    private readonly List<SelectItemRegistration<TValue>> _items = [];
 
-    private async Task OnChange(ChangeEventArgs e)
+    internal string DisplayText
     {
-        var raw = e.Value?.ToString();
-        if (string.IsNullOrEmpty(raw) && Clearable)
+        get
         {
-            await ValueChanged.InvokeAsync(default);
-            return;
+            if (Value is null)
+                return string.IsNullOrEmpty(Placeholder) ? "" : Placeholder;
+
+            if (ToStringFunc is not null)
+                return ToStringFunc(Value) ?? "";
+
+            var item = _items.FirstOrDefault(i => EqualityComparer<TValue>.Default.Equals(i.Value, Value));
+            if (item?.DisplayText is not null)
+                return item.DisplayText;
+
+            return Value.ToString() ?? "";
         }
+    }
+
+    internal void RegisterItem(SelectItemRegistration<TValue> item)
+    {
+        _items.Add(item);
+    }
+
+    internal void UnregisterItem(SelectItemRegistration<TValue> item)
+    {
+        _items.Remove(item);
+    }
+
+    internal bool IsSelected(TValue? value)
+    {
+        return EqualityComparer<TValue>.Default.Equals(Value, value);
+    }
+
+    internal async Task SelectValueAsync(TValue? value)
+    {
+        await ValueChanged.InvokeAsync(value);
+        await CloseAsync();
+    }
+
+    private async Task Toggle()
+    {
+        if (_open)
+            await CloseAsync();
+        else
+            await OpenAsync();
+    }
+
+    private async Task OpenAsync()
+    {
+        _open = true;
+        StateHasChanged();
+        await Task.Yield();
+        _closeCallbackRef?.Dispose();
+        _closeCallbackRef = DotNetObjectReference.Create(new LayerCloseCallback(OnLayerClosed));
         try
         {
-            var targetType = Nullable.GetUnderlyingType(typeof(TValue)) ?? typeof(TValue);
-            TValue? val;
-            if (targetType.IsEnum)
-                val = (TValue?)Enum.Parse(targetType, raw!);
-            else
-                val = (TValue?)System.Convert.ChangeType(raw, targetType);
-            await ValueChanged.InvokeAsync(val);
+            await SpatialNav.PushLayerAsync(_dropdown, "popover", new SpatialNavLayerOptions
+            {
+                OnClose = _closeCallbackRef
+            });
         }
-        catch { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+        }
     }
+
+    private async Task CloseAsync()
+    {
+        if (!_open) return;
+        _open = false;
+        try
+        {
+            await SpatialNav.PopLayerAsync(_dropdown);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+        }
+        StateHasChanged();
+    }
+
+    private async void OnLayerClosed()
+    {
+        if (!_open) return;
+        _open = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _closeCallbackRef?.Dispose();
+    }
+}
+
+public sealed class SelectItemRegistration<TValue>(TValue? value, string? displayText)
+{
+    public TValue? Value { get; } = value;
+    public string? DisplayText { get; } = displayText;
 }

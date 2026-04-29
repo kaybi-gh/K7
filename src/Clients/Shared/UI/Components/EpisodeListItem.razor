@@ -15,7 +15,7 @@
             else
             {
                 <div class="episode-still-placeholder">
-                    <K7Icon Name="@Phosphor.Circle" Style="font-size: 24px; opacity: 0.3;" />
+                    <K7Icon Icon="@Phosphor.Circle" Style="font-size: 24px; opacity: 0.3;" />
                 </div>
             }
             @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
@@ -30,7 +30,7 @@
                 <p class="text-subtitle2">@(Episode.Title ?? S["Untitled"])</p>
                 @if (Episode.UserState?.IsCompleted == true)
                 {
-                    <K7Icon Name="@Phosphor.CheckCircle" Color="success" Size="sm" />
+                    <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
                 }
             </div>
             <div class="d-flex">
@@ -60,15 +60,20 @@
             <div class="d-flex align-center mt-3">
                 <K7Button Variant="filled"
                            Color="primary"
-                           StartIcon="play"
+                           StartIcon="@Phosphor.Play"
                            OnClick="HandlePlay"
                            Size="sm">
                     @(Episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Resume"] : S["Play"])
                 </K7Button>
                 @if (_fullEpisode?.IndexedFiles is { Count: > 0 })
                 {
-                    <K7Menu Icon="dots-three" Size="sm">
-                        <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@S["IndexedVersions"]</K7MenuItem>
+                    <K7Menu>
+                        <ActivatorContent>
+                            <button type="button" class="k7-icon-btn k7-icon-btn--sm focusable" aria-label="Menu"><i class="ph ph-dots-three"></i></button>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@S["IndexedVersions"]</K7MenuItem>
+                        </ChildContent>
                     </K7Menu>
                 }
             </div>

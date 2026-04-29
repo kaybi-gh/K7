@@ -2,13 +2,14 @@
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
 public partial class K7DialogHost : IDisposable
 {
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     private readonly List<K7DialogEntry> _dialogs = [];
 
@@ -20,21 +21,39 @@ public partial class K7DialogHost : IDisposable
 
     private async Task<IK7DialogReference> HandleShow(K7DialogRequest request)
     {
-        var entry = new K7DialogEntry(request, () => InvokeAsync(StateHasChanged));
+        var entry = new K7DialogEntry(request, () => InvokeAsync(StateHasChanged), OnDialogClosed);
         _dialogs.Add(entry);
         await InvokeAsync(StateHasChanged);
+        await Task.Yield();
+        try
+        {
+            await SpatialNav.PushLayerAsync(entry.BackdropRef, "dialog", new SpatialNavLayerOptions
+            {
+                OnClose = entry.CloseCallback
+            });
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+            // Element not yet rendered
+        }
         return entry;
+    }
+
+    private async void OnDialogClosed(K7DialogEntry entry)
+    {
+        try
+        {
+            await SpatialNav.PopLayerAsync(entry.BackdropRef);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+            // Element already removed
+        }
     }
 
     private void OnBackdropClick(K7DialogEntry entry)
     {
         if (entry.Options?.BackdropClick != false)
-            entry.Cancel();
-    }
-
-    private void OnBackdropKeyDown(KeyboardEventArgs e, K7DialogEntry entry)
-    {
-        if (e.Key == "Escape" && entry.Options?.CloseOnEscapeKey != false)
             entry.Cancel();
     }
 
@@ -55,27 +74,32 @@ public partial class K7DialogHost : IDisposable
     }
 }
 
-internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference
+internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference, IDisposable
 {
     private readonly TaskCompletionSource<K7DialogResult> _tcs = new();
     private readonly Func<Task> _stateChanged;
-    private readonly List<K7DialogEntry> _owner;
+    private readonly Action<K7DialogEntry> _onClosed;
+    private readonly LayerCloseCallback _closeCallbackWrapper;
 
     public Guid Id { get; } = Guid.NewGuid();
     public Type Type { get; }
     public string Title { get; private set; }
     public K7DialogOptions? Options { get; }
     public Dictionary<string, object?> ComponentParameters { get; }
+    public ElementReference BackdropRef { get; set; }
+    public DotNetObjectReference<LayerCloseCallback> CloseCallback { get; }
 
     public Task<K7DialogResult> Result => _tcs.Task;
 
-    public K7DialogEntry(K7DialogRequest request, Func<Task> stateChanged)
+    public K7DialogEntry(K7DialogRequest request, Func<Task> stateChanged, Action<K7DialogEntry> onClosed)
     {
         Type = request.Type;
         Title = request.Title;
         Options = request.Options;
         _stateChanged = stateChanged;
-        _owner = [];
+        _onClosed = onClosed;
+        _closeCallbackWrapper = new LayerCloseCallback(Cancel);
+        CloseCallback = DotNetObjectReference.Create(_closeCallbackWrapper);
 
         ComponentParameters = request.Parameters?.ToDictionary()
             .ToDictionary(k => k.Key, v => v.Value)
@@ -96,6 +120,21 @@ internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference
     {
         if (_tcs.Task.IsCompleted) return;
         _tcs.TrySetResult(result);
+        _onClosed(this);
         _ = _stateChanged();
+    }
+
+    public void Dispose()
+    {
+        CloseCallback.Dispose();
+    }
+}
+
+public sealed class LayerCloseCallback(Action closeAction)
+{
+    [JSInvokable]
+    public void OnLayerClosed()
+    {
+        closeAction();
     }
 }

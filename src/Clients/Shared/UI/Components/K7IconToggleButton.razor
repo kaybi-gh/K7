@@ -1,40 +1,7 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 
-<button type="@Type"
-        class="k7-icon-btn @(Size == "sm" ? "k7-icon-btn--sm" : Size == "lg" ? "k7-icon-btn--lg" : "") @ActiveClass @Class"
-        disabled="@Disabled"
-        aria-label="@(Value ? ActiveAriaLabel ?? AriaLabel : AriaLabel)"
-        aria-pressed="@Value"
-        @onclick="Toggle"
-        @attributes="AdditionalAttributes">
-    @if (Value)
-    {
-        @if (ActiveContent is not null)
-        {
-            @ActiveContent
-        }
-        else if (!string.IsNullOrEmpty(ActiveIcon))
-        {
-            <i class="ph ph-@ActiveIcon"></i>
-        }
-        else if (!string.IsNullOrEmpty(Icon))
-        {
-            <i class="ph ph-@Icon"></i>
-        }
-    }
-    else
-    {
-        @if (InactiveContent is not null)
-        {
-            @InactiveContent
-        }
-        else if (!string.IsNullOrEmpty(Icon))
-        {
-            <i class="ph ph-@Icon"></i>
-        }
-        else if (!string.IsNullOrEmpty(ActiveIcon))
-        {
-            <i class="ph ph-@ActiveIcon"></i>
-        }
-    }
-</button>
+    <K7IconButton Icon="@(Value ? ActiveIcon : Icon)"
+                  Class="@(Value ? $"{Class} {ActiveClass}" : Class)"
+                  Size="@Size" OnClick="Toggle" @attributes="AdditionalAttributes" Disabled="@Disabled"
+                  aria-label="@(Value ? ActiveAriaLabel ?? AriaLabel : AriaLabel)"
+                  aria-pressed="@Value" />
