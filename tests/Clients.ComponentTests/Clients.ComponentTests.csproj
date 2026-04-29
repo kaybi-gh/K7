@@ -16,6 +16,7 @@
         <PackageReference Include="NUnit3TestAdapter" />
         <PackageReference Include="coverlet.collector" />
         <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="NSubstitute" />
     </ItemGroup>
 
     <ItemGroup>
