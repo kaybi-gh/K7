@@ -1,4 +1,4 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 @implements IDisposable
 
 <div class="k7-snackbar-host" aria-live="polite" aria-atomic="false">
@@ -6,11 +6,9 @@
     {
         <div class="k7-toast k7-toast--@msg.Severity.ToString().ToLower()" @key="msg.Id" role="alert">
             <span class="k7-toast-accent" aria-hidden="true"></span>
-            <i class="ph ph-@GetIcon(msg.Severity)"></i>
+            <K7Icon Icon="@GetIcon(msg.Severity)" />
             <span class="k7-toast-msg">@msg.Message</span>
-            <button class="k7-toast-close" type="button" aria-label="Dismiss" @onclick="() => Remove(msg)">
-                <i class="ph ph-x"></i>
-            </button>
+            <K7IconButton Icon="@Phosphor.X" Class="k7-toast-close" aria-label="Dismiss" OnClick="() => Remove(msg)" />
         </div>
     }
 </div>

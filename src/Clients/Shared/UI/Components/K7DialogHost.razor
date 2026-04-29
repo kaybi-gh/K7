@@ -5,8 +5,8 @@
 {
     <div class="k7-dialog-backdrop"
          @key="entry.Id"
-         @onclick="() => OnBackdropClick(entry)"
-         @onkeydown="(e) => OnBackdropKeyDown(e, entry)">
+         @ref="entry.BackdropRef"
+         @onclick="() => OnBackdropClick(entry)">
         <div class="k7-dialog-paper @GetSizeClass(entry.Options?.MaxWidth) @(entry.Options?.FullWidth == true ? "k7-dialog--full" : "")"
              @onclick:stopPropagation="true">
             <div class="k7-dialog-header">

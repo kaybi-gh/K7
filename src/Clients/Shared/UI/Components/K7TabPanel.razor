@@ -1,9 +1,0 @@
-﻿@namespace K7.Clients.Shared.UI.Components
-
-<div class="k7-tab-panel @(Parent?.IsActive(this) == true ? "k7-tab-panel--active" : "") @Class"
-     role="tabpanel">
-    @if (Parent?.IsActive(this) == true)
-    {
-        @ChildContent
-    }
-</div>

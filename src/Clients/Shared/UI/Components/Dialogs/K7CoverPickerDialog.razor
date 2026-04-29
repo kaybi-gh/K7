@@ -2,41 +2,36 @@
 @using Microsoft.AspNetCore.Components.Forms
 
 <div class="k7-dialog-content">
-    <K7Tabs @bind-ActivePanelIndex="_tab">
-        <K7TabPanel Text="@FromMediaText">
-            @if (_pictures.Count == 0)
+    @if (_pictures.Count == 0)
+    {
+        <p class="text-sm text-secondary">@NoPicturesText</p>
+    }
+    else
+    {
+        <div class="cover-picker-grid">
+            @foreach (var pic in _pictures)
             {
-                <p class="text-sm text-secondary">@NoPicturesText</p>
+                var picId = pic.Id;
+                <button type="button"
+                        class="cover-picker-item @(_selectedSourceId == picId ? "selected" : "")"
+                        @onclick="() => _selectedSourceId = picId">
+                    <img src="/api/metadata-pictures/@picId?size=Small" alt="" loading="lazy" />
+                </button>
             }
-            else
-            {
-                <div class="cover-picker-grid">
-                    @foreach (var pic in _pictures)
-                    {
-                        var picId = pic.Id;
-                        <button type="button"
-                                class="cover-picker-item @(_selectedSourceId == picId ? "selected" : "")"
-                                @onclick="() => _selectedSourceId = picId">
-                            <img src="/api/metadata-pictures/@picId?size=Small" alt="" loading="lazy" />
-                        </button>
-                    }
-                </div>
-            }
-        </K7TabPanel>
-        <K7TabPanel Text="@UploadText">
-            <div class="d-flex align-center gap-2">
-                <InputFile OnChange="OnFileSelected" accept="image/*" id="cover-picker-upload" class="visually-hidden" />
-                <label for="cover-picker-upload" class="btn btn--outlined btn--sm">
-                    <K7Icon Name="@Phosphor.Upload" />
-                    @ChooseFileText
-                </label>
-                @if (_file is not null)
-                {
-                    <span class="text-sm text-secondary">@_file.Name</span>
-                }
-            </div>
-        </K7TabPanel>
-    </K7Tabs>
+        </div>
+    }
+    <K7Divider />
+    <div class="d-flex align-center gap-2">
+        <InputFile OnChange="OnFileSelected" accept="image/*" id="cover-picker-upload" class="visually-hidden" />
+        <label for="cover-picker-upload" class="btn btn--outlined btn--sm">
+            <K7Icon Icon="@Phosphor.Upload" />
+            @ChooseFileText
+        </label>
+        @if (_file is not null)
+        {
+            <span class="text-sm text-secondary">@_file.Name</span>
+        }
+    </div>
 </div>
 <div class="k7-dialog-actions">
     <K7Button OnClick="Cancel">@CancelText</K7Button>

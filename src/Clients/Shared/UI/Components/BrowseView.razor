@@ -13,12 +13,12 @@
                 @foreach (var mode in _availableModes)
                 {
                     var m = mode;
-                    <button class="k7-icon-btn" type="button" @onclick="() => SetViewModeAsync(m)" aria-label="@GetModeIcon(m)"><i class="ph ph-@GetModeIcon(m)"></i></button>
+                    <K7IconButton OnClick="() => SetViewModeAsync(m)" AriaLabel="@GetModeIcon(m)" Icon="@GetModeIcon(m)" />
                 }
             }
             @if (_currentMode is BrowseViewMode.Grid)
             {
-                <button class="k7-icon-btn" type="button" @onclick="() => _settingsOpen = !_settingsOpen" aria-label="settings"><i class="ph ph-sliders-horizontal"></i></button>
+                <K7IconButton OnClick="() => _settingsOpen = !_settingsOpen" AriaLabel="settings" Icon="@Phosphor.SlidersHorizontal" />
             }
         </div>
     </div>
@@ -55,7 +55,7 @@
         else
         {
             <div class="d-flex flex-col pa-16">
-                <K7Icon Name=""magnifying-glass"Off" Style="font-size: 64px; opacity: 0.3;" />
+                <K7Icon Icon="@Phosphor.MagnifyingGlass" Style="font-size: 64px; opacity: 0.3;" />
             </div>
         }
     }
@@ -64,7 +64,7 @@
         @switch (_currentMode)
         {
             case BrowseViewMode.Grid when GridTemplate is not null:
-                <div class="browse-view-grid" data-nav-grid="true"
+                <div class="browse-view-grid"
                      style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;"
                      @ref="_gridRef">
                     <Virtualize Items="_rows" Context="row" ItemSize="_estimatedRowHeight" OverscanCount="2">

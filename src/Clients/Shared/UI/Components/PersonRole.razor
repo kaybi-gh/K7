@@ -1,4 +1,4 @@
-﻿@using K7.Shared.Dtos.Entities.PersonRoles
+@using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Shared.Interfaces
 @inject IK7ServerService k7ServerService
 
@@ -19,7 +19,7 @@ else
 {
     <a class="personrole-item-link" href="@("/persons/" + LitePersonRoleDto.Person!.Id)">
         <div class="d-flex flex-col">
-            <K7Avatar Style="height:150px; width:150px;">
+            <K7Avatar Class="focusable" Style="height:150px; width:150px;">
                 @if (LitePersonRoleDto.PortraitPicture is not null)
                 {
                     <K7Image Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="cover" loading="lazy" />

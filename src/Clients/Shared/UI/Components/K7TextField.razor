@@ -1,4 +1,4 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
 
 <div class="k7-field @Class" style="@(string.IsNullOrEmpty(Style) ? null : Style)">
@@ -9,7 +9,7 @@
     @if (Lines > 1)
     {
         <textarea id="@_id"
-                  class="k7-textarea @(_hasError ? "k7-input--error" : "")"
+                  class="k7-textarea focusable @(_hasError ? "k7-input--error" : "")"
                   placeholder="@Placeholder"
                   disabled="@Disabled"
                   readonly="@ReadOnly"
@@ -23,7 +23,7 @@
     {
         <div class="k7-input-wrap">
             <input id="@_id"
-                   class="k7-input @(_hasError ? "k7-input--error" : "") @(!string.IsNullOrEmpty(AdornmentName) ? "k7-input--has-adornment" : "")"
+                   class="k7-input focusable @(_hasError ? "k7-input--error" : "") @(!string.IsNullOrEmpty(AdornmentIcon) ? "k7-input--has-adornment" : "")"
                    type="@Type"
                    placeholder="@Placeholder"
                    disabled="@Disabled"
@@ -32,17 +32,13 @@
                    value="@Value"
                    @oninput="OnInput"
                    @onchange="OnChange" />
-            @if (!string.IsNullOrEmpty(AdornmentName))
+            @if (!string.IsNullOrEmpty(AdornmentIcon))
             {
-                <button type="button" class="k7-input-adornment" @onclick="OnAdornmentClick" tabindex="-1">
-                    <i class="ph ph-@AdornmentName"></i>
-                </button>
+                <K7IconButton Icon="@AdornmentIcon" Class="k7-input-adornment" OnClick="OnAdornmentClick" />
             }
             @if (Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString()))
             {
-                <button type="button" class="k7-input-adornment" @onclick="ClearAsync" tabindex="-1" aria-label="clear">
-                    <i class="ph ph-x"></i>
-                </button>
+                <K7IconButton Icon="@Phosphor.X" Class="k7-input-adornment" OnClick="ClearAsync" AriaLabel="clear" />
             }
         </div>
     }

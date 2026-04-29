@@ -1,4 +1,4 @@
-﻿namespace K7.Clients.Shared.UI.Components;
+namespace K7.Clients.Shared.UI.Components;
 
 public enum K7IconSize
 {
@@ -7,3 +7,4 @@ public enum K7IconSize
     Large,
     XLarge,
 }
+//TODO - Make use of this

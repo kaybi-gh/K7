@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -9,12 +9,6 @@ public partial class K7IconToggleButton
 
     /// <summary>Icon name shown when Value is true. Takes precedence over Icon.</summary>
     [Parameter] public string ActiveIcon { get; set; } = "";
-
-    /// <summary>Custom render fragment shown when Value is true. Takes precedence over ActiveIcon/Icon.</summary>
-    [Parameter] public RenderFragment? ActiveContent { get; set; }
-
-    /// <summary>Custom render fragment shown when Value is false. Takes precedence over Icon.</summary>
-    [Parameter] public RenderFragment? InactiveContent { get; set; }
 
     [Parameter] public bool Value { get; set; }
     [Parameter] public EventCallback<bool> ValueChanged { get; set; }

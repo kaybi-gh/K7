@@ -1,4 +1,4 @@
-﻿namespace K7.Clients.Shared.UI;
+namespace K7.Clients.Shared.UI;
 
 /// <summary>Phosphor icon CSS class constants and variant accessors. Use <c>Phosphor.House</c> for a regular icon, <c>Phosphor.Fill.House</c> for a filled icon.</summary>
 public static class Phosphor

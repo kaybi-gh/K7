@@ -8,6 +8,11 @@
     padding-inline: 16px;
 }
 
+.carousel-wrapper {
+    min-width: 0;
+    max-width: 100vw;
+}
+
 @media (min-width: 601px) {
     ::deep .carousel-item > .media-card.media-card--poster {
         width: 200px !important;

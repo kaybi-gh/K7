@@ -1,7 +1,7 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 
 <button type="button"
-        class="k7-category-card @(!string.IsNullOrEmpty(DominantColor) ? "has-dominant-color" : "") @Class"
+        class="k7-category-card focusable @(!string.IsNullOrEmpty(DominantColor) ? "has-dominant-color" : "") @Class"
         style="--card-gradient-start:@ComputedGradientStart;--card-gradient-end:@ComputedGradientEnd;--card-color:@ComputedColor;--card-icon-color:@IconColor;@Style"
         @onclick="OnClick"
         @attributes="AdditionalAttributes">

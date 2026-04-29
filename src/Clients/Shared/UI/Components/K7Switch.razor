@@ -1,9 +1,10 @@
-﻿@namespace K7.Clients.Shared.UI.Components
+@namespace K7.Clients.Shared.UI.Components
 
-<label class="k7-switch-wrap @Class">
+<label class="k7-switch-wrap focusable @Class" role="switch" aria-checked="@Value" tabindex="0" data-sn-focus-target=".k7-switch-track">
     <input type="checkbox"
            checked="@Value"
            disabled="@Disabled"
+           tabindex="-1"
            @onchange="OnChange" />
     <span class="k7-switch-track">
         <span class="k7-switch-thumb"></span>
