@@ -19,6 +19,7 @@
     /* Text */
     --color-text:          #FFFFFF;
     --color-text-secondary:#AAAAAA;
+    --color-text-muted:    #AAAAAA;
     --color-text-disabled: #666666;
     --color-text-on-accent:#000000;
 
