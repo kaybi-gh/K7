@@ -42,6 +42,14 @@
       ]
     },
     {
+      "provider": "filesystem",
+      "library": "https://raw.githubusercontent.com/luke-chang/js-spatial-navigation/master/spatial_navigation.js",
+      "destination": "wwwroot/lib/js-spatial-navigation",
+      "files": [
+        "spatial_navigation.js"
+      ]
+    },
+    {
       "provider": "jsdelivr",
       "library": "@phosphor-icons/web@2.1.2",
       "destination": "wwwroot/dist/phosphor-icons/",
