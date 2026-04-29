@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
@@ -15,10 +16,13 @@ public partial class MainLayout : IDisposable
 {
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
     private Timer? _overlayTimer;
+    private DotNetObjectReference<MainLayout>? _selfRef;
 
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
 
@@ -65,6 +69,33 @@ public partial class MainLayout : IDisposable
         if (firstRender)
         {
             await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
+            _selfRef = DotNetObjectReference.Create(this);
+            try
+            {
+                await SpatialNav.RegisterHomeEscapeAsync(_selfRef);
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
+    }
+
+    [JSInvokable]
+    public void OnHomeEscapeFirst()
+    {
+        InvokeAsync(() =>
+        {
+            Snackbar.Add("Press Escape again to quit", K7Severity.Normal);
+            StateHasChanged();
+        });
+    }
+
+    [JSInvokable]
+    public void OnHomeEscapeSecond()
+    {
+        if (DeviceService.GetClientType() != ClientType.Web)
+        {
+#if MAUI
+            Microsoft.Maui.Controls.Application.Current?.Quit();
+#endif
         }
     }
 
@@ -98,6 +129,7 @@ public partial class MainLayout : IDisposable
         ThemeService.ThemeOnChange -= OnThemeChanged;
         K7HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
         _overlayTimer?.Dispose();
+        _selfRef?.Dispose();
     }
 
     private void Recover()
