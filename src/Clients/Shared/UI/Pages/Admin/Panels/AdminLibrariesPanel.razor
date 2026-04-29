@@ -1,11 +1,11 @@
-﻿@page "/admin/libraries"
+@page "/admin/libraries"
 @layout AdminLayout
 @inject IStringLocalizer<AdminLibrariesPanel> L
 @inject IStringLocalizer<SharedResource> S
 
 <div class="d-flex align-center justify-between mb-4">
     <h6>@L["Title"]</h6>
-    <K7Button Variant="filled" Color="primary" StartIcon="plus" OnClick="OpenCreateDialog">
+    <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
         @L["NewLibrary"]
     </K7Button>
 </div>
@@ -20,7 +20,7 @@ else if (_libraries == null || _libraries.Count == 0)
         <K7Icon Name="video-camera" Size="lg" Color="secondary" />
         <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
         <p class="text-sm mb-4"  Color="secondary" >@L["EmptyDescription"]</p>
-        <K7Button Variant="filled" Color="primary" StartIcon="plus" OnClick="OpenCreateDialog">
+        <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
             @L["CreateLibrary"]
         </K7Button>
     </K7Paper>

@@ -118,16 +118,16 @@ else
                     </p>
                 }
 
-                <div class="d-flex flex-col py-3 overview-clickable" style="max-width: 800px;" tabindex="0" @onclick="OpenSynopsisDialogAsync" @onkeydown="HandleOverviewKeyDown">
+                <div class="d-flex flex-col py-3 overview-clickable focusable" style="max-width: 800px;" tabindex="0" @onclick="OpenSynopsisDialogAsync" @onkeydown="HandleOverviewKeyDown">
                     <p Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem;">
                         @_movie.Overview
                     </p>
                 </div>
 
-                <div class="d-flex mt-4" data-nav-row>
+                <div class="d-flex mt-4">
                     <K7Button Disabled="@(_movie.IndexedFiles == null || !_movie.IndexedFiles.Any())" 
                                Variant="filled" 
-                               StartIcon="play" 
+                               StartIcon="@Phosphor.Play" 
                                Color="primary" 
                                Size="lg"
                                Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
@@ -140,12 +140,17 @@ else
                         <button type="button" class="k7-icon-btn" aria-label="mark-as-shown"><i class="ph ph-check-circle"></i></button>
                     </AuthorizeView>
 
-                    <K7Menu Icon="dots-three" AriaLabel="more-actions">
-                        <AuthorizeView Roles="Administrator">
-                            <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
-                            <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                        </AuthorizeView>
-                        <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@L["IndexedVersions"]</K7MenuItem>
+                    <K7Menu>
+                        <ActivatorContent>
+                            <button type="button" class="k7-icon-btn focusable" aria-label="more-actions"><i class="ph ph-dots-three"></i></button>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <AuthorizeView Roles="Administrator">
+                                <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
+                                <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                            </AuthorizeView>
+                            <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@L["IndexedVersions"]</K7MenuItem>
+                        </ChildContent>
                     </K7Menu>
                 </div>
                 <K7Icon Style="position: absolute; left: 50%; top: 90vh;" Size="md" Name="caret-down" />

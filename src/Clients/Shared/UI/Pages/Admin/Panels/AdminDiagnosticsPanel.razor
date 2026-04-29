@@ -1,4 +1,4 @@
-﻿@page "/admin/diagnostics"
+@page "/admin/diagnostics"
 @layout AdminLayout
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Diagnostics
@@ -74,11 +74,15 @@
             <div class="d-flex align-center" style="gap: var(--space-1);">
                 @if (_selectedItems.Count > 0 && GetBulkFixAction() is not null)
                 {
-                    <K7Button Size="sm" Variant="filled" Color="primary" StartIcon="wrench" OnClick="BulkFixAsync" Disabled="_isBulkFixing">
+                    <K7Button Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench" OnClick="BulkFixAsync" Disabled="_isBulkFixing">
                         @string.Format(L["FixSelected"], _selectedItems.Count)
                     </K7Button>
                 }
-                <K7Menu Icon="funnel" AriaLabel="@L["FilterBy"]">
+                <K7Menu>
+                    <ActivatorContent>
+                        <button type="button" class="k7-icon-btn focusable" aria-label="@L["FilterBy"]"><i class="ph ph-funnel"></i></button>
+                    </ActivatorContent>
+                    <ChildContent>
                     <K7MenuItem OnClick="ClearFilters">
                         <p class="text-sm">@L["ClearFilters"]</p>
                     </K7MenuItem>
@@ -108,6 +112,7 @@
                             }
                         </K7Select>
                     </K7MenuItem>
+                    </ChildContent>
                 </K7Menu>
                 <button class="k7-icon-btn k7-icon-btn--sm ph ph-arrow-clockwise" type="button"  @onclick="LoadAsync" aria-label="@L["Refresh"]"><i class="k7-icon-btn k7-icon-btn--sm ph ph-arrow-clockwise" ></i></button>
             </div>
@@ -163,13 +168,13 @@
                             <div class="d-flex justify-end" style="gap: var(--space-1);">
                                 @if (context.EntityType == DiagnosticEntityType.Media)
                                 {
-                                    <K7Button Size="sm" Variant="text" Color="primary" StartIcon="arrow-clockwise"
+                                    <K7Button Size="sm" Variant="text" Color="primary" StartIcon="@Phosphor.ArrowClockwise"
                                                OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.RefreshMetadata))">
                                         @L["ActionRefresh"]
                                     </K7Button>
                                     @if (context.MediaUrl is not null)
                                     {
-                                        <K7Button Size="sm" Variant="text" Color="default" StartIcon="arrow-square-out" Href="@context.MediaUrl">
+                                        <K7Button Size="sm" Variant="text" Color="default" StartIcon="@Phosphor.ArrowSquareOut" Href="@context.MediaUrl">
                                             @L["GoToMedia"]
                                         </K7Button>
                                     }
@@ -178,14 +183,14 @@
                                 {
                                     @if (context.Issues.Contains(DiagnosticIssue.MissingFileMetadata))
                                     {
-                                        <K7Button Size="sm" Variant="text" Color="primary" StartIcon="code"
+                                        <K7Button Size="sm" Variant="text" Color="primary" StartIcon="@Phosphor.Code"
                                                    OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.ExtractFileMetadata))">
                                             @L["ActionExtract"]
                                         </K7Button>
                                     }
                                     @if (context.Issues.Contains(DiagnosticIssue.MissingHlsSegments))
                                     {
-                                        <K7Button Size="sm" Variant="text" Color="primary" StartIcon="rows"
+                                        <K7Button Size="sm" Variant="text" Color="primary" StartIcon="@Phosphor.Rows"
                                                    OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.ComputeHlsSegments))">
                                             @L["ActionHls"]
                                         </K7Button>

@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
@@ -6,7 +7,6 @@ using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -19,7 +19,7 @@ public partial class Home : IDisposable
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
-    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
@@ -85,7 +85,11 @@ public partial class Home : IDisposable
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("SpatialNavigation.focusFirst", "[data-carousel-item]");
+            try
+            {
+                await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
+            }
+            catch (InvalidOperationException) { }
         }
     }
 

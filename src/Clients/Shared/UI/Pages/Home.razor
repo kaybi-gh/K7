@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @inject IStringLocalizer<Home> L
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
@@ -59,7 +59,7 @@
         @if (_heroItems.Count == 0 && !hasAnyCarousel)
         {
             <div class="home-empty-state">
-                <K7Icon Name="@Phosphor.FilmSlate" Style="font-size: 64px; opacity: 0.2;" />
+                <K7Icon Icon="@Phosphor.FilmSlate" Style="font-size: 64px; opacity: 0.2;" />
                 <p class="home-empty-state__title">@L["EmptyStateTitle"]</p>
                 <p class="home-empty-state__subtitle">@L["EmptyStateSubtitle"]</p>
             </div>

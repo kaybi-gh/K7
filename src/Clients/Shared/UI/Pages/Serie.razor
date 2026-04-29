@@ -82,11 +82,11 @@ else if (_serie is not null)
                     </p>
                 }
 
-                <div class="d-flex mt-4 serie-actions" data-nav-row>
+                <div class="d-flex mt-4 serie-actions">
                     <div class="d-flex serie-actions-primary">
                         <K7Button Disabled="@(_seasons.Count == 0)"
                                    Variant="filled"
-                                   StartIcon="play"
+                                   StartIcon="@Phosphor.Play"
                                    Color="primary"
                                    Size="lg"
                                    Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
@@ -100,11 +100,16 @@ else if (_serie is not null)
                                 <button type="button" class="k7-icon-btn" aria-label="mark-as-watched"><i class="ph ph-check-circle"></i></button>
                         </AuthorizeView>
 
-                        <K7Menu Icon="dots-three" AriaLabel="more-actions">
-                            <AuthorizeView Roles="Administrator">
-                                <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
-                                <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                            </AuthorizeView>
+                        <K7Menu>
+                            <ActivatorContent>
+                                <button type="button" class="k7-icon-btn focusable" aria-label="more-actions"><i class="ph ph-dots-three"></i></button>
+                            </ActivatorContent>
+                            <ChildContent>
+                                <AuthorizeView Roles="Administrator">
+                                    <K7MenuItem Icon="magnifying-glass" OnClick="OpenMediaReIdentifyDialogAsync">@L["ReIdentify"]</K7MenuItem>
+                                    <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                </AuthorizeView>
+                            </ChildContent>
                         </K7Menu>
                     </div>
                 </div>

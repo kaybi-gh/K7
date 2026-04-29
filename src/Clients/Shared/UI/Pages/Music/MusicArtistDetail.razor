@@ -1,4 +1,4 @@
-﻿@page "/music/artists/{Id}"
+@page "/music/artists/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
@@ -45,7 +45,7 @@
                         </div>
                         <K7Button Variant="text"
                                    Size="sm"
-                                   EndIcon="@(_overviewExpanded ? "caret-up" : "caret-down")"
+                                   EndIcon="@(_overviewExpanded ? Phosphor.CaretUp : Phosphor.CaretDown)"
                                    OnClick="() => _overviewExpanded = !_overviewExpanded">
                             @(_overviewExpanded ? L["ShowLess"] : L["ShowMore"])
                         </K7Button>

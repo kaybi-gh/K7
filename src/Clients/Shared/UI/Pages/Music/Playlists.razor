@@ -17,18 +17,26 @@
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
         <div class="flex-1"></div>
-        <K7Menu Label="@L["Presets"]" Variant="outlined" Color="primary"
-                 StartIcon="lightbulb">
-            <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</K7MenuItem>
-            <K7MenuItem OnClick="() => CreatePreset(Preset.MostPlayed)">@L["PresetMostPlayed"]</K7MenuItem>
-            <K7MenuItem OnClick="() => CreatePreset(Preset.NeverPlayed)">@L["PresetNeverPlayed"]</K7MenuItem>
-            <K7MenuItem OnClick="() => CreatePreset(Preset.HighlyRated)">@L["PresetHighlyRated"]</K7MenuItem>
-            <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">@L["PresetRecentlyPlayed"]</K7MenuItem>
+        <K7Menu>
+            <ActivatorContent>
+                <K7Button Variant="outlined" Color="primary" StartIcon="lightbulb">@L["Presets"]</K7Button>
+            </ActivatorContent>
+            <ChildContent>
+                <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</K7MenuItem>
+                <K7MenuItem OnClick="() => CreatePreset(Preset.MostPlayed)">@L["PresetMostPlayed"]</K7MenuItem>
+                <K7MenuItem OnClick="() => CreatePreset(Preset.NeverPlayed)">@L["PresetNeverPlayed"]</K7MenuItem>
+                <K7MenuItem OnClick="() => CreatePreset(Preset.HighlyRated)">@L["PresetHighlyRated"]</K7MenuItem>
+                <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyPlayed)">@L["PresetRecentlyPlayed"]</K7MenuItem>
+            </ChildContent>
         </K7Menu>
-        <K7Menu Label="@L["NewMenu"]" Variant="filled" Color="primary"
-                 StartIcon="plus">
-            <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
-            <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+        <K7Menu>
+            <ActivatorContent>
+                <K7Button Variant="filled" Color="primary" StartIcon="plus">@L["NewMenu"]</K7Button>
+            </ActivatorContent>
+            <ChildContent>
+                <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
+                <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+            </ChildContent>
         </K7Menu>
     </ToolbarContent>
     <EmptyContent>
