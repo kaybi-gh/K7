@@ -1,34 +1,19 @@
 .rating-stars {
     display: inline-flex;
-    flex-direction: row-reverse;
     align-items: center;
-    gap: 0;
+    gap: 2px;
+    cursor: pointer;
+    user-select: none;
+    padding: 2px;
+    border-radius: var(--radius-sm);
 }
 
-.rating-stars .k7-icon-btn {
-    width: 24px;
-    height: 24px;
+.rating-star {
     font-size: 1rem;
     color: var(--color-text-muted);
-    transition: color var(--duration-fast), transform var(--duration-fast);
-    background: transparent;
+    line-height: 1;
 }
 
-/* Hovered star scales up */
-.rating-stars .k7-icon-btn:hover {
-    color: var(--color-accent);
-    transform: scale(1.2);
-    background: transparent;
-}
-
-/* All DOM-later siblings (visually before in row-reverse) also highlighted */
-.rating-stars .k7-icon-btn:hover ~ .k7-icon-btn {
-    color: var(--color-accent);
-    transform: none;
-    background: transparent;
-}
-
-/* Selected stars: filled + primary color */
-.rating-stars .star--selected {
+.rating-star.star--filled {
     color: var(--color-accent);
 }

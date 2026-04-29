@@ -36,22 +36,20 @@ public partial class FullScreenMusicPlayer : IDisposable
         : null;
 
     private string PlayPauseIcon => Audio.PlaybackState == PlaybackState.Playing
-        ? "pause"
-        : "play";
-
-    private string ShuffleIcon => "shuffle";
+        ? Phosphor.Pause
+        : Phosphor.Play;
 
     private string RepeatIcon => Audio.Repeat switch
     {
-        RepeatMode.One => "repeat-once",
-        _ => "repeat"
+        RepeatMode.One => Phosphor.RepeatOnce,
+        _ => Phosphor.Repeat
     };
 
     private string VolumeIcon => Audio.IsMuted || Audio.Volume <= 0
-        ? "speaker-x"
+        ? Phosphor.SpeakerX
         : Audio.Volume < 0.5
-            ? "speaker-low"
-            : "speaker-high";
+            ? Phosphor.SpeakerLow
+            : Phosphor.SpeakerHigh;
 
     protected override void OnInitialized()
     {
@@ -141,7 +139,7 @@ public partial class FullScreenMusicPlayer : IDisposable
         sb.Append("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'>");
         sb.Append("<path d='");
 
-        // Top half: left to right with smooth cubic Béziers
+        // Top half: left to right with smooth cubic BÃ©ziers
         for (var i = 0; i < count; i++)
         {
             var x = i * step;
@@ -162,7 +160,7 @@ public partial class FullScreenMusicPlayer : IDisposable
             }
         }
 
-        // Bottom half: right to left (mirror) with smooth cubic Béziers
+        // Bottom half: right to left (mirror) with smooth cubic BÃ©ziers
         for (var i = count - 1; i >= 0; i--)
         {
             var x = i * step;

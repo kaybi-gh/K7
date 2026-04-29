@@ -19,13 +19,10 @@
                     @if (currentStillUrl is null)
                     {
                         <div class="nep-card-still-placeholder">
-                            <i class="ph ph-film-slate"></i>
+                            <K7Icon Icon="@Phosphor.FilmSlate" />
                         </div>
                     }
-                    <button class="nep-action-btn" type="button" @onclick="ReplayAsync">
-                        <i class="ph ph-arrow-counter-clockwise"></i>
-                        <span>@L["Replay"]</span>
-                    </button>
+                    <K7Button style="z-index: 1" StartIcon="@Phosphor.ArrowCounterClockwise" OnClick="ReplayAsync">@L["Replay"]</K7Button>
                 </div>
                 @if (currentEp is not null)
                 {
@@ -56,10 +53,7 @@
                         {
                             <div class="nep-countdown">@string.Format(L["AutoPlayIn"], countdown)</div>
                         }
-                        <button class="nep-action-btn nep-action-btn--primary" type="button" @onclick="PlayNextAsync">
-                            <i class="ph ph-play"></i>
-                            <span>@L["PlayNow"]</span>
-                        </button>
+                        <K7Button style="z-index: 1" StartIcon="@Phosphor.Play" OnClick="PlayNextAsync" Color="primary">@L["PlayNow"]</K7Button>
                     </div>
                     <div class="nep-card-info">
                         <span class="nep-card-badge nep-card-badge--accent">@L["NextEpisode"]</span>
@@ -83,6 +77,7 @@
 
         </div>
 
+        <K7Button style="z-index: 1" OnClick="Dismiss" Variant="outlined">@L["Dismiss"]</K7Button>
         <button class="nep-dismiss-btn" type="button" @onclick="Dismiss">@L["Dismiss"]</button>
     </div>
 }

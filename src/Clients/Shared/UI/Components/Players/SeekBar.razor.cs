@@ -24,6 +24,7 @@ public partial class SeekBar : IAsyncDisposable
 
     private double SeekBarWidth = 0;
     private double SeekBarLeft;
+    private DotNetObjectReference<SeekBar>? _dotNetRef;
 
     [Parameter] public EventCallback<bool> OnDragChanged { get; set; }
     [Parameter] public Uri? ThumbnailsUri { get; set; }
@@ -45,6 +46,15 @@ public partial class SeekBar : IAsyncDisposable
         PlayerService.BufferedTimeChanged += OnBufferedTimeChanged;
         _scrubDecayTimer = new System.Timers.Timer(400) { AutoReset = false };
         _scrubDecayTimer.Elapsed += (_, _) => _scrubRepeatCount = 0;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("K7.SeekBar.init", SeekBarRef, _dotNetRef);
+        }
     }
 
     private async Task OnPointerDown(PointerEventArgs e)
@@ -124,63 +134,67 @@ public partial class SeekBar : IAsyncDisposable
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
-        _preventKeyDefault = true;
-        // Android TV WebView sends empty Code for remote keys; fall back to Key
+        _preventKeyDefault = false;
         var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
 
+        if (!_isScrubbing)
+            return;
+
+        switch (code)
+        {
+            case "ArrowLeft":
+                _preventKeyDefault = true;
+                _scrubRepeatCount++;
+                _scrubDecayTimer?.Stop();
+                _scrubDecayTimer?.Start();
+                _scrubTime = Math.Max(0, _scrubTime - GetScrubStep());
+                HoverPercent = _scrubTime / PlayerService.Duration * 100;
+                HoverTime = _scrubTime;
+                break;
+            case "ArrowRight":
+                _preventKeyDefault = true;
+                _scrubRepeatCount++;
+                _scrubDecayTimer?.Stop();
+                _scrubDecayTimer?.Start();
+                _scrubTime = Math.Min(PlayerService.Duration, _scrubTime + GetScrubStep());
+                HoverPercent = _scrubTime / PlayerService.Duration * 100;
+                HoverTime = _scrubTime;
+                break;
+        }
+    }
+
+    [JSInvokable("OnEditStart")]
+    public void OnEditStart()
+    {
+        _isScrubbing = true;
+        _scrubRepeatCount = 0;
+        _scrubTime = PlayerService.CurrentTime;
+        HoverPercent = CurrentPercent;
+        HoverTime = _scrubTime;
+        IsHovering = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable("OnEditCommit")]
+    public void OnEditCommit()
+    {
         if (_isScrubbing)
         {
-            switch (code)
-            {
-                case "ArrowLeft":
-                    _scrubRepeatCount++;
-                    _scrubDecayTimer?.Stop();
-                    _scrubDecayTimer?.Start();
-                    _scrubTime = Math.Max(0, _scrubTime - GetScrubStep());
-                    HoverPercent = _scrubTime / PlayerService.Duration * 100;
-                    HoverTime = _scrubTime;
-                    break;
-                case "ArrowRight":
-                    _scrubRepeatCount++;
-                    _scrubDecayTimer?.Stop();
-                    _scrubDecayTimer?.Start();
-                    _scrubTime = Math.Min(PlayerService.Duration, _scrubTime + GetScrubStep());
-                    HoverPercent = _scrubTime / PlayerService.Duration * 100;
-                    HoverTime = _scrubTime;
-                    break;
-                case "Enter":
-                    PlayerService.Seek(_scrubTime);
-                    _isScrubbing = false;
-                    _scrubRepeatCount = 0;
-                    IsHovering = false;
-                    break;
-                case "Escape":
-                    _isScrubbing = false;
-                    _scrubRepeatCount = 0;
-                    IsHovering = false;
-                    break;
-                default:
-                    _preventKeyDefault = false;
-                    break;
-            }
+            PlayerService.Seek(_scrubTime);
         }
-        else
-        {
-            switch (code)
-            {
-                case "Enter":
-                    _isScrubbing = true;
-                    _scrubRepeatCount = 0;
-                    _scrubTime = PlayerService.CurrentTime;
-                    HoverPercent = CurrentPercent;
-                    HoverTime = _scrubTime;
-                    IsHovering = true;
-                    break;
-                default:
-                    _preventKeyDefault = false;
-                    break;
-            }
-        }
+        _isScrubbing = false;
+        _scrubRepeatCount = 0;
+        IsHovering = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable("OnEditCancel")]
+    public void OnEditCancel()
+    {
+        _isScrubbing = false;
+        _scrubRepeatCount = 0;
+        IsHovering = false;
+        InvokeAsync(StateHasChanged);
     }
 
     private void OnFocus(FocusEventArgs e)
@@ -264,13 +278,23 @@ public partial class SeekBar : IAsyncDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         _scrubDecayTimer?.Dispose();
+        if (_dotNetRef is not null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("K7.SeekBar.dispose", SeekBarRef);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+            _dotNetRef.Dispose();
+        }
         PlayerService.DurationChanged -= OnDurationChanged;
         PlayerService.CurrentTimeChanged -= OnCurrentTimeChanged;
         PlayerService.BufferedTimeChanged -= OnBufferedTimeChanged;
-        return ValueTask.CompletedTask;
     }
 
     public class Chapter

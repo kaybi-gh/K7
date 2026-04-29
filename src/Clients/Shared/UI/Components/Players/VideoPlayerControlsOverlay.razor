@@ -1,4 +1,4 @@
-﻿@using K7.Clients.Shared.Models
+@using K7.Clients.Shared.Models
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
 @using Microsoft.JSInterop
@@ -10,6 +10,7 @@
 @inject IDeviceService DeviceService
 @inject IBrightnessService BrightnessService
 @inject IVolumeService VolumeService
+@inject K7.Clients.Shared.Interfaces.ISpatialNavService SpatialNav
 @inject IStringLocalizer<VideoPlayerControlsOverlay> L
 
 <div class="video-controls-overlay" tabindex="0" @ref="_overlayRef"
@@ -22,20 +23,18 @@
      style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
 
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
-        <button class="k7-icon-btn" type="button" @onclick="OnCloseButtonClick" aria-label="Close"><i class="ph ph-x"></i></button>
+        <K7IconButton Icon="@Phosphor.X" OnClick="OnCloseButtonClick" AriaLabel="Close" />
     </div>
 
     <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <div style="width:100%; display:flex; align-items:center; gap:0.5rem;">
             <div style="display:flex; align-items:center; flex-shrink:0;">
-                <button type="button" class="k7-icon-btn" @onclick="TogglePlayPause" aria-label="">
-                    <i class="ph ph-@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? "play" : "pause")"></i>
-                </button>
+                <K7IconButton Icon="@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? Phosphor.Play : Phosphor.Pause)" OnClick="TogglePlayPause" AriaLabel="Play pause" />
 
                 @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
                 {
                     <div class="volume-control" @onmouseover="OnVolumeSliderMouseOver" @onmouseout="OnVolumeSliderMouseOut">
-                        <button class="k7-icon-btn" type="button" @onclick="ToggleIsMuted" aria-label="Volume"><i class="ph ph-@GetVolumeIcon()"></i></button>
+                        <K7IconButton Icon="@GetVolumeIcon()" OnClick="ToggleIsMuted" AriaLabel="Volume" />
                         @if (_isVolumeSliderVisible)
                         {
                             <div class="volume-slider-popover">
@@ -59,11 +58,19 @@
             </div>
 
             <div style="display:flex; align-items:center; flex-shrink:0;">
-                <K7Menu Icon="gear" Class="k7-menu--upward"
-                @bind-Open="_isMenuOpen" Color="inherit">
+                <K7Menu Class="k7-menu--upward"
+                @bind-Open="_isMenuOpen">
+                    <ActivatorContent>
+                        <K7IconButton Icon="@Phosphor.Gear" AriaLabel="Settings" />
+                    </ActivatorContent>
+                    <ChildContent>
                         @if (PlayerService.AudioTracks.Count > 1)
                         {
-                        <K7Menu Label="@L["Audio"]" StartIcon="speaker-high">
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.SpeakerHigh">@L["Audio"]</K7Button>
+                            </ActivatorContent>
+                            <ChildContent>
                             @foreach (var track in PlayerService.AudioTracks)
                             {
                                 <K7MenuItem OnClick="@(() => OnAudioTrackSelected(track))"
@@ -71,12 +78,17 @@
                                     @($"{track.Language} - {track.Name} ({track.Codec} {track.ChannelLayout})")
                                 </K7MenuItem>
                             }
+                            </ChildContent>
                         </K7Menu>
                         }
 
                         @if (PlayerService.SubtitleTracks.Count > 0)
                         {
-                        <K7Menu Label="@L["Subtitles"]" StartIcon="subtitles">
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.Subtitles">@L["Subtitles"]</K7Button>
+                            </ActivatorContent>
+                            <ChildContent>
                             <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
                                          Icon="@(PlayerService.SelectedSubtitleTrack is null ? "check-circle" : null)">
                                 @L["SubtitlesOff"]
@@ -88,12 +100,17 @@
                                     @($"{track.Language} - {track.Name}{(track.IsForced ? L["ForcedSuffix"] : "")} ({track.Codec})")
                                 </K7MenuItem>
                             }
+                            </ChildContent>
                         </K7Menu>
                         }
 
                         @if (PlayerService.AvailableQualities.Count > 1)
                         {
-                        <K7Menu Label="@L["Quality"]" StartIcon="sliders-horizontal">
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.SlidersHorizontal">@L["Quality"]</K7Button>
+                            </ActivatorContent>
+                            <ChildContent>
                             @foreach (var quality in PlayerService.AvailableQualities)
                             {
                                 <K7MenuItem OnClick="@(() => OnQualitySelected(quality))"
@@ -101,10 +118,15 @@
                                     @quality.Label
                                 </K7MenuItem>
                             }
+                            </ChildContent>
                         </K7Menu>
                         }
 
-                        <K7Menu Label="@L["Speed"]" StartIcon="gauge">
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.Gauge">@L["Speed"]</K7Button>
+                            </ActivatorContent>
+                            <ChildContent>
                             @foreach (var speed in _playbackSpeedOptions)
                             {
                                 <K7MenuItem OnClick="@(() => OnSpeedSelected(speed))"
@@ -112,9 +134,14 @@
                                     @(speed == 1.0 ? L["SpeedNormal"] : $"{speed}x")
                                 </K7MenuItem>
                             }
+                            </ChildContent>
                         </K7Menu>
 
-                        <K7Menu Label="@L["AspectRatio"]" StartIcon="frame-corners">
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.FrameCorners">@L["AspectRatio"]</K7Button>
+                            </ActivatorContent>
+                            <ChildContent>
                             @foreach (var mode in _aspectRatioOptions)
                             {
                                 <K7MenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
@@ -122,14 +149,14 @@
                                     @GetAspectRatioLabel(mode)
                                 </K7MenuItem>
                             }
+                            </ChildContent>
                         </K7Menu>
+                    </ChildContent>
                     </K7Menu>
 
                     @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
                     {
-                        <button class="k7-icon-btn" type="button" @onclick="ToggleFullscreen" aria-label="">
-                            <i class="ph ph-@(PlayerService.IsFullScreen ? "corners-in" : "corners-out")"></i>
-                        </button>
+                        <K7IconButton Icon="@(PlayerService.IsFullScreen ? Phosphor.CornersIn : Phosphor.CornersOut)" OnClick="ToggleFullscreen" AriaLabel="Toggle fullscreen" />
                     }
                 </div>
         </div>
@@ -261,14 +288,18 @@
         if (firstRender)
         {
             _dotNetRef = DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("K7.registerVideoOverlay", _dotNetRef);
+            try
+            {
+                await SpatialNav.PushLayerAsync(_overlayRef, "overlay");
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
             await _overlayRef.FocusAsync();
         }
     }
 
     private void OnKeyDown(KeyboardEventArgs e)
     {
-        // preventDefault is handled in JS capture phase (spatial-navigation.js)
+        // preventDefault for arrows is handled in JS capture phase (navigation.js)
         // to avoid Blazor render-cycle lag blocking Enter click synthesis on MAUI.
         // Android TV WebView sends empty Code for remote keys; fall back to Key.
         var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
@@ -281,13 +312,11 @@
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
-                // Menu/submenu escape is handled by JS (spatial-navigation.js capture handler).
+                // Menu/submenu escape is handled by JS (navigation.js capture handler).
                 if (_isMenuOpen) return;
                 if (_showOverlay)
                 {
-                    _showOverlay = false;
-                    _overlayVisibleTimer?.Stop();
-                    _ = _overlayRef.FocusAsync();
+                    HideOverlay();
                 }
                 else
                 {
@@ -316,9 +345,7 @@
             switch (code)
             {
                 case "Enter":
-                    _showOverlay = true;
-                    ResetOverlayTimeout(TimeSpan.FromSeconds(5));
-                    _ = FocusByDirectionAsync("first");
+                    ShowOverlay();
                     return;
                 case "ArrowLeft":
                     AccumulateSeek(-10);
@@ -334,27 +361,21 @@
                     return;
             }
         }
-        else
-        {
-            // Overlay visible: arrows navigate between focusable controls
-            switch (code)
-            {
-                case "ArrowLeft" or "ArrowUp":
-                    _ = FocusByDirectionAsync("prev");
-                    ResetOverlayTimeout();
-                    return;
-                case "ArrowRight" or "ArrowDown":
-                    _ = FocusByDirectionAsync("next");
-                    ResetOverlayTimeout();
-                    return;
-            }
-        }
+        // When overlay is visible, JS handles arrow navigation between controls.
     }
 
-    private async Task FocusByDirectionAsync(string direction)
+    private void ShowOverlay()
     {
-        await Task.Yield();
-        await JSRuntime.InvokeVoidAsync("K7.focusDirection", _overlayRef, direction);
+        _showOverlay = true;
+        ResetOverlayTimeout(TimeSpan.FromSeconds(5));
+        _ = SpatialNav.FocusFirstAsync();
+    }
+
+    private void HideOverlay()
+    {
+        _showOverlay = false;
+        _overlayVisibleTimer?.Stop();
+        _ = _overlayRef.FocusAsync();
     }
 
     private void AccumulateSeek(double offset)
@@ -404,7 +425,7 @@
             try
             {
                 if (_isMenuOpen || _isSeeking) return;
-                var focusInChild = await JSRuntime.InvokeAsync<bool>("K7.isFocusInOverlayChild", _overlayRef);
+                var focusInChild = await SpatialNav.IsFocusInsideAsync(_overlayRef);
                 if (focusInChild) return;
                 _showOverlay = false;
                 StateHasChanged();
@@ -798,15 +819,15 @@
     {
         if (PlayerService.IsMuted)
         {
-            return "speaker-x";
+            return Phosphor.SpeakerX;
         }
 
         return PlayerService.Volume switch
         {
-            0 => "speaker-none",
-            < 0.5d => "speaker-low",
-            >= 0.5d => "speaker-high",
-            _ => "speaker-none"
+            0 => Phosphor.SpeakerNone,
+            < 0.5d => Phosphor.SpeakerLow,
+            >= 0.5d => Phosphor.SpeakerHigh,
+            _ => Phosphor.SpeakerNone
         };
     }
 
@@ -829,7 +850,7 @@
         _tapDelayTimer?.Dispose();
         BrightnessService.ResetBrightness();
         _dotNetRef?.Dispose();
-        try { await JSRuntime.InvokeVoidAsync("K7.unregisterVideoOverlay"); }
+        try { await SpatialNav.PopLayerAsync(_overlayRef); }
         catch (JSException) { }
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         PlayerService.IsMutedChanged -= OnIsMutedChanged;

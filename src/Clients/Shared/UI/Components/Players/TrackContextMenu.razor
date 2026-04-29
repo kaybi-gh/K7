@@ -8,7 +8,11 @@
 @inject IStringLocalizer<SharedResource> S
 
 <span @onclick:stopPropagation="true">
-    <K7Menu Icon="dots-three-vertical" Size="sm">
+    <K7Menu>
+        <ActivatorContent>
+            <button type="button" class="k7-icon-btn k7-icon-btn--sm focusable" aria-label="Menu"><i class="ph ph-dots-three-vertical"></i></button>
+        </ActivatorContent>
+        <ChildContent>
         <K7MenuItem Icon="play-circle" OnClick="PlayNext">@L["PlayNext"]</K7MenuItem>
         <K7MenuItem Icon="queue" OnClick="AddToQueue">@L["AddToQueue"]</K7MenuItem>
         @if (_canCreatePlaylist)
@@ -25,5 +29,6 @@
         {
             <K7MenuItem Icon="broadcast" OnClick="RadioGenre">@string.Format(L["RadioGenre"], Track.Genre)</K7MenuItem>
         }
+        </ChildContent>
     </K7Menu>
 </span>

@@ -1,6 +1,7 @@
 @using System.Globalization
 
-<div class="seekbar-container @(_isScrubbing ? "scrubbing" : "")" tabindex="0" role="slider"
+<div class="seekbar-container focusable @(_isScrubbing ? "scrubbing" : "")" tabindex="0" role="slider"
+     data-sn-activatable
      aria-valuemin="0" aria-valuemax="@PlayerService.Duration.ToString(CultureInfo.InvariantCulture)"
      aria-valuenow="@PlayerService.CurrentTime.ToString(CultureInfo.InvariantCulture)"
      aria-label="Seek"
