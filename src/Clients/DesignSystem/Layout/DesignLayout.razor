@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager Nav
 
@@ -9,13 +9,13 @@
 <div class="ds-shell">
     <nav class="ds-nav">
         <div class="ds-nav-logo">
-            <K7Icon Name="@Phosphor.Hurricane" Size="lg" />
+            <K7Icon Icon="@Phosphor.Hurricane" Size="lg" />
             <span>K7 Design System</span>
         </div>
         <ul class="ds-nav-links">
-            <li><NavLink href="/" Match="NavLinkMatch.All"><K7Icon Name="@Phosphor.House" />Overview</NavLink></li>
-            <li><NavLink href="/tokens"><K7Icon Name="@Phosphor.Palette" />Tokens</NavLink></li>
-            <li><NavLink href="/components"><K7Icon Name="@Phosphor.SquaresFour" />Components</NavLink></li>
+            <li><NavLink href="/" Match="NavLinkMatch.All"><K7Icon Icon="@Phosphor.House" />Overview</NavLink></li>
+            <li><NavLink href="/tokens"><K7Icon Icon="@Phosphor.Palette" />Tokens</NavLink></li>
+            <li><NavLink href="/components"><K7Icon Icon="@Phosphor.SquaresFour" />Components</NavLink></li>
             @if (page == "components")
             {
                 <ul class="ds-nav-sub">
@@ -37,7 +37,6 @@
                     <li><a href="/components#k7-select">K7Select</a></li>
                     <li><a href="/components#k7-slider">K7Slider</a></li>
                     <li><a href="/components#k7-switch">K7Switch</a></li>
-                    <li><a href="/components#k7-tabs">K7Tabs</a></li>
                     <li><a href="/components#k7-expansion">K7ExpansionPanel</a></li>
                     <li><a href="/components#k7-table">K7Table</a></li>
                     <li><a href="/components#k7-menu">K7Menu</a></li>
@@ -54,7 +53,7 @@
                     <li><a href="/components#splash">Splash</a></li>
                 </ul>
             }
-            <li><NavLink href="/players"><K7Icon Name="@Phosphor.PlayCircle" />Players</NavLink></li>
+            <li><NavLink href="/players"><K7Icon Icon="@Phosphor.PlayCircle" />Players</NavLink></li>
             @if (page == "players")
             {
                 <ul class="ds-nav-sub">
@@ -68,7 +67,7 @@
                     <li><a href="/players#next-episode">NextEpisodeOverlay</a></li>
                 </ul>
             }
-            <li><NavLink href="/layout"><K7Icon Name="@Phosphor.AppWindow" />Layout</NavLink></li>
+            <li><NavLink href="/layout"><K7Icon Icon="@Phosphor.AppWindow" />Layout</NavLink></li>
             @if (page == "layout")
             {
                 <ul class="ds-nav-sub">
@@ -79,7 +78,7 @@
                     <li><a href="/layout#css-vars">CSS variables</a></li>
                 </ul>
             }
-            <li><NavLink href="/dialogs"><K7Icon Name="@Phosphor.Layout" />Dialogs</NavLink></li>
+            <li><NavLink href="/dialogs"><K7Icon Icon="@Phosphor.Layout" />Dialogs</NavLink></li>
             @if (page == "dialogs")
             {
                 <ul class="ds-nav-sub">

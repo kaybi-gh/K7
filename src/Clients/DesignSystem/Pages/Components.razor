@@ -16,10 +16,10 @@
     <section id="k7-alert" class="ds-section">
         <h2>K7Alert</h2>
         <div class="ds-preview ds-preview--column">
-            <K7Alert Severity="K7Severity.Info">This is an informational alert.</K7Alert>
-            <K7Alert Severity="K7Severity.Success">Operation completed successfully.</K7Alert>
-            <K7Alert Severity="K7Severity.Warning">Please review this warning.</K7Alert>
-            <K7Alert Severity="K7Severity.Error">An error occurred.</K7Alert>
+            <K7Alert Severity="K7Severity.Info" Icon="@Phosphor.Info">This is an informational alert.</K7Alert>
+            <K7Alert Severity="K7Severity.Success" Icon="@Phosphor.CheckCircle">Operation completed successfully.</K7Alert>
+            <K7Alert Severity="K7Severity.Warning" Icon="@Phosphor.WarningCircle">Please review this warning.</K7Alert>
+            <K7Alert Severity="K7Severity.Error" Icon="@Phosphor.ExclamationMark">An error occurred.</K7Alert>
             <K7Alert Severity="K7Severity.Info" NoIcon="true">Alert without icon.</K7Alert>
         </div>
     </section>
@@ -38,7 +38,7 @@
             <K7Button Disabled="true">Disabled</K7Button>
             <K7Button Size="sm">Small</K7Button>
             <K7Button Size="lg">Large</K7Button>
-            <K7Button StartIcon="plus">With Icon</K7Button>
+            <K7Button StartIcon="@Phosphor.Plus">With Icon</K7Button>
         </div>
     </section>
 
@@ -60,34 +60,34 @@
 
         <h3>Icons</h3>
         <div class="ds-preview">
-            <K7Icon Name="@Phosphor.House" />
-            <K7Icon Name="@Phosphor.PlayCircle" />
-            <K7Icon Name="@Phosphor.MusicNote" />
-            <K7Icon Name="@Phosphor.FilmStrip" />
-            <K7Icon Name="@Phosphor.Television" />
-            <K7Icon Name="@Phosphor.Gear" />
-            <K7Icon Name="@Phosphor.MagnifyingGlass" />
-            <K7Icon Name="@Phosphor.Star" />
-            <K7Icon Name="@Phosphor.Heart" />
-            <K7Icon Name="@Phosphor.Bell" />
+            <K7Icon Icon="@Phosphor.House" />
+            <K7Icon Icon="@Phosphor.PlayCircle" />
+            <K7Icon Icon="@Phosphor.MusicNote" />
+            <K7Icon Icon="@Phosphor.FilmStrip" />
+            <K7Icon Icon="@Phosphor.Television" />
+            <K7Icon Icon="@Phosphor.Gear" />
+            <K7Icon Icon="@Phosphor.MagnifyingGlass" />
+            <K7Icon Icon="@Phosphor.Star" />
+            <K7Icon Icon="@Phosphor.Heart" />
+            <K7Icon Icon="@Phosphor.Bell" />
         </div>
 
         <h3>Sizes</h3>
         <div class="ds-preview ds-preview--align-end">
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.House" Size="sm" />
+                <K7Icon Icon="@Phosphor.House" Size="sm" />
                 <span class="ds-label">sm</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.House" />
+                <K7Icon Icon="@Phosphor.House" />
                 <span class="ds-label">md</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.House" Size="lg" />
+                <K7Icon Icon="@Phosphor.House" Size="lg" />
                 <span class="ds-label">lg</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.House" Size="xl" />
+                <K7Icon Icon="@Phosphor.House" Size="xl" />
                 <span class="ds-label">xl</span>
             </div>
         </div>
@@ -95,27 +95,27 @@
         <h3>Variants</h3>
         <div class="ds-preview">
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.House" Size="lg" />
+                <K7Icon Icon="@Phosphor.House" Size="lg" />
                 <span class="ds-label">Regular</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.Fill.House" Size="lg" />
+                <K7Icon Icon="@Phosphor.Fill.House" Size="lg" />
                 <span class="ds-label">Fill</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.Bold.House" Size="lg" />
+                <K7Icon Icon="@Phosphor.Bold.House" Size="lg" />
                 <span class="ds-label">Bold</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.Thin.House" Size="lg" />
+                <K7Icon Icon="@Phosphor.Thin.House" Size="lg" />
                 <span class="ds-label">Thin</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.Light.House" Size="lg" />
+                <K7Icon Icon="@Phosphor.Light.House" Size="lg" />
                 <span class="ds-label">Light</span>
             </div>
             <div class="ds-labeled-item">
-                <K7Icon Name="@Phosphor.Duotone.House" Size="lg" />
+                <K7Icon Icon="@Phosphor.Duotone.House" Size="lg" />
                 <span class="ds-label">Duotone</span>
             </div>
         </div>
@@ -175,23 +175,23 @@
     <section id="k7-fab-button" class="ds-section">
         <h2>K7FabButton</h2>
         <div class="ds-preview">
-            <K7FabButton Icon="plus" AriaLabel="Add" />
-            <K7FabButton Icon="pencil-simple" AriaLabel="Edit" Color="surface" />
-            <K7FabButton Icon="trash" AriaLabel="Delete" Color="error" />
-            <K7FabButton Icon="play" AriaLabel="Play" Size="sm" />
-            <K7FabButton Icon="plus" AriaLabel="Add large" Size="lg" />
+            <K7FabButton Icon="@Phosphor.Plus" AriaLabel="Add" />
+            <K7FabButton Icon="@Phosphor.PencilSimple" AriaLabel="Edit" Color="surface" />
+            <K7FabButton Icon="@Phosphor.Trash" AriaLabel="Delete" Color="error" />
+            <K7FabButton Icon="@Phosphor.Play" AriaLabel="Play" Size="sm" />
+            <K7FabButton Icon="@Phosphor.Plus" AriaLabel="Add large" Size="lg" />
         </div>
     </section>
 
     <section id="k7-icon-button" class="ds-section">
         <h2>K7IconButton</h2>
         <div class="ds-preview">
-            <K7IconButton Icon="house" AriaLabel="Home" />
-            <K7IconButton Icon="gear" AriaLabel="Settings" />
-            <K7IconButton Icon="heart" AriaLabel="Like" Color="primary" />
-            <K7IconButton Icon="trash" AriaLabel="Delete" Color="error" />
-            <K7IconButton Icon="magnifying-glass" AriaLabel="Search" Size="sm" />
-            <K7IconButton Icon="play-circle" AriaLabel="Play" Size="lg" />
+            <K7IconButton Icon="@Phosphor.House" AriaLabel="Home" />
+            <K7IconButton Icon="@Phosphor.Gear" AriaLabel="Settings" />
+            <K7IconButton Icon="@Phosphor.Heart" AriaLabel="Like" Color="primary" />
+            <K7IconButton Icon="@Phosphor.Trash" AriaLabel="Delete" Color="error" />
+            <K7IconButton Icon="@Phosphor.MagnifyingGlass" AriaLabel="Search" Size="sm" />
+            <K7IconButton Icon="@Phosphor.PlayCircle" AriaLabel="Play" Size="lg" />
         </div>
     </section>
 
@@ -199,19 +199,16 @@
         <h2>K7IconToggleButton</h2>
         <p class="ds-description">Toggle button with distinct icons for each state. Binds to a boolean value.</p>
         <div class="ds-preview">
-            <K7IconToggleButton Icon="heart" ActiveIcon="heart-fill"
+            <K7IconToggleButton Icon="@Phosphor.Heart" ActiveIcon="@Phosphor.Fill.Heart"
                                 @bind-Value="_liked"
                                 AriaLabel="Like" ActiveAriaLabel="Unlike" />
-            <K7IconToggleButton Icon="speaker-slash" ActiveIcon="speaker-high"
+            <K7IconToggleButton Icon="@Phosphor.SpeakerSlash" ActiveIcon="@Phosphor.SpeakerHigh"
                                 @bind-Value="_muted"
                                 AriaLabel="Unmute" ActiveAriaLabel="Mute" />
-            <K7IconToggleButton Icon="star" ActiveIcon="star-fill"
+            <K7IconToggleButton Icon="@Phosphor.Star" ActiveIcon="@Phosphor.Fill.Star"
                                 @bind-Value="_starred"
                                 AriaLabel="Star" ActiveAriaLabel="Unstar" />
-            <K7IconToggleButton @bind-Value="_custom" AriaLabel="Toggle">
-                <InactiveContent><K7Icon Name="@Phosphor.Heart" /></InactiveContent>
-                <ActiveContent><K7Icon Name="@Phosphor.Fill.Heart" /></ActiveContent>
-            </K7IconToggleButton>
+            <K7IconToggleButton @bind-Value="_custom" AriaLabel="Toggle" Icon="@Phosphor.Heart" ActiveIcon="@Phosphor.Fill.Heart" />
         </div>
         <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--spacing-2)">
             Liked: @_liked | Muted: @_muted | Starred: @_starred | Custom: @_custom
@@ -248,6 +245,8 @@
             <K7TextField TValue="string" Label="With placeholder" Placeholder="Enter value..." @bind-Value="_text2" />
             <K7TextField TValue="string" Label="Disabled" Value="@("Disabled value")" Disabled="@true" />
             <K7TextField TValue="string" Label="Password" Type="password" @bind-Value="_text4" />
+            <K7TextField TValue="string" Label="With adornment" Placeholder="Search..." @bind-Value="_textAdornment" AdornmentIcon="@Phosphor.MagnifyingGlass" />
+            <K7TextField TValue="string" Label="Clearable" Placeholder="Type something..." @bind-Value="_textClearable" Clearable="true" />
         </div>
     </section>
 
@@ -298,26 +297,6 @@
         </div>
     </section>
 
-    <section id="k7-tabs" class="ds-section">
-        <h2>K7Tabs</h2>
-        <div class="ds-preview ds-preview--block">
-            <K7Tabs @bind-ActivePanelIndex="_activeTab">
-                <K7TabPanel Text="Overview">
-                    <p style="padding:var(--spacing-4)">Overview tab content. Navigate to other tabs.</p>
-                </K7TabPanel>
-                <K7TabPanel Text="Details">
-                    <p style="padding:var(--spacing-4)">Details tab with more information.</p>
-                </K7TabPanel>
-                <K7TabPanel Text="Cast">
-                    <p style="padding:var(--spacing-4)">Cast &amp; crew information.</p>
-                </K7TabPanel>
-                <K7TabPanel Text="Files">
-                    <p style="padding:var(--spacing-4)">File and codec details.</p>
-                </K7TabPanel>
-            </K7Tabs>
-        </div>
-    </section>
-
     <section id="k7-expansion" class="ds-section">
         <h2>K7ExpansionPanel</h2>
         <div class="ds-preview ds-preview--block">
@@ -358,19 +337,29 @@
     <section id="k7-menu" class="ds-section">
         <h2>K7Menu</h2>
         <div class="ds-preview">
-            <K7Menu Icon="dots-three-vertical" AriaLabel="Options">
-                <K7MenuItem Icon="pencil-simple">Edit</K7MenuItem>
-                <K7MenuItem Icon="share-network">Share</K7MenuItem>
-                <K7MenuItem Icon="plus">Add to queue</K7MenuItem>
-                <K7MenuItem Icon="playlist">Add to playlist</K7MenuItem>
-                <K7MenuItem Icon="trash" Class="color-error">Delete</K7MenuItem>
+            <K7Menu>
+                <ActivatorContent>
+                    <button type="button" class="k7-icon-btn focusable" aria-label="Options"><i class="ph ph-dots-three-vertical"></i></button>
+                </ActivatorContent>
+                <ChildContent>
+                    <K7MenuItem Icon="pencil-simple">Edit</K7MenuItem>
+                    <K7MenuItem Icon="share-network">Share</K7MenuItem>
+                    <K7MenuItem Icon="plus">Add to queue</K7MenuItem>
+                    <K7MenuItem Icon="playlist">Add to playlist</K7MenuItem>
+                    <K7MenuItem Icon="trash" Class="color-error">Delete</K7MenuItem>
+                </ChildContent>
             </K7Menu>
 
-            <K7Menu Label="Sort by" Icon="sort-ascending">
-                <K7MenuItem>Title</K7MenuItem>
-                <K7MenuItem>Artist</K7MenuItem>
-                <K7MenuItem>Year</K7MenuItem>
-                <K7MenuItem>Rating</K7MenuItem>
+            <K7Menu>
+                <ActivatorContent>
+                    <K7Button StartIcon="sort-ascending">Sort by</K7Button>
+                </ActivatorContent>
+                <ChildContent>
+                    <K7MenuItem>Title</K7MenuItem>
+                    <K7MenuItem>Artist</K7MenuItem>
+                    <K7MenuItem>Year</K7MenuItem>
+                    <K7MenuItem>Rating</K7MenuItem>
+                </ChildContent>
             </K7Menu>
         </div>
     </section>
@@ -599,15 +588,12 @@
     private bool _custom;
 
     // Forms
-    private string? _text1, _text2, _text4;
+    private string? _text1, _text2, _text4, _textAdornment, _textClearable;
     private string? _genre, _genre2;
     private double _volume = 70;
     private double _brightness = 100;
     private bool _switch1 = true;
     private bool _switch2;
-
-    // Complex
-    private int _activeTab;
 
     private readonly List<TrackRow> _tracks =
     [
