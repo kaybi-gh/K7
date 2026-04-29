@@ -3,13 +3,26 @@
 
 @if (_canRate)
 {
-    <span class="rating-stars" @onclick:stopPropagation="true">
-        @for (int i = 5; i >= 1; i--)
+    <span @ref="_element"
+          class="rating-stars focusable"
+          role="slider"
+          data-sn-activatable
+          aria-valuemin="0"
+          aria-valuemax="5"
+          aria-valuenow="@StarCount"
+          aria-label="Rating"
+          tabindex="0"
+          @onclick:stopPropagation="true"
+          @onkeydown="HandleKeyDown">
+        @for (int i = 1; i <= 5; i++)
         {
             var star = i;
-            <button class="k7-icon-btn @(star <= StarCount ? "star--selected" : "")" type="button" @onclick="() => OnStarClick(star)" aria-label="">
-                <i class="@(star <= StarCount ? "ph-fill ph-star" : "ph ph-star")"></i>
-            </button>
+            <span class="rating-star @(IsFilled(star) ? "star--filled" : "")"
+                  @onclick="() => OnStarClick(star)"
+                  @onpointerover="() => OnPointerOver(star)"
+                  @onpointerout="OnPointerOut">
+                <K7Icon Icon="@(IsFilled(star) ? Phosphor.Fill.Star : Phosphor.Star)" />
+            </span>
         }
     </span>
 }

@@ -1,4 +1,4 @@
-﻿@using K7.Shared
+@using K7.Shared
 
 @if (_lines.Count > 0)
 {
@@ -9,7 +9,7 @@
             var isActive = i == _activeIndex;
             var isPast = i < _activeIndex;
 
-            <div class="lyrics-line @(isActive ? "lyrics-line-active" : "") @(isPast ? "lyrics-line-past" : "")"
+            <div class="lyrics-line focusable @(isActive ? "lyrics-line-active" : "") @(isPast ? "lyrics-line-past" : "")"
                  tabindex="0" role="button"
                  @ref="_lineRefs[idx]"
                  @onclick="() => OnLineClick(idx)"
@@ -35,7 +35,7 @@ else if (!string.IsNullOrWhiteSpace(PlainTextLyrics))
 else
 {
     <div class="no-lyrics">
-        <K7Icon Name="@Phosphor.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
+        <K7Icon Icon="@Phosphor.MusicNote" Style="font-size: 48px; opacity: 0.3;" />
         <span>Aucune parole disponible</span>
     </div>
 }

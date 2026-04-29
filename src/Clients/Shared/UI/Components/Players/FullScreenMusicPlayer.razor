@@ -15,10 +15,10 @@
 
         <div class="fullscreen-player-content" @onclick:stopPropagation="true">
             <div class="fullscreen-player-header">
-                <button type="button" class="k7-icon-btn" @onclick="Close" aria-label="@S["Close"]"><i class="ph ph-caret-down"></i></button>
+                <K7IconButton Icon="@Phosphor.CaretDown" OnClick="Close" AriaLabel="@S["Close"]" />
                 <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
-                <button type="button" class="k7-icon-btn" style="@(_view == FullScreenView.Lyrics ? "color: var(--color-accent);" : "")" @onclick="ToggleLyrics" aria-label="Lyrics"><i class="ph ph-text-align-left"></i></button>
-                <button type="button" class="k7-icon-btn" style="@(_view == FullScreenView.Queue ? "color: var(--color-accent);" : "")" @onclick="ToggleQueue" aria-label="Queue"><i class="ph ph-queue"></i></button>
+                <K7IconButton Icon="@Phosphor.TextAlignLeft" OnClick="ToggleLyrics" AriaLabel="Lyrics" Color="@(_view == FullScreenView.Lyrics ? "active" : "")" />
+                <K7IconButton Icon="@Phosphor.Queue" OnClick="ToggleQueue" AriaLabel="Queue" Color="@(_view == FullScreenView.Queue ? "active" : "")" />
             </div>
 
             @if (_view == FullScreenView.Player)
@@ -34,7 +34,7 @@
                     else
                     {
                         <div class="artwork-placeholder">
-                            <K7Icon Name="@Phosphor.MusicNote"
+                            <K7Icon Icon="@Phosphor.MusicNote"
                                      Style="font-size: 96px;" />
                         </div>
                     }
@@ -96,19 +96,15 @@
                 </div>
 
                 <div class="fullscreen-player-controls">
-                    <button class="k7-icon-btn" type="button" @onclick="Audio.ToggleShuffle" aria-label="shuffle"><i class="ph ph-@ShuffleIcon"></i></button>
-
-                    <button type="button" class="k7-icon-btn" @onclick="OnPrevious" aria-label="Previous"><i class="ph ph-skip-back"></i></button>
-
-                    <button type="button" class="k7-fab k7-fab--lg" @onclick="TogglePlayPause" aria-label="Play/Pause"><i class="ph ph-@PlayPauseIcon"></i></button>
-
-                    <button type="button" class="k7-icon-btn" @onclick="OnNext" aria-label="Next"><i class="ph ph-skip-forward"></i></button>
-
-                    <button class="k7-icon-btn" type="button" @onclick="Audio.CycleRepeatMode" aria-label="repeat"><i class="ph ph-@RepeatIcon"></i></button>
+                    <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" />
+                    <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
+                    <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                    <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
+                    <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" />
                 </div>
 
                 <div class="fullscreen-player-volume">
-                    <button class="k7-icon-btn" type="button" @onclick="ToggleMute" aria-label="mute"><i class="ph ph-@VolumeIcon"></i></button>
+                    <K7IconButton Icon="@VolumeIcon" OnClick="ToggleMute" AriaLabel="Toggle mute" />
                     <K7Slider TValue="double"
                                Value="Audio.Volume"
                                Min="0" Max="1"
@@ -138,14 +134,14 @@
                             var track = Audio.Queue[i];
                             var isCurrent = i == Audio.CurrentIndex;
 
-                            <div class="queue-item @(isCurrent ? "queue-item-current" : "")"
+                            <div class="queue-item focusable @(isCurrent ? "queue-item-current" : "")"
                                  tabindex="0" role="button"
                                  @onclick="() => PlayFromQueue(index)"
                                  @onkeydown="(e) => OnQueueItemKeyDown(e, index)">
                                 <div class="queue-item-index">
                                     @if (isCurrent)
                                     {
-                                        <K7Icon Name="@Phosphor.Equalizer"
+                                        <K7Icon Icon="@Phosphor.Equalizer"
                                                  Size="sm"
                                                  Color="primary" />
                                     }
@@ -165,7 +161,7 @@
                                 }
                                 else
                                 {
-                                    <K7Icon Name="@Phosphor.MusicNote"
+                                    <K7Icon Icon="@Phosphor.MusicNote"
                                              Class="queue-item-cover-placeholder" />
                                 }
                                 <div class="queue-item-info">
@@ -173,9 +169,7 @@
                                     <span class="queue-item-artist">@track.Artist</span>
                                 </div>
                                 <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
-                                <button type="button" class="k7-icon-btn queue-item-remove" @onclick="@(() => Audio.RemoveFromQueue(index))">
-                                    <i class="ph ph-x"></i>
-                                </button>
+                                <K7IconButton Icon="@Phosphor.X" OnClick="() => Audio.RemoveFromQueue(index)" Class="queue-item-remove" />
                             </div>
                         }
                     </div>

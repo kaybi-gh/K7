@@ -22,22 +22,20 @@ public partial class MiniMusicPlayer : IDisposable
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
 
     private string PlayPauseIcon => Audio.PlaybackState == PlaybackState.Playing
-        ? "pause"
-        : "play";
-
-    private string ShuffleIcon => "shuffle";
+        ? Phosphor.Pause
+        : Phosphor.Play;
 
     private string RepeatIcon => Audio.Repeat switch
     {
-        RepeatMode.One => "repeat-once",
-        _ => "repeat"
+        RepeatMode.One => Phosphor.RepeatOnce,
+        _ => Phosphor.Repeat
     };
 
     private string VolumeIcon => Audio.IsMuted || Audio.Volume <= 0
-        ? "speaker-x"
+        ? Phosphor.SpeakerX
         : Audio.Volume < 0.5
-            ? "speaker-low"
-            : "speaker-high";
+            ? Phosphor.SpeakerLow
+            : Phosphor.SpeakerHigh;
 
     protected override void OnInitialized()
     {
