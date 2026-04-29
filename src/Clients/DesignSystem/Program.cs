@@ -27,6 +27,7 @@ builder.Services.AddScoped<K7DialogService>();
 builder.Services.AddScoped<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
 builder.Services.AddScoped<K7SnackbarService>();
 builder.Services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
+builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
 
 // Client-side mock services
 builder.Services.AddSingleton<MockAudioPlayerService>();
