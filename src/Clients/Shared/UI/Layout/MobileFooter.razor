@@ -1,4 +1,4 @@
-﻿@using K7.Shared.Dtos.Entities
+@using K7.Shared.Dtos.Entities
 @using K7.Server.Domain.Enums
 @using Microsoft.AspNetCore.Components.Authorization
 @inject ILibraryService K7ServerService
@@ -11,19 +11,19 @@
 <div class="mobile-footer">
     <div class="mobile-footer-bar">
         <a href="/" class="mobile-footer-btn" title="@L["Home"]">
-            <K7Icon Name="@Phosphor.House" />
+            <K7Icon Icon="@Phosphor.House" />
         </a>
         <button class="mobile-footer-btn" @onclick="ToggleLibraryDrawer" title="@L["Libraries"]">
-            <K7Icon Name="@Phosphor.VideoCamera" />
+            <K7Icon Icon="@Phosphor.VideoCamera" />
         </button>
         <a href="/" class="mobile-footer-btn mobile-footer-btn--logo" title="K7">
-            <K7Icon Name="@Phosphor.Hurricane" Size="lg" />
+            <K7Icon Icon="@Phosphor.Hurricane" Size="lg" />
         </a>
         <button class="mobile-footer-btn" @onclick="ToggleMusicDrawer" title="@L["Music"]">
-            <K7Icon Name="@Phosphor.MusicNotes" />
+            <K7Icon Icon="@Phosphor.MusicNotes" />
         </button>
         <button class="mobile-footer-btn" @onclick="ToggleMenuDrawer" title="@L["Menu"]">
-            <K7Icon Name="@Phosphor.List" />
+            <K7Icon Icon="@Phosphor.List" />
         </button>
     </div>
 </div>
@@ -36,7 +36,7 @@
 <div class="bottom-sheet @(_libraryDrawerOpen ? "open" : "")">
     <div class="bottom-sheet-header">
         <span class="bottom-sheet-title">@L["Libraries"]</span>
-        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Name="@Phosphor.X" /></button>
+        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Icon="@Phosphor.X" /></button>
     </div>
     <nav class="bottom-sheet-nav">
         @foreach (var library in _libraries)
@@ -52,34 +52,34 @@
 <div class="bottom-sheet @(_musicDrawerOpen ? "open" : "")">
     <div class="bottom-sheet-header">
         <span class="bottom-sheet-title">@L["Music"]</span>
-        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Name="@Phosphor.X" /></button>
+        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Icon="@Phosphor.X" /></button>
     </div>
     <nav class="bottom-sheet-nav">
         <NavLink class="nav-link" href="/music/artists" @onclick="CloseDrawers">
-            <span class="nav-icon"><K7Icon Name="@Phosphor.User" /></span>
+            <span class="nav-icon"><K7Icon Icon="@Phosphor.User" /></span>
             <span class="nav-label">@L["Artists"]</span>
         </NavLink>
         <NavLink class="nav-link" href="/music/albums" @onclick="CloseDrawers">
-            <span class="nav-icon"><K7Icon Name="@Phosphor.VinylRecord" /></span>
+            <span class="nav-icon"><K7Icon Icon="@Phosphor.VinylRecord" /></span>
             <span class="nav-label">@L["Albums"]</span>
         </NavLink>
         <NavLink class="nav-link" href="/music/tracks" @onclick="CloseDrawers">
-            <span class="nav-icon"><K7Icon Name="@Phosphor.MusicNote" /></span>
+            <span class="nav-icon"><K7Icon Icon="@Phosphor.MusicNote" /></span>
             <span class="nav-label">@L["Tracks"]</span>
         </NavLink>
         <AuthorizeView Roles="User,Administrator">
             <NavLink class="nav-link" href="/playlists" @onclick="CloseDrawers">
-                <span class="nav-icon"><K7Icon Name="@Phosphor.Queue" /></span>
+                <span class="nav-icon"><K7Icon Icon="@Phosphor.Queue" /></span>
                 <span class="nav-label">@L["Playlists"]</span>
             </NavLink>
         </AuthorizeView>
         <NavLink class="nav-link" href="/music/radio" @onclick="CloseDrawers">
-            <span class="nav-icon"><K7Icon Name="@Phosphor.Radio" /></span>
+            <span class="nav-icon"><K7Icon Icon="@Phosphor.Radio" /></span>
             <span class="nav-label">@L["Radio"]</span>
         </NavLink>
         <AuthorizeView Roles="User,Administrator">
             <NavLink class="nav-link" href="/music/stats" @onclick="CloseDrawers">
-                <span class="nav-icon"><K7Icon Name="@Phosphor.ChartBar" /></span>
+                <span class="nav-icon"><K7Icon Icon="@Phosphor.ChartBar" /></span>
                 <span class="nav-label">@L["Stats"]</span>
             </NavLink>
         </AuthorizeView>
@@ -102,18 +102,18 @@
                 <span class="bottom-sheet-title">@L["Menu"]</span>
             </NotAuthorized>
         </AuthorizeView>
-        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Name="@Phosphor.X" /></button>
+        <button class="btn-icon" @onclick="CloseDrawers"><K7Icon Icon="@Phosphor.X" /></button>
     </div>
     <nav class="bottom-sheet-nav">
         <AuthorizeView>
             <NavLink class="nav-link" href="/settings" @onclick="CloseDrawers">
-                <span class="nav-icon"><K7Icon Name="@Phosphor.Gear" /></span>
+                <span class="nav-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
                 <span class="nav-label">@L["Settings"]</span>
             </NavLink>
         </AuthorizeView>
         <AuthorizeView Roles="Administrator">
             <NavLink class="nav-link" href="/admin" @onclick="CloseDrawers">
-                <span class="nav-icon"><K7Icon Name="@Phosphor.ShieldCheck" /></span>
+                <span class="nav-icon"><K7Icon Icon="@Phosphor.ShieldCheck" /></span>
                 <span class="nav-label">@L["Admin"]</span>
             </NavLink>
         </AuthorizeView>
@@ -122,18 +122,18 @@
                 @if (DeviceService.GetClientType() != ClientType.Web)
                 {
                     <button class="nav-link" style="width:100%;background:transparent;border:none;font:inherit;text-align:left;cursor:pointer" @onclick="SwitchUser">
-                        <span class="nav-icon"><K7Icon Name="@Phosphor.UserSwitch" /></span>
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.UserSwitch" /></span>
                         <span class="nav-label">@L["SwitchUser"]</span>
                     </button>
                 }
                 <button class="nav-link" style="width:100%;background:transparent;border:none;font:inherit;text-align:left;cursor:pointer;color:var(--color-error)" @onclick="Logout">
-                    <span class="nav-icon"><K7Icon Name="@Phosphor.SignOut" /></span>
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.SignOut" /></span>
                     <span class="nav-label">@L["Logout"]</span>
                 </button>
             </Authorized>
             <NotAuthorized>
                 <button class="nav-link" style="width:100%;background:transparent;border:none;font:inherit;text-align:left;cursor:pointer" @onclick="Login">
-                    <span class="nav-icon"><K7Icon Name="@Phosphor.SignIn" /></span>
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.SignIn" /></span>
                     <span class="nav-label">@L["Login"]</span>
                 </button>
             </NotAuthorized>

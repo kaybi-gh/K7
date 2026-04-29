@@ -1,10 +1,11 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
@@ -15,20 +16,21 @@ public partial class AppNav : IDisposable
     private bool _exploreOpen;
     private bool _profileMenuOpen;
     private ElementReference _profilePopoverRef;
+    private ElementReference _explorePopoverRef;
     private ElementReference _profileButtonRef;
-    private bool _preventPopoverKeyDefault;
+    private DotNetObjectReference<LayerCloseCallback>? _exploreCloseRef;
+    private DotNetObjectReference<LayerCloseCallback>? _profileCloseRef;
     private List<LibraryDto> _libraries = [];
     private string _badgeClass = "offline";
     private string _badgeTitle = string.Empty;
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
-    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private ICustomAuthenticationStateProvider CustomAuthenticationStateProvider { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IStringLocalizer<AppNav> L { get; set; } = default!;
-    [Inject] private BackButtonService BackButton { get; set; } = default!;
     [Inject] private K7HubClient HubClient { get; set; } = default!;
 
     public bool IsAnyMenuOpen => _exploreOpen || _profileMenuOpen;
@@ -36,7 +38,6 @@ public partial class AppNav : IDisposable
     protected override async Task OnInitializedAsync()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
-        BackButton.Register(HandleBackButton);
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
         HubClient.ConnectionStateChanged += OnConnectionStateChanged;
         UpdateBadge(HubClient.State);
@@ -56,36 +57,78 @@ public partial class AppNav : IDisposable
         if (!IsAnyMenuOpen)
             return false;
 
-        CloseAll();
+        _ = CloseAllAsync();
         InvokeAsync(StateHasChanged);
         return true;
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        CloseAll();
+        _ = CloseAllAsync();
         InvokeAsync(StateHasChanged);
     }
 
-    public void ToggleExplore()
+    public async Task ToggleExplore()
     {
+        var wasOpen = _exploreOpen;
         _exploreOpen = !_exploreOpen;
         _profileMenuOpen = false;
+
+        if (_exploreOpen)
+        {
+            StateHasChanged();
+            await Task.Yield();
+            _exploreCloseRef?.Dispose();
+            _exploreCloseRef = DotNetObjectReference.Create(new LayerCloseCallback(() =>
+            {
+                _exploreOpen = false;
+                InvokeAsync(StateHasChanged);
+            }));
+            try
+            {
+                await SpatialNav.PushLayerAsync(_explorePopoverRef, "popover", new SpatialNavLayerOptions
+                {
+                    OnClose = _exploreCloseRef
+                });
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
+        else if (wasOpen)
+        {
+            try { await SpatialNav.PopLayerAsync(_explorePopoverRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
     }
 
     public async Task ToggleProfile()
     {
+        var wasOpen = _profileMenuOpen;
         _profileMenuOpen = !_profileMenuOpen;
         _exploreOpen = false;
+
         if (_profileMenuOpen)
         {
             StateHasChanged();
             await Task.Yield();
-            try { await JS.InvokeVoidAsync("K7.focusFirstIn", _profilePopoverRef); }
-            catch (JSException) { }
+            _profileCloseRef?.Dispose();
+            _profileCloseRef = DotNetObjectReference.Create(new LayerCloseCallback(() =>
+            {
+                _profileMenuOpen = false;
+                InvokeAsync(StateHasChanged);
+            }));
+            try
+            {
+                await SpatialNav.PushLayerAsync(_profilePopoverRef, "popover", new SpatialNavLayerOptions
+                {
+                    OnClose = _profileCloseRef
+                });
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
-        else
+        else if (wasOpen)
         {
+            try { await SpatialNav.PopLayerAsync(_profilePopoverRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
             StateHasChanged();
             await Task.Yield();
             try { await _profileButtonRef.FocusAsync(); }
@@ -93,34 +136,19 @@ public partial class AppNav : IDisposable
         }
     }
 
-    public async Task OnProfileMenuKeyDown(KeyboardEventArgs e)
+    public async Task CloseAllAsync()
     {
-        _preventPopoverKeyDefault = false;
-        switch (e.Code)
+        if (_exploreOpen)
         {
-            case "Escape" or "BrowserBack" or "GoBack":
-                _preventPopoverKeyDefault = true;
-                CloseAll();
-                StateHasChanged();
-                await Task.Yield();
-                try { await _profileButtonRef.FocusAsync(); }
-                catch { }
-                break;
-            case "ArrowDown":
-                _preventPopoverKeyDefault = true;
-                try { await JS.InvokeVoidAsync("K7.focusDirection", _profilePopoverRef, "next"); }
-                catch (JSException) { }
-                break;
-            case "ArrowUp":
-                _preventPopoverKeyDefault = true;
-                try { await JS.InvokeVoidAsync("K7.focusDirection", _profilePopoverRef, "prev"); }
-                catch (JSException) { }
-                break;
-            case "Tab":
-                _preventPopoverKeyDefault = true;
-                try { await JS.InvokeVoidAsync("K7.focusDirection", _profilePopoverRef, e.ShiftKey ? "prev" : "next"); }
-                catch (JSException) { }
-                break;
+            _exploreOpen = false;
+            try { await SpatialNav.PopLayerAsync(_explorePopoverRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
+        if (_profileMenuOpen)
+        {
+            _profileMenuOpen = false;
+            try { await SpatialNav.PopLayerAsync(_profilePopoverRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
     }
 
@@ -213,6 +241,7 @@ public partial class AppNav : IDisposable
         NavigationManager.LocationChanged -= OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
-        BackButton.Unregister();
+        _exploreCloseRef?.Dispose();
+        _profileCloseRef?.Dispose();
     }
 }

@@ -1,4 +1,4 @@
-﻿@implements IDisposable
+@implements IDisposable
 @using K7.Shared.Dtos.Entities
 @using K7.Server.Domain.Enums
 @using Microsoft.AspNetCore.Components.Authorization
@@ -6,40 +6,41 @@
 <div class="app-nav-backdrop @(IsAnyMenuOpen ? "open" : "")" @onclick="CloseAll"></div>
 
 <header class="app-nav">
-    <div class="app-nav-bar" data-nav-row>
+    <SpatialNavSection SectionId="app-navbar" EnterTo="last-focused">
+    <div class="app-nav-bar">
         <a href="/" class="app-nav-logo" title="K7">
-            <K7Icon Name="@Phosphor.Hurricane" Size="lg" />
+            <K7Icon Icon="@Phosphor.Hurricane" Size="lg" />
             <span class="app-nav-logo-text">K7</span>
         </a>
 
-        <NavLink class="app-nav-link app-nav-item--home" href="/" Match="NavLinkMatch.All">
-            <span class="app-nav-icon"><K7Icon Name="@Phosphor.House" /></span>
+        <NavLink class="app-nav-link app-nav-item--home focusable" href="/" Match="NavLinkMatch.All">
+            <span class="app-nav-icon"><K7Icon Icon="@Phosphor.House" /></span>
             <span class="app-nav-label">@L["Home"]</span>
         </NavLink>
 
-        <button class="app-nav-link app-nav-link--btn app-nav-item--explore @(_exploreOpen ? "active" : "")"
+            <button class="app-nav-link app-nav-link--btn app-nav-item--explore focusable @(_exploreOpen ? "active" : "")"
                 type="button" @onclick="ToggleExplore">
-            <span class="app-nav-icon"><K7Icon Name="@Phosphor.Compass" /></span>
+            <span class="app-nav-icon"><K7Icon Icon="@Phosphor.Compass" /></span>
             <span class="app-nav-label">@L["Explore"]</span>
         </button>
 
-        <NavLink class="app-nav-link app-nav-item--myspace" href="/my-space">
-            <span class="app-nav-icon"><K7Icon Name="@Phosphor.Heart" /></span>
+            <NavLink class="app-nav-link app-nav-item--myspace focusable" href="/my-space">
+            <span class="app-nav-icon"><K7Icon Icon="@Phosphor.Heart" /></span>
             <span class="app-nav-label">@L["MySpace"]</span>
         </NavLink>
 
         <div class="app-nav-spacer"></div>
 
-        <NavLink class="app-nav-link app-nav-item--search" href="/search">
-            <span class="app-nav-icon"><K7Icon Name="@Phosphor.MagnifyingGlass" /></span>
+            <NavLink class="app-nav-link app-nav-item--search focusable" href="/search">
+            <span class="app-nav-icon"><K7Icon Icon="@Phosphor.MagnifyingGlass" /></span>
             <span class="app-nav-label">@L["Search"]</span>
         </NavLink>
 
         <AuthorizeView>
             <Authorized>
-                <button class="app-nav-link app-nav-link--btn app-nav-item--profile @(_profileMenuOpen ? "active" : "")"
+                    <button class="app-nav-link app-nav-link--btn app-nav-item--profile focusable @(_profileMenuOpen ? "active" : "")"
                         type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
-                    <div class="avatar avatar--sm" title="@context.User.Identity?.Name">
+                        <div class="avatar avatar--sm focusable" title="@context.User.Identity?.Name">
                         @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
                         <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
                     </div>
@@ -47,21 +48,23 @@
                 </button>
             </Authorized>
             <NotAuthorized>
-                <button class="app-nav-link app-nav-link--btn app-nav-item--profile" type="button" @onclick="Login">
-                    <span class="app-nav-icon"><K7Icon Name="@Phosphor.UserCircle" /></span>
+                    <button class="app-nav-link app-nav-link--btn app-nav-item--profile focusable" type="button" @onclick="Login">
+                    <span class="app-nav-icon"><K7Icon Icon="@Phosphor.UserCircle" /></span>
                     <span class="app-nav-label">@L["Login"]</span>
                 </button>
             </NotAuthorized>
         </AuthorizeView>
     </div>
+    </SpatialNavSection>
 </header>
 
 <!-- Explore popover -->
-<div class="app-nav-popover app-nav-popover--explore @(_exploreOpen ? "open" : "")">
+<SpatialNavSection SectionId="app-explore-popover" Restrict="self-only" style="display:contents">
+<div class="app-nav-popover app-nav-popover--explore @(_exploreOpen ? "open" : "")" @ref="_explorePopoverRef">
     <div class="app-nav-popover-inner">
         <div class="app-nav-popover-header">
             <span class="app-nav-popover-title">@L["Explore"]</span>
-            <button class="btn-icon" type="button" @onclick="CloseAll"><K7Icon Name="@Phosphor.X" /></button>
+            <button class="btn-icon" type="button" @onclick="CloseAll"><K7Icon Icon="@Phosphor.X" /></button>
         </div>
 
         <div class="app-nav-explore-grid">
@@ -84,15 +87,14 @@
         </div>
     </div>
 </div>
+</SpatialNavSection>
 
 <!-- Profile popover -->
 <AuthorizeView>
     <Authorized>
+        <SpatialNavSection SectionId="app-profile-popover" Restrict="self-only" style="display:contents">
         <div class="app-nav-popover app-nav-popover--profile @(_profileMenuOpen ? "open" : "")"
-             @ref="_profilePopoverRef"
-             @onkeydown="OnProfileMenuKeyDown"
-             @onkeydown:stopPropagation="@_profileMenuOpen"
-             @onkeydown:preventDefault="@_preventPopoverKeyDefault">
+             @ref="_profilePopoverRef">
             <div class="app-nav-popover-inner">
                 <div class="app-nav-popover-user">
                     <div class="avatar">
@@ -105,28 +107,29 @@
                     </div>
                 </div>
                 <hr class="app-nav-popover-divider" />
-                <NavLink class="nav-link" href="/settings" @onclick="CloseAll">
-                    <span class="nav-icon"><K7Icon Name="@Phosphor.Gear" /></span>
+                <NavLink class="nav-link focusable" href="/settings" @onclick="CloseAll">
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
                     <span class="nav-label">@L["Settings"]</span>
                 </NavLink>
                 <AuthorizeView Roles="Administrator" Context="adminCtx">
-                    <NavLink class="nav-link" href="/admin" @onclick="CloseAll">
-                        <span class="nav-icon"><K7Icon Name="@Phosphor.ShieldCheck" /></span>
+                    <NavLink class="nav-link focusable" href="/admin" @onclick="CloseAll">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.ShieldCheck" /></span>
                         <span class="nav-label">@L["Admin"]</span>
                     </NavLink>
                 </AuthorizeView>
                 @if (DeviceService.GetClientType() != ClientType.Web)
                 {
-                    <button class="nav-link app-nav-popover-btn" type="button" @onclick="SwitchUser">
-                        <span class="nav-icon"><K7Icon Name="@Phosphor.UserSwitch" /></span>
+                    <button class="nav-link app-nav-popover-btn focusable" type="button" @onclick="SwitchUser">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.UserSwitch" /></span>
                         <span class="nav-label">@L["SwitchUser"]</span>
                     </button>
                 }
-                <button class="nav-link app-nav-popover-btn" type="button" @onclick="Logout">
-                    <span class="nav-icon"><K7Icon Name="@Phosphor.SignOut" /></span>
+                <button class="nav-link app-nav-popover-btn focusable" type="button" @onclick="Logout">
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.SignOut" /></span>
                     <span class="nav-label">@L["Logout"]</span>
                 </button>
             </div>
         </div>
+        </SpatialNavSection>
     </Authorized>
 </AuthorizeView>
