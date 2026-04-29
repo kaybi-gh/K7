@@ -39,7 +39,7 @@ else if (_season is not null)
                     <h3>@_season.SerieTitle?.ToUpper()</h3>
                 }
                 <K7Button Variant="text"
-                           StartIcon="caret-left"
+                           StartIcon="@Phosphor.CaretLeft"
                            Color="primary"
                            Href="@($"/series/{SerieId}")"
                            Class="px-0">
@@ -58,7 +58,7 @@ else if (_season is not null)
                     @if (_previousSeasonNumber is not null)
                     {
                         <K7Button Variant="text"
-                                   StartIcon="caret-left"
+                                  StartIcon="@Phosphor.CaretLeft"
                                    OnClick="GoToPreviousSeason">
                             @L["PreviousSeason"]
                         </K7Button>
@@ -66,7 +66,7 @@ else if (_season is not null)
                     @if (_nextSeasonNumber is not null)
                     {
                         <K7Button Variant="text"
-                                   EndIcon="caret-right"
+                                   EndIcon="@Phosphor.CaretRight"
                                    OnClick="GoToNextSeason">
                             @L["NextSeason"]
                         </K7Button>

@@ -1,4 +1,4 @@
-﻿@page "/admin/restrictions"
+@page "/admin/restrictions"
 @layout AdminLayout
 @inject IStringLocalizer<AdminRestrictionsPanel> L
 @inject IStringLocalizer<SharedResource> S
@@ -6,14 +6,18 @@
 <div class="d-flex align-center justify-between mb-4">
     <h6>@L["Title"]</h6>
     <div class="d-flex">
-        <K7Menu Label="@L["CreateFromTemplate"]" Icon="sparkle" Color="secondary"
-                 Variant="outlined" EndIcon="caret-down">
-            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">@L["TemplateChildFriendly"]</K7MenuItem>
-            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">@L["TemplateFamily12"]</K7MenuItem>
-            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">@L["TemplateTeen16"]</K7MenuItem>
-            <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">@L["TemplateNoHorror"]</K7MenuItem>
+        <K7Menu>
+            <ActivatorContent>
+                <K7Button Variant="outlined" Color="secondary" StartIcon="sparkle" EndIcon="caret-down">@L["CreateFromTemplate"]</K7Button>
+            </ActivatorContent>
+            <ChildContent>
+                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.ChildFriendly))">@L["TemplateChildFriendly"]</K7MenuItem>
+                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Family12))">@L["TemplateFamily12"]</K7MenuItem>
+                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.Teen16))">@L["TemplateTeen16"]</K7MenuItem>
+                <K7MenuItem OnClick="@(() => CreateFromTemplate(Templates.NoHorror))">@L["TemplateNoHorror"]</K7MenuItem>
+            </ChildContent>
         </K7Menu>
-        <K7Button StartIcon="plus" Variant="filled" Color="primary"
+        <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary"
                    OnClick="OpenCreateDialog">@L["CreateProfile"]</K7Button>
     </div>
 </div>

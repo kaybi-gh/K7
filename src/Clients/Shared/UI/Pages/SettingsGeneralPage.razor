@@ -37,7 +37,7 @@
     }
     else
     {
-        <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" Adornment="end" AdornmentName="trash" OnAdornmentClick="ChangeBackendUrl" />
+        <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" Adornment="end" AdornmentIcon="@Phosphor.Trash" OnAdornmentClick="ChangeBackendUrl" />
     }
 
     <span>@L["FormFactor"]: @_deviceType</span>

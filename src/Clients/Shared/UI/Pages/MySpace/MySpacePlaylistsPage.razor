@@ -29,28 +29,33 @@
                  Variant="@(_mediaTypeFilter == MediaType.MusicTrack ? "filled" : "outlined")"
                  Color="primary"
                  OnClick="@(() => SetMediaTypeFilter(MediaType.MusicTrack))">
-            <K7Icon Name="@Phosphor.MusicNote" />
+            <K7Icon Icon="@Phosphor.MusicNote" />
         </K7Chip>
         <K7Chip Value="@MediaType.Movie"
                  Variant="@(_mediaTypeFilter == MediaType.Movie ? "filled" : "outlined")"
                  Color="primary"
                  OnClick="@(() => SetMediaTypeFilter(MediaType.Movie))">
-            <K7Icon Name="@Phosphor.FilmStrip" />
+            <K7Icon Icon="@Phosphor.FilmStrip" />
         </K7Chip>
         <K7Chip Value="@MediaType.SerieEpisode"
                  Variant="@(_mediaTypeFilter == MediaType.SerieEpisode ? "filled" : "outlined")"
                  Color="primary"
                  OnClick="@(() => SetMediaTypeFilter(MediaType.SerieEpisode))">
-            <K7Icon Name="@Phosphor.Television" />
+            <K7Icon Icon="@Phosphor.Television" />
         </K7Chip>
-        <K7Menu Label="@L["New"]" Variant="filled" Color="primary" StartIcon="plus">
-            <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
-            <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+        <K7Menu>
+            <ActivatorContent>
+                <K7Button Variant="filled" Color="primary" StartIcon="plus">@L["New"]</K7Button>
+            </ActivatorContent>
+            <ChildContent>
+                <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
+                <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+            </ChildContent>
         </K7Menu>
     </ToolbarContent>
     <EmptyContent>
         <div class="d-flex flex-col pa-16">
-            <K7Icon Name="@Phosphor.Queue" Style="font-size: 64px; opacity: 0.3;" />
+            <K7Icon Icon="@Phosphor.Queue" Style="font-size: 64px; opacity: 0.3;" />
             <h6 Color="default" Style="opacity: 0.5;">@L["None"]</h6>
             <p class="text-sm" Color="secondary">@L["EmptyHint"]</p>
         </div>

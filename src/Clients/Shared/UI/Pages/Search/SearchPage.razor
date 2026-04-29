@@ -14,7 +14,7 @@
     <div class="search-page__header">
         <K7TextField @bind-Value="_query"
                       Adornment="start"
-                      AdornmentName="@Phosphor.MagnifyingGlass"
+                      AdornmentIcon="@Phosphor.MagnifyingGlass"
                       Placeholder="@L["TypeHint"]"
                       Variant="outlined"
                       Clearable="true"
@@ -26,7 +26,7 @@
     @if (string.IsNullOrWhiteSpace(_query) || _query.Length < 2)
     {
         <div class="search-page__empty">
-            <K7Icon Name="@Phosphor.MagnifyingGlass" Style="font-size: 64px; opacity: 0.2;" />
+            <K7Icon Icon="@Phosphor.MagnifyingGlass" Style="font-size: 64px; opacity: 0.2;" />
             <p class="text-sm" Color="secondary">@L["EnterQuery"]</p>
         </div>
     }
@@ -40,7 +40,7 @@
     else if (_result is null || (_result.MediaResults.Count == 0 && _result.PersonResults.Count == 0 && _result.CharacterResults.Count == 0))
     {
         <div class="search-page__empty">
-            <K7Icon Name="@Phosphor.SmileyMeh" Style="font-size: 64px; opacity: 0.2;" />
+            <K7Icon Icon="@Phosphor.SmileyMeh" Style="font-size: 64px; opacity: 0.2;" />
             <p class="text-sm" Color="secondary">@string.Format(L["NoResults"], _query)</p>
         </div>
     }

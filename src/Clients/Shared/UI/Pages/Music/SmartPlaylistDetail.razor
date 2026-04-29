@@ -39,17 +39,17 @@
 
                 <div class="d-flex mt-3">
                     <K7Button Variant="filled" Color="primary"
-                               StartIcon="play"
+                               StartIcon="@Phosphor.Play"
                                OnClick="PlayAll" Disabled="@(_items.Count == 0)">
                         @S["PlayAll"]
                     </K7Button>
                     <K7Button Variant="outlined" Color="primary"
-                               StartIcon="shuffle"
+                               StartIcon="@Phosphor.Shuffle"
                                OnClick="ShuffleAll" Disabled="@(_items.Count == 0)">
                         @S["Shuffle"]
                     </K7Button>
                     <K7Button Variant="outlined" Color="secondary"
-                               StartIcon="arrow-clockwise"
+                               StartIcon="@Phosphor.ArrowClockwise"
                                OnClick="EvaluateAsync" Disabled="_evaluating">
                         @if (_evaluating)
                         {

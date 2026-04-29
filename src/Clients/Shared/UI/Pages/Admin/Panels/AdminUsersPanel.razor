@@ -1,11 +1,11 @@
-﻿@page "/admin/users"
+@page "/admin/users"
 @layout AdminLayout
 @inject IStringLocalizer<AdminUsersPanel> L
 @inject IStringLocalizer<SharedResource> S
 
 <div class="d-flex align-center justify-between mb-4">
     <h6>@L["Title"]</h6>
-    <K7Button Variant="filled" Color="primary" StartIcon="user-plus"
+    <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.UserPlus"
                OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
         @L["CreateUserTitle"]
     </K7Button>

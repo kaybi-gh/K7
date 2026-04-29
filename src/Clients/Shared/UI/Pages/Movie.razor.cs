@@ -1,4 +1,5 @@
-﻿using K7.Clients.Shared.Models;
+﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
@@ -7,7 +8,6 @@ using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -16,7 +16,7 @@ public partial class Movie
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
-    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
 
@@ -55,7 +55,11 @@ public partial class Movie
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("SpatialNavigation.focusFirst", "[data-nav-row] .k7-btn");
+            try
+            {
+                await SpatialNav.FocusFirstAsync(".k7-btn--filled");
+            }
+            catch (InvalidOperationException) { }
         }
     }
 

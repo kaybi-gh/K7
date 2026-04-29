@@ -26,11 +26,11 @@ else
                         <div class="d-flex flex-col gap-1">
                             <button type="button" class="k7-icon-btn" disabled="@isFirst"
                                     @onclick="() => MoveUp(row)" aria-label="@L["MoveUp"]">
-                                <K7Icon Name="@Phosphor.ArrowUp" />
+                                <K7Icon Icon="@Phosphor.ArrowUp" />
                             </button>
                             <button type="button" class="k7-icon-btn" disabled="@isLast"
                                     @onclick="() => MoveDown(row)" aria-label="@L["MoveDown"]">
-                                <K7Icon Name="@Phosphor.ArrowDown" />
+                                <K7Icon Icon="@Phosphor.ArrowDown" />
                             </button>
                         </div>
                         <span class="text-sm">@row.Title</span>
