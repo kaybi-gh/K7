@@ -13,7 +13,7 @@
         <div class="auth-form-stack">
             @foreach (var provider in externalLogins)
             {
-                <button class="k7-btn k7-btn--outlined" style="width:100%;" name="provider" value="@provider.Name" type="submit">
+                <button class="k7-btn k7-btn--outlined focusable" style="width:100%;" name="provider" value="@provider.Name" type="submit">
                     @provider.DisplayName
                 </button>
             }

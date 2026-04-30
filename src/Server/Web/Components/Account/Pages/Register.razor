@@ -36,20 +36,20 @@
     <div class="auth-form-stack">
         <div class="auth-form-field">
             <label>@L["Email"]</label>
-            <InputText @bind-Value="Input!.Email" type="email" class="auth-input" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" />
+            <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" autofocus />
             <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
         </div>
         <div class="auth-form-field">
             <label>@L["Password"]</label>
-            <InputText @bind-Value="Input!.Password" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+            <InputText @bind-Value="Input!.Password" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
             <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
         </div>
         <div class="auth-form-field">
             <label>@L["ConfirmPassword"]</label>
-            <InputText @bind-Value="Input!.ConfirmPassword" type="password" class="auth-input" placeholder="@L["ConfirmPasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+            <InputText @bind-Value="Input!.ConfirmPassword" type="password" class="auth-input focusable" placeholder="@L["ConfirmPasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
             <ValidationMessage For="@(() => Input!.ConfirmPassword)" class="auth-validation" />
         </div>
-        <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["Register"]</button>
+        <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["Register"]</button>
     </div>
 </EditForm>
 

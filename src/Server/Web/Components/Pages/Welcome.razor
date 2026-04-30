@@ -24,13 +24,13 @@
         <hr class="auth-divider" />
         <div class="auth-form-stack">
             <a href="@_loginUrl" style="text-decoration:none;">
-                <button class="k7-btn k7-btn--filled" style="width:100%;">@L["SignIn"]</button>
+                <button class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["SignIn"]</button>
             </a>
 
             @if (_guestEnabled)
             {
                 <EditForm Model="_guestModel" method="post" OnValidSubmit="ContinueAsGuest" FormName="guest">
-                    <button type="submit" class="k7-btn k7-btn--outlined" style="width:100%;">@L["ContinueAsGuest"]</button>
+                    <button type="submit" class="k7-btn k7-btn--outlined focusable" style="width:100%;">@L["ContinueAsGuest"]</button>
                 </EditForm>
             }
         </div>

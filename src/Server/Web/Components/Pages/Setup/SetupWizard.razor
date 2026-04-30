@@ -31,15 +31,15 @@
             <div class="auth-form-stack">
                 <div class="auth-form-field">
                     <label>@L["Email"]</label>
-                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input" placeholder="@L["EmailPlaceholder"]" autocomplete="email" aria-required="true" />
+                    <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="email" aria-required="true" autofocus />
                     <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
                 </div>
 
                 <div class="auth-form-field">
                     <label>@L["Password"]</label>
                     <div class="auth-input-row">
-                        <InputText @bind-Value="Input!.Password" id="pw-setup" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
-                        <button type="button" class="auth-input-action" onclick="togglePw('pw-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
+                        <InputText @bind-Value="Input!.Password" id="pw-setup" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+                        <button type="button" class="auth-input-action focusable" onclick="togglePw('pw-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
                     </div>
                     <ValidationMessage For="@(() => Input!.Password)" class="auth-validation" />
                 </div>
@@ -47,13 +47,13 @@
                 <div class="auth-form-field">
                     <label>@L["ConfirmPassword"]</label>
                     <div class="auth-input-row">
-                        <InputText @bind-Value="Input!.ConfirmPassword" id="pw-confirm-setup" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
-                        <button type="button" class="auth-input-action" onclick="togglePw('pw-confirm-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
+                        <InputText @bind-Value="Input!.ConfirmPassword" id="pw-confirm-setup" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="new-password" aria-required="true" />
+                        <button type="button" class="auth-input-action focusable" onclick="togglePw('pw-confirm-setup')" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
                     </div>
                     <ValidationMessage For="@(() => Input!.ConfirmPassword)" class="auth-validation" />
                 </div>
 
-                <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["CompleteSetup"]</button>
+                <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["CompleteSetup"]</button>
             </div>
         </EditForm>
     </div>
