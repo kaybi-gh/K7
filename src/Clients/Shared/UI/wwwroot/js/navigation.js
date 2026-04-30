@@ -271,7 +271,30 @@ var SpatialNav = (function () {
             e.stopImmediatePropagation();
             var onClose = layer.onClose;
             popLayer(layer.el);
-            if (onClose) invokeCallback(onClose, 'OnLayerClosed');
+            if (onClose) {
+                invokeCallback(onClose, 'OnLayerClosed');
+            } else {
+                // Auto-detected layer: trigger close via backdrop click or custom event
+                var closeSelector = layer.el.getAttribute('data-sn-layer-close');
+                var closeTarget = null;
+                if (closeSelector === 'self') {
+                    closeTarget = layer.el;
+                } else if (closeSelector) {
+                    closeTarget = document.querySelector(closeSelector);
+                }
+                if (!closeTarget) {
+                    // Walk up to find nearest .k7-backdrop (K7Menu, K7Select)
+                    var parent = layer.el.parentElement;
+                    while (parent && parent !== document.body) {
+                        closeTarget = parent.querySelector(':scope > .k7-backdrop');
+                        if (closeTarget) break;
+                        parent = parent.parentElement;
+                    }
+                }
+                if (closeTarget) {
+                    closeTarget.click();
+                }
+            }
             return;
         }
 
@@ -373,6 +396,25 @@ var SpatialNav = (function () {
         if (key === 'Backspace' || key === 'XF86Back') { handleBackKey(e); return; }
         if (key === ' ' && active && active.closest('.video-controls-overlay')) { e.preventDefault(); }
     }
+
+    // Focus Guard - prevent focus from escaping the active layer
+
+    var _guardingFocus = false;
+
+    document.addEventListener('focus', function (e) {
+        if (_guardingFocus) return;
+        var layer = peekLayer();
+        if (!layer || !layer.el) return;
+        if (!e.target || e.target === document.body) return;
+        if (layer.el.contains(e.target)) return;
+        // Focus escaped the layer - pull it back
+        var items = getFocusables(layer.el);
+        if (items.length > 0) {
+            _guardingFocus = true;
+            items[0].focus({ preventScroll: true });
+            _guardingFocus = false;
+        }
+    }, true);
 
     // Focus Scroll Listener
 
@@ -489,13 +531,47 @@ var SpatialNav = (function () {
 
             SpatialNavigation.makeFocusable();
 
+            // Auto-layer detection: watch for elements with data-sn-layer attribute
+            // This is more reliable than C# JS interop which can fail in MAUI.
+            var _trackedLayers = new Set();
+
+            function syncLayers() {
+                var layerEls = document.querySelectorAll('[data-sn-layer]');
+                var currentSet = new Set();
+
+                layerEls.forEach(function (el) {
+                    currentSet.add(el);
+                    if (!_trackedLayers.has(el)) {
+                        // New layer appeared
+                        var type = el.getAttribute('data-sn-layer') || 'popover';
+                        pushLayer(el, type, {});
+                    }
+                });
+
+                // Check for removed layers (iterate in reverse for correct stack order)
+                var toRemove = [];
+                _trackedLayers.forEach(function (el) {
+                    if (!currentSet.has(el)) {
+                        toRemove.push(el);
+                    }
+                });
+                toRemove.forEach(function (el) {
+                    popLayer(el);
+                });
+
+                _trackedLayers = currentSet;
+            }
+
             // Auto-refresh after any DOM mutation (covers all Blazor re-renders)
-            var observer = new MutationObserver(scheduleRefresh);
+            var observer = new MutationObserver(function () {
+                scheduleRefresh();
+                syncLayers();
+            });
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['disabled', 'tabindex', 'hidden']
+                attributeFilter: ['disabled', 'tabindex', 'hidden', 'data-sn-layer']
             });
         }
 
