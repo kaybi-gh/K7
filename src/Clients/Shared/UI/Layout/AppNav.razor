@@ -6,8 +6,7 @@
 <div class="app-nav-backdrop @(IsAnyMenuOpen ? "open" : "")" @onclick="CloseAllAsync"></div>
 
 <header class="app-nav">
-    <SpatialNavSection SectionId="app-navbar" EnterTo="last-focused">
-    <div class="app-nav-bar">
+    <div class="app-nav-bar" data-sn-section="app-navbar" data-sn-enter="last-focused">
         <a href="/" class="app-nav-logo" title="K7">
             <K7Icon Icon="@Phosphor.Hurricane" Size="lg" />
             <span class="app-nav-logo-text">K7</span>
@@ -55,11 +54,9 @@
             </NotAuthorized>
         </AuthorizeView>
     </div>
-    </SpatialNavSection>
 </header>
 
 <!-- Explore popover -->
-<SpatialNavSection SectionId="app-explore-popover" Restrict="self-only" style="display:contents">
 <div class="app-nav-popover app-nav-popover--explore @(_exploreOpen ? "open" : "")" @ref="_explorePopoverRef"
      data-sn-layer="@(_exploreOpen ? "popover" : null)"
      data-sn-layer-close=".app-nav-backdrop">
@@ -89,12 +86,10 @@
         </div>
     </div>
 </div>
-</SpatialNavSection>
 
 <!-- Profile popover -->
 <AuthorizeView>
     <Authorized>
-        <SpatialNavSection SectionId="app-profile-popover" Restrict="self-only" style="display:contents">
         <div class="app-nav-popover app-nav-popover--profile @(_profileMenuOpen ? "open" : "")"
              @ref="_profilePopoverRef"
              data-sn-layer="@(_profileMenuOpen ? "popover" : null)"
@@ -134,6 +129,5 @@
                 </button>
             </div>
         </div>
-        </SpatialNavSection>
     </Authorized>
 </AuthorizeView>

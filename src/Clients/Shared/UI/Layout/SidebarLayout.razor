@@ -1,8 +1,8 @@
 <div class="page-with-sidebar">
-    <aside class="page-sidebar">
+    <aside class="page-sidebar" data-sn-section="sidebar-nav" data-sn-enter="last-focused" data-sn-restrict="self-first">
         @SidebarContent
     </aside>
-    <main class="page-sidebar-body">
+    <main class="page-sidebar-body" data-sn-section="sidebar-content" data-sn-enter="last-focused" data-sn-restrict="self-first">
         @ChildContent
     </main>
 </div>
