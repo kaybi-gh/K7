@@ -1,4 +1,5 @@
 @namespace K7.Clients.Shared.UI.Components
+@implements IAsyncDisposable
 
 @if (_open)
 {
@@ -8,7 +9,8 @@
     <div class="k7-menu-activator" @onclick="Toggle" @onclick:stopPropagation="true">
         @ActivatorContent
     </div>
-    <div class="k7-menu-dropdown" role="menu" @ref="_dropdown" @onclick:stopPropagation="true">
+    <div class="k7-menu-dropdown" role="menu" @ref="_dropdown" @onclick:stopPropagation="true"
+         data-sn-layer="@(_open ? "popover" : null)">
         <CascadingValue Value="this" IsFixed="true">
             @ChildContent
         </CascadingValue>

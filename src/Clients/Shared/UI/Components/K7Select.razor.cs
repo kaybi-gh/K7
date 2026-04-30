@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public partial class K7Select<TValue> : IDisposable
+public partial class K7Select<TValue> : IAsyncDisposable
 {
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
@@ -114,8 +114,13 @@ public partial class K7Select<TValue> : IDisposable
         StateHasChanged();
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
+        if (_open)
+        {
+            try { await SpatialNav.PopLayerAsync(_dropdown); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
         _closeCallbackRef?.Dispose();
     }
 }

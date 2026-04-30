@@ -1,5 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
+@implements IAsyncDisposable
 
 <div class="k7-field @Class" style="@(string.IsNullOrEmpty(Style) ? null : Style)">
     @if (!string.IsNullOrEmpty(Label))
@@ -21,7 +22,8 @@
             <span class="k7-select-text">@DisplayText</span>
             <K7Icon Icon="@Phosphor.CaretDown" Class="k7-select-icon"></K7Icon>
         </button>
-        <div class="k7-select-dropdown" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true">
+        <div class="k7-select-dropdown" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true"
+             data-sn-layer="@(_open ? "popover" : null)">
             <CascadingValue Value="this" IsFixed="true">
                 @ChildContent
             </CascadingValue>
