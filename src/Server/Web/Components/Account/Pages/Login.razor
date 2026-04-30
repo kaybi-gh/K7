@@ -31,15 +31,15 @@
                 <div class="auth-form-stack">
                     <div class="auth-form-field">
                         <label>@L["Email"]</label>
-                        <InputText @bind-Value="Input!.Email" type="email" class="auth-input" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" />
+                        <InputText @bind-Value="Input!.Email" type="email" class="auth-input focusable" placeholder="@L["EmailPlaceholder"]" autocomplete="username" aria-required="true" autofocus />
                         <ValidationMessage For="@(() => Input!.Email)" class="auth-validation" />
                     </div>
 
                     <div class="auth-form-field">
                         <label>@L["Password"]</label>
                         <div class="auth-input-row">
-                            <InputText @bind-Value="Input.Password" id="pw-login" type="password" class="auth-input" placeholder="@L["PasswordPlaceholder"]" autocomplete="current-password" aria-required="true" />
-                            <button type="button" class="auth-input-action" onclick="togglePwLogin()" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
+                            <InputText @bind-Value="Input.Password" id="pw-login" type="password" class="auth-input focusable" placeholder="@L["PasswordPlaceholder"]" autocomplete="current-password" aria-required="true" />
+                            <button type="button" class="auth-input-action focusable" onclick="togglePwLogin()" aria-label="@L["ShowPassword"]"><i class="ph ph-eye"></i></button>
                         </div>
                         <ValidationMessage For="@(() => Input.Password)" class="auth-validation" />
                     </div>
@@ -49,10 +49,10 @@
                             <InputCheckbox @bind-Value="Input.RememberMe" />
                             <span>@L["RememberMe"]</span>
                         </label>
-                        <a href="Account/ForgotPassword" class="auth-link">@L["ForgotPassword"]</a>
+                        <a href="Account/ForgotPassword" class="auth-link focusable">@L["ForgotPassword"]</a>
                     </div>
 
-                    <button type="submit" class="k7-btn k7-btn--filled" style="width:100%;">@L["SignIn"]</button>
+                    <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["SignIn"]</button>
                 </div>
             </EditForm>
 
@@ -72,10 +72,10 @@
             {
                 <span class="auth-caption">
                     @L["NoAccount"]
-                    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link">@L["SignUp"]</a>
+                    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable">@L["SignUp"]</a>
                 </span>
             }
-            <a href="Account/ResendEmailConfirmation" class="auth-link">@L["ResendEmailConfirmation"]</a>
+            <a href="Account/ResendEmailConfirmation" class="auth-link focusable">@L["ResendEmailConfirmation"]</a>
         </div>
     }
 </div>
