@@ -12,37 +12,32 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<h1>@L["Title"]</h1>
+<h2 class="auth-heading">@L["Title"]</h2>
 <hr class="auth-divider" />
 <StatusMessage Message="@message" />
 <p>@L["Prompt"]</p>
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-            <input type="hidden" name="RememberMe" value="@RememberMe" />
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input!.TwoFactorCode" id="Input.TwoFactorCode" class="form-control" autocomplete="off" />
-                <label for="Input.TwoFactorCode" class="form-label">@L["AuthenticatorCode"]</label>
-                <ValidationMessage For="() => Input!.TwoFactorCode" class="text-danger" />
-            </div>
-            <div class="checkbox mb-3">
-                <label for="remember-machine" class="form-label">
-                    <InputCheckbox @bind-Value="Input.RememberMachine" />
-                    @L["RememberMachine"]
-                </label>
-            </div>
-            <div>
-                <button type="submit" class="w-100 btn btn-lg btn-primary">@L["LogIn"]</button>
-            </div>
-        </EditForm>
+
+<EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+    <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+    <input type="hidden" name="RememberMe" value="@RememberMe" />
+    <DataAnnotationsValidator />
+    <ValidationSummary class="auth-validation" role="alert" />
+    <div class="auth-form-stack">
+        <div class="auth-form-field">
+            <label>@L["AuthenticatorCode"]</label>
+            <InputText @bind-Value="Input!.TwoFactorCode" class="auth-input focusable" autocomplete="off" autofocus />
+            <ValidationMessage For="() => Input!.TwoFactorCode" class="auth-validation" />
+        </div>
+        <label class="auth-toggle">
+            <InputCheckbox @bind-Value="Input.RememberMachine" />
+            <span>@L["RememberMachine"]</span>
+        </label>
+        <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["LogIn"]</button>
     </div>
-</div>
+</EditForm>
 <p>
     @L["NoAccess"]
-    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">@L["UseRecoveryCode"]</a>.
+    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl" class="auth-link focusable">@L["UseRecoveryCode"]</a>.
 </p>
 
 @code {
