@@ -401,18 +401,49 @@ var SpatialNav = (function () {
 
     var _guardingFocus = false;
 
+    // Section last-focused tracking: remember and restore last focused element per section
+    var _sectionLastFocused = {};
+    var _currentSectionId = null;
+
     document.addEventListener('focus', function (e) {
         if (_guardingFocus) return;
+
+        // Layer guard
         var layer = peekLayer();
-        if (!layer || !layer.el) return;
-        if (!e.target || e.target === document.body) return;
-        if (layer.el.contains(e.target)) return;
-        // Focus escaped the layer - pull it back
-        var items = getFocusables(layer.el);
-        if (items.length > 0) {
-            _guardingFocus = true;
-            items[0].focus({ preventScroll: true });
-            _guardingFocus = false;
+        if (layer && layer.el) {
+            if (!e.target || e.target === document.body) return;
+            if (!layer.el.contains(e.target)) {
+                var items = getFocusables(layer.el);
+                if (items.length > 0) {
+                    _guardingFocus = true;
+                    items[0].focus({ preventScroll: true });
+                    _guardingFocus = false;
+                }
+                return;
+            }
+        }
+
+        // Section enter-to-last-focused
+        if (e.target && e.target !== document.body) {
+            var section = e.target.closest('[data-sn-section]');
+            if (section) {
+                var id = section.getAttribute('data-sn-section');
+                var enterTo = section.getAttribute('data-sn-enter');
+                if (id !== _currentSectionId && enterTo === 'last-focused' && _sectionLastFocused[id]) {
+                    var last = _sectionLastFocused[id];
+                    if (last.isConnected && last !== e.target && section.contains(last)) {
+                        _guardingFocus = true;
+                        _currentSectionId = id;
+                        last.focus({ preventScroll: true });
+                        _guardingFocus = false;
+                        return;
+                    }
+                }
+                _currentSectionId = id;
+                _sectionLastFocused[id] = e.target;
+            } else {
+                _currentSectionId = null;
+            }
         }
     }, true);
 
@@ -531,9 +562,34 @@ var SpatialNav = (function () {
 
             SpatialNavigation.makeFocusable();
 
-            // Auto-layer detection: watch for elements with data-sn-layer attribute
-            // This is more reliable than C# JS interop which can fail in MAUI.
+            // Auto-detection: watch for data-sn-layer and data-sn-section attributes.
+            // More reliable than C# JS interop which can fail in MAUI.
             var _trackedLayers = new Set();
+            var _trackedSections = new Set();
+
+            function syncSections() {
+                var sectionEls = document.querySelectorAll('[data-sn-section]');
+                var currentSet = new Set();
+
+                sectionEls.forEach(function (el) {
+                    var id = el.getAttribute('data-sn-section');
+                    if (!id) return;
+                    currentSet.add(id);
+                    if (!_trackedSections.has(id)) {
+                        var enterTo = el.getAttribute('data-sn-enter') || 'last-focused';
+                        var restrict = el.getAttribute('data-sn-restrict') || 'self-first';
+                        addSection(id, { enterTo: enterTo, restrict: restrict });
+                    }
+                });
+
+                _trackedSections.forEach(function (id) {
+                    if (!currentSet.has(id)) {
+                        removeSection(id);
+                    }
+                });
+
+                _trackedSections = currentSet;
+            }
 
             function syncLayers() {
                 var layerEls = document.querySelectorAll('[data-sn-layer]');
@@ -563,15 +619,17 @@ var SpatialNav = (function () {
             }
 
             // Auto-refresh after any DOM mutation (covers all Blazor re-renders)
+            syncSections();
             var observer = new MutationObserver(function () {
                 scheduleRefresh();
+                syncSections();
                 syncLayers();
             });
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['disabled', 'tabindex', 'hidden', 'data-sn-layer']
+                attributeFilter: ['disabled', 'tabindex', 'hidden', 'data-sn-layer', 'data-sn-section']
             });
         }
 
