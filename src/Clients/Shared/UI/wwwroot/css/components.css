@@ -347,7 +347,7 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
 .k7-switch-wrap input:disabled + .k7-switch-track { opacity: 0.45; cursor: not-allowed; }
 .k7-switch-wrap:has(input:disabled) { cursor: not-allowed; }
 .k7-switch-wrap:focus-visible { box-shadow: none; outline: none; }
-.k7-switch-wrap:focus-visible .k7-switch-track { box-shadow: var(--focus-ring); outline: none; }
+.k7-switch-wrap:focus-visible .k7-switch-track { box-shadow: var(--focus-ring); outline: 2px solid var(--color-accent); outline-offset: 2px; }
 html.platform-tv .k7-switch-wrap:focus-visible .k7-switch-track { outline: 3px solid var(--color-accent); outline-offset: 3px; box-shadow: var(--focus-ring), 0 0 0 6px rgba(0, 0, 0, 0.35); }
 
 /* slider */
