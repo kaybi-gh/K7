@@ -60,7 +60,9 @@
 
 <!-- Explore popover -->
 <SpatialNavSection SectionId="app-explore-popover" Restrict="self-only" style="display:contents">
-<div class="app-nav-popover app-nav-popover--explore @(_exploreOpen ? "open" : "")" @ref="_explorePopoverRef">
+<div class="app-nav-popover app-nav-popover--explore @(_exploreOpen ? "open" : "")" @ref="_explorePopoverRef"
+     data-sn-layer="@(_exploreOpen ? "popover" : null)"
+     data-sn-layer-close=".app-nav-backdrop">
     <div class="app-nav-popover-inner">
         <div class="app-nav-popover-header">
             <span class="app-nav-popover-title">@L["Explore"]</span>
@@ -94,7 +96,9 @@
     <Authorized>
         <SpatialNavSection SectionId="app-profile-popover" Restrict="self-only" style="display:contents">
         <div class="app-nav-popover app-nav-popover--profile @(_profileMenuOpen ? "open" : "")"
-             @ref="_profilePopoverRef">
+             @ref="_profilePopoverRef"
+             data-sn-layer="@(_profileMenuOpen ? "popover" : null)"
+             data-sn-layer-close=".app-nav-backdrop">
             <div class="app-nav-popover-inner">
                 <div class="app-nav-popover-user">
                     <div class="avatar">

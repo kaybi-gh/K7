@@ -72,7 +72,13 @@ public partial class AppNav : IDisposable
     {
         var wasOpen = _exploreOpen;
         _exploreOpen = !_exploreOpen;
-        _profileMenuOpen = false;
+
+        if (_profileMenuOpen)
+        {
+            _profileMenuOpen = false;
+            try { await SpatialNav.PopLayerAsync(_profilePopoverRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
 
         if (_exploreOpen)
         {
@@ -104,7 +110,13 @@ public partial class AppNav : IDisposable
     {
         var wasOpen = _profileMenuOpen;
         _profileMenuOpen = !_profileMenuOpen;
-        _exploreOpen = false;
+
+        if (_exploreOpen)
+        {
+            _exploreOpen = false;
+            try { await SpatialNav.PopLayerAsync(_explorePopoverRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
 
         if (_profileMenuOpen)
         {
