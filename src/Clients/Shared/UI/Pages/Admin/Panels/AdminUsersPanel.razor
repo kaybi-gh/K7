@@ -67,16 +67,16 @@ else
                         <div class="d-flex">
                             @if (!user.IsGuest)
                             {
-                                <button type="button" class="k7-icon-btn" @onclick="@(() => OpenCapabilitiesDialog(user))" aria-label="@L["AriaCapabilities"]"><i class="ph ph-sliders"></i></button>
+                                <K7IconButton Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(user))" AriaLabel="@L["AriaCapabilities"]" />
                             }
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenLibraryExclusionsDialog(user))" aria-label="@L["AriaLibraries"]"><i class="ph ph-video-camera"></i></button>
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenMediaExclusionsDialog(user))" aria-label="@L["AriaHiddenMedia"]"><i class="ph ph-eye-slash"></i></button>
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenRestrictionProfileDialog(user))" aria-label="@L["AriaRestrictionProfile"]"><i class="ph ph-shield"></i></button>
+                            <K7IconButton Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(user))" AriaLabel="@L["AriaLibraries"]" />
+                            <K7IconButton Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(user))" AriaLabel="@L["AriaHiddenMedia"]" />
+                            <K7IconButton Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(user))" AriaLabel="@L["AriaRestrictionProfile"]" />
                             @if (!user.IsGuest && user.Id != _currentUserId)
                             {
-                                <button type="button" class="k7-icon-btn" @onclick="@(() => OpenResetPasswordDialog(user))" aria-label="@L["AriaResetPassword"]"><i class="ph ph-key"></i></button>
-                                <button type="button" class="k7-icon-btn" @onclick="@(() => OpenMergeUserDialog(user))" aria-label="@L["AriaMerge"]"><i class="ph ph-git-merge"></i></button>
-                                <button type="button" class="k7-icon-btn" @onclick="@(() => ConfirmDelete(user))" aria-label="@L["AriaDelete"]"><i class="ph ph-trash"></i></button>
+                                <K7IconButton Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(user))" AriaLabel="@L["AriaResetPassword"]" />
+                                <K7IconButton Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(user))" AriaLabel="@L["AriaMerge"]" />
+                                <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(user))" AriaLabel="@L["AriaDelete"]" />
                             }
                         </div>
                     </td>

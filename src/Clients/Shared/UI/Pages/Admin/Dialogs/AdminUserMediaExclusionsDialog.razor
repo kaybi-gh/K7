@@ -34,8 +34,8 @@
                                     }
                                     <p class="text-sm">@(media.Title ?? media.Id.ToString())</p>
                                 </div>
-                                <button type="button" class="k7-icon-btn" Name="x" Size="sm" Color="error"
-                                               OnClick="@(() => RemoveExclusion(media))" ></button>
+                                <K7IconButton Icon="@Phosphor.X" Size="sm" Color="error"
+                                               OnClick="@(() => RemoveExclusion(media))" />
                             </div>
                         
                     </li>

@@ -133,16 +133,16 @@ else
                                Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
                                OnClick="PlayAsync">@S["Play"]</K7Button>   
                                
-                    <button type="button" class="k7-icon-btn" @onclick="OpenPlaybackOptionsAsync" aria-label="playback-options"><i class="ph ph-sliders"></i></button>
-                    <button type="button" class="k7-icon-btn" aria-label="trailer"><i class="ph ph-film-slate"></i></button>
+                    <K7IconButton Icon="@Phosphor.Sliders" OnClick="OpenPlaybackOptionsAsync" AriaLabel="playback-options" />
+                    <K7IconButton Icon="@Phosphor.FilmSlate" AriaLabel="trailer" />
                     
                     <AuthorizeView Roles="User,Administrator">
-                        <button type="button" class="k7-icon-btn" aria-label="mark-as-shown"><i class="ph ph-check-circle"></i></button>
+                        <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-shown" />
                     </AuthorizeView>
 
                     <K7Menu>
                         <ActivatorContent>
-                            <button type="button" class="k7-icon-btn focusable" aria-label="more-actions"><i class="ph ph-dots-three"></i></button>
+                            <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
                         </ActivatorContent>
                         <ChildContent>
                             <AuthorizeView Roles="Administrator">

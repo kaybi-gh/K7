@@ -1,4 +1,4 @@
-﻿@page "/admin/streams"
+@page "/admin/streams"
 @layout AdminLayout
 @inject IStringLocalizer<AdminActiveStreamsPanel> L
 @inject IServerInfoService K7ServerService
@@ -6,7 +6,7 @@
 
 <div class="d-flex pa-4" style="width: 100%">
     <h5>@L["Title"]</h5>
-    <button type="button" class="k7-icon-btn" @onclick="FetchStreamsAsync" aria-label="@L["Title"]"><i class="ph ph-arrow-clockwise"></i></button>
+    <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="FetchStreamsAsync" AriaLabel="@L["Title"]" />
 </div>
 
 @if (_loading)

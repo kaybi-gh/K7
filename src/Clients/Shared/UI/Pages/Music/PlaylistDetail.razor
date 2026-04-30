@@ -59,12 +59,10 @@
                                Disabled="@(_items.Count == 0)">
                         @S["Shuffle"]
                     </K7Button>
-                    <button type="button" class="k7-icon-btn" Name="pencil"
-                                   Color="default"
-                                   OnClick="OpenEditDialog" ></button>
-                    <button type="button" class="k7-icon-btn" Name="trash"
-                                   Color="error"
-                                   OnClick="ConfirmDelete" ></button>
+                    <K7IconButton Icon="@Phosphor.Pencil"
+                                   OnClick="OpenEditDialog" />
+                    <K7IconButton Icon="@Phosphor.Trash" Color="error"
+                                   OnClick="ConfirmDelete" />
                 </div>
             </div>
         </div>
@@ -139,10 +137,8 @@
                         </td>
                         <td>
                             <span @onclick:stopPropagation="true">
-                                <button type="button" class="k7-icon-btn" Name="x"
-                                               Size="sm"
-                                               Color="error"
-                                               OnClick="() => RemoveItem(context)" ></button>
+                                <K7IconButton Icon="@Phosphor.X" Size="sm" Color="error"
+                                               OnClick="() => RemoveItem(context)" />
                             </span>
                         </td>
                     </RowTemplate>

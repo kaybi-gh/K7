@@ -1,4 +1,4 @@
-﻿@page "/admin/devices"
+@page "/admin/devices"
 @layout AdminLayout
 @inject IStringLocalizer<AdminDevicesPanel> L
 
@@ -43,7 +43,7 @@ else
                                 @device.OperatingSystem @device.OperatingSystemVersion
                                 @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
                                 {
-                                    <text> - @($"{device.DisplayWidth:0}Ã—{device.DisplayHeight:0}")</text>
+                                    <text> - @($"{device.DisplayWidth:0}×{device.DisplayHeight:0}")</text>
                                 }
                             </p>
                         </div>
@@ -53,7 +53,7 @@ else
                             <p class="text-sm">@device.LastSeen.LocalDateTime.ToString("g")</p>
                         </div>
 
-                        <button type="button" class="k7-icon-btn" @onclick="@(() => DeleteDeviceAsync(device))" aria-label="@L["DeleteDevice"]"><i class="ph ph-trash"></i></button>
+                        <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteDeviceAsync(device))" AriaLabel="@L["DeleteDevice"]" />
                     </div>
 
                     @if (device.Users.Count > 0)

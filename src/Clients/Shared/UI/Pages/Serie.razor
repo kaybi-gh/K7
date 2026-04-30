@@ -94,15 +94,15 @@ else if (_serie is not null)
                     </div>
 
                     <div class="d-flex">
-<button type="button" class="k7-icon-btn" aria-label="trailer"><i class="ph ph-film-clapper"></i></button>
+                        <K7IconButton Icon="@Phosphor.FilmSlate" AriaLabel="trailer" />
 
                             <AuthorizeView Roles="User,Administrator">
-                                <button type="button" class="k7-icon-btn" aria-label="mark-as-watched"><i class="ph ph-check-circle"></i></button>
+                                <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-watched" />
                         </AuthorizeView>
 
                         <K7Menu>
                             <ActivatorContent>
-                                <button type="button" class="k7-icon-btn focusable" aria-label="more-actions"><i class="ph ph-dots-three"></i></button>
+                                <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
                             </ActivatorContent>
                             <ChildContent>
                                 <AuthorizeView Roles="Administrator">

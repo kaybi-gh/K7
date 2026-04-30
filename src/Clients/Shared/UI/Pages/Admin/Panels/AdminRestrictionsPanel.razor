@@ -52,9 +52,9 @@ else
                             }
                         </div>
                         <div class="k7-card-header-actions">
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => PreviewRestrictedMedias(profile))" aria-label="preview"><i class="ph ph-eye"></i></button>
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => OpenEditDialog(profile))" aria-label="edit"><i class="ph ph-pencil"></i></button>
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => ConfirmDelete(profile))" aria-label="delete"><i class="ph ph-trash"></i></button>
+                            <K7IconButton Icon="@Phosphor.Eye" OnClick="@(() => PreviewRestrictedMedias(profile))" AriaLabel="preview" />
+                            <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(profile))" AriaLabel="edit" />
+                            <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(profile))" AriaLabel="delete" />
                         </div>
                     </div>
                     <div class="k7-card-content">

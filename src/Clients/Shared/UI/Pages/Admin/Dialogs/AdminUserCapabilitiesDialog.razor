@@ -15,7 +15,7 @@
                     <div class="d-flex align-center">
                         @if (hasOverride)
                         {
-                            <button type="button" class="k7-icon-btn" @onclick="@(() => RemoveOverride(capability))" aria-label="remove override"><i class="ph ph-x-circle"></i></button>
+                            <K7IconButton Icon="@Phosphor.XCircle" OnClick="@(() => RemoveOverride(capability))" AriaLabel="remove override" />
                         }
                         <K7Switch Value="@effectiveValue" ValueChanged="@(v => SetOverride(capability, v, defaultEnabled))" />
                     </div>
