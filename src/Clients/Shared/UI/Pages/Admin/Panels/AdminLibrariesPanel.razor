@@ -45,10 +45,10 @@ else
                         </p>
                 </div>
                 <div class="k7-card-actions">
-                    <button type="button" class="k7-icon-btn" @onclick="@(() => IndexLibrary(library))" aria-label="@L["AriaIndex"]"><i class="ph ph-arrow-clockwise"></i></button>
-                    <button type="button" class="k7-icon-btn" @onclick="@(() => OpenEditDialog(library))" aria-label="@L["AriaEdit"]"><i class="ph ph-pencil"></i></button>
-                    <button type="button" class="k7-icon-btn" @onclick="@(() => OpenUsersDialog(library))" aria-label="@L["AriaUserAccess"]"><i class="ph ph-users"></i></button>
-                    <button type="button" class="k7-icon-btn" @onclick="@(() => DeleteLibrary(library))" aria-label="@L["AriaDelete"]"><i class="ph ph-trash"></i></button>
+                    <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
+                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))" AriaLabel="@L["AriaEdit"]" />
+                    <K7IconButton Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))" AriaLabel="@L["AriaUserAccess"]" />
+                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))" AriaLabel="@L["AriaDelete"]" />
                 </div>
             </K7Paper>
         }

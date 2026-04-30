@@ -14,7 +14,7 @@
         else if (_summaries is { Count: > 0 })
         {
             <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-3);">
-                <div class="surface cursor-pointer @(SummaryCardClass(null))" @onclick="@(() => OnSeverityFilterChanged(null))">
+                <div class="surface cursor-pointer focusable @(SummaryCardClass(null))" tabindex="0" role="button" @onclick="@(() => OnSeverityFilterChanged(null))">
                     <div class="d-flex justify-between align-start">
                         <div class="d-flex flex-col" style="gap: var(--space-1);">
                             <span class="text-overline">@L["AllIssues"]</span>
@@ -24,7 +24,7 @@
                         <i class="ph ph-chart-bar summary-icon"></i>
                     </div>
                 </div>
-                <div class="surface cursor-pointer @(SummaryCardClass("error"))" @onclick="@(() => OnSeverityFilterChanged("error"))">
+                <div class="surface cursor-pointer focusable @(SummaryCardClass("error"))" tabindex="0" role="button" @onclick="@(() => OnSeverityFilterChanged("error"))">
                     <div class="d-flex justify-between align-start">
                         <div class="d-flex flex-col" style="gap: var(--space-1);">
                             <span class="text-overline">@L["SeverityErrors"]</span>
@@ -34,7 +34,7 @@
                         <i class="ph ph-x-circle summary-icon" style="color: var(--color-error);"></i>
                     </div>
                 </div>
-                <div class="surface cursor-pointer @(SummaryCardClass("warning"))" @onclick="@(() => OnSeverityFilterChanged("warning"))">
+                <div class="surface cursor-pointer focusable @(SummaryCardClass("warning"))" tabindex="0" role="button" @onclick="@(() => OnSeverityFilterChanged("warning"))">
                     <div class="d-flex justify-between align-start">
                         <div class="d-flex flex-col" style="gap: var(--space-1);">
                             <span class="text-overline">@L["SeverityWarnings"]</span>
@@ -44,7 +44,7 @@
                         <i class="ph ph-warning summary-icon" style="color: var(--color-warning);"></i>
                     </div>
                 </div>
-                <div class="surface cursor-pointer @(SummaryCardClass("info"))" @onclick="@(() => OnSeverityFilterChanged("info"))">
+                <div class="surface cursor-pointer focusable @(SummaryCardClass("info"))" tabindex="0" role="button" @onclick="@(() => OnSeverityFilterChanged("info"))">
                     <div class="d-flex justify-between align-start">
                         <div class="d-flex flex-col" style="gap: var(--space-1);">
                             <span class="text-overline">@L["SeverityInfo"]</span>
@@ -114,7 +114,7 @@
                     </K7MenuItem>
                     </ChildContent>
                 </K7Menu>
-                <button class="k7-icon-btn k7-icon-btn--sm ph ph-arrow-clockwise" type="button"  @onclick="LoadAsync" aria-label="@L["Refresh"]"><i class="k7-icon-btn k7-icon-btn--sm ph ph-arrow-clockwise" ></i></button>
+                <K7IconButton Icon="@Phosphor.ArrowClockwise" Size="sm" OnClick="LoadAsync" AriaLabel="@L["Refresh"]" />
             </div>
         </div>
 
@@ -204,9 +204,9 @@
                 @if ((_items.TotalPages ?? 1) > 1)
                 {
                     <div class="d-flex justify-center mt-3" style="gap: var(--space-2);">
-                        <button class="k7-btn k7-btn--outlined ph ph-caret-left" type="button"  @onclick="PreviousPage" disabled="@(_pageNumber <= 1)"><i class="k7-btn k7-btn--outlined ph ph-caret-left" ></i></button>
+                        <button class="k7-btn k7-btn--outlined focusable" type="button" @onclick="PreviousPage" disabled="@(_pageNumber <= 1)"><i class="ph ph-caret-left"></i></button>
                         <span class="d-flex align-center" style="padding: 0 var(--space-3);">@_pageNumber / @(_items.TotalPages ?? 1)</span>
-                        <button class="k7-btn k7-btn--outlined ph ph-caret-right" type="button"  @onclick="NextPage" disabled="@(_pageNumber >= (_items.TotalPages ?? 1))"><i class="k7-btn k7-btn--outlined ph ph-caret-right" ></i></button>
+                        <button class="k7-btn k7-btn--outlined focusable" type="button" @onclick="NextPage" disabled="@(_pageNumber >= (_items.TotalPages ?? 1))"><i class="ph ph-caret-right"></i></button>
                     </div>
                 }
             }

@@ -24,14 +24,10 @@ else
                 <div class="surface pa-3 d-flex align-center justify-between gap-3">
                     <div class="d-flex align-center gap-2">
                         <div class="d-flex flex-col gap-1">
-                            <button type="button" class="k7-icon-btn" disabled="@isFirst"
-                                    @onclick="() => MoveUp(row)" aria-label="@L["MoveUp"]">
-                                <K7Icon Icon="@Phosphor.ArrowUp" />
-                            </button>
-                            <button type="button" class="k7-icon-btn" disabled="@isLast"
-                                    @onclick="() => MoveDown(row)" aria-label="@L["MoveDown"]">
-                                <K7Icon Icon="@Phosphor.ArrowDown" />
-                            </button>
+                            <K7IconButton Icon="@Phosphor.ArrowUp" Disabled="@isFirst"
+                                    OnClick="() => MoveUp(row)" AriaLabel="@L["MoveUp"]" />
+                            <K7IconButton Icon="@Phosphor.ArrowDown" Disabled="@isLast"
+                                    OnClick="() => MoveDown(row)" AriaLabel="@L["MoveDown"]" />
                         </div>
                         <span class="text-sm">@row.Title</span>
                     </div>

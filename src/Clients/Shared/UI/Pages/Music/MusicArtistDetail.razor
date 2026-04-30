@@ -36,7 +36,7 @@
                 <div class="d-flex flex-col pa-4">
                     <div class="d-flex">
                         <h4>@_person.Name</h4>
-                        <button type="button" class="k7-icon-btn" Name="user" Href="@($"/persons/{_person.Id}")" Size="sm" title="@L["ViewPerson"]" ></button>
+                        <K7IconButton Icon="@Phosphor.User" Href="@($"/persons/{_person.Id}")" Size="sm" title="@L["ViewPerson"]" />
                     </div>
                     @if (!string.IsNullOrEmpty(_person.Biography))
                     {

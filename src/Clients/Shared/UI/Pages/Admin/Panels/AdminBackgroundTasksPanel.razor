@@ -1,4 +1,4 @@
-﻿@page "/admin/background-tasks"
+@page "/admin/background-tasks"
 @layout AdminLayout
 @using K7.Server.Domain.Enums
 @implements IDisposable
@@ -10,14 +10,14 @@
         @if (_summary is not null)
         {
             <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-2);">
-                <div class="surface cursor-pointer summary-card" @onclick="@(() => OnStatusFilterChanged(null))">
+                <div class="surface cursor-pointer summary-card focusable" tabindex="0" role="button" @onclick="@(() => OnStatusFilterChanged(null))">
                     <h5>@_summary.TotalCount</h5>
                     <span class="text-caption" style="color: var(--color-text-muted);">@L["FilterAll"]</span>
                 </div>
                 @foreach (var status in _allStatuses)
                 {
                     var count = _summary.StatusCounts.FirstOrDefault(s => s.Status == status)?.Count ?? 0;
-                    <div class="surface cursor-pointer summary-card" @onclick="@(() => OnStatusFilterChanged(status))">
+                    <div class="surface cursor-pointer summary-card focusable" tabindex="0" role="button" @onclick="@(() => OnStatusFilterChanged(status))">
                         <div class="d-flex align-center" style="gap: var(--space-2);">
                             <K7Icon Name="@GetStatusIcon(status)" Size="sm" />
                             <h5>@count</h5>
@@ -75,7 +75,7 @@
                                 <td class="text-sm">@(task.Duration.HasValue ? FormatDuration(task.Duration.Value) : "-")</td>
                                 <td class="text-sm">@(task.ConcurrencyGroup ?? "-")</td>
                                 <td>
-                                    <button type="button" class="k7-icon-btn" @onclick="@(() => OpenDetailDialog(task))" aria-label="detail"><i class="ph ph-info"></i></button>
+                                    <K7IconButton Icon="@Phosphor.Info" OnClick="@(() => OpenDetailDialog(task))" AriaLabel="detail" />
                                 </td>
                             </tr>
                         }
