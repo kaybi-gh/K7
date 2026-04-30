@@ -45,20 +45,4 @@ public sealed class SpatialNavService(IJSRuntime jsRuntime) : ISpatialNavService
     {
         await jsRuntime.InvokeVoidAsync("SpatialNav.refresh");
     }
-
-    public async Task AddSectionAsync(string sectionId, SpatialNavSectionOptions? options = null)
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.addSection", sectionId, new
-        {
-            selector = options?.Selector,
-            restrict = options?.Restrict ?? "self-first",
-            enterTo = options?.EnterTo ?? "last-focused",
-            leaveFor = options?.LeaveFor
-        });
-    }
-
-    public async Task RemoveSectionAsync(string sectionId)
-    {
-        await jsRuntime.InvokeVoidAsync("SpatialNav.removeSection", sectionId);
-    }
 }
