@@ -13,12 +13,9 @@
                 <h6 class="k7-dialog-title">@entry.Title</h6>
                 @if (entry.Options?.CloseButton != false)
                 {
-                    <button class="k7-icon-btn k7-icon-btn--sm"
-                            type="button"
-                            aria-label="Close"
-                            @onclick="() => entry.Cancel()">
-                        <i class="ph ph-x"></i>
-                    </button>
+                    <K7IconButton Icon="@Phosphor.X" Size="sm"
+                                  AriaLabel="Close"
+                                  OnClick="() => entry.Cancel()" />
                 }
             </div>
             <CascadingValue Value="@((IK7DialogInstance)entry)" IsFixed="true">

@@ -15,7 +15,7 @@
                 @foreach (var item in Items)
                 {
                     var localItem = item;
-                    <tr class="@RowClass" @onclick="() => OnRowClick.InvokeAsync(new TableRowClickEventArgs<TItem> { Item = localItem })">
+                    <tr class="focusable @RowClass" tabindex="0" @onclick="() => OnRowClick.InvokeAsync(new TableRowClickEventArgs<TItem> { Item = localItem })">
                         @RowTemplate?.Invoke(localItem)
                     </tr>
                 }

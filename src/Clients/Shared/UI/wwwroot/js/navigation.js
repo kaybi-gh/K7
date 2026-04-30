@@ -29,8 +29,17 @@ var SpatialNav = (function () {
 
     // Layer Stack
 
+    function pruneDisconnectedLayers() {
+        for (var i = _layers.length - 1; i >= 0; i--) {
+            if (_layers[i].el && !_layers[i].el.isConnected) {
+                _layers.splice(i, 1);
+            }
+        }
+    }
+
     function pushLayer(el, type, opts) {
         if (!el) return;
+        pruneDisconnectedLayers();
         opts = opts || {};
         for (var i = 0; i < _layers.length; i++) {
             if (_layers[i].el === el) return;
@@ -59,6 +68,7 @@ var SpatialNav = (function () {
     }
 
     function peekLayer() {
+        pruneDisconnectedLayers();
         return _layers.length > 0 ? _layers[_layers.length - 1] : null;
     }
 
@@ -513,6 +523,12 @@ var SpatialNav = (function () {
 
 // RatingStars JS helper
 window.K7 = window.K7 || {};
+
+K7.scrollToElement = function (id) {
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
 K7.RatingStars = {
     _instances: new WeakMap(),
     init: function (el, dotNetRef) {
