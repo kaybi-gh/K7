@@ -1,6 +1,6 @@
 @using K7.Shared.Dtos.Entities.Medias
 
-<div class="episode-item @(IsExpanded ? "episode-item--expanded" : "")" tabindex="0" role="button" @onclick="OnToggleExpand" @onkeydown="OnKeyDown">
+<div class="episode-item focusable @(IsExpanded ? "episode-item--expanded" : "")" tabindex="0" role="button" @onclick="OnToggleExpand" @onkeydown="OnKeyDown">
     <div class="episode-item-main">
         <div class="episode-still-container">
             @if (!string.IsNullOrEmpty(StillUrl))

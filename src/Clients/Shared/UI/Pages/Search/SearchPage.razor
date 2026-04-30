@@ -76,7 +76,7 @@
                 <div class="search-person-row">
                     @foreach (var person in _result.PersonResults)
                     {
-                        <a href="/persons/@person.Id" class="search-person-card">
+                        <a href="/persons/@person.Id" class="search-person-card focusable">
                             <K7Avatar Image="@GetPersonPictureUrl(person)"
                                        Alt="@person.Name"
                                        Size="lg" />
@@ -94,7 +94,7 @@
                 <div class="search-person-row">
                     @foreach (var character in _result.CharacterResults)
                     {
-                        <a href="/persons/@character.PersonId" class="search-person-card">
+                        <a href="/persons/@character.PersonId" class="search-person-card focusable">
                             <K7Avatar Image="@GetCharacterPictureUrl(character)"
                                        Alt="@character.PersonName"
                                        Size="lg" />
