@@ -3,7 +3,7 @@
 @using K7.Server.Domain.Enums
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="app-nav-backdrop @(IsAnyMenuOpen ? "open" : "")" @onclick="CloseAll"></div>
+<div class="app-nav-backdrop @(IsAnyMenuOpen ? "open" : "")" @onclick="CloseAllAsync"></div>
 
 <header class="app-nav">
     <SpatialNavSection SectionId="app-navbar" EnterTo="last-focused">
@@ -64,7 +64,7 @@
     <div class="app-nav-popover-inner">
         <div class="app-nav-popover-header">
             <span class="app-nav-popover-title">@L["Explore"]</span>
-            <button class="btn-icon" type="button" @onclick="CloseAll"><K7Icon Icon="@Phosphor.X" /></button>
+            <button class="btn-icon focusable" type="button" @onclick="CloseAll"><K7Icon Icon="@Phosphor.X" /></button>
         </div>
 
         <div class="app-nav-explore-grid">

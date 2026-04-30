@@ -154,8 +154,7 @@ public partial class AppNav : IDisposable
 
     public void CloseAll()
     {
-        _exploreOpen = false;
-        _profileMenuOpen = false;
+        _ = CloseAllAsync();
     }
 
     private void OnConnectionStateChanged(HubConnectionState state)
