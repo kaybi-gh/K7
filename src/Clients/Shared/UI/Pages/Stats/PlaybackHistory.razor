@@ -57,9 +57,9 @@ else
         {
             <div class="d-flex justify-center mt-4">
                 <div class="d-flex align-center gap-2">
-                    <K7Button Variant="text" Disabled="@(_currentPage <= 1)" OnClick="@(() => OnPageChanged(_currentPage - 1))"><K7Icon Name="caret-left" /></K7Button>
+                    <K7IconButton Icon="@Phosphor.CaretLeft" Disabled="@(_currentPage <= 1)" OnClick="@(() => OnPageChanged(_currentPage - 1))" />
                     <span class="text-sm">@_currentPage / @((int)Math.Ceiling((double)_history.TotalCount / _history.PageSize))</span>
-                    <K7Button Variant="text" Disabled="@(_currentPage >= (int)Math.Ceiling((double)_history.TotalCount / _history.PageSize))" OnClick="@(() => OnPageChanged(_currentPage + 1))"><K7Icon Name="caret-right" /></K7Button>
+                    <K7IconButton Icon="@Phosphor.CaretRight" Disabled="@(_currentPage >= (int)Math.Ceiling((double)_history.TotalCount / _history.PageSize))" OnClick="@(() => OnPageChanged(_currentPage + 1))" />
                 </div>
             </div>
         }
