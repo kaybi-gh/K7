@@ -1,8 +1,20 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="empty-layout">
-    @Body
+    <K7ErrorBoundary>
+        <ChildContent>
+            @Body
+        </ChildContent>
+        <ErrorContent>
+            <div class="error-state">
+                <p style="font-size:var(--text-lg);font-weight:600;color:var(--color-text-primary)">An unexpected error occurred.</p>
+                <button class="btn btn--primary mt-4" onclick="location.reload()">Reload</button>
+            </div>
+        </ErrorContent>
+    </K7ErrorBoundary>
 </div>
+
+<K7SnackbarHost />
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
