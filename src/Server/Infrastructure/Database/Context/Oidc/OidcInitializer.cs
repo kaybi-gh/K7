@@ -50,11 +50,14 @@ public static class OidcInitializer
             };
 
             var existing = await manager.FindByClientIdAsync("k7-native");
-            if (existing != null)
+            if (existing is not null)
             {
-                await manager.DeleteAsync(existing);
+                await manager.UpdateAsync(existing, descriptor);
             }
-            await manager.CreateAsync(descriptor);
+            else
+            {
+                await manager.CreateAsync(descriptor);
+            }
 
             var cliDescriptor = new OpenIddictApplicationDescriptor
             {
@@ -77,11 +80,14 @@ public static class OidcInitializer
             };
 
             var existingCli = await manager.FindByClientIdAsync("k7-cli");
-            if (existingCli != null)
+            if (existingCli is not null)
             {
-                await manager.DeleteAsync(existingCli);
+                await manager.UpdateAsync(existingCli, cliDescriptor);
             }
-            await manager.CreateAsync(cliDescriptor);
+            else
+            {
+                await manager.CreateAsync(cliDescriptor);
+            }
         }
 
         static async Task RegisterScopesAsync(IServiceProvider serviceProvider)
