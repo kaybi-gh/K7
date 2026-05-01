@@ -5,60 +5,54 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="container">
-    <div class="d-flex flex-col" style="width:100%; max-width:700px;">
-        <h4>@L["PageTitle"]</h4>
-
-        @if (_loading)
-        {
-            <K7Spinner />
-        }
-
-        <div class="grid">
+<div class="select-user-page">
+    @if (_loading)
+    {
+        <K7Spinner />
+    }
+    else
+    {
+        <Carousel Title="@L["PageTitle"]">
             @foreach (var user in _users)
             {
-                <div>
-                    <div class="d-flex flex-col cursor-pointer pa-4 rounded-lg select-user-card focusable"
+                <CarouselItem @key="user.IdentityUserId">
+                    <div class="select-user-card focusable my-2"
                          tabindex="0" role="button"
                          @onclick="() => SelectUserAsync(user)"
-                         @onkeydown="(e) => OnUserKeyDown(e, user)"
-                         style="min-width: 120px;">
-                        <K7Avatar Size="lg" Color="primary"
-                                   Style="width:80px; height:80px; font-size:2rem;">
+                         @onkeydown="(e) => OnUserKeyDown(e, user)">
+                        <K7Avatar Class="ma-2" Size="xl" Color="primary">
                             @GetInitials(user.UserName)
                         </K7Avatar>
-                        <div class="d-flex align-center">
-                            <p>@user.UserName</p>
+                        <div class="select-user-name">
+                            <span>@user.UserName</span>
                             @if (user.PinHash is not null)
                             {
                                 <K7Icon Name="lock" Size="sm" Color="secondary" />
                             }
                         </div>
                     </div>
-                </div>
+                </CarouselItem>
             }
 
-            <div>
-                <div class="d-flex flex-col cursor-pointer pa-4 rounded-lg select-user-card focusable"
+            <CarouselItem>
+                <div class="select-user-card focusable my-2"
                      tabindex="0" role="button"
                      @onclick="AddUserAsync"
-                     @onkeydown="OnAddUserKeyDown"
-                     style="min-width: 120px;">
-                    <K7Avatar Size="lg" Color="default"
-                               Style="width:80px; height:80px; font-size:2rem;">
-                        <K7Icon Name="plus" Size="lg" />
+                     @onkeydown="OnAddUserKeyDown">
+                    <K7Avatar Class="ma-2" Size="xl" Color="default">
+                        <K7Icon Icon="@Phosphor.Plus" Size="lg" />
                     </K7Avatar>
-                    <p>@L["AddServer"]</p>
+                    <span class="select-user-name">@L["AddServer"]</span>
                 </div>
-            </div>
-        </div>
+            </CarouselItem>
+        </Carousel>
 
         @if (_users.Count > 0)
         {
-            <div class="d-flex align-center mt-4">
-                <K7Switch Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
+            <div class="select-user-switch">
+                <K7Switch Class="ma-4" Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
                            Label="@L["SingleUserMode"]" />
             </div>
         }
-    </div>
+    }
 </div>
