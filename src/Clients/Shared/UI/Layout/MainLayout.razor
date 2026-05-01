@@ -33,7 +33,7 @@
             <MiniMusicPlayer />
         </div>
         <FullScreenMusicPlayer />
-        <ErrorBoundary @ref="_errorBoundary">
+        <K7ErrorBoundary @ref="_errorBoundary">
             <ChildContent>
                 @Body
             </ChildContent>
@@ -45,7 +45,7 @@
                     <button class="btn btn--primary mt-4" @onclick="Recover">@L["Retry"]</button>
                 </div>
             </ErrorContent>
-        </ErrorBoundary>
+        </K7ErrorBoundary>
     </main>
 </div>
 
