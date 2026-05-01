@@ -23,7 +23,7 @@
             }
             else if (_error is not null)
             {
-                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2" Style="width:100%;">
+                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2 w-full">
                     @_error
                 </K7Alert>
                 <K7Button Variant="filled" Color="primary" Size="lg" OnClick="SignInAsync">
@@ -34,7 +34,7 @@
             {
                 @if (_serverInfoError is not null)
                 {
-                    <K7Alert Severity="K7Severity.Warning" Variant="text" Class="mt-2" Style="width:100%;">
+                    <K7Alert Severity="K7Severity.Warning" Variant="text" Class="mt-2 w-full">
                         @_serverInfoError
                     </K7Alert>
                 }
