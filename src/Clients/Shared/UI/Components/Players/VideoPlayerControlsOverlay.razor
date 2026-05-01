@@ -432,7 +432,7 @@
                 await _overlayRef.FocusAsync();
             }
             catch (ObjectDisposedException) { }
-            catch (JSException) { }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         });
     }
 
@@ -851,7 +851,7 @@
         BrightnessService.ResetBrightness();
         _dotNetRef?.Dispose();
         try { await SpatialNav.PopLayerAsync(_overlayRef); }
-        catch (JSException) { }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         PlayerService.IsMutedChanged -= OnIsMutedChanged;
         PlayerService.VolumeChanged -= OnVolumeChanged;
