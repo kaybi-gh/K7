@@ -62,6 +62,7 @@ builder.Services.AddSingleton<K7DialogService>();
 builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
 builder.Services.AddSingleton<K7SnackbarService>();
 builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
+builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
 builder.Services.AddSingleton<ISpatialNavService, SpatialNavService>();
 
 builder.Services.AddHttpClient("BackendAPI", client =>
