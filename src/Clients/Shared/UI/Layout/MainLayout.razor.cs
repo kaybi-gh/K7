@@ -19,7 +19,7 @@ public partial class MainLayout : IDisposable
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
-    private ErrorBoundary? _errorBoundary;
+    private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
     private Timer? _overlayTimer;
     private DotNetObjectReference<MainLayout>? _selfRef;
