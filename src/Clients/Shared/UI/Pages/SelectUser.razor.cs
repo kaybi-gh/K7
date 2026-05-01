@@ -12,12 +12,12 @@ public partial class SelectUser
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private List<LocalUser> _users = [];
     private bool _singleUserMode;
     private bool _loading;
     private bool _isTv;
-    private string? _error;
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,7 +42,6 @@ public partial class SelectUser
         }
 
         _loading = true;
-        _error = null;
         StateHasChanged();
 
         try
@@ -57,13 +56,13 @@ public partial class SelectUser
             {
                 LocalUserService.Remove(user.IdentityUserId);
                 _users = LocalUserService.GetAll();
-                _error = string.Format(L["SessionExpired"], user.UserName);
+                Snackbar.Add(string.Format(L["SessionExpired"], user.UserName), K7Severity.Error);
                 _loading = false;
             }
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            Snackbar.Add(ex.Message, K7Severity.Error);
             _loading = false;
         }
 
@@ -85,12 +84,10 @@ public partial class SelectUser
 
         if (!LocalUserService.VerifyPin(user.IdentityUserId, pin))
         {
-            _error = L["IncorrectPin"];
-            StateHasChanged();
+            Snackbar.Add(L["IncorrectPin"], K7Severity.Error);
             return false;
         }
 
-        _error = null;
         return true;
     }
 
@@ -103,7 +100,6 @@ public partial class SelectUser
         }
 
         _loading = true;
-        _error = null;
         StateHasChanged();
 
         try
@@ -124,7 +120,7 @@ public partial class SelectUser
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            Snackbar.Add(ex.Message, K7Severity.Error);
             _loading = false;
             StateHasChanged();
         }
