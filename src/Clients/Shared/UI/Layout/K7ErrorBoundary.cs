@@ -16,7 +16,14 @@ public class K7ErrorBoundary : ErrorBoundary
 
     protected override Task OnErrorAsync(Exception exception)
     {
-        ErrorReporter.ReportError(exception, "ErrorBoundary");
+        try
+        {
+            ErrorReporter.ReportError(exception, "ErrorBoundary");
+        }
+        catch
+        {
+            // Best-effort - don't let reporting failure prevent recovery
+        }
 
         var now = DateTime.UtcNow;
 
@@ -30,7 +37,7 @@ public class K7ErrorBoundary : ErrorBoundary
 
         if (_errorCount <= MaxAutoRecovers)
         {
-            Recover();
+            _ = InvokeAsync(Recover);
         }
 
         return Task.CompletedTask;
