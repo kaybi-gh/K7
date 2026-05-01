@@ -47,7 +47,7 @@ public partial class BlazorPage : ContentPage
             _ = blazorWebView.TryDispatchAsync(async sp =>
             {
                 var js = sp.GetRequiredService<IJSRuntime>();
-                await js.InvokeVoidAsync("history.back");
+                await js.InvokeVoidAsync("SpatialNav.handleBack");
             });
         });
         return true;

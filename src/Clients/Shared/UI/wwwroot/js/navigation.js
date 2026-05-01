@@ -639,6 +639,11 @@ var SpatialNav = (function () {
 
     // Public API
 
+    function handleBack() {
+        var fakeEvent = { key: 'GoBack', preventDefault: function () {}, stopImmediatePropagation: function () {} };
+        handleEscape(fakeEvent);
+    }
+
     return {
         init: init,
         pushLayer: pushLayer,
@@ -650,7 +655,8 @@ var SpatialNav = (function () {
         removeSection: removeSection,
         registerHomeEscape: registerHomeEscape,
         isFocusInside: isFocusInside,
-        isElementEditing: isElementEditing
+        isElementEditing: isElementEditing,
+        handleBack: handleBack
     };
 
 })();
