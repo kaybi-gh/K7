@@ -13,12 +13,6 @@
         {
             <K7Spinner />
         }
-        else if (_error is not null)
-        {
-            <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2" Style="width:100%;">
-                @_error
-            </K7Alert>
-        }
 
         <div class="grid">
             @foreach (var user in _users)
