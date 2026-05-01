@@ -20,7 +20,7 @@
             }
             else if (_error is not null)
             {
-                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2" Style="width:100%;">
+                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2 w-full">
                     @_error
                 </K7Alert>
                 <K7Button Variant="filled" Color="primary" OnClick="StartDeviceCodeFlowAsync">
@@ -29,7 +29,7 @@
             }
             else if (_authorized)
             {
-                <K7Alert Severity="K7Severity.Success" Variant="filled" Class="mt-2" Style="width:100%;">
+                <K7Alert Severity="K7Severity.Success" Variant="filled" Class="mt-2 w-full">
                     @L["ActivationSuccess"]
                 </K7Alert>
             }
