@@ -26,7 +26,7 @@ public class ReportClientError : IEndpoint
 
             return Results.Ok();
         })
-        .RequireAuthorization()
+        .AllowAnonymous()
         .WithName(type.Name)
         .WithTags(groupName);
     }
