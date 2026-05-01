@@ -3481,6 +3481,29 @@
         }
       }
     },
+    "/api/diagnostics/client-errors": {
+      "post": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "operationId": "ReportClientError",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/devices/{id}/attach-user": {
       "post": {
         "tags": [
@@ -5370,6 +5393,38 @@
           },
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
+          }
+        }
+      },
+      "ClientErrorReport": {
+        "required": [
+          "message",
+          "source",
+          "stackTrace",
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stackTrace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
