@@ -40,6 +40,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Action<VideoQualityOption?>? QualityChanged;
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
 
+    public event Action? BackPressed;
+
     private PlayerSource _source = new();
     public PlayerSource Source
     {
@@ -331,6 +333,8 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;
     }
+
+    public void OnBackPressed() => BackPressed?.Invoke();
 
     public void Play() => PlayRequested?.Invoke();
     public void Pause() => PauseRequested?.Invoke();
