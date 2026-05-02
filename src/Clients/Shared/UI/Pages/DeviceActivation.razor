@@ -18,20 +18,9 @@
                     <p class="text-sm color-secondary">@L["Activating"]</p>
                 </div>
             }
-            else if (_error is not null)
-            {
-                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2 w-full">
-                    @_error
-                </K7Alert>
-                <K7Button Variant="filled" Color="primary" OnClick="StartDeviceCodeFlowAsync">
-                    @L["Activate"]
-                </K7Button>
-            }
             else if (_authorized)
             {
-                <K7Alert Severity="K7Severity.Success" Variant="filled" Class="mt-2 w-full">
-                    @L["ActivationSuccess"]
-                </K7Alert>
+                <K7Icon Name="check-circle" Size="lg" Color="success" />
             }
             else if (_deviceCode is not null)
             {
@@ -79,6 +68,12 @@
                     <K7ProgressBar Indeterminate="true" />
                     <p class="text-sm color-secondary">@L["Activating"]</p>
                 </div>
+            }
+            else
+            {
+                <K7Button Variant="filled" Color="primary" OnClick="StartDeviceCodeFlowAsync">
+                    @L["Activate"]
+                </K7Button>
             }
         </div>
     </div>

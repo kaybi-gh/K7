@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -8,9 +10,9 @@ public partial class DeviceActivation : IDisposable
     [Inject] private ICustomAuthenticationStateProvider AuthService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private bool _loading = true;
-    private string? _error;
     private DeviceCodeInfo? _deviceCode;
     private string? _displayUri;
     private bool _authorized;
@@ -28,7 +30,6 @@ public partial class DeviceActivation : IDisposable
     private async Task StartDeviceCodeFlowAsync()
     {
         _loading = true;
-        _error = null;
         _deviceCode = null;
         _authorized = false;
         _cts?.Cancel();
@@ -49,6 +50,7 @@ public partial class DeviceActivation : IDisposable
             }, _cts.Token);
 
             _authorized = true;
+            Snackbar.Add(L["ActivationSuccess"], K7Severity.Success);
             await InvokeAsync(StateHasChanged);
 
             await Task.Delay(1500);
@@ -57,7 +59,7 @@ public partial class DeviceActivation : IDisposable
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            Snackbar.Add(ex.Message, K7Severity.Error);
             _loading = false;
             await InvokeAsync(StateHasChanged);
         }

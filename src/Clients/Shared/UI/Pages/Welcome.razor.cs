@@ -1,4 +1,6 @@
-﻿using K7.Server.Domain.Enums;
+﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
+using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
@@ -15,13 +17,12 @@ public partial class Welcome : IDisposable
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     private K7.Clients.Shared.UI.Components.K7Button? _signInButton;
     private bool _loading;
     private bool _guestEnabled;
     private bool _isTv;
-    private string? _error;
-    private string? _serverInfoError;
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
@@ -63,7 +64,7 @@ public partial class Welcome : IDisposable
         catch (Exception ex)
         {
             if (!_guestEnabled)
-                _serverInfoError = string.Format(S["ErrorWithDetails"], ex.Message);
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Warning);
         }
     }
 
@@ -84,7 +85,6 @@ public partial class Welcome : IDisposable
         }
 
         _loading = true;
-        _error = null;
         StateHasChanged();
 
         try
@@ -94,7 +94,7 @@ public partial class Welcome : IDisposable
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            Snackbar.Add(ex.Message, K7Severity.Error);
             _loading = false;
             StateHasChanged();
         }
@@ -103,7 +103,6 @@ public partial class Welcome : IDisposable
     private async Task ContinueAsGuestAsync()
     {
         _loading = true;
-        _error = null;
         StateHasChanged();
 
         try
@@ -113,7 +112,7 @@ public partial class Welcome : IDisposable
         }
         catch (Exception ex)
         {
-            _error = ex.Message;
+            Snackbar.Add(ex.Message, K7Severity.Error);
             _loading = false;
             StateHasChanged();
         }
@@ -128,7 +127,7 @@ public partial class Welcome : IDisposable
         }
         else
         {
-            _error = L["SignInFailed"];
+            Snackbar.Add(L["SignInFailed"], K7Severity.Error);
             _loading = false;
             StateHasChanged();
         }
