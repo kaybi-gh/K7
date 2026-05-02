@@ -9,6 +9,8 @@ public interface ISpatialNavService
 
     Task PopLayerAsync(ElementReference element);
 
+    Task AttachLayerCallbackAsync(ElementReference element, object onClose);
+
     Task FocusFirstAsync(string? selector = null);
 
     Task FocusElementAsync(ElementReference element);

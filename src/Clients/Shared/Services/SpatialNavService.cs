@@ -21,6 +21,11 @@ public sealed class SpatialNavService(IJSRuntime jsRuntime) : ISpatialNavService
         await jsRuntime.InvokeVoidAsync("SpatialNav.popLayer", element);
     }
 
+    public async Task AttachLayerCallbackAsync(ElementReference element, object onClose)
+    {
+        await jsRuntime.InvokeVoidAsync("SpatialNav.attachLayerCallback", element, onClose);
+    }
+
     public async Task FocusFirstAsync(string? selector = null)
     {
         await jsRuntime.InvokeVoidAsync("SpatialNav.focusFirst", selector);
