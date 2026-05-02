@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -13,6 +14,7 @@ public partial class SelectUser
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     private List<LocalUser> _users = [];
     private bool _singleUserMode;
@@ -30,6 +32,15 @@ public partial class SelectUser
         _users = LocalUserService.GetAll();
         _singleUserMode = LocalUserService.IsSingleUserMode;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _isTv && !_loading)
+        {
+            await JSRuntime.InvokeVoidAsync("eval",
+                "document.querySelector('.select-user-card.focusable')?.focus()");
+        }
     }
 
     private async Task SelectUserAsync(LocalUser user)
