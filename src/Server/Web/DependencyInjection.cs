@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using K7.Server.Domain.Constants;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Web.Services;
@@ -85,6 +86,9 @@ public static class DependencyInjection
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
         services.AddSingleton<ILibraryNotifier, LibraryNotifier>();
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();
+        services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
+        services.AddScoped<K7SnackbarService>();
+        services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         services.AddSignalR();
         //services.AddHttpForwarderWithServiceDiscovery(); // TODO - To keep or not?
         services.AddHttpContextAccessor();
