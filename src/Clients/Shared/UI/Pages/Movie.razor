@@ -118,7 +118,7 @@ else
                     </p>
                 }
 
-                <div class="d-flex flex-col py-3 overview-clickable focusable" style="max-width: 800px;" tabindex="0" @onclick="OpenSynopsisDialogAsync" @onkeydown="HandleOverviewKeyDown">
+                <div class="d-flex flex-col py-3 overview-clickable focusable" style="max-width: 800px;" tabindex="0" role="button" @onclick="OpenSynopsisDialogAsync">
                     <p Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem;">
                         @_movie.Overview
                     </p>

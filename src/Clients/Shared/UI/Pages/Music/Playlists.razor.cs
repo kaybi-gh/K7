@@ -75,14 +75,6 @@ public partial class Playlists
         NavigationManager.NavigateTo(url);
     }
 
-    private void OnPlaylistKeyDown(KeyboardEventArgs e, LitePlaylistDto playlist)
-    {
-        if (e.Code is "Enter" or "Space")
-        {
-            GoToPlaylist(playlist);
-        }
-    }
-
     private string? GetCoverUrl(LitePlaylistDto playlist)
     {
         return ApiClient.GetAbsoluteUri(

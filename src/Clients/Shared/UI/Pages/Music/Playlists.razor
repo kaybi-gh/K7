@@ -47,7 +47,7 @@
         </div>
     </EmptyContent>
     <GridTemplate Context="playlist">
-        <div class="k7-card k7-card--outlined playlist-card" tabindex="0" @onclick="() => GoToPlaylist(playlist)" @onkeydown="(e) => OnPlaylistKeyDown(e, playlist)" Style="cursor: pointer;">
+        <div class="k7-card k7-card--outlined playlist-card" tabindex="0" role="button" @onclick="() => GoToPlaylist(playlist)" Style="cursor: pointer;">
             <div class="k7-card-content">
                 <div class="d-flex flex-col">
                     @if (playlist.CoverPicture is not null)

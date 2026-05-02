@@ -35,13 +35,6 @@ public partial class CreateLibraryDialog
         _selectedProvider = _availableProviders.FirstOrDefault()?.ProviderName ?? "";
     }
 
-    private async Task OnMediaTypeKeyDown(KeyboardEventArgs e, LibraryMediaType mediaType)
-    {
-        if (e.Code is "Enter" or "Space")
-        {
-            await SelectMediaType(mediaType);
-        }
-    }
 
     private string GetMediaTypeCardClass(LibraryMediaType type)
     {

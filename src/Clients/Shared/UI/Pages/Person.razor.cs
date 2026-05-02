@@ -130,12 +130,6 @@ public partial class Person : IDisposable
         return DialogService.ShowAsync<OverviewDialog>(_person.Name ?? string.Empty, parameters, options);
     }
 
-    private async Task HandleBioKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key is "Enter" or " ")
-            await OpenBioDialogAsync();
-    }
-
     private static int Age(DateOnly birthday)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);

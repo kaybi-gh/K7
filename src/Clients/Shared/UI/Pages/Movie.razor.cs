@@ -68,14 +68,6 @@ public partial class Movie
         _overviewExpanded = !_overviewExpanded;
     }
 
-    private async Task HandleOverviewKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key is "Enter" or " ")
-        {
-            await OpenSynopsisDialogAsync();
-        }
-    }
-
     private async Task PlayAsync()
     {
         if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any() || _selectedFile == null)
