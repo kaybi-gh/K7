@@ -27,10 +27,7 @@ public partial class K7DialogHost : IDisposable
         await Task.Yield();
         try
         {
-            await SpatialNav.PushLayerAsync(entry.BackdropRef, "dialog", new SpatialNavLayerOptions
-            {
-                OnClose = entry.CloseCallback
-            });
+            await SpatialNav.AttachLayerCallbackAsync(entry.BackdropRef, entry.CloseCallback);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
