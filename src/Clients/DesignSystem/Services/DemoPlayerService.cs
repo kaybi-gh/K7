@@ -41,6 +41,7 @@ public sealed class DemoPlayerService : IPlayerService
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
     public event Action<VideoQualityOption?>? QualityChanged;
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
+    public event Action? BackPressed;
 #pragma warning restore CS0067
 
     public IReadOnlyList<AudioFileTrackDto> AudioTracks => [];
@@ -50,8 +51,7 @@ public sealed class DemoPlayerService : IPlayerService
     public IReadOnlyList<VideoQualityOption> AvailableQualities => [];
     public VideoQualityOption? SelectedQuality => null;
 
-    private bool _isVisible;
-    public bool IsVisible => _isVisible;
+    public bool IsVisible { get; private set; }
     public PlayerSource Source { get; set; } = new();
     public PlaybackState PlaybackState { get; set; } = PlaybackState.Idle;
     public bool IsFullScreen { get; set; }
@@ -77,14 +77,14 @@ public sealed class DemoPlayerService : IPlayerService
 
     public Task ShowAsync()
     {
-        _isVisible = true;
+        IsVisible = true;
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;
     }
 
     public Task HideAsync()
     {
-        _isVisible = false;
+        IsVisible = false;
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;
     }
@@ -105,7 +105,7 @@ public sealed class DemoPlayerService : IPlayerService
         Source = new PlayerSource { Url = url, MimeType = mimeType };
         SourceChanged?.Invoke(Source);
 
-        _isVisible = true;
+        IsVisible = true;
         IsVisibleChanged?.Invoke();
 
         // VideoPlayer.PlayAsync() will set _playPending=true since it isn't initialized yet;

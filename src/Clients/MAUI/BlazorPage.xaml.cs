@@ -29,19 +29,31 @@ public partial class BlazorPage : ContentPage
 
     protected override bool OnBackButtonPressed()
     {
-        if (_backButtonService.HandleBackButton())
-            return true;
+        HandleBackButton();
+        return true;
+    }
 
+    internal void HandleBackButton()
+    {
+        if (_backButtonService.HandleBackButton())
+            return;
+
+        // When native video player is active, signal the overlay component
         if (_playerService.IsVisible)
         {
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                _playerService.Stop();
-                _playerService.HideAsync();
+                if (_playerService is MAUI.Services.PlayerService ps)
+                    ps.OnBackPressed();
             });
-            return true;
+            return;
         }
 
+        DispatchBackAsEscape();
+    }
+
+    internal void DispatchBackAsEscape()
+    {
         MainThread.BeginInvokeOnMainThread(() =>
         {
             _ = blazorWebView.TryDispatchAsync(async sp =>
@@ -50,7 +62,27 @@ public partial class BlazorPage : ContentPage
                 await js.InvokeVoidAsync("SpatialNav.handleBack");
             });
         });
-        return true;
+    }
+
+    internal void HandleMediaPlayPause()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (_playerService.IsVisible)
+            {
+                if (_playerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing)
+                    _playerService.Play();
+                else
+                    _playerService.Pause();
+            }
+            else if (_audioPlayerService.IsVisible)
+            {
+                if (_audioPlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing)
+                    _audioPlayerService.Play();
+                else
+                    _audioPlayerService.Pause();
+            }
+        });
     }
 
     private void InitializePlayer()
