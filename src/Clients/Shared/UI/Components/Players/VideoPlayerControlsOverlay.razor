@@ -29,7 +29,7 @@
     <div class="controls-bar bottom" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <div style="width:100%; display:flex; align-items:center; gap:0.5rem;">
             <div style="display:flex; align-items:center; flex-shrink:0;">
-                <K7IconButton Icon="@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? Phosphor.Play : Phosphor.Pause)" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                <K7IconButton Icon="@(PlayerService.PlaybackState != Server.Domain.Enums.PlaybackState.Playing ? Phosphor.Play : Phosphor.Pause)" OnClick="TogglePlayPause" AriaLabel="Play pause" Class="play-pause-btn" />
 
                 @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
                 {
@@ -216,7 +216,8 @@
     private string _hudIcon = Phosphor.FastForward;
     private ElementReference _overlayRef;
     private DotNetObjectReference<VideoPlayerControlsOverlay>? _dotNetRef;
-    private static readonly TimeSpan _overlayTimeout = TimeSpan.FromMilliseconds(1500);
+    private static readonly TimeSpan _overlayTimeoutDesktop = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan _overlayTimeoutTv = TimeSpan.FromSeconds(5);
     private CancellationTokenSource? _volumePopoverHideDelayCts;
 
     // Touch gesture state
@@ -236,6 +237,7 @@
     private int _doubleTapSeekCount;
     private double _viewportWidth;
     private const double SwipeThreshold = 15;
+    private DotNetObjectReference<LayerCloseCallback>? _overlayCloseRef;
 
     private enum SwipeSide { Left, Right }
 
@@ -256,9 +258,13 @@
     protected override async Task OnInitializedAsync()
     {
         _deviceType = await DeviceService.GetDeviceTypeAsync();
-        _overlayVisibleTimer = new Timer(_overlayTimeout);
+        var initialTimeout = _deviceType == DeviceType.TV ? _overlayTimeoutTv : _overlayTimeoutDesktop;
+        _overlayVisibleTimer = new Timer(initialTimeout) { AutoReset = false };
         _overlayVisibleTimer.Elapsed += OnOverlayTimerElapsed;
-        _overlayVisibleTimer.Start();
+        if (_deviceType is not (DeviceType.Phone or DeviceType.Tablet))
+        {
+            _overlayVisibleTimer.Start();
+        }
         _seekDebounceTimer = new Timer(300) { AutoReset = false };
         _seekDebounceTimer.Elapsed += OnSeekDebounceElapsed;
         _hudTimer = new Timer(800) { AutoReset = false };
@@ -277,6 +283,7 @@
         PlayerService.SubtitleTrackChanged += OnSubtitleTrackChanged;
         PlayerService.QualityChanged += OnQualityChanged;
         PlayerService.AspectRatioModeChanged += OnAspectRatioModeChanged;
+        PlayerService.BackPressed += OnBackPressed;
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             await JSRuntime.InvokeVoidAsync("hideBodyScroll", true);
@@ -288,12 +295,16 @@
         if (firstRender)
         {
             _dotNetRef = DotNetObjectReference.Create(this);
+            _overlayCloseRef = DotNetObjectReference.Create(new LayerCloseCallback(HandleBack));
             try
             {
-                await SpatialNav.PushLayerAsync(_overlayRef, "overlay");
+                await SpatialNav.PushLayerAsync(_overlayRef, "overlay", new SpatialNavLayerOptions
+                {
+                    OnClose = _overlayCloseRef,
+                    FocusSelector = ".play-pause-btn"
+                });
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
-            await _overlayRef.FocusAsync();
         }
     }
 
@@ -307,7 +318,7 @@
         // Global shortcuts - always active
         switch (code)
         {
-            case "Space" or " " or "MediaPlayPause":
+            case "Space" or " " or "MediaPlayPause" or "MediaPlay" or "MediaPause":
                 TogglePlayPause();
                 ResetOverlayTimeout();
                 return;
@@ -368,7 +379,16 @@
     {
         _showOverlay = true;
         ResetOverlayTimeout(TimeSpan.FromSeconds(5));
-        _ = SpatialNav.FocusFirstAsync();
+        _ = FocusPlayPauseAsync();
+    }
+
+    private async Task FocusPlayPauseAsync()
+    {
+        try
+        {
+            await SpatialNav.FocusFirstAsync(".play-pause-btn");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
     }
 
     private void HideOverlay()
@@ -425,8 +445,11 @@
             try
             {
                 if (_isMenuOpen || _isSeeking) return;
-                var focusInChild = await SpatialNav.IsFocusInsideAsync(_overlayRef);
-                if (focusInChild) return;
+                if (_deviceType is not DeviceType.TV)
+                {
+                    var focusInChild = await SpatialNav.IsFocusInsideAsync(_overlayRef);
+                    if (focusInChild) return;
+                }
                 _showOverlay = false;
                 StateHasChanged();
                 await _overlayRef.FocusAsync();
@@ -462,6 +485,7 @@
     {
         _showOverlay = true;
         _overlayVisibleTimer?.Stop();
+        if (_deviceType is DeviceType.Phone or DeviceType.Tablet) return;
         if (timeout.HasValue && _overlayVisibleTimer is not null)
         {
             _overlayVisibleTimer.Interval = timeout.Value.TotalMilliseconds;
@@ -474,6 +498,25 @@
         PlayerService.Stop();
         PlayerService.HideAsync();
     }
+
+    private void HandleBack()
+    {
+        InvokeAsync(() =>
+        {
+            if (_isMenuOpen) return;
+            if (_showOverlay)
+            {
+                HideOverlay();
+            }
+            else
+            {
+                OnCloseButtonClick();
+            }
+            StateHasChanged();
+        });
+    }
+
+    private void OnBackPressed() => HandleBack();
 
     private void OnOverlayMouseMove(MouseEventArgs args)
     {
@@ -850,6 +893,7 @@
         _tapDelayTimer?.Dispose();
         BrightnessService.ResetBrightness();
         _dotNetRef?.Dispose();
+        _overlayCloseRef?.Dispose();
         try { await SpatialNav.PopLayerAsync(_overlayRef); }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
@@ -862,6 +906,7 @@
         PlayerService.SubtitleTrackChanged -= OnSubtitleTrackChanged;
         PlayerService.QualityChanged -= OnQualityChanged;
         PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
+        PlayerService.BackPressed -= OnBackPressed;
         if (DeviceService.GetClientType() == ClientType.Web)
         {
             await JSRuntime.InvokeVoidAsync("hideBodyScroll", false);

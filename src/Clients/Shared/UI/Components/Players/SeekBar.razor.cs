@@ -52,8 +52,18 @@ public partial class SeekBar : IAsyncDisposable
     {
         if (firstRender)
         {
-            _dotNetRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("K7.SeekBar.init", SeekBarRef, _dotNetRef);
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("K7.SeekBar.init", SeekBarRef, _dotNetRef);
+                if (ThumbnailsUri is not null)
+                {
+                    // Preload the thumbnail sprite to avoid freeze on first seekbar hovering
+                    await JS.InvokeVoidAsync("eval", $"(new Image()).src = '{ThumbnailsUri}'");
+                }
+            }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
         }
     }
 
