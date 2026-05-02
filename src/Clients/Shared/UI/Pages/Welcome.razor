@@ -21,24 +21,8 @@
                 <K7Spinner />
                 <p class="text-sm" Color="secondary">@L["SignInPrompt"]</p>
             }
-            else if (_error is not null)
-            {
-                <K7Alert Severity="K7Severity.Error" Variant="filled" Class="mt-2 w-full">
-                    @_error
-                </K7Alert>
-                <K7Button Variant="filled" Color="primary" Size="lg" OnClick="SignInAsync">
-                    @S["TryAgain"]
-                </K7Button>
-            }
             else
             {
-                @if (_serverInfoError is not null)
-                {
-                    <K7Alert Severity="K7Severity.Warning" Variant="text" Class="mt-2 w-full">
-                        @_serverInfoError
-                    </K7Alert>
-                }
-
                 <K7Button @ref="_signInButton" Variant="filled" Color="primary" Size="lg" OnClick="SignInAsync">
                     @S["SignIn"]
                 </K7Button>
