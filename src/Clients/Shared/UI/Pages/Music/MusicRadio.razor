@@ -16,7 +16,7 @@
         @foreach (var radio in _radioTypes)
         {
             <div>
-                <div class="k7-card radio-card" Outlined="true" tabindex="0" @onclick="() => PlayRadioAsync(radio)" @onkeydown="(e) => OnRadioKeyDown(e, radio)">
+                <div class="k7-card radio-card" Outlined="true" tabindex="0" role="button" @onclick="() => PlayRadioAsync(radio)">
                     <div class="radio-card-content">
                         <K7Icon Name="@radio.Icon" Style="font-size: 48px;" Color="@radio.Color" />
                         <h6>@radio.Title</h6>

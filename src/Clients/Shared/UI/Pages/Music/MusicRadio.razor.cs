@@ -63,14 +63,6 @@ public partial class MusicRadio
         _loading = false;
     }
 
-    private async Task OnRadioKeyDown(KeyboardEventArgs e, RadioTypeInfo radio)
-    {
-        if (e.Code is "Enter" or "Space")
-        {
-            await PlayRadioAsync(radio);
-        }
-    }
-
     private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<TrackViewModel> args)
     {
         var track = args.Item;

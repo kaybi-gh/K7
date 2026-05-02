@@ -81,7 +81,7 @@ else if (_person is not null)
 
                     @if (!string.IsNullOrEmpty(_person.Biography))
                     {
-                        <div class="person-bio overview-clickable" tabindex="0" @onclick="OpenBioDialogAsync" @onkeydown="HandleBioKeyDown">
+                        <div class="person-bio overview-clickable" tabindex="0" role="button" @onclick="OpenBioDialogAsync">
                             <p Style="opacity: 0.85; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">@_person.Biography</p>
                         </div>
                     }

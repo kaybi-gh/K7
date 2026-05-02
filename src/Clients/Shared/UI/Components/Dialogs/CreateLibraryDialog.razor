@@ -17,7 +17,7 @@
             <h6>@L["SelectContentType"]</h6>
             <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: var(--space-3);">
                 <div>
-                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Movie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Movie)">
+                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" tabindex="0" role="button" @onclick="() => SelectMediaType(LibraryMediaType.Movie)">
                         <div class="d-flex flex-column align-center pa-6">
                             <K7Icon Icon="@Phosphor.FilmStrip" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
                             <h6>@S["MediaTypeMovies"]</h6>
@@ -26,7 +26,7 @@
                     </div>
                 </div>
                 <div>
-                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Serie)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Serie)">
+                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" tabindex="0" role="button" @onclick="() => SelectMediaType(LibraryMediaType.Serie)">
                         <div class="d-flex flex-column align-center pa-6">
                             <K7Icon Icon="@Phosphor.Television" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
                             <h6>@S["MediaTypeSeries"]</h6>
@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 <div>
-                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" tabindex="0" @onclick="() => SelectMediaType(LibraryMediaType.Music)" @onkeydown="(e) => OnMediaTypeKeyDown(e, LibraryMediaType.Music)">
+                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" tabindex="0" role="button" @onclick="() => SelectMediaType(LibraryMediaType.Music)">
                         <div class="d-flex flex-column align-center pa-6">
                             <K7Icon Icon="@Phosphor.MusicNote" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
                             <h6>@S["MediaTypeMusic"]</h6>
