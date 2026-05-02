@@ -42,7 +42,13 @@ var SpatialNav = (function () {
         pruneDisconnectedLayers();
         opts = opts || {};
         for (var i = 0; i < _layers.length; i++) {
-            if (_layers[i].el === el) return;
+            var existing = _layers[i].el;
+            if (existing === el || (existing.isSameNode && existing.isSameNode(el))) {
+                // Merge options into existing layer (e.g. onClose callback arriving after auto-detection)
+                if (opts.onClose && !_layers[i].onClose) _layers[i].onClose = opts.onClose;
+                if (opts.focusSelector && !_layers[i].focusSelector) _layers[i].focusSelector = opts.focusSelector;
+                return;
+            }
         }
         _layers.push({
             el: el,
@@ -54,10 +60,43 @@ var SpatialNav = (function () {
         autoFocusLayer(_layers[_layers.length - 1]);
     }
 
+    function attachLayerCallback(el, onClose) {
+        if (!el) return;
+        // Try matching by UID attribute (most reliable in MAUI WebView)
+        var uid = el.getAttribute && el.getAttribute('data-sn-layer-uid');
+        if (uid) {
+            for (var i = 0; i < _layers.length; i++) {
+                if (_layers[i].el.getAttribute && _layers[i].el.getAttribute('data-sn-layer-uid') === uid) {
+                    if (onClose) _layers[i].onClose = onClose;
+                    return;
+                }
+            }
+        }
+        // Fallback: match by reference or isSameNode
+        for (var i = 0; i < _layers.length; i++) {
+            var existing = _layers[i].el;
+            if (existing === el || (existing.isSameNode && existing.isSameNode(el))) {
+                if (onClose) _layers[i].onClose = onClose;
+                return;
+            }
+        }
+        // Last resort: find most recent layer of same type without a callback
+        var tag = el.getAttribute && el.getAttribute('data-sn-layer');
+        if (tag) {
+            for (var i = _layers.length - 1; i >= 0; i--) {
+                if (_layers[i].type === tag && !_layers[i].onClose) {
+                    _layers[i].onClose = onClose;
+                    return;
+                }
+            }
+        }
+    }
+
     function popLayer(el) {
         if (!el) return;
         for (var i = _layers.length - 1; i >= 0; i--) {
-            if (_layers[i].el === el) {
+            var existing = _layers[i].el;
+            if (existing === el || (existing.isSameNode && existing.isSameNode(el))) {
                 var layer = _layers.splice(i, 1)[0];
                 if (layer.restoreFocus && layer.restoreFocus.isConnected) {
                     layer.restoreFocus.focus({ preventScroll: true });
@@ -227,6 +266,13 @@ var SpatialNav = (function () {
         var active = document.activeElement;
         if (!active || active === document.body) return;
 
+        // If inside a hidden overlay, suppress button click but let keydown reach Blazor
+        var overlay = active.closest('.video-controls-overlay');
+        if (overlay && overlay.style.opacity === '0') {
+            e.preventDefault();
+            return;
+        }
+
         if (isActivatable(active)) {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -244,7 +290,13 @@ var SpatialNav = (function () {
 
         var tag = (active.tagName || '').toLowerCase();
         var role = active.getAttribute('role') || '';
-        if (tag === 'button' || tag === 'a' || role === 'button' || role === 'switch') {
+        if (tag === 'button' || tag === 'a') {
+            // Native button/a elements receive click from Enter/DpadCenter natively.
+            // Don't synthesize - DpadCenter fires both keydown AND click on Android TV,
+            // causing double-fire if we also call .click() here.
+            return;
+        }
+        if (role === 'button' || role === 'switch') {
             active.click();
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -266,7 +318,14 @@ var SpatialNav = (function () {
 
         var layer = peekLayer();
         if (layer && layer.type !== 'page') {
-            if (layer.type === 'overlay') return;
+            if (layer.type === 'overlay') {
+                if (layer.onClose) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    invokeCallback(layer.onClose, 'OnLayerClosed');
+                }
+                return;
+            }
             e.preventDefault();
             e.stopImmediatePropagation();
             var onClose = layer.onClose;
@@ -354,6 +413,7 @@ var SpatialNav = (function () {
 
     function handleKeyDown(e) {
         var key = e.key;
+        var layer = peekLayer();
 
         if (!window.__snBlurAdded) {
             window.__snBlurAdded = true;
@@ -366,6 +426,13 @@ var SpatialNav = (function () {
 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1) {
             var el = document.activeElement;
+            // When overlay is hidden, block spatial navigation so arrows go to Blazor for seek/volume
+            var hiddenOverlay = el && el.closest('.video-controls-overlay');
+            if (hiddenOverlay && hiddenOverlay.style.opacity === '0') {
+                if (window.SpatialNavigation) SpatialNavigation.pause();
+                e.preventDefault();
+                return;
+            }
             if (el && el.closest('[data-carousel]') && handleCarouselNav(el, key)) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -564,7 +631,8 @@ var SpatialNav = (function () {
 
             // Auto-detection: watch for data-sn-layer and data-sn-section attributes.
             // More reliable than C# JS interop which can fail in MAUI.
-            var _trackedLayers = new Set();
+            var _trackedLayerIds = {};
+            var _layerUidCounter = 0;
             var _trackedSections = new Set();
 
             function syncSections() {
@@ -593,29 +661,40 @@ var SpatialNav = (function () {
 
             function syncLayers() {
                 var layerEls = document.querySelectorAll('[data-sn-layer]');
-                var currentSet = new Set();
+                var currentIds = {};
 
                 layerEls.forEach(function (el) {
-                    currentSet.add(el);
-                    if (!_trackedLayers.has(el)) {
+                    // Assign a stable UID if not present
+                    var uid = el.getAttribute('data-sn-layer-uid');
+                    if (!uid) {
+                        uid = 'snl-' + (++_layerUidCounter);
+                        el.setAttribute('data-sn-layer-uid', uid);
+                    }
+                    currentIds[uid] = el;
+
+                    if (!_trackedLayerIds[uid]) {
                         // New layer appeared
                         var type = el.getAttribute('data-sn-layer') || 'popover';
                         pushLayer(el, type, {});
+                    } else {
+                        // Update element reference (may change between calls in MAUI WebView)
+                        for (var i = 0; i < _layers.length; i++) {
+                            if (_layers[i].el === _trackedLayerIds[uid] || (_layers[i].el.getAttribute && _layers[i].el.getAttribute('data-sn-layer-uid') === uid)) {
+                                _layers[i].el = el;
+                                break;
+                            }
+                        }
                     }
                 });
 
-                // Check for removed layers (iterate in reverse for correct stack order)
-                var toRemove = [];
-                _trackedLayers.forEach(function (el) {
-                    if (!currentSet.has(el)) {
-                        toRemove.push(el);
+                // Check for removed layers
+                for (var uid in _trackedLayerIds) {
+                    if (!currentIds[uid]) {
+                        popLayer(_trackedLayerIds[uid]);
                     }
-                });
-                toRemove.forEach(function (el) {
-                    popLayer(el);
-                });
+                }
 
-                _trackedLayers = currentSet;
+                _trackedLayerIds = currentIds;
             }
 
             // Auto-refresh after any DOM mutation (covers all Blazor re-renders)
@@ -648,6 +727,7 @@ var SpatialNav = (function () {
         init: init,
         pushLayer: pushLayer,
         popLayer: popLayer,
+        attachLayerCallback: attachLayerCallback,
         focusFirst: focusFirst,
         focusElement: focusElement,
         refresh: refresh,
