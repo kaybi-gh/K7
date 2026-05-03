@@ -35,7 +35,9 @@
     flex-direction: column;
     min-height: 0;
     position: relative;
-    padding-top: var(--nav-height);
+    padding-top: calc(var(--nav-height) + env(safe-area-inset-top, 0px));
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* Mobile: nav is fixed at bottom, no grid row needed */
@@ -46,7 +48,8 @@
 
     .app-main {
         grid-row: 1;
-        padding-bottom: var(--nav-height);
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
     }
 }
 

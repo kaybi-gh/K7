@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Backdrop
    ============================================================ */
 .app-nav-backdrop {
@@ -23,7 +23,7 @@
 /* Mobile: covers content above bottom nav bar, with dim */
 @media (max-width: 599.98px) {
     .app-nav-backdrop {
-        inset: 0 0 var(--nav-height) 0;
+        inset: 0 0 calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)) 0;
     }
     .app-nav-backdrop.open {
         opacity: 1;
@@ -42,7 +42,8 @@
     z-index: var(--z-drawer);
     background: var(--color-drawer);
     border-bottom: 1px solid var(--color-border);
-    height: var(--nav-height);
+    height: calc(var(--nav-height) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -230,10 +231,14 @@
 
 /* Mobile: slide-up panel — fullscreen for explore, card for profile */
 @media (max-width: 599.98px) {
+    .app-nav-bar {
+        justify-content: space-around !important;
+    }
+
     .app-nav-popover {
         left: 0;
         right: 0;
-        bottom: var(--nav-height);
+        bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
         max-height: 75dvh;
         overflow-y: auto;
         background: var(--color-surface);
@@ -261,6 +266,10 @@
 
     .app-nav-popover-inner {
         padding: var(--space-2) 0 var(--space-4);
+    }
+
+    .app-nav-label {
+        display: none !important;
     }
 }
 
@@ -367,6 +376,10 @@
         bottom: 0;
         border-top: 1px solid var(--color-border);
         border-bottom: none;
+        height: var(--nav-height);
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     .app-nav-bar {
