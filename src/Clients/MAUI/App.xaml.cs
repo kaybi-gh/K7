@@ -50,7 +50,7 @@ public partial class App : Application
                 try
                 {
                     Debug.WriteLine("K7 MAUI - Creating real page now");
-                    window.Page = GetNavigationPage();
+                    window.Page = GetStartPage();
                     Debug.WriteLine("K7 MAUI - Real page set");
                 }
                 catch (Exception ex)
@@ -63,34 +63,30 @@ public partial class App : Application
         Debug.WriteLine("K7 MAUI - App.CreateWindow - splash returned");
         return window;
 #else
-        var navigationPage = GetNavigationPage();
+        var page = GetStartPage();
         Debug.WriteLine("K7 MAUI - App.CreateWindow - page created");
-        return new Window(navigationPage)
+        return new Window(page)
         {
             Title = "K7"
         };
 #endif
     }
 
-    private NavigationPage GetNavigationPage()
+    private ContentPage GetStartPage()
     {
         var k7ServerUrl = Preferences.Get(PreferenceKeys.K7_SERVER_URL, null);
-        Debug.WriteLine($"K7 MAUI - GetNavigationPage - serverUrl={(!string.IsNullOrEmpty(k7ServerUrl) ? "set" : "null")}");
+        Debug.WriteLine($"K7 MAUI - GetStartPage - serverUrl={(!string.IsNullOrEmpty(k7ServerUrl) ? "set" : "null")}");
 
-        ContentPage? page;
         if (string.IsNullOrEmpty(k7ServerUrl))
         {
-            page = new SetupPage(_k7ServerManagerService, _playerService, _audioPlayerService);
-        }
-        else
-        {
-            _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
-            Debug.WriteLine("K7 MAUI - GetNavigationPage - creating BlazorPage");
-            page = new BlazorPage(_playerService, _audioPlayerService, _backButtonService, _k7ServerService);
-            Debug.WriteLine("K7 MAUI - GetNavigationPage - BlazorPage created");
+            return new SetupPage(_k7ServerManagerService, _playerService, _audioPlayerService);
         }
 
-        return new NavigationPage(page);
+        _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
+        Debug.WriteLine("K7 MAUI - GetStartPage - creating BlazorPage");
+        var page = new BlazorPage(_playerService, _audioPlayerService, _backButtonService, _k7ServerService);
+        Debug.WriteLine("K7 MAUI - GetStartPage - BlazorPage created");
+        return page;
     }
 
     protected override void OnAppLinkRequestReceived(Uri uri)
@@ -103,7 +99,7 @@ public partial class App : Application
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            Current!.Windows[0]!.Page = GetNavigationPage();
+            Current!.Windows[0]!.Page = GetStartPage();
         });
     }
 }
