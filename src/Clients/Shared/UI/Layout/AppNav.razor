@@ -17,20 +17,20 @@
             <span class="app-nav-label">@L["Home"]</span>
         </NavLink>
 
-            <button class="app-nav-link app-nav-link--btn app-nav-item--explore focusable @(_exploreOpen ? "active" : "")"
+        <button class="app-nav-link app-nav-link--btn app-nav-item--explore focusable @(_exploreOpen ? "active" : "")"
                 type="button" @onclick="ToggleExplore">
             <span class="app-nav-icon"><K7Icon Icon="@Phosphor.Compass" /></span>
             <span class="app-nav-label">@L["Explore"]</span>
         </button>
 
-            <NavLink class="app-nav-link app-nav-item--myspace focusable" href="/my-space">
-            <span class="app-nav-icon"><K7Icon Icon="@Phosphor.Heart" /></span>
+        <NavLink class="app-nav-link app-nav-item--myspace focusable" href="/my-space">
+            <span class="app-nav-icon"><K7Icon Icon="@Phosphor.FolderUser" /></span>
             <span class="app-nav-label">@L["MySpace"]</span>
         </NavLink>
 
         <div class="app-nav-spacer"></div>
 
-            <NavLink class="app-nav-link app-nav-item--search focusable" href="/search">
+        <NavLink class="app-nav-link app-nav-item--search focusable" href="/search">
             <span class="app-nav-icon"><K7Icon Icon="@Phosphor.MagnifyingGlass" /></span>
             <span class="app-nav-label">@L["Search"]</span>
         </NavLink>
