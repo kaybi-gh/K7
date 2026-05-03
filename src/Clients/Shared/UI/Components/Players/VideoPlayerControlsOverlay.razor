@@ -445,10 +445,13 @@
             try
             {
                 if (_isMenuOpen || _isSeeking) return;
-                if (_deviceType is not DeviceType.TV)
+                // Keep overlay visible while seekbar is being scrubbed (keyboard editing mode)
+                var isEditing = await JSRuntime.InvokeAsync<bool>(
+                    "eval", "!!document.querySelector('.video-controls-overlay [data-sn-editing]')");
+                if (isEditing)
                 {
-                    var focusInChild = await SpatialNav.IsFocusInsideAsync(_overlayRef);
-                    if (focusInChild) return;
+                    ResetOverlayTimeout();
+                    return;
                 }
                 _showOverlay = false;
                 StateHasChanged();
@@ -501,9 +504,17 @@
 
     private void HandleBack()
     {
-        InvokeAsync(() =>
+        InvokeAsync(async () =>
         {
-            if (_isMenuOpen) return;
+            if (_isMenuOpen)
+            {
+                try
+                {
+                    await JSRuntime.InvokeVoidAsync("SpatialNav.handleBack");
+                }
+                catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+                return;
+            }
             if (_showOverlay)
             {
                 HideOverlay();
