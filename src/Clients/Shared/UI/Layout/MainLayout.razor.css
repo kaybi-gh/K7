@@ -3,7 +3,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 1100;
+    z-index: var(--z-above);
     container-type: inline-size;
     padding: 0 var(--space-4) var(--space-3);
 }
@@ -12,6 +12,6 @@
     .mini-player-dock {
         left: var(--space-3);
         right: var(--space-3);
-        bottom: calc(var(--nav-height) + var(--space-3));
+        bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-3));
     }
 }

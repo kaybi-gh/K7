@@ -412,9 +412,9 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
   animation: k7-fade-in 0.15s ease;
 }
 @keyframes k7-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes k7-slide-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes k7-slide-up { from { transform: translateY(16px); } to { transform: translateY(0); } }
 .k7-dialog-paper {
-  background: var(--color-surface);
+  background: var(--color-surface, #1e1e2e);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl, 0 25px 50px -12px rgba(0,0,0,.5));
   width: 100%;
