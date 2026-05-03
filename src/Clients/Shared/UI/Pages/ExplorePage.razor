@@ -1,0 +1,28 @@
+@page "/explore"
+@using K7.Server.Domain.Enums
+@inject ILibraryService LibraryService
+@inject IStringLocalizer<ExplorePage> L
+@inject NavigationManager NavigationManager
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="explore-page">
+    <div class="explore-grid">
+        @foreach (var library in _libraries)
+        {
+            var (gs, ge, ic) = GetLibraryCardColors(library.MediaType);
+            var icon = !string.IsNullOrEmpty(library.Icon) ? library.Icon : GetLibraryIconName(library.MediaType);
+            var imageUrl = library.CoverPictureId.HasValue ? $"/api/metadata-pictures/{library.CoverPictureId}?size=Medium" : null;
+            <K7CategoryCard @key="library.Id"
+                            Title="@library.Title"
+                            Description="@(library.Description ?? "")"
+                            Icon="@icon"
+                            GradientStart="@gs"
+                            GradientEnd="@ge"
+                            IconColor="@ic"
+                            ImageUrl="@imageUrl"
+                            DominantColor="@library.CoverDominantColor"
+                            OnClick="@(() => NavigationManager.NavigateTo($"/library/{library.Id}"))" />
+        }
+    </div>
+</div>
