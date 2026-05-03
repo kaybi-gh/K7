@@ -153,7 +153,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                         else if (prop.Value.ValueKind == JsonValueKind.Number)
                             claims.Add(new Claim(prop.Name, prop.Value.GetRawText()));
                     }
-                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict"));
+                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict", Claims.Name, Claims.Role));
                 }
             }
         }
@@ -202,6 +202,25 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
         }
 
+        // Device code flow may not return an identity token with the name claim.
+        // Fetch user info from the server to enrich the principal.
+        if (_currentUser.Identity?.Name is null)
+        {
+            try
+            {
+                var serverUser = await _userAdminService.GetCurrentUserAsync(cancellationToken);
+                if (serverUser?.UserName is not null)
+                {
+                    var claims = new List<Claim>(_currentUser.Claims)
+                    {
+                        new(Claims.Name, serverUser.UserName)
+                    };
+                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict", Claims.Name, Claims.Role));
+                }
+            }
+            catch { }
+        }
+
         await SaveLocalUserFromCurrentUserAsync(result.RefreshToken ?? "", cancellationToken);
         await TryAttachCurrentUserToDeviceAsync(cancellationToken);
 
@@ -210,7 +229,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     public Task LogoutAsync(CancellationToken cancellationToken = default)
     {
-        var identityUserId = _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var identityUserId = _currentUser.FindFirst(Claims.Subject)?.Value
+            ?? _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
@@ -287,6 +307,24 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
                 _deviceStorageService.Set(PreferenceKeys.REFRESH_TOKEN, result.RefreshToken);
             }
 
+            // Refresh token flow may not include the name claim in the principal.
+            if (_currentUser.Identity?.Name is null)
+            {
+                try
+                {
+                    var serverUser = await _userAdminService.GetCurrentUserAsync(cts.Token);
+                    if (serverUser?.UserName is not null)
+                    {
+                        var claims = new List<Claim>(_currentUser.Claims)
+                        {
+                            new(Claims.Name, serverUser.UserName)
+                        };
+                        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "OpenIddict", Claims.Name, Claims.Role));
+                    }
+                }
+                catch { }
+            }
+
             return true;
         }
         catch
@@ -309,7 +347,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
 
     private async Task SaveLocalUserFromCurrentUserAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        var identityUserId = _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var identityUserId = _currentUser.FindFirst(Claims.Subject)?.Value
+            ?? _currentUser.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(identityUserId))
             return;
 
