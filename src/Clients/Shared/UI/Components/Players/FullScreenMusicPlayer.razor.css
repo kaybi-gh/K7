@@ -141,8 +141,24 @@
     height: 48px;
     cursor: pointer;
     touch-action: none;
+    border-radius: var(--radius-sm);
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
+    transition: filter 0.15s;
+}
+
+.waveform-container:hover,
+.waveform-container:focus-visible {
+    filter: drop-shadow(0 0 4px var(--color-accent)) drop-shadow(0 0 1px var(--color-accent));
+}
+
+.waveform-container:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+}
+
+.waveform-container.scrubbing {
+    filter: drop-shadow(0 0 4px var(--color-accent)) drop-shadow(0 0 1px var(--color-accent));
 }
 
 .waveform-bg {
@@ -158,6 +174,24 @@
     height: 100%;
     background: var(--color-accent);
     transition: width 0.1s linear;
+}
+
+.seek-cursor {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #fff;
+    transform: translateX(-50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.waveform-container:hover .seek-cursor,
+.waveform-container:focus-visible .seek-cursor,
+.waveform-container.scrubbing .seek-cursor {
+    opacity: 1;
 }
 
 .seek-bar {
