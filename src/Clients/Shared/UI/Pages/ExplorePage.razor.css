@@ -1,0 +1,20 @@
+.explore-page {
+    padding: var(--space-4) var(--space-5);
+}
+
+.explore-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4);
+}
+
+@media (max-width: 599.98px) {
+    .explore-page {
+        padding: var(--space-3);
+    }
+
+    .explore-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+    }
+}
