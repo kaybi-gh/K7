@@ -1,10 +1,13 @@
 @inject IAudioPlayerService Audio
 @inject IMediaService Server
+@inject IDeviceService DeviceService
 
 @if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
 {
     <div class="fullscreen-player"
          style="@DominantColorStyle"
+         data-sn-layer="fullscreen-music-player"
+         data-sn-layer-close="self"
          @onclick="OnBackdropClick">
         @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
         {
@@ -57,40 +60,41 @@
                 <div class="fullscreen-player-seek">
                     @if (_waveformMaskStyle is not null)
                     {
-                        <div class="waveform-container" style="@_waveformMaskStyle"
+                        <div class="waveform-container focusable @(_isScrubbing ? "scrubbing" : "")" style="@_waveformMaskStyle"
                              tabindex="0" role="slider"
+                             data-sn-activatable
                              aria-label="@S["SeekBar"]"
                              aria-valuemin="0" aria-valuemax="100"
-                             aria-valuenow="@((int)CurrentPercent)"
+                             aria-valuenow="@((int)DisplayPercent)"
                              @ref="_seekBarRef"
-                             @onclick="OnSeekClick"
                              @onkeydown="OnSeekKeyDown"
                              @onpointerdown="OnSeekPointerDown"
                              @onpointermove="OnSeekPointerMove"
                              @onpointerup="OnSeekPointerUp">
                             <div class="waveform-bg"></div>
-                            <div class="waveform-progress" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="waveform-progress" style="width: @(DisplayPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="seek-cursor" style="left: @(DisplayPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
                         </div>
                     }
                     else
                     {
-                        <div class="seek-bar" @ref="_seekBarRef"
+                        <div class="seek-bar focusable @(_isScrubbing ? "scrubbing" : "")" @ref="_seekBarRef"
                              tabindex="0" role="slider"
+                             data-sn-activatable
                              aria-label="@S["SeekBar"]"
                              aria-valuemin="0" aria-valuemax="100"
-                             aria-valuenow="@((int)CurrentPercent)"
-                             @onclick="OnSeekClick"
+                             aria-valuenow="@((int)DisplayPercent)"
                              @onkeydown="OnSeekKeyDown"
                              @onpointerdown="OnSeekPointerDown"
                              @onpointermove="OnSeekPointerMove"
                              @onpointerup="OnSeekPointerUp">
                             <div class="seek-buffered" style="width: @(BufferedPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
-                            <div class="seek-current" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
-                            <div class="seek-thumb" style="left: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="seek-current" style="width: @(DisplayPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                            <div class="seek-thumb" style="left: @(DisplayPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
                         </div>
                     }
                     <div class="seek-times">
-                        <span>@FormatTime(Audio.CurrentTime)</span>
+                        <span>@(_isScrubbing ? FormatTime(_scrubTime) : FormatTime(Audio.CurrentTime))</span>
                         <span>@FormatTime(Audio.Duration)</span>
                     </div>
                 </div>
@@ -99,19 +103,23 @@
                     <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" />
                     <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
                     <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                    <K7IconButton Icon="@Phosphor.Stop" OnClick="StopAndHide" AriaLabel="Stop" />
                     <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
                     <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" />
                 </div>
 
-                <div class="fullscreen-player-volume">
-                    <K7IconButton Icon="@VolumeIcon" OnClick="ToggleMute" AriaLabel="Toggle mute" />
-                    <K7Slider TValue="double"
-                               Value="Audio.Volume"
-                               Min="0" Max="1"
-                               Immediate="true"
-                               ValueChanged="OnVolumeChanged" Step="0.01"
-                               Class="fullscreen-volume-slider" />
-                </div>
+                @if (_showVolumeControls)
+                {
+                    <div class="fullscreen-player-volume">
+                        <K7IconButton Icon="@VolumeIcon" OnClick="ToggleMute" AriaLabel="Toggle mute" />
+                        <K7Slider TValue="double"
+                                   Value="Audio.Volume"
+                                   Min="0" Max="1"
+                                   Immediate="true"
+                                   ValueChanged="OnVolumeChanged" Step="0.01"
+                                   Class="fullscreen-volume-slider" />
+                    </div>
+                }
             }
             else if (_view == FullScreenView.Lyrics)
             {

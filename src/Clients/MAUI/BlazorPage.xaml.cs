@@ -85,6 +85,25 @@ public partial class BlazorPage : ContentPage
         });
     }
 
+    internal void HandleMediaStop()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (_playerService.IsVisible)
+            {
+                _playerService.Stop();
+                _playerService.HideAsync();
+            }
+            else if (_audioPlayerService.IsVisible || _audioPlayerService.IsFullScreenVisible)
+            {
+                if (_audioPlayerService.IsFullScreenVisible)
+                    _audioPlayerService.ToggleFullScreen();
+                _audioPlayerService.Stop();
+                _audioPlayerService.HideAsync();
+            }
+        });
+    }
+
     private void InitializePlayer()
     {
         NativePlayer.Volume = _playerService.Volume;
@@ -159,8 +178,6 @@ public partial class BlazorPage : ContentPage
             {
                 BackgroundColor = Colors.Black;
                 Padding = new Thickness(0);
-                SafeAreaEdges = SafeAreaEdges.None;
-                RootGrid.SafeAreaEdges = SafeAreaEdges.None;
 #if ANDROID || IOS
                 DeviceDisplay.Current.KeepScreenOn = true;
                 Microsoft.Maui.Devices.DeviceDisplay.Current.MainDisplayInfoChanged += OnDisplayInfoChanged;
@@ -177,9 +194,7 @@ public partial class BlazorPage : ContentPage
             }
             else
             {
-                BackgroundColor = (Color)Application.Current!.Resources["PageBackgroundColor"];
-                SafeAreaEdges = SafeAreaEdges.Default;
-                RootGrid.SafeAreaEdges = SafeAreaEdges.Default;
+                BackgroundColor = Colors.Transparent;
                 NativePlayer.Stop();
                 NativePlayer.Source = null;
 #if ANDROID || IOS
@@ -289,7 +304,10 @@ public partial class BlazorPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             if (!string.IsNullOrEmpty(source.Url))
+            {
                 NativeAudioPlayer.Source = CreateMediaSourceWithAuth(source.Url);
+                NativeAudioPlayer.Play();
+            }
         });
     }
 

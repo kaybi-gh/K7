@@ -15,18 +15,28 @@ namespace K7.Clients.Shared.UI.Components.Players;
 
 public enum FullScreenView { Player, Lyrics, Queue }
 
-public partial class FullScreenMusicPlayer : IDisposable
+public partial class FullScreenMusicPlayer : IAsyncDisposable
 {
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
     private ElementReference _seekBarRef;
     private bool _isDragging;
+    private bool _showVolumeControls = true;
+    private bool _isScrubbing;
+    private double _scrubTime;
+    private BoundingRect? _seekBarBounds;
     private FullScreenView _view;
     private string? _lyricsLrc;
     private string? _lyrics;
     private float[]? _waveformPeaks;
     private string? _waveformMaskStyle;
+    private string? _prevWaveformState;
     private Guid? _detailsLoadedForMediaId;
+    private DotNetObjectReference<FullScreenMusicPlayer>? _dotNetRef;
+
+    private double DisplayPercent => _isScrubbing && Audio.Duration > 0
+        ? (_scrubTime / Audio.Duration) * 100
+        : CurrentPercent;
 
     private double CurrentPercent => Audio.Duration > 0 ? (Audio.CurrentTime / Audio.Duration) * 100 : 0;
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
@@ -51,7 +61,7 @@ public partial class FullScreenMusicPlayer : IDisposable
             ? Phosphor.SpeakerLow
             : Phosphor.SpeakerHigh;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Audio.PlaybackStateChanged += OnStateChanged;
         Audio.CurrentTimeChanged += OnTimeChanged;
@@ -64,9 +74,28 @@ public partial class FullScreenMusicPlayer : IDisposable
         Audio.VolumeChanged += OnVolumeStateChanged;
         Audio.IsMutedChanged += OnMutedStateChanged;
         Audio.IsFullScreenVisibleChanged += OnFullScreenVisibilityChanged;
+
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
     }
 
-    public void Dispose()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var currentState = _waveformMaskStyle is not null ? "waveform" : "bar";
+        if (firstRender || currentState != _prevWaveformState)
+        {
+            _prevWaveformState = currentState;
+            try
+            {
+                _dotNetRef ??= DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("K7.SeekBar.init", _seekBarRef, _dotNetRef);
+            }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
     {
         Audio.PlaybackStateChanged -= OnStateChanged;
         Audio.CurrentTimeChanged -= OnTimeChanged;
@@ -79,11 +108,22 @@ public partial class FullScreenMusicPlayer : IDisposable
         Audio.VolumeChanged -= OnVolumeStateChanged;
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsFullScreenVisibleChanged -= OnFullScreenVisibilityChanged;
+
+        try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _seekBarRef); }
+        catch (JSDisconnectedException) { }
+        _dotNetRef?.Dispose();
     }
 
     private void Close() => Audio.ToggleFullScreen();
 
     private void OnBackdropClick() => Audio.ToggleFullScreen();
+
+    private async Task StopAndHide()
+    {
+        Audio.ToggleFullScreen();
+        Audio.Stop();
+        await Audio.HideAsync();
+    }
 
     private void ToggleQueue() => _view = _view == FullScreenView.Queue ? FullScreenView.Player : FullScreenView.Queue;
 
@@ -235,25 +275,54 @@ public partial class FullScreenMusicPlayer : IDisposable
         await Audio.PlayTracksAsync(Audio.Queue, index);
     }
 
-    private async Task OnSeekClick(MouseEventArgs e)
+    private async Task OnSeekPointerDown(PointerEventArgs e)
     {
-        if (_isDragging) return;
-        await SeekToPosition(e);
+        _isDragging = true;
+        _isScrubbing = true;
+        _seekBarBounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", _seekBarRef);
+        UpdateScrubFromPointer(e);
     }
 
-    private void OnSeekPointerDown(PointerEventArgs e) => _isDragging = true;
-
-    private async Task OnSeekPointerMove(PointerEventArgs e)
+    private void OnSeekPointerMove(PointerEventArgs e)
     {
         if (!_isDragging) return;
-        await SeekToPosition(e);
+        UpdateScrubFromPointer(e);
     }
 
-    private void OnSeekPointerUp(PointerEventArgs e) => _isDragging = false;
+    private void OnSeekPointerUp(PointerEventArgs e)
+    {
+        if (!_isDragging) return;
+        if (_isScrubbing)
+            Audio.Seek(_scrubTime);
+        _isDragging = false;
+        _isScrubbing = false;
+        _seekBarBounds = null;
+    }
+
+    private void UpdateScrubFromPointer(MouseEventArgs e)
+    {
+        if (_seekBarBounds is not { Width: > 0 } bounds || Audio.Duration <= 0) return;
+        var percent = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
+        _scrubTime = percent * Audio.Duration;
+    }
 
     private void OnSeekKeyDown(KeyboardEventArgs e)
     {
         if (Audio.Duration <= 0) return;
+
+        if (_isScrubbing)
+        {
+            switch (e.Code)
+            {
+                case "ArrowRight":
+                    _scrubTime = Math.Min(_scrubTime + 5, Audio.Duration);
+                    break;
+                case "ArrowLeft":
+                    _scrubTime = Math.Max(_scrubTime - 5, 0);
+                    break;
+            }
+            return;
+        }
 
         switch (e.Code)
         {
@@ -266,21 +335,36 @@ public partial class FullScreenMusicPlayer : IDisposable
         }
     }
 
+    [JSInvokable("OnEditStart")]
+    public void OnEditStart()
+    {
+        _isScrubbing = true;
+        _scrubTime = Audio.CurrentTime;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable("OnEditCommit")]
+    public void OnEditCommit()
+    {
+        if (_isScrubbing)
+            Audio.Seek(_scrubTime);
+        _isScrubbing = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable("OnEditCancel")]
+    public void OnEditCancel()
+    {
+        _isScrubbing = false;
+        InvokeAsync(StateHasChanged);
+    }
+
     private async Task OnQueueItemKeyDown(KeyboardEventArgs e, int index)
     {
         if (e.Code is "Enter" or "Space")
         {
             await PlayFromQueue(index);
         }
-    }
-
-    private async Task SeekToPosition(MouseEventArgs e)
-    {
-        var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", _seekBarRef);
-        if (bounds.Width <= 0 || Audio.Duration <= 0) return;
-
-        var percent = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
-        Audio.Seek(percent * Audio.Duration);
     }
 
     private void OnStateChanged(PlaybackState _) => InvokeAsync(StateHasChanged);

@@ -9,14 +9,25 @@ using K7.Clients.Shared.UI;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
-public partial class MiniMusicPlayer : IDisposable
+public partial class MiniMusicPlayer : IAsyncDisposable
 {
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
 
     private ElementReference _progressBarRef;
     private bool _isDragging;
+    private bool _showVolumeControls = true;
+    private bool _seekbarFocusable = true;
+    private bool _isScrubbing;
+    private double _scrubTime;
+    private BoundingRect? _progressBarBounds;
+    private DotNetObjectReference<MiniMusicPlayer>? _dotNetRef;
+
+    private double DisplayPercent => _isScrubbing && Audio.Duration > 0
+        ? (_scrubTime / Audio.Duration) * 100
+        : CurrentPercent;
 
     private double CurrentPercent => Audio.Duration > 0 ? (Audio.CurrentTime / Audio.Duration) * 100 : 0;
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
@@ -37,7 +48,7 @@ public partial class MiniMusicPlayer : IDisposable
             ? Phosphor.SpeakerLow
             : Phosphor.SpeakerHigh;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Audio.PlaybackStateChanged += OnStateChanged;
         Audio.CurrentTimeChanged += OnTimeChanged;
@@ -50,9 +61,27 @@ public partial class MiniMusicPlayer : IDisposable
         Audio.VolumeChanged += OnVolumeStateChanged;
         Audio.IsMutedChanged += OnMutedStateChanged;
         Audio.IsVisibleChanged += OnVisibilityChanged;
+
+        var deviceType = await DeviceService.GetDeviceTypeAsync();
+        _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
+        _seekbarFocusable = deviceType is DeviceType.Desktop;
     }
 
-    public void Dispose()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("K7.SeekBar.init", _progressBarRef, _dotNetRef);
+            }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
     {
         Audio.PlaybackStateChanged -= OnStateChanged;
         Audio.CurrentTimeChanged -= OnTimeChanged;
@@ -65,6 +94,10 @@ public partial class MiniMusicPlayer : IDisposable
         Audio.VolumeChanged -= OnVolumeStateChanged;
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsVisibleChanged -= OnVisibilityChanged;
+
+        try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _progressBarRef); }
+        catch (JSDisconnectedException) { }
+        _dotNetRef?.Dispose();
     }
 
     private void TogglePlayPause()
@@ -77,6 +110,12 @@ public partial class MiniMusicPlayer : IDisposable
 
     private async Task OnNext() => await Audio.NextAsync();
     private async Task OnPrevious() => await Audio.PreviousAsync();
+
+    private async Task StopAndHide()
+    {
+        Audio.Stop();
+        await Audio.HideAsync();
+    }
 
     private void ToggleMute()
     {
@@ -94,35 +133,35 @@ public partial class MiniMusicPlayer : IDisposable
             Audio.CurrentTrack.UserRating = value;
     }
 
-    private async Task OnProgressClick(MouseEventArgs e)
-    {
-        if (_isDragging) return;
-        await SeekToPosition(e);
-    }
-
-    private void OnProgressPointerDown(PointerEventArgs e)
+    private async Task OnProgressPointerDown(PointerEventArgs e)
     {
         _isDragging = true;
+        _isScrubbing = true;
+        _progressBarBounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", _progressBarRef);
+        UpdateScrubFromPointer(e);
     }
 
-    private async Task OnProgressPointerMove(PointerEventArgs e)
+    private void OnProgressPointerMove(PointerEventArgs e)
     {
         if (!_isDragging) return;
-        await SeekToPosition(e);
+        UpdateScrubFromPointer(e);
     }
 
     private void OnProgressPointerUp(PointerEventArgs e)
     {
+        if (!_isDragging) return;
+        if (_isScrubbing)
+            Audio.Seek(_scrubTime);
         _isDragging = false;
+        _isScrubbing = false;
+        _progressBarBounds = null;
     }
 
-    private async Task SeekToPosition(MouseEventArgs e)
+    private void UpdateScrubFromPointer(MouseEventArgs e)
     {
-        var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", _progressBarRef);
-        if (bounds.Width <= 0 || Audio.Duration <= 0) return;
-
+        if (_progressBarBounds is not { Width: > 0 } bounds || Audio.Duration <= 0) return;
         var percent = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
-        Audio.Seek(percent * Audio.Duration);
+        _scrubTime = percent * Audio.Duration;
     }
 
     private void OnStateChanged(PlaybackState _) => InvokeAsync(StateHasChanged);
@@ -140,6 +179,20 @@ public partial class MiniMusicPlayer : IDisposable
     {
         if (Audio.Duration <= 0) return;
 
+        if (_isScrubbing)
+        {
+            switch (e.Code)
+            {
+                case "ArrowRight":
+                    _scrubTime = Math.Min(_scrubTime + 5, Audio.Duration);
+                    break;
+                case "ArrowLeft":
+                    _scrubTime = Math.Max(_scrubTime - 5, 0);
+                    break;
+            }
+            return;
+        }
+
         switch (e.Code)
         {
             case "ArrowRight":
@@ -149,6 +202,30 @@ public partial class MiniMusicPlayer : IDisposable
                 Audio.Seek(Math.Max(Audio.CurrentTime - 5, 0));
                 break;
         }
+    }
+
+    [JSInvokable("OnEditStart")]
+    public void OnEditStart()
+    {
+        _isScrubbing = true;
+        _scrubTime = Audio.CurrentTime;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable("OnEditCommit")]
+    public void OnEditCommit()
+    {
+        if (_isScrubbing)
+            Audio.Seek(_scrubTime);
+        _isScrubbing = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable("OnEditCancel")]
+    public void OnEditCancel()
+    {
+        _isScrubbing = false;
+        InvokeAsync(StateHasChanged);
     }
 
     private void OnTrackInfoKeyDown(KeyboardEventArgs e)
