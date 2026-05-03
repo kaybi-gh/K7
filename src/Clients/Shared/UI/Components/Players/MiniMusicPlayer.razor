@@ -1,18 +1,18 @@
 @if (Audio.IsVisible && Audio.CurrentTrack is not null)
 {
     <div class="music-mini-player">
-        <div class="mini-player-progress" @ref="_progressBarRef"
-             tabindex="0" role="slider"
+        <div class="mini-player-progress @(_seekbarFocusable ? "focusable" : "")" @ref="_progressBarRef"
+             tabindex="@(_seekbarFocusable ? 0 : -1)"
+             role="slider"
              aria-label="@S["SeekBar"]"
              aria-valuemin="0" aria-valuemax="100"
-             aria-valuenow="@((int)CurrentPercent)"
-             @onclick="OnProgressClick"
+             aria-valuenow="@((int)DisplayPercent)"
              @onkeydown="OnProgressKeyDown"
              @onpointerdown="OnProgressPointerDown"
              @onpointermove="OnProgressPointerMove"
              @onpointerup="OnProgressPointerUp">
             <div class="progress-buffered" style="width: @(BufferedPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
-            <div class="progress-current" style="width: @(CurrentPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+            <div class="progress-current" style="width: @(DisplayPercent.ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
         </div>
 
         <div class="mini-player-content">
@@ -43,6 +43,7 @@
                     <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" />
                     <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
                     <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                    <K7IconButton Icon="@Phosphor.Stop" OnClick="StopAndHide" AriaLabel="Stop" />
                     <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
                     <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" />
                 </div>
@@ -63,17 +64,20 @@
                 </div>
 
                 <div class="mini-player-secondary-controls">
-                    <div class="mini-player-volume">
-                        <K7IconButton Icon="@VolumeIcon" OnClick="ToggleMute" AriaLabel="Toggle mute" />
-                        <div class="volume-popup">
-                            <K7Slider TValue="double"
-                                       Value="Audio.Volume"
-                                       Min="0" Max="1"
-                                       Immediate="true"
-                                       ValueChanged="OnVolumeChanged" Step="0.01"
-                                       Class="mini-player-volume-slider" />
+                    @if (_showVolumeControls)
+                    {
+                        <div class="mini-player-volume">
+                            <K7IconButton Icon="@VolumeIcon" OnClick="ToggleMute" AriaLabel="Toggle mute" />
+                            <div class="volume-popup">
+                                <K7Slider TValue="double"
+                                           Value="Audio.Volume"
+                                           Min="0" Max="1"
+                                           Immediate="true"
+                                           ValueChanged="OnVolumeChanged" Step="0.01"
+                                           Class="mini-player-volume-slider" />
+                            </div>
                         </div>
-                    </div>
+                    }
                     <K7IconButton Icon="@Phosphor.CornersOut" OnClick="Audio.ToggleFullScreen" AriaLabel="EnterFullscreen" />
                 </div>
             </div>

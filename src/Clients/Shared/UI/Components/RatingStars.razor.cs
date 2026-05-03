@@ -50,8 +50,13 @@ public partial class RatingStars : IAsyncDisposable
     {
         if (firstRender && _canRate)
         {
-            _dotNetRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("K7.RatingStars.init", _element, _dotNetRef);
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("K7.RatingStars.init", _element, _dotNetRef);
+            }
+            catch (JSException) { }
+            catch (InvalidOperationException) { }
         }
     }
 

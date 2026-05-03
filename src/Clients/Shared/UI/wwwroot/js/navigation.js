@@ -384,6 +384,11 @@ var SpatialNav = (function () {
             return;
         }
 
+        // Block back navigation on auth pages (no navbar flicker)
+        if (/^\/(sign-in|linkdevice|select-user)(\/|$)/.test(path)) {
+            return;
+        }
+
         var previousUrl = window.location.href;
         window.history.back();
         var checkCount = 0;
@@ -752,6 +757,7 @@ K7.scrollToElement = function (id) {
 K7.RatingStars = {
     _instances: new WeakMap(),
     init: function (el, dotNetRef) {
+        if (!el || typeof el.addEventListener !== 'function') return;
         var handlers = {
             start: function () { dotNetRef.invokeMethodAsync('OnEditStart'); },
             commit: function () { dotNetRef.invokeMethodAsync('OnEditCommit'); },
@@ -776,6 +782,7 @@ K7.RatingStars = {
 K7.SeekBar = {
     _instances: new WeakMap(),
     init: function (el, dotNetRef) {
+        if (!el || typeof el.addEventListener !== 'function') return;
         var handlers = {
             start: function () { dotNetRef.invokeMethodAsync('OnEditStart'); },
             commit: function () { dotNetRef.invokeMethodAsync('OnEditCommit'); },
