@@ -350,38 +350,52 @@ public partial class BlazorPage : ContentPage
         if (activity is not null)
         {
             activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.SensorLandscape;
-
-            var window = activity.Window;
-            if (window is not null)
-            {
-#pragma warning disable CA1422, CS0618
-                if (OperatingSystem.IsAndroidVersionAtLeast(30))
-                {
-                    window.SetDecorFitsSystemWindows(false);
-                }
-                window.SetStatusBarColor(Android.Graphics.Color.Transparent);
-                window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
-                window.AddFlags(Android.Views.WindowManagerFlags.Fullscreen);
-                window.AddFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
-
-                if (OperatingSystem.IsAndroidVersionAtLeast(28))
-                {
-                    window.Attributes!.LayoutInDisplayCutoutMode =
-                        Android.Views.LayoutInDisplayCutoutMode.ShortEdges;
-                }
-
-                window.DecorView.SystemUiFlags =
-                    Android.Views.SystemUiFlags.Fullscreen
-                    | Android.Views.SystemUiFlags.HideNavigation
-                    | Android.Views.SystemUiFlags.ImmersiveSticky
-                    | Android.Views.SystemUiFlags.LayoutFullscreen
-                    | Android.Views.SystemUiFlags.LayoutHideNavigation
-                    | Android.Views.SystemUiFlags.LayoutStable;
-#pragma warning restore CA1422, CS0618
-            }
+            SetImmersiveMode(activity);
         }
 #endif
     }
+
+#if ANDROID
+    private static void SetImmersiveMode(Android.App.Activity activity)
+    {
+        var window = activity.Window;
+        if (window is null) return;
+
+#pragma warning disable CA1422, CS0618
+        if (OperatingSystem.IsAndroidVersionAtLeast(30))
+        {
+            window.SetDecorFitsSystemWindows(false);
+            var controller = window.InsetsController;
+            if (controller is not null)
+            {
+                controller.Hide(Android.Views.WindowInsets.Type.StatusBars()
+                    | Android.Views.WindowInsets.Type.NavigationBars());
+                controller.SystemBarsBehavior =
+                    (int)Android.Views.WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
+            }
+        }
+
+        window.SetStatusBarColor(Android.Graphics.Color.Transparent);
+        window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+        window.AddFlags(Android.Views.WindowManagerFlags.Fullscreen);
+        window.AddFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+        {
+            window.Attributes!.LayoutInDisplayCutoutMode =
+                Android.Views.LayoutInDisplayCutoutMode.ShortEdges;
+        }
+
+        window.DecorView.SystemUiFlags =
+            Android.Views.SystemUiFlags.Fullscreen
+            | Android.Views.SystemUiFlags.HideNavigation
+            | Android.Views.SystemUiFlags.ImmersiveSticky
+            | Android.Views.SystemUiFlags.LayoutFullscreen
+            | Android.Views.SystemUiFlags.LayoutHideNavigation
+            | Android.Views.SystemUiFlags.LayoutStable;
+#pragma warning restore CA1422, CS0618
+    }
+#endif
 
     private static void RestoreOrientation()
     {
@@ -398,8 +412,12 @@ public partial class BlazorPage : ContentPage
 #pragma warning disable CA1422, CS0618
                 if (OperatingSystem.IsAndroidVersionAtLeast(30))
                 {
-                    window.SetDecorFitsSystemWindows(true);
+                    window.SetDecorFitsSystemWindows(false);
+                    var controller = window.InsetsController;
+                    controller?.Show(Android.Views.WindowInsets.Type.StatusBars()
+                        | Android.Views.WindowInsets.Type.NavigationBars());
                 }
+
                 window.ClearFlags(Android.Views.WindowManagerFlags.Fullscreen);
                 window.ClearFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
 
@@ -410,6 +428,12 @@ public partial class BlazorPage : ContentPage
                 }
 
                 window.DecorView.SystemUiFlags = Android.Views.SystemUiFlags.Visible;
+
+                if (!OperatingSystem.IsAndroidVersionAtLeast(35))
+                {
+                    window.SetStatusBarColor(Android.Graphics.Color.Transparent);
+                    window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+                }
 #pragma warning restore CA1422, CS0618
             }
         }
