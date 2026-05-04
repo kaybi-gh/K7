@@ -61,8 +61,15 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<BackButtonService>();
         builder.Services.AddSingleton<ThemeService>();
 
-        builder.Services.AddHttpClient(nameof(K7ServerService));
-        builder.Services.AddSingleton<K7ServerService>();
+        builder.Services.AddTransient<AuthenticationDelegatingHandler>();
+        builder.Services.AddHttpClient(nameof(K7ServerService))
+            .AddHttpMessageHandler<AuthenticationDelegatingHandler>();
+        builder.Services.AddSingleton<K7ServerService>(sp =>
+        {
+            var factory = sp.GetRequiredService<IHttpClientFactory>();
+            var client = factory.CreateClient(nameof(K7ServerService));
+            return new K7ServerService(client);
+        });
         builder.Services.AddSingleton<IK7ServerService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IMediaService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<ILibraryService>(sp => sp.GetRequiredService<K7ServerService>());
