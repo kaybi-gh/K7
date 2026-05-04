@@ -194,10 +194,6 @@
     text-overflow: ellipsis;
 }
 
-.app-nav-label--profile {
-    max-width: 100px;
-}
-
 .avatar--sm {
     width: 28px;
     height: 28px;
@@ -220,8 +216,11 @@
         display: none;
     }
 
-    .app-nav-item--search .app-nav-label,
-    .app-nav-label--profile {
+    .app-nav-item--search .app-nav-label {
+        display: none;
+    }
+
+    ::deep .app-nav-item--search-mobile {
         display: none;
     }
 }
@@ -339,15 +338,15 @@
         bottom: 0;
         border-top: 1px solid var(--color-border);
         border-bottom: none;
-        height: var(--nav-height);
+        height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
         padding-top: 0;
-        padding-bottom: 0;
-        margin-bottom: env(safe-area-inset-bottom, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        margin-bottom: 0;
     }
 
     .app-nav-bar {
-        justify-content: space-between;
-        padding: 0 var(--space-3);
+        justify-content: space-around;
+        padding: 0;
         gap: 0;
     }
 
@@ -356,12 +355,22 @@
         display: none;
     }
 
+    ::deep .app-nav-item--search-desktop {
+        display: none;
+    }
+
+    /* On mobile, app-nav-main renders inline with search/avatar */
+    .app-nav-main {
+        display: contents;
+    }
+
     /* Reorder for mobile: Home, Explore, Search, My space, Profile */
-    .app-nav-item--home    { order: 1; }
-    .app-nav-item--explore { order: 2; }
-    .app-nav-item--search  { order: 3; }
-    .app-nav-item--myspace { order: 4; }
-    .app-nav-item--profile { order: 5; }
+    .app-nav-item--home              { order: 1; }
+    .app-nav-item--explore           { order: 2; }
+    ::deep .app-nav-item--search-mobile { order: 3; }
+    .app-nav-item--myspace           { order: 4; }
+    .app-nav-avatar-btn,
+    .app-nav-item--profile           { order: 5; }
 
     .app-nav-link {
         flex-direction: column;
@@ -371,6 +380,18 @@
         justify-content: center;
         align-items: center;
         border-radius: 0;
+    }
+
+    ::deep .k7-btn {
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--space-1) var(--space-2);
+        min-height: var(--nav-height);
+        justify-content: center;
+        align-items: center;
+        border-radius: 0;
+        font-size: var(--text-sm);
+        font-weight: 500;
     }
 
     /* Show icons for all items on mobile */
@@ -388,13 +409,19 @@
         font-size: 0.625rem;
     }
 
-    /* Search and Profile labels visible on mobile */
-    .app-nav-item--search .app-nav-label {
-        display: block;
+    ::deep .app-nav-item--search-mobile {
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--space-1) var(--space-2);
+        min-height: var(--nav-height);
+        justify-content: center;
+        align-items: center;
+        border-radius: 0;
+        width: auto;
+        height: auto;
     }
 
-    .app-nav-label--profile {
-        display: block;
-        max-width: none;
+    ::deep .app-nav-item--search-mobile .app-nav-label {
+        font-size: 0.625rem;
     }
 }

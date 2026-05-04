@@ -32,11 +32,16 @@
 
         <div class="app-nav-spacer"></div>
 
-        <K7IconButton Icon="@Phosphor.MagnifyingGlass" Href="/search" AriaLabel="@L["Search"]" Class="app-nav-item--search" />
+        <K7IconButton Icon="@Phosphor.MagnifyingGlass" Href="/search" AriaLabel="@L["Search"]" Class="app-nav-item--search app-nav-item--search-desktop" />
+
+        <K7IconButton Href="/search" AriaLabel="@L["Search"]" Class="app-nav-item--search app-nav-item--search-mobile">
+            <K7Icon Icon="@Phosphor.MagnifyingGlass" />
+            <span class="app-nav-label">@L["Search"]</span>
+        </K7IconButton>
 
         <AuthorizeView>
             <Authorized>
-                    <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
+                <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
                         type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
                         <div class="avatar avatar--sm" title="@context.User.Identity?.Name">
                         @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
@@ -45,7 +50,7 @@
                 </button>
             </Authorized>
             <NotAuthorized>
-                    <button class="app-nav-link app-nav-link--btn app-nav-item--profile focusable" type="button" @onclick="Login">
+                <button class="app-nav-link app-nav-link--btn app-nav-item--profile focusable" type="button" @onclick="Login">
                     <span class="app-nav-icon"><K7Icon Icon="@Phosphor.UserCircle" /></span>
                     <span class="app-nav-label">@L["Login"]</span>
                 </button>
