@@ -64,6 +64,8 @@ public partial class AppNav : IDisposable
             _activeNav = "/explore";
         else if (path.StartsWith("/my-space", StringComparison.OrdinalIgnoreCase))
             _activeNav = "/my-space";
+        else if (path.StartsWith("/search", StringComparison.OrdinalIgnoreCase))
+            _activeNav = "/search";
         else
             _activeNav = "";
     }
