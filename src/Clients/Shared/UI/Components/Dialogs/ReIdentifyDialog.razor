@@ -3,7 +3,7 @@
 
 <div class="k7-dialog-content">
         <div class="d-flex flex-col">
-            <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" Adornment="end" AdornmentIcon="@Phosphor.MagnifyingGlass" OnAdornmentClick="SearchAsync" OnKeyDown="HandleKeyDown" />
+            <K7TextField @bind-Value="_searchQuery" Label="@L["TitleLabel"]" Variant="outlined" Adornment="end" AdornmentIcon="@Phosphor.MagnifyingGlass" OnAdornmentClick="SearchAsync" Immediate="true" DebounceInterval="500" OnDebounceIntervalElapsed="@((string? _) => SearchAsync())" />
             
             <div class="d-flex">
                 <K7TextField Type="number" @bind-Value="_searchYear" Label="@L["YearOptionalLabel"]" Variant="outlined" Clearable="true" />
@@ -33,7 +33,7 @@
                     <ul class="k7-list">
                         @foreach (var result in _results)
                         {
-                            <li Value="result">
+                            <li class="@(_selectedResult == result ? "selected" : "")" @onclick="() => _selectedResult = result">
                                 <div class="grid">
                                     <div>
                                         @if (!string.IsNullOrEmpty(result.PosterUrl))

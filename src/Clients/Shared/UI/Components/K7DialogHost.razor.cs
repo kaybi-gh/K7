@@ -24,10 +24,15 @@ public partial class K7DialogHost : IDisposable
         var entry = new K7DialogEntry(request, () => InvokeAsync(StateHasChanged), OnDialogClosed);
         _dialogs.Add(entry);
         await InvokeAsync(StateHasChanged);
+
+        // Allow two render cycles so the backdrop element is available
         await Task.Yield();
+        await Task.Delay(50);
+
         try
         {
-            await SpatialNav.AttachLayerCallbackAsync(entry.BackdropRef, entry.CloseCallback);
+            if (entry.BackdropRef.Id is not null)
+                await SpatialNav.AttachLayerCallbackAsync(entry.BackdropRef, entry.CloseCallback);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
@@ -82,7 +87,7 @@ internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference, IDi
     public Type Type { get; }
     public string Title { get; private set; }
     public K7DialogOptions? Options { get; }
-    public Dictionary<string, object?> ComponentParameters { get; }
+    public Dictionary<string, object> ComponentParameters { get; }
     public ElementReference BackdropRef { get; set; }
     public DotNetObjectReference<LayerCloseCallback> CloseCallback { get; }
 
@@ -99,7 +104,8 @@ internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference, IDi
         CloseCallback = DotNetObjectReference.Create(_closeCallbackWrapper);
 
         ComponentParameters = request.Parameters?.ToDictionary()
-            .ToDictionary(k => k.Key, v => v.Value)
+            .Where(kv => kv.Value is not null)
+            .ToDictionary(k => k.Key, v => v.Value!)
             ?? [];
     }
 

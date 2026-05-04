@@ -1,7 +1,6 @@
 using K7.Shared.Dtos.Entities.Metadatas;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
@@ -38,14 +37,6 @@ public partial class ReIdentifyDialog
     {
         _searchQuery = InitialSearchQuery ?? "";
         base.OnInitialized();
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SearchAsync();
-        }
     }
 
     private async Task SearchAsync()
