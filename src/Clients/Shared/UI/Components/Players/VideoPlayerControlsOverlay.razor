@@ -15,9 +15,9 @@
 
 <div class="video-controls-overlay" tabindex="0" @ref="_overlayRef"
      @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap"
-     @ontouchstart="OnTouchStart"
+     @ontouchstart="OnTouchStart" @ontouchstart:preventDefault
      @ontouchmove="OnTouchMove" @ontouchmove:preventDefault="@_swipeGestureActive"
-     @ontouchend="OnTouchEnd"
+     @ontouchend="OnTouchEnd" @ontouchend:preventDefault
      @onkeydown="OnKeyDown" @onkeydown:stopPropagation
      @onfocusin="OnFocusIn"
      style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
