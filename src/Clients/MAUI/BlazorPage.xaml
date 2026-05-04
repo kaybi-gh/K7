@@ -5,9 +5,10 @@
              xmlns:sharedPages="clr-namespace:K7.Clients.Shared.UI.Pages;assembly=K7.Clients.Shared.UI"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="K7.Clients.MAUI.BlazorPage"
-             BackgroundColor="{DynamicResource PageBackgroundColor}">
+             BackgroundColor="{DynamicResource PageBackgroundColor}"
+             Padding="0">
 
-    <Grid x:Name="RootGrid">
+    <Grid x:Name="RootGrid" SafeAreaEdges="None">
         <!-- Native MediaElement (video) -->
         <toolkit:MediaElement x:Name="NativePlayer"
                               Aspect="AspectFit"
