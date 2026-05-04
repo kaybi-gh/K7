@@ -5,6 +5,12 @@
     isolation: isolate;
 }
 
+@media (max-width: 599.98px) {
+    .home-page {
+        margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+    }
+}
+
 .home-bg {
     position: absolute;
     top: 0;

@@ -264,6 +264,14 @@ html.platform-tv .media-card-menu { display: none !important; }
 /* ============================================================
    Loading progress
    ============================================================ */
+#preload {
+    overflow: hidden;
+}
+
+body:has(#preload) {
+    overflow: hidden;
+}
+
 .loading-progress {
     position: relative;
     display: block;
