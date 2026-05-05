@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject Microsoft.JSInterop.IJSRuntime JS
 
 <div class="empty-layout">
     <K7ErrorBoundary>
@@ -13,6 +14,16 @@
         </ErrorContent>
     </K7ErrorBoundary>
 </div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("K7.dismissPreload");
+        }
+    }
+}
 
 <K7SnackbarHost />
 

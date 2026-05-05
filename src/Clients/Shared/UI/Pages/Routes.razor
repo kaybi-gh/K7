@@ -2,6 +2,9 @@
     <Found Context="routeData">
         <CascadingAuthenticationState>
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <Authorizing>
+                    @* Preload only renders for WASM pages; nothing needed here *@
+                </Authorizing>
                 <NotAuthorized>
                     @if (context.User.Identity?.IsAuthenticated == true)
                     {
@@ -25,9 +28,4 @@
     </Found>
 </Router>
 
-@* TODO - Put in seperated file and rename class *@
-<style>
-    #preload {
-        display: none;
-    }
-</style>
+@* Preload is dismissed by MainLayout once auth is resolved *@

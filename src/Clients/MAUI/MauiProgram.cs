@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 using K7.Clients.MAUI.Interfaces;
 using K7.Shared.Interfaces;
 using K7.Shared.Services;
@@ -30,6 +31,7 @@ public static partial class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseSkiaSharp()
             .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: false)
             .ConfigureFonts(fonts =>
             {

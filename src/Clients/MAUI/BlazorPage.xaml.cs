@@ -23,8 +23,39 @@ public partial class BlazorPage : ContentPage
         _backButtonService = backButtonService;
         _k7ServerService = k7ServerService;
         InitializeComponent();
+        InitializeSplashOverlay();
         InitializePlayer();
         InitializeAudioPlayer();
+    }
+
+    private void InitializeSplashOverlay()
+    {
+        var startTime = System.Diagnostics.Stopwatch.GetTimestamp();
+
+        _ = Task.Run(async () =>
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            try
+            {
+                await AppReadySignal.WaitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                System.Diagnostics.Debug.WriteLine("K7 MAUI - Splash timeout, hiding anyway");
+            }
+
+            // Ensure minimum display time so the animation is visible
+            var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(startTime);
+            var remaining = TimeSpan.FromMilliseconds(1500) - elapsed;
+            if (remaining > TimeSpan.Zero)
+                await Task.Delay(remaining);
+
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                SplashOverlay.IsVisible = false;
+                RootGrid.Children.Remove(SplashOverlay);
+            });
+        });
     }
 
     protected override bool OnBackButtonPressed()

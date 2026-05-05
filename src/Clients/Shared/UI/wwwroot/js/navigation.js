@@ -496,7 +496,7 @@ var SpatialNav = (function () {
         }
 
         // Section enter-to-last-focused
-        if (e.target && e.target !== document.body) {
+        if (e.target && e.target !== document.body && e.target.closest) {
             var section = e.target.closest('[data-sn-section]');
             if (section) {
                 var id = section.getAttribute('data-sn-section');

@@ -30,32 +30,27 @@ public partial class App : Application
         Debug.WriteLine("K7 MAUI - App.CreateWindow - start");
 
 #if ANDROID
-        // Android debug: FastDev assembly loading blocks the main thread 15+ seconds.
-        // Return a lightweight page immediately so Android can draw the first frame
-        // and reset the ANR watchdog, then swap in the heavy BlazorPage later.
-        var splash = new ContentPage
-        {
-            BackgroundColor = Colors.Black,
-            Content = new ActivityIndicator { IsRunning = true, Color = Colors.White, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center }
-        };
+        // Show the real page immediately. The BlazorPage has a built-in splash
+        // overlay that stays visible until Blazor signals readiness.
+        K7.Clients.Shared.Services.AppReadySignal.Reset();
+        var splash = new LottieSplashPage();
         var window = new Window(splash) { Title = "K7" };
 
         _ = Task.Run(async () =>
         {
-            // Wait for the Activity to fully render the splash frame
-            await Task.Delay(1500);
-            Debug.WriteLine("K7 MAUI - Posting real page creation to main thread");
+            // Small delay to let Android draw the lightweight splash frame
+            await Task.Delay(50);
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 try
                 {
-                    Debug.WriteLine("K7 MAUI - Creating real page now");
+                    Debug.WriteLine("K7 MAUI - Creating BlazorPage");
                     window.Page = GetStartPage();
-                    Debug.WriteLine("K7 MAUI - Real page set");
+                    Debug.WriteLine("K7 MAUI - BlazorPage set");
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"K7 MAUI - Real page creation failed: {ex}");
+                    Debug.WriteLine($"K7 MAUI - BlazorPage creation failed: {ex}");
                 }
             });
         });

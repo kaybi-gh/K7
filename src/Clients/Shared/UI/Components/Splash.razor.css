@@ -9,8 +9,33 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    transform: translate(-50%,-50%);
     z-index: 99;
+}
+
+.splash-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.splash-animation {
+    width: 80px;
+    height: 80px;
+}
+
+.splash-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: 2px;
+    opacity: 0;
+    animation: splash-fade-in 0.6s ease-out 0.3s forwards;
+}
+
+@keyframes splash-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -1,8 +1,25 @@
+@inject Microsoft.JSInterop.IJSRuntime JS
+
 <div class="splash">
-     <div class="d-flex flex-col">
-        <div class="d-flex align-center">
-            <K7Icon Color="primary" Size="lg" Icon="@Phosphor.Hurricane" />
-             <span class="text-h6 color-primary">K7</span>
-        </div>
-     </div>
+    <div class="splash-content">
+        <div class="splash-animation" @ref="_animationContainer"></div>
+        <span class="splash-title">K7</span>
+    </div>
 </div>
+
+@code {
+    private Microsoft.AspNetCore.Components.ElementReference _animationContainer;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("K7.Lottie.play", _animationContainer,
+                    "_content/K7.Clients.Shared.UI/animations/splash.json");
+            }
+            catch (Microsoft.JSInterop.JSException) { }
+        }
+    }
+}
