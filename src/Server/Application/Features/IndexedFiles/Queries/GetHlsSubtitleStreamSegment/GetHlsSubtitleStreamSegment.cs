@@ -57,10 +57,6 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
 
     public async Task<IResult> Handle(GetHlsSubtitleStreamSegmentQuery query, CancellationToken cancellationToken)
     {
-        _logger.LogInformation(
-            "Handling subtitle segment request: Id={Id}, Track={Track}, Segment={Segment}",
-            query.Id, query.SubtitleTrackIndex, query.SegmentNumber);
-
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
@@ -101,7 +97,7 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
 
     private async Task EnsureVttExtractedAsync(string inputPath, int trackIndex, string vttCachePath, CancellationToken cancellationToken)
     {
-        if (File.Exists(vttCachePath))
+        if (File.Exists(vttCachePath) && new FileInfo(vttCachePath).Length > 0)
         {
             return;
         }
@@ -112,13 +108,27 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
         await semaphore.WaitAsync(cancellationToken);
         try
         {
-            // Double-check after acquiring lock
-            if (File.Exists(vttCachePath))
+            if (File.Exists(vttCachePath) && new FileInfo(vttCachePath).Length > 0)
             {
                 return;
             }
 
+            // Delete any stale 0-byte file from a previous failed extraction
+            if (File.Exists(vttCachePath))
+            {
+                File.Delete(vttCachePath);
+            }
+
             await _mediaTranscoder.ExtractSubtitleAsVttAsync(inputPath, trackIndex, vttCachePath, cancellationToken);
+
+            // Clean up if ffmpeg produced an empty file
+            if (File.Exists(vttCachePath) && new FileInfo(vttCachePath).Length == 0)
+            {
+                _logger.LogWarning(
+                    "FFmpeg produced empty VTT for track {Track} from {Input} - removing cached file",
+                    trackIndex, inputPath);
+                File.Delete(vttCachePath);
+            }
         }
         finally
         {
