@@ -124,6 +124,7 @@ public partial class BlazorPage : ContentPage
         _playerService.StopRequested += () => { NativePlayer.Stop(); return Task.CompletedTask; };
         _playerService.SeekRequested += (position) => { NativePlayer.SeekTo(TimeSpan.FromSeconds(position)); return Task.CompletedTask; };
         _playerService.AspectRatioModeChangeRequested += OnAspectRatioModeChanged;
+        InitializePlayerPlatform();
 
         NativePlayer.PropertyChanged += (sender, e) =>
         {
@@ -160,10 +161,27 @@ public partial class BlazorPage : ContentPage
         {
             if (!string.IsNullOrEmpty(source.Url))
             {
-                System.Diagnostics.Debug.WriteLine($"[K7-Player] Setting source: {source.Url}");
-                System.Diagnostics.Debug.WriteLine($"[K7-Player] Volume={NativePlayer.Volume}, ShouldMute={NativePlayer.ShouldMute}");
+                NativePlayer.Stop();
                 NativePlayer.ShouldAutoPlay = true;
                 NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
+
+                if (source.PendingSeekTime is double seekTime)
+                {
+                    // Seek once the player starts playing (MediaOpened may not fire on source swap)
+                    void OnStateChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
+                    {
+                        if (e.PropertyName != nameof(MediaElement.CurrentState))
+                            return;
+
+                        if (NativePlayer.CurrentState is MediaElementState.Playing or MediaElementState.Buffering)
+                        {
+                            NativePlayer.PropertyChanged -= OnStateChanged;
+                            NativePlayer.SeekTo(TimeSpan.FromSeconds(seekTime));
+                        }
+                    }
+
+                    NativePlayer.PropertyChanged += OnStateChanged;
+                }
             }
         });
     }
@@ -346,97 +364,15 @@ public partial class BlazorPage : ContentPage
     {
         DeviceDisplay.Current.KeepScreenOn = true;
 #if ANDROID
-        var activity = Platform.CurrentActivity;
-        if (activity is not null)
-        {
-            activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.SensorLandscape;
-            SetImmersiveMode(activity);
-        }
+        SetLandscapeOrientationPlatform();
 #endif
     }
-
-#if ANDROID
-    private static void SetImmersiveMode(Android.App.Activity activity)
-    {
-        var window = activity.Window;
-        if (window is null) return;
-
-#pragma warning disable CA1422, CS0618
-        if (OperatingSystem.IsAndroidVersionAtLeast(30))
-        {
-            window.SetDecorFitsSystemWindows(false);
-            var controller = window.InsetsController;
-            if (controller is not null)
-            {
-                controller.Hide(Android.Views.WindowInsets.Type.StatusBars()
-                    | Android.Views.WindowInsets.Type.NavigationBars());
-                controller.SystemBarsBehavior =
-                    (int)Android.Views.WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
-            }
-        }
-
-        window.SetStatusBarColor(Android.Graphics.Color.Transparent);
-        window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
-        window.AddFlags(Android.Views.WindowManagerFlags.Fullscreen);
-        window.AddFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
-
-        if (OperatingSystem.IsAndroidVersionAtLeast(28))
-        {
-            window.Attributes!.LayoutInDisplayCutoutMode =
-                Android.Views.LayoutInDisplayCutoutMode.ShortEdges;
-        }
-
-        window.DecorView.SystemUiFlags =
-            Android.Views.SystemUiFlags.Fullscreen
-            | Android.Views.SystemUiFlags.HideNavigation
-            | Android.Views.SystemUiFlags.ImmersiveSticky
-            | Android.Views.SystemUiFlags.LayoutFullscreen
-            | Android.Views.SystemUiFlags.LayoutHideNavigation
-            | Android.Views.SystemUiFlags.LayoutStable;
-#pragma warning restore CA1422, CS0618
-    }
-#endif
 
     private static void RestoreOrientation()
     {
         DeviceDisplay.Current.KeepScreenOn = false;
 #if ANDROID
-        var activity = Platform.CurrentActivity;
-        if (activity is not null)
-        {
-            activity.RequestedOrientation = Android.Content.PM.ScreenOrientation.Unspecified;
-
-            var window = activity.Window;
-            if (window is not null)
-            {
-#pragma warning disable CA1422, CS0618
-                if (OperatingSystem.IsAndroidVersionAtLeast(30))
-                {
-                    window.SetDecorFitsSystemWindows(false);
-                    var controller = window.InsetsController;
-                    controller?.Show(Android.Views.WindowInsets.Type.StatusBars()
-                        | Android.Views.WindowInsets.Type.NavigationBars());
-                }
-
-                window.ClearFlags(Android.Views.WindowManagerFlags.Fullscreen);
-                window.ClearFlags(Android.Views.WindowManagerFlags.LayoutNoLimits);
-
-                if (OperatingSystem.IsAndroidVersionAtLeast(28))
-                {
-                    window.Attributes!.LayoutInDisplayCutoutMode =
-                        Android.Views.LayoutInDisplayCutoutMode.Default;
-                }
-
-                window.DecorView.SystemUiFlags = Android.Views.SystemUiFlags.Visible;
-
-                if (!OperatingSystem.IsAndroidVersionAtLeast(35))
-                {
-                    window.SetStatusBarColor(Android.Graphics.Color.Transparent);
-                    window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
-                }
-#pragma warning restore CA1422, CS0618
-            }
-        }
+        RestoreOrientationPlatform();
 #endif
     }
 
@@ -444,4 +380,6 @@ public partial class BlazorPage : ContentPage
     {
     }
 #endif
+
+    partial void InitializePlayerPlatform();
 }
