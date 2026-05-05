@@ -69,6 +69,7 @@ public partial class MainLayout : IDisposable
         if (firstRender)
         {
             await JS.InvokeVoidAsync("K7.applyTheme", ThemeService.Theme.CssDataAttribute);
+            await JS.InvokeVoidAsync("K7.dismissPreload");
             _selfRef = DotNetObjectReference.Create(this);
             try
             {

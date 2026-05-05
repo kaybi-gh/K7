@@ -17,6 +17,14 @@
 
 window.K7 = window.K7 || {};
 
+window.K7.dismissPreload = function () {
+    var el = document.getElementById('preload');
+    if (!el) return;
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    setTimeout(function () { el.remove(); }, 400);
+};
+
 window.K7.applyTheme = function (dataAttribute) {
     document.documentElement.setAttribute('data-theme', dataAttribute);
     localStorage.setItem('k7-theme', dataAttribute);

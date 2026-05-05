@@ -16,18 +16,32 @@
 </head>
 
 <body>
-    <div id="preload">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
-        @* TODO - Customize splash *@
-    </div>
+    @if (PageRenderMode is not null)
+    {
+        <div id="preload">
+            <div class="preload-content">
+                <div id="preload-animation" class="preload-animation"></div>
+                <span class="preload-title">K7</span>
+            </div>
+        </div>
+    }
     <Routes @rendermode="PageRenderMode" />
 
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/theme.js"]"></script>
+    <script src="@Assets["_content/K7.Clients.Shared.UI/dist/lottie/build/player/lottie_light.min.js"]"></script>
+    <script>
+        if (window.lottie) {
+            lottie.loadAnimation({
+                container: document.getElementById('preload-animation'),
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: '_content/K7.Clients.Shared.UI/animations/splash.json'
+            });
+        }
+    </script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets["_content/K7.Clients.Shared.UI/js/lottie-interop.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/embla-carousel/embla-carousel.umd.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/lib/js-spatial-navigation/spatial_navigation.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/navigation.js"]"></script>

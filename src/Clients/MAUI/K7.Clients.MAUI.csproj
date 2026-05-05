@@ -72,7 +72,7 @@
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
     <!-- Splash Screen -->
-    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#212121" BaseSize="128,128" />
 
     <!-- Images -->
     <MauiImage Include="Resources\Images\*" />
@@ -83,11 +83,13 @@
 
     <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
     <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+    <MauiAsset Include="..\Shared\UI\wwwroot\animations\splash.json" LogicalName="splash.json" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Maui.MediaElement" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="SkiaSharp.Extended.UI.Maui" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Maui.Controls" />
@@ -109,6 +111,9 @@
     <Compile Update="BlazorPage.xaml.cs">
       <DependentUpon>BlazorPage.xaml</DependentUpon>
     </Compile>
+    <Compile Update="LottieSplashPage.xaml.cs">
+      <DependentUpon>LottieSplashPage.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Platforms\iOS\Services\CodecService.cs">
       <ExcludeFromCurrentConfiguration>false</ExcludeFromCurrentConfiguration>
     </Compile>
@@ -122,6 +127,9 @@
 
   <ItemGroup>
     <MauiXaml Update="SetupPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="LottieSplashPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
   </ItemGroup>

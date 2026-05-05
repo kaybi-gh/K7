@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:K7.Clients.MAUI"
              xmlns:sharedPages="clr-namespace:K7.Clients.Shared.UI.Pages;assembly=K7.Clients.Shared.UI"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:skia="clr-namespace:SkiaSharp.Extended.UI.Controls;assembly=SkiaSharp.Extended.UI"
              x:Class="K7.Clients.MAUI.BlazorPage"
              BackgroundColor="{DynamicResource PageBackgroundColor}"
              Padding="0">
@@ -34,6 +35,21 @@
                 <RootComponent Selector="#app" ComponentType="{x:Type sharedPages:Routes}" />
             </BlazorWebView.RootComponents>
         </BlazorWebView>
+
+        <!-- Splash overlay - covers BlazorWebView until Blazor is ready -->
+        <Grid x:Name="SplashOverlay" ZIndex="3"
+              BackgroundColor="#212121"
+              HorizontalOptions="Fill"
+              VerticalOptions="Fill"
+              InputTransparent="False">
+            <skia:SKLottieView x:Name="SplashAnimation"
+                               Source="splash.json"
+                               RepeatCount="0"
+                               WidthRequest="120"
+                               HeightRequest="120"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+        </Grid>
 
         <!-- Close button for native player on Windows (overlay is not usable due to opaque WebView2) -->
         <Button x:Name="NativePlayerCloseButton"

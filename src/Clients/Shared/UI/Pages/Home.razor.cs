@@ -70,6 +70,7 @@ public partial class Home : IDisposable
         await Task.WhenAll(tasks);
 
         isLoading = false;
+        Shared.Services.AppReadySignal.Signal();
         var heroRows = _rows.Where(r => r.Config.DisplayType == HomeRowDisplayType.Hero).ToList();
         _heroItems = heroRows.Count > 0
             ? heroRows.SelectMany(r => r.Items).Take(5).ToList()

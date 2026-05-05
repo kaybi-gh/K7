@@ -32,6 +32,8 @@ public partial class SelectUser
         _users = LocalUserService.GetAll();
         _singleUserMode = LocalUserService.IsSingleUserMode;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+
+        K7.Clients.Shared.Services.AppReadySignal.Signal();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -67,6 +67,14 @@
         "src/duotone/style.css",
         "src/duotone/Phosphor-Duotone.woff2"
       ]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "lottie-web@5.12.2",
+      "destination": "wwwroot/dist/lottie/",
+      "files": [
+        "build/player/lottie_light.min.js"
+      ]
     }
   ]
 }
