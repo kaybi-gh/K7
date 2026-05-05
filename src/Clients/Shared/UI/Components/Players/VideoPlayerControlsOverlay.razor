@@ -20,7 +20,7 @@
      @ontouchend="OnTouchEnd" @ontouchend:preventDefault
      @onkeydown="OnKeyDown" @onkeydown:stopPropagation
      @onfocusin="OnFocusIn"
-     style="@(_showOverlay || _isMenuOpen || _isMouseOverVolumeSlider ? "opacity: 1;" : "opacity: 0;")">
+     style="@OverlayStyle">
 
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <K7IconButton Icon="@Phosphor.X" OnClick="OnCloseButtonClick" AriaLabel="Close" />
@@ -203,6 +203,14 @@
     private bool _showOverlay = true;
     private bool _isMenuOpen = false;
     private bool _isMouseOverControlsBar = false;
+
+    private bool IsOverlayVisible => _showOverlay || _isMenuOpen || _isMouseOverVolumeSlider;
+
+    // On native MAUI, Android WebView may skip hit-testing elements with opacity: 0.
+    // Use a near-zero opacity so the overlay remains touchable when hidden.
+    private string OverlayStyle => IsOverlayVisible
+        ? "opacity: 1;"
+        : DeviceService.GetClientType() == ClientType.Web ? "opacity: 0;" : "opacity: 0.01;";
     private bool _isMouseOverVolumeButton = false;
     private bool _isMouseOverVolumeSlider = false;
     private bool _isVolumeSliderVisible = false;
@@ -639,7 +647,10 @@
             return;
         }
 
-        if (_isMouseOverControlsBar || _isMenuOpen) return;
+        // Reset mouse-over flag on touch - Android WebView can emit stale mouseover events
+        _isMouseOverControlsBar = false;
+
+        if (_isMenuOpen) return;
 
         var now = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
         var elapsed = now - _touchStartTime;
