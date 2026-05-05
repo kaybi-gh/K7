@@ -300,6 +300,7 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         QualityChanged?.Invoke(quality);
 
         var seekTime = CurrentTime;
+        var previousDuration = Duration;
 
         var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
 
@@ -309,6 +310,14 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             MimeType = "application/vnd.apple.mpegurl",
             PendingSeekTime = seekTime > 0 ? seekTime : null
         };
+
+        // Restore time/duration so the overlay keeps showing the correct position
+        // while the new quality loads
+        if (seekTime > 0)
+        {
+            CurrentTime = seekTime;
+            Duration = previousDuration;
+        }
 
         return Task.CompletedTask;
     }
