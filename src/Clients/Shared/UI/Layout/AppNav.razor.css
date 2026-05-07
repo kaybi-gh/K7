@@ -90,6 +90,11 @@
     background: var(--color-surface-hover);
 }
 
+.app-nav-logo ::deep .k7-brand-symbol {
+    width: 1.5rem;
+    height: auto;
+}
+
 .app-nav-logo-text {
     font-family: var(--font-heading);
     font-size: var(--text-xl);
