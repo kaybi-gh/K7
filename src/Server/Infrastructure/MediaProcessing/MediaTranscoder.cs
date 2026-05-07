@@ -300,8 +300,6 @@ public class MediaTranscoder : IMediaTranscoder
             "Extracting subtitle stream {StreamIndex} from {Input} to {Output}",
             subtitleStreamIndex, inputFilePath, outputVttPath);
 
-        var stderrLines = new List<string>();
-
         var result = await FFMpegArguments
             .FromFileInput(inputFilePath, verifyExists: true)
             .OutputToFile(outputVttPath, overwrite: true, options =>
@@ -310,33 +308,17 @@ public class MediaTranscoder : IMediaTranscoder
                 options.WithCustomArgument("-c:s webvtt");
             })
             .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg subtitle stdout: {Output}", output))
-            .NotifyOnError((error) =>
-            {
-                stderrLines.Add(error);
-                _logger.LogDebug("FFmpeg subtitle stderr: {Error}", error);
-            })
+            .NotifyOnError((error) => _logger.LogDebug("FFmpeg subtitle stderr: {Error}", error))
             .CancellableThrough(cancellationToken)
             .ProcessAsynchronously(throwOnError: false);
 
         if (!result || !File.Exists(outputVttPath))
         {
-            _logger.LogError(
-                "Failed to extract subtitle stream {StreamIndex} from {Input}. FFmpeg stderr: {Stderr}",
-                subtitleStreamIndex, inputFilePath, string.Join('\n', stderrLines));
+            _logger.LogError("Failed to extract subtitle stream {StreamIndex} from {Input}", subtitleStreamIndex, inputFilePath);
             throw new InvalidOperationException($"FFmpeg failed to extract subtitle stream {subtitleStreamIndex}");
         }
 
-        var fileSize = new FileInfo(outputVttPath).Length;
-        if (fileSize == 0)
-        {
-            _logger.LogWarning(
-                "FFmpeg produced 0-byte VTT for stream {StreamIndex} from {Input}. FFmpeg stderr: {Stderr}",
-                subtitleStreamIndex, inputFilePath, string.Join('\n', stderrLines));
-        }
-
-        _logger.LogInformation(
-            "Subtitle extraction completed: {Output} ({Size} bytes)",
-            outputVttPath, fileSize);
+        _logger.LogInformation("Subtitle extraction completed: {Output}", outputVttPath);
     }
 }
 
