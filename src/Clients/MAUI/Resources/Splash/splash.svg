@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <rect width="128" height="128" fill="#212121"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+    <g fill="#ffffff" transform="translate(45,50) scale(1)">
+        <path d="m 0,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+        <path d="m 34.251,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+    </g>
 </svg>
