@@ -14,6 +14,22 @@
 .k7-icon--lg { font-size: 2rem; }
 .k7-icon--xl { font-size: 3rem; }
 
+/* Brand SVG icons - size via width/height instead of font-size */
+svg.k7-icon { display: inline-block; vertical-align: middle; height: auto; }
+svg.k7-icon.k7-icon--sm { width: 1rem; }
+svg.k7-icon.k7-icon--md { width: 1.5rem; }
+svg.k7-icon.k7-icon--lg { width: 2rem; }
+svg.k7-icon.k7-icon--xl { width: 3rem; }
+
+/* Icon colors */
+.k7-icon.color-accent  { color: var(--color-accent); }
+.k7-icon.color-primary { color: var(--color-text); }
+.k7-icon.color-secondary { color: var(--color-text-secondary); }
+.k7-icon.color-success { color: var(--color-success); }
+.k7-icon.color-error   { color: var(--color-error); }
+.k7-icon.color-warning { color: var(--color-warning); }
+.k7-icon.color-default { color: inherit; }
+
 /* ============================================================
    App shell - CSS Grid layout
    ============================================================ */
