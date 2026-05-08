@@ -562,22 +562,6 @@
             </BrowseView>
         </div>
     </section>
-
-    <section id="splash" class="ds-section">
-        <h2>Splash</h2>
-        <p class="ds-description">Full-screen loading overlay shown while the app initialises. Uses <code>position: fixed</code> and <code>z-index: 99</code>.</p>
-        <div class="ds-preview">
-            <K7Button OnClick="() => _showSplash = true">Show Splash</K7Button>
-        </div>
-    </section>
-
-    @if (_showSplash)
-    {
-        <div @onclick="() => _showSplash = false" style="position:fixed;inset:0;z-index:100;cursor:pointer">
-            <Splash />
-            <span style="position:fixed;bottom:var(--space-6);left:50%;transform:translateX(-50%);font-size:var(--text-xs);color:var(--color-text-secondary)">Click anywhere to close</span>
-        </div>
-    }
 </div>
 
 @code {
@@ -614,7 +598,6 @@
     }
 
     // Media
-    private bool _showSplash;
     private int _dsHeroActiveIndex;
 
     private static readonly MediaCardViewModel _skeletonCard = new() { Id = "skeleton" };

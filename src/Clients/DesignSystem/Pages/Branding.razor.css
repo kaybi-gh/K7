@@ -1,0 +1,88 @@
+/* Branding page */
+
+.ds-brand-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+}
+
+.ds-brand-grid--wide {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.ds-brand-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.ds-brand-card--dark {
+    background: #1a1a1a;
+}
+
+.ds-brand-card--light {
+    background: #f5f5f5;
+}
+
+.ds-brand-card--wide {
+    padding: var(--space-4);
+}
+
+.ds-brand-card--splash {
+    padding: var(--space-6);
+    gap: var(--space-4);
+}
+
+.ds-brand-preview {
+    width: 48px;
+    height: auto;
+}
+
+.ds-brand-preview--wide {
+    width: 140px;
+}
+
+.ds-brand-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.ds-brand-card--light .ds-brand-label {
+    color: #666;
+}
+
+.ds-splash-player {
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 128 / 70;
+}
+
+.ds-splash-controls {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.ds-splash-select {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-sm);
+}
+
+.ds-splash-loop {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}

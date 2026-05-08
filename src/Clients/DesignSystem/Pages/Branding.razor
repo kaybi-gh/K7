@@ -1,0 +1,182 @@
+@page "/branding"
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>Branding - K7 Design System</PageTitle>
+
+<div class="ds-page">
+    <header class="ds-page-header">
+        <h1>Branding</h1>
+        <p class="ds-lead">K7 brand assets: symbol, logo, and splash animation. Each variant respects <code>currentColor</code> for flexible theming.</p>
+    </header>
+
+    <!-- Symbol -->
+    <section id="symbol" class="ds-section">
+        <h2>Symbol</h2>
+        <p class="ds-description">The K7 symbol mark. Used for favicons, app icons, nav branding, and compact contexts.</p>
+        <div class="ds-brand-grid">
+            <div class="ds-brand-card ds-brand-card--dark">
+                <svg class="ds-brand-preview" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+                    <g fill="#FFFFFF" transform="translate(3.65,8.8) scale(0.65)">
+                        <path d="m 0,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+                        <path d="m 34.251,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">White on dark</span>
+            </div>
+            <div class="ds-brand-card ds-brand-card--light">
+                <svg class="ds-brand-preview" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+                    <g fill="#1a1a1a" transform="translate(3.65,8.8) scale(0.65)">
+                        <path d="m 0,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+                        <path d="m 34.251,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">Black on light</span>
+            </div>
+            <div class="ds-brand-card ds-brand-card--dark">
+                <svg class="ds-brand-preview" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+                    <g fill="#E5A00D" transform="translate(3.65,8.8) scale(0.65)">
+                        <path d="m 0,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+                        <path d="m 34.251,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">Accent on dark</span>
+            </div>
+            <div class="ds-brand-card ds-brand-card--light">
+                <svg class="ds-brand-preview" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+                    <g fill="#E5A00D" transform="translate(3.65,8.8) scale(0.65)">
+                        <path d="m 0,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+                        <path d="m 34.251,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">Accent on light</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Logo -->
+    <section id="logo" class="ds-section">
+        <h2>Logo</h2>
+        <p class="ds-description">The full K7 wordmark with integrated symbol. Used for splash screens, headers, and marketing.</p>
+        <div class="ds-brand-grid ds-brand-grid--wide">
+            <div class="ds-brand-card ds-brand-card--dark ds-brand-card--wide">
+                <svg class="ds-brand-preview ds-brand-preview--wide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 70" aria-hidden="true">
+                    <g fill="#FFFFFF">
+                        <path d="m 0,0 v 65 c 0,4.802 6.115,6.839 9,3 l 1,-1.334 V 0 Z"/>
+                        <path d="m 11,48.667 v 16.667 L 60,0 H 47.5 Z"/>
+                        <path d="m 34.367,35.851 -6.236,8.316 19.37,25.834 h 12.5 z"/>
+                        <path d="m 96.751,10 -7.5,-10 h -21.25 l -7.5,10 z"/>
+                        <path d="m 111.134,29.156 -6.253,-8.325 -36.88,49.17 h 12.5 z"/>
+                        <path d="m 90.501,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+                        <path d="m 124.751,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">White on dark</span>
+            </div>
+            <div class="ds-brand-card ds-brand-card--light ds-brand-card--wide">
+                <svg class="ds-brand-preview ds-brand-preview--wide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 70" aria-hidden="true">
+                    <g fill="#1a1a1a">
+                        <path d="m 0,0 v 65 c 0,4.802 6.115,6.839 9,3 l 1,-1.334 V 0 Z"/>
+                        <path d="m 11,48.667 v 16.667 L 60,0 H 47.5 Z"/>
+                        <path d="m 34.367,35.851 -6.236,8.316 19.37,25.834 h 12.5 z"/>
+                        <path d="m 96.751,10 -7.5,-10 h -21.25 l -7.5,10 z"/>
+                        <path d="m 111.134,29.156 -6.253,-8.325 -36.88,49.17 h 12.5 z"/>
+                        <path d="m 90.501,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z"/>
+                        <path d="m 124.751,11 h -12.5 l -6.75,9 6.26,8.32 z"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">Black on light</span>
+            </div>
+            <div class="ds-brand-card ds-brand-card--dark ds-brand-card--wide">
+                <svg class="ds-brand-preview ds-brand-preview--wide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 70" aria-hidden="true">
+                    <g fill="#FFFFFF">
+                        <path d="m 0,0 v 65 c 0,4.802 6.115,6.839 9,3 l 1,-1.334 V 0 Z"/>
+                        <path d="m 11,48.667 v 16.667 L 60,0 H 47.5 Z"/>
+                        <path d="m 34.367,35.851 -6.236,8.316 19.37,25.834 h 12.5 z"/>
+                        <path d="m 96.751,10 -7.5,-10 h -21.25 l -7.5,10 z"/>
+                        <path d="m 111.134,29.156 -6.253,-8.325 -36.88,49.17 h 12.5 z"/>
+                        <path d="m 90.501,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z" fill="#E5A00D"/>
+                        <path d="m 124.751,11 h -12.5 l -6.75,9 6.26,8.32 z" fill="#E5A00D"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">Brand (white + accent symbol)</span>
+            </div>
+            <div class="ds-brand-card ds-brand-card--light ds-brand-card--wide">
+                <svg class="ds-brand-preview ds-brand-preview--wide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 70" aria-hidden="true">
+                    <g fill="#1a1a1a">
+                        <path d="m 0,0 v 65 c 0,4.802 6.115,6.839 9,3 l 1,-1.334 V 0 Z"/>
+                        <path d="m 11,48.667 v 16.667 L 60,0 H 47.5 Z"/>
+                        <path d="m 34.367,35.851 -6.236,8.316 19.37,25.834 h 12.5 z"/>
+                        <path d="m 96.751,10 -7.5,-10 h -21.25 l -7.5,10 z"/>
+                        <path d="m 111.134,29.156 -6.253,-8.325 -36.88,49.17 h 12.5 z"/>
+                        <path d="m 90.501,0 7.5,10 h 27.5 l 1.49,-2 c 2.474,-3.297 0.132,-8.002 -3.99,-8 z" fill="#E5A00D"/>
+                        <path d="m 124.751,11 h -12.5 l -6.75,9 6.26,8.32 z" fill="#E5A00D"/>
+                    </g>
+                </svg>
+                <span class="ds-brand-label">Brand (black + accent symbol)</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Splash Animation -->
+    <section id="splash" class="ds-section">
+        <h2>Splash Animation</h2>
+        <p class="ds-description">Lottie animation played during app initialisation. 6 layers with staggered entry, accent-coloured symbol fade-in.</p>
+        <div class="ds-brand-card ds-brand-card--dark ds-brand-card--splash">
+            <div @ref="_splashContainer" class="ds-splash-player"></div>
+            <div class="ds-splash-controls">
+                <K7Button Variant="K7ButtonVariant.Outlined" OnClick="SplashReplay">Replay</K7Button>
+                <K7Button Variant="K7ButtonVariant.Outlined" OnClick="SplashPause">Pause</K7Button>
+                <K7Button Variant="K7ButtonVariant.Outlined" OnClick="SplashResume">Play</K7Button>
+                <select @onchange="SplashSpeedChanged" class="ds-splash-select">
+                    <option value="0.25">0.25x</option>
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="2">2x</option>
+                </select>
+                <label class="ds-splash-loop">
+                    <input type="checkbox" checked="@_splashLoop" @onchange="SplashLoopChanged" /> Loop
+                </label>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private ElementReference _splashContainer;
+    private bool _splashLoop = true;
+    private const string SplashId = "ds-branding-splash";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("K7.Lottie.create", SplashId, _splashContainer,
+                "_content/K7.Clients.Shared.UI/animations/splash.json");
+        }
+    }
+
+    private async Task SplashReplay() => await JS.InvokeVoidAsync("K7.Lottie.replay", SplashId);
+    private async Task SplashPause() => await JS.InvokeVoidAsync("K7.Lottie.pause", SplashId);
+    private async Task SplashResume() => await JS.InvokeVoidAsync("K7.Lottie.resume", SplashId);
+
+    private async Task SplashSpeedChanged(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var speed))
+            await JS.InvokeVoidAsync("K7.Lottie.setSpeed", SplashId, speed);
+    }
+
+    private async Task SplashLoopChanged(ChangeEventArgs e)
+    {
+        _splashLoop = e.Value is true;
+        await JS.InvokeVoidAsync("K7.Lottie.setLoop", SplashId, _splashLoop);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("K7.Lottie.destroy", SplashId); }
+        catch (JSDisconnectedException) { }
+        catch (InvalidOperationException) { }
+    }
+}

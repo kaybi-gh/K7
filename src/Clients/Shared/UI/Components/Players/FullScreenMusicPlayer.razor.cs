@@ -111,6 +111,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
         try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _seekBarRef); }
         catch (JSDisconnectedException) { }
+        catch (InvalidOperationException) { }
         _dotNetRef?.Dispose();
     }
 

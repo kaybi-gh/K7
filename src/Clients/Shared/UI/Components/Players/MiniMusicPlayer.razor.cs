@@ -97,6 +97,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
         try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _progressBarRef); }
         catch (JSDisconnectedException) { }
+        catch (InvalidOperationException) { }
         _dotNetRef?.Dispose();
     }
 
