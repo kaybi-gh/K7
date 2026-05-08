@@ -286,8 +286,9 @@ html.platform-tv .media-card-menu { display: none !important; }
 }
 
 .preload-animation {
-    width: 80px;
-    height: 80px;
+    width: min(40vw, 240px);
+    height: auto;
+    aspect-ratio: 128 / 70;
 }
 
 .preload-title {
