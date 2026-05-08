@@ -44,12 +44,6 @@
     margin-bottom: var(--spacing-2);
 }
 
-.ds-nav-logo .k7-brand-symbol {
-    width: 1.25rem;
-    height: auto;
-    color: var(--color-accent);
-}
-
 .ds-nav-links {
     list-style: none;
     padding: 0 var(--spacing-2);
