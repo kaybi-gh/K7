@@ -14,6 +14,15 @@
         </div>
         <ul class="ds-nav-links">
             <li><NavLink href="/" Match="NavLinkMatch.All"><K7Icon Icon="@Phosphor.House" />Overview</NavLink></li>
+            <li><NavLink href="/branding"><K7Icon Icon="@Phosphor.Diamond" />Branding</NavLink></li>
+            @if (page == "branding")
+            {
+                <ul class="ds-nav-sub">
+                    <li><a href="/branding#symbol">Symbol</a></li>
+                    <li><a href="/branding#logo">Logo</a></li>
+                    <li><a href="/branding#splash">Splash Animation</a></li>
+                </ul>
+            }
             <li><NavLink href="/tokens"><K7Icon Icon="@Phosphor.Palette" />Tokens</NavLink></li>
             <li><NavLink href="/components"><K7Icon Icon="@Phosphor.SquaresFour" />Components</NavLink></li>
             @if (page == "components")
@@ -50,7 +59,6 @@
                     <li><a href="/components#episode-list-item">EpisodeListItem</a></li>
                     <li><a href="/components#person-role">PersonRole</a></li>
                     <li><a href="/components#browse-view">BrowseView</a></li>
-                    <li><a href="/components#splash">Splash</a></li>
                 </ul>
             }
             <li><NavLink href="/players"><K7Icon Icon="@Phosphor.PlayCircle" />Players</NavLink></li>
