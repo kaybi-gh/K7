@@ -29,8 +29,6 @@ public partial class Home : IDisposable
     private bool _canExclude;
     private bool _isAdmin;
     private List<(HomeRowConfigDto Config, List<MediaCardViewModel> Items)> _rows = [];
-    private List<MediaCardViewModel> _heroItems = [];
-    private int _activeHeroIndex;
     private Timer? _mediaAddedDebounce;
 
     protected override async Task OnInitializedAsync()
@@ -71,15 +69,6 @@ public partial class Home : IDisposable
 
         isLoading = false;
         Shared.Services.AppReadySignal.Signal();
-        var heroRows = _rows.Where(r => r.Config.DisplayType == HomeRowDisplayType.Hero).ToList();
-        _heroItems = heroRows.Count > 0
-            ? heroRows.SelectMany(r => r.Items).Take(5).ToList()
-            : _rows
-                .Where(r => !r.Config.ContinueWatching)
-                .SelectMany(r => r.Items)
-                .Where(x => !string.IsNullOrEmpty(x.BackdropUrl))
-                .Take(5)
-                .ToList();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -122,11 +111,6 @@ public partial class Home : IDisposable
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
         K7HubClient.MediaAdded -= OnMediaAdded;
         _mediaAddedDebounce?.Dispose();
-    }
-
-    private void OnHeroActiveIndexChanged(int index)
-    {
-        _activeHeroIndex = index;
     }
 
     private void OnMediaAdded(Guid mediaId, string? title, string mediaType)
