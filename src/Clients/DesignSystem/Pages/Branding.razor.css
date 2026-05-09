@@ -46,6 +46,28 @@
     width: 140px;
 }
 
+.ds-brand-preview--appicon {
+    width: 96px;
+    border-radius: 14px;
+}
+
+.ds-brand-preview--banner {
+    width: 320px;
+    border-radius: 8px;
+}
+
+.ds-brand-grid--manifests {
+    grid-template-columns: auto auto auto;
+    justify-content: start;
+    align-items: end;
+}
+
+.ds-brand-grid--manifests .ds-brand-card {
+    background: transparent;
+    border: none;
+    padding: var(--space-2);
+}
+
 .ds-brand-label {
     font-size: var(--text-xs);
     color: var(--color-text-secondary);
