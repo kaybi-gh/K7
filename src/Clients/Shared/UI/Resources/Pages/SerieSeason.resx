@@ -24,4 +24,8 @@
   <data name="PreviousSeason" xml:space="preserve"><value>Saison precedente</value></data>
   <data name="NextSeason" xml:space="preserve"><value>Saison suivante</value></data>
   <data name="BackToSerie" xml:space="preserve"><value>Retour à la série</value></data>
+  <data name="EpisodeLabel" xml:space="preserve"><value>Saison {0} - Episode {1}</value></data>
+  <data name="EpisodeList" xml:space="preserve"><value>Liste des episodes</value></data>
+  <data name="EpisodeNumber" xml:space="preserve"><value>Episode {0}</value></data>
+  <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
 </root>

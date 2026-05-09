@@ -1,9 +1,13 @@
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -25,12 +29,18 @@ public partial class SerieSeason
     private string _pageTitle = "";
     private bool _loading = true;
     private string? _focusEpisodeFragment;
+    private bool _isTv;
+    private LiteSerieEpisodeDto? _focusedEpisode;
+    private string? _focusedStillUrl;
+    private string? _previousStillUrl;
+    private Carousel? _tvCarousel;
 
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
         _expandedEpisodeId = null;
         _focusEpisodeFragment = null;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         var serieMedia = await k7ServerService.GetMediaAsync(Guid.Parse(SerieId));
         if (serieMedia is not SerieDto serie)
@@ -81,6 +91,16 @@ public partial class SerieSeason
             _focusEpisodeFragment = uri.Fragment;
         }
 
+        // Set initial focused episode for TV
+        if (_isTv && _episodes.Count > 0)
+        {
+            var targetEpNumber = ParseEpisodeFragment(_focusEpisodeFragment);
+            _focusedEpisode = (targetEpNumber is not null
+                ? _episodes.FirstOrDefault(e => e.EpisodeNumber == targetEpNumber)
+                : null) ?? _episodes[0];
+            _focusedStillUrl = GetEpisodeStillUrl(_focusedEpisode, MetadataPictureSize.Medium);
+        }
+
         _loading = false;
     }
 
@@ -90,16 +110,73 @@ public partial class SerieSeason
         {
             var elementId = _focusEpisodeFragment.TrimStart('#');
             _focusEpisodeFragment = null;
-            await JSRuntime.InvokeVoidAsync("K7.scrollToElement", elementId);
+
+            if (_isTv && _tvCarousel is not null)
+            {
+                var targetEpNumber = ParseEpisodeFragment("#" + elementId);
+                if (targetEpNumber is not null)
+                {
+                    var index = _episodes.FindIndex(e => e.EpisodeNumber == targetEpNumber);
+                    if (index >= 0)
+                    {
+                        await _tvCarousel.ScrollToIndexAsync(index);
+                        await JSRuntime.InvokeVoidAsync("K7.focusById", elementId);
+                    }
+                }
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("K7.scrollToElement", elementId);
+            }
         }
     }
 
-    private string? GetEpisodeStillUrl(LiteSerieEpisodeDto episode)
+    private static int? ParseEpisodeFragment(string? fragment)
+    {
+        if (fragment is null) return null;
+        var raw = fragment.TrimStart('#');
+        if (raw.StartsWith("ep-") && int.TryParse(raw[3..], out var num))
+            return num;
+        return null;
+    }
+
+    private string? GetEpisodeStillUrl(LiteSerieEpisodeDto episode, MetadataPictureSize size = MetadataPictureSize.Small)
     {
         if (episode.StillImageId is null) return null;
         return apiClient.GetAbsoluteUri(
             episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
-                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+                ?.GetUri(size)?.OriginalString)?.AbsoluteUri;
+    }
+
+    private void OnTvEpisodeFocus(LiteSerieEpisodeDto episode)
+    {
+        _focusedEpisode = episode;
+        _previousStillUrl = _focusedStillUrl;
+        _focusedStillUrl = GetEpisodeStillUrl(episode, MetadataPictureSize.Medium);
+        var baseUri = NavigationManager.Uri.Split('#')[0];
+        NavigationManager.NavigateTo($"{baseUri}#ep-{episode.EpisodeNumber}", replace: true);
+        StateHasChanged();
+    }
+
+    private Task OpenSynopsisDialogAsync()
+    {
+        if (_focusedEpisode is null || string.IsNullOrWhiteSpace(_focusedEpisode.Overview)) return Task.CompletedTask;
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
+        var parameters = new K7DialogParameters
+        {
+            { "ContentText", _focusedEpisode.Overview },
+            { "ButtonText", S["Cancel"].Value }
+        };
+        return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
+    }
+
+    private async Task OnTvEpisodeKeyDown(KeyboardEventArgs e, LiteSerieEpisodeDto episode)
+    {
+        if (e.Key is "Enter")
+        {
+            await PlayEpisodeAsync(episode);
+        }
     }
 
     private void ToggleExpand(Guid episodeId)
