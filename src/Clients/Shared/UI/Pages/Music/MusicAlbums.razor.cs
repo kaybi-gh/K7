@@ -50,7 +50,7 @@ public partial class MusicAlbums
     {
         Id = album.Id,
         Title = album.Title,
-        ReleaseYear = album.ReleaseDate,
+        ReleaseYear = album.ReleaseDate?.Year.ToString(),
         CoverUrl = apiClient.GetAbsoluteUri(
             album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri

@@ -52,7 +52,7 @@ public partial class MusicArtistDetail
                 {
                     Id = album.Id.ToString(),
                     Title = album.Title,
-                    AdditionalInformations = album.ReleaseDate,
+                    AdditionalInformations = album.ReleaseDate?.Year.ToString(),
                     PictureUrl = apiClient.GetAbsoluteUri(
                         album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                             .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
