@@ -8,6 +8,7 @@ public sealed record LiteSerieEpisodeDto : LiteMediaDto
     public double? Duration { get; init; }
     public Guid SerieId { get; init; }
     public string? SerieTitle { get; init; }
+    public DateOnly? SerieReleaseDate { get; init; }
     public Guid? StillImageId { get; init; }
     public IReadOnlyList<MetadataPictureDto>? SeriePictures { get; init; }
     public IReadOnlyList<MetadataPictureDto>? SeasonPictures { get; init; }
