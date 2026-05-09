@@ -253,6 +253,7 @@ public static class MediaMappings
                 SeasonNumber = episode.Season?.SeasonNumber ?? 0,
                 SerieSeasonCount = episode.Serie?.Seasons?.Count ?? 1,
                 Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds,
+                Overview = episode.Overview,
                 SerieId = episode.SerieId,
                 SerieTitle = episode.Serie?.Title,
                 SerieReleaseDate = episode.Serie?.ReleaseDate,

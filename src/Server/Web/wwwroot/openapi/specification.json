@@ -7164,6 +7164,12 @@
             ],
             "format": "double"
           },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "serieId": {
             "type": "string",
             "format": "uuid"
@@ -7807,6 +7813,12 @@
               "string"
             ],
             "format": "double"
+          },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "serieId": {
             "type": "string",
