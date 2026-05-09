@@ -100,7 +100,7 @@ public static class MediaMappings
                     {
                         Id = s.Id,
                         Title = s.Title,
-                        ReleaseDate = s.ReleaseDate?.ToString(),
+                        ReleaseDate = s.ReleaseDate,
                         Pictures = s.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                         SerieId = s.SerieId,
                         SeasonNumber = s.SeasonNumber,
@@ -172,7 +172,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
-                ReleaseDate = domain.ReleaseDate?.ToString(),
+                ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
@@ -183,7 +183,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
-                ReleaseDate = domain.ReleaseDate?.ToString(),
+                ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
@@ -194,7 +194,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
-                ReleaseDate = domain.ReleaseDate?.ToString(),
+                ReleaseDate = domain.ReleaseDate,
                 Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(p => p.ToMetadataPictureDto()).ToList(),
                 AlbumId = track.AlbumId,
                 TrackNumber = track.TrackNumber,
@@ -218,7 +218,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
-                ReleaseDate = domain.ReleaseDate?.ToString(),
+                ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
@@ -229,7 +229,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
-                ReleaseDate = domain.ReleaseDate?.ToString(),
+                ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 SerieId = season.SerieId,
                 SeasonNumber = season.SeasonNumber,
@@ -247,7 +247,7 @@ public static class MediaMappings
             {
                 Id = domain.Id,
                 Title = domain.Title,
-                ReleaseDate = domain.ReleaseDate?.ToString(),
+                ReleaseDate = domain.ReleaseDate,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 EpisodeNumber = episode.EpisodeNumber,
                 SeasonNumber = episode.Season?.SeasonNumber ?? 0,
@@ -255,6 +255,7 @@ public static class MediaMappings
                 Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds,
                 SerieId = episode.SerieId,
                 SerieTitle = episode.Serie?.Title,
+                SerieReleaseDate = episode.Serie?.ReleaseDate,
                 StillImageId = domain.Pictures
                     .Where(p => p.Type == MetadataPictureType.Still)
                     .Select(p => (Guid?)p.Id)

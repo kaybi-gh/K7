@@ -57,7 +57,7 @@ public partial class Person : IDisposable
                     {
                         Id = movie.Id.ToString(),
                         Title = movie.Title,
-                        AdditionalInformations = movie.ReleaseDate,
+                        AdditionalInformations = movie.ReleaseDate?.Year.ToString(),
                         PictureUrl = apiClient.GetAbsoluteUri(
                             movie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                                 ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
@@ -70,7 +70,7 @@ public partial class Person : IDisposable
                         Id = serie.Id.ToString(),
                         Kind = MediaCardKind.Serie,
                         Title = serie.Title,
-                        AdditionalInformations = serie.ReleaseDate,
+                        AdditionalInformations = serie.ReleaseDate?.Year.ToString(),
                         PictureUrl = apiClient.GetAbsoluteUri(
                             serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                                 ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
@@ -100,7 +100,7 @@ public partial class Person : IDisposable
                 {
                     Id = album.Id.ToString(),
                     Title = album.Title,
-                    AdditionalInformations = album.ReleaseDate,
+                    AdditionalInformations = album.ReleaseDate?.Year.ToString(),
                     PictureUrl = apiClient.GetAbsoluteUri(
                         album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                             ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
