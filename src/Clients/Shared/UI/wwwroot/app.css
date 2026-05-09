@@ -41,7 +41,6 @@ html, body, #app {
     height: 100%;
     font-family: var(--font-body);
     font-size: var(--text-base);
-    background-color: var(--color-bg);
     color: var(--color-text);
 }
 
