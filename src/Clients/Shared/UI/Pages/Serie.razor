@@ -27,8 +27,9 @@ else if (_serie is not null)
             <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
         }
 
-        <div class="serie-hero">
-            <div class="d-flex flex-col pa-10" style="height: 100%; justify-content: flex-end;">
+        <div class="serie-main">
+            <div class="serie-hero">
+                <div class="d-flex flex-col pa-10" style="height: 100%; justify-content: flex-end; gap: 8px;">
                 @if (_logoUrl is not null)
                 {
                     <img src="@_logoUrl" alt="@_serie.Title" style="height: 180px; max-width: 80vw; object-fit: scale-down; object-position: left center;" />
@@ -38,8 +39,8 @@ else if (_serie is not null)
                     <h2>@_serie.Title?.ToUpper()</h2>
                 }
 
-                <div class="d-flex serie-meta">
-                    <div class="d-flex align-center">
+                <div class="d-flex serie-meta" style="gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <div class="d-flex align-center" style="gap: 4px;">
                         @if (_serie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
                         {
                             <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
@@ -50,7 +51,7 @@ else if (_serie is not null)
                         }
                     </div>
 
-                    <div class="d-flex">
+                    <div class="d-flex" style="gap: 4px;">
                         @foreach (var genre in _serie.Genres ?? [])
                         {
                             <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
@@ -77,12 +78,14 @@ else if (_serie is not null)
 
                 @if (!string.IsNullOrEmpty(_serie.Overview))
                 {
-                    <p Class="mt-2" Style="opacity: 0.85; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 1.05rem; max-width: 800px;">
-                        @_serie.Overview
-                    </p>
+                    <div class="d-flex flex-col py-3 mt-2 overview-clickable focusable" style="max-width: 800px;" tabindex="0" role="button" @onclick="OpenSynopsisDialogAsync">
+                        <p class="serie-overview">
+                            @_serie.Overview
+                        </p>
+                    </div>
                 }
 
-                <div class="d-flex mt-4 serie-actions">
+                <div class="d-flex mt-6 serie-actions">
                     <div class="d-flex serie-actions-primary">
                         <K7Button Disabled="@(_seasons.Count == 0)"
                                    Variant="filled"
@@ -122,13 +125,30 @@ else if (_serie is not null)
                 @foreach (var season in _seasons)
                 {
                     <CarouselItem @key="season.Id">
-                        <SeasonCard Season="season"
-                                    PosterUrl="@GetSeasonPosterUrl(season)"
-                                    OnClick="() => NavigateToSeason(season)" />
+                        <MediaCard Model="@(new MediaCardViewModel
+                                   {
+                                       Id = season.Id.ToString(),
+                                       Kind = MediaCardKind.Season,
+                                       Title = season.SeasonNumber == 0 ? S["Specials"] : string.Format(S["SeasonNumber"], season.SeasonNumber),
+                                       AdditionalInformations = string.Format(S["EpisodeCount"], season.EpisodeCount),
+                                       PictureUrl = GetSeasonPosterUrl(season),
+                                   })"
+                                   Variant="MediaCardVariant.Poster"
+                                   Href="@($"/series/{Id}/seasons/{season.SeasonNumber}")"
+                                   FooterVisible="true"
+                                   OverlayEnabled="true" />
                     </CarouselItem>
                 }
             </Carousel>
         }
+
+        @if ((_serie.PersonRoles?.Count ?? 0) > 0)
+        {
+            <div class="serie-scroll-hint">
+                <K7Icon Icon="@Phosphor.CaretDown" />
+            </div>
+        }
+        </div>
 
         @if ((_serie.PersonRoles?.Count ?? 0) > 0)
         {

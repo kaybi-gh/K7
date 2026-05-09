@@ -103,4 +103,17 @@ public partial class Serie
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
     }
+
+    private Task OpenSynopsisDialogAsync()
+    {
+        if (_serie is null || string.IsNullOrWhiteSpace(_serie.Overview)) return Task.CompletedTask;
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
+        var parameters = new K7DialogParameters
+        {
+            { "ContentText", _serie.Overview },
+            { "ButtonText", S["Cancel"].Value }
+        };
+        return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
+    }
 }
