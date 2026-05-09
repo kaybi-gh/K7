@@ -72,9 +72,11 @@ else
 {
     @if (_movie != null)
     {
+        <div class="movie-page">
         <div class="background-image" style="--background-picture: url(@apiClient.GetAbsoluteUri(apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri)" />
+        <div class="movie-main">
         <div class="hero-page-stack">
-            <div class="d-flex flex-col pa-10">
+            <div class="d-flex flex-col pa-10" style="gap: 8px;">
                 @if (apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is string logoUri)
                 {
                     <K7Image Style="max-height: 180px; max-width: 500px;" ObjectFit="scale-down" Src="@logoUri"></K7Image>
@@ -83,12 +85,12 @@ else
                 {
                     <h2 Style="font-weight: 800; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">@_movie.Title?.ToUpper()</h2>  
                 }
-                <div class="d-flex align-center">
+                <div class="d-flex align-center" style="gap: 8px;">
                     @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
                     {
                         <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
                     }
-                    <div class="d-flex">
+                    <div class="d-flex" style="gap: 4px;">
                         @foreach (var genre in _movie.Genres ?? [])
                         {
                             <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
@@ -153,8 +155,15 @@ else
                         </ChildContent>
                     </K7Menu>
                 </div>
-                <K7Icon Style="position: absolute; left: 50%; top: 90vh;" Size="md" Name="caret-down" />
             </div>
+        </div>
+
+        @if ((_movie.PersonRoles?.Count ?? 0) > 0)
+        {
+            <div class="movie-scroll-hint">
+                <K7Icon Icon="@Phosphor.CaretDown" />
+            </div>
+        }
         </div>
         <div>
             <div class="grid">
@@ -169,6 +178,7 @@ else
                     </Carousel>
                 </div>
             </div>
+        </div>
         </div>
     }
 }
