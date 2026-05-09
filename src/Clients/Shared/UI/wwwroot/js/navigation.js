@@ -754,6 +754,13 @@ K7.scrollToElement = function (id) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
+K7.focusById = function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var target = el.querySelector('.focusable') || el;
+    target.focus({ preventScroll: false });
+};
+
 K7.RatingStars = {
     _instances: new WeakMap(),
     init: function (el, dotNetRef) {
