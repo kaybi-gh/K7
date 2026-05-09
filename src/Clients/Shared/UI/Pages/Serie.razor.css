@@ -2,7 +2,14 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+}
+
+.serie-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--nav-height));
+    overflow: hidden;
 }
 
 .background-image {
@@ -26,7 +33,8 @@
 .serie-hero {
     position: relative;
     z-index: 1;
-    height: 70vh;
+    flex: 1;
+    min-height: 0;
 }
 
 .serie-title {
@@ -36,7 +44,13 @@
 }
 
 @media (max-width: 600px) {
+    .serie-main {
+        height: auto;
+        overflow: visible;
+    }
+
     .serie-hero {
+        flex: none;
         height: 60vh;
     }
 
@@ -45,4 +59,51 @@
     .serie-hero ::deep .serie-meta {
         width: 100%;
     }
+}
+
+::deep .carousel-wrapper {
+    position: relative;
+    z-index: 1;
+    margin-top: 16px;
+    flex-shrink: 0;
+    padding-bottom: 24px;
+    --carousel-margin-start: 40px;
+}
+
+.overview-clickable {
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    padding: 8px;
+    margin-inline: -8px;
+    transition: background-color 0.2s ease;
+}
+
+.overview-clickable:hover,
+.overview-clickable:focus-visible {
+    background-color: rgba(128, 128, 128, 0.15);
+}
+
+.serie-overview {
+    opacity: 0.85;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 1.05rem;
+}
+
+.serie-scroll-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    opacity: 0.4;
+    animation: bounce-hint 2s ease-in-out infinite;
+}
+
+@keyframes bounce-hint {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
 }
