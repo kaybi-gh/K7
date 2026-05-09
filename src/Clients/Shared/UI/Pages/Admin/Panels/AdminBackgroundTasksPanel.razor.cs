@@ -27,8 +27,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private BackgroundTaskSummaryDto? _summary;
 #pragma warning disable CS0414
     private bool _isLoadingTasks = true;
-    private bool _isSavingSettings;
 #pragma warning restore CS0414
+    private bool _isSavingSettings;
     private BackgroundTaskStatus? _selectedStatus;
     private string? _selectedTaskType;
     private int _pageNumber = 1;
