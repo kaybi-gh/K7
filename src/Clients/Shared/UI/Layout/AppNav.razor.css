@@ -67,6 +67,7 @@
 
 @media (min-width: 600px) {
     .app-nav-bar {
+        padding: 0 var(--space-10);
         gap: var(--space-2);
     }
 }
@@ -192,6 +193,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: 1px;
 }
 
 .avatar--sm {
