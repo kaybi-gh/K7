@@ -6,6 +6,7 @@
     gap: 24px;
     padding-top: var(--space-6);
     padding-bottom: 32px;
+    --carousel-margin-start: 40px;
 }
 
 @media (max-width: 599.98px) {
