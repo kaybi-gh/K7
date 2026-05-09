@@ -29,6 +29,38 @@
         }
     </div>
 
+    <K7ExpansionPanel>
+        <TitleContent>@L["SettingsTitle"]</TitleContent>
+        <ChildContent>
+            @if (_settings is not null)
+            {
+                <div class="d-flex flex-col" style="gap: var(--space-3);">
+                    <K7TextField TValue="int" Type="number" @bind-Value="_workerCount" Label="@L["WorkerCountLabel"]" />
+
+                    @if (_settings.ConcurrencyGroups.Count > 0)
+                    {
+                        <h6>@L["ConcurrencyGroupsTitle"]</h6>
+                        @foreach (var group in _settings.ConcurrencyGroups)
+                        {
+                            var name = group.Name;
+                            <div class="d-flex align-center" style="gap: var(--space-2);">
+                                <span class="text-sm" style="min-width: 140px;">@name</span>
+                                <K7TextField TValue="int" Type="number" Value="GetGroupLimit(name)"
+                                             ValueChanged="@(v => SetGroupLimit(name, v))"
+                                             Label="@L["GroupLimit"]" Style="max-width: 100px;" />
+                                <span class="text-caption" style="color: var(--color-text-muted);">@L["GroupActive"]: @group.ActiveCount</span>
+                            </div>
+                        }
+                    }
+
+                    <div>
+                        <K7Button OnClick="SaveSettingsAsync" Disabled="_isSavingSettings">@L["Save"]</K7Button>
+                    </div>
+                </div>
+            }
+        </ChildContent>
+    </K7ExpansionPanel>
+
     @if (_tasks is not null)
     {
         @if (_tasks.Items is null || _tasks.Items.Count == 0)
