@@ -12,6 +12,7 @@ public partial class Carousel : IAsyncDisposable
 
     [Parameter] public bool Skeleton { get; set; } = false;
     [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Style { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -39,6 +40,14 @@ public partial class Carousel : IAsyncDisposable
             catch (JSDisconnectedException)
             {
             }
+        }
+    }
+
+    public async Task ScrollToIndexAsync(int index)
+    {
+        if (_module is not null)
+        {
+            await _module.InvokeVoidAsync("scrollToIndex", _root, index);
         }
     }
 }

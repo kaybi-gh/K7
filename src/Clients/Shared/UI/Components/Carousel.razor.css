@@ -4,8 +4,15 @@
 
 .carousel-container {
     display: flex;
-    gap: 16px;
-    padding-inline: 16px;
+    gap: var(--carousel-gap, 16px);
+    padding-inline-start: var(--carousel-margin-start, 16px);
+    padding-inline-end: var(--carousel-margin-end, 16px);
+}
+
+.carousel-header {
+    display: flex;
+    justify-content: space-between;
+    padding-inline-start: var(--carousel-margin-start, 16px);
 }
 
 .carousel-wrapper {
