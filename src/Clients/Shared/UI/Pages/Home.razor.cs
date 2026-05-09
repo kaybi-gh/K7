@@ -183,7 +183,6 @@ public partial class Home : IDisposable
             foreach (var item in mediasPage.Items)
             {
                 if (item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n), useParentTitle: true) is not { } vm) continue;
-                if (vm.Kind == MediaCardKind.Serie) continue;
 
                 if (vm.Kind == MediaCardKind.Episode && vm.ParentId is not null)
                 {
