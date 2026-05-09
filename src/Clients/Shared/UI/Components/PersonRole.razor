@@ -17,7 +17,7 @@
 }
 else
 {
-    <a class="personrole-item-link" href="@("/persons/" + LitePersonRoleDto.Person!.Id)">
+    <a class="personrole-item" href="@("/persons/" + LitePersonRoleDto.Person!.Id)">
         <div class="d-flex flex-col">
             <K7Avatar Class="focusable" Style="height:150px; width:150px;">
                 @if (LitePersonRoleDto.PortraitPicture is not null)
@@ -34,18 +34,16 @@ else
                 }
             </K7Avatar>
 
-            <div class="person-text">
-                <div class="d-flex flex-col person-text">
-                    <span class="person-text mt-2">@LitePersonRoleDto.Person.Name</span>
-                    @if (LitePersonRoleDto is LiteCrewMemberDto liteCrewMemberDto)
-                    {
-                <span class="text-caption color-secondary">@liteCrewMemberDto.Department / @liteCrewMemberDto.Job</span>
-                    }
-                    else if (LitePersonRoleDto is LiteActorDto liteActorDto)
-                    {
-                <span class="text-caption color-secondary">@liteActorDto.CharacterName</span>
-                    }
-                </div>
+            <div class="person-footer">
+                <div class="person-title"><span class="person-title-inner">@LitePersonRoleDto.Person.Name</span></div>
+                @if (LitePersonRoleDto is LiteCrewMemberDto liteCrewMemberDto)
+                {
+                    <div class="person-subtitle"><span class="person-subtitle-inner">@liteCrewMemberDto.Department / @liteCrewMemberDto.Job</span></div>
+                }
+                else if (LitePersonRoleDto is LiteActorDto liteActorDto)
+                {
+                    <div class="person-subtitle"><span class="person-subtitle-inner">@liteActorDto.CharacterName</span></div>
+                }
             </div>
         </div>
     </a>

@@ -1,35 +1,84 @@
-﻿.person-text {
-    max-width: 150px;
-}
-
-.personrole-item-link {
+﻿.personrole-item {
     display: flex;
     padding: 4px;
+    width: 150px;
 }
 
-.personrole-item-link:focus-visible {
+.personrole-item:focus-visible {
     outline: none !important;
 }
 
-.personrole-item-link:hover ::deep .k7-avatar,
-.personrole-item-link:focus-visible ::deep .k7-avatar {
+.personrole-item:hover ::deep .k7-avatar,
+.personrole-item:focus-visible ::deep .k7-avatar {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 
-::deep .person-text:nth-child(1) {
-    max-width: 150px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.person-footer {
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+    width: 100%;
+    container-type: inline-size;
+}
+
+.person-title {
+    width: 100%;
+    height: 1lh;
+    text-align: center;
     overflow: hidden;
 }
 
-@media(max-width:600px) {
-    .person-text {
-        max-width: 30vw;
-    }
+.person-title-inner {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    will-change: transform;
+}
 
-    ::deep .person-text:nth-child(1) {
-        max-width: 30vw;
+.personrole-item:hover .person-title-inner,
+.personrole-item:focus-within .person-title-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
+    animation: person-title-scroll 3s linear 0.5s infinite alternate;
+}
+
+.person-subtitle {
+    width: 100%;
+    height: 1lh;
+    text-align: center;
+    overflow: hidden;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.person-subtitle-inner {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    will-change: transform;
+}
+
+.personrole-item:hover .person-subtitle-inner,
+.personrole-item:focus-within .person-subtitle-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
+    animation: person-title-scroll 3s linear 0.5s infinite alternate;
+}
+
+@keyframes person-title-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(min(0px, calc(100cqw - 100%))); }
+}
+
+@media (max-width: 600px) {
+    .personrole-item {
+        width: 30vw;
     }
 }
