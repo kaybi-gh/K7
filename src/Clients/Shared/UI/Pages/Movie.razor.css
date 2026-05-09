@@ -98,7 +98,6 @@
 }
 
 .hero-page-stack {
-    height: 100vh;
     width: fit-content;
     max-width: 50vw;
     display: flex;
@@ -106,6 +105,9 @@
     justify-content: flex-end;
     position: relative;
     z-index: 1;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .mobile-layout .hero-page-stack {
@@ -118,10 +120,44 @@
     cursor: pointer;
     border-radius: 8px;
     padding: 8px;
+    margin-inline: -8px;
     transition: background-color 0.2s ease;
 }
 
 .overview-clickable:hover,
 .overview-clickable:focus-visible {
     background-color: rgba(128, 128, 128, 0.15);
+}
+
+::deep .carousel-wrapper {
+    --carousel-margin-start: 40px;
+}
+
+.movie-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--nav-height));
+    overflow: hidden;
+}
+
+.movie-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.movie-scroll-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    opacity: 0.4;
+    animation: bounce-hint 2s ease-in-out infinite;
+}
+
+@keyframes bounce-hint {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
 }
