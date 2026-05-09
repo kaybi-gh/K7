@@ -263,7 +263,6 @@ public partial class Home : IDisposable
             {
                 foreach (var (_, items) in _rows)
                     items.RemoveAll(x => x.Id == model.Id || x.ParentId == model.Id);
-                _heroItems.RemoveAll(x => x.Id == model.Id || x.ParentId == model.Id);
             }
         }
         catch (Exception ex)
