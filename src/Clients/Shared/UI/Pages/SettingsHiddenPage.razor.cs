@@ -20,7 +20,7 @@ public partial class SettingsHiddenPage
         {
             var exclusions = await UserAdminService.GetSelfMediaExclusionsAsync();
             _items = exclusions
-                .Select(m => m.ToCardViewModel(ApiClient))
+                .Select(m => m.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n)))
                 .Where(vm => vm is not null)
                 .Select(vm => vm!)
                 .ToList();

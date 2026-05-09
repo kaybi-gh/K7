@@ -7,7 +7,7 @@ namespace K7.Clients.Shared.Mappings;
 
 public static class LiteMediaMappings
 {
-    public static MediaCardViewModel? ToCardViewModel(this LiteMediaDto item, IK7ServerService apiClient, bool useParentTitle = false)
+    public static MediaCardViewModel? ToCardViewModel(this LiteMediaDto item, IK7ServerService apiClient, Func<int, string> seasonFormatter, bool useParentTitle = false)
     {
         var kind = item switch
         {
@@ -67,12 +67,28 @@ public static class LiteMediaMappings
             EpisodeNumber = episodeDto?.EpisodeNumber,
             Kind = kind.Value,
             Title = cardTitle,
-            AdditionalInformations = item.ReleaseDate,
+            AdditionalInformations = GetAdditionalInfo(item, seasonDto, episodeDto, seasonFormatter),
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
-            SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1
+            SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1,
+            SerieReleaseYear = episodeDto?.SerieReleaseDate?.Year
         };
+    }
+
+    private static string? GetAdditionalInfo(
+        LiteMediaDto item,
+        LiteSerieSeasonDto? season,
+        LiteSerieEpisodeDto? episode,
+        Func<int, string> seasonFormatter)
+    {
+        if (episode is not null)
+            return $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+
+        if (season is not null)
+            return seasonFormatter(season.SeasonNumber);
+
+        return item.ReleaseDate?.Year.ToString();
     }
 }

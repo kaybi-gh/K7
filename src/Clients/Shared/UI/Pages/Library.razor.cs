@@ -71,7 +71,7 @@ public partial class Library
         {
             foreach (var item in liteMediasPage.Items!)
             {
-                if (item.ToCardViewModel(apiClient) is { } vm)
+                if (item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n)) is { } vm)
                     MediaCards.Add(vm);
             }
         }

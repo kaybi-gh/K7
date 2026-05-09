@@ -53,7 +53,7 @@
                 <div class="search-media-row">
                     @foreach (var media in _result.MediaResults)
                     {
-                        var card = media.ToCardViewModel(ApiClient);
+                        var card = media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
                         @if (card is not null)
                         {
                             <div class="search-media-item">

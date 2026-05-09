@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -10,6 +11,7 @@ public partial class HomeLayoutPreview
 {
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     [Parameter] public IReadOnlyList<HomeRowEditModel> Rows { get; set; } = [];
 
@@ -62,7 +64,7 @@ public partial class HomeLayoutPreview
 
             foreach (var item in mediasPage.Items)
             {
-                if (item.ToCardViewModel(ApiClient, useParentTitle: true) is not { } vm) continue;
+                if (item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n), useParentTitle: true) is not { } vm) continue;
                 if (vm.Kind == MediaCardKind.Serie) continue;
 
                 if (vm.Kind == MediaCardKind.Episode && vm.ParentId is not null)

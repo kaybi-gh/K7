@@ -54,7 +54,7 @@ public partial class CollectionDetailPage
         {
             foreach (var item in page.Items)
             {
-                if (item.Media.ToCardViewModel(ApiClient) is { } vm)
+                if (item.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n)) is { } vm)
                     _items.Add(vm);
             }
         }
