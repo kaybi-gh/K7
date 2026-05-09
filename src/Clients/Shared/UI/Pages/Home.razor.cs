@@ -166,7 +166,7 @@ public partial class Home : IDisposable
                 var seen = new HashSet<string>();
                 foreach (var item in mediasPage.Items)
                 {
-                    if (item.ToCardViewModel(apiClient, false) is { } vm && seen.Add(vm.Id))
+                    if (item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n), false) is { } vm && seen.Add(vm.Id))
                         target.Add(vm);
                 }
                 return;
@@ -182,7 +182,7 @@ public partial class Home : IDisposable
 
             foreach (var item in mediasPage.Items)
             {
-                if (item.ToCardViewModel(apiClient, useParentTitle: true) is not { } vm) continue;
+                if (item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n), useParentTitle: true) is not { } vm) continue;
                 if (vm.Kind == MediaCardKind.Serie) continue;
 
                 if (vm.Kind == MediaCardKind.Episode && vm.ParentId is not null)
@@ -217,8 +217,8 @@ public partial class Home : IDisposable
                 MediaCardViewModel card = episodes.Count == 1
                     ? firstEp
                     : episodes.Select(e => e.SeasonNumber).Distinct().Count() == 1 && firstEp.SerieSeasonCount > 1
-                        ? firstEp with { Kind = MediaCardKind.Season, GroupCount = episodes.Count, Watched = allWatched }
-                        : firstEp with { Id = serieId, Kind = MediaCardKind.Serie, GroupCount = episodes.Count, Watched = allWatched };
+                        ? firstEp with { Kind = MediaCardKind.Season, GroupCount = episodes.Count, Watched = allWatched, AdditionalInformations = null }
+                        : firstEp with { Id = serieId, Kind = MediaCardKind.Serie, GroupCount = episodes.Count, Watched = allWatched, AdditionalInformations = firstEp.SerieReleaseYear?.ToString() };
                 orderedCards.Add((serieInsertOrder[serieId], card));
             }
 
