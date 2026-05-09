@@ -11,6 +11,12 @@
     width: 100%;
 }
 
+.media-card-link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
 .media-card-container ::deep .k7-skeleton {
     position: absolute;
     inset: 0;
@@ -87,7 +93,7 @@
     left: 0;
     height: 100%;
     width: 100%;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     justify-content: center;
     align-items: center;
     pointer-events: none;
