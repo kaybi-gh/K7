@@ -6,9 +6,11 @@
 @inject IPlayerService PlayerService
 @inject PlaybackProgressTracker PlaybackProgressTracker
 @inject IFeatureAccessService FeatureAccess
+@inject IDeviceService DeviceService
 @inject IStringLocalizer<SerieSeason> L
 @inject IStringLocalizer<SharedResource> S
 @inject IJSRuntime JSRuntime
+@inject IK7DialogService DialogService
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -17,6 +19,85 @@
     <div class="season-page">
         <div class="d-flex flex-col pa-16">
             <K7Spinner />
+        </div>
+    </div>
+}
+else if (_season is not null && _isTv)
+{
+    <div class="season-tv">
+        <div class="tv-backdrop" style="--tv-backdrop: url('@(_previousStillUrl ?? _backdropUrl)')" />
+        <div class="tv-backdrop tv-backdrop--next" style="--tv-backdrop: url('@(_focusedStillUrl ?? _backdropUrl)')" @key="_focusedStillUrl" />
+
+        <div class="tv-back-button">
+            <K7Button StartIcon="@Phosphor.ArrowLeft"
+                       Color="secondary"
+                       Variant="filled"
+                       Href="@($"/series/{SerieId}")">
+                @L["BackToSerie"]
+            </K7Button>
+        </div>
+
+
+        <div class="tv-details">
+            @if (_logoUrl is not null)
+            {
+                <K7Image Class="tv-logo" ObjectFit="scale-down" Src="@_logoUrl" Alt="@_season.SerieTitle" />
+            }
+            else
+            {
+                <h3 class="tv-serie-title">@_season.SerieTitle?.ToUpper()</h3>
+            }
+
+            <div class="tv-episode-info">
+                @if (_focusedEpisode is not null)
+                {
+                    <span class="tv-episode-label">
+                        @string.Format(L["EpisodeNumber"], _focusedEpisode.EpisodeNumber)
+                    </span>
+                    <h3 class="tv-episode-title">@_focusedEpisode.Title</h3>
+
+                    @if (_focusedEpisode.ReleaseDate is not null)
+                    {
+                        <span class="tv-episode-date text-sm">@_focusedEpisode.ReleaseDate.Value.ToString("d MMMM yyyy")</span>
+                    }
+
+                    <div class="tv-episode-overview overview-clickable focusable" tabindex="0" role="button" @onclick="OpenSynopsisDialogAsync">
+                        <p>@(_focusedEpisode.Overview ?? "")</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="tv-carousel-area">
+            <h2 class="tv-season-title">@(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))</h2>
+            <Carousel @ref="_tvCarousel" Title="@L["EpisodeList"]" Style="--carousel-margin-start: 32px;">
+                @foreach (var episode in _episodes)
+                {
+                    var ep = episode;
+                    <div class="carousel-item"
+                         @onfocusin="() => OnTvEpisodeFocus(ep)"
+                         @onclick="() => PlayEpisodeAsync(ep)"
+                         @onclick:preventDefault="true"
+                         @onkeydown="e => OnTvEpisodeKeyDown(e, ep)"
+                         id="ep-@ep.EpisodeNumber">
+                        <MediaCard Model="@(new MediaCardViewModel
+                                   {
+                                       Id = ep.Id.ToString(),
+                                       Kind = MediaCardKind.Episode,
+                                       Title = ep.Title,
+                                       AdditionalInformations = string.Format(L["EpisodeNumber"], ep.EpisodeNumber),
+                                       PictureUrl = GetEpisodeStillUrl(ep),
+                                       Progress = ep.UserState?.ProgressPercentage ?? 0,
+                                       Watched = ep.UserState?.IsCompleted ?? false,
+                                   })"
+                                   Variant="MediaCardVariant.Backdrop"
+                                   FooterVisible="true"
+                                   ProgressEnabled="true"
+                                   OverlayEnabled="true"
+                                   WatchedStatusEnabled="true" />
+                    </div>
+                }
+            </Carousel>
         </div>
     </div>
 }
