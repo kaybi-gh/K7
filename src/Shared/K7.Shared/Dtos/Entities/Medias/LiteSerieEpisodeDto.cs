@@ -6,6 +6,7 @@ public sealed record LiteSerieEpisodeDto : LiteMediaDto
     public int SeasonNumber { get; init; }
     public int SerieSeasonCount { get; init; }
     public double? Duration { get; init; }
+    public string? Overview { get; init; }
     public Guid SerieId { get; init; }
     public string? SerieTitle { get; init; }
     public DateOnly? SerieReleaseDate { get; init; }
