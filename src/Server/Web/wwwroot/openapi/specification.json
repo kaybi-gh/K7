@@ -6847,7 +6847,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -6901,7 +6902,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -7033,7 +7035,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -7087,7 +7090,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -7170,6 +7174,13 @@
               "string"
             ]
           },
+          "serieReleaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
           "stillImageId": {
             "type": [
               "null",
@@ -7209,7 +7220,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -7293,7 +7305,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -7420,7 +7433,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -7804,6 +7818,13 @@
               "string"
             ]
           },
+          "serieReleaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
           "stillImageId": {
             "type": [
               "null",
@@ -7843,7 +7864,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
@@ -7922,7 +7944,8 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "format": "date"
           },
           "pictures": {
             "type": [
