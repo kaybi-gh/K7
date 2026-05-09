@@ -457,16 +457,6 @@
         </div>
     </section>
 
-    <section id="season-card" class="ds-section">
-        <h2>SeasonCard</h2>
-        <div class="ds-preview">
-            @foreach (var season in _seasons)
-            {
-                <div style="width:160px"><SeasonCard Season="season" PosterUrl="@($"https://picsum.photos/seed/{season.Id}/200/300")" /></div>
-            }
-        </div>
-    </section>
-
     <section id="rating-stars" class="ds-section">
         <h2>RatingStars</h2>
         <p class="ds-description">10-point scale displayed as stars (0-5). Supports interactive rating.</p>
@@ -616,13 +606,6 @@
         new() { Id = Guid.NewGuid(), MediaId = Guid.NewGuid(), CharacterName = "Walter White", Person = new() { Id = Guid.NewGuid(), Name = "Bryan Cranston" } },
         new() { Id = Guid.NewGuid(), MediaId = Guid.NewGuid(), CharacterName = "Jesse Pinkman", Person = new() { Id = Guid.NewGuid(), Name = "Aaron Paul" } },
         new() { Id = Guid.NewGuid(), MediaId = Guid.NewGuid(), CharacterName = "Gus Fring", Person = new() { Id = Guid.NewGuid(), Name = "Giancarlo Esposito" } },
-    ];
-
-    private static readonly List<LiteSerieSeasonDto> _seasons =
-    [
-        new() { Id = Guid.NewGuid(), Title = "Season 1", SeasonNumber = 1, EpisodeCount = 10, SerieId = Guid.NewGuid() },
-        new() { Id = Guid.NewGuid(), Title = "Season 2", SeasonNumber = 2, EpisodeCount = 13, SerieId = Guid.NewGuid() },
-        new() { Id = Guid.NewGuid(), Title = "Season 3", SeasonNumber = 3, EpisodeCount = 8, SerieId = Guid.NewGuid() },
     ];
 
     private static readonly List<LiteSerieEpisodeDto> _episodes =
