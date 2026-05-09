@@ -457,29 +457,6 @@
         </div>
     </section>
 
-    <section id="hero-section" class="ds-section">
-        <h2>HeroSection</h2>
-        <p class="ds-description">Full-viewport auto-rotating hero. Backdrop is provided by the parent page; HeroSection renders only the content scrim, text, and dots.</p>
-
-        <h3 class="ds-sub-heading">Skeleton</h3>
-        <HeroSection Skeleton="true" />
-
-        <h3 class="ds-sub-heading">Live (with backdrop wrapper)</h3>
-        <div style="position:relative;isolation:isolate">
-            <div style="position:absolute;top:0;left:0;right:0;height:100%;z-index:-1;overflow:hidden;mask-image:linear-gradient(to bottom,black 0,black 55vh,rgba(0,0,0,.12) 105vh,transparent 180vh)">
-                @foreach (var (item, i) in _heroItems.Select((x, idx) => (x, idx)))
-                {
-                    var src = item.BackdropUrl ?? item.PictureUrl;
-                    <div style="position:absolute;top:0;left:0;right:0;height:100vh;transition:opacity .8s ease;opacity:@(i == _dsHeroActiveIndex ? 1 : 0)">
-                        @if (src is not null) { <img src="@src" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center top" /> }
-                    </div>
-                }
-            </div>
-            <HeroSection Items="_heroItems" HrefProvider='(item) => "#"'
-                         OnActiveIndexChanged="i => _dsHeroActiveIndex = i" />
-        </div>
-    </section>
-
     <section id="season-card" class="ds-section">
         <h2>SeasonCard</h2>
         <div class="ds-preview">
@@ -598,7 +575,6 @@
     }
 
     // Media
-    private int _dsHeroActiveIndex;
 
     private static readonly MediaCardViewModel _skeletonCard = new() { Id = "skeleton" };
 
@@ -621,15 +597,6 @@
         new() { Id = Guid.NewGuid().ToString(), Title = "Random Access Memories", PictureUrl = "https://picsum.photos/seed/ram/200/200", Kind = MediaCardKind.Cover },
         new() { Id = Guid.NewGuid().ToString(), Title = "Abbey Road", PictureUrl = "https://picsum.photos/seed/ar/200/200", Kind = MediaCardKind.Cover },
         new() { Id = Guid.NewGuid().ToString(), Title = "Dark Side of the Moon", PictureUrl = "https://picsum.photos/seed/dsm/200/200", Kind = MediaCardKind.Cover },
-    ];
-
-    private static readonly List<MediaCardViewModel> _heroItems =
-    [
-        new() { Id = Guid.NewGuid().ToString(), Title = "Dune: Part Two", AdditionalInformations = "2024", BackdropUrl = "https://picsum.photos/seed/dune2/1280/720", Kind = MediaCardKind.Poster },
-        new() { Id = Guid.NewGuid().ToString(), Title = "Oppenheimer", AdditionalInformations = "2023", BackdropUrl = "https://picsum.photos/seed/opp/1280/720", Kind = MediaCardKind.Poster },
-        new() { Id = Guid.NewGuid().ToString(), Title = "Interstellar", AdditionalInformations = "2014", BackdropUrl = "https://picsum.photos/seed/inter2/1280/720", Kind = MediaCardKind.Poster },
-        new() { Id = Guid.NewGuid().ToString(), Title = "The Revenant", AdditionalInformations = "2015", BackdropUrl = "https://picsum.photos/seed/rev2/1280/720", Kind = MediaCardKind.Poster },
-        new() { Id = Guid.NewGuid().ToString(), Title = "Blade Runner 2049", AdditionalInformations = "2017", BackdropUrl = "https://picsum.photos/seed/br49/1280/720", Kind = MediaCardKind.Poster },
     ];
 
     private static readonly List<MediaCardViewModel> _allCards =

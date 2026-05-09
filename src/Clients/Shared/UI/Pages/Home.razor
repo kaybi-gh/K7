@@ -4,25 +4,8 @@
 <PageTitle>@L["PageTitle"]</PageTitle>
 
 <div class="home-page">
-    @if (_heroItems.Count > 0)
-    {
-        <div class="home-bg" aria-hidden="true">
-            @foreach (var (item, i) in _heroItems.Select((x, idx) => (x, idx)))
-            {
-                var src = item.BackdropUrl;
-                <div class="home-bg-img @(i == _activeHeroIndex ? "home-bg-img--active" : "")">
-                    @if (src is not null)
-                    {
-                        <img src="@src" alt="" loading="@(i == 0 ? "eager" : "lazy")" />
-                    }
-                </div>
-            }
-        </div>
-    }
-
     @if (isLoading)
     {
-        <HeroSection Skeleton="true" FullBleed="true" />
         @for (int i = 0; i < 3; i++)
         {
             <Carousel Skeleton="true">
@@ -39,24 +22,17 @@
     {
         var hasAnyCarousel = _rows.Any(r =>
             r.Items.Count > 0 &&
-            (!r.Config.ContinueWatching || _canTrackProgress) &&
-            r.Config.DisplayType != HomeRowDisplayType.Hero);
-
-        @if (_heroItems.Count > 0)
-        {
-            <HeroSection Items="_heroItems" HrefProvider="GetHref" FullBleed="true"
-                         OnActiveIndexChanged="OnHeroActiveIndexChanged" />
-        }
+            (!r.Config.ContinueWatching || _canTrackProgress));
 
         @foreach (var (row, items) in _rows)
         {
-            @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress) && row.DisplayType != HomeRowDisplayType.Hero)
+            @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
             {
                 @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
             }
         }
 
-        @if (_heroItems.Count == 0 && !hasAnyCarousel)
+        @if (!hasAnyCarousel)
         {
             <div class="home-empty-state">
                 <K7Icon Icon="@Phosphor.FilmSlate" Style="font-size: 64px; opacity: 0.2;" />

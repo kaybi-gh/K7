@@ -1,5 +1,3 @@
-/* Home page backdrop that bleeds from hero zone into carousels */
-
 .home-page {
     position: relative;
     isolation: isolate;
@@ -9,47 +7,6 @@
     .home-page {
         margin-top: calc(-1 * env(safe-area-inset-top, 0px));
     }
-}
-
-.home-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    z-index: -1;
-    pointer-events: none;
-    overflow: hidden;
-    /* Full opacity through the hero viewport, fading to a hint in the carousel area */
-    mask-image: linear-gradient(
-        to bottom,
-        black 0,
-        black 35vh,
-        rgba(0, 0, 0, 0.12) 75vh,
-        rgba(0, 0, 0, 0.06) 120vh,
-        transparent 200vh
-    );
-}
-
-.home-bg-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100vh;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-}
-
-.home-bg-img--active {
-    opacity: 1;
-}
-
-.home-bg-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center top;
 }
 
 .home-empty-state {
