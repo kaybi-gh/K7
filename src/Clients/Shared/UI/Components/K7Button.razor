@@ -1,17 +1,38 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<button class="k7-btn k7-btn--@Variant focusable @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
-        type="@Type"
-        disabled="@Disabled"
-        @onclick="OnClick"
-        @attributes="AdditionalAttributes">
-    @if (!string.IsNullOrEmpty(StartIcon))
-    {
-        <K7Icon Icon="@StartIcon" />
-    }
-    @ChildContent
-    @if (!string.IsNullOrEmpty(EndIcon))
-    {
-        <K7Icon Icon="@EndIcon" />
-    }
-</button>
+@if (!string.IsNullOrEmpty(Href))
+{
+    <a class="k7-btn k7-btn--@Variant focusable @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
+       style="@Style"
+       href="@Href"
+       @attributes="AdditionalAttributes">
+        @if (!string.IsNullOrEmpty(StartIcon))
+        {
+            <K7Icon Icon="@StartIcon" />
+        }
+        @ChildContent
+        @if (!string.IsNullOrEmpty(EndIcon))
+        {
+            <K7Icon Icon="@EndIcon" />
+        }
+    </a>
+}
+else
+{
+    <button class="k7-btn k7-btn--@Variant focusable @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
+            style="@Style"
+            type="@Type"
+            disabled="@Disabled"
+            @onclick="OnClick"
+            @attributes="AdditionalAttributes">
+        @if (!string.IsNullOrEmpty(StartIcon))
+        {
+            <K7Icon Icon="@StartIcon" />
+        }
+        @ChildContent
+        @if (!string.IsNullOrEmpty(EndIcon))
+        {
+            <K7Icon Icon="@EndIcon" />
+        }
+    </button>
+}
