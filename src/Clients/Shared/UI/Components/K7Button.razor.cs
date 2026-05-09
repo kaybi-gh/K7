@@ -9,6 +9,7 @@ public partial class K7Button
     [Parameter] public string Color { get; set; } = "";
     [Parameter] public string Size { get; set; } = "";
     [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
     [Parameter] public string Type { get; set; } = "button";
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public string StartIcon { get; set; } = "";
