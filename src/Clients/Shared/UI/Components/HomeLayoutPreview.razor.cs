@@ -3,7 +3,6 @@ using K7.Clients.Shared.Models;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -11,7 +10,6 @@ public partial class HomeLayoutPreview
 {
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
-    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     [Parameter] public IReadOnlyList<HomeRowEditModel> Rows { get; set; } = [];
 
@@ -40,7 +38,7 @@ public partial class HomeLayoutPreview
 
     private async Task LoadRowAsync(HomeRowConfigDto config, List<MediaCardViewModel> target)
     {
-        var query = new GetMediasWithPaginationQuery
+        var query = new GetHomeFeedQuery
         {
             ContinueWatching = config.ContinueWatching ? true : null,
             LibraryIds = config.LibraryIds?.ToArray(),
@@ -52,66 +50,13 @@ public partial class HomeLayoutPreview
 
         try
         {
-            var mediasPage = await MediaService.GetLiteMediasAsync(query);
-            if (mediasPage?.Items is null) return;
+            var feedPage = await MediaService.GetHomeFeedAsync(query);
+            if (feedPage?.Items is null) return;
 
-            var insertOrder = 0;
-            var orderedCards = new List<(int Order, MediaCardViewModel Card)>();
-            var serieInsertOrder = new Dictionary<string, int>();
-            var serieEpisodes = new Dictionary<string, List<MediaCardViewModel>>();
-            var albumInsertOrder = new Dictionary<string, int>();
-            var albumTracks = new Dictionary<string, List<MediaCardViewModel>>();
-
-            foreach (var item in mediasPage.Items)
+            foreach (var item in feedPage.Items)
             {
-                if (item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n), useParentTitle: true) is not { } vm) continue;
-                if (vm.Kind == MediaCardKind.Serie) continue;
-
-                if (vm.Kind == MediaCardKind.Episode && vm.ParentId is not null)
-                {
-                    if (!serieInsertOrder.ContainsKey(vm.ParentId))
-                    {
-                        serieInsertOrder[vm.ParentId] = insertOrder++;
-                        serieEpisodes[vm.ParentId] = [];
-                    }
-                    serieEpisodes[vm.ParentId].Add(vm);
-                }
-                else if (vm.Kind == MediaCardKind.Cover && vm.ParentId is not null)
-                {
-                    if (!albumInsertOrder.ContainsKey(vm.ParentId))
-                    {
-                        albumInsertOrder[vm.ParentId] = insertOrder++;
-                        albumTracks[vm.ParentId] = [];
-                    }
-                    albumTracks[vm.ParentId].Add(vm);
-                }
-                else
-                {
-                    orderedCards.Add((insertOrder++, vm));
-                }
+                target.Add(item.ToCardViewModel(ApiClient));
             }
-
-            foreach (var (serieId, episodes) in serieEpisodes)
-            {
-                var firstEp = episodes[0];
-                var allWatched = episodes.All(e => e.Watched);
-                var card = episodes.Count == 1
-                    ? firstEp
-                    : episodes.Select(e => e.SeasonNumber).Distinct().Count() == 1 && firstEp.SerieSeasonCount > 1
-                        ? firstEp with { Kind = MediaCardKind.Season, GroupCount = episodes.Count, Watched = allWatched }
-                        : firstEp with { Id = serieId, Kind = MediaCardKind.Serie, GroupCount = episodes.Count, Watched = allWatched };
-                orderedCards.Add((serieInsertOrder[serieId], card));
-            }
-
-            foreach (var (albumId, tracks) in albumTracks)
-            {
-                if (orderedCards.Any(c => c.Card.Id == albumId && c.Card.Kind == MediaCardKind.Cover))
-                    continue;
-                var firstTrack = tracks[0];
-                orderedCards.Add((albumInsertOrder[albumId], firstTrack with { Id = albumId }));
-            }
-
-            target.AddRange(orderedCards.OrderBy(x => x.Order).Select(x => x.Card));
         }
         catch { }
     }

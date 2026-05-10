@@ -1,0 +1,517 @@
+using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Models;
+using K7.Server.Application.Features.Restrictions.Services;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Home;
+using K7.Shared.Dtos.Requests;
+
+namespace K7.Server.Application.Features.Home.Queries.GetHomeFeedItems;
+
+public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
+{
+    public Guid[]? LibraryIds { get; init; }
+    public bool? ContinueWatching { get; init; }
+    public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
+    public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
+    public required int PageNumber { get; init; } = 1;
+    public required int PageSize { get; init; } = 20;
+}
+
+public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser)
+    : IRequestHandler<GetHomeFeedItemsQuery, PaginatedList<HomeFeedItemDto>>
+{
+    public async Task<PaginatedList<HomeFeedItemDto>> Handle(GetHomeFeedItemsQuery request, CancellationToken cancellationToken)
+    {
+        var userId = currentUser.Id;
+        var strategy = InferStrategy(request);
+
+        return strategy switch
+        {
+            FeedStrategy.ContinueWatching => await HandleContinueWatchingAsync(request, userId, cancellationToken),
+            FeedStrategy.RecentlyAdded => await HandleRecentlyAddedAsync(request, userId, cancellationToken),
+            _ => await HandleTopLevelAsync(request, userId, cancellationToken)
+        };
+    }
+
+    private static FeedStrategy InferStrategy(GetHomeFeedItemsQuery request)
+    {
+        if (request.ContinueWatching == true)
+            return FeedStrategy.ContinueWatching;
+
+        if (request.OrderBy is { Count: > 0 } && request.OrderBy.Contains(MediaOrderingOption.CreatedDesc))
+            return FeedStrategy.RecentlyAdded;
+
+        return FeedStrategy.TopLevel;
+    }
+
+    private async Task<PaginatedList<HomeFeedItemDto>> HandleContinueWatchingAsync(
+        GetHomeFeedItemsQuery request, Guid? userId, CancellationToken cancellationToken)
+    {
+        if (!userId.HasValue)
+            return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
+
+        var query = context.Medias
+            .AsNoTracking()
+            .Where(x => !(x is MusicAlbum) && !(x is MusicTrack))
+            .Where(x => x.UserMediaStates.Any(s =>
+                s.UserId == userId.Value
+                && !s.IsCompleted
+                && s.LastInteractedAt != null));
+
+        query = ApplyFamilyFilter(query, request.MediaTypes);
+        query = ApplyLibraryFilter(query, request.LibraryIds);
+        query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderByDescending(x => x.UserMediaStates
+                .Where(s => s.UserId == userId.Value)
+                .Select(s => s.LastInteractedAt)
+                .FirstOrDefault())
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
+            .ToListAsync(cancellationToken);
+
+        var feedItems = items.Select(MapContinueWatchingItem).ToList();
+        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<PaginatedList<HomeFeedItemDto>> HandleRecentlyAddedAsync(
+        GetHomeFeedItemsQuery request, Guid? userId, CancellationToken cancellationToken)
+    {
+        // Fetch child-level items (episodes, tracks, movies) ordered by created desc.
+        // Then aggregate: group episodes by serie/season, tracks by album.
+        var query = context.Medias
+            .AsNoTracking()
+            .Where(x => x.IndexedFiles.Any() || x is MusicAlbum || x is Serie);
+
+        query = ApplyFamilyFilter(query, request.MediaTypes);
+        query = ApplyLibraryFilter(query, request.LibraryIds);
+
+        if (userId.HasValue)
+            query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
+
+        // Fetch more than needed because aggregation reduces item count
+        var fetchSize = request.PageSize * 3;
+        var skip = (request.PageNumber - 1) * fetchSize;
+
+        var rawItems = await query
+            .OrderByDescending(x => x.Id)
+            .Skip(skip)
+            .Take(fetchSize)
+            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
+            .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        if (userId.HasValue)
+        {
+            var rawIds = rawItems.Select(x => x.Id).ToList();
+            var userStates = await context.UserMediaStates
+                .AsNoTracking()
+                .Where(s => s.UserId == userId.Value && rawIds.Contains(s.MediaId))
+                .ToDictionaryAsync(s => s.MediaId, cancellationToken);
+
+            foreach (var item in rawItems)
+            {
+                if (userStates.TryGetValue(item.Id, out var state))
+                    item.UserMediaStates = [state];
+            }
+        }
+
+        var aggregated = AggregateRecentItems(rawItems);
+        var page = aggregated.Take(request.PageSize).ToList();
+        var totalCount = aggregated.Count;
+
+        return new PaginatedList<HomeFeedItemDto>(page, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<PaginatedList<HomeFeedItemDto>> HandleTopLevelAsync(
+        GetHomeFeedItemsQuery request, Guid? userId, CancellationToken cancellationToken)
+    {
+        // Only top-level entities: Movie, Serie, MusicAlbum
+        var query = context.Medias
+            .AsNoTracking()
+            .Where(x => x is Movie || x is Serie || x is MusicAlbum);
+
+        query = ApplyFamilyFilter(query, request.MediaTypes);
+        query = ApplyLibraryFilter(query, request.LibraryIds);
+
+        if (userId.HasValue)
+            query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var ordered = ApplyOrdering(request.OrderBy, query, userId);
+        var pageIds = await ordered
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(m => m.Id)
+            .ToListAsync(cancellationToken);
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<HomeFeedItemDto>([], totalCount, request.PageNumber, request.PageSize);
+
+        var items = await context.Medias
+            .Where(m => pageIds.Contains(m.Id))
+            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        if (userId.HasValue)
+        {
+            var userStates = await context.UserMediaStates
+                .AsNoTracking()
+                .Where(s => s.UserId == userId.Value && pageIds.Contains(s.MediaId))
+                .ToDictionaryAsync(s => s.MediaId, cancellationToken);
+
+            foreach (var item in items)
+            {
+                if (userStates.TryGetValue(item.Id, out var state))
+                    item.UserMediaStates = [state];
+            }
+        }
+
+        var feedItems = pageIds
+            .Select(id => items.First(m => m.Id == id))
+            .Select(MapTopLevelItem)
+            .ToList();
+
+        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private List<HomeFeedItemDto> AggregateRecentItems(List<BaseMedia> rawItems)
+    {
+        var result = new List<(int Order, HomeFeedItemDto Item)>();
+        var serieGroups = new Dictionary<Guid, (int Order, List<SerieEpisode> Episodes)>();
+        var albumGroups = new Dictionary<Guid, (int Order, List<MusicTrack> Tracks)>();
+        var insertOrder = 0;
+
+        foreach (var item in rawItems)
+        {
+            switch (item)
+            {
+                case SerieEpisode episode when episode.Serie is not null:
+                {
+                    var serieId = episode.Serie.Id;
+                    if (!serieGroups.ContainsKey(serieId))
+                        serieGroups[serieId] = (insertOrder++, []);
+                    serieGroups[serieId].Episodes.Add(episode);
+                    break;
+                }
+                case MusicTrack track when track.Album is not null:
+                {
+                    var albumId = track.Album.Id;
+                    if (!albumGroups.ContainsKey(albumId))
+                        albumGroups[albumId] = (insertOrder++, []);
+                    albumGroups[albumId].Tracks.Add(track);
+                    break;
+                }
+                case Serie or SerieSeason:
+                    // Skip top-level serie/season entries -- episodes represent them
+                    break;
+                case MusicAlbum:
+                    // Skip top-level album entries -- tracks represent them
+                    break;
+                default:
+                    result.Add((insertOrder++, MapTopLevelItem(item)));
+                    break;
+            }
+        }
+
+        foreach (var (serieId, (order, episodes)) in serieGroups)
+        {
+            result.Add((order, AggregateSerieEpisodes(serieId, episodes)));
+        }
+
+        foreach (var (albumId, (order, tracks)) in albumGroups)
+        {
+            result.Add((order, AggregateAlbumTracks(albumId, tracks)));
+        }
+
+        return result.OrderBy(x => x.Order).Select(x => x.Item).ToList();
+    }
+
+    private static HomeFeedItemDto AggregateSerieEpisodes(Guid serieId, List<SerieEpisode> episodes)
+    {
+        var first = episodes[0];
+        var serie = first.Serie!;
+        var allWatched = episodes.All(e =>
+            e.UserMediaStates.Any(s => s.IsCompleted));
+
+        var distinctSeasons = episodes.Select(e => e.Season?.SeasonNumber ?? 0).Distinct().ToList();
+        var isSingleSeason = distinctSeasons.Count == 1;
+        var serieHasMultipleSeasons = serie.Seasons?.Count > 1;
+
+        if (episodes.Count == 1)
+        {
+            // Single episode (weekly) -- link to the episode anchor
+            var ep = first;
+            var seasonPictures = ep.Season?.Pictures ?? serie.Pictures;
+            return new HomeFeedItemDto
+            {
+                Id = serieId,
+                Title = serie.Title ?? ep.Title ?? "",
+                MediaType = MediaType.SerieEpisode,
+                NavigationTarget = $"/series/{serieId}/seasons/{ep.Season?.SeasonNumber ?? 0}#ep-{ep.EpisodeNumber}",
+                Pictures = seasonPictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+                AdditionalInfo = $"S{ep.Season?.SeasonNumber ?? 0:D2}E{ep.EpisodeNumber:D2}",
+                GroupCount = 1,
+                ReleaseDate = serie.ReleaseDate,
+                Watched = allWatched
+            };
+        }
+
+        if (isSingleSeason && serieHasMultipleSeasons == true)
+        {
+            // All episodes from one season of a multi-season serie -- season card
+            var season = first.Season;
+            var seasonNumber = distinctSeasons[0];
+            return new HomeFeedItemDto
+            {
+                Id = serieId,
+                Title = serie.Title ?? "",
+                MediaType = MediaType.SerieSeason,
+                NavigationTarget = $"/series/{serieId}/seasons/{seasonNumber}",
+                Pictures = (season?.Pictures ?? serie.Pictures)?.Select(p => p.ToMetadataPictureDto()).ToList(),
+                AdditionalInfo = $"{episodes.Count} episodes",
+                GroupCount = episodes.Count,
+                ReleaseDate = serie.ReleaseDate,
+                Watched = allWatched
+            };
+        }
+
+        // Multiple seasons or single-season serie -- serie card
+        return new HomeFeedItemDto
+        {
+            Id = serieId,
+            Title = serie.Title ?? "",
+            MediaType = MediaType.Serie,
+            NavigationTarget = $"/series/{serieId}",
+            Pictures = serie.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+            AdditionalInfo = $"{episodes.Count} episodes",
+            GroupCount = episodes.Count,
+            ReleaseDate = serie.ReleaseDate,
+            Watched = allWatched
+        };
+    }
+
+    private static HomeFeedItemDto AggregateAlbumTracks(Guid albumId, List<MusicTrack> tracks)
+    {
+        var first = tracks[0];
+        var album = first.Album!;
+        var allWatched = tracks.All(t =>
+            t.UserMediaStates.Any(s => s.IsCompleted));
+
+        return new HomeFeedItemDto
+        {
+            Id = albumId,
+            Title = album.Title ?? first.Title ?? "",
+            MediaType = MediaType.MusicAlbum,
+            NavigationTarget = $"/music/albums/{albumId}",
+            Pictures = album.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+            AdditionalInfo = tracks.Count > 1 ? $"{tracks.Count} tracks" : null,
+            GroupCount = tracks.Count,
+            ReleaseDate = album.ReleaseDate,
+            Watched = allWatched
+        };
+    }
+
+    private static HomeFeedItemDto MapTopLevelItem(BaseMedia item)
+    {
+        var pictures = item.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList();
+        var userState = item.UserMediaStates.FirstOrDefault();
+
+        return new HomeFeedItemDto
+        {
+            Id = item.Id,
+            Title = item.Title ?? "",
+            MediaType = item.Type,
+            NavigationTarget = item switch
+            {
+                Movie => $"/movies/{item.Id}",
+                Serie => $"/series/{item.Id}",
+                MusicAlbum => $"/music/albums/{item.Id}",
+                _ => $"/medias/{item.Id}"
+            },
+            Pictures = pictures,
+            ReleaseDate = item.ReleaseDate,
+            Watched = userState?.IsCompleted ?? false,
+            Progress = userState?.ProgressPercentage ?? 0,
+            GroupCount = 1
+        };
+    }
+
+    private static HomeFeedItemDto MapContinueWatchingItem(BaseMedia item)
+    {
+        var userState = item.UserMediaStates.FirstOrDefault();
+        IList<MetadataPicture>? pictures;
+        string navTarget;
+        string title;
+        string? additionalInfo = null;
+
+        switch (item)
+        {
+            case SerieEpisode episode:
+                pictures = episode.Serie?.Pictures ?? item.Pictures;
+                navTarget = $"/series/{episode.Serie?.Id ?? item.Id}/seasons/{episode.Season?.SeasonNumber ?? 0}#ep-{episode.EpisodeNumber}";
+                title = episode.Serie?.Title ?? episode.Title ?? "";
+                additionalInfo = $"S{episode.Season?.SeasonNumber ?? 0:D2}E{episode.EpisodeNumber:D2}";
+                break;
+            default:
+                pictures = item.Pictures;
+                navTarget = item switch
+                {
+                    Movie => $"/movies/{item.Id}",
+                    _ => $"/medias/{item.Id}"
+                };
+                title = item.Title ?? "";
+                break;
+        }
+
+        return new HomeFeedItemDto
+        {
+            Id = item.Id,
+            Title = title,
+            MediaType = item.Type,
+            NavigationTarget = navTarget,
+            Pictures = pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+            AdditionalInfo = additionalInfo,
+            ReleaseDate = item.ReleaseDate,
+            Watched = userState?.IsCompleted ?? false,
+            Progress = userState?.ProgressPercentage ?? 0,
+            GroupCount = 1
+        };
+    }
+
+    private static IQueryable<BaseMedia> ApplyFamilyFilter(IQueryable<BaseMedia> query, HashSet<MediaType>? mediaTypes)
+    {
+        if (mediaTypes is not { Count: > 0 })
+            return query;
+
+        // MediaTypes acts as a family selector:
+        // Serie -> include Serie, SerieSeason, SerieEpisode
+        // MusicAlbum -> include MusicAlbum, MusicTrack
+        // Movie -> include Movie
+        var conditions = new List<Func<BaseMedia, bool>>();
+        var includeMovies = mediaTypes.Contains(MediaType.Movie);
+        var includeSeries = mediaTypes.Contains(MediaType.Serie)
+                            || mediaTypes.Contains(MediaType.SerieEpisode)
+                            || mediaTypes.Contains(MediaType.SerieSeason);
+        var includeMusic = mediaTypes.Contains(MediaType.MusicAlbum)
+                           || mediaTypes.Contains(MediaType.MusicTrack);
+
+        return query.Where(x =>
+            (includeMovies && x is Movie) ||
+            (includeSeries && (x is Serie || x is SerieSeason || x is SerieEpisode)) ||
+            (includeMusic && (x is MusicAlbum || x is MusicTrack)));
+    }
+
+    private static IQueryable<BaseMedia> ApplyLibraryFilter(IQueryable<BaseMedia> query, Guid[]? libraryIds)
+    {
+        if (libraryIds is not { Length: > 0 })
+            return query;
+
+        return query.Where(x =>
+            x is MusicAlbum
+                ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId)))
+                : x is Serie
+                    ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))))
+                    : x is SerieSeason
+                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId)))
+                        : x.IndexedFiles != null && x.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId)));
+    }
+
+    private async Task<IQueryable<BaseMedia>> ApplyUserExclusionsAsync(
+        IQueryable<BaseMedia> query, Guid userId, CancellationToken cancellationToken)
+    {
+        var excludedLibraryIds = context.UserLibraryExclusions
+            .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
+            .Select(e => e.LibraryId);
+
+        query = query.Where(x =>
+            x is MusicAlbum
+                ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                : x is Serie
+                    ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
+                    : x is SerieSeason
+                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                        : !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
+
+        var excludedMediaIds = context.UserMediaExclusions
+            .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
+            .Select(e => e.MediaId);
+
+        query = query.Where(x => !excludedMediaIds.Contains(x.Id));
+
+        var restrictionProfile = await context.ContentRestrictionProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
+
+        if (restrictionProfile is not null)
+            query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
+
+        return query;
+    }
+
+    private static IOrderedQueryable<BaseMedia> ApplyOrdering(
+        HashSet<MediaOrderingOption>? orderBy, IQueryable<BaseMedia> queryable, Guid? userId)
+    {
+        if (orderBy is not { Count: > 0 })
+            return queryable.OrderByDescending(x => x.Id);
+
+        IOrderedQueryable<BaseMedia>? ordered = null;
+
+        foreach (var option in orderBy)
+        {
+            ordered = option switch
+            {
+                MediaOrderingOption.CreatedAsc => ordered?.ThenBy(x => x.Id) ?? queryable.OrderBy(x => x.Id),
+                MediaOrderingOption.CreatedDesc => ordered?.ThenByDescending(x => x.Id) ?? queryable.OrderByDescending(x => x.Id),
+                MediaOrderingOption.TitleAsc => ordered?.ThenBy(x => x.Title) ?? queryable.OrderBy(x => x.Title),
+                MediaOrderingOption.TitleDesc => ordered?.ThenByDescending(x => x.Title) ?? queryable.OrderByDescending(x => x.Title),
+                MediaOrderingOption.ReleaseDateAsc => ordered?.ThenBy(x => x.ReleaseDate) ?? queryable.OrderBy(x => x.ReleaseDate),
+                MediaOrderingOption.ReleaseDateDesc => ordered?.ThenByDescending(x => x.ReleaseDate) ?? queryable.OrderByDescending(x => x.ReleaseDate),
+                MediaOrderingOption.LocalRatingAsc => ordered?.ThenBy(x => x.Ratings
+                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                    .Select(r => (double?)r.Value).FirstOrDefault())
+                    ?? queryable.OrderBy(x => x.Ratings
+                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                    .Select(r => (double?)r.Value).FirstOrDefault()),
+                MediaOrderingOption.LocalRatingDesc => ordered?.ThenByDescending(x => x.Ratings
+                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                    .Select(r => (double?)r.Value).FirstOrDefault())
+                    ?? queryable.OrderByDescending(x => x.Ratings
+                    .OfType<K7.Server.Domain.Entities.Ratings.UserRating>()
+                    .Where(r => !userId.HasValue || r.UserId == userId.Value)
+                    .Select(r => (double?)r.Value).FirstOrDefault()),
+                _ => ordered ?? queryable.OrderByDescending(x => x.Id)
+            };
+        }
+
+        return ordered!;
+    }
+
+    private enum FeedStrategy
+    {
+        ContinueWatching,
+        RecentlyAdded,
+        TopLevel
+    }
+}
