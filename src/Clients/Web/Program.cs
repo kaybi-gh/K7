@@ -54,6 +54,7 @@ builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
 builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
 builder.Services.AddSingleton<K7HubClient>();
+builder.Services.AddSingleton<MediaCacheStore>();
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
 builder.Services.AddSingleton<ILocalUserService, StubbedLocalUserService>();
