@@ -27,5 +27,11 @@
   <data name="Albums" xml:space="preserve"><value>Albums</value></data>
   <data name="Tracks" xml:space="preserve"><value>Morceaux</value></data>
   <data name="ItemCount" xml:space="preserve"><value>{0} élément(s)</value></data>
+  <data name="SortTitleAsc" xml:space="preserve"><value>Titre A-Z</value></data>
+  <data name="SortTitleDesc" xml:space="preserve"><value>Titre Z-A</value></data>
+  <data name="SortNewest" xml:space="preserve"><value>Plus recents</value></data>
+  <data name="SortOldest" xml:space="preserve"><value>Plus anciens</value></data>
+  <data name="SortReleaseDateDesc" xml:space="preserve"><value>Date de sortie (recents)</value></data>
+  <data name="SortReleaseDateAsc" xml:space="preserve"><value>Date de sortie (anciens)</value></data>
 </root>
 
