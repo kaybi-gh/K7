@@ -57,6 +57,7 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
                 Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = entity.Id,
                 TargetEntityTypeName = nameof(Library),
+                TimeoutSeconds = 3600
             }, cancellationToken);
         }
 

@@ -37,7 +37,7 @@ public class FileIndexer : IFileIndexer
         {
             _logger.LogInformation("Starting indexing files of library {LibraryId}.", library.Id);
 
-            var (indexedFiles, skippedFilePaths, inaccessiblePaths) = ScanFiles(library);
+            var (indexedFiles, skippedFilePaths, inaccessiblePaths) = ScanFiles(library, cancellationToken);
             var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles, skippedFilePaths);
             var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)).ToList();
 
@@ -82,13 +82,13 @@ public class FileIndexer : IFileIndexer
         }
     }
 
-    private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths, IReadOnlyList<(string Path, string Error)> InaccessiblePaths) ScanFiles(Library library)
+    private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths, IReadOnlyList<(string Path, string Error)> InaccessiblePaths) ScanFiles(Library library, CancellationToken cancellationToken)
     {
-        var (fileInfos, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
+        var (fileInfos, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath, cancellationToken);
         ConcurrentBag<IndexedFile> indexedFiles = [];
         ConcurrentBag<string> skippedFilePaths = [];
 
-        Parallel.ForEach(fileInfos, fileInfo =>
+        Parallel.ForEach(fileInfos, new ParallelOptions { CancellationToken = cancellationToken }, fileInfo =>
         {
             try
             {
