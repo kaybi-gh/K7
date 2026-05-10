@@ -1,28 +1,17 @@
 <div class="page-with-sidebar">
     <header class="sidebar-mobile-topbar">
         <button class="sidebar-mobile-toggle focusable" @onclick="ToggleSidebar" aria-label="Menu">
-            <K7Icon Icon="@Phosphor.List" />
+            <K7Icon Icon="@(_sidebarOpen ? Phosphor.X : Phosphor.List)" />
         </button>
         <span class="sidebar-mobile-title">@Title</span>
     </header>
 
     <aside class="page-sidebar @(_sidebarOpen ? "sidebar-open" : "")" data-sn-section="sidebar-nav" data-sn-enter="last-focused" data-sn-restrict="self-first">
-        <div class="sidebar-overlay-header">
-            <span class="sidebar-overlay-title">@Title</span>
-            <button class="sidebar-overlay-close focusable" @onclick="CloseSidebar" aria-label="Close">
-                <K7Icon Icon="@Phosphor.X" />
-            </button>
-        </div>
         <div class="page-sidebar-title">@Title</div>
         @SidebarContent
     </aside>
 
-    @if (_sidebarOpen)
-    {
-        <div class="sidebar-backdrop" @onclick="CloseSidebar"></div>
-    }
-
-    <main class="page-sidebar-body" data-sn-section="sidebar-content" data-sn-enter="last-focused" data-sn-restrict="self-first">
+    <main class="page-sidebar-body @(_sidebarOpen ? "sidebar-body-hidden" : "")" data-sn-section="sidebar-content" data-sn-enter="last-focused" data-sn-restrict="self-first">
         @ChildContent
     </main>
 </div>
