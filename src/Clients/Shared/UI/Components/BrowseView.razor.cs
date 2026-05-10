@@ -45,7 +45,6 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     private List<List<TItem>> _rows = [];
     private bool _observingGrid;
-    private bool _observingSentinel;
 
     protected override void OnInitialized()
     {
@@ -81,9 +80,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             await StartObservingGridWidth();
         }
 
-        if (!_observingSentinel && HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 })
+        if (HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 })
         {
-            _observingSentinel = true;
             await StartObservingSentinel();
         }
     }
@@ -97,8 +95,6 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             _currentMode = _availableModes[0];
         }
 
-        _observingGrid = false;
-        _observingSentinel = false;
         RebuildRows();
     }
 
@@ -249,10 +245,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
                 {
                     await _module.InvokeVoidAsync("dispose", _gridRef);
                 }
-                if (_observingSentinel)
-                {
-                    await _module.InvokeVoidAsync("disposeSentinel", _sentinelRef);
-                }
+                await _module.InvokeVoidAsync("disposeSentinel");
                 await _module.DisposeAsync();
             }
             catch (JSDisconnectedException)

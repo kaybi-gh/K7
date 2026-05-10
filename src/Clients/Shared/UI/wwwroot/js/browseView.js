@@ -1,5 +1,6 @@
 let _observers = new Map();
-let _sentinelObservers = new Map();
+let _sentinelObserver = null;
+let _sentinelPending = false;
 
 export function getSettings(key) {
     try {
@@ -40,28 +41,32 @@ export function dispose(element) {
 }
 
 export function observeSentinel(element, dotnetRef) {
-    if (!(element instanceof Element) || _sentinelObservers.has(element)) return;
+    if (!(element instanceof Element)) return;
 
-    let pending = false;
-    const observer = new IntersectionObserver(entries => {
+    // Disconnect previous sentinel observer if any
+    if (_sentinelObserver) {
+        _sentinelObserver.disconnect();
+        _sentinelObserver = null;
+    }
+
+    _sentinelPending = false;
+    _sentinelObserver = new IntersectionObserver(entries => {
         for (const entry of entries) {
-            if (entry.isIntersecting && !pending) {
-                pending = true;
+            if (entry.isIntersecting && !_sentinelPending) {
+                _sentinelPending = true;
                 dotnetRef.invokeMethodAsync("OnSentinelVisible").finally(() => {
-                    pending = false;
+                    _sentinelPending = false;
                 });
             }
         }
     }, { rootMargin: "200px" });
 
-    observer.observe(element);
-    _sentinelObservers.set(element, observer);
+    _sentinelObserver.observe(element);
 }
 
-export function disposeSentinel(element) {
-    const observer = _sentinelObservers.get(element);
-    if (observer) {
-        observer.disconnect();
-        _sentinelObservers.delete(element);
+export function disposeSentinel() {
+    if (_sentinelObserver) {
+        _sentinelObserver.disconnect();
+        _sentinelObserver = null;
     }
 }
