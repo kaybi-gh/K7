@@ -265,7 +265,7 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   color: var(--color-text-muted);
   transition: transform 0.15s ease;
 }
-.k7-select-wrap { position: relative; }
+.k7-select-wrap { position: relative; min-width: 0; }
 .k7-select-wrap--open .k7-select-icon { transform: rotate(180deg); }
 .k7-select-dropdown {
   position: absolute;

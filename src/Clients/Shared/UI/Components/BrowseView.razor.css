@@ -19,6 +19,12 @@
     gap: 8px;
     flex: 1;
     min-width: 0;
+    flex-wrap: wrap;
+}
+
+.browse-view-toolbar-start ::deep .k7-field {
+    width: auto;
+    flex-shrink: 0;
 }
 
 .browse-view-toolbar-end {
