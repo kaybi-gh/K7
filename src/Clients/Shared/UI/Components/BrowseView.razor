@@ -103,5 +103,12 @@
                 </div>
                 break;
         }
+
+        @if (HasMore && OnLoadMore is not null)
+        {
+            <div class="browse-view-sentinel" @ref="_sentinelRef">
+                <K7Spinner />
+            </div>
+        }
     }
 </div>

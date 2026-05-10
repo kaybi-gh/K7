@@ -1,4 +1,5 @@
 let _observers = new Map();
+let _sentinelObservers = new Map();
 
 export function getSettings(key) {
     try {
@@ -35,5 +36,28 @@ export function dispose(element) {
     if (observer) {
         observer.disconnect();
         _observers.delete(element);
+    }
+}
+
+export function observeSentinel(element, dotnetRef) {
+    if (!(element instanceof Element) || _sentinelObservers.has(element)) return;
+
+    const observer = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                dotnetRef.invokeMethodAsync("OnSentinelVisible");
+            }
+        }
+    }, { rootMargin: "200px" });
+
+    observer.observe(element);
+    _sentinelObservers.set(element, observer);
+}
+
+export function disposeSentinel(element) {
+    const observer = _sentinelObservers.get(element);
+    if (observer) {
+        observer.disconnect();
+        _sentinelObservers.delete(element);
     }
 }

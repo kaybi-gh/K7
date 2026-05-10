@@ -57,6 +57,11 @@ public static class GetMediasWithPaginationQueryUriBuilder
                 queryParams.Add(new(nameof(query.Genres), g));
         }
 
+        if (!string.IsNullOrWhiteSpace(query.SearchText))
+        {
+            queryParams.Add(new(nameof(query.SearchText), query.SearchText));
+        }
+
         return QueryBuilderHelper.AddQueryParameters(Route, queryParams);
     }
 }

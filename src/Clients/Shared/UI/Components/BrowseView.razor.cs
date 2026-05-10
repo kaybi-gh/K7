@@ -10,6 +10,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     [Parameter] public IList<TItem> Items { get; set; } = [];
     [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool HasMore { get; set; }
+    [Parameter] public Func<Task>? OnLoadMore { get; set; }
 
     [Parameter] public RenderFragment<TItem>? GridTemplate { get; set; }
     [Parameter] public RenderFragment<TItem>? ListTemplate { get; set; }
@@ -27,6 +29,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public float GridItemAspectRatio { get; set; } = 1.5f;
 
     private ElementReference _gridRef;
+    private ElementReference _sentinelRef;
     private IJSObjectReference? _module;
     private DotNetObjectReference<BrowseView<TItem>>? _dotnetRef;
 
@@ -40,6 +43,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     private List<List<TItem>> _rows = [];
     private bool _observingGrid;
+    private bool _observingSentinel;
 
     protected override void OnInitialized()
     {
@@ -74,6 +78,12 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             _observingGrid = true;
             await StartObservingGridWidth();
         }
+
+        if (!_observingSentinel && HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 })
+        {
+            _observingSentinel = true;
+            await StartObservingSentinel();
+        }
     }
 
     protected override void OnParametersSet()
@@ -86,6 +96,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         }
 
         _observingGrid = false;
+        _observingSentinel = false;
         RebuildRows();
     }
 
@@ -96,6 +107,19 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         _containerWidth = width;
         RebuildRows();
         StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnSentinelVisible()
+    {
+        if (OnLoadMore is not null && HasMore)
+        {
+            await InvokeAsync(async () =>
+            {
+                await OnLoadMore();
+                StateHasChanged();
+            });
+        }
     }
 
     private async Task SetViewModeAsync(BrowseViewMode mode)
@@ -164,6 +188,14 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         await _module.InvokeVoidAsync("observeContainerWidth", _gridRef, _dotnetRef);
     }
 
+    private async Task StartObservingSentinel()
+    {
+        if (_module is null) return;
+        _dotnetRef ??= DotNetObjectReference.Create(this);
+
+        await _module.InvokeVoidAsync("observeSentinel", _sentinelRef, _dotnetRef);
+    }
+
     private async Task SaveSettingsAsync()
     {
         if (_module is null) return;
@@ -202,6 +234,10 @@ public partial class BrowseView<TItem> : IAsyncDisposable
                 if (_observingGrid)
                 {
                     await _module.InvokeVoidAsync("dispose", _gridRef);
+                }
+                if (_observingSentinel)
+                {
+                    await _module.InvokeVoidAsync("disposeSentinel", _sentinelRef);
                 }
                 await _module.DisposeAsync();
             }

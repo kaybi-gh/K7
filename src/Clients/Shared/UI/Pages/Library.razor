@@ -11,12 +11,14 @@
 <BrowseView TItem="MediaCardViewModel"
               Items="MediaCards"
               Loading="_loading"
+              HasMore="_hasMore"
+              OnLoadMore="LoadMoreAsync"
               PersistenceKey="@($"library-{Id}")"
               DefaultItemWidth="160"
               DefaultSpacing="6"
               GridItemAspectRatio="1.8f">
     <ToolbarContent>
-        <span>@string.Format(L["ItemCount"], MediaCards.Count)</span>
+        <span>@string.Format(L["ItemCount"], _totalCount)</span>
         @if (_availableMediaTypes.Count > 1)
         {
             @foreach (var mt in _availableMediaTypes)
@@ -25,6 +27,13 @@
                 <K7Chip Value="@mt" Variant="@(_selectedMediaType.Equals(mt) ? "filled" : "outlined")" Color="primary" Text="@GetMediaTypeLabel(mt)" OnClick="() => OnMediaTypeFilterChanged(mediaType)" />
             }
         }
+        <K7TextField TValue="string" Placeholder="@S["Search"]" Value="@_searchText" ValueChanged="OnSearchTextChanged" Style="max-width: 220px;" />
+        <K7Select TValue="MediaOrderingOption" Value="_selectedSort" ValueChanged="OnSortChanged">
+            @foreach (var opt in SortOptions)
+            {
+                <K7SelectItem Value="@opt">@GetSortLabel(opt)</K7SelectItem>
+            }
+        </K7Select>
     </ToolbarContent>
     <GridTemplate Context="item">
         <MediaCard Model="item" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
