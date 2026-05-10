@@ -26,15 +26,8 @@ public static class FileInfoExtensions
         if (bytesRead == 0) return 0;
         byte[] hashBytes = SHA256.HashData(buffer.AsSpan(0, bytesRead));
 
-        // Prefix the hash with the file size
-        long fileSize = fileInfo.Length;
-        byte[] fileSizeBytes = BitConverter.GetBytes(fileSize);
-        byte[] combinedBytes = new byte[hashBytes.Length + fileSizeBytes.Length];
-        Array.Copy(fileSizeBytes, 0, combinedBytes, 0, fileSizeBytes.Length);
-        Array.Copy(hashBytes, 0, combinedBytes, fileSizeBytes.Length, hashBytes.Length);
-
-        // Convert the first 4 bytes of the combined hash to uint to use as seed
-        return BitConverter.ToUInt32(combinedBytes, 0);
+        // Combine content hash with file size for a stronger seed
+        return BitConverter.ToUInt32(hashBytes) ^ (uint)fileInfo.Length;
     }
 
     public static IndexedFile? ToIndexedFile(this FileInfo fileInfo, Guid libraryId)
