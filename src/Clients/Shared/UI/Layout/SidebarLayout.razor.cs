@@ -16,6 +16,13 @@ public partial class SidebarLayout : IDisposable
     protected override void OnInitialized()
     {
         NavigationManager.LocationChanged += OnLocationChanged;
+
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = uri.Query;
+        if (query.Contains("sidebar=open", StringComparison.OrdinalIgnoreCase))
+        {
+            _sidebarOpen = true;
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
