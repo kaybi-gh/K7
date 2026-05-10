@@ -26,8 +26,6 @@ public static partial class Constants
         ".ast",
         ".au",
         ".awb",
-        ".cda",
-        ".cue",
         ".dmf",
         ".dsf",
         ".dsm",
