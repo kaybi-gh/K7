@@ -39,6 +39,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private int _itemWidth;
     private int _spacing;
     private int _containerWidth;
+    private int _lastColumnCount;
     private float _estimatedRowHeight = 300;
 
     private List<List<TItem>> _rows = [];
@@ -105,6 +106,10 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     {
         if (width == _containerWidth) return;
         _containerWidth = width;
+
+        var newCols = CalculateColumnCount();
+        if (newCols == _lastColumnCount) return;
+
         RebuildRows();
         StateHasChanged();
     }
@@ -160,6 +165,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         }
 
         var cols = CalculateColumnCount();
+        _lastColumnCount = cols;
         _rows = Items
             .Chunk(cols)
             .Select(chunk => chunk.ToList())
