@@ -63,6 +63,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<UserLibraryExclusion> UserLibraryExclusions => Set<UserLibraryExclusion>();
     public DbSet<UserMediaExclusion> UserMediaExclusions => Set<UserMediaExclusion>();
     public DbSet<ContentRestrictionProfile> ContentRestrictionProfiles => Set<ContentRestrictionProfile>();
+    public DbSet<LibraryScanIssue> ScanIssues => Set<LibraryScanIssue>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

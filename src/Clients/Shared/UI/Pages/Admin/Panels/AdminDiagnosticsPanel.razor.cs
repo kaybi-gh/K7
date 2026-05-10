@@ -11,6 +11,9 @@ public partial class AdminDiagnosticsPanel
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
+    [SupplyParameterFromQuery(Name = "libraryId")]
+    public Guid? QueryLibraryId { get; set; }
+
     private List<LibraryHealthSummaryDto>? _summaries;
     private PaginatedListDto<DiagnosticItemDto>? _items;
     private bool _isLoadingSummary = true;
@@ -36,6 +39,11 @@ public partial class AdminDiagnosticsPanel
 
     protected override async Task OnInitializedAsync()
     {
+        if (QueryLibraryId.HasValue)
+        {
+            _filterLibraryId = QueryLibraryId.Value;
+        }
+
         await LoadAsync();
     }
 
@@ -66,7 +74,7 @@ public partial class AdminDiagnosticsPanel
 
         _errorCount = _summaries.Sum(l => l.OrphanIndexedFileCount + l.MediaWithoutFilesCount + l.MissingFileMetadataCount);
         _warningCount = _summaries.Sum(l => l.UnidentifiedIndexedFileCount + l.MissingHlsSegmentsCount
-            + l.MediaMissingPicturesCount + l.MediaMissingMetadataCount + l.StaleMetadataCount);
+            + l.MediaMissingPicturesCount + l.MediaMissingMetadataCount + l.StaleMetadataCount + l.InaccessiblePathCount);
         _infoCount = _summaries.Sum(l => l.MissingAudioAnalysisCount);
         _totalIssueCount = _errorCount + _warningCount + _infoCount;
     }
@@ -94,7 +102,7 @@ public partial class AdminDiagnosticsPanel
     private static IReadOnlyCollection<DiagnosticIssue>? GetSeverityIssues(string? severity) => severity switch
     {
         "error" => [DiagnosticIssue.OrphanFile, DiagnosticIssue.MissingFiles, DiagnosticIssue.MissingFileMetadata],
-        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.StaleMetadata],
+        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.StaleMetadata, DiagnosticIssue.InaccessiblePath],
         "info" => [DiagnosticIssue.MissingAudioAnalysis],
         _ => null
     };
@@ -256,8 +264,12 @@ public partial class AdminDiagnosticsPanel
         }
         if (_filterEntityType.HasValue)
         {
-            chips["type"] = _filterEntityType.Value == DiagnosticEntityType.Media
-                ? L["EntityTypeMedia"] : L["EntityTypeIndexedFile"];
+            chips["type"] = _filterEntityType.Value switch
+            {
+                DiagnosticEntityType.Media => L["EntityTypeMedia"],
+                DiagnosticEntityType.Library => L["EntityTypeLibrary"],
+                _ => L["EntityTypeIndexedFile"]
+            };
         }
         if (_filterIssue.HasValue) chips["issue"] = GetIssueLabel(_filterIssue.Value);
         return chips;
@@ -272,6 +284,7 @@ public partial class AdminDiagnosticsPanel
                 item.LastMetadataRefreshedAt.Value.LocalDateTime.ToString("d"),
                 item.MetadataRefreshIntervalDays),
         DiagnosticIssue.StaleMetadata => L["DetailNeverRefreshed"],
+        DiagnosticIssue.InaccessiblePath when item.DetailText is not null => item.DetailText,
         _ => GetIssueLabel(issue)
     };
 
@@ -286,6 +299,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.StaleMetadata => L["StaleMetadata"],
         DiagnosticIssue.MissingAudioAnalysis => L["MissingAudioAnalysis"],
         DiagnosticIssue.MissingFiles => L["MissingFiles"],
+        DiagnosticIssue.InaccessiblePath => L["InaccessiblePath"],
         _ => issue.ToString()
     };
 
@@ -294,6 +308,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.OrphanFile or DiagnosticIssue.MissingFiles or DiagnosticIssue.MissingFileMetadata
             => "error",
         DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis => "info",
+        DiagnosticIssue.InaccessiblePath => "warning",
         _ => "warning"
     };
 }

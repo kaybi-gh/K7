@@ -37,5 +37,6 @@
   <data name="DeleteDialogMessage" xml:space="preserve"><value>Are you sure you want to delete the library '{0}'? This action cannot be undone.</value></data>
   <data name="DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
   <data name="DeleteSuccess" xml:space="preserve"><value>Library '{0}' deleted.</value></data>
+  <data name="IssueCount" xml:space="preserve"><value>{0} issue(s)</value></data>
 </root>
 

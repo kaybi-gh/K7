@@ -14,9 +14,9 @@ internal sealed class LibraryNotifier(IHubContext<K7Hub, IK7HubClient> hubContex
         await hubContext.Clients.All.ReceiveMediaAdded(mediaId, title, mediaType);
     }
 
-    public async Task NotifyLibraryScanCompletedAsync(Guid libraryId, int addedCount, CancellationToken cancellationToken = default)
+    public async Task NotifyLibraryScanCompletedAsync(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Broadcasting LibraryScanCompleted: library {LibraryId}, {AddedCount} added", libraryId, addedCount);
-        await hubContext.Clients.All.ReceiveLibraryScanCompleted(libraryId, addedCount);
+        logger.LogDebug("Broadcasting LibraryScanCompleted: library {LibraryId}, {AddedCount} added, {SkippedCount} skipped, {InaccessiblePathCount} inaccessible", libraryId, addedCount, skippedCount, inaccessiblePathCount);
+        await hubContext.Clients.All.ReceiveLibraryScanCompleted(libraryId, addedCount, skippedCount, inaccessiblePathCount);
     }
 }

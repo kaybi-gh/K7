@@ -112,6 +112,73 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("BackgroundTasks");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Collections.Collection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MediaType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Collections");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Collections.CollectionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CollectionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CollectionId");
+
+                    b.HasIndex("MediaId");
+
+                    b.ToTable("CollectionItems");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Devices.Device", b =>
                 {
                     b.Property<Guid>("Id")
@@ -338,6 +405,36 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("Libraries");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.LibraryScanIssue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("DetectedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LibraryId")
+                        .HasDatabaseName("IX_Library_ScanIssues_LibraryId");
+
+                    b.ToTable("Library_ScanIssues", (string)null);
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.AudioAnalysis", b =>
                 {
                     b.Property<Guid>("Id")
@@ -469,6 +566,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("CollectionId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
@@ -512,6 +612,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CollectionId")
+                        .IsUnique();
 
                     b.HasIndex("LibraryId")
                         .IsUnique();
@@ -762,6 +865,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("MediaType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(3);
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -2075,9 +2183,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("MatchCondition")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("MediaType")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("OrderBy")
                         .HasColumnType("INTEGER");
 
@@ -2128,6 +2233,35 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasForeignKey("UsersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Collections.Collection", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Collections.CollectionItem", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Collections.Collection", "Collection")
+                        .WithMany("Items")
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany()
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Collection");
+
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Devices.Device", b =>
@@ -2329,6 +2463,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Media");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.LibraryScanIssue", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Library", null)
+                        .WithMany("ScanIssues")
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.AudioAnalysis", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.MusicTrack", "MusicTrack")
@@ -2342,6 +2485,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.MetadataPicture", b =>
                 {
+                    b.HasOne("K7.Server.Domain.Entities.Collections.Collection", "Collection")
+                        .WithOne("CoverPicture")
+                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("K7.Server.Domain.Entities.Library", "Library")
                         .WithOne("CoverPicture")
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "LibraryId")
@@ -2368,6 +2516,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .WithOne("Thumbnails")
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "VideoFileMetadataId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Collection");
 
                     b.Navigation("Library");
 
@@ -2795,6 +2945,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Collections.Collection", b =>
+                {
+                    b.Navigation("CoverPicture");
+
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.IndexedFile", b =>
                 {
                     b.Navigation("FileMetadata");
@@ -2805,6 +2962,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("CoverPicture");
 
                     b.Navigation("IndexedFiles");
+
+                    b.Navigation("ScanIssues");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.BaseMedia", b =>

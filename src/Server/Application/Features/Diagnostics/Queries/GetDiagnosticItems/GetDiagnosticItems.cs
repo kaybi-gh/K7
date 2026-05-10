@@ -43,6 +43,11 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             items.AddRange(await GetMediaIssuesAsync(request, cancellationToken));
         }
 
+        if (request.EntityType is null or DiagnosticEntityType.Library)
+        {
+            items.AddRange(await GetScanIssuesAsync(request, cancellationToken));
+        }
+
         if (request.Issue.HasValue)
         {
             items = items.Where(i => i.Issues.Contains(request.Issue.Value)).ToList();
@@ -229,4 +234,39 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         MediaType.MusicAlbum => $"/music/albums/{id}",
         _ => null
     };
+
+    private async Task<List<DiagnosticItemDto>> GetScanIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
+    {
+        var query = _context.ScanIssues
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (request.LibraryId.HasValue)
+        {
+            query = query.Where(s => s.LibraryId == request.LibraryId.Value);
+        }
+
+        var issues = await query
+            .Select(s => new
+            {
+                s.Id,
+                s.Path,
+                s.ErrorMessage,
+                s.LibraryId,
+                LibraryTitle = _context.Libraries.Where(l => l.Id == s.LibraryId).Select(l => l.Title).FirstOrDefault() ?? ""
+            })
+            .ToListAsync(cancellationToken);
+
+        return issues.Select(s => new DiagnosticItemDto
+        {
+            EntityId = s.Id,
+            EntityName = s.Path,
+            EntityType = DiagnosticEntityType.Library,
+            LibraryId = s.LibraryId,
+            LibraryTitle = s.LibraryTitle,
+            Issues = [DiagnosticIssue.InaccessiblePath],
+            Severity = DiagnosticSeverity.Warning,
+            DetailText = s.ErrorMessage
+        }).ToList();
+    }
 }

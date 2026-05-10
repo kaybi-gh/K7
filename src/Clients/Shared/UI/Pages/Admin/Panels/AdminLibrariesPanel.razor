@@ -43,6 +43,16 @@ else
                             <K7Icon Name="folder" Size="sm" Class="mr-1" />
                             @library.RootPath
                         </p>
+                        @{
+                            var issueCount = GetIssueCount(library.Id);
+                        }
+                        @if (issueCount > 0)
+                        {
+                            <K7Chip Size="sm" Color="warning" Class="mt-2 cursor-pointer" OnClick="@(() => NavigateToDiagnostics(library.Id))">
+                                <K7Icon Name="warning" Size="sm" Class="mr-1" />
+                                @string.Format(L["IssueCount"], issueCount)
+                            </K7Chip>
+                        }
                 </div>
                 <div class="k7-card-actions">
                     <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />

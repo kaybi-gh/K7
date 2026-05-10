@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.Libraries.Commands.IndexLibraryFiles;
@@ -26,6 +27,28 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
 
         Guard.Against.NotFound(request.Id, entity);
         var result = await _fileIndexerService.IndexAsync(entity, cancellationToken);
-        await _libraryNotifier.NotifyLibraryScanCompletedAsync(entity.Id, result.AddedCount, cancellationToken);
+
+        var existingIssues = await _context.ScanIssues
+            .Where(s => s.LibraryId == entity.Id)
+            .ToListAsync(cancellationToken);
+        _context.ScanIssues.RemoveRange(existingIssues);
+
+        if (result.InaccessiblePaths.Count > 0)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var newIssues = result.InaccessiblePaths.Select(p => new LibraryScanIssue
+            {
+                Id = Guid.NewGuid(),
+                LibraryId = entity.Id,
+                Path = p.Path,
+                ErrorMessage = p.Error,
+                DetectedAt = now
+            });
+            _context.ScanIssues.AddRange(newIssues);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        await _libraryNotifier.NotifyLibraryScanCompletedAsync(entity.Id, result.AddedCount, result.SkippedCount, result.InaccessiblePaths.Count, cancellationToken);
     }
 }
