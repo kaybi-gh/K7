@@ -14,6 +14,7 @@ public record CreateBackgroundTaskCommand : IRequest<Guid>
     public Guid? TargetEntityId { get; set; }
     public BackgroundTaskPriority Priority { get; set; } = BackgroundTaskPriority.Lowest;
     public int MaxAttempts { get; set; } = 1;
+    public int? TimeoutSeconds { get; set; }
     public string? ConcurrencyGroup { get; set; }
 }
 
@@ -55,6 +56,7 @@ public class CreateBackgroundTaskCommandHandler(IApplicationDbContext context, I
             TargetEntityId = request.TargetEntityId,
             Priority = request.Priority,
             MaxAttempts = request.MaxAttempts,
+            TimeoutSeconds = request.TimeoutSeconds ?? 300,
             ConcurrencyGroup = request.ConcurrencyGroup,
             Status = BackgroundTaskStatus.Pending
         };

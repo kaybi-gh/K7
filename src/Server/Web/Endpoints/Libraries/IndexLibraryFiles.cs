@@ -20,7 +20,8 @@ public class IndexLibraryFiles : IEndpoint
                 Request = new IndexLibraryFilesCommand(id),
                 Priority = Domain.Enums.BackgroundTaskPriority.Normal,
                 TargetEntityId = id,
-                TargetEntityTypeName = nameof(Library)
+                TargetEntityTypeName = nameof(Library),
+                TimeoutSeconds = 3600
             }, cancellationToken);
             return Results.NoContent();
         })

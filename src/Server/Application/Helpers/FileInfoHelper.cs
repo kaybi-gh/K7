@@ -10,7 +10,7 @@ public static class FileInfoHelper
         ".DS_Store"
     };
 
-    public static (List<FileInfo> Files, List<(string Path, string Error)> InaccessiblePaths) GetAllFileInfosRecursively(string rootDirectory)
+    public static (List<FileInfo> Files, List<(string Path, string Error)> InaccessiblePaths) GetAllFileInfosRecursively(string rootDirectory, CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(rootDirectory))
         {
@@ -24,6 +24,7 @@ public static class FileInfoHelper
 
         while (stack.Count > 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var currentDir = stack.Pop();
 
             try
