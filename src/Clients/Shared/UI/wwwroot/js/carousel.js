@@ -46,6 +46,12 @@ export function scrollToIndex(rootElement, index) {
     }
 }
 
+export function reInit(rootElement) {
+    if (rootElement && rootElement.__embla) {
+        rootElement.__embla.reInit();
+    }
+}
+
 export function destroy(rootElement) {
     if (rootElement && rootElement.__embla) {
         rootElement.__embla.destroy();

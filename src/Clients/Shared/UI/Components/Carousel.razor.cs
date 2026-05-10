@@ -28,6 +28,14 @@ public partial class Carousel : IAsyncDisposable
         }
     }
 
+    public async Task NotifyItemsChangedAsync()
+    {
+        if (_module is not null)
+        {
+            await _module.InvokeVoidAsync("reInit", _root);
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_module is not null)
