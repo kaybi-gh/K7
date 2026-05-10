@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Interfaces;
@@ -36,6 +37,8 @@ public static class DependencyInjection
         services.AddHostedService<MetadataRefreshSchedulerService>();
         services.AddSingleton<ActiveStreamTracker>();
         services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
+        services.AddSingleton<MediaQueryCacheInvalidator>();
+        services.AddSingleton<IMediaQueryCacheInvalidator>(sp => sp.GetRequiredService<MediaQueryCacheInvalidator>());
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
 
