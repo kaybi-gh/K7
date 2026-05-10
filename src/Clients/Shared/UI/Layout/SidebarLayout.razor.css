@@ -4,6 +4,18 @@
     overflow: hidden;
 }
 
+/* ── Mobile top bar ── */
+
+.sidebar-mobile-topbar {
+    display: none;
+}
+
+/* ── Sidebar overlay header (visible only on mobile when open) ── */
+
+.sidebar-overlay-header {
+    display: none;
+}
+
 .page-sidebar {
     width: var(--page-sidebar-width, 220px);
     flex-shrink: 0;
@@ -25,6 +37,14 @@
 /* Menu-style nav links */
 .page-sidebar ::deep .page-sidebar-nav {
     padding: var(--space-1) var(--space-2);
+}
+
+.page-sidebar .page-sidebar-title {
+    padding: var(--space-4) var(--space-3) var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    letter-spacing: -0.01em;
 }
 
 .page-sidebar ::deep .nav-link {
@@ -61,46 +81,115 @@
     min-width: 0;
 }
 
-/* On mobile, sidebar collapses — content fills full width */
+.sidebar-backdrop {
+    display: none;
+}
+
+/* ── Mobile ── */
+
 @media (max-width: 599.98px) {
     .page-with-sidebar {
         flex-direction: column;
     }
 
-    .page-sidebar {
-        width: 100%;
-        height: auto;
-        border-right: none;
+    .sidebar-mobile-topbar {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+        background: var(--color-drawer);
         border-bottom: 1px solid var(--color-border);
-        flex-direction: row;
-        overflow-x: auto;
-        overflow-y: hidden;
         flex-shrink: 0;
+        z-index: 10;
     }
 
-    .page-sidebar .nav-link {
-        flex-direction: column;
-        gap: 2px;
-        padding: var(--space-2) var(--space-3);
-        font-size: var(--text-xs);
-        min-height: 52px;
-        white-space: nowrap;
-        border-bottom: 2px solid transparent;
-        margin: var(--space-1) 0;
-        width: auto;
+    .sidebar-mobile-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: var(--color-text-primary);
+        font-size: 1.25rem;
+        padding: var(--space-1);
+        cursor: pointer;
         border-radius: var(--radius-sm);
     }
 
-    .page-sidebar .nav-link.active {
-        border-bottom-color: var(--color-accent);
-        background: transparent;
+    .sidebar-mobile-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
-    .page-sidebar .nav-label {
-        max-width: none;
+    .sidebar-mobile-title {
+        font-size: var(--text-base);
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .page-sidebar {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 200;
+        border-right: none;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        flex-direction: column;
+    }
+
+    .page-sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-3) var(--space-4);
+        border-bottom: 1px solid var(--color-border);
+        flex-shrink: 0;
+    }
+
+    .sidebar-overlay-title {
+        font-size: var(--text-lg);
+        font-weight: 700;
+        color: var(--color-text-primary);
+    }
+
+    .sidebar-overlay-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: var(--color-text-secondary);
+        font-size: 1.25rem;
+        padding: var(--space-1);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+    }
+
+    .sidebar-overlay-close:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
     .page-sidebar .page-sidebar-title {
         display: none;
+    }
+
+    .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 199;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .page-sidebar ::deep .nav-link {
+        padding: var(--space-3) var(--space-4);
+        font-size: var(--text-base);
     }
 }

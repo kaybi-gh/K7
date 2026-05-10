@@ -2,9 +2,8 @@
 @layout MainLayout
 @inject IStringLocalizer<SettingsLayout> L
 
-<SidebarLayout>
+<SidebarLayout Title="@L["Title"]">
     <SidebarContent>
-        <div class="page-sidebar-title">@L["Title"]</div>
         <nav class="page-sidebar-nav">
             <NavLink class="nav-link focusable" href="/settings/general">
                 <span class="nav-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
