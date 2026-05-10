@@ -7,7 +7,7 @@
 
     protected override void OnParametersSet()
     {
-        var target = string.IsNullOrEmpty(Tab) ? "/admin/general" : $"/admin/{Tab}";
+        var target = string.IsNullOrEmpty(Tab) ? "/admin/general?sidebar=open" : $"/admin/{Tab}";
         NavigationManager.NavigateTo(target, replace: true);
     }
 }
