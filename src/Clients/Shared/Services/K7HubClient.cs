@@ -1,3 +1,4 @@
+using K7.Shared.Dtos.Notifications;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace K7.Clients.Shared.Services;
@@ -17,6 +18,7 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<HubConnectionState>? ConnectionStateChanged;
     public event Action<Guid, double, bool>? ProgressUpdated;
     public event Action<Guid, string?, string>? MediaAdded;
+    public event Action<List<MediaBatchItem>>? MediaBatchAdded;
     public event Action<Guid, int, int, int>? LibraryScanCompleted;
     public event Action? BackgroundTaskUpdated;
 
@@ -83,6 +85,11 @@ public sealed class K7HubClient : IAsyncDisposable
             _hubConnection.On<Guid, string?, string>("ReceiveMediaAdded", (mediaId, title, mediaType) =>
             {
                 MediaAdded?.Invoke(mediaId, title, mediaType);
+            });
+
+            _hubConnection.On<List<MediaBatchItem>>("ReceiveMediaBatchAdded", (items) =>
+            {
+                MediaBatchAdded?.Invoke(items);
             });
 
             _hubConnection.On<Guid, int, int, int>("ReceiveLibraryScanCompleted", (libraryId, addedCount, skippedCount, inaccessiblePathCount) =>

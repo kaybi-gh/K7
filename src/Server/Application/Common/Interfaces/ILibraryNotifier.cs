@@ -1,7 +1,10 @@
+using K7.Shared.Dtos.Notifications;
+
 namespace K7.Server.Application.Common.Interfaces;
 
 public interface ILibraryNotifier
 {
     Task NotifyMediaAddedAsync(Guid mediaId, string? title, string mediaType, CancellationToken cancellationToken = default);
+    Task NotifyMediaBatchAddedAsync(List<MediaBatchItem> items, CancellationToken cancellationToken = default);
     Task NotifyLibraryScanCompletedAsync(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount, CancellationToken cancellationToken = default);
 }

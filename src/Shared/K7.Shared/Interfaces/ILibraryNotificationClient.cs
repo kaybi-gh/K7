@@ -1,7 +1,10 @@
+using K7.Shared.Dtos.Notifications;
+
 namespace K7.Shared.Interfaces;
 
 public interface ILibraryNotificationClient
 {
     Task ReceiveMediaAdded(Guid mediaId, string? title, string mediaType);
+    Task ReceiveMediaBatchAdded(List<MediaBatchItem> items);
     Task ReceiveLibraryScanCompleted(Guid libraryId, int addedCount, int skippedCount, int inaccessiblePathCount);
 }

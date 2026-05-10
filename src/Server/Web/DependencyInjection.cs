@@ -84,6 +84,7 @@ public static class DependencyInjection
         services.AddDatabaseDeveloperPageExceptionFilter();
         services.AddScoped<IUser, CurrentUser>();
         services.AddSingleton<IPlaybackProgressNotifier, PlaybackProgressNotifier>();
+        services.AddSingleton<MediaNotificationBatcher>();
         services.AddSingleton<ILibraryNotifier, LibraryNotifier>();
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();
         services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
