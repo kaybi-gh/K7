@@ -13,4 +13,5 @@ public class Library : BaseAuditableEntity
 
     public MetadataPicture? CoverPicture { get; set; }
     public IList<IndexedFile> IndexedFiles { get; set; } = [];
+    public IList<LibraryScanIssue> ScanIssues { get; set; } = [];
 }

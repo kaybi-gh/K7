@@ -102,6 +102,7 @@
                         <K7Select TValue="DiagnosticEntityType?" Value="_filterEntityType" ValueChanged="OnEntityTypeFilterChanged" Label="@L["FilterEntityType"]" Clearable="true">
                             <K7SelectItem TValue="DiagnosticEntityType?" Value="DiagnosticEntityType.Media">@L["EntityTypeMedia"]</K7SelectItem>
                             <K7SelectItem TValue="DiagnosticEntityType?" Value="DiagnosticEntityType.IndexedFile">@L["EntityTypeIndexedFile"]</K7SelectItem>
+                            <K7SelectItem TValue="DiagnosticEntityType?" Value="DiagnosticEntityType.Library">@L["EntityTypeLibrary"]</K7SelectItem>
                         </K7Select>
                     </K7MenuItem>
                     <K7MenuItem>
@@ -151,7 +152,12 @@
                                     <p class="text-sm">@context.EntityName</p>
                                 }
                                 <span class="text-caption" style="color: var(--color-text-muted);">
-                                    @(context.EntityType == DiagnosticEntityType.Media ? L["EntityTypeMedia"] : L["EntityTypeIndexedFile"])
+                                    @(context.EntityType switch
+                                    {
+                                        DiagnosticEntityType.Media => L["EntityTypeMedia"],
+                                        DiagnosticEntityType.Library => L["EntityTypeLibrary"],
+                                        _ => L["EntityTypeIndexedFile"]
+                                    })
                                 </span>
                             </div>
                         </td>

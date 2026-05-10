@@ -6,4 +6,5 @@ public record LibraryScanResult(
     int RemovedCount,
     int RenamedCount,
     int SkippedCount,
-    IReadOnlyList<string> SkippedFilePaths);
+    IReadOnlyList<string> SkippedFilePaths,
+    IReadOnlyList<(string Path, string Error)> InaccessiblePaths);

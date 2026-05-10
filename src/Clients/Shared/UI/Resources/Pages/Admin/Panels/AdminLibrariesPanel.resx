@@ -37,5 +37,6 @@
   <data name="DeleteDialogMessage" xml:space="preserve"><value>Êtes-vous sûr de vouloir supprimer la librairie « {0} » ? Cette action est irréversible.</value></data>
   <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
   <data name="DeleteSuccess" xml:space="preserve"><value>Librairie « {0} » supprimée.</value></data>
+  <data name="IssueCount" xml:space="preserve"><value>{0} probleme(s)</value></data>
 </root>
 

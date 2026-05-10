@@ -1,6 +1,7 @@
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
@@ -10,11 +11,14 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 public partial class AdminLibrariesPanel
 {
     [Inject] private ILibraryService K7ServerService { get; set; } = default!;
+    [Inject] private IDiagnosticsService DiagnosticsService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<LibraryDto>? _libraries;
+    private Dictionary<Guid, int> _libraryIssueCountMap = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -27,6 +31,7 @@ public partial class AdminLibrariesPanel
         try
         {
             _libraries = await K7ServerService.GetLibrariesAsync();
+            await LoadIssueCounts();
         }
         catch
         {
@@ -37,6 +42,30 @@ public partial class AdminLibrariesPanel
             _isLoading = false;
         }
     }
+
+    private async Task LoadIssueCounts()
+    {
+        try
+        {
+            var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
+            _libraryIssueCountMap = summaries.ToDictionary(
+                s => s.LibraryId,
+                s => s.OrphanIndexedFileCount + s.UnidentifiedIndexedFileCount + s.MissingFileMetadataCount
+                    + s.MissingHlsSegmentsCount + s.MediaMissingPicturesCount + s.MediaMissingMetadataCount
+                    + s.MediaWithoutFilesCount + s.StaleMetadataCount + s.MissingAudioAnalysisCount
+                    + s.InaccessiblePathCount);
+        }
+        catch
+        {
+            _libraryIssueCountMap = [];
+        }
+    }
+
+    private int GetIssueCount(Guid libraryId) =>
+        _libraryIssueCountMap.GetValueOrDefault(libraryId);
+
+    private void NavigateToDiagnostics(Guid libraryId) =>
+        NavigationManager.NavigateTo($"/admin/diagnostics?libraryId={libraryId}");
 
     private async Task OpenCreateDialog()
     {

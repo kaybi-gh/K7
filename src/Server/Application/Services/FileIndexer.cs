@@ -37,7 +37,7 @@ public class FileIndexer : IFileIndexer
         {
             _logger.LogInformation("Starting indexing files of library {LibraryId}.", library.Id);
 
-            var (indexedFiles, skippedFilePaths) = ScanFiles(library);
+            var (indexedFiles, skippedFilePaths, inaccessiblePaths) = ScanFiles(library);
             var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles, skippedFilePaths);
             var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)).ToList();
 
@@ -46,8 +46,13 @@ public class FileIndexer : IFileIndexer
             var removedCount = removedFiles.Count();
             var renamedCount = renamedFiles.Count();
 
-            _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {SkippedCount} skipped, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified.",
-                unchangedCount, addedCount, removedCount, skippedFilePaths.Count, renamedCount, toBeIdentifiedFiles.Count);
+            _logger.LogInformation("Found {UnchangedCount} unchanged, {AddedCount} added, {RemovedCount} removed, {SkippedCount} skipped, {RenamedCount} renamed files. {ToIdentifyCount} files to be identified. {InaccessibleCount} inaccessible directories.",
+                unchangedCount, addedCount, removedCount, skippedFilePaths.Count, renamedCount, toBeIdentifiedFiles.Count, inaccessiblePaths.Count);
+
+            foreach (var (path, error) in inaccessiblePaths)
+            {
+                _logger.LogWarning("Inaccessible directory {Path}: {Error}", path, error);
+            }
 
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
             ProcessAddedFiles(library, addedFiles);
@@ -67,7 +72,8 @@ public class FileIndexer : IFileIndexer
                 removedCount,
                 renamedCount,
                 skippedFilePaths.Count,
-                [.. skippedFilePaths]);
+                [.. skippedFilePaths],
+                inaccessiblePaths);
         }
         catch (Exception ex)
         {
@@ -76,9 +82,9 @@ public class FileIndexer : IFileIndexer
         }
     }
 
-    private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths) ScanFiles(Library library)
+    private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths, IReadOnlyList<(string Path, string Error)> InaccessiblePaths) ScanFiles(Library library)
     {
-        var fileInfos = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
+        var (fileInfos, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath);
         ConcurrentBag<IndexedFile> indexedFiles = [];
         ConcurrentBag<string> skippedFilePaths = [];
 
@@ -99,7 +105,7 @@ public class FileIndexer : IFileIndexer
             }
         });
 
-        return ([.. indexedFiles], [.. skippedFilePaths]);
+        return ([.. indexedFiles], [.. skippedFilePaths], inaccessiblePaths);
     }
 
     private void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<IBaseRequest> backgroundTasks)

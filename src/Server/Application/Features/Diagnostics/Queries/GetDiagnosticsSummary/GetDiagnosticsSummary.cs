@@ -89,6 +89,10 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                     .CountAsync(cancellationToken)
                 : 0;
 
+            var inaccessiblePathCount = await _context.ScanIssues
+                .Where(s => s.LibraryId == library.Id)
+                .CountAsync(cancellationToken);
+
             var pendingStatuses = new[] { BackgroundTaskStatus.Pending, BackgroundTaskStatus.InProgress, BackgroundTaskStatus.WaitingForRetry };
             var pendingTaskCount = await _context.BackgroundTasks
                 .Where(t => pendingStatuses.Contains(t.Status))
@@ -116,6 +120,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 MissingFileMetadataCount = missingFileMetadataCount,
                 MissingHlsSegmentsCount = missingHlsSegmentsCount,
                 MissingAudioAnalysisCount = missingAudioAnalysisCount,
+                InaccessiblePathCount = inaccessiblePathCount,
                 PendingBackgroundTaskCount = pendingTaskCount,
                 FailedBackgroundTaskCount = failedTaskCount
             });

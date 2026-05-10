@@ -22,5 +22,11 @@ public class LibraryConfiguration : IEntityTypeConfiguration<Library>
             .HasMany(l => l.IndexedFiles)
             .WithOne()
             .HasForeignKey(i => i.LibraryId);
+
+        builder
+            .HasMany(l => l.ScanIssues)
+            .WithOne()
+            .HasForeignKey(s => s.LibraryId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

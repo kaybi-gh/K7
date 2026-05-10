@@ -74,4 +74,7 @@
   <data name="ActionRefresh" xml:space="preserve"><value>Rafraichir</value></data>
   <data name="ActionExtract" xml:space="preserve"><value>Extraire</value></data>
   <data name="ActionHls" xml:space="preserve"><value>HLS</value></data>
+  <data name="InaccessiblePath" xml:space="preserve"><value>Chemin inaccessible</value></data>
+  <data name="EntityTypeLibrary" xml:space="preserve"><value>Librairie</value></data>
+  <data name="FilterBy" xml:space="preserve"><value>Filtrer</value></data>
 </root>
