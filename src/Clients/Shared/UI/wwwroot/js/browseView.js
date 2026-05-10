@@ -42,10 +42,14 @@ export function dispose(element) {
 export function observeSentinel(element, dotnetRef) {
     if (!(element instanceof Element) || _sentinelObservers.has(element)) return;
 
+    let pending = false;
     const observer = new IntersectionObserver(entries => {
         for (const entry of entries) {
-            if (entry.isIntersecting) {
-                dotnetRef.invokeMethodAsync("OnSentinelVisible");
+            if (entry.isIntersecting && !pending) {
+                pending = true;
+                dotnetRef.invokeMethodAsync("OnSentinelVisible").finally(() => {
+                    pending = false;
+                });
             }
         }
     }, { rootMargin: "200px" });
