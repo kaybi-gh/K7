@@ -41,6 +41,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private int _containerWidth;
     private int _lastColumnCount;
     private float _estimatedRowHeight = 300;
+    private bool _loadingMore;
 
     private List<List<TItem>> _rows = [];
     private bool _observingGrid;
@@ -117,13 +118,20 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [JSInvokable]
     public async Task OnSentinelVisible()
     {
-        if (OnLoadMore is not null && HasMore)
+        if (_loadingMore || OnLoadMore is null || !HasMore) return;
+
+        _loadingMore = true;
+        try
         {
             await InvokeAsync(async () =>
             {
                 await OnLoadMore();
                 StateHasChanged();
             });
+        }
+        finally
+        {
+            _loadingMore = false;
         }
     }
 
