@@ -124,7 +124,7 @@ public class MediaAnalysisService : IMediaAnalysisService
                     }
                 }
             },
-            timeout: TimeSpan.FromSeconds(60),
+            timeout: TimeSpan.FromSeconds(300),
             cancellationToken: cancellationToken
         );
 
@@ -231,7 +231,7 @@ public class MediaAnalysisService : IMediaAnalysisService
                 .WithCustomArgument($"-vf \"fps=1/{delayBetweenTilesInSeconds},scale=320:180:force_original_aspect_ratio=increase,crop=320:180,tile={columns}x{rows}\"")
                 .WithFrameOutputCount(1)
                 .WithCustomArgument("-q:v 5"))
-            .CancellableThrough(cancellationToken, timeout: (int)TimeSpan.FromSeconds(60).TotalMilliseconds)
+            .CancellableThrough(cancellationToken, timeout: (int)TimeSpan.FromSeconds(300).TotalMilliseconds)
             .ProcessAsynchronously(throwOnError: true)
             .ConfigureAwait(false);
 
