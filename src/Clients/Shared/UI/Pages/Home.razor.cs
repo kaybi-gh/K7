@@ -1,9 +1,11 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Home;
+using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -23,13 +25,13 @@ public partial class Home : IDisposable
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
 
     private bool isLoading { get; set; } = true;
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _isAdmin;
     private List<(HomeRowConfigDto Config, List<MediaCardViewModel> Items)> _rows = [];
-    private Timer? _mediaAddedDebounce;
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,7 +41,7 @@ public partial class Home : IDisposable
         _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
         _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
 
-        K7HubClient.MediaAdded += OnMediaAdded;
+        K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
 
         HomeLayoutDto layout;
         try
@@ -109,21 +111,18 @@ public partial class Home : IDisposable
     public void Dispose()
     {
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
-        K7HubClient.MediaAdded -= OnMediaAdded;
-        _mediaAddedDebounce?.Dispose();
+        K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
     }
 
-    private void OnMediaAdded(Guid mediaId, string? title, string mediaType)
+    private void OnMediaBatchAdded(List<MediaBatchItem> items)
     {
-        _mediaAddedDebounce?.Dispose();
-        _mediaAddedDebounce = new Timer(async _ =>
+        CacheStore.InvalidateByPrefix("home-feed");
+
+        _ = InvokeAsync(async () =>
         {
-            await InvokeAsync(async () =>
-            {
-                await RefreshNonContinueWatchingRowsAsync();
-                StateHasChanged();
-            });
-        }, null, 10000, Timeout.Infinite);
+            await RefreshNonContinueWatchingRowsAsync();
+            StateHasChanged();
+        });
     }
 
     private async Task RefreshNonContinueWatchingRowsAsync()
@@ -132,8 +131,24 @@ public partial class Home : IDisposable
             .Where(r => !r.Config.ContinueWatching)
             .Select(async r =>
             {
-                r.Items.Clear();
-                await LoadRowAsync(r.Config, r.Items);
+                var query = new GetHomeFeedQuery
+                {
+                    ContinueWatching = null,
+                    LibraryIds = r.Config.LibraryIds?.ToArray(),
+                    MediaTypes = r.Config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
+                    OrderBy = r.Config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
+                    PageNumber = 1,
+                    PageSize = r.Config.PageSize
+                };
+
+                var items = await FetchRowAsync(query);
+                if (items is not null)
+                {
+                    var cacheKey = MediaCacheStore.BuildKey("home-feed", r.Config.Title, r.Config.ContinueWatching.ToString());
+                    CacheStore.Set(cacheKey, items);
+                    r.Items.Clear();
+                    r.Items.AddRange(items);
+                }
             });
 
         await Task.WhenAll(tasks);
@@ -141,7 +156,7 @@ public partial class Home : IDisposable
 
     private async Task LoadRowAsync(HomeRowConfigDto config, List<MediaCardViewModel> target)
     {
-        var query = new GetMediasWithPaginationQuery
+        var query = new GetHomeFeedQuery
         {
             ContinueWatching = config.ContinueWatching ? true : null,
             LibraryIds = config.LibraryIds?.ToArray(),
@@ -151,98 +166,63 @@ public partial class Home : IDisposable
             PageSize = config.PageSize
         };
 
-        await LoadCarouselAsync(query, target, useParentTitle: true);
+        var cacheKey = MediaCacheStore.BuildKey("home-feed", config.Title, config.ContinueWatching.ToString());
+        var cached = CacheStore.Get<List<MediaCardViewModel>>(cacheKey);
+
+        if (cached is not null)
+        {
+            target.AddRange(cached);
+            _ = Task.Run(async () => await RefreshRowInBackground(query, cacheKey, target));
+            return;
+        }
+
+        var items = await FetchRowAsync(query);
+        if (items is not null)
+        {
+            target.AddRange(items);
+            CacheStore.Set(cacheKey, items);
+        }
     }
 
-    private async Task LoadCarouselAsync(GetMediasWithPaginationQuery query, List<MediaCardViewModel> target, bool useParentTitle = false)
+    private async Task RefreshRowInBackground(GetHomeFeedQuery query, string cacheKey, List<MediaCardViewModel> target)
+    {
+        var items = await FetchRowAsync(query);
+        if (items is null) return;
+
+        CacheStore.Set(cacheKey, items);
+
+        await InvokeAsync(() =>
+        {
+            target.Clear();
+            target.AddRange(items);
+            StateHasChanged();
+        });
+    }
+
+    private async Task<List<MediaCardViewModel>?> FetchRowAsync(GetHomeFeedQuery query)
     {
         try
         {
-            var mediasPage = await k7ServerService.GetLiteMediasAsync(query);
-            if (mediasPage?.Items is null) return;
+            var feedPage = await k7ServerService.GetHomeFeedAsync(query);
+            if (feedPage?.Items is null) return null;
 
-            if (!useParentTitle)
-            {
-                var seen = new HashSet<string>();
-                foreach (var item in mediasPage.Items)
-                {
-                    if (item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n), false) is { } vm && seen.Add(vm.Id))
-                        target.Add(vm);
-                }
-                return;
-            }
-
-            // Smart grouping: episodes are aggregated per serie, tracks are aggregated per album
-            var insertOrder = 0;
-            var orderedCards = new List<(int Order, MediaCardViewModel Card)>();
-            var serieInsertOrder = new Dictionary<string, int>();
-            var serieEpisodes = new Dictionary<string, List<MediaCardViewModel>>();
-            var albumInsertOrder = new Dictionary<string, int>();
-            var albumTracks = new Dictionary<string, List<MediaCardViewModel>>();
-
-            foreach (var item in mediasPage.Items)
-            {
-                if (item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n), useParentTitle: true) is not { } vm) continue;
-
-                if (vm.Kind == MediaCardKind.Episode && vm.ParentId is not null)
-                {
-                    if (!serieInsertOrder.ContainsKey(vm.ParentId))
-                    {
-                        serieInsertOrder[vm.ParentId] = insertOrder++;
-                        serieEpisodes[vm.ParentId] = [];
-                    }
-                    serieEpisodes[vm.ParentId].Add(vm);
-                }
-                else if (vm.Kind == MediaCardKind.Cover && vm.ParentId is not null)
-                {
-                    // Track card showing album info — group by album
-                    if (!albumInsertOrder.ContainsKey(vm.ParentId))
-                    {
-                        albumInsertOrder[vm.ParentId] = insertOrder++;
-                        albumTracks[vm.ParentId] = [];
-                    }
-                    albumTracks[vm.ParentId].Add(vm);
-                }
-                else
-                {
-                    orderedCards.Add((insertOrder++, vm));
-                }
-            }
-
-            foreach (var (serieId, episodes) in serieEpisodes)
-            {
-                var firstEp = episodes[0];
-                var allWatched = episodes.All(e => e.Watched);
-                MediaCardViewModel card = episodes.Count == 1
-                    ? firstEp
-                    : episodes.Select(e => e.SeasonNumber).Distinct().Count() == 1 && firstEp.SerieSeasonCount > 1
-                        ? firstEp with { Kind = MediaCardKind.Season, GroupCount = episodes.Count, Watched = allWatched, AdditionalInformations = null }
-                        : firstEp with { Id = serieId, Kind = MediaCardKind.Serie, GroupCount = episodes.Count, Watched = allWatched, AdditionalInformations = firstEp.SerieReleaseYear?.ToString() };
-                orderedCards.Add((serieInsertOrder[serieId], card));
-            }
-
-            foreach (var (albumId, tracks) in albumTracks)
-            {
-                // Skip if a direct album card (LiteMusicAlbumDto) was already added
-                if (orderedCards.Any(c => c.Card.Id == albumId && c.Card.Kind == MediaCardKind.Cover))
-                    continue;
-                var firstTrack = tracks[0];
-                orderedCards.Add((albumInsertOrder[albumId], firstTrack with { Id = albumId }));
-            }
-
-            target.AddRange(orderedCards.OrderBy(x => x.Order).Select(x => x.Card));
+            return feedPage.Items.Select(item => item.ToCardViewModel(apiClient)).ToList();
         }
-        catch { }
+        catch
+        {
+            return null;
+        }
     }
 
-    private string GetHref(MediaCardViewModel item) => item.Kind switch
-    {
-        MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
-        MediaCardKind.Serie => $"/series/{item.Id}",
-        MediaCardKind.Season => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}",
-        MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}#ep-{item.EpisodeNumber}",
-        _ => $"/movies/{item.Id}"
-    };
+    private string GetHref(MediaCardViewModel item) =>
+        item.NavigationTarget ?? item.Kind switch
+        {
+            MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
+            MediaCardKind.Serie => $"/series/{item.Id}",
+            MediaCardKind.Season => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}",
+            MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}#ep-{item.EpisodeNumber}",
+            _ => $"/movies/{item.Id}"
+        };
 
     private MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
     {

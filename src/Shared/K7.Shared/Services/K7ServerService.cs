@@ -98,6 +98,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteMediaDto>>(requestUri, _serializerOptions, cancellationToken);
     }
 
+    public async Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default)
+    {
+        var requestUri = GetHomeFeedQueryUriBuilder.Build(query);
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<HomeFeedItemDto>>(requestUri, _serializerOptions, cancellationToken);
+    }
+
     public async Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default)
     {
         try

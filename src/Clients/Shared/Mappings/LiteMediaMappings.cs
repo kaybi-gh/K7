@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Home;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Mappings;
@@ -90,5 +91,37 @@ public static class LiteMediaMappings
             return seasonFormatter(season.SeasonNumber);
 
         return item.ReleaseDate?.Year.ToString();
+    }
+
+    public static MediaCardViewModel ToCardViewModel(this HomeFeedItemDto item, IK7ServerService apiClient)
+    {
+        var kind = item.MediaType switch
+        {
+            MediaType.MusicAlbum or MediaType.MusicTrack => MediaCardKind.Cover,
+            MediaType.Serie => MediaCardKind.Serie,
+            MediaType.SerieSeason => MediaCardKind.Season,
+            MediaType.SerieEpisode => MediaCardKind.Episode,
+            _ => MediaCardKind.Poster
+        };
+
+        var bestPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+            ?? item.Pictures?.FirstOrDefault();
+
+        var backdropPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+
+        return new MediaCardViewModel
+        {
+            Id = item.Id.ToString(),
+            Kind = kind,
+            Title = item.Title,
+            AdditionalInformations = item.AdditionalInfo,
+            PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+            BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
+            Watched = item.Watched,
+            Progress = item.Progress,
+            GroupCount = item.GroupCount,
+            NavigationTarget = item.NavigationTarget
+        };
     }
 }

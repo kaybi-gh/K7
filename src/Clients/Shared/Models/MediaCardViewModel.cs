@@ -18,4 +18,5 @@ public record MediaCardViewModel
     public int GroupCount { get; set; } = 1;
     public int SerieSeasonCount { get; set; } = 1;
     public int? SerieReleaseYear { get; init; }
+    public string? NavigationTarget { get; init; }
 }
