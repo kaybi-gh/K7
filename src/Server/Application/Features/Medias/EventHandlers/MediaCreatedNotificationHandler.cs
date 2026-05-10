@@ -4,12 +4,17 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.EventHandlers;
 
-public class MediaCreatedNotificationHandler(ILibraryNotifier notifier, ILogger<MediaCreatedNotificationHandler> logger)
+public class MediaCreatedNotificationHandler(
+    ILibraryNotifier notifier,
+    IMediaQueryCacheInvalidator cacheInvalidator,
+    ILogger<MediaCreatedNotificationHandler> logger)
     : INotificationHandler<MediaCreatedEvent>
 {
     public async Task Handle(MediaCreatedEvent notification, CancellationToken cancellationToken)
     {
         var media = notification.Media;
+
+        cacheInvalidator.InvalidateAll();
 
         logger.LogDebug("Broadcasting MediaAdded for {MediaId} '{Title}'", media.Id, media.Title);
 

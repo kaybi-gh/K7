@@ -6,6 +6,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedias;
 
@@ -19,14 +20,56 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
     public string[]? Genres { get; init; }
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
+    public string? SearchText { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;
 }
 
-public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser)
+public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>
 {
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
+
     public async Task<PaginatedList<BaseMedia>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
+    {
+        var cacheKey = BuildCacheKey(request, currentUser.Id);
+        var version = cacheInvalidator.Version;
+
+        if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<BaseMedia> Result) cached) && cached.Version == version)
+            return cached.Result;
+
+        var result = await ExecuteQueryAsync(request, cancellationToken);
+        cache.Set(cacheKey, (version, result), CacheDuration);
+        return result;
+    }
+
+    private static string BuildCacheKey(GetMediasWithPaginationQuery request, Guid? userId)
+    {
+        var parts = new List<string> { "medias", $"u:{userId}" };
+
+        if (request.LibraryIds is { Length: > 0 })
+            parts.Add($"lib:{string.Join(',', request.LibraryIds.OrderBy(x => x))}");
+        if (request.Ids is { Length: > 0 })
+            parts.Add($"ids:{string.Join(',', request.Ids.OrderBy(x => x))}");
+        if (request.ContinueWatching.HasValue)
+            parts.Add($"cw:{request.ContinueWatching.Value}");
+        if (request.PersonIds is { Length: > 0 })
+            parts.Add($"pid:{string.Join(',', request.PersonIds.OrderBy(x => x))}");
+        if (request.Genres is { Length: > 0 })
+            parts.Add($"g:{string.Join(',', request.Genres.Order())}");
+        if (request.MediaTypes is { Count: > 0 })
+            parts.Add($"mt:{string.Join(',', request.MediaTypes.Order())}");
+        if (request.OrderBy is { Count: > 0 })
+            parts.Add($"ob:{string.Join(',', request.OrderBy.Order())}");
+        if (!string.IsNullOrWhiteSpace(request.SearchText))
+            parts.Add($"st:{request.SearchText.Trim()}");
+        parts.Add($"p:{request.PageNumber}");
+        parts.Add($"ps:{request.PageSize}");
+
+        return string.Join('|', parts);
+    }
+
+    private async Task<PaginatedList<BaseMedia>> ExecuteQueryAsync(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
     {
         Guid? userId = currentUser.Id;
 
@@ -176,6 +219,12 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         {
             query = query.Where(x => x.Genres.Any(g => request.Genres.Contains(g))
                 || (x is MusicTrack && ((MusicTrack)x).Album.Genres.Any(g => request.Genres.Contains(g))));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.SearchText))
+        {
+            var term = request.SearchText.Trim();
+            query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title, $"%{term}%"));
         }
 
         return query;
