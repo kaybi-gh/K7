@@ -3,15 +3,15 @@
 @if (Shape == "circle")
 {
     <span class="k7-skeleton k7-skeleton--circle @Class"
-          style="width: @Width; height: @Height;"></span>
+          style="width: @Width; height: @Height; @Style"></span>
 }
 else if (Shape == "text")
 {
     <span class="k7-skeleton k7-skeleton--text @Class"
-          style="@(string.IsNullOrEmpty(Width) ? string.Empty : $"width:{Width};") @(string.IsNullOrEmpty(Height) ? string.Empty : $"height:{Height};")"></span>
+          style="@(string.IsNullOrEmpty(Width) ? string.Empty : $"width:{Width};") @(string.IsNullOrEmpty(Height) ? string.Empty : $"height:{Height};") @Style"></span>
 }
 else
 {
     <span class="k7-skeleton @Class"
-          style="display:block; @(string.IsNullOrEmpty(Width) ? string.Empty : $"width:{Width};") @(string.IsNullOrEmpty(Height) ? string.Empty : $"height:{Height};")"></span>
+          style="display:block; @(string.IsNullOrEmpty(Width) ? string.Empty : $"width:{Width};") @(string.IsNullOrEmpty(Height) ? string.Empty : $"height:{Height};") @Style"></span>
 }

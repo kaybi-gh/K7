@@ -8,4 +8,5 @@ public partial class K7Skeleton
     [Parameter] public string Width { get; set; } = "";
     [Parameter] public string Height { get; set; } = "";
     [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
 }
