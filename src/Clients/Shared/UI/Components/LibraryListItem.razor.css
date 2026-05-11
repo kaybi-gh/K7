@@ -1,0 +1,85 @@
+.library-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 4px;
+    text-decoration: none;
+    color: inherit;
+    border-radius: var(--radius-sm);
+}
+
+.library-list-item:hover {
+    background: var(--color-surface-hover);
+}
+
+.library-list-item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.library-list-item-thumb-placeholder {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-gray);
+}
+
+.library-list-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.library-list-item-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.library-list-item-secondary {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.library-list-item-end {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.library-list-item-rating {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.library-list-item-progress {
+    width: 48px;
+}
+
+@media (max-width: 599.98px) {
+    .library-list-item-secondary {
+        max-width: 120px;
+    }
+}
+
+:global(html.platform-tv) .library-list-item {
+    padding: 12px 8px;
+    min-height: 56px;
+}
+
+:global(html.platform-tv) .library-list-item:focus-visible {
+    outline-width: 3px;
+}
+
+:global(html.platform-tv) .library-list-item:hover {
+    background: none;
+}
