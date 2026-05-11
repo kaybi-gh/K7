@@ -6,6 +6,7 @@ namespace K7.Clients.Shared.UI.Components;
 public partial class Carousel : IAsyncDisposable
 {
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     private ElementReference _root;
     private IJSObjectReference? _module;
@@ -13,6 +14,7 @@ public partial class Carousel : IAsyncDisposable
     [Parameter] public bool Skeleton { get; set; } = false;
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string? Style { get; set; }
+    [Parameter] public bool ShowLoopBack { get; set; } = true;
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

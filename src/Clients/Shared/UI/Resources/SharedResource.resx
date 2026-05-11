@@ -85,4 +85,6 @@
   <data name="EpisodeCount" xml:space="preserve"><value>{0} épisode(s)</value></data>
   <data name="IndexedVersions" xml:space="preserve"><value>Fichiers indexes</value></data>
   <data name="LoadError" xml:space="preserve"><value>Erreur de chargement.</value></data>
+  <data name="ToggleColumns" xml:space="preserve"><value>Colonnes</value></data>
+  <data name="BackToStart" xml:space="preserve"><value>Retour au debut</value></data>
 </root>
