@@ -1,5 +1,8 @@
 @page "/library/{id}"
+@using K7.Clients.Shared.Enums
+@using K7.Clients.Shared.Mappings
 @using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Medias
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject ILibraryService LibraryService
@@ -8,15 +11,14 @@
 
 <PageTitle>@string.Format(L["PageTitle"].Value, Id)</PageTitle>
 
-<BrowseView TItem="MediaCardViewModel"
-              Items="MediaCards"
-              Loading="_loading"
-              HasMore="_hasMore"
-              OnLoadMore="LoadMoreAsync"
-              PersistenceKey="@($"library-{Id}")"
-              DefaultItemWidth="160"
-              DefaultSpacing="6"
-              GridItemAspectRatio="1.8f">
+<BrowseView TItem="LiteMediaDto"
+            ItemsProvider="ProvideMediasAsync"
+            Loading="_loading"
+            @ref="_browseView"
+            PersistenceKey="@($"library-{Id}")"
+            DefaultItemWidth="160"
+            DefaultSpacing="6"
+            GridItemAspectRatio="1.5f">
     <ToolbarContent>
         <span>@string.Format(L["ItemCount"], _totalCount)</span>
         @if (_availableMediaTypes.Count > 1)
@@ -36,49 +38,62 @@
         </K7Select>
     </ToolbarContent>
     <GridTemplate Context="item">
-        <MediaCard Model="item" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+        @{
+            var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));
+        }
+        @if (vm is not null)
+        {
+            <MediaCard Model="vm" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+        }
     </GridTemplate>
-    <TableHeaderContent>
-        <th>@L["Title"]</th>
-        <th>@L["Status"]</th>
-    </TableHeaderContent>
-    <TableRowTemplate Context="item">
-        <tr tabindex="0" role="button" @onclick="() => NavigateToItem(item)" @onkeydown="(e) => OnRowKeyDown(e, item)">
-            <td>
-                <div class="library-table-title">
-                    @if (!string.IsNullOrEmpty(item.PictureUrl))
+    <GridPlaceholder>
+        <K7Skeleton Shape="rect" Width="100%" Height="0" Style="aspect-ratio: 2 / 3;" />
+    </GridPlaceholder>
+    <TableContent>
+        <K7DataTable TItem="LiteMediaDto"
+                     ServerData="LoadTableDataAsync"
+                     ActiveSortKey="@_activeSortKey"
+                     ActiveSortDirection="@_activeSortDirection"
+                     OnSortChanged="OnTableSortChanged"
+                     OnRowClick="NavigateToItem"
+                     @ref="_dataTable">
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["Title"]" SortKey="title" Hideable="false">
+                <CellTemplate Context="item">
+                    <div class="library-table-title">
+                        @{
+                            var poster = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster) ?? item.Pictures?.FirstOrDefault();
+                            var thumbUrl = apiClient.GetAbsoluteUri(poster?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+                        }
+                        @if (thumbUrl is not null)
+                        {
+                            <K7Image Src="@thumbUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
+                        }
+                        <p class="text-sm">@item.Title</p>
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["Year"]" SortKey="releaseDate" Width="80px" VisibleOnMobile="false" Property="item => item.ReleaseDate?.Year" />
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["Rating"]" SortKey="localRating" Width="80px" VisibleOnMobile="false" Property="item => item.UserRating" />
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["Status"]" VisibleOnMobile="true">
+                <CellTemplate Context="item">
+                    @if (item.UserState?.ProgressPercentage is > 0 and < 100)
                     {
-                        <K7Image Src="@item.PictureUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
+                        <K7ProgressBar Value="@(item.UserState.ProgressPercentage)" />
                     }
-                    <p class="text-sm">@item.Title</p>
-                </div>
-            </td>
-            <td>
-                @if (item.Watched)
-                {
-                    <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
-                }
-            </td>
-        </tr>
-    </TableRowTemplate>
+                    else if (item.UserState?.IsCompleted ?? false)
+                    {
+                        <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
+                    }
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["PlayCount"]" SortKey="playCount" Width="100px" VisibleOnMobile="false" Visible="false" Property="item => item.UserState?.PlayCount" />
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["DateAdded"]" SortKey="created" Width="120px" VisibleOnMobile="false" Visible="false" Property="FormatLastInteracted" />
+        </K7DataTable>
+    </TableContent>
     <ListTemplate Context="item">
-        <a href="@GetItemHref(item)" class="library-list-item">
-            @if (!string.IsNullOrEmpty(item.PictureUrl))
-            {
-                <K7Image Src="@item.PictureUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
-            }
-            <div class="library-list-info">
-                <p>@item.Title</p>
-                @if (!string.IsNullOrEmpty(item.AdditionalInformations))
-                {
-                    <span class="text-caption" Color="secondary">@item.AdditionalInformations</span>
-                }
-            </div>
-            @if (item.Watched)
-            {
-                <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
-            }
-        </a>
+        <LibraryListItem Item="item" Href="@GetItemHref(item)" />
     </ListTemplate>
+    <ListPlaceholder>
+        <K7Skeleton Shape="rect" Width="100%" Height="64px" />
+    </ListPlaceholder>
 </BrowseView>
-

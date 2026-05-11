@@ -33,5 +33,9 @@
   <data name="SortOldest" xml:space="preserve"><value>Plus anciens</value></data>
   <data name="SortReleaseDateDesc" xml:space="preserve"><value>Date de sortie (recents)</value></data>
   <data name="SortReleaseDateAsc" xml:space="preserve"><value>Date de sortie (anciens)</value></data>
+  <data name="Year" xml:space="preserve"><value>Annee</value></data>
+  <data name="Rating" xml:space="preserve"><value>Note</value></data>
+  <data name="PlayCount" xml:space="preserve"><value>Lectures</value></data>
+  <data name="DateAdded" xml:space="preserve"><value>Date d'ajout</value></data>
 </root>
 

@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Enums;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
@@ -8,7 +9,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 {
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
-    [Parameter] public IList<TItem> Items { get; set; } = [];
+    [Parameter] public IList<TItem>? Items { get; set; }
+    [Parameter] public ItemsProviderDelegate<TItem>? ItemsProvider { get; set; }
     [Parameter] public bool Loading { get; set; }
     [Parameter] public bool HasMore { get; set; }
     [Parameter] public Func<Task>? OnLoadMore { get; set; }
@@ -17,9 +19,12 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public RenderFragment<TItem>? ListTemplate { get; set; }
     [Parameter] public RenderFragment? TableHeaderContent { get; set; }
     [Parameter] public RenderFragment<TItem>? TableRowTemplate { get; set; }
+    [Parameter] public RenderFragment? TableContent { get; set; }
     [Parameter] public RenderFragment? ToolbarContent { get; set; }
     [Parameter] public RenderFragment? LoadingContent { get; set; }
     [Parameter] public RenderFragment? EmptyContent { get; set; }
+    [Parameter] public RenderFragment? GridPlaceholder { get; set; }
+    [Parameter] public RenderFragment? ListPlaceholder { get; set; }
 
     [Parameter] public string PersistenceKey { get; set; } = "default";
     [Parameter] public BrowseViewMode DefaultMode { get; set; } = BrowseViewMode.Grid;
@@ -27,8 +32,11 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public int DefaultSpacing { get; set; } = 6;
     [Parameter] public float ListItemHeight { get; set; } = 64;
     [Parameter] public float GridItemAspectRatio { get; set; } = 1.5f;
+    [Parameter] public int GridFooterHeight { get; set; } = 44;
+    [Parameter] public int OverscanCount { get; set; } = 4;
 
-    private ElementReference _gridRef;
+    private K7VirtualGrid<TItem>? _gridComponentRef;
+    private K7VirtualList<TItem>? _listComponentRef;
     private ElementReference _sentinelRef;
     private IJSObjectReference? _module;
     private DotNetObjectReference<BrowseView<TItem>>? _dotnetRef;
@@ -38,13 +46,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private bool _settingsOpen;
     private int _itemWidth;
     private int _spacing;
-    private int _containerWidth;
-    private int _lastColumnCount;
-    private float _estimatedRowHeight = 300;
     private bool _loadingMore;
-
-    private List<List<TItem>> _rows = [];
-    private bool _observingGrid;
 
     protected override void OnInitialized()
     {
@@ -69,15 +71,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
                 _spacing = saved.Spacing;
             }
 
-            RebuildRows();
             StateHasChanged();
             return;
-        }
-
-        if (!_observingGrid && _currentMode is BrowseViewMode.Grid && !Loading && Items is { Count: > 0 })
-        {
-            _observingGrid = true;
-            await StartObservingGridWidth();
         }
 
         if (HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 })
@@ -94,22 +89,43 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         {
             _currentMode = _availableModes[0];
         }
-
-        RebuildRows();
     }
 
-    [JSInvokable]
-    public void OnContainerWidthChanged(int width)
+    private async Task SetViewModeAsync(BrowseViewMode mode)
     {
-        if (width == _containerWidth) return;
-        _containerWidth = width;
-
-        var newCols = CalculateColumnCount();
-        if (newCols == _lastColumnCount) return;
-
-        RebuildRows();
-        StateHasChanged();
+        if (mode == _currentMode) return;
+        _currentMode = mode;
+        await SaveSettingsAsync();
     }
+
+    private async Task OnItemWidthChanged(int value)
+    {
+        _itemWidth = value;
+        await SaveSettingsAsync();
+    }
+
+    private async Task OnSpacingChanged(int value)
+    {
+        _spacing = value;
+        await SaveSettingsAsync();
+    }
+
+    public async Task RefreshAsync()
+    {
+        switch (_currentMode)
+        {
+            case BrowseViewMode.Grid when _gridComponentRef is not null:
+                await _gridComponentRef.RefreshAsync();
+                break;
+            case BrowseViewMode.List when _listComponentRef is not null:
+                await _listComponentRef.RefreshAsync();
+                break;
+        }
+    }
+
+    private bool IsEmpty => Items is { Count: 0 } && ItemsProvider is null;
+
+    private bool UseProvider => ItemsProvider is not null;
 
     [JSInvokable]
     public async Task OnSentinelVisible()
@@ -129,73 +145,6 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         {
             _loadingMore = false;
         }
-    }
-
-    private async Task SetViewModeAsync(BrowseViewMode mode)
-    {
-        if (mode == _currentMode) return;
-        _currentMode = mode;
-
-        if (mode is not BrowseViewMode.Grid)
-        {
-            _observingGrid = false;
-        }
-
-        RebuildRows();
-        await SaveSettingsAsync();
-    }
-
-    private async Task OnItemWidthChanged(int value)
-    {
-        _itemWidth = value;
-        RebuildRows();
-        UpdateEstimatedRowHeight();
-        await SaveSettingsAsync();
-    }
-
-    private async Task OnSpacingChanged(int value)
-    {
-        _spacing = value;
-        RebuildRows();
-        await SaveSettingsAsync();
-    }
-
-    private void RebuildRows()
-    {
-        if (Items is null || Items.Count == 0 || _currentMode is not BrowseViewMode.Grid)
-        {
-            _rows = [];
-            return;
-        }
-
-        var cols = CalculateColumnCount();
-        _lastColumnCount = cols;
-        _rows = Items
-            .Chunk(cols)
-            .Select(chunk => chunk.ToList())
-            .ToList();
-
-        UpdateEstimatedRowHeight();
-    }
-
-    private int CalculateColumnCount()
-    {
-        if (_containerWidth <= 0) return 4;
-        var cols = (_containerWidth + _spacing) / (_itemWidth + _spacing);
-        return Math.Max(cols, 1);
-    }
-
-    private void UpdateEstimatedRowHeight()
-    {
-        _estimatedRowHeight = _itemWidth * GridItemAspectRatio + _spacing + 40;
-    }
-
-    private async Task StartObservingGridWidth()
-    {
-        if (_module is null) return;
-        _dotnetRef ??= DotNetObjectReference.Create(this);
-
-        await _module.InvokeVoidAsync("observeContainerWidth", _gridRef, _dotnetRef);
     }
 
     private async Task StartObservingSentinel()
@@ -222,7 +171,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     {
         var modes = new List<BrowseViewMode>();
         if (GridTemplate is not null) modes.Add(BrowseViewMode.Grid);
-        if (TableHeaderContent is not null && TableRowTemplate is not null) modes.Add(BrowseViewMode.Table);
+        if (TableContent is not null || (TableHeaderContent is not null && TableRowTemplate is not null))
+            modes.Add(BrowseViewMode.Table);
         if (ListTemplate is not null) modes.Add(BrowseViewMode.List);
         return modes;
     }
@@ -241,10 +191,6 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         {
             try
             {
-                if (_observingGrid)
-                {
-                    await _module.InvokeVoidAsync("dispose", _gridRef);
-                }
                 await _module.InvokeVoidAsync("disposeSentinel");
                 await _module.DisposeAsync();
             }

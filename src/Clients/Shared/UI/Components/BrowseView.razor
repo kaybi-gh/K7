@@ -46,7 +46,7 @@
             </div>
         }
     }
-    else if (Items is null || Items.Count == 0)
+    else if (IsEmpty)
     {
         @if (EmptyContent is not null)
         {
@@ -64,47 +64,85 @@
         @switch (_currentMode)
         {
             case BrowseViewMode.Grid when GridTemplate is not null:
-                <div class="browse-view-grid"
-                     style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;"
-                     @ref="_gridRef">
-                    <Virtualize Items="_rows" Context="row" ItemSize="_estimatedRowHeight" OverscanCount="2">
-                        <div class="browse-view-grid-row" style="grid-template-columns: repeat(@(CalculateColumnCount()), @(_itemWidth)px);">
-                            @foreach (var item in row)
-                            {
-                                @GridTemplate(item)
-                            }
-                        </div>
-                    </Virtualize>
-                </div>
+                @if (UseProvider)
+                {
+                    <K7VirtualGrid TItem="TItem"
+                                   ItemsProvider="ItemsProvider"
+                                   ItemWidth="_itemWidth"
+                                   Spacing="_spacing"
+                                   AspectRatio="GridItemAspectRatio"
+                                   FooterHeight="GridFooterHeight"
+                                   OverscanCount="OverscanCount"
+                                   @ref="_gridComponentRef">
+                        <ItemTemplate>@GridTemplate(context)</ItemTemplate>
+                        <Placeholder>@GridPlaceholder</Placeholder>
+                    </K7VirtualGrid>
+                }
+                else
+                {
+                    <K7VirtualGrid TItem="TItem"
+                                   Items="Items"
+                                   ItemWidth="_itemWidth"
+                                   Spacing="_spacing"
+                                   AspectRatio="GridItemAspectRatio"
+                                   FooterHeight="GridFooterHeight"
+                                   OverscanCount="OverscanCount"
+                                   @ref="_gridComponentRef">
+                        <ItemTemplate>@GridTemplate(context)</ItemTemplate>
+                    </K7VirtualGrid>
+                }
                 break;
 
-            case BrowseViewMode.Table when TableHeaderContent is not null && TableRowTemplate is not null:
-                <div class="browse-view-table">
-                    <table class="browse-view-table-el">
-                        <thead>
-                            <tr>
-                                @TableHeaderContent
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <Virtualize Items="Items" Context="item" ItemSize="48" OverscanCount="10">
-                                @TableRowTemplate(item)
-                            </Virtualize>
-                        </tbody>
-                    </table>
-                </div>
+            case BrowseViewMode.Table:
+                @if (TableContent is not null)
+                {
+                    @TableContent
+                }
+                else if (TableHeaderContent is not null && TableRowTemplate is not null)
+                {
+                    <div class="browse-view-table">
+                        <table class="browse-view-table-el">
+                            <thead>
+                                <tr>
+                                    @TableHeaderContent
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <Virtualize Items="Items" Context="item" ItemSize="48" OverscanCount="10">
+                                    @TableRowTemplate(item)
+                                </Virtualize>
+                            </tbody>
+                        </table>
+                    </div>
+                }
                 break;
 
             case BrowseViewMode.List when ListTemplate is not null:
-                <div class="browse-view-list">
-                    <Virtualize Items="Items" Context="item" ItemSize="ListItemHeight" OverscanCount="5">
-                        @ListTemplate(item)
-                    </Virtualize>
-                </div>
+                @if (UseProvider)
+                {
+                    <K7VirtualList TItem="TItem"
+                                   ItemsProvider="ItemsProvider"
+                                   ItemHeight="ListItemHeight"
+                                   OverscanCount="OverscanCount"
+                                   @ref="_listComponentRef">
+                        <ItemTemplate>@ListTemplate(context)</ItemTemplate>
+                        <Placeholder>@ListPlaceholder</Placeholder>
+                    </K7VirtualList>
+                }
+                else
+                {
+                    <K7VirtualList TItem="TItem"
+                                   Items="Items"
+                                   ItemHeight="ListItemHeight"
+                                   OverscanCount="OverscanCount"
+                                   @ref="_listComponentRef">
+                        <ItemTemplate>@ListTemplate(context)</ItemTemplate>
+                    </K7VirtualList>
+                }
                 break;
         }
 
-        @if (HasMore && OnLoadMore is not null)
+        @if (!UseProvider && HasMore && OnLoadMore is not null)
         {
             <div class="browse-view-sentinel" @ref="_sentinelRef">
                 <K7Spinner />
