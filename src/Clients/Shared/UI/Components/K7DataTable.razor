@@ -1,0 +1,110 @@
+@typeparam TItem
+@inject IStringLocalizer<SharedResource> S
+
+<CascadingValue Value="this" IsFixed="true">
+    @ChildContent
+</CascadingValue>
+
+<div class="k7-data-table">
+    <div class="k7-data-table-toolbar">
+        <K7Menu Open="_columnPickerOpen" OpenChanged="v => _columnPickerOpen = v">
+            <ActivatorContent>
+                <K7IconButton OnClick="() => _columnPickerOpen = !_columnPickerOpen"
+                              AriaLabel="@S["ToggleColumns"]"
+                              Icon="@Phosphor.Columns" />
+            </ActivatorContent>
+            <ChildContent>
+                <div class="k7-data-table-column-picker">
+                    @foreach (var col in _columns.Where(c => c.Hideable))
+                    {
+                        var c = col;
+                        <K7Switch Value="c.IsVisible"
+                                  ValueChanged="_ => ToggleColumnVisibility(c)"
+                                  Label="@c.Title" />
+                    }
+                </div>
+            </ChildContent>
+        </K7Menu>
+    </div>
+
+    <div class="k7-data-table-scroll">
+        <table class="k7-data-table-el" role="grid">
+            <thead>
+                <tr>
+                    @foreach (var col in VisibleColumns)
+                    {
+                        var c = col;
+                        <th style="@(c.Width is not null ? $"width: {c.Width}" : "")"
+                            data-mobile-hide="@(!c.VisibleOnMobile)">
+                            @if (c.SortKey is not null)
+                            {
+                                <button class="k7-data-table-sort-btn focusable"
+                                        @onclick="() => OnHeaderClick(c)">
+                                    <span>@c.Title</span>
+                                    <K7Icon Icon="@GetSortIcon(c)" Size="sm" />
+                                </button>
+                            }
+                            else
+                            {
+                                <span>@c.Title</span>
+                            }
+
+                            @if (c.FilterTemplate is not null)
+                            {
+                                @c.FilterTemplate
+                            }
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (Items is not null)
+                {
+                    <Virtualize Items="Items" Context="item" ItemSize="RowHeight"
+                                OverscanCount="OverscanCount" @ref="_virtualizeRef">
+                        <tr class="focusable" tabindex="0" role="row"
+                            @onclick="() => OnRowClicked(item)"
+                            @onkeydown="e => OnRowKeyDown(e, item)">
+                            @foreach (var col in VisibleColumns)
+                            {
+                                <td data-mobile-hide="@(!col.VisibleOnMobile)">
+                                    @{ var cell = col.RenderCell(item); }
+                                    @if (cell is not null) { @cell }
+                                </td>
+                            }
+                        </tr>
+                    </Virtualize>
+                }
+                else if (ServerData is not null)
+                {
+                    <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="RowHeight"
+                                OverscanCount="OverscanCount" @ref="_virtualizeRef">
+                        <ItemContent>
+                            <tr class="focusable" tabindex="0" role="row"
+                                @onclick="() => OnRowClicked(item)"
+                                @onkeydown="e => OnRowKeyDown(e, item)">
+                                @foreach (var col in VisibleColumns)
+                                {
+                                    <td data-mobile-hide="@(!col.VisibleOnMobile)">
+                                        @{ var cell = col.RenderCell(item); }
+                                        @if (cell is not null) { @cell }
+                                    </td>
+                                }
+                            </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr class="k7-data-table-placeholder">
+                                @foreach (var col in VisibleColumns)
+                                {
+                                    <td data-mobile-hide="@(!col.VisibleOnMobile)">
+                                        <div class="k7-skeleton-line"></div>
+                                    </td>
+                                }
+                            </tr>
+                        </Placeholder>
+                    </Virtualize>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

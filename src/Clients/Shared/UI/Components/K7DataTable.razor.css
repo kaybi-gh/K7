@@ -1,0 +1,123 @@
+.k7-data-table {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.k7-data-table-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 16px;
+}
+
+.k7-data-table-column-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    min-width: 180px;
+}
+
+.k7-data-table-scroll {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0 16px 16px;
+}
+
+.k7-data-table-el {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.k7-data-table-el thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-surface);
+}
+
+.k7-data-table-el th,
+.k7-data-table-el td {
+    padding: 8px 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.k7-data-table-el th {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary, inherit);
+    user-select: none;
+}
+
+.k7-data-table-sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 2px;
+    border-radius: 4px;
+}
+
+.k7-data-table-sort-btn:hover {
+    background: var(--color-surface-hover);
+}
+
+.k7-data-table-sort-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.k7-data-table-el tbody tr {
+    cursor: pointer;
+}
+
+.k7-data-table-el tbody tr:hover {
+    background: var(--color-surface-hover);
+}
+
+.k7-data-table-el tbody tr:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.k7-data-table-placeholder td {
+    padding: 8px 12px;
+}
+
+.k7-skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    background: var(--color-surface-hover);
+    width: 60%;
+    animation: k7-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes k7-skeleton-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+@media (max-width: 599.98px) {
+    [data-mobile-hide="True"] {
+        display: none;
+    }
+}
+
+:global(html.platform-tv) .k7-data-table-el tbody tr {
+    min-height: 56px;
+}
+
+:global(html.platform-tv) .k7-data-table-el tbody tr:focus-visible {
+    outline-width: 3px;
+}
+
+:global(html.platform-tv) .k7-data-table-sort-btn:hover {
+    background: none;
+}
