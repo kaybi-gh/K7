@@ -206,9 +206,26 @@ var SpatialNav = (function () {
         if (!carouselRoot || !carouselRoot.__embla) return;
         var item = el.closest('[data-carousel-item]');
         if (!item) return;
-        var items = Array.from(carouselRoot.querySelectorAll('[data-carousel-item]'));
-        var idx = items.indexOf(item);
-        if (idx >= 0) carouselRoot.__embla.scrollTo(idx);
+
+        var container = carouselRoot.querySelector('.carousel-container');
+        var allItems = container ? Array.from(container.querySelectorAll('[data-carousel-item]')) : [];
+        var idx = allItems.indexOf(item);
+
+        if (idx === 0) {
+            carouselRoot.__embla.scrollTo(0);
+            return;
+        }
+
+        var viewport = carouselRoot.querySelector('[data-carousel-viewport]') || carouselRoot;
+        var vpRect = viewport.getBoundingClientRect();
+        var itemRect = item.getBoundingClientRect();
+        if (itemRect.left >= vpRect.left + 1 && itemRect.right <= vpRect.right + 5) return;
+
+        if (itemRect.right > vpRect.right + 5) {
+            carouselRoot.__embla.scrollNext();
+        } else if (itemRect.left < vpRect.left + 1) {
+            carouselRoot.__embla.scrollPrev();
+        }
     }
 
     function isNearPageTop(el) {
@@ -217,6 +234,8 @@ var SpatialNav = (function () {
 
     // Carousel Navigation
 
+    var _carouselNavHandled = false;
+
     function handleCarouselNav(active, direction) {
         var carousel = active.closest('[data-carousel]');
         if (!carousel) return false;
@@ -224,6 +243,11 @@ var SpatialNav = (function () {
 
         var currentItem = active.closest('[data-carousel-item]');
         if (!currentItem) return false;
+
+        // Block ArrowRight from the loop-back item (action is click/Enter only)
+        if (currentItem.hasAttribute('data-carousel-loop-back') && direction === 'ArrowRight') {
+            return true;
+        }
 
         var allItems = Array.from(carousel.querySelectorAll('[data-carousel-item]'));
         var currentIdx = allItems.indexOf(currentItem);
@@ -236,8 +260,24 @@ var SpatialNav = (function () {
         var target = targetItem.matches(FOCUSABLE) ? targetItem : targetItem.querySelector(FOCUSABLE);
         if (!target) return false;
 
-        if (carousel.__embla) carousel.__embla.scrollTo(targetIdx);
-        setTimeout(function () { target.focus({ preventScroll: true }); }, 10);
+        if (carousel.__embla) {
+            var viewport = carousel.querySelector('[data-carousel-viewport]') || carousel;
+            var vpRect = viewport.getBoundingClientRect();
+            var targetRect = targetItem.getBoundingClientRect();
+
+            if (targetIdx === 0) {
+                carousel.__embla.scrollTo(0);
+            } else if (targetRect.right > vpRect.right + 5) {
+                carousel.__embla.scrollNext();
+            } else if (targetRect.left < vpRect.left + 1) {
+                carousel.__embla.scrollPrev();
+            }
+        }
+        _carouselNavHandled = true;
+        setTimeout(function () {
+            target.focus({ preventScroll: true });
+            setTimeout(function () { _carouselNavHandled = false; }, 50);
+        }, 10);
         return true;
     }
 
@@ -534,7 +574,9 @@ var SpatialNav = (function () {
                     return;
                 }
             }
-            scrollCarouselToElement(el);
+            if (!_carouselNavHandled) {
+                scrollCarouselToElement(el);
+            }
             if (!el.closest('[data-carousel-item]')) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
             }
