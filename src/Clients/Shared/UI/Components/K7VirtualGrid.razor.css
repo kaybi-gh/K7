@@ -1,0 +1,11 @@
+.k7-virtual-grid {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    flex: 1;
+    padding: 0 16px 16px;
+}
+
+.k7-virtual-grid-row {
+    display: grid;
+    gap: var(--grid-gap);
+}
