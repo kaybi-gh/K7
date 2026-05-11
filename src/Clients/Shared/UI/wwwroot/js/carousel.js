@@ -4,10 +4,12 @@ export function init(rootElement) {
     var viewportNode = rootElement.querySelector('[data-carousel-viewport]');
     if (!viewportNode) return;
 
+    var container = viewportNode.querySelector('.carousel-container') || viewportNode.firstElementChild;
+    var padStart = container ? parseInt(getComputedStyle(container).paddingInlineStart) || 0 : 0;
+
     var embla = EmblaCarousel(viewportNode, {
-        dragFree: true,
         containScroll: 'trimSnaps',
-        align: 'start',
+        align: function () { return padStart; },
         slidesToScroll: 1
     });
 
@@ -15,9 +17,31 @@ export function init(rootElement) {
 
     var prevBtn = rootElement.querySelector('[data-carousel-prev]');
     var nextBtn = rootElement.querySelector('[data-carousel-next]');
+    var loopBackBtn = rootElement.querySelector('[data-carousel-loop-back]');
 
     if (prevBtn) prevBtn.addEventListener('click', function () { embla.scrollPrev(); });
     if (nextBtn) nextBtn.addEventListener('click', function () { embla.scrollNext(); });
+
+    if (loopBackBtn) {
+        var loopBackAction = loopBackBtn.querySelector('.carousel-loop-back__image') || loopBackBtn;
+        function doLoopBack() {
+            embla.scrollTo(0);
+            setTimeout(function () {
+                var firstItem = rootElement.querySelector('[data-carousel-item]:not([data-carousel-loop-back])');
+                if (firstItem) {
+                    var target = firstItem.querySelector('.focusable') || firstItem;
+                    target.focus({ preventScroll: true });
+                }
+            }, 50);
+        }
+        loopBackAction.addEventListener('click', doLoopBack);
+        loopBackAction.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                doLoopBack();
+            }
+        });
+    }
 
     function updateArrows() {
         var canPrev = embla.canScrollPrev();
@@ -31,6 +55,18 @@ export function init(rootElement) {
         if (nextBtn) {
             nextBtn.style.display = hasOverflow ? '' : 'none';
             nextBtn.disabled = !canNext;
+        }
+        if (loopBackBtn) {
+            var realSlides = container ? container.querySelectorAll('[data-carousel-item]:not([data-carousel-loop-back])') : [];
+            var totalWidth = 0;
+            var gap = container ? parseInt(getComputedStyle(container).gap) || 0 : 0;
+            for (var i = 0; i < realSlides.length; i++) {
+                totalWidth += realSlides[i].offsetWidth;
+                if (i > 0) totalWidth += gap;
+            }
+            totalWidth += padStart + (parseInt(getComputedStyle(container).paddingInlineEnd) || 0);
+            var needsLoopBack = totalWidth > viewportNode.offsetWidth;
+            loopBackBtn.classList.toggle('visible', needsLoopBack);
         }
     }
 

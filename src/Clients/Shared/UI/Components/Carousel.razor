@@ -13,6 +13,22 @@
         <div class="carousel-viewport" data-carousel-viewport tabindex="-1">
             <div class="carousel-container">
                 @ChildContent
+                @if (ShowLoopBack)
+                {
+                    <div class="carousel-item carousel-loop-back"
+                         data-carousel-item
+                         data-carousel-loop-back>
+                        <div class="carousel-loop-back__image focusable"
+                             tabindex="0"
+                             role="button"
+                             aria-label="@S["BackToStart"]">
+                            <K7Icon Icon="@Phosphor.ArrowCounterClockwise" Size="lg" />
+                        </div>
+                        <div class="carousel-loop-back__footer">
+                            <span>@S["BackToStart"]</span>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
