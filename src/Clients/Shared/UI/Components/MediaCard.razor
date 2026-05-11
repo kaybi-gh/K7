@@ -58,7 +58,7 @@ else
                 @if (OverlayEnabled)
                 {
                     <div class="media-card-overlay">
-                        <K7FabButton AriaLabel="Play" Icon="@Phosphor.Play" />
+                        <K7FabButton AriaLabel="Play" Icon="@Phosphor.Play" Focusable="false" />
                     </div>
                 }
             </a>
@@ -68,7 +68,7 @@ else
                 <div class="media-card-menu">
                     <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged">
                         <ActivatorContent>
-                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" />
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
                         </ActivatorContent>
                         <ChildContent>
                             <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
