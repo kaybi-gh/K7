@@ -1,0 +1,49 @@
+@typeparam TItem
+
+<div class="k7-virtual-list">
+    @if (Items is not null)
+    {
+        @if (Items.Count == 0 && EmptyContent is not null)
+        {
+            @EmptyContent
+        }
+        else
+        {
+            <Virtualize Items="Items" Context="item" ItemSize="ItemHeight"
+                        OverscanCount="OverscanCount" @ref="_virtualizeRef">
+                @if (ItemTemplate is not null)
+                {
+                    @ItemTemplate(item)
+                }
+            </Virtualize>
+        }
+    }
+    else if (ItemsProvider is not null)
+    {
+        @if (Placeholder is not null)
+        {
+            <Virtualize ItemsProvider="ItemsProvider" Context="item" ItemSize="ItemHeight"
+                        OverscanCount="OverscanCount" @ref="_virtualizeRef">
+                <ItemContent>
+                    @if (ItemTemplate is not null)
+                    {
+                        @ItemTemplate(item)
+                    }
+                </ItemContent>
+                <Placeholder>
+                    @Placeholder
+                </Placeholder>
+            </Virtualize>
+        }
+        else
+        {
+            <Virtualize ItemsProvider="ItemsProvider" Context="item" ItemSize="ItemHeight"
+                        OverscanCount="OverscanCount" @ref="_virtualizeRef">
+                @if (ItemTemplate is not null)
+                {
+                    @ItemTemplate(item)
+                }
+            </Virtualize>
+        }
+    }
+</div>

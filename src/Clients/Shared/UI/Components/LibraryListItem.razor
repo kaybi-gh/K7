@@ -1,0 +1,35 @@
+@using K7.Shared.Dtos.Entities.Medias
+
+<a href="@Href" class="library-list-item focusable">
+    @if (ThumbnailUrl is not null)
+    {
+        <K7Image Src="@ThumbnailUrl" Alt="@Item.Title" Width="48" ObjectFit="cover" Class="library-list-item-thumb rounded" loading="lazy" />
+    }
+    else
+    {
+        <div class="library-list-item-thumb-placeholder rounded">
+            <K7Icon Icon="@Phosphor.Image" Size="sm" />
+        </div>
+    }
+    <div class="library-list-item-info">
+        <p class="library-list-item-title">@Item.Title</p>
+        @if (SecondaryText is not null)
+        {
+            <span class="library-list-item-secondary">@SecondaryText</span>
+        }
+    </div>
+    <div class="library-list-item-end">
+        @if (Item.UserRating is > 0)
+        {
+            <span class="library-list-item-rating">@Item.UserRating</span>
+        }
+        @if (Progress is > 0 and < 100)
+        {
+            <K7ProgressBar Value="@Progress" Class="library-list-item-progress" />
+        }
+        else if (IsWatched)
+        {
+            <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
+        }
+    </div>
+</a>
