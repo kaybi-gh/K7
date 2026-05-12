@@ -3,6 +3,7 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    position: relative;
 }
 
 .k7-data-table-toolbar {
@@ -19,9 +20,27 @@
     min-width: 180px;
 }
 
+.k7-data-table-column-picker-floating {
+    position: absolute;
+    right: 16px;
+    top: 0;
+    z-index: 20;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+.k7-data-table-column-picker-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+}
+
 .k7-data-table-scroll {
     overflow-y: auto;
-    flex: 1;
+    flex: 1 1 0;
+    min-height: 0;
     padding: 0 16px 16px;
 }
 
@@ -76,6 +95,10 @@
 
 .k7-data-table-el tbody tr {
     cursor: pointer;
+}
+
+.k7-data-table-el tbody tr:nth-child(even) {
+    background: color-mix(in srgb, var(--color-surface-hover) 50%, transparent);
 }
 
 .k7-data-table-el tbody tr:hover {

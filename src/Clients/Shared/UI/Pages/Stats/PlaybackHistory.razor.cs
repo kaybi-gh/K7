@@ -1,49 +1,66 @@
+using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.UI.Components;
 using K7.Shared.Dtos;
 
 namespace K7.Clients.Shared.UI.Pages.Stats;
 
 public partial class PlaybackHistory
 {
-    private PlaybackHistoryPageDto? _history;
-    private bool _loading = true;
-    private int _currentPage = 1;
+    private K7DataTable<PlaybackHistoryItemDto>? _tableRef;
     private string _selectedMediaType = "";
-
-    protected override async Task OnInitializedAsync()
-    {
-        await FetchHistoryAsync();
-    }
+    private const int PageSize = 50;
+    private int _tableKey;
 
     private async Task OnMediaTypeChanged(string mediaType)
     {
         _selectedMediaType = mediaType ?? "";
-        _currentPage = 1;
-        await FetchHistoryAsync();
+        _tableKey++;
+        await InvokeAsync(StateHasChanged);
     }
 
-    private async Task OnPageChanged(int page)
+    private async Task<K7DataTableResult<PlaybackHistoryItemDto>> LoadServerDataAsync(
+        K7DataTableState<PlaybackHistoryItemDto> state, CancellationToken cancellationToken)
     {
-        _currentPage = page;
-        await FetchHistoryAsync();
-    }
+        var startIndex = state.StartIndex;
+        var count = state.Count;
+        if (count <= 0) return new K7DataTableResult<PlaybackHistoryItemDto>([], 0);
 
-    private async Task FetchHistoryAsync()
-    {
-        _loading = true;
-        StateHasChanged();
+        var mediaTypeParam = string.IsNullOrEmpty(_selectedMediaType) ? null : _selectedMediaType;
+
+        var firstPage = (startIndex / PageSize) + 1;
+        var lastPage = ((startIndex + count - 1) / PageSize) + 1;
 
         try
         {
-            var mediaTypeParam = string.IsNullOrEmpty(_selectedMediaType) ? null : _selectedMediaType;
-            _history = await K7ServerService.GetPlaybackHistoryAsync(_currentPage, 25, mediaTypeParam);
+            var tasks = Enumerable.Range(firstPage, lastPage - firstPage + 1)
+                .Select(page => K7ServerService.GetPlaybackHistoryAsync(page, PageSize, mediaTypeParam, cancellationToken));
+
+            var results = await Task.WhenAll(tasks);
+
+            var totalCount = 0;
+            var allItems = new List<PlaybackHistoryItemDto>(count);
+            foreach (var result in results)
+            {
+                if (result?.Items is { Count: > 0 })
+                {
+                    totalCount = result.TotalCount;
+                    allItems.AddRange(result.Items);
+                }
+            }
+
+            var offset = startIndex - (firstPage - 1) * PageSize;
+            var items = allItems.Skip(offset).Take(count).ToList();
+
+            return new K7DataTableResult<PlaybackHistoryItemDto>(items, totalCount);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch
         {
-            _history = null;
+            return new K7DataTableResult<PlaybackHistoryItemDto>([], 0);
         }
-
-        _loading = false;
-        StateHasChanged();
     }
 
     private static string FormatDuration(double totalSeconds)

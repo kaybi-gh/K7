@@ -6,28 +6,45 @@
 </CascadingValue>
 
 <div class="k7-data-table">
-    <div class="k7-data-table-toolbar">
-        <K7Menu Open="_columnPickerOpen" OpenChanged="v => _columnPickerOpen = v">
-            <ActivatorContent>
-                <K7IconButton OnClick="() => _columnPickerOpen = !_columnPickerOpen"
-                              AriaLabel="@S["ToggleColumns"]"
-                              Icon="@Phosphor.Columns" />
-            </ActivatorContent>
-            <ChildContent>
-                <div class="k7-data-table-column-picker">
-                    @foreach (var col in _columns.Where(c => c.Hideable))
-                    {
-                        var c = col;
-                        <K7Switch Value="c.IsVisible"
-                                  ValueChanged="_ => ToggleColumnVisibility(c)"
-                                  Label="@c.Title" />
-                    }
-                </div>
-            </ChildContent>
-        </K7Menu>
-    </div>
+    @if (ShowToolbar)
+    {
+        <div class="k7-data-table-toolbar">
+            <K7Menu Open="_columnPickerOpen" OpenChanged="v => _columnPickerOpen = v">
+                <ActivatorContent>
+                    <K7IconButton AriaLabel="@S["ToggleColumns"]"
+                                  Icon="@Phosphor.Columns" />
+                </ActivatorContent>
+                <ChildContent>
+                    <div class="k7-data-table-column-picker">
+                        @foreach (var col in _columns.Where(c => c.Hideable))
+                        {
+                            var c = col;
+                            <K7Switch Value="c.IsVisible"
+                                      ValueChanged="_ => ToggleColumnVisibility(c)"
+                                      Label="@c.Title" />
+                        }
+                    </div>
+                </ChildContent>
+            </K7Menu>
+        </div>
+    }
+    else if (_columnPickerOpen)
+    {
+        <div class="k7-data-table-column-picker-backdrop" @onclick="() => _columnPickerOpen = false"></div>
+        <div class="k7-data-table-column-picker-floating">
+            <div class="k7-data-table-column-picker">
+                @foreach (var col in _columns.Where(c => c.Hideable))
+                {
+                    var c = col;
+                    <K7Switch Value="c.IsVisible"
+                              ValueChanged="_ => ToggleColumnVisibility(c)"
+                              Label="@c.Title" />
+                }
+            </div>
+        </div>
+    }
 
-    <div class="k7-data-table-scroll">
+    <div class="k7-data-table-scroll" style="@ScrollStyle">
         <table class="k7-data-table-el" role="grid">
             <thead>
                 <tr>
