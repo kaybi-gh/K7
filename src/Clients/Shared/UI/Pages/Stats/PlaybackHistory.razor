@@ -9,59 +9,26 @@
     <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("5")'>@L["TVShows"]</K7Chip>
 </div>
 
-@if (_loading)
-{
-    <div class="d-flex flex-col pa-16">
-        <K7Spinner />
-    </div>
-}
-else if (_history is null || _history.Items.Count == 0)
-{
-    <div class="d-flex flex-col pa-16">
-        <K7Icon Name="clock-counter-clockwise" Style="font-size: 64px; opacity: 0.3;" />
-        <h6 Color="default" Style="opacity: 0.5;">@L["NoHistory"]</h6>
-    </div>
-}
-else
-{
-    <div class="pa-4">
-        <K7Table Items="@_history.Items">
-            <HeaderContent>
-                <th>@L["Title"]</th>
-                <th>@L["Type"]</th>
-                <th>@L["Date"]</th>
-                <th>@L["Duration"]</th>
-                <th>@L["Device"]</th>
-                <th>@L["Status"]</th>
-            </HeaderContent>
-            <RowTemplate Context="item">
-                <td DataLabel="@L["Title"]">@item.MediaTitle</td>
-                <td DataLabel="@L["Type"]">@item.MediaType</td>
-                <td DataLabel="@L["Date"]">@item.StartedAt.ToLocalTime().ToString("g")</td>
-                <td DataLabel="@L["Duration"]">@FormatDuration(item.TotalWatchedSeconds)</td>
-                <td DataLabel="@L["Device"]">@(item.DeviceName ?? "-")</td>
-                <td DataLabel="@L["Status"]">
-                    @if (item.IsCompleted)
-                    {
-                        <K7Icon Name="check-circle" Color="success" Size="sm" />
-                    }
-                    else
-                    {
-                        <K7Icon Name="pause-circle" Color="warning" Size="sm" />
-                    }
-                </td>
-            </RowTemplate>
-        </K7Table>
-
-        @if (_history.TotalCount > _history.PageSize)
-        {
-            <div class="d-flex justify-center mt-4">
-                <div class="d-flex align-center gap-2">
-                    <K7IconButton Icon="@Phosphor.CaretLeft" Disabled="@(_currentPage <= 1)" OnClick="@(() => OnPageChanged(_currentPage - 1))" />
-                    <span class="text-sm">@_currentPage / @((int)Math.Ceiling((double)_history.TotalCount / _history.PageSize))</span>
-                    <K7IconButton Icon="@Phosphor.CaretRight" Disabled="@(_currentPage >= (int)Math.Ceiling((double)_history.TotalCount / _history.PageSize))" OnClick="@(() => OnPageChanged(_currentPage + 1))" />
-                </div>
-            </div>
-        }
-    </div>
-}
+<div class="pa-4">
+    <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef" Height="60vh">
+        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Property="@(i => i.MediaTitle)" Hideable="false" />
+        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Property="@(i => i.MediaType)" />
+        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Property="@(i => i.StartedAt.ToLocalTime().ToString("g"))" />
+        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]">
+            <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
+        </K7DataColumn>
+        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" />
+        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Status"]" Width="80px">
+            <CellTemplate>
+                @if (context.IsCompleted)
+                {
+                    <K7Icon Icon="@Phosphor.CheckCircle" Style="color: var(--color-success);" Size="sm" />
+                }
+                else
+                {
+                    <K7Icon Icon="@Phosphor.PauseCircle" Style="color: var(--color-warning);" Size="sm" />
+                }
+            </CellTemplate>
+        </K7DataColumn>
+    </K7DataTable>
+</div>

@@ -120,28 +120,9 @@
         </div>
 
         <div aria-live="polite">
-            @if (_isLoadingItems)
-            {
-                <K7ProgressBar Indeterminate="true" />
-            }
-            else if (_items?.Items is null or { Count: 0 })
-            {
-                <div class="d-flex flex-col align-center pa-8">
-                    <i class="ph ph-check-circle" style="font-size: 2rem; color: var(--color-text-muted);"></i>
-                    <p class="text-sm mt-2" style="color: var(--color-text-muted);">@L["NoItems"]</p>
-                </div>
-            }
-            else
-            {
-                <K7Table Items="_items.Items" TItem="DiagnosticItemDto" Hover="true" Dense="true">
-                    <HeaderContent>
-                        <th>@L["ColName"]</th>
-                        <th>@L["ColLibrary"]</th>
-                        <th>@L["ColIssues"]</th>
-                        <th style="width: 160px; text-align: right;">@L["ColActions"]</th>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <td>
+            <K7DataTable @key="_tableKey" TItem="DiagnosticItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef" RowHeight="56" Height="60vh">
+                    <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColName"]" Hideable="false">
+                        <CellTemplate>
                             <div class="d-flex flex-col">
                                 @if (context.MediaUrl is not null)
                                 {
@@ -160,17 +141,21 @@
                                     })
                                 </span>
                             </div>
-                        </td>
-                        <td><p class="text-sm">@context.LibraryTitle</p></td>
-                        <td>
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColLibrary"]" Property="@(i => i.LibraryTitle)" />
+                    <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColIssues"]">
+                        <CellTemplate>
                             <div class="d-flex flex-col">
                                 @foreach (var issue in context.Issues)
                                 {
                                     <span class="text-sm" title="@GetIssueDetail(context, issue)" style="color: var(--color-@(GetIssueColor(issue)));">@GetIssueLabel(issue)</span>
                                 }
                             </div>
-                        </td>
-                        <td class="actions-cell">
+                        </CellTemplate>
+                    </K7DataColumn>
+                    <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColActions"]" Width="160px" Hideable="false">
+                        <CellTemplate>
                             <div class="d-flex justify-end" style="gap: var(--space-1);">
                                 @if (context.EntityType == DiagnosticEntityType.Media)
                                 {
@@ -203,19 +188,9 @@
                                     }
                                 }
                             </div>
-                        </td>
-                    </RowTemplate>
-                </K7Table>
-
-                @if ((_items.TotalPages ?? 1) > 1)
-                {
-                    <div class="d-flex justify-center mt-3" style="gap: var(--space-2);">
-                        <button class="k7-btn k7-btn--outlined focusable" type="button" @onclick="PreviousPage" disabled="@(_pageNumber <= 1)"><i class="ph ph-caret-left"></i></button>
-                        <span class="d-flex align-center" style="padding: 0 var(--space-3);">@_pageNumber / @(_items.TotalPages ?? 1)</span>
-                        <button class="k7-btn k7-btn--outlined focusable" type="button" @onclick="NextPage" disabled="@(_pageNumber >= (_items.TotalPages ?? 1))"><i class="ph ph-caret-right"></i></button>
-                    </div>
-                }
-            }
+                        </CellTemplate>
+                    </K7DataColumn>
+                </K7DataTable>
         </div>
     </div>
 </div>

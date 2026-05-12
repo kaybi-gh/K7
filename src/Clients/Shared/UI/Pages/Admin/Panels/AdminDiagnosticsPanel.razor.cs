@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Diagnostics;
@@ -15,12 +17,12 @@ public partial class AdminDiagnosticsPanel
     public Guid? QueryLibraryId { get; set; }
 
     private List<LibraryHealthSummaryDto>? _summaries;
-    private PaginatedListDto<DiagnosticItemDto>? _items;
+    private K7DataTable<DiagnosticItemDto>? _tableRef;
     private bool _isLoadingSummary = true;
-    private bool _isLoadingItems;
     private bool _isBulkFixing;
-    private int _pageNumber = 1;
     private string? _selectedSeverity;
+    private const int PageSize = 50;
+    private int _tableKey;
 
     private Guid? _filterLibraryId;
     private DiagnosticEntityType? _filterEntityType;
@@ -49,7 +51,12 @@ public partial class AdminDiagnosticsPanel
 
     private async Task LoadAsync()
     {
-        _isLoadingSummary = true;
+        var isFirstLoad = _summaries is null;
+        if (isFirstLoad)
+        {
+            _isLoadingSummary = true;
+        }
+
         try
         {
             _summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
@@ -81,21 +88,56 @@ public partial class AdminDiagnosticsPanel
 
     private async Task LoadItemsAsync()
     {
-        _isLoadingItems = true;
         _selectedItems.Clear();
+        _tableKey++;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task<K7DataTableResult<DiagnosticItemDto>> LoadServerDataAsync(
+        K7DataTableState<DiagnosticItemDto> state, CancellationToken cancellationToken)
+    {
+        var startIndex = state.StartIndex;
+        var count = state.Count;
+        if (count <= 0) return new K7DataTableResult<DiagnosticItemDto>([], 0);
+
+        var severityIssues = GetSeverityIssues(_selectedSeverity);
+
+        var firstPage = (startIndex / PageSize) + 1;
+        var lastPage = ((startIndex + count - 1) / PageSize) + 1;
+
+        cancellationToken.ThrowIfCancellationRequested();
+
         try
         {
-            var severityIssues = GetSeverityIssues(_selectedSeverity);
-            _items = await DiagnosticsService.GetDiagnosticItemsAsync(
-                _filterLibraryId, _filterEntityType, _filterIssue, severityIssues, _pageNumber);
+            var tasks = Enumerable.Range(firstPage, lastPage - firstPage + 1)
+                .Select(page => DiagnosticsService.GetDiagnosticItemsAsync(
+                    _filterLibraryId, _filterEntityType, _filterIssue, severityIssues, page, PageSize, cancellationToken));
+
+            var results = await Task.WhenAll(tasks);
+
+            var totalCount = 0;
+            var allItems = new List<DiagnosticItemDto>(count);
+            foreach (var result in results)
+            {
+                if (result?.Items is { Count: > 0 })
+                {
+                    totalCount = result.TotalCount ?? 0;
+                    allItems.AddRange(result.Items);
+                }
+            }
+
+            var offset = startIndex - (firstPage - 1) * PageSize;
+            var items = allItems.Skip(offset).Take(count).ToList();
+
+            return new K7DataTableResult<DiagnosticItemDto>(items, totalCount);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch
         {
-            _items = null;
-        }
-        finally
-        {
-            _isLoadingItems = false;
+            return new K7DataTableResult<DiagnosticItemDto>([], 0);
         }
     }
 
@@ -113,7 +155,6 @@ public partial class AdminDiagnosticsPanel
         _filterEntityType = entityType;
         _filterIssue = issue;
         _selectedSeverity = null;
-        _pageNumber = 1;
         await LoadItemsAsync();
     }
 
@@ -123,7 +164,6 @@ public partial class AdminDiagnosticsPanel
         _filterEntityType = null;
         _filterIssue = null;
         _selectedSeverity = null;
-        _pageNumber = 1;
         await LoadItemsAsync();
     }
 
@@ -135,7 +175,6 @@ public partial class AdminDiagnosticsPanel
             case "type": _filterEntityType = null; break;
             case "issue": _filterIssue = null; break;
         }
-        _pageNumber = 1;
         await LoadItemsAsync();
     }
 
@@ -145,49 +184,25 @@ public partial class AdminDiagnosticsPanel
         _filterIssue = null;
         _filterEntityType = null;
         _filterLibraryId = null;
-        _pageNumber = 1;
         await LoadItemsAsync();
     }
 
     private async Task OnLibraryFilterChanged(Guid? libraryId)
     {
         _filterLibraryId = libraryId;
-        _pageNumber = 1;
         await LoadItemsAsync();
     }
 
     private async Task OnEntityTypeFilterChanged(DiagnosticEntityType? entityType)
     {
         _filterEntityType = entityType;
-        _pageNumber = 1;
         await LoadItemsAsync();
     }
 
     private async Task OnIssueFilterChanged(DiagnosticIssue? issue)
     {
         _filterIssue = issue;
-        _pageNumber = 1;
         await LoadItemsAsync();
-    }
-
-    private async Task OnPageChanged(int page)
-    {
-        _pageNumber = page;
-        await LoadItemsAsync();
-    }
-
-    private Task PreviousPage()
-    {
-        if (_pageNumber > 1)
-            return OnPageChanged(_pageNumber - 1);
-        return Task.CompletedTask;
-    }
-
-    private Task NextPage()
-    {
-        if (_pageNumber < (_items?.TotalPages ?? 1))
-            return OnPageChanged(_pageNumber + 1);
-        return Task.CompletedTask;
     }
 
     private async Task FixItemAsync(Guid entityId, DiagnosticFixAction action)

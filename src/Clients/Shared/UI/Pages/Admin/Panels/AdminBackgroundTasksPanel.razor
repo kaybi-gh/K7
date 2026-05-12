@@ -61,59 +61,36 @@
         </ChildContent>
     </K7ExpansionPanel>
 
-    @if (_tasks is not null)
-    {
-        @if (_tasks.Items is null || _tasks.Items.Count == 0)
-        {
-            <div class="surface pa-8 d-flex flex-column align-center">
-                <K7Icon Name="check-circle" Size="lg" Color="secondary" />
-                <p class="text-sm mt-2" style="color: var(--color-text-muted);">@L["NoTasks"]</p>
-            </div>
-        }
-        else
-        {
-            <div class="k7-table-wrap">
-                <table class="k7-table k7-table--dense">
-                    <thead>
-                        <tr>
-                            <th>@L["ColName"]</th>
-                            <th>@L["ColStatus"]</th>
-                            <th>@L["ColAttempts"]</th>
-                            <th>@L["ColDate"]</th>
-                            <th>@L["ColDuration"]</th>
-                            <th>@L["ColGroup"]</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var task in _tasks.Items)
-                        {
-                            <tr>
-                                <td>
-                                    <span class="text-sm">@GetTaskTypeLabel(task.Name)</span>
-                                    @if (!string.IsNullOrEmpty(task.ErrorDetails))
-                                    {
-                                        <p class="text-caption" style="color: var(--color-error);">@task.ErrorDetails</p>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="d-flex align-center" style="gap: var(--space-1);">
-                                        <K7Icon Name="@GetStatusIcon(task.Status)" Size="sm" Style="@GetStatusIconStyle(task.Status)" />
-                                        <span class="text-sm" style="@GetStatusTextStyle(task.Status)">@GetStatusLabel(task.Status)</span>
-                                    </div>
-                                </td>
-                                <td class="text-sm">@task.AttemptCount / @task.MaxAttempts</td>
-                                <td class="text-sm">@FormatRelativeTime(task.Created)</td>
-                                <td class="text-sm">@(task.Duration.HasValue ? FormatDuration(task.Duration.Value) : "-")</td>
-                                <td class="text-sm">@(task.ConcurrencyGroup ?? "-")</td>
-                                <td>
-                                    <K7IconButton Icon="@Phosphor.Info" OnClick="@(() => OpenDetailDialog(task))" AriaLabel="detail" />
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    }
+    <K7DataTable @key="_tableKey" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync" @ref="_tableRef" Height="60vh">
+        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false">
+            <CellTemplate>
+                <span class="text-sm">@GetTaskTypeLabel(context.Name)</span>
+                @if (!string.IsNullOrEmpty(context.ErrorDetails))
+                {
+                    <p class="text-caption" style="color: var(--color-error);">@context.ErrorDetails</p>
+                }
+            </CellTemplate>
+        </K7DataColumn>
+        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColStatus"]" Hideable="false">
+            <CellTemplate>
+                <div class="d-flex align-center" style="gap: var(--space-1);">
+                    <K7Icon Name="@GetStatusIcon(context.Status)" Size="sm" Style="@GetStatusIconStyle(context.Status)" />
+                    <span class="text-sm" style="@GetStatusTextStyle(context.Status)">@GetStatusLabel(context.Status)</span>
+                </div>
+            </CellTemplate>
+        </K7DataColumn>
+        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColAttempts"]" Property="@(t => $"{t.AttemptCount} / {t.MaxAttempts}")" Width="100px" />
+        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColDate"]">
+            <CellTemplate><span class="text-sm">@FormatRelativeTime(context.Created)</span></CellTemplate>
+        </K7DataColumn>
+        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColDuration"]" Width="100px">
+            <CellTemplate><span class="text-sm">@(context.Duration.HasValue ? FormatDuration(context.Duration.Value) : "-")</span></CellTemplate>
+        </K7DataColumn>
+        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColGroup"]" Property="@(t => t.ConcurrencyGroup ?? "-")" />
+        <K7DataColumn TItem="BackgroundTaskDto" Title="" Width="50px" Hideable="false">
+            <CellTemplate>
+                <K7IconButton Icon="@Phosphor.Info" OnClick="@(() => OpenDetailDialog(context))" AriaLabel="detail" />
+            </CellTemplate>
+        </K7DataColumn>
+    </K7DataTable>
 </div>

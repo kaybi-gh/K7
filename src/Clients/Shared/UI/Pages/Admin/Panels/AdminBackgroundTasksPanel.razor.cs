@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
@@ -22,25 +24,23 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
 
-    private PaginatedListDto<BackgroundTaskDto>? _tasks;
     private BackgroundTaskSettingsDto? _settings;
     private BackgroundTaskSummaryDto? _summary;
-#pragma warning disable CS0414
-    private bool _isLoadingTasks = true;
-#pragma warning restore CS0414
+    private K7DataTable<BackgroundTaskDto>? _tableRef;
     private bool _isSavingSettings;
     private BackgroundTaskStatus? _selectedStatus;
     private string? _selectedTaskType;
-    private int _pageNumber = 1;
     private int _workerCount;
     private Dictionary<string, int> _concurrencyLimits = new();
     private readonly CancellationTokenSource _cts = new();
     private Timer? _debounceTimer;
+    private const int PageSize = 50;
+    private int _tableKey;
 
     protected override async Task OnInitializedAsync()
     {
         K7HubClient.BackgroundTaskUpdated += OnBackgroundTaskUpdated;
-        await Task.WhenAll(LoadTasksAsync(), LoadSettingsAsync(initial: true), LoadSummaryAsync());
+        await Task.WhenAll(LoadSettingsAsync(initial: true), LoadSummaryAsync());
     }
 
     public void Dispose()
@@ -58,33 +58,64 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         {
             _ = InvokeAsync(async () =>
             {
-                await Task.WhenAll(LoadTasksAsync(), LoadSettingsAsync(), LoadSummaryAsync());
+                await Task.WhenAll(LoadSummaryAsync(), LoadSettingsAsync());
                 StateHasChanged();
             });
         }, null, DebounceDelay, Timeout.InfiniteTimeSpan);
     }
 
-    private async Task LoadTasksAsync()
+    private async Task RefreshTableAsync()
     {
-        _isLoadingTasks = true;
+        _tableKey++;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task<K7DataTableResult<BackgroundTaskDto>> LoadServerDataAsync(
+        K7DataTableState<BackgroundTaskDto> state, CancellationToken cancellationToken)
+    {
+        var startIndex = state.StartIndex;
+        var count = state.Count;
+        if (count <= 0) return new K7DataTableResult<BackgroundTaskDto>([], 0);
+
+        var statuses = _selectedStatus.HasValue ? new[] { _selectedStatus.Value } : null;
+        var names = _selectedTaskType is not null ? new[] { _selectedTaskType } : null;
+
+        var firstPage = (startIndex / PageSize) + 1;
+        var lastPage = ((startIndex + count - 1) / PageSize) + 1;
+
+        cancellationToken.ThrowIfCancellationRequested();
+
         try
         {
-            var statuses = _selectedStatus.HasValue ? new[] { _selectedStatus.Value } : null;
-            var names = _selectedTaskType is not null ? new[] { _selectedTaskType } : null;
-            _tasks = await BackgroundTaskService.GetBackgroundTasksAsync(_pageNumber, 20, statuses, names, _cts.Token);
+            var tasks = Enumerable.Range(firstPage, lastPage - firstPage + 1)
+                .Select(page => BackgroundTaskService.GetBackgroundTasksAsync(page, PageSize, statuses, names, cancellationToken));
+
+            var results = await Task.WhenAll(tasks);
+
+            var totalCount = 0;
+            var allItems = new List<BackgroundTaskDto>(count);
+            foreach (var result in results)
+            {
+                if (result?.Items is { Count: > 0 })
+                {
+                    totalCount = result.TotalCount ?? 0;
+                    allItems.AddRange(result.Items);
+                }
+            }
+
+            var offset = startIndex - (firstPage - 1) * PageSize;
+            var items = allItems.Skip(offset).Take(count).ToList();
+
+            return new K7DataTableResult<BackgroundTaskDto>(items, totalCount);
         }
         catch (OperationCanceledException)
         {
-            // Component disposed
+            throw;
         }
         catch
         {
-            _tasks = null;
             Snackbar.Add(S["LoadError"], K7Severity.Error);
-        }
-        finally
-        {
-            _isLoadingTasks = false;
+            return new K7DataTableResult<BackgroundTaskDto>([], 0);
         }
     }
 
@@ -156,21 +187,13 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private async Task OnStatusFilterChanged(BackgroundTaskStatus? status)
     {
         _selectedStatus = status;
-        _pageNumber = 1;
-        await LoadTasksAsync();
+        await RefreshTableAsync();
     }
 
     private async Task OnTaskTypeFilterChanged(string? taskType)
     {
         _selectedTaskType = taskType;
-        _pageNumber = 1;
-        await LoadTasksAsync();
-    }
-
-    private async Task OnPageChanged(int page)
-    {
-        _pageNumber = page;
-        await LoadTasksAsync();
+        await RefreshTableAsync();
     }
 
     private int GetGroupLimit(string name) => _concurrencyLimits.GetValueOrDefault(name, 1);
@@ -268,7 +291,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         {
             await BackgroundTaskService.DeleteBackgroundTaskAsync(task.Id, _cts.Token);
             Snackbar.Add(L["TaskDeleted"], K7Severity.Success);
-            await Task.WhenAll(LoadTasksAsync(), LoadSummaryAsync());
+            await Task.WhenAll(RefreshTableAsync(), LoadSummaryAsync());
         }
         catch (OperationCanceledException)
         {
