@@ -8,6 +8,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace K7.Server.Application.Features.Home.Queries.GetHomeFeedItems;
 
@@ -21,20 +22,32 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public required int PageSize { get; init; } = 20;
 }
 
-public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser)
+public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<GetHomeFeedItemsQuery, PaginatedList<HomeFeedItemDto>>
 {
+    private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromHours(24);
+    private static readonly TimeSpan ContinueWatchingCacheDuration = TimeSpan.FromMinutes(5);
+
     public async Task<PaginatedList<HomeFeedItemDto>> Handle(GetHomeFeedItemsQuery request, CancellationToken cancellationToken)
     {
         var userId = currentUser.Id;
         var strategy = InferStrategy(request);
+        var cacheKey = BuildCacheKey(request, userId);
+        var version = cacheInvalidator.Version;
 
-        return strategy switch
+        if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<HomeFeedItemDto> Result) cached) && cached.Version == version)
+            return cached.Result;
+
+        var result = strategy switch
         {
             FeedStrategy.ContinueWatching => await HandleContinueWatchingAsync(request, userId, cancellationToken),
             FeedStrategy.RecentlyAdded => await HandleRecentlyAddedAsync(request, userId, cancellationToken),
             _ => await HandleTopLevelAsync(request, userId, cancellationToken)
         };
+
+        var ttl = strategy == FeedStrategy.ContinueWatching ? ContinueWatchingCacheDuration : DefaultCacheDuration;
+        cache.Set(cacheKey, (version, result), ttl);
+        return result;
     }
 
     private static FeedStrategy InferStrategy(GetHomeFeedItemsQuery request)
@@ -46,6 +59,24 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             return FeedStrategy.RecentlyAdded;
 
         return FeedStrategy.TopLevel;
+    }
+
+    private static string BuildCacheKey(GetHomeFeedItemsQuery request, Guid? userId)
+    {
+        var parts = new List<string> { "home-feed", $"u:{userId}" };
+
+        if (request.LibraryIds is { Length: > 0 })
+            parts.Add($"lib:{string.Join(',', request.LibraryIds.OrderBy(x => x))}");
+        if (request.ContinueWatching.HasValue)
+            parts.Add($"cw:{request.ContinueWatching.Value}");
+        if (request.MediaTypes is { Count: > 0 })
+            parts.Add($"mt:{string.Join(',', request.MediaTypes.Order())}");
+        if (request.OrderBy is { Count: > 0 })
+            parts.Add($"ob:{string.Join(',', request.OrderBy.Order())}");
+        parts.Add($"p:{request.PageNumber}");
+        parts.Add($"ps:{request.PageSize}");
+
+        return string.Join('|', parts);
     }
 
     private async Task<PaginatedList<HomeFeedItemDto>> HandleContinueWatchingAsync(
@@ -66,8 +97,6 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         query = ApplyLibraryFilter(query, request.LibraryIds);
         query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
 
-        var totalCount = await query.CountAsync(cancellationToken);
-
         var items = await query
             .OrderByDescending(x => x.UserMediaStates
                 .Where(s => s.UserId == userId.Value)
@@ -80,10 +109,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
+            .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
         var feedItems = items.Select(MapContinueWatchingItem).ToList();
-        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
+        return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 
     private async Task<PaginatedList<HomeFeedItemDto>> HandleRecentlyAddedAsync(
@@ -153,8 +183,6 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         if (userId.HasValue)
             query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
 
-        var totalCount = await query.CountAsync(cancellationToken);
-
         var ordered = ApplyOrdering(request.OrderBy, query, userId);
         var pageIds = await ordered
             .Skip((request.PageNumber - 1) * request.PageSize)
@@ -163,7 +191,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .ToListAsync(cancellationToken);
 
         if (pageIds.Count == 0)
-            return new PaginatedList<HomeFeedItemDto>([], totalCount, request.PageNumber, request.PageSize);
+            return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
 
         var items = await context.Medias
             .Where(m => pageIds.Contains(m.Id))
@@ -190,7 +218,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Select(MapTopLevelItem)
             .ToList();
 
-        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
+        return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 
     private List<HomeFeedItemDto> AggregateRecentItems(List<BaseMedia> rawItems)
