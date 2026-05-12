@@ -1,6 +1,6 @@
 @typeparam TItem
 
-<div class="k7-virtual-list">
+<div class="k7-virtual-list" @ref="_listRef">
     @if (Items is not null)
     {
         @if (Items.Count == 0 && EmptyContent is not null)
@@ -22,7 +22,7 @@
     {
         @if (Placeholder is not null)
         {
-            <Virtualize ItemsProvider="ItemsProvider" Context="item" ItemSize="ItemHeight"
+            <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="ItemHeight"
                         OverscanCount="OverscanCount" @ref="_virtualizeRef">
                 <ItemContent>
                     @if (ItemTemplate is not null)
@@ -37,7 +37,7 @@
         }
         else
         {
-            <Virtualize ItemsProvider="ItemsProvider" Context="item" ItemSize="ItemHeight"
+            <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="ItemHeight"
                         OverscanCount="OverscanCount" @ref="_virtualizeRef">
                 @if (ItemTemplate is not null)
                 {

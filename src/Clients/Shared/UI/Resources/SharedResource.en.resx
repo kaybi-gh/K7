@@ -87,4 +87,8 @@
   <data name="LoadError" xml:space="preserve"><value>Failed to load.</value></data>
   <data name="ToggleColumns" xml:space="preserve"><value>Columns</value></data>
   <data name="BackToStart" xml:space="preserve"><value>Back to start</value></data>
+  <data name="BackToTop" xml:space="preserve"><value>Back to top</value></data>
+  <data name="NoResults" xml:space="preserve"><value>No results</value></data>
+  <data name="JumpIndex" xml:space="preserve"><value>Jump index</value></data>
+  <data name="ViewMode" xml:space="preserve"><value>View mode</value></data>
 </root>
