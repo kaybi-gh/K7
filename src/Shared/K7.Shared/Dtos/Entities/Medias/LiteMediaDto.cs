@@ -14,6 +14,7 @@ public abstract record LiteMediaDto
     public Guid Id { get; init; }
     public string? Title { get; init; }
     public DateOnly? ReleaseDate { get; init; }
+    public DateTimeOffset? Created { get; init; }
     public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }
     public UserMediaStateDto? UserState { get; init; }
     public int? UserRating { get; init; }
