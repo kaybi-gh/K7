@@ -173,6 +173,7 @@ public static class MediaMappings
                 Id = domain.Id,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
+                Created = domain.Created,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
@@ -184,6 +185,7 @@ public static class MediaMappings
                 Id = domain.Id,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
+                Created = domain.Created,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
@@ -195,6 +197,7 @@ public static class MediaMappings
                 Id = domain.Id,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
+                Created = domain.Created,
                 Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(p => p.ToMetadataPictureDto()).ToList(),
                 AlbumId = track.AlbumId,
                 TrackNumber = track.TrackNumber,
@@ -219,6 +222,7 @@ public static class MediaMappings
                 Id = domain.Id,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
+                Created = domain.Created,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
@@ -230,6 +234,7 @@ public static class MediaMappings
                 Id = domain.Id,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
+                Created = domain.Created,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 SerieId = season.SerieId,
                 SeasonNumber = season.SeasonNumber,
@@ -248,6 +253,7 @@ public static class MediaMappings
                 Id = domain.Id,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
+                Created = domain.Created,
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 EpisodeNumber = episode.EpisodeNumber,
                 SeasonNumber = episode.Season?.SeasonNumber ?? 0,
