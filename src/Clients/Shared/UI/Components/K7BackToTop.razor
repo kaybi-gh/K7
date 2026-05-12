@@ -1,0 +1,9 @@
+@inject IJSRuntime JSRuntime
+
+<button class="k7-back-to-top @(_visible ? "visible" : "") focusable"
+        @ref="_buttonRef"
+        @onclick="ScrollToTop"
+        aria-label="@S["BackToTop"]"
+        title="@S["BackToTop"]">
+    <K7Icon Icon="@Phosphor.ArrowUp" Size="md" />
+</button>
