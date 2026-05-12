@@ -1,0 +1,35 @@
+.k7-back-to-top {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--color-surface-2);
+    color: var(--color-text);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease, background 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.k7-back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.k7-back-to-top:hover,
+.k7-back-to-top:focus-visible {
+    background: var(--color-surface-3, rgba(255, 255, 255, 0.15));
+}
+
+.k7-back-to-top:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}

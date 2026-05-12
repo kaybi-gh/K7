@@ -1,0 +1,18 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-jump-index @(_dragging ? "k7-jump-index--active" : "")"
+     @ref="_root"
+     role="navigation"
+     aria-label="@AriaLabel">
+    @foreach (var label in Labels)
+    {
+        var l = label;
+        <button class="k7-jump-index-item focusable @(l == _activeLabel ? "k7-jump-index-item--active" : "")"
+                type="button"
+                tabindex="0"
+                aria-label="@l"
+                @onclick="() => OnLabelClicked(l)">
+            @l
+        </button>
+    }
+</div>
