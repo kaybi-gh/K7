@@ -50,15 +50,26 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
                 "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
         }
 
-        if (!_observing && HasContent())
+        if (!_observing && HasContent() && _module is not null)
         {
             _observing = true;
-            await StartObserving();
+            _dotnetRef ??= DotNetObjectReference.Create(this);
+
+            var initialWidth = await _module.InvokeAsync<int>("observeContainerWidth", _gridRef, _dotnetRef);
+            if (initialWidth > 0 && _containerWidth == 0)
+            {
+                _containerWidth = initialWidth;
+                UpdateEstimatedRowHeight();
+                _lastColumnCount = CalculateColumnCount();
+                StateHasChanged();
+            }
+
+            await _module.InvokeVoidAsync("initGridKeyNav", _gridRef, _estimatedRowHeight);
         }
     }
 
     [JSInvokable]
-    public void OnContainerWidthChanged(int width)
+    public async Task OnContainerWidthChanged(int width)
     {
         if (width == _containerWidth) return;
 
@@ -74,7 +85,11 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
             RebuildRows();
         }
 
-        _virtualizeRef?.RefreshDataAsync();
+        if (_virtualizeRef is not null)
+        {
+            await _virtualizeRef.RefreshDataAsync();
+        }
+
         StateHasChanged();
     }
 
@@ -83,6 +98,18 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         if (_virtualizeRef is not null)
         {
             await _virtualizeRef.RefreshDataAsync();
+        }
+    }
+
+    public void ScrollToItemIndex(int itemIndex)
+    {
+        var cols = CalculateColumnCount();
+        var rowIndex = itemIndex / cols;
+        var scrollTop = rowIndex * _estimatedRowHeight;
+
+        if (_module is not null)
+        {
+            _ = _module.InvokeVoidAsync("scrollTo", _gridRef, scrollTop);
         }
     }
 
@@ -158,14 +185,6 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
     private bool HasContent() =>
         Items is { Count: > 0 } || ItemsProvider is not null;
-
-    private async Task StartObserving()
-    {
-        if (_module is null) return;
-        _dotnetRef ??= DotNetObjectReference.Create(this);
-        await _module.InvokeVoidAsync("observeContainerWidth", _gridRef, _dotnetRef);
-        await _module.InvokeVoidAsync("initGridKeyNav", _gridRef, _estimatedRowHeight);
-    }
 
     public async ValueTask DisposeAsync()
     {
