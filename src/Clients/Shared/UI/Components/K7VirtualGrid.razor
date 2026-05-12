@@ -58,5 +58,15 @@
                 </Placeholder>
             </Virtualize>
         }
+        else if (Placeholder is not null)
+        {
+            <div class="k7-virtual-grid-row"
+                 style="grid-template-columns: repeat(auto-fill, minmax(@(ItemWidth)px, 1fr)); height: @(_estimatedRowHeight)px;">
+                @for (var i = 0; i < 12; i++)
+                {
+                    @Placeholder
+                }
+            </div>
+        }
     }
 </div>
