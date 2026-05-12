@@ -29,16 +29,13 @@ public partial class App : Application
     {
         Debug.WriteLine("K7 MAUI - App.CreateWindow - start");
 
-#if ANDROID
-        // Show the real page immediately. The BlazorPage has a built-in splash
-        // overlay that stays visible until Blazor signals readiness.
         K7.Clients.Shared.Services.AppReadySignal.Reset();
         var splash = new LottieSplashPage();
         var window = new Window(splash) { Title = "K7" };
 
         _ = Task.Run(async () =>
         {
-            // Small delay to let Android draw the lightweight splash frame
+            // Small delay to let the platform draw the lightweight splash frame
             await Task.Delay(50);
             MainThread.BeginInvokeOnMainThread(() =>
             {
@@ -57,14 +54,6 @@ public partial class App : Application
 
         Debug.WriteLine("K7 MAUI - App.CreateWindow - splash returned");
         return window;
-#else
-        var page = GetStartPage();
-        Debug.WriteLine("K7 MAUI - App.CreateWindow - page created");
-        return new Window(page)
-        {
-            Title = "K7"
-        };
-#endif
     }
 
     private ContentPage GetStartPage()
