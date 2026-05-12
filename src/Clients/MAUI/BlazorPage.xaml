@@ -44,7 +44,7 @@
               InputTransparent="False">
             <skia:SKLottieView x:Name="SplashAnimation"
                                Source="splash.json"
-                               RepeatCount="0"
+                               RepeatCount="-1"
                                WidthRequest="120"
                                HeightRequest="120"
                                HorizontalOptions="Center"
