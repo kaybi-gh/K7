@@ -276,6 +276,11 @@ public partial class Library : IDisposable
         Navigation.NavigateTo(GetItemHref(item));
     }
 
+    private void OnColumnPickerRequested()
+    {
+        _dataTable?.ToggleColumnPicker();
+    }
+
     private static string GetItemHref(LiteMediaDto item) => item switch
     {
         LiteMusicAlbumDto album => $"/music/albums/{album.Id}",
@@ -344,8 +349,86 @@ public partial class Library : IDisposable
         _ => mediaType.ToString()
     };
 
-    private static object? FormatLastInteracted(LiteMediaDto item) =>
-        item.UserState?.LastInteractedAt?.ToString("d");
+    private static readonly IReadOnlyList<string> AlphabetLabels =
+        ["#", ..Enumerable.Range('A', 26).Select(c => ((char)c).ToString())];
+
+    private IReadOnlyList<string>? JumpLabels => _selectedSort is MediaOrderingOption.TitleAsc or MediaOrderingOption.TitleDesc
+        ? AlphabetLabels
+        : null;
+
+    private async Task OnJumpRequested(string label)
+    {
+        if (_browseView is null || _totalCount == 0) return;
+
+        var index = await FindIndexForLetterAsync(label);
+        _browseView.ScrollToItemIndex(index);
+    }
+
+    private async Task<int> FindIndexForLetterAsync(string label)
+    {
+        var ascending = _selectedSort is not MediaOrderingOption.TitleDesc;
+
+        if (label == "#")
+        {
+            return ascending ? 0 : _totalCount - 1;
+        }
+
+        var targetChar = char.ToUpperInvariant(label[0]);
+        var low = 0;
+        var high = _totalCount - 1;
+        var result = ascending ? _totalCount - 1 : 0;
+
+        while (low <= high)
+        {
+            var mid = (low + high) / 2;
+            var query = BuildQuery((mid / PageSize) + 1, PageSize);
+
+            try
+            {
+                var page = await k7ServerService.GetLiteMediasAsync(query);
+                var offset = mid - ((mid / PageSize) * PageSize);
+                var items = page?.Items?.ToList();
+
+                if (items is null || offset >= items.Count) break;
+
+                var itemTitle = items[offset].Title ?? "";
+                var itemChar = itemTitle.Length > 0 ? char.ToUpperInvariant(itemTitle[0]) : '#';
+                var isLetter = char.IsLetter(itemChar);
+
+                int cmp;
+                if (!isLetter && targetChar == '#')
+                {
+                    cmp = 0;
+                }
+                else if (!isLetter)
+                {
+                    cmp = ascending ? -1 : 1;
+                }
+                else
+                {
+                    cmp = ascending
+                        ? itemChar.CompareTo(targetChar)
+                        : targetChar.CompareTo(itemChar);
+                }
+
+                if (cmp < 0)
+                {
+                    low = mid + 1;
+                }
+                else
+                {
+                    result = mid;
+                    high = mid - 1;
+                }
+            }
+            catch
+            {
+                break;
+            }
+        }
+
+        return Math.Clamp(result, 0, Math.Max(0, _totalCount - 1));
+    }
 
     public void Dispose()
     {

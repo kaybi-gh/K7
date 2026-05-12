@@ -529,6 +529,51 @@
             </BrowseView>
         </div>
     </section>
+
+    <section id="k7-data-table" class="ds-section">
+        <h2>K7DataTable</h2>
+        <p class="ds-description">Virtualized data table with sortable columns, column picker, and row click support.</p>
+        <div class="ds-preview ds-preview--block" style="height:300px">
+            <K7DataTable TItem="TrackRow" Items="_tracks">
+                <K7DataColumn TItem="TrackRow" Title="#" Property="@(t => t.Track)" Width="60px" />
+                <K7DataColumn TItem="TrackRow" Title="Title" SortKey="title">
+                    <CellTemplate>
+                        <strong>@context.Title</strong>
+                    </CellTemplate>
+                </K7DataColumn>
+                <K7DataColumn TItem="TrackRow" Title="Artist" Property="@(t => t.Artist)" SortKey="artist" />
+                <K7DataColumn TItem="TrackRow" Title="Album" Property="@(t => t.Album)" Hideable="true" />
+                <K7DataColumn TItem="TrackRow" Title="Duration" Property="@(t => t.Duration)" Width="80px" />
+            </K7DataTable>
+        </div>
+    </section>
+
+    <section id="k7-back-to-top" class="ds-section">
+        <h2>K7BackToTop</h2>
+        <p class="ds-description">Floating button that appears after scrolling past a threshold. Scrolls the nearest scroll container back to top.</p>
+        <div class="ds-preview ds-preview--block" style="height:200px; overflow-y:auto; position:relative;">
+            <div style="height:800px; padding:16px;">
+                <p>Scroll down to see the back-to-top button appear.</p>
+            </div>
+            <K7BackToTop Threshold="100" />
+        </div>
+    </section>
+
+    <section id="k7-jump-index" class="ds-section">
+        <h2>K7JumpIndex</h2>
+        <p class="ds-description">Vertical alphabet rail for quick navigation. Supports click and drag. Integrates with BrowseView for scrolling to letter positions.</p>
+        <div class="ds-preview ds-preview--block" style="height:300px; position:relative; overflow-y:auto;">
+            <div style="padding: 16px; padding-right: 32px;">
+                @foreach (var letter in _jumpLabels)
+                {
+                    <div id="jump-@letter" style="padding: 8px 0; border-bottom: 1px solid var(--color-border);">
+                        <strong>@letter</strong> - Items starting with @letter
+                    </div>
+                }
+            </div>
+            <K7JumpIndex Labels="_jumpLabels" OnJumpRequested="OnJumpDemoRequested" />
+        </div>
+    </section>
 </div>
 
 @code {
@@ -614,4 +659,13 @@
         new() { Id = Guid.NewGuid(), Title = "The Cat's in the Bag", EpisodeNumber = 2, SeasonNumber = 1, Duration = 48.0, SerieId = Guid.NewGuid(), SerieSeasonCount = 5 },
         new() { Id = Guid.NewGuid(), Title = "...And the Bag's in the River", EpisodeNumber = 3, SeasonNumber = 1, Duration = 50.2, SerieId = Guid.NewGuid(), SerieSeasonCount = 5 },
     ];
+
+    // Jump Index
+    private static readonly IReadOnlyList<string> _jumpLabels =
+        ["#", ..Enumerable.Range('A', 26).Select(c => ((char)c).ToString())];
+
+    private void OnJumpDemoRequested(string label)
+    {
+        // Demo only - in real usage this scrolls a BrowseView
+    }
 }

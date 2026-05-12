@@ -3,6 +3,7 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
+    position: relative;
 }
 
 .browse-view-toolbar {
@@ -41,6 +42,18 @@
     gap: 16px;
 }
 
+.browse-view-grid {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    flex: 1;
+    padding: 0 16px 16px;
+}
+
+.browse-view-grid-row {
+    display: grid;
+    gap: var(--grid-gap);
+}
+
 .browse-view-table {
     overflow-y: auto;
     flex: 1;
@@ -73,4 +86,20 @@
 .browse-view-table-el tbody tr:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
+}
+
+.browse-view-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0 16px 16px;
+}
+
+.browse-view-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    padding: 48px 16px;
 }

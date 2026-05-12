@@ -25,6 +25,10 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public RenderFragment? EmptyContent { get; set; }
     [Parameter] public RenderFragment? GridPlaceholder { get; set; }
     [Parameter] public RenderFragment? ListPlaceholder { get; set; }
+    [Parameter] public EventCallback OnColumnPickerRequested { get; set; }
+
+    [Parameter] public IReadOnlyList<string>? JumpIndexLabels { get; set; }
+    [Parameter] public EventCallback<string> OnJumpRequested { get; set; }
 
     [Parameter] public string PersistenceKey { get; set; } = "default";
     [Parameter] public BrowseViewMode DefaultMode { get; set; } = BrowseViewMode.Grid;
@@ -43,10 +47,14 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     private BrowseViewMode _currentMode;
     private List<BrowseViewMode> _availableModes = [];
+    private List<ButtonGroupOption<BrowseViewMode>> _modeOptions = [];
     private bool _settingsOpen;
+    private bool _hasColumnPicker;
+    private bool _initialized;
     private int _itemWidth;
     private int _spacing;
     private bool _loadingMore;
+    private int? _totalItemCount;
 
     protected override void OnInitialized()
     {
@@ -54,6 +62,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         _itemWidth = DefaultItemWidth;
         _spacing = DefaultSpacing;
         _availableModes = BuildAvailableModes();
+        _modeOptions = BuildModeOptions();
+        _hasColumnPicker = OnColumnPickerRequested.HasDelegate;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -71,6 +81,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
                 _spacing = saved.Spacing;
             }
 
+            _initialized = true;
             StateHasChanged();
             return;
         }
@@ -84,10 +95,21 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     protected override void OnParametersSet()
     {
         _availableModes = BuildAvailableModes();
+        _modeOptions = BuildModeOptions();
+        _hasColumnPicker = OnColumnPickerRequested.HasDelegate;
 
         if (!_availableModes.Contains(_currentMode) && _availableModes.Count > 0)
         {
             _currentMode = _availableModes[0];
+        }
+
+        if (Items is not null)
+        {
+            _totalItemCount = Items.Count;
+        }
+        else if (TableContent is not null && _currentMode is BrowseViewMode.Table)
+        {
+            _totalItemCount = null;
         }
     }
 
@@ -123,9 +145,38 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         }
     }
 
-    private bool IsEmpty => Items is { Count: 0 } && ItemsProvider is null;
+    public void ScrollToItemIndex(int itemIndex)
+    {
+        switch (_currentMode)
+        {
+            case BrowseViewMode.Grid when _gridComponentRef is not null:
+                _gridComponentRef.ScrollToItemIndex(itemIndex);
+                break;
+            case BrowseViewMode.List when _listComponentRef is not null:
+                _ = _listComponentRef.ScrollToItemIndex(itemIndex);
+                break;
+        }
+    }
+
+    private bool IsEmpty => _totalItemCount is 0 && !Loading && _initialized;
 
     private bool UseProvider => ItemsProvider is not null;
+
+    private async ValueTask<ItemsProviderResult<TItem>> WrappedItemsProvider(ItemsProviderRequest request)
+    {
+        if (ItemsProvider is null) return default;
+
+        var result = await ItemsProvider(request);
+        var prevCount = _totalItemCount;
+        _totalItemCount = result.TotalItemCount;
+
+        if (_totalItemCount != prevCount)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+
+        return result;
+    }
 
     [JSInvokable]
     public async Task OnSentinelVisible()
@@ -175,6 +226,14 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             modes.Add(BrowseViewMode.Table);
         if (ListTemplate is not null) modes.Add(BrowseViewMode.List);
         return modes;
+    }
+
+    private List<ButtonGroupOption<BrowseViewMode>> BuildModeOptions() =>
+        _availableModes.Select(m => new ButtonGroupOption<BrowseViewMode>(m, Icon: GetModeIcon(m))).ToList();
+
+    private async Task OnColumnPickerClicked()
+    {
+        await OnColumnPickerRequested.InvokeAsync();
     }
 
     private static string GetModeIcon(BrowseViewMode mode) => mode switch
