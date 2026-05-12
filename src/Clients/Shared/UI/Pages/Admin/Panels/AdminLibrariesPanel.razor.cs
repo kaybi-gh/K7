@@ -20,6 +20,8 @@ public partial class AdminLibrariesPanel
     private List<LibraryDto>? _libraries;
     private Dictionary<Guid, int> _libraryIssueCountMap = [];
 
+    private IList<LibraryDto> _libraryItems => _libraries ?? [];
+
     protected override async Task OnInitializedAsync()
     {
         await LoadLibraries();

@@ -1,66 +1,60 @@
 @page "/admin/libraries"
 @layout AdminLayout
+@using K7.Shared.Dtos.Entities
 @inject IStringLocalizer<AdminLibrariesPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="d-flex align-center justify-between mb-4">
-    <h6>@L["Title"]</h6>
-    <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
-        @L["NewLibrary"]
-    </K7Button>
-</div>
-
-@if (_isLoading)
-{
-    <K7ProgressBar Indeterminate="true" />
-}
-else if (_libraries == null || _libraries.Count == 0)
-{
-    <K7Paper Class="pa-8 d-flex flex-column align-center">
-        <K7Icon Name="video-camera" Size="lg" Color="secondary" />
-        <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
-        <p class="text-sm mb-4"  Color="secondary" >@L["EmptyDescription"]</p>
+<BrowseView TItem="LibraryDto" Items="_libraryItems" Loading="_isLoading"
+            DefaultItemWidth="280" DefaultSpacing="16"
+            GridItemAspectRatio="0.8f" GridFooterHeight="80">
+    <ToolbarContent>
+        <h6>@L["Title"]</h6>
+        <div style="flex:1"></div>
         <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
-            @L["CreateLibrary"]
+            @L["NewLibrary"]
         </K7Button>
-    </K7Paper>
-}
-else
-{
-    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4);">
-        @foreach (var library in _libraries)
-        {
-            <K7Paper Outlined="true">
-                <div class="k7-card-content">
-                        <div class="d-flex align-center">
-                            <K7Icon Name="@GetMediaTypeIcon(library.MediaType)" Size="lg" Color="primary" />
-                            <div class="d-flex flex-col">
-                                <h6>@library.Title</h6>
-                                <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(library.MediaType)</K7Chip>
-                            </div>
-                        </div>
-                        <p class="text-sm mt-2"  Color="secondary" >
-                            <K7Icon Name="folder" Size="sm" Class="mr-1" />
-                            @library.RootPath
-                        </p>
-                        @{
-                            var issueCount = GetIssueCount(library.Id);
-                        }
-                        @if (issueCount > 0)
-                        {
-                            <K7Chip Size="sm" Color="warning" Class="mt-2 cursor-pointer" OnClick="@(() => NavigateToDiagnostics(library.Id))">
-                                <K7Icon Name="warning" Size="sm" Class="mr-1" />
-                                @string.Format(L["IssueCount"], issueCount)
-                            </K7Chip>
-                        }
+    </ToolbarContent>
+    <EmptyContent>
+        <K7Paper Class="pa-8 d-flex flex-column align-center">
+            <K7Icon Name="video-camera" Size="lg" Color="secondary" />
+            <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
+            <p class="text-sm mb-4" Color="secondary">@L["EmptyDescription"]</p>
+            <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateDialog">
+                @L["CreateLibrary"]
+            </K7Button>
+        </K7Paper>
+    </EmptyContent>
+    <GridTemplate Context="library">
+        <K7Paper Outlined="true" Style="height:100%;">
+            <div class="k7-card-content">
+                <div class="d-flex align-center">
+                    <K7Icon Name="@GetMediaTypeIcon(library.MediaType)" Size="lg" Color="primary" />
+                    <div class="d-flex flex-col">
+                        <h6>@library.Title</h6>
+                        <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(library.MediaType)</K7Chip>
+                    </div>
                 </div>
-                <div class="k7-card-actions">
-                    <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
-                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))" AriaLabel="@L["AriaEdit"]" />
-                    <K7IconButton Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))" AriaLabel="@L["AriaUserAccess"]" />
-                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))" AriaLabel="@L["AriaDelete"]" />
-                </div>
-            </K7Paper>
-        }
-    </div>
-}
+                <p class="text-sm mt-2" Color="secondary">
+                    <K7Icon Name="folder" Size="sm" Class="mr-1" />
+                    @library.RootPath
+                </p>
+                @{
+                    var issueCount = GetIssueCount(library.Id);
+                }
+                @if (issueCount > 0)
+                {
+                    <K7Chip Size="sm" Color="warning" Class="mt-2 cursor-pointer" OnClick="@(() => NavigateToDiagnostics(library.Id))">
+                        <K7Icon Name="warning" Size="sm" Class="mr-1" />
+                        @string.Format(L["IssueCount"], issueCount)
+                    </K7Chip>
+                }
+            </div>
+            <div class="k7-card-actions">
+                <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
+                <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))" AriaLabel="@L["AriaEdit"]" />
+                <K7IconButton Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))" AriaLabel="@L["AriaUserAccess"]" />
+                <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))" AriaLabel="@L["AriaDelete"]" />
+            </div>
+        </K7Paper>
+    </GridTemplate>
+</BrowseView>

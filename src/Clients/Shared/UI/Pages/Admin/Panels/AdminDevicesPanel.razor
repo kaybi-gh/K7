@@ -1,72 +1,71 @@
 @page "/admin/devices"
 @layout AdminLayout
+@using K7.Clients.Shared.Enums
+@using K7.Shared.Dtos.Devices
 @inject IStringLocalizer<AdminDevicesPanel> L
 
-@if (_isLoading)
-{
-    <K7ProgressBar Indeterminate="true" />
-}
-else if (_devices is null || _devices.TotalCount == 0)
-{
-    <K7Paper Class="d-flex flex-col pa-8">
-        <K7Icon Name="monitor-play" Size="lg" Color="secondary" />
-        <p Color="secondary">@L["NoDevices"]</p>
-    </K7Paper>
-}
-else
-{
-    <div class="d-flex flex-col pa-4">
-        <p class="text-sm" Color="secondary">
-            @(string.Format(L["DeviceCount"], _devices.TotalCount))
-        </p>
-
-        @foreach (var device in _devices.Items!)
+<BrowseView TItem="DeviceDto" Items="_deviceItems" Loading="_isLoading"
+            DefaultMode="BrowseViewMode.List" ListItemHeight="80">
+    <ToolbarContent>
+        @if (_devices is not null)
         {
+            <p class="text-sm" Color="secondary">
+                @(string.Format(L["DeviceCount"], _devices.TotalCount))
+            </p>
+        }
+    </ToolbarContent>
+    <EmptyContent>
+        <K7Paper Class="d-flex flex-col pa-8">
+            <K7Icon Name="monitor-play" Size="lg" Color="secondary" />
+            <p Color="secondary">@L["NoDevices"]</p>
+        </K7Paper>
+    </EmptyContent>
+    <ListTemplate Context="device">
+        @{
             var isCurrent = IsCurrentDevice(device);
+        }
+        <K7Paper Outlined="true" Class="@(isCurrent ? "current-device" : "")">
+            <div class="k7-card-content">
+                <div class="d-flex align-center">
+                    <K7Icon Name="@GetDeviceIcon(device.DeviceType)" Size="lg" Color="@(isCurrent ? "primary" : "default")" />
 
-            <K7Paper Outlined="true" Class="@(isCurrent ? "current-device" : "")">
-                <div class="k7-card-content">
-                    <div class="d-flex align-center">
-                        <K7Icon Name="@GetDeviceIcon(device.DeviceType)" Size="lg" Color="@(isCurrent ? "primary" : "default")" />
-
-                        <div class="d-flex flex-col" style="flex: 1;">
-                            <div class="d-flex align-center">
-                                <p class="text-subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</p>
-                                <K7Chip Size="sm" Variant="outlined" Color="default">@device.ClientType</K7Chip>
-                                @if (isCurrent)
-                                {
-                                    <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisDevice"]</K7Chip>
-                                }
-                            </div>
-
-                            <p class="text-sm" Color="secondary">
-                                @device.OperatingSystem @device.OperatingSystemVersion
-                                @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
-                                {
-                                    <text> - @($"{device.DisplayWidth:0}×{device.DisplayHeight:0}")</text>
-                                }
-                            </p>
+                    <div class="d-flex flex-col" style="flex: 1;">
+                        <div class="d-flex align-center">
+                            <p class="text-subtitle1">@(device.DeviceName ?? L["UnknownDevice"])</p>
+                            <K7Chip Size="sm" Variant="outlined" Color="default">@device.ClientType</K7Chip>
+                            @if (isCurrent)
+                            {
+                                <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisDevice"]</K7Chip>
+                            }
                         </div>
 
-                        <div class="d-flex flex-col">
-                            <span class="text-caption" Color="secondary">@L["LastSeen"]</span>
-                            <p class="text-sm">@device.LastSeen.LocalDateTime.ToString("g")</p>
-                        </div>
-
-                        <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteDeviceAsync(device))" AriaLabel="@L["DeleteDevice"]" />
+                        <p class="text-sm" Color="secondary">
+                            @device.OperatingSystem @device.OperatingSystemVersion
+                            @if (device.DisplayWidth > 0 && device.DisplayHeight > 0)
+                            {
+                                <text> - @($"{device.DisplayWidth:0}x{device.DisplayHeight:0}")</text>
+                            }
+                        </p>
                     </div>
 
-                    @if (device.Users.Count > 0)
-                    {
-                        <div class="d-flex align-center mt-2">
-                            <K7Icon Name="users" Size="sm" Color="secondary" />
-                            <span class="text-caption" Color="secondary">
-                                @(string.Format(L["UserCount"], device.Users.Count))
-                            </span>
-                        </div>
-                    }
+                    <div class="d-flex flex-col">
+                        <span class="text-caption" Color="secondary">@L["LastSeen"]</span>
+                        <p class="text-sm">@device.LastSeen.LocalDateTime.ToString("g")</p>
+                    </div>
+
+                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteDeviceAsync(device))" AriaLabel="@L["DeleteDevice"]" />
                 </div>
-            </K7Paper>
-        }
-    </div>
-}
+
+                @if (device.Users.Count > 0)
+                {
+                    <div class="d-flex align-center mt-2">
+                        <K7Icon Name="users" Size="sm" Color="secondary" />
+                        <span class="text-caption" Color="secondary">
+                            @(string.Format(L["UserCount"], device.Users.Count))
+                        </span>
+                    </div>
+                }
+            </div>
+        </K7Paper>
+    </ListTemplate>
+</BrowseView>
