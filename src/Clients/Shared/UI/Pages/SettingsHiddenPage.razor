@@ -1,44 +1,38 @@
 @page "/settings/hidden"
 @layout SettingsLayout
+@using K7.Clients.Shared.Enums
 @inject IStringLocalizer<Settings> L
 @inject IStringLocalizer<SharedResource> S
 
 <PageTitle>@L["HiddenPageTitle"]</PageTitle>
 
-<h4 class="mb-4">@L["HiddenPageTitle"]</h4>
-
-@if (_isLoading)
-{
-    <K7ProgressBar Indeterminate="true" />
-}
-else if (_items.Count == 0)
-{
-    <p class="text-sm" style="color: var(--color-text-secondary)">@L["HiddenPageEmpty"]</p>
-}
-else
-{
-    <div class="d-flex flex-col gap-2">
-        @foreach (var item in _items)
-        {
-            <div class="surface pa-3 d-flex align-center justify-between gap-3">
-                <div class="d-flex align-center gap-2">
-                    @if (item.PictureUrl is not null)
-                    {
-                        <K7Image Src="@item.PictureUrl" Style="width:40px;height:60px;border-radius:var(--radius-sm);flex-shrink:0;" ObjectFit="cover" />
-                    }
-                    else
-                    {
-                        <div style="width:40px;height:60px;border-radius:var(--radius-sm);background:var(--color-surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <K7Icon Icon="@Phosphor.FilmSlate" Style="opacity:0.3;" />
-                        </div>
-                    }
-                    <span class="text-sm">@item.Title</span>
-                </div>
-                <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.Eye"
-                          OnClick="() => UnhideAsync(item)" Disabled="_processing.Contains(item.Id)">
-                    @L["Unhide"]
-                </K7Button>
+<BrowseView TItem="MediaCardViewModel" Items="_items" Loading="_isLoading"
+            DefaultMode="BrowseViewMode.List" ListItemHeight="72">
+    <ToolbarContent>
+        <h4>@L["HiddenPageTitle"]</h4>
+    </ToolbarContent>
+    <EmptyContent>
+        <p class="text-sm pa-4" style="color: var(--color-text-secondary)">@L["HiddenPageEmpty"]</p>
+    </EmptyContent>
+    <ListTemplate Context="item">
+        <div class="surface pa-3 d-flex align-center justify-between gap-3">
+            <div class="d-flex align-center gap-2">
+                @if (item.PictureUrl is not null)
+                {
+                    <K7Image Src="@item.PictureUrl" Style="width:40px;height:60px;border-radius:var(--radius-sm);flex-shrink:0;" ObjectFit="cover" />
+                }
+                else
+                {
+                    <div style="width:40px;height:60px;border-radius:var(--radius-sm);background:var(--color-surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <K7Icon Icon="@Phosphor.FilmSlate" Style="opacity:0.3;" />
+                    </div>
+                }
+                <span class="text-sm">@item.Title</span>
             </div>
-        }
-    </div>
-}
+            <K7Button Color="secondary" Variant="text" StartIcon="@Phosphor.Eye"
+                      OnClick="() => UnhideAsync(item)" Disabled="_processing.Contains(item.Id)">
+                @L["Unhide"]
+            </K7Button>
+        </div>
+    </ListTemplate>
+</BrowseView>

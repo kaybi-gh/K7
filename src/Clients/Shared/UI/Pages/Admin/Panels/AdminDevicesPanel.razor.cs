@@ -16,6 +16,8 @@ public partial class AdminDevicesPanel
     private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? _devices;
     private string? _currentDeviceId;
 
+    private IList<DeviceDto> _deviceItems => _devices?.Items?.ToList() ?? [];
+
     protected override async Task OnInitializedAsync()
     {
         _currentDeviceId = DeviceStorageService.Get(PreferenceKeys.DEVICE_ID);

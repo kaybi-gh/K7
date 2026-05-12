@@ -1,11 +1,16 @@
 @page "/admin/restrictions"
 @layout AdminLayout
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Restrictions
 @inject IStringLocalizer<AdminRestrictionsPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="d-flex align-center justify-between mb-4">
-    <h6>@L["Title"]</h6>
-    <div class="d-flex">
+<BrowseView TItem="ContentRestrictionProfileDto" Items="_profiles" Loading="_loading"
+            DefaultItemWidth="280" DefaultSpacing="16"
+            GridItemAspectRatio="0.7f" GridFooterHeight="60">
+    <ToolbarContent>
+        <h6>@L["Title"]</h6>
+        <div style="flex:1"></div>
         <K7Menu>
             <ActivatorContent>
                 <K7Button Variant="outlined" Color="secondary" StartIcon="sparkle" EndIcon="caret-down">@L["CreateFromTemplate"]</K7Button>
@@ -19,63 +24,49 @@
         </K7Menu>
         <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary"
                    OnClick="OpenCreateDialog">@L["CreateProfile"]</K7Button>
-    </div>
-</div>
-
-@if (_loading)
-{
-    <K7ProgressBar Indeterminate="true" />
-}
-else if (_profiles.Count == 0)
-{
-    <div class="surface pa-8 d-flex flex-column align-center">
-        <K7Icon Name="prohibition" Size="lg" Color="secondary" />
-        <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
-        <p class="text-sm mt-2"  Color="secondary" >
-            @L["EmptyDescription"]
-        </p>
-    </div>
-}
-else
-{
-    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4);">
-        @foreach (var profile in _profiles)
-        {
-            <div>
-                <div class="k7-card">
-                    <div class="k7-card-header">
-                        <div class="k7-card-header-content">
-                            <h6>@profile.Name</h6>
-                            @if (!string.IsNullOrEmpty(profile.Description))
-                            {
-                                <p class="text-sm" Color="secondary">@profile.Description</p>
-                            }
-                        </div>
-                        <div class="k7-card-header-actions">
-                            <K7IconButton Icon="@Phosphor.Eye" OnClick="@(() => PreviewRestrictedMedias(profile))" AriaLabel="preview" />
-                            <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(profile))" AriaLabel="edit" />
-                            <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(profile))" AriaLabel="delete" />
-                        </div>
-                    </div>
-                    <div class="k7-card-content">
-                        <div class="d-flex flex-col">
-                            <span class="text-caption" Color="secondary">
-                                @L["ConditionPrefix"] @(profile.MatchCondition == RestrictionMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
-                            </span>
-                            @foreach (var rule in profile.Rules)
-                            {
-                                <K7Chip Size="sm" Color="default">
-                                    @FormatRule(rule)
-                                </K7Chip>
-                            }
-                            <span class="text-caption mt-2">
-                                <K7Icon Name="users" Size="sm" Class="mr-1" />
-                                @string.Format(L["AttachedUsers"], profile.UserCount)
-                            </span>
-                        </div>
-                    </div>
+    </ToolbarContent>
+    <EmptyContent>
+        <div class="surface pa-8 d-flex flex-column align-center">
+            <K7Icon Name="prohibition" Size="lg" Color="secondary" />
+            <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
+            <p class="text-sm mt-2" Color="secondary">
+                @L["EmptyDescription"]
+            </p>
+        </div>
+    </EmptyContent>
+    <GridTemplate Context="profile">
+        <div class="k7-card" style="height:100%;">
+            <div class="k7-card-header">
+                <div class="k7-card-header-content">
+                    <h6>@profile.Name</h6>
+                    @if (!string.IsNullOrEmpty(profile.Description))
+                    {
+                        <p class="text-sm" Color="secondary">@profile.Description</p>
+                    }
+                </div>
+                <div class="k7-card-header-actions">
+                    <K7IconButton Icon="@Phosphor.Eye" OnClick="@(() => PreviewRestrictedMedias(profile))" AriaLabel="preview" />
+                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(profile))" AriaLabel="edit" />
+                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(profile))" AriaLabel="delete" />
                 </div>
             </div>
-        }
-    </div>
-}
+            <div class="k7-card-content">
+                <div class="d-flex flex-col">
+                    <span class="text-caption" Color="secondary">
+                        @L["ConditionPrefix"] @(profile.MatchCondition == RestrictionMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
+                    </span>
+                    @foreach (var rule in profile.Rules)
+                    {
+                        <K7Chip Size="sm" Color="default">
+                            @FormatRule(rule)
+                        </K7Chip>
+                    }
+                    <span class="text-caption mt-2">
+                        <K7Icon Name="users" Size="sm" Class="mr-1" />
+                        @string.Format(L["AttachedUsers"], profile.UserCount)
+                    </span>
+                </div>
+            </div>
+        </div>
+    </GridTemplate>
+</BrowseView>
