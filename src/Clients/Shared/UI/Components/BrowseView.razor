@@ -8,17 +8,21 @@
             @ToolbarContent
         </div>
         <div class="browse-view-toolbar-end">
-            @if (_availableModes.Count > 1)
+            @if (_currentMode is BrowseViewMode.Table && _hasColumnPicker)
             {
-                @foreach (var mode in _availableModes)
-                {
-                    var m = mode;
-                    <K7IconButton OnClick="() => SetViewModeAsync(m)" AriaLabel="@GetModeIcon(m)" Icon="@GetModeIcon(m)" />
-                }
+                <K7IconButton OnClick="OnColumnPickerClicked" AriaLabel="@S["ToggleColumns"]" Icon="@Phosphor.Columns" />
             }
             @if (_currentMode is BrowseViewMode.Grid)
             {
                 <K7IconButton OnClick="() => _settingsOpen = !_settingsOpen" AriaLabel="settings" Icon="@Phosphor.SlidersHorizontal" />
+            }
+            @if (_availableModes.Count > 1)
+            {
+                <K7ButtonGroup TValue="BrowseViewMode"
+                               Options="_modeOptions"
+                               Value="_currentMode"
+                               ValueChanged="SetViewModeAsync"
+                               AriaLabel="@S["ViewMode"]" />
             }
         </div>
     </div>
@@ -33,7 +37,7 @@
         </div>
     }
 
-    @if (Loading)
+    @if (Loading || !_initialized)
     {
         @if (LoadingContent is not null)
         {
@@ -54,8 +58,9 @@
         }
         else
         {
-            <div class="d-flex flex-col pa-16">
-                <K7Icon Icon="@Phosphor.MagnifyingGlass" Style="font-size: 64px; opacity: 0.3;" />
+            <div class="browse-view-empty">
+                <K7Icon Icon="@Phosphor.MagnifyingGlass" Style="font-size: 48px; opacity: 0.3;" />
+                <p class="text-secondary">@S["NoResults"]</p>
             </div>
         }
     }
@@ -67,7 +72,7 @@
                 @if (UseProvider)
                 {
                     <K7VirtualGrid TItem="TItem"
-                                   ItemsProvider="ItemsProvider"
+                                   ItemsProvider="WrappedItemsProvider"
                                    ItemWidth="_itemWidth"
                                    Spacing="_spacing"
                                    AspectRatio="GridItemAspectRatio"
@@ -121,7 +126,7 @@
                 @if (UseProvider)
                 {
                     <K7VirtualList TItem="TItem"
-                                   ItemsProvider="ItemsProvider"
+                                   ItemsProvider="WrappedItemsProvider"
                                    ItemHeight="ListItemHeight"
                                    OverscanCount="OverscanCount"
                                    @ref="_listComponentRef">
@@ -148,5 +153,12 @@
                 <K7Spinner />
             </div>
         }
+
+        @if (JumpIndexLabels is { Count: > 0 } && _currentMode is not BrowseViewMode.Table)
+        {
+            <K7JumpIndex Labels="JumpIndexLabels" OnJumpRequested="OnJumpRequested" AriaLabel="@S["JumpIndex"]" />
+        }
+
+        <K7BackToTop />
     }
 </div>

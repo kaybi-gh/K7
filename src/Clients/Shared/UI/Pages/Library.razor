@@ -18,7 +18,10 @@
             PersistenceKey="@($"library-{Id}")"
             DefaultItemWidth="160"
             DefaultSpacing="6"
-            GridItemAspectRatio="1.5f">
+            GridItemAspectRatio="1.5f"
+            JumpIndexLabels="JumpLabels"
+            OnJumpRequested="OnJumpRequested"
+            OnColumnPickerRequested="OnColumnPickerRequested">
     <ToolbarContent>
         <span>@string.Format(L["ItemCount"], _totalCount)</span>
         @if (_availableMediaTypes.Count > 1)
@@ -33,7 +36,7 @@
         <K7Select TValue="MediaOrderingOption" Value="_selectedSort" ValueChanged="OnSortChanged">
             @foreach (var opt in SortOptions)
             {
-                <K7SelectItem Value="@opt">@GetSortLabel(opt)</K7SelectItem>
+                <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
     </ToolbarContent>
@@ -56,6 +59,7 @@
                      ActiveSortDirection="@_activeSortDirection"
                      OnSortChanged="OnTableSortChanged"
                      OnRowClick="NavigateToItem"
+                     ShowToolbar="false"
                      @ref="_dataTable">
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Title"]" SortKey="title" Hideable="false">
                 <CellTemplate Context="item">
@@ -73,7 +77,17 @@
                 </CellTemplate>
             </K7DataColumn>
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Year"]" SortKey="releaseDate" Width="80px" VisibleOnMobile="false" Property="item => item.ReleaseDate?.Year" />
-            <K7DataColumn TItem="LiteMediaDto" Title="@L["Rating"]" SortKey="localRating" Width="80px" VisibleOnMobile="false" Property="item => item.UserRating" />
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["Rating"]" SortKey="localRating" Width="120px" VisibleOnMobile="false">
+                <CellTemplate Context="item">
+                    <div class="library-table-stars">
+                        @{ var stars = item.UserRating is > 0 ? (int)Math.Ceiling(item.UserRating.Value / 2.0) : 0; }
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            <K7Icon Icon="@(i <= stars ? Phosphor.Fill.Star : Phosphor.Star)" Size="xs" Style="@(i <= stars ? "color: var(--color-accent);" : "color: var(--color-text-muted); opacity: 0.4;")" />
+                        }
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Status"]" VisibleOnMobile="true">
                 <CellTemplate Context="item">
                     @if (item.UserState?.ProgressPercentage is > 0 and < 100)
@@ -84,10 +98,22 @@
                     {
                         <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
                     }
+                    else
+                    {
+                        <span class="text-muted">-</span>
+                    }
                 </CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="LiteMediaDto" Title="@L["PlayCount"]" SortKey="playCount" Width="100px" VisibleOnMobile="false" Visible="false" Property="item => item.UserState?.PlayCount" />
-            <K7DataColumn TItem="LiteMediaDto" Title="@L["DateAdded"]" SortKey="created" Width="120px" VisibleOnMobile="false" Visible="false" Property="FormatLastInteracted" />
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["PlayCount"]" SortKey="playCount" Width="100px" VisibleOnMobile="false" Visible="false">
+                <CellTemplate Context="item">
+                    <span>@(item.UserState?.PlayCount > 0 ? item.UserState.PlayCount.ToString() : "-")</span>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LiteMediaDto" Title="@L["DateAdded"]" SortKey="created" Width="120px" VisibleOnMobile="false" Visible="false">
+                <CellTemplate Context="item">
+                    <span>@(item.Created?.ToString("d") ?? "-")</span>
+                </CellTemplate>
+            </K7DataColumn>
         </K7DataTable>
     </TableContent>
     <ListTemplate Context="item">

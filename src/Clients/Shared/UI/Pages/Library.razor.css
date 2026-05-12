@@ -3,3 +3,9 @@
     align-items: center;
     gap: 12px;
 }
+
+.library-table-stars {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}

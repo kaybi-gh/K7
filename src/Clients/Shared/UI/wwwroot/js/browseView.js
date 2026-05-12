@@ -20,7 +20,7 @@ export function saveSettings(key, settings) {
 }
 
 export function observeContainerWidth(element, dotnetRef) {
-    if (!(element instanceof Element) || _observers.has(element)) return;
+    if (!(element instanceof Element) || _observers.has(element)) return 0;
 
     const observer = new ResizeObserver(entries => {
         for (const entry of entries) {
@@ -31,6 +31,9 @@ export function observeContainerWidth(element, dotnetRef) {
 
     observer.observe(element);
     _observers.set(element, observer);
+
+    const style = getComputedStyle(element);
+    return Math.floor(element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight));
 }
 
 export function dispose(element) {
@@ -39,6 +42,11 @@ export function dispose(element) {
         observer.disconnect();
         _observers.delete(element);
     }
+}
+
+export function scrollTo(element, scrollTop) {
+    if (!(element instanceof Element)) return;
+    element.scrollTo({ top: scrollTop, behavior: 'instant' });
 }
 
 export function observeSentinel(element, dotnetRef) {
