@@ -22,10 +22,17 @@ public class IndexLibraryFilesCommandHandler : IRequestHandler<IndexLibraryFiles
     public async Task Handle(IndexLibraryFilesCommand request, CancellationToken cancellationToken)
     {
         var entity = await _context.Libraries
-            .Include(l => l.IndexedFiles)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
+
+        var existingFiles = await _context.IndexedFiles
+            .Where(f => f.LibraryId == request.Id)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        entity.IndexedFiles = existingFiles;
+
         var result = await _fileIndexerService.IndexAsync(entity, cancellationToken);
 
         var existingIssues = await _context.ScanIssues

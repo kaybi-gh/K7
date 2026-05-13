@@ -13,7 +13,7 @@ public class TagLibAudioTagReader : IAudioTagReader
         _logger = logger;
     }
 
-    public AudioTagData? ReadTags(string filePath)
+    public AudioTagData? ReadTags(string filePath, bool includeCoverArt = true)
     {
         try
         {
@@ -25,16 +25,19 @@ public class TagLibAudioTagReader : IAudioTagReader
                 return null;
             }
 
-            // Extract front cover art
             byte[]? coverData = null;
             string? coverMime = null;
-            var frontCover = tag.Pictures?.FirstOrDefault(p => p.Type == TagLib.PictureType.FrontCover)
-                          ?? tag.Pictures?.FirstOrDefault();
 
-            if (frontCover?.Data?.Data is { Length: > 0 })
+            if (includeCoverArt)
             {
-                coverData = frontCover.Data.Data;
-                coverMime = frontCover.MimeType;
+                var frontCover = tag.Pictures?.FirstOrDefault(p => p.Type == TagLib.PictureType.FrontCover)
+                              ?? tag.Pictures?.FirstOrDefault();
+
+                if (frontCover?.Data?.Data is { Length: > 0 })
+                {
+                    coverData = frontCover.Data.Data;
+                    coverMime = frontCover.MimeType;
+                }
             }
 
             return new AudioTagData

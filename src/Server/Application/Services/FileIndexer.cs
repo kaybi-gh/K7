@@ -1,14 +1,14 @@
 ﻿using System.Collections.Concurrent;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Extensions;
-using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTasksBatch;
+using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
 using K7.Server.Application.Features.Libraries.Commands.DeleteIndexedFile;
 using K7.Server.Application.Features.Medias.Commands.CreateMedia;
 using K7.Server.Application.Helpers;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
-using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -31,7 +31,7 @@ public class FileIndexer : IFileIndexer
 
     public async Task<LibraryScanResult> IndexAsync(Library library, CancellationToken cancellationToken)
     {
-        List<IBaseRequest> backgroundTasks = [];
+        List<CreateBackgroundTasksBatchItem> backgroundTasks = [];
 
         try
         {
@@ -39,7 +39,8 @@ public class FileIndexer : IFileIndexer
 
             var (indexedFiles, skippedFilePaths, inaccessiblePaths) = ScanFiles(library, cancellationToken);
             var (unchangedFiles, addedFiles, removedFiles, renamedFiles) = library.IndexedFiles.CompareTo(indexedFiles, skippedFilePaths);
-            var toBeIdentifiedFiles = addedFiles.Concat(unchangedFiles.Where(x => x.Identification == null || !x.MediaId.HasValue)).ToList();
+            var unchangedToReIdentify = unchangedFiles.Where(x => x.Identification is null || !x.MediaId.HasValue).ToList();
+            var toBeIdentifiedFiles = addedFiles.Concat(unchangedToReIdentify).ToList();
 
             var unchangedCount = unchangedFiles.Count();
             var addedCount = addedFiles.Count();
@@ -55,15 +56,22 @@ public class FileIndexer : IFileIndexer
             }
 
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
-            ProcessAddedFiles(library, addedFiles);
+            _context.IndexedFiles.AddRange(addedFiles);
+            ProcessAddedFiles(library, addedFiles, backgroundTasks);
             ProcessRemovedFiles(removedFiles, backgroundTasks);
             ProcessRenamedFiles(library, renamedFiles, backgroundTasks);
 
+            // Attach unchanged files that were re-identified (loaded as no-tracking)
+            if (unchangedToReIdentify.Count > 0)
+            {
+                _context.IndexedFiles.UpdateRange(unchangedToReIdentify);
+            }
+
             await _context.SaveChangesAsync(cancellationToken);
 
-            foreach (var request in backgroundTasks)
+            if (backgroundTasks.Count > 0)
             {
-                await _sender.Send(request, cancellationToken);
+                await _sender.Send(new CreateBackgroundTasksBatchCommand(backgroundTasks), cancellationToken);
             }
 
             return new LibraryScanResult(
@@ -108,7 +116,7 @@ public class FileIndexer : IFileIndexer
         return ([.. indexedFiles], [.. skippedFilePaths], inaccessiblePaths);
     }
 
-    private void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<IBaseRequest> backgroundTasks)
+    private void IdentifyFiles(Library library, List<IndexedFile> toBeIdentifiedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
     {
         if (toBeIdentifiedFiles.Count == 0) return;
 
@@ -120,7 +128,7 @@ public class FileIndexer : IFileIndexer
                     if (file.TryIdentifyMovie(out MediaIdentification? movieIdentification))
                     {
                         file.Identification = movieIdentification;
-                        backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                        backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
                         {
                             Request = new CreateMediaCommand()
                             {
@@ -145,16 +153,19 @@ public class FileIndexer : IFileIndexer
                     foreach (var file in filesInSameDirectory)
                     {
                         file.TryIdentifyMusicTrack(library, filesInSameDirectory);
-                        EnrichMusicIdentificationFromTags(file);
                     }
                 }
+
+                Parallel.ForEach(toBeIdentifiedFiles.Where(f => f.Identification is not null),
+                    new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                    file => EnrichMusicIdentificationFromTags(file));
 
                 foreach (var albumGroup in toBeIdentifiedFiles
                     .Where(f => f.Identification is not null)
                     .GroupBy(f => (f.Identification!.AlbumName ?? f.ParentDirectory, f.Identification.ArtistName)))
                 {
                     var albumFiles = albumGroup.ToList();
-                    backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                    backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
                     {
                         Request = new CreateMediaCommand()
                         {
@@ -184,7 +195,7 @@ public class FileIndexer : IFileIndexer
                     .GroupBy(f => f.Identification!.SeriesTitle))
                 {
                     var serieFiles = serieGroup.ToList();
-                    backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                    backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
                     {
                         Request = new CreateMediaCommand()
                         {
@@ -203,24 +214,37 @@ public class FileIndexer : IFileIndexer
         }
     }
 
-    private void ProcessAddedFiles(Library library, IEnumerable<IndexedFile> addedFiles)
+    private static void ProcessAddedFiles(Library library, IEnumerable<IndexedFile> addedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
     {
-        _context.IndexedFiles.AddRange(addedFiles);
+        var fileType = library.MediaType switch
+        {
+            LibraryMediaType.Movie => FileType.Video,
+            LibraryMediaType.Music => FileType.Audio,
+            LibraryMediaType.Serie => FileType.Video,
+            _ => throw new InvalidOperationException(),
+        };
+
         foreach (var file in addedFiles)
         {
-            file.AddDomainEvent(new IndexedFileCreatedEvent(file, library.MediaType switch
+            backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
             {
-                LibraryMediaType.Movie => FileType.Video,
-                LibraryMediaType.Music => FileType.Audio,
-                LibraryMediaType.Serie => FileType.Video,
-                _ => throw new InvalidOperationException(),
-            }));
+                Request = new CreateFileMetadatasCommand()
+                {
+                    Id = file.Id,
+                    FileType = fileType
+                },
+                Priority = BackgroundTaskPriority.VeryHigh,
+                TargetEntityId = file.Id,
+                TargetEntityTypeName = nameof(IndexedFile),
+                MaxAttempts = 5,
+                ConcurrencyGroup = "ffmpeg"
+            });
         }
     }
 
-    private static void ProcessRemovedFiles(IEnumerable<IndexedFile> removedFiles, List<IBaseRequest> backgroundTasks)
+    private static void ProcessRemovedFiles(IEnumerable<IndexedFile> removedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
     {
-        backgroundTasks.AddRange(removedFiles.Select(x => new CreateBackgroundTaskCommand()
+        backgroundTasks.AddRange(removedFiles.Select(x => new CreateBackgroundTasksBatchItem()
         {
             Request = new DeleteIndexedFileCommand(x.Id),
             Priority = BackgroundTaskPriority.Normal,
@@ -229,7 +253,7 @@ public class FileIndexer : IFileIndexer
         }));
     }
 
-    private void ProcessRenamedFiles(Library library, IEnumerable<(IndexedFile NewFile, IndexedFile OldFile)> renamedFiles, List<IBaseRequest> backgroundTasks)
+    private void ProcessRenamedFiles(Library library, IEnumerable<(IndexedFile NewFile, IndexedFile OldFile)> renamedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks)
     {
         foreach (var (newFile, oldFile) in renamedFiles)
         {
@@ -245,7 +269,7 @@ public class FileIndexer : IFileIndexer
                 && movieIdentification != oldFile.Identification)
             {
                 oldFile.Identification = movieIdentification;
-                backgroundTasks.Add(new CreateBackgroundTaskCommand()
+                backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
                 {
                     Request = new CreateMediaCommand()
                     {
@@ -271,7 +295,7 @@ public class FileIndexer : IFileIndexer
 
         try
         {
-            var tags = _audioTagReader.ReadTags(file.Path);
+            var tags = _audioTagReader.ReadTags(file.Path, includeCoverArt: false);
             if (tags is null) return;
 
             if (!string.IsNullOrEmpty(tags.Album))
