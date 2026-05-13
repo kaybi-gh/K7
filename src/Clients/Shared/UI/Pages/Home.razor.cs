@@ -26,11 +26,14 @@ public partial class Home : IDisposable
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
+    [Inject] private IDeviceService DeviceService { get; set; } = default!;
 
     private bool isLoading { get; set; } = true;
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _isAdmin;
+    private bool _isTv;
+    private MediaCardViewModel? _focusedItem;
     private List<(HomeRowConfigDto Config, List<MediaCardViewModel> Items)> _rows = [];
 
     protected override async Task OnInitializedAsync()
@@ -40,6 +43,7 @@ public partial class Home : IDisposable
         _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
         _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
         _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
 
@@ -68,6 +72,14 @@ public partial class Home : IDisposable
             .ToList();
 
         await Task.WhenAll(tasks);
+
+        if (_isTv)
+        {
+            _focusedItem = _rows
+                .Where(r => r.Items.Count > 0)
+                .Select(r => r.Items.First())
+                .FirstOrDefault();
+        }
 
         isLoading = false;
         Shared.Services.AppReadySignal.Signal();
@@ -137,6 +149,7 @@ public partial class Home : IDisposable
                     LibraryIds = r.Config.LibraryIds?.ToArray(),
                     MediaTypes = r.Config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
                     OrderBy = r.Config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
+                    Detailed = _isTv,
                     PageNumber = 1,
                     PageSize = r.Config.PageSize
                 };
@@ -162,6 +175,7 @@ public partial class Home : IDisposable
             LibraryIds = config.LibraryIds?.ToArray(),
             MediaTypes = config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
             OrderBy = config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
+            Detailed = _isTv,
             PageNumber = 1,
             PageSize = config.PageSize
         };
@@ -265,5 +279,12 @@ public partial class Home : IDisposable
         {
             Snackbar.Add(S["ExclusionsUpdated"], K7Severity.Success);
         }
+    }
+
+    private void OnItemFocused(MediaCardViewModel item)
+    {
+        if (!_isTv) return;
+        _focusedItem = item;
+        StateHasChanged();
     }
 }

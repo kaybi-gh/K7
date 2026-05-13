@@ -9,6 +9,26 @@
     --carousel-margin-start: 40px;
 }
 
+:global(html.platform-tv) .home-page,
+.home-page--tv {
+    height: calc(100dvh - var(--nav-height, 56px));
+    max-height: calc(100dvh - var(--nav-height, 56px));
+    padding-top: 0;
+    padding-bottom: 0;
+    gap: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.home-page--tv ::deep .vertical-carousel {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
 @media (max-width: 599.98px) {
     .home-page {
         margin-top: calc(-1 * env(safe-area-inset-top, 0px));

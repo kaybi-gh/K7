@@ -18,6 +18,7 @@ public partial class MediaCard
     [Parameter] public bool IsAdmin { get; set; }
     [Parameter] public EventCallback OnExcludeForSelf { get; set; }
     [Parameter] public EventCallback OnExcludeForOthers { get; set; }
+    [Parameter] public EventCallback OnFocused { get; set; }
 
     private bool _menuOpen;
 

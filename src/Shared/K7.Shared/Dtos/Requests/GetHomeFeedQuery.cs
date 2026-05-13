@@ -8,6 +8,7 @@ public sealed record GetHomeFeedQuery
     public bool? ContinueWatching { get; init; }
     public HashSet<MediaType>? MediaTypes { get; init; }
     public HashSet<MediaOrderingOption>? OrderBy { get; init; }
+    public bool Detailed { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 20;
 }

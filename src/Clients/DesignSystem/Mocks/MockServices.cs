@@ -16,6 +16,7 @@ using K7.Shared.Dtos.Search;
 using K7.Shared.Dtos.Entities.Collections;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Diagnostics;
+using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Dtos.Requests;
@@ -296,6 +297,7 @@ public sealed class MockK7ServerService : IK7ServerService
 
 public sealed class MockMediaService : IMediaService
 {
+    public Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<HomeFeedItemDto>?>(null);
     public Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<MediaFormatDto>());
     public Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MovieDto?>(null);
     public Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MediaDto?>(null);

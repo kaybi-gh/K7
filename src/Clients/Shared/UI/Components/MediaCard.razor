@@ -20,7 +20,7 @@
 }
 else
 {
-    <div class="media-card @VariantClass">
+    <div class="media-card @VariantClass" @onfocusin="OnFocused">
         <div class="media-card-container">
             <a class="media-card-link focusable" href="@Href">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))

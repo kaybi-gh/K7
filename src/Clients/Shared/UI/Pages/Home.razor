@@ -3,19 +3,42 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="home-page">
+<div class="home-page @(_isTv ? "home-page--tv" : "")" style="@(_isTv ? "height: calc(100dvh - var(--nav-height, 56px)); max-height: calc(100dvh - var(--nav-height, 56px)); overflow: hidden;" : "")">
+    @if (_isTv)
+    {
+        <HomeTvHero Model="_focusedItem" />
+    }
     @if (isLoading)
     {
-        @for (int i = 0; i < 3; i++)
+        @if (_isTv)
         {
-            <Carousel Skeleton="true">
-                @for (int j = 0; j < 10; j++)
+            <VerticalCarousel>
+                @for (int i = 0; i < 3; i++)
                 {
-                    <CarouselItem>
-                        <MediaCard Skeleton="true" FooterVisible="true" />
-                    </CarouselItem>
+                    <Carousel Skeleton="true">
+                        @for (int j = 0; j < 10; j++)
+                        {
+                            <CarouselItem>
+                                <MediaCard Skeleton="true" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
                 }
-            </Carousel>
+            </VerticalCarousel>
+        }
+        else
+        {
+            @for (int i = 0; i < 3; i++)
+            {
+                <Carousel Skeleton="true">
+                    @for (int j = 0; j < 10; j++)
+                    {
+                        <CarouselItem>
+                            <MediaCard Skeleton="true" FooterVisible="true" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+            }
         }
     }
     else
@@ -24,11 +47,26 @@
             r.Items.Count > 0 &&
             (!r.Config.ContinueWatching || _canTrackProgress));
 
-        @foreach (var (row, items) in _rows)
+        @if (_isTv)
         {
-            @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
+            <VerticalCarousel>
+                @foreach (var (row, items) in _rows)
+                {
+                    @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
+                    {
+                        @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
+                    }
+                }
+            </VerticalCarousel>
+        }
+        else
+        {
+            @foreach (var (row, items) in _rows)
             {
-                @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
+                @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
+                {
+                    @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
+                }
             }
         }
 
@@ -58,6 +96,7 @@
                            FooterVisible="true"
                            ExcludeMenuEnabled="_canExclude"
                            IsAdmin="_isAdmin"
+                           OnFocused="() => OnItemFocused(item)"
                            OnExcludeForSelf="() => ExcludeForSelf(item)"
                            OnExcludeForOthers="() => ExcludeForOthers(item)" />
             </CarouselItem>

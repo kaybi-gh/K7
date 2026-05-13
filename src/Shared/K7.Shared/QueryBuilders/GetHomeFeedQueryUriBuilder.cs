@@ -38,6 +38,11 @@ public static class GetHomeFeedQueryUriBuilder
             queryParams.Add(new(nameof(query.ContinueWatching), $"{query.ContinueWatching.Value}"));
         }
 
+        if (query.Detailed)
+        {
+            queryParams.Add(new(nameof(query.Detailed), "true"));
+        }
+
         return QueryBuilderHelper.AddQueryParameters(Route, queryParams);
     }
 }
