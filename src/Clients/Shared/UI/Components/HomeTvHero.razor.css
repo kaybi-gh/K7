@@ -1,0 +1,109 @@
+.home-tv-hero__backdrop-fixed {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.home-tv-hero__backdrop {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 20%;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.home-tv-hero__backdrop--active {
+    opacity: 1;
+}
+
+.home-tv-hero__gradient {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(to right, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%),
+        linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 30%, transparent 60%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.home-tv-hero {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    flex-shrink: 0;
+    height: 30vh;
+    min-height: 220px;
+    max-height: 380px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.home-tv-hero__content {
+    padding: 32px var(--carousel-margin-start, 40px);
+    max-width: 55%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.home-tv-hero__title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text-primary, #fff);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.home-tv-hero__meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 1.1rem;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.home-tv-hero__meta-item {
+    white-space: nowrap;
+}
+
+.home-tv-hero__badge {
+    border: 1px solid var(--color-text-secondary, rgba(255, 255, 255, 0.4));
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 0.95rem;
+}
+
+.home-tv-hero__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-warning, #f5c518);
+}
+
+.home-tv-hero__genres {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+::deep .home-tv-hero__genres .k7-chip {
+    font-size: 0.95rem;
+}
+
+.home-tv-hero__overview {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

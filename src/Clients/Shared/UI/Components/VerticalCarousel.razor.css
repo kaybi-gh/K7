@@ -1,0 +1,26 @@
+.vertical-carousel {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.vertical-carousel__viewport {
+    height: 100%;
+    overflow: hidden;
+    scrollbar-width: none;
+}
+
+.vertical-carousel__viewport::-webkit-scrollbar {
+    display: none;
+}
+
+.vertical-carousel__container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.vertical-carousel__container > :deep(*) {
+    scroll-snap-align: center;
+    transition: mask-image 0.55s cubic-bezier(0.4, 0, 0.2, 1), -webkit-mask-image 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}

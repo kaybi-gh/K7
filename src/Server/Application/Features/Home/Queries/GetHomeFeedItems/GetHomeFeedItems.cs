@@ -18,6 +18,7 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public bool? ContinueWatching { get; init; }
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
+    public bool? Detailed { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 20;
 }
@@ -73,6 +74,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             parts.Add($"mt:{string.Join(',', request.MediaTypes.Order())}");
         if (request.OrderBy is { Count: > 0 })
             parts.Add($"ob:{string.Join(',', request.OrderBy.Order())}");
+        if (request.Detailed == true)
+            parts.Add("detailed");
         parts.Add($"p:{request.PageNumber}");
         parts.Add($"ps:{request.PageSize}");
 
@@ -105,14 +108,16 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Ratings)
             .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var feedItems = items.Select(MapContinueWatchingItem).ToList();
+        var feedItems = items.Select(i => MapContinueWatchingItem(i, request.Detailed == true)).ToList();
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 
@@ -140,7 +145,9 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Skip(skip)
             .Take(fetchSize)
             .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Ratings)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
             .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
@@ -162,7 +169,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             }
         }
 
-        var aggregated = AggregateRecentItems(rawItems);
+        var aggregated = AggregateRecentItems(rawItems, request.Detailed == true);
         var page = aggregated.Take(request.PageSize).ToList();
         var totalCount = aggregated.Count;
 
@@ -196,6 +203,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         var items = await context.Medias
             .Where(m => pageIds.Contains(m.Id))
             .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Ratings)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -215,13 +223,13 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         var feedItems = pageIds
             .Select(id => items.First(m => m.Id == id))
-            .Select(MapTopLevelItem)
+            .Select(m => MapTopLevelItem(m, request.Detailed == true))
             .ToList();
 
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 
-    private List<HomeFeedItemDto> AggregateRecentItems(List<BaseMedia> rawItems)
+    private List<HomeFeedItemDto> AggregateRecentItems(List<BaseMedia> rawItems, bool detailed)
     {
         var result = new List<(int Order, HomeFeedItemDto Item)>();
         var serieGroups = new Dictionary<Guid, (int Order, List<SerieEpisode> Episodes)>();
@@ -255,14 +263,14 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                     // Skip top-level album entries -- tracks represent them
                     break;
                 default:
-                    result.Add((insertOrder++, MapTopLevelItem(item)));
+                    result.Add((insertOrder++, MapTopLevelItem(item, detailed)));
                     break;
             }
         }
 
         foreach (var (serieId, (order, episodes)) in serieGroups)
         {
-            result.Add((order, AggregateSerieEpisodes(serieId, episodes)));
+            result.Add((order, AggregateSerieEpisodes(serieId, episodes, detailed)));
         }
 
         foreach (var (albumId, (order, tracks)) in albumGroups)
@@ -273,7 +281,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         return result.OrderBy(x => x.Order).Select(x => x.Item).ToList();
     }
 
-    private static HomeFeedItemDto AggregateSerieEpisodes(Guid serieId, List<SerieEpisode> episodes)
+    private static HomeFeedItemDto AggregateSerieEpisodes(Guid serieId, List<SerieEpisode> episodes, bool detailed)
     {
         var first = episodes[0];
         var serie = first.Serie!;
@@ -299,7 +307,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 AdditionalInfo = $"S{ep.Season?.SeasonNumber ?? 0:D2}E{ep.EpisodeNumber:D2}",
                 GroupCount = 1,
                 ReleaseDate = serie.ReleaseDate,
-                Watched = allWatched
+                Watched = allWatched,
+                Overview = detailed ? (serie.Overview ?? ep.Overview) : null,
+                Genres = detailed && serie.Genres.Count > 0 ? serie.Genres.ToList() : null,
+                ContentRating = detailed ? serie.ContentRating : null,
+                RuntimeMinutes = detailed ? ep.Runtime : null,
+                Rating = detailed ? GetBestRating(serie) : null
             };
         }
 
@@ -318,7 +331,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 AdditionalInfo = $"{episodes.Count} episodes",
                 GroupCount = episodes.Count,
                 ReleaseDate = serie.ReleaseDate,
-                Watched = allWatched
+                Watched = allWatched,
+                Overview = detailed ? serie.Overview : null,
+                Genres = detailed && serie.Genres.Count > 0 ? serie.Genres.ToList() : null,
+                ContentRating = detailed ? serie.ContentRating : null,
+                Rating = detailed ? GetBestRating(serie) : null
             };
         }
 
@@ -333,7 +350,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             AdditionalInfo = $"{episodes.Count} episodes",
             GroupCount = episodes.Count,
             ReleaseDate = serie.ReleaseDate,
-            Watched = allWatched
+            Watched = allWatched,
+            Overview = detailed ? serie.Overview : null,
+            Genres = detailed && serie.Genres.Count > 0 ? serie.Genres.ToList() : null,
+            ContentRating = detailed ? serie.ContentRating : null,
+            Rating = detailed ? GetBestRating(serie) : null
         };
     }
 
@@ -358,7 +379,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         };
     }
 
-    private static HomeFeedItemDto MapTopLevelItem(BaseMedia item)
+    private static HomeFeedItemDto MapTopLevelItem(BaseMedia item, bool detailed = false)
     {
         var pictures = item.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList();
         var userState = item.UserMediaStates.FirstOrDefault();
@@ -379,17 +400,23 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             ReleaseDate = item.ReleaseDate,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
-            GroupCount = 1
+            GroupCount = 1,
+            Overview = detailed ? GetOverview(item) : null,
+            Genres = detailed && item.Genres.Count > 0 ? item.Genres.ToList() : null,
+            ContentRating = detailed ? GetContentRating(item) : null,
+            RuntimeMinutes = detailed ? GetRuntimeMinutes(item) : null,
+            Rating = detailed ? GetBestRating(item) : null
         };
     }
 
-    private static HomeFeedItemDto MapContinueWatchingItem(BaseMedia item)
+    private static HomeFeedItemDto MapContinueWatchingItem(BaseMedia item, bool detailed = false)
     {
         var userState = item.UserMediaStates.FirstOrDefault();
         IList<MetadataPicture>? pictures;
         string navTarget;
         string title;
         string? additionalInfo = null;
+        BaseMedia detailSource = item;
 
         switch (item)
         {
@@ -398,6 +425,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 navTarget = $"/series/{episode.Serie?.Id ?? item.Id}/seasons/{episode.Season?.SeasonNumber ?? 0}#ep-{episode.EpisodeNumber}";
                 title = episode.Serie?.Title ?? episode.Title ?? "";
                 additionalInfo = $"S{episode.Season?.SeasonNumber ?? 0:D2}E{episode.EpisodeNumber:D2}";
+                detailSource = episode.Serie ?? item;
                 break;
             default:
                 pictures = item.Pictures;
@@ -421,7 +449,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             ReleaseDate = item.ReleaseDate,
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
-            GroupCount = 1
+            GroupCount = 1,
+            Overview = detailed ? GetOverview(detailSource) : null,
+            Genres = detailed && detailSource.Genres.Count > 0 ? detailSource.Genres.ToList() : null,
+            ContentRating = detailed ? GetContentRating(detailSource) : null,
+            RuntimeMinutes = detailed ? GetRuntimeMinutes(item) : null,
+            Rating = detailed ? GetBestRating(detailSource) : null
         };
     }
 
@@ -541,5 +574,37 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         ContinueWatching,
         RecentlyAdded,
         TopLevel
+    }
+
+    private static string? GetOverview(BaseMedia item) => item switch
+    {
+        Movie m => m.Tagline ?? m.Overview,
+        Serie s => s.Overview,
+        SerieEpisode e => e.Overview,
+        MusicAlbum a => a.Overview,
+        _ => null
+    };
+
+    private static string? GetContentRating(BaseMedia item) => item switch
+    {
+        Movie m => m.ContentRating,
+        Serie s => s.ContentRating,
+        _ => null
+    };
+
+    private static int? GetRuntimeMinutes(BaseMedia item) => item switch
+    {
+        SerieEpisode e => e.Runtime,
+        _ => null
+    };
+
+    private static double? GetBestRating(BaseMedia item)
+    {
+        var rating = item.Ratings
+            .OfType<K7.Server.Domain.Entities.Ratings.MetadataProviderRating>()
+            .FirstOrDefault();
+        if (rating is null || rating.MaximumValue == 0)
+            return null;
+        return Math.Round(rating.Value / rating.MaximumValue * 10, 1);
     }
 }

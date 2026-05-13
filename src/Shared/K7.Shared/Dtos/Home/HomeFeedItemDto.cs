@@ -15,4 +15,11 @@ public sealed record HomeFeedItemDto
     public DateOnly? ReleaseDate { get; init; }
     public bool Watched { get; init; }
     public double Progress { get; init; }
+
+    // Detailed fields (populated only when Detailed=true)
+    public string? Overview { get; init; }
+    public IReadOnlyList<string>? Genres { get; init; }
+    public string? ContentRating { get; init; }
+    public int? RuntimeMinutes { get; init; }
+    public double? Rating { get; init; }
 }

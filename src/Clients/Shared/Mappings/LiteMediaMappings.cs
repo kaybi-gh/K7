@@ -121,7 +121,13 @@ public static class LiteMediaMappings
             Watched = item.Watched,
             Progress = item.Progress,
             GroupCount = item.GroupCount,
-            NavigationTarget = item.NavigationTarget
+            NavigationTarget = item.NavigationTarget,
+            Overview = item.Overview,
+            Genres = item.Genres,
+            ContentRating = item.ContentRating,
+            RuntimeMinutes = item.RuntimeMinutes,
+            Rating = item.Rating,
+            ReleaseYear = item.ReleaseDate?.Year
         };
     }
 }

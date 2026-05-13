@@ -3380,6 +3380,13 @@
             }
           },
           {
+            "name": "Detailed",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "PageNumber",
             "in": "query",
             "required": true,
