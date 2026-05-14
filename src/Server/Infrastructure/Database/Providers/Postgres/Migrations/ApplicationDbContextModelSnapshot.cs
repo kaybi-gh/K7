@@ -385,6 +385,20 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int>("MediaType")
                         .HasColumnType("integer");
 
+                    b.Property<string>("MetadataFallbackLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("en");
+
+                    b.Property<string>("MetadataLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("fr");
+
                     b.Property<string>("MetadataProviderName")
                         .IsRequired()
                         .HasMaxLength(100)
