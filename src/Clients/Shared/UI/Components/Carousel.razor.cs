@@ -50,6 +50,9 @@ public partial class Carousel : IAsyncDisposable
             catch (JSDisconnectedException)
             {
             }
+            catch (JSException)
+            {
+            }
         }
     }
 
