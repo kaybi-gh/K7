@@ -9,6 +9,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? SelectedContent { get; set; }
     [Parameter] public TValue? Value { get; set; }
     [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
     [Parameter] public Func<TValue?, string>? ToStringFunc { get; set; }

@@ -24,6 +24,9 @@
 @import url('./dist/phosphor-icons/src/light/style.css');
 @import url('./dist/phosphor-icons/src/duotone/style.css');
 
+/* 4b. Flag Icons */
+@import url('./css/flag-icons.css');
+
 /* 5. Utilities */
 @import url('./css/utilities.css');
 
