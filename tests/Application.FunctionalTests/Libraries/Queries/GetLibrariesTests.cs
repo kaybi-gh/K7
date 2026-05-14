@@ -17,6 +17,8 @@ public class GetLibrariesTests : DatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = "/root/path"
         });
         var query = new GetLibrariesQuery();

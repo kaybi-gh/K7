@@ -18,6 +18,8 @@ public class CreateLibraryTests : DatabaseFixture
         {
             MediaType = LibraryMediaType.Music,
             MetadataProviderName = "musicbrainz",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = null!,
             Title = null!
         };
@@ -35,6 +37,8 @@ public class CreateLibraryTests : DatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = "/root/path"
         });
         var command = new CreateLibraryCommand
@@ -42,6 +46,8 @@ public class CreateLibraryTests : DatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = "/root/path"
         };
 
@@ -61,6 +67,8 @@ public class CreateLibraryTests : DatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = "/root/path"
         };
 

@@ -30,6 +30,8 @@ public class IndexLibraryFilesTests : FileAndDatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath
         });
         FileHelper.CreateTestFile("movie.mp4", "movie");

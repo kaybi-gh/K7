@@ -33,7 +33,9 @@ public class RequestLoggerTests
             MediaType = LibraryMediaType.Music,
             Title = "title",
             RootPath = "path",
-            MetadataProviderName = "tmdb"
+            MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
         }, new CancellationToken());
 
         // Assert
@@ -52,7 +54,9 @@ public class RequestLoggerTests
             MediaType = LibraryMediaType.Music,
             Title = "title",
             RootPath = "path",
-            MetadataProviderName = "tmdb"
+            MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en"
         }, new CancellationToken());
 
         // Assert
