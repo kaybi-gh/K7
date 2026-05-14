@@ -51,7 +51,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         }
     }
 
-    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, MediaType? mediaType, CancellationToken cancellationToken)
+    public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year, string? providerId, MediaType? mediaType, string language, CancellationToken cancellationToken)
     {
         if (mediaType.HasValue && mediaType != K7.Server.Domain.Enums.MediaType.Movie)
             return [];
@@ -62,7 +62,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         {
             if (!string.IsNullOrWhiteSpace(providerId) && int.TryParse(providerId, out var tmdbId))
             {
-                var movie = await _tdmbClient.GetMovieAsync(tmdbId, "fr", cancellationToken: cancellationToken);
+                var movie = await _tdmbClient.GetMovieAsync(tmdbId, language, cancellationToken: cancellationToken);
                 if (movie != null)
                 {
                     results.Add(MapToSearchResult(movie.Id, movie.Title, movie.ReleaseDate, movie.PosterPath, movie.Overview));
@@ -72,7 +72,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                var searchResult = await _tdmbClient.SearchMovieAsync(query, language: "fr", year: year ?? 0, cancellationToken: cancellationToken);
+                var searchResult = await _tdmbClient.SearchMovieAsync(query, language: language, year: year ?? 0, cancellationToken: cancellationToken);
                 if (searchResult?.Results != null)
                 {
                     results.AddRange(searchResult.Results.Select(movie => 
@@ -109,7 +109,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
     {
         try
         {
-            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: "fr,en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates, cancellationToken: cancellationToken);
+            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: $"{language},en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates, cancellationToken: cancellationToken);
 
             var contentRating = ExtractContentRating(tmdbMovie.ReleaseDates, language);
 

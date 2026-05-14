@@ -1786,6 +1786,13 @@
             "schema": {
               "$ref": "#/components/schemas/MediaType"
             }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -5799,7 +5806,9 @@
           "title",
           "mediaType",
           "rootPath",
-          "metadataProviderName"
+          "metadataProviderName",
+          "metadataLanguage",
+          "metadataFallbackLanguage"
         ],
         "type": "object",
         "properties": {
@@ -5813,6 +5822,12 @@
             "type": "string"
           },
           "metadataProviderName": {
+            "type": "string"
+          },
+          "metadataLanguage": {
+            "type": "string"
+          },
+          "metadataFallbackLanguage": {
             "type": "string"
           },
           "triggerFileIndexingOnCreation": {
@@ -6583,7 +6598,9 @@
           "title",
           "mediaType",
           "rootPath",
-          "metadataProviderName"
+          "metadataProviderName",
+          "metadataLanguage",
+          "metadataFallbackLanguage"
         ],
         "type": "object",
         "properties": {
@@ -6601,6 +6618,12 @@
             "type": "string"
           },
           "metadataProviderName": {
+            "type": "string"
+          },
+          "metadataLanguage": {
+            "type": "string"
+          },
+          "metadataFallbackLanguage": {
             "type": "string"
           },
           "metadataRefreshIntervalDays": {
@@ -10885,6 +10908,18 @@
             ]
           },
           "metadataProviderName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "metadataLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "metadataFallbackLanguage": {
             "type": [
               "null",
               "string"

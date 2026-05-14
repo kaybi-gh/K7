@@ -24,9 +24,15 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
     {
         var media = await context.Medias
             .Include(m => m.ExternalIds)
+            .Include(m => m.IndexedFiles)
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
 
         Guard.Against.NotFound(request.MediaId, media);
+
+        var libraryId = media.IndexedFiles.FirstOrDefault()?.LibraryId;
+        var library = libraryId.HasValue
+            ? await context.Libraries.FindAsync([libraryId.Value], cancellationToken)
+            : null;
 
         // Update or add external Id
         var existingExternalId = media.ExternalIds?.FirstOrDefault(x => x.ProviderName == request.SelectedProvider);
@@ -50,8 +56,8 @@ public class ReidentifyMediaCommandHandler(IApplicationDbContext context, ISende
                 MediaId = media.Id,
                 MetadataProviderExternalId = request.SelectedExternalId,
                 MetadataProviderName = request.SelectedProvider,
-                Language = "fr", // TODO - Take langage from config
-                FallbackLanguage = "en"
+                Language = library?.MetadataLanguage ?? "fr",
+                FallbackLanguage = library?.MetadataFallbackLanguage ?? "en"
             },
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = media.Id,

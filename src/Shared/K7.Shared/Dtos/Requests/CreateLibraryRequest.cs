@@ -8,6 +8,8 @@ public sealed record CreateLibraryRequest
     public required LibraryMediaType MediaType { get; init; }
     public required string RootPath { get; init; }
     public required string MetadataProviderName { get; init; }
+    public required string MetadataLanguage { get; init; }
+    public required string MetadataFallbackLanguage { get; init; }
     public bool TriggerFileIndexingOnCreation { get; init; } = true;
     public string? Description { get; init; }
     public string? Icon { get; init; }

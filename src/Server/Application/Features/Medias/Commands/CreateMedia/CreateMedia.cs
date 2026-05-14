@@ -106,8 +106,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 MediaId = movie.Id,
                 MetadataProviderExternalId = metadataProviderExternalId,
                 MetadataProviderName = library.MetadataProviderName!,
-                Language = "fr",
-                FallbackLanguage = "en"
+                Language = library.MetadataLanguage,
+                FallbackLanguage = library.MetadataFallbackLanguage
             },
             Priority = BackgroundTaskPriority.Low,
             TargetEntityId = movie.Id,
@@ -165,8 +165,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                         MediaId = album.Id,
                         MetadataProviderExternalId = musicBrainzId,
                         MetadataProviderName = library.MetadataProviderName,
-                        Language = "en",
-                        FallbackLanguage = "en"
+                        Language = library.MetadataLanguage,
+                        FallbackLanguage = library.MetadataFallbackLanguage
                     },
                     Priority = BackgroundTaskPriority.Low,
                     TargetEntityId = album.Id,
@@ -345,8 +345,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     MediaId = serie.Id,
                     MetadataProviderExternalId = providerExternalId,
                     MetadataProviderName = library.MetadataProviderName!,
-                    Language = "fr",
-                    FallbackLanguage = "en"
+                    Language = library.MetadataLanguage,
+                    FallbackLanguage = library.MetadataFallbackLanguage
                 },
                 Priority = BackgroundTaskPriority.Normal,
                 TargetEntityId = serie.Id,

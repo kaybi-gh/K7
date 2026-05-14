@@ -24,6 +24,8 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
 
         Guard.Against.NotFound(request.IndexedFileId, indexedFile);
 
+        var library = await context.Libraries.FindAsync([indexedFile.LibraryId], cancellationToken);
+
         if (indexedFile.MediaId.HasValue)
         {
             var oldMedia = await context.Medias
@@ -33,7 +35,6 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
             if (oldMedia != null)
             {
                 oldMedia.IndexedFiles?.Remove(indexedFile);
-                // We keep the old media as is. It might have playback progress or other files attached to it.
             }
             indexedFile.MediaId = null;
         }
@@ -71,8 +72,8 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
                 MediaId = newMedia.Id,
                 MetadataProviderExternalId = request.SelectedExternalId,
                 MetadataProviderName = request.SelectedProvider,
-                Language = "fr", // TODO - Take langage from config
-                FallbackLanguage = "en"
+                Language = library?.MetadataLanguage ?? "fr",
+                FallbackLanguage = library?.MetadataFallbackLanguage ?? "en"
             },
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = newMedia.Id,

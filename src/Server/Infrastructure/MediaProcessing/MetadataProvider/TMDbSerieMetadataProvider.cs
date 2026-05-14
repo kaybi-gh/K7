@@ -60,7 +60,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
     }
 
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(
-        string query, int? year, string? providerId, K7.Server.Domain.Enums.MediaType? mediaType, CancellationToken cancellationToken)
+        string query, int? year, string? providerId, K7.Server.Domain.Enums.MediaType? mediaType, string language, CancellationToken cancellationToken)
     {
         if (mediaType.HasValue && mediaType != K7.Server.Domain.Enums.MediaType.Serie)
             return [];
@@ -71,7 +71,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         {
             if (!string.IsNullOrWhiteSpace(providerId) && int.TryParse(providerId, out var tmdbId))
             {
-                var show = await _tmdbClient.GetTvShowAsync(tmdbId, language: "fr", cancellationToken: cancellationToken);
+                var show = await _tmdbClient.GetTvShowAsync(tmdbId, language: language, cancellationToken: cancellationToken);
                 if (show is not null)
                 {
                     results.Add(MapToSearchResult(show.Id, show.Name, show.FirstAirDate, show.PosterPath, show.Overview));
@@ -82,7 +82,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             if (!string.IsNullOrWhiteSpace(query))
             {
                 var searchResult = await _tmdbClient.SearchTvShowAsync(
-                    query, language: "fr", firstAirDateYear: year ?? 0, cancellationToken: cancellationToken);
+                    query, language: language, firstAirDateYear: year ?? 0, cancellationToken: cancellationToken);
 
                 if (searchResult?.Results is not null)
                 {
