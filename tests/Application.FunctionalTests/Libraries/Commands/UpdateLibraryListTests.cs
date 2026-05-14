@@ -33,6 +33,8 @@ public class UpdateLibraryListTests : DatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = "/root/path"
         });
         await SendAsync(new CreateLibraryCommand
@@ -40,6 +42,8 @@ public class UpdateLibraryListTests : DatabaseFixture
             Title = "Other Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = "/root/path"
         });
         var command = new UpdateLibraryCommand
@@ -66,6 +70,8 @@ public class UpdateLibraryListTests : DatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = "/root/path"
         });
         var command = new UpdateLibraryCommand

@@ -42,6 +42,8 @@ public class IndexedFileExtensionsTests : FileFixture
             Id = Guid.NewGuid(),
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             Title = "Movies"
         };
@@ -81,6 +83,8 @@ public class IndexedFileExtensionsTests : FileFixture
             Id = Guid.NewGuid(),
             MediaType = LibraryMediaType.Music,
             MetadataProviderName = "musicbrainz",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             Title = "Music"
         };
@@ -205,6 +209,8 @@ public class IndexedFileExtensionsTests : FileFixture
             Id = Guid.NewGuid(),
             MediaType = LibraryMediaType.Serie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             Title = "TV Shows"
         };
@@ -232,6 +238,8 @@ public class IndexedFileExtensionsTests : FileFixture
             Id = Guid.NewGuid(),
             MediaType = LibraryMediaType.Serie,
             MetadataProviderName = "tmdb",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             Title = "TV Shows"
         };

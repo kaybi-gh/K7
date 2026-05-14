@@ -20,6 +20,8 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Music,
             MetadataProviderName = "musicbrainz",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             TriggerFileIndexingOnCreation = false
         });
@@ -48,6 +50,8 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Music,
             MetadataProviderName = "musicbrainz",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             TriggerFileIndexingOnCreation = true
         });
@@ -74,6 +78,8 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Music,
             MetadataProviderName = "musicbrainz",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             TriggerFileIndexingOnCreation = true
         });
@@ -103,6 +109,8 @@ public class FileIndexerServiceTests : FileAndDatabaseFixture
             Title = "New Library",
             MediaType = LibraryMediaType.Music,
             MetadataProviderName = "musicbrainz",
+            MetadataLanguage = "fr",
+            MetadataFallbackLanguage = "en",
             RootPath = FileHelper.TestDirectoryPath,
             TriggerFileIndexingOnCreation = true
         });
