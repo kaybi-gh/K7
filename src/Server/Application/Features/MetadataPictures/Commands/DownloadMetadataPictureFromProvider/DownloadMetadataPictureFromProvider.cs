@@ -1,6 +1,8 @@
-﻿using K7.Server.Application.Common.Interfaces;
+﻿using System.Net;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
@@ -21,19 +23,22 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
     private readonly IImageProcessor _imageProcessor;
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
+    private readonly OutboundRateLimiter _rateLimiter;
 
     public DownloadMetadataPictureFromProviderCommandHandler(
         IApplicationDbContext context,
         HttpClient httpClient,
         IImageProcessor imageProcessor,
         ISender sender,
-        IOptions<PathsConfiguration> pathsConfiguration)
+        IOptions<PathsConfiguration> pathsConfiguration,
+        OutboundRateLimiter rateLimiter)
     {
         _context = context;
         _httpClient = httpClient;
         _imageProcessor = imageProcessor;
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
+        _rateLimiter = rateLimiter;
     }
 
     public async Task Handle(DownloadMetadataPictureFromProviderCommand request, CancellationToken cancellationToken)
@@ -58,7 +63,20 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
             var originalExtension = Path.GetExtension(entity.OriginalRemoteUri!.LocalPath);
             var tempFilePath = Path.Combine(directory, $"{entity.Id}{originalExtension}");
 
-            var imageData = await _httpClient.GetByteArrayAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
+            await _rateLimiter.WaitAsync(entity.OriginalRemoteUri.Host, cancellationToken);
+
+            using var response = await _httpClient.GetAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                var retryAfter = response.Headers.RetryAfter?.Delta
+                    ?? TimeSpan.FromSeconds(5);
+                _rateLimiter.ReportRetryAfter(entity.OriginalRemoteUri.Host, retryAfter);
+                throw new HttpRequestException($"Rate limited (429) by {entity.OriginalRemoteUri.Host}. Retry after {retryAfter.TotalSeconds}s.");
+            }
+
+            response.EnsureSuccessStatusCode();
+            var imageData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             var file = new FileInfo(tempFilePath);
             file.Directory?.Create();
             await File.WriteAllBytesAsync(tempFilePath, imageData, cancellationToken);
