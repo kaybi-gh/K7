@@ -14,6 +14,8 @@ public static class LibraryMappings
             MediaType = domain.MediaType,
             RootPath = domain.RootPath,
             MetadataProviderName = domain.MetadataProviderName,
+            MetadataLanguage = domain.MetadataLanguage,
+            MetadataFallbackLanguage = domain.MetadataFallbackLanguage,
             MetadataRefreshIntervalDays = domain.MetadataRefreshIntervalDays,
             Description = domain.Description,
             Icon = domain.Icon,

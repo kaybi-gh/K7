@@ -19,6 +19,18 @@ public class LibraryConfiguration : IEntityTypeConfiguration<Library>
             .IsRequired();
 
         builder
+            .Property(t => t.MetadataLanguage)
+            .HasMaxLength(10)
+            .IsRequired()
+            .HasDefaultValue("fr");
+
+        builder
+            .Property(t => t.MetadataFallbackLanguage)
+            .HasMaxLength(10)
+            .IsRequired()
+            .HasDefaultValue("en");
+
+        builder
             .HasMany(l => l.IndexedFiles)
             .WithOne()
             .HasForeignKey(i => i.LibraryId);

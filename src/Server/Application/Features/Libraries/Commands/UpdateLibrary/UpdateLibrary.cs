@@ -11,6 +11,8 @@ public record UpdateLibraryCommand : IRequest
 
     public string? Title { get; init; }
     public string? MetadataProviderName { get; init; }
+    public string? MetadataLanguage { get; init; }
+    public string? MetadataFallbackLanguage { get; init; }
     public int? MetadataRefreshIntervalDays { get; init; }
     public string? Description { get; init; }
     public string? Icon { get; init; }
@@ -33,6 +35,8 @@ public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
         Guard.Against.NotFound(request.Id, entity);
         entity.Title = request.Title ?? entity.Title;
         entity.MetadataProviderName = request.MetadataProviderName ?? entity.MetadataProviderName;
+        entity.MetadataLanguage = request.MetadataLanguage ?? entity.MetadataLanguage;
+        entity.MetadataFallbackLanguage = request.MetadataFallbackLanguage ?? entity.MetadataFallbackLanguage;
         entity.MetadataRefreshIntervalDays = request.MetadataRefreshIntervalDays;
         if (request.Description is not null) entity.Description = request.Description;
         if (request.Icon is not null) entity.Icon = request.Icon;
