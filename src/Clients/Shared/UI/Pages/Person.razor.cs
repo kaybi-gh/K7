@@ -96,14 +96,23 @@ public partial class Person : IDisposable
         {
             if (role.Media is LiteMusicAlbumDto album && seenAlbums.Add(album.Id))
             {
+                var coverUri = album.Pictures
+                    ?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                    ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
+
+                if (_backdropUrls.Count < 5
+                    && apiClient.GetAbsoluteUri(coverUri?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is { } coverUrl)
+                {
+                    _backdropUrls.Add(coverUrl);
+                }
+
                 _discography.Add(new MediaCardViewModel
                 {
                     Id = album.Id.ToString(),
                     Title = album.Title,
                     AdditionalInformations = album.ReleaseDate?.Year.ToString(),
                     PictureUrl = apiClient.GetAbsoluteUri(
-                        album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                            ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+                        coverUri?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
                 });
             }
         }

@@ -33,91 +33,107 @@ else if (_person is not null)
             </div>
         }
 
-        <div class="person-hero">
-            <div class="person-hero-content">
-                <div class="person-portrait">
-                    @if (_portraitUrl is not null)
-                    {
-                        <img src="@_portraitUrl" alt="@_person.Name" class="person-portrait-img" />
-                    }
-                    else
-                    {
-                        <div class="person-portrait-placeholder">
-                            <K7Icon Name="user" Style="font-size: 64px; opacity: 0.3;" />
-                        </div>
-                    }
-                </div>
-
-                <div class="person-info">
-                    <h3>@_person.Name</h3>
-
-                    <div class="d-flex mt-3">
-                        @if (_person.Birthday.HasValue)
+        <div class="person-main">
+            <div class="person-hero">
+                <div class="person-hero-content">
+                    <div class="person-portrait">
+                        @if (_portraitUrl is not null)
                         {
-                            <div class="d-flex">
-                                <K7Icon Name="cake" Size="sm" Style="opacity:0.55" />
-                                <p class="text-sm">@_person.Birthday.Value.ToString("d MMMM yyyy")</p>
-                                @if (_person.Deathday is null)
-                                {
-                                    <p class="text-sm" Style="opacity:0.6;">(@Age(_person.Birthday.Value) @L["YearsOld"])</p>
-                                }
-                            </div>
+                            <img src="@_portraitUrl" alt="@_person.Name" class="person-portrait-img" />
                         }
-                        @if (_person.Deathday.HasValue)
+                        else
                         {
-                            <div class="d-flex">
-                                <p class="text-sm" Style="opacity:0.5;">†</p>
-                                <p class="text-sm">@_person.Deathday.Value.ToString("d MMMM yyyy")</p>
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(_person.BirthPlace))
-                        {
-                            <div class="d-flex">
-                                <K7Icon Name="map-pin" Size="sm" Style="opacity:0.55" />
-                                <p class="text-sm">@_person.BirthPlace</p>
+                            <div class="person-portrait-placeholder">
+                                <K7Icon Name="user" Class="person-portrait-placeholder-icon" />
                             </div>
                         }
                     </div>
 
-                    @if (!string.IsNullOrEmpty(_person.Biography))
-                    {
-                        <div class="person-bio overview-clickable" tabindex="0" role="button" @onclick="OpenBioDialogAsync">
-                            <p Style="opacity: 0.85; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">@_person.Biography</p>
+                    <div class="person-info">
+                        <h3 class="person-name">@_person.Name</h3>
+
+                        <div class="person-meta">
+                            @if (_person.Birthday.HasValue)
+                            {
+                                <div class="person-meta-item">
+                                    <K7Icon Name="cake" Size="sm" Class="person-meta-icon" />
+                                    <span>@_person.Birthday.Value.ToString("d MMMM yyyy")</span>
+                                    @if (_person.Deathday is null)
+                                    {
+                                        <span class="person-meta-secondary">(@Age(_person.Birthday.Value) @L["YearsOld"])</span>
+                                    }
+                                </div>
+                            }
+                            @if (_person.Deathday.HasValue)
+                            {
+                                <div class="person-meta-item">
+                                    <span class="person-meta-secondary">&#x2020;</span>
+                                    <span>@_person.Deathday.Value.ToString("d MMMM yyyy")</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(_person.BirthPlace))
+                            {
+                                <div class="person-meta-item">
+                                    <K7Icon Name="map-pin" Size="sm" Class="person-meta-icon" />
+                                    <span>@_person.BirthPlace</span>
+                                </div>
+                            }
                         </div>
-                    }
+
+                        @if (!string.IsNullOrEmpty(_person.Biography))
+                        {
+                            <div class="person-bio overview-clickable focusable" tabindex="0" role="button" @onclick="OpenBioDialogAsync">
+                                <p class="person-bio-text">@_person.Biography</p>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
+
+            @if (_discography.Count > 0 || _medias.Count > 0)
+            {
+                <div class="person-scroll-hint">
+                    <K7Icon Name="caret-down" />
+                </div>
+            }
         </div>
 
-        @if (_discography.Count > 0)
+        @if (_discography.Count > 0 || _medias.Count > 0)
         {
-            <Carousel Title="@L["Discography"]">
-                @foreach (var album in _discography)
+            <div class="person-content">
+                @if (_discography.Count > 0)
                 {
-                    <CarouselItem @key="album.Id">
-                        <MediaCard Model="album"
-                                   Href="@($"/music/albums/{album.Id}")"
-                                   FooterVisible="true" />
-                    </CarouselItem>
+                    <Carousel Title="@L["Discography"]">
+                        @foreach (var album in _discography)
+                        {
+                            <CarouselItem @key="album.Id">
+                                <MediaCard Model="album"
+                                           Variant="MediaCardVariant.Cover"
+                                           Href="@($"/music/albums/{album.Id}")"
+                                           OverlayEnabled="true"
+                                           FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
                 }
-            </Carousel>
-        }
 
-        @if (_medias.Count > 0)
-        {
-            <Carousel Title="@L["Filmography"]">
-                @foreach (var media in _medias)
+                @if (_medias.Count > 0)
                 {
-                    <CarouselItem @key="media.Id">
-                        <MediaCard Model="media"
-                                   Href="@(media.Kind == MediaCardKind.Serie ? $"/series/{media.Id}" : $"/movies/{media.Id}")"
-                                   OverlayEnabled="true"
-                                   ProgressEnabled="true"
-                                   WatchedStatusEnabled="true"
-                                   FooterVisible="true" />
-                    </CarouselItem>
+                    <Carousel Title="@L["Filmography"]">
+                        @foreach (var media in _medias)
+                        {
+                            <CarouselItem @key="media.Id">
+                                <MediaCard Model="media"
+                                           Href="@(media.Kind == MediaCardKind.Serie ? $"/series/{media.Id}" : $"/movies/{media.Id}")"
+                                           OverlayEnabled="true"
+                                           ProgressEnabled="true"
+                                           WatchedStatusEnabled="true"
+                                           FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
                 }
-            </Carousel>
+            </div>
         }
     </div>
 }
