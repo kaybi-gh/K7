@@ -45,8 +45,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
 .app-main {
     grid-column: 1;
     grid-row: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -54,6 +53,19 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     padding-top: calc(var(--nav-height) + env(safe-area-inset-top, 0px));
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
+}
+
+.page-viewport {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-viewport > * {
+    flex: 1;
+    min-height: 0;
 }
 
 /* Mobile: nav is fixed at bottom, no grid row needed */

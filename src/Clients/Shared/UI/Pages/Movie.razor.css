@@ -137,14 +137,17 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - var(--nav-height));
+    height: 100%;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .movie-page {
     position: relative;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .movie-scroll-hint {

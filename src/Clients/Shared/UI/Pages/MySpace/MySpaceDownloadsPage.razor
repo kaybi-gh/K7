@@ -5,7 +5,8 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="d-flex flex-col align-center pa-16">
+<div class="page-scrollable">
+    <div class="d-flex flex-col align-center pa-16">
     @if (DeviceService.GetClientType() != ClientType.Web)
     {
         <K7Icon Icon="@Phosphor.DownloadSimple" Style="font-size: 64px; opacity: 0.3;" />
@@ -16,4 +17,5 @@
         <K7Icon Icon="@Phosphor.DownloadSimple" Style="font-size: 64px; opacity: 0.3;" />
         <p class="text-sm" Color="secondary">@L["NotAvailableOnWeb"]</p>
     }
+    </div>
 </div>

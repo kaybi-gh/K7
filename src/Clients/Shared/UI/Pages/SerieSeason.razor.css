@@ -1,6 +1,7 @@
 .season-page {
     position: relative;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .background-image {
@@ -79,7 +80,7 @@
 
 .season-tv {
     position: relative;
-    height: 100vh;
+    height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;

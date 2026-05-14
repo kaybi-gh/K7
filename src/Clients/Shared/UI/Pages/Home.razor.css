@@ -7,12 +7,14 @@
     padding-top: var(--space-6);
     padding-bottom: 32px;
     --carousel-margin-start: 40px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 :global(html.platform-tv) .home-page,
 .home-page--tv {
-    height: calc(100dvh - var(--nav-height, 56px));
-    max-height: calc(100dvh - var(--nav-height, 56px));
+    height: 100%;
+    max-height: 100%;
     padding-top: 0;
     padding-bottom: 0;
     gap: 0;
