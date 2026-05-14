@@ -39,6 +39,14 @@ public static class DependencyInjection
         services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
         services.AddSingleton<MediaQueryCacheInvalidator>();
         services.AddSingleton<IMediaQueryCacheInvalidator>(sp => sp.GetRequiredService<MediaQueryCacheInvalidator>());
+        services.AddSingleton(sp =>
+        {
+            var limiter = new OutboundRateLimiter();
+            limiter.ConfigureHost("musicbrainz.org", TimeSpan.FromMilliseconds(1100));
+            limiter.ConfigureHost("commons.wikimedia.org", TimeSpan.FromSeconds(2));
+            limiter.ConfigureHost("upload.wikimedia.org", TimeSpan.FromSeconds(2));
+            return limiter;
+        });
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
 
