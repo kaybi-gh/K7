@@ -21,6 +21,8 @@ public partial class EditLibraryDialog
     [Parameter] public List<MetadataProviderInfoDto> AvailableProviders { get; set; } = [];
     [Parameter] public string? SelectedProvider { get; set; }
     [Parameter] public int? MetadataRefreshIntervalDays { get; set; }
+    [Parameter] public string MetadataLanguage { get; set; } = "en";
+    [Parameter] public string MetadataFallbackLanguage { get; set; } = "en";
 
     private Guid? _currentCoverPictureId;
     private CoverPickerResult? _pendingCover;
@@ -87,6 +89,8 @@ public partial class EditLibraryDialog
             {
                 Title = Title.Trim(),
                 MetadataProviderName = SelectedProvider,
+                MetadataLanguage = MetadataLanguage,
+                MetadataFallbackLanguage = MetadataFallbackLanguage,
                 MetadataRefreshIntervalDays = MetadataRefreshIntervalDays,
                 Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim(),
                 Icon = Icon

@@ -10,10 +10,7 @@ else
 {
     <div class="d-flex flex-col pa-4">
         <div>
-            <K7Select TValue="string" Label="@L["DefaultLanguage"]" Value="@_defaultLanguage" ValueChanged="OnDefaultLanguageChanged">
-                <K7SelectItem Value="@("fr")">FranÃ§ais</K7SelectItem>
-                <K7SelectItem Value="@("en")">English</K7SelectItem>
-            </K7Select>
+            <K7LanguageSelect Value="@_defaultLanguage" ValueChanged="OnDefaultLanguageChanged" Label="@L["DefaultLanguage"]" Languages="SupportedLanguages.Interface" />
             <span class="text-caption mt-1" Color="secondary">@L["DefaultLanguageHelp"]</span>
         </div>
     </div>

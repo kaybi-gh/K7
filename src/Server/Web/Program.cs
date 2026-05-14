@@ -1,6 +1,7 @@
 using K7.Clients.Shared.UI.Pages.Utils;
 using K7.Server.Application;
 using K7.Server.Infrastructure.Database.Context;
+using K7.Shared;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Oidc;
 using K7.Server.Infrastructure.FileSystem;
@@ -65,7 +66,7 @@ try
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
 
-    var supportedCultures = new[] { "en", "fr" };
+    var supportedCultures = SupportedLanguages.Interface.Select(l => l.Code).ToArray();
     app.UseRequestLocalization(new RequestLocalizationOptions()
         .SetDefaultCulture("en")
         .AddSupportedCultures(supportedCultures)

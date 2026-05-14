@@ -139,7 +139,9 @@ public partial class AdminLibrariesPanel
             { x => x.CoverPictureId, library.CoverPictureId },
             { x => x.AvailableProviders, providers },
             { x => x.SelectedProvider, library.MetadataProviderName },
-            { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays }
+            { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays },
+            { x => x.MetadataLanguage, library.MetadataLanguage },
+            { x => x.MetadataFallbackLanguage, library.MetadataFallbackLanguage }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
