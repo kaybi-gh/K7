@@ -19,7 +19,7 @@ public record DownloadMetadataPictureFromProviderCommand : IRequest
 public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler<DownloadMetadataPictureFromProviderCommand>
 {
     private readonly IApplicationDbContext _context;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IImageProcessor _imageProcessor;
     private readonly ISender _sender;
     private readonly PathsConfiguration _pathsConfiguration;
@@ -27,14 +27,14 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 
     public DownloadMetadataPictureFromProviderCommandHandler(
         IApplicationDbContext context,
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         IImageProcessor imageProcessor,
         ISender sender,
         IOptions<PathsConfiguration> pathsConfiguration,
         OutboundRateLimiter rateLimiter)
     {
         _context = context;
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _imageProcessor = imageProcessor;
         _sender = sender;
         _pathsConfiguration = pathsConfiguration.Value;
@@ -65,7 +65,8 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
 
             await _rateLimiter.WaitAsync(entity.OriginalRemoteUri.Host, cancellationToken);
 
-            using var response = await _httpClient.GetAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
+            using var httpClient = _httpClientFactory.CreateClient(DependencyInjection.MetadataPictureDownloadClient);
+            using var response = await httpClient.GetAsync(entity.OriginalRemoteUri.OriginalString, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
