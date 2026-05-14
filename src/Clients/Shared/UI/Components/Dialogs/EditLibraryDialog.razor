@@ -15,6 +15,10 @@
                 }
             </K7Select>
 
+            <K7LanguageSelect @bind-Value="MetadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined" />
+
+            <K7LanguageSelect @bind-Value="MetadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined" />
+
             <K7TextField TValue="int?" Type="number" @bind-Value="MetadataRefreshIntervalDays"
                              Label="@L["MetadataRefreshLabel"]" Variant="outlined"
                              HelperText="@L["MetadataRefreshHelper"]" />

@@ -22,6 +22,8 @@ public partial class CreateLibraryDialog
     private string? _icon = null;
     private string _rootPath = "";
     private string _selectedProvider = "";
+    private string _metadataLanguage = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    private string _metadataFallbackLanguage = "en";
     private List<MetadataProviderInfoDto> _availableProviders = [];
     private bool _triggerIndexing = true;
     private bool _isSubmitting;
@@ -113,6 +115,8 @@ public partial class CreateLibraryDialog
                 RootPath = _rootPath.Trim(),
                 TriggerFileIndexingOnCreation = _triggerIndexing,
                 MetadataProviderName = _selectedProvider,
+                MetadataLanguage = _metadataLanguage,
+                MetadataFallbackLanguage = _metadataFallbackLanguage,
                 Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
                 Icon = _icon
             };

@@ -80,6 +80,10 @@
                     }
                 </K7Select>
 
+                <K7LanguageSelect @bind-Value="_metadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined" />
+
+                <K7LanguageSelect @bind-Value="_metadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined" />
+
                 <div class="d-flex align-center mt-2">
                     <K7Switch @bind-Value="_triggerIndexing" />
                     <label class="text-sm ml-2">@L["AutoIndex"]</label>

@@ -26,10 +26,7 @@
         }
     </K7Select>
 
-    <K7Select TValue="string" Label="@L["Language"]" Value="@_currentCulture" ValueChanged="OnCultureChanged">
-        <K7SelectItem Value="@("fr")">Français</K7SelectItem>
-        <K7SelectItem Value="@("en")">English</K7SelectItem>
-    </K7Select>
+    <K7LanguageSelect Value="@_currentCulture" ValueChanged="OnCultureChanged" Label="@L["Language"]" Languages="SupportedLanguages.Interface" />
 
     @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
     {
