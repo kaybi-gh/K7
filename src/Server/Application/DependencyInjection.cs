@@ -11,6 +11,8 @@ namespace K7.Server.Application;
 
 public static class DependencyInjection
 {
+    public const string MetadataPictureDownloadClient = "MetadataPictureDownload";
+
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddHttpClient(string.Empty, client =>
@@ -18,6 +20,13 @@ public static class DependencyInjection
             var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
             client.DefaultRequestHeaders.UserAgent.ParseAdd($"K7/{version}");
         });
+
+        services.AddHttpClient(MetadataPictureDownloadClient, client =>
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
+            client.DefaultRequestHeaders.UserAgent.ParseAdd($"K7/{version}");
+            client.Timeout = TimeSpan.FromMinutes(3);
+        }).ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear());
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         services.AddMediatR(cfg =>
