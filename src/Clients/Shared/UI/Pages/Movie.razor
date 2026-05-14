@@ -54,18 +54,14 @@
                 <K7Skeleton Width="100%" />
             </div>
         </div>
-        <div class="grid">
-            <div>
-                <Carousel Skeleton="true" Title="@L["CastingAndCrew"]">
-                    @for (int i = 0; i < 10; i++)
-                    {
-                        <CarouselItem>
-                            <PersonRole Skeleton="true" />
-                        </CarouselItem>
-                    }
-                </Carousel>
-            </div>
-        </div>
+        <Carousel Skeleton="true" Title="@L["CastingAndCrew"]">
+            @for (int i = 0; i < 10; i++)
+            {
+                <CarouselItem>
+                    <PersonRole Skeleton="true" />
+                </CarouselItem>
+            }
+        </Carousel>
     </div>
 }
 else
@@ -165,20 +161,18 @@ else
             </div>
         }
         </div>
-        <div>
-            <div class="grid">
-                <div>
-                    <Carousel Title="@L["CastingAndCrew"]">
-                        @foreach (var cast in (_movie.PersonRoles ?? []).Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
-                        {
-                            <CarouselItem @key="cast.Id">
-                                <PersonRole LitePersonRoleDto="@cast" />
-                            </CarouselItem>
-                        }
-                    </Carousel>
-                </div>
-            </div>
-        </div>
+
+        @if ((_movie.PersonRoles?.Count ?? 0) > 0)
+        {
+            <Carousel Title="@L["CastingAndCrew"]">
+                @foreach (var cast in (_movie.PersonRoles ?? []).Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
+                {
+                    <CarouselItem @key="cast.Id">
+                        <PersonRole LitePersonRoleDto="@cast" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
         </div>
     }
 }
