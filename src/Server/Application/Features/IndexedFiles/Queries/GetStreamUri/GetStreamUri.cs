@@ -1,4 +1,6 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
@@ -10,6 +12,7 @@ using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.QueryBuilders;
+using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 
@@ -25,11 +28,19 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 {
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
+    private readonly ISender _sender;
+    private readonly ILogger<GetStreamUriQueryHandler> _logger;
 
-    public GetStreamUriQueryHandler(IApplicationDbContext context, IMediaAccessGuard accessGuard)
+    public GetStreamUriQueryHandler(
+        IApplicationDbContext context,
+        IMediaAccessGuard accessGuard,
+        ISender sender,
+        ILogger<GetStreamUriQueryHandler> logger)
     {
         _context = context;
         _accessGuard = accessGuard;
+        _sender = sender;
+        _logger = logger;
     }
 
     public async Task<IndexedFileStreamUri> Handle(GetStreamUriQuery request, CancellationToken cancellationToken)
@@ -68,13 +79,37 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 .Collection(v => v.VideoTracks)
                 .LoadAsync(cancellationToken);
 
-            return GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request);
+            var hlsSegmentsAvailable = await _context.HlsSegments
+                .AnyAsync(s => s.IndexedFileId == request.Id, cancellationToken);
+
+            if (!hlsSegmentsAvailable)
+            {
+                _logger.LogWarning(
+                    "HLS segments not yet computed for IndexedFile {Id}, queuing segmentation and forcing transcoding",
+                    request.Id);
+
+                await _sender.Send(new CreateBackgroundTaskCommand
+                {
+                    Request = new ComputeHlsSegmentsCommand
+                    {
+                        Id = request.Id,
+                        SegmentsDuration = TimeSpan.FromSeconds(2)
+                    },
+                    Priority = BackgroundTaskPriority.High,
+                    TargetEntityId = request.Id,
+                    TargetEntityTypeName = nameof(IndexedFile),
+                    MaxAttempts = 5,
+                    ConcurrencyGroup = "ffmpeg"
+                }, cancellationToken);
+            }
+
+            return GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable);
         }
 
         throw new InvalidOperationException();
     }
 
-    private static IndexedFileStreamUri GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request)
+    private static IndexedFileStreamUri GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable)
     {
         AudioFileTrack selectedAudioTrack;
         if (request.AudioTrackIndex is int audioIdx)
@@ -121,6 +156,13 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
         //var requiresSubtitlesTranscoding = false; // TODO - Subtitles
         var requiresVideoTranscoding = !videoCodecSupported;
+
+        // When HLS segments aren't available, force transcoding to avoid the "original"
+        // quality path which requires keyframe-based segments from the database
+        if (!hlsSegmentsAvailable && !requiresVideoTranscoding)
+        {
+            requiresVideoTranscoding = true;
+        }
 
         VideoMediaFormat? videoTranscodingMediaFormat = null;
 
