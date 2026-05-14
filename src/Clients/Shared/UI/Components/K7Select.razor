@@ -19,7 +19,16 @@
                 aria-expanded="@_open"
                 @onclick="Toggle"
                 @onclick:stopPropagation="true">
-            <span class="k7-select-text">@DisplayText</span>
+            <span class="k7-select-text">
+                @if (SelectedContent is not null)
+                {
+                    @SelectedContent
+                }
+                else
+                {
+                    @DisplayText
+                }
+            </span>
             <K7Icon Icon="@Phosphor.CaretDown" Class="k7-select-icon"></K7Icon>
         </button>
         <div class="k7-select-dropdown" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true"

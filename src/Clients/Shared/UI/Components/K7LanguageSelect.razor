@@ -1,0 +1,35 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Shared
+
+<K7Select TValue="string" Value="@Value" ValueChanged="@ValueChanged" Label="@Label" Variant="@Variant" Class="@Class">
+    <SelectedContent>
+        @{ var selected = Languages.FirstOrDefault(l => l.Code == Value); }
+        @if (selected is not null)
+        {
+            <span class="fi fi-@selected.CountryCode"></span>
+            @selected.NativeLabel
+        }
+    </SelectedContent>
+    <ChildContent>
+        @foreach (var lang in Languages)
+        {
+            <K7SelectItem TValue="string" Value="@lang.Code" Text="@lang.NativeLabel">
+                <span class="fi fi-@lang.CountryCode"></span> @lang.NativeLabel
+            </K7SelectItem>
+        }
+    </ChildContent>
+</K7Select>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Variant { get; set; } = "outlined";
+    [Parameter] public string Class { get; set; } = "";
+
+    /// <summary>
+    /// Which language set to display. Defaults to Metadata (the larger set).
+    /// Use SupportedLanguages.Interface for UI-only language selection.
+    /// </summary>
+    [Parameter] public IReadOnlyList<LanguageOption> Languages { get; set; } = SupportedLanguages.Metadata;
+}
