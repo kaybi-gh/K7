@@ -1,7 +1,7 @@
 @inject IServerInfoService K7ServerService
 @inject IStringLocalizer<PlaybackHistory> L
 
-<div class="d-flex align-center gap-2 pa-4" style="width: 100%; flex-wrap: wrap;">
+<div class="d-flex align-center gap-2 pa-4" style="flex-wrap: wrap;">
     <h5 class="mr-4">@L["PageTitle"]</h5>
     <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("")'>@L["All"]</K7Chip>
     <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("3")'>@L["Music"]</K7Chip>
@@ -9,8 +9,8 @@
     <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("5")'>@L["TVShows"]</K7Chip>
 </div>
 
-<div class="pa-4">
-    <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef" Height="60vh">
+<div class="pa-4" style="flex: 1; min-height: 0;">
+    <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef" Height="100%">
         <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Property="@(i => i.MediaTitle)" Hideable="false" />
         <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Property="@(i => i.MediaType)" />
         <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Property="@(i => i.StartedAt.ToLocalTime().ToString("g"))" />

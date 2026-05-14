@@ -3,7 +3,7 @@
 @inject IStringLocalizer<SharedResource> S
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="home-page @(_isTv ? "home-page--tv" : "")" style="@(_isTv ? "height: calc(100dvh - var(--nav-height, 56px)); max-height: calc(100dvh - var(--nav-height, 56px)); overflow: hidden;" : "")">
+<div class="home-page @(_isTv ? "home-page--tv" : "")">
     @if (_isTv)
     {
         <HomeTvHero Model="_focusedItem" />

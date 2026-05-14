@@ -33,19 +33,21 @@
             <MiniMusicPlayer />
         </div>
         <FullScreenMusicPlayer />
-        <K7ErrorBoundary @ref="_errorBoundary">
-            <ChildContent>
-                @Body
-            </ChildContent>
-            <ErrorContent>
-                <div class="error-state">
-                    <K7Icon Name="warning-circle" Size="xl" class="error-icon" />
-                    <p style="font-size:var(--text-lg);font-weight:600">@L["UnexpectedError"]</p>
-                    <p style="color:var(--color-text-secondary)">@L["UnexpectedErrorDescription"]</p>
-                    <button class="btn btn--primary mt-4" @onclick="Recover">@L["Retry"]</button>
-                </div>
-            </ErrorContent>
-        </K7ErrorBoundary>
+        <div class="page-viewport">
+            <K7ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <div class="error-state">
+                        <K7Icon Name="warning-circle" Size="xl" class="error-icon" />
+                        <p style="font-size:var(--text-lg);font-weight:600">@L["UnexpectedError"]</p>
+                        <p style="color:var(--color-text-secondary)">@L["UnexpectedErrorDescription"]</p>
+                        <button class="btn btn--primary mt-4" @onclick="Recover">@L["Retry"]</button>
+                    </div>
+                </ErrorContent>
+            </K7ErrorBoundary>
+        </div>
     </main>
 </div>
 

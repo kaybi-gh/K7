@@ -4,6 +4,9 @@
    Colors always via tokens, never hardcoded here.
    ============================================================ */
 
+/* --- Page scroll --- */
+.page-scrollable { overflow-y: auto; overflow-x: hidden; }
+
 /* --- Display --- */
 .flex        { display: flex; }
 .inline-flex { display: inline-flex; }

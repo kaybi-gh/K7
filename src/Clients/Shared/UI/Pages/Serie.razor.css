@@ -2,14 +2,17 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .serie-main {
     position: relative;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - var(--nav-height));
+    height: 100%;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .background-image {
@@ -45,13 +48,14 @@
 
 @media (max-width: 600px) {
     .serie-main {
-        height: auto;
-        overflow: visible;
+        height: 60vh;
+        flex-shrink: 0;
+        overflow: hidden;
     }
 
     .serie-hero {
         flex: none;
-        height: 60vh;
+        height: 100%;
     }
 
     .serie-hero ::deep .serie-actions,
