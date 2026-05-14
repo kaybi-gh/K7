@@ -46,7 +46,15 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
             TargetEntityId = notification.MetadataPicture.Id,
             TargetEntityTypeName = nameof(MetadataPicture),
             MaxAttempts = 5,
-            ConcurrencyGroup = "image-download"
+            ConcurrencyGroup = GetProviderGroup(notification.MetadataPicture.OriginalRemoteUri)
         }, cancellationToken);
     }
+
+    private static string GetProviderGroup(Uri? uri) => uri?.Host switch
+    {
+        "image.tmdb.org" => "tmdb",
+        "coverartarchive.org" or "archive.org" => "musicbrainz",
+        "upload.wikimedia.org" or "commons.wikimedia.org" => "wikimedia",
+        _ => "image-download"
+    };
 }

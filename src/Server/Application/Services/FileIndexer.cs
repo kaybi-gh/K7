@@ -58,6 +58,7 @@ public class FileIndexer : IFileIndexer
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
             _context.IndexedFiles.AddRange(addedFiles);
             ProcessAddedFiles(library, addedFiles, backgroundTasks);
+            await ProcessUnchangedFilesMissingMetadataAsync(library, unchangedFiles, backgroundTasks, cancellationToken);
             ProcessRemovedFiles(removedFiles, backgroundTasks);
             ProcessRenamedFiles(library, renamedFiles, backgroundTasks);
 
@@ -225,6 +226,48 @@ public class FileIndexer : IFileIndexer
         };
 
         foreach (var file in addedFiles)
+        {
+            backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
+            {
+                Request = new CreateFileMetadatasCommand()
+                {
+                    Id = file.Id,
+                    FileType = fileType
+                },
+                Priority = BackgroundTaskPriority.VeryHigh,
+                TargetEntityId = file.Id,
+                TargetEntityTypeName = nameof(IndexedFile),
+                MaxAttempts = 5,
+                ConcurrencyGroup = "ffmpeg"
+            });
+        }
+    }
+
+    private async Task ProcessUnchangedFilesMissingMetadataAsync(Library library, IEnumerable<IndexedFile> unchangedFiles, List<CreateBackgroundTasksBatchItem> backgroundTasks, CancellationToken cancellationToken)
+    {
+        var unchangedIds = unchangedFiles.Select(f => f.Id).ToList();
+        if (unchangedIds.Count == 0) return;
+
+        var idsWithMetadata = (await _context.FileMetadatas
+            .Where(fm => unchangedIds.Contains(fm.IndexedFileId))
+            .Select(fm => fm.IndexedFileId)
+            .ToListAsync(cancellationToken))
+            .ToHashSet();
+
+        var filesMissingMetadata = unchangedFiles.Where(f => !idsWithMetadata.Contains(f.Id)).ToList();
+        if (filesMissingMetadata.Count == 0) return;
+
+        _logger.LogInformation("Found {Count} unchanged files missing FileMetadata, creating tasks.", filesMissingMetadata.Count);
+
+        var fileType = library.MediaType switch
+        {
+            LibraryMediaType.Movie => FileType.Video,
+            LibraryMediaType.Music => FileType.Audio,
+            LibraryMediaType.Serie => FileType.Video,
+            _ => throw new InvalidOperationException(),
+        };
+
+        foreach (var file in filesMissingMetadata)
         {
             backgroundTasks.Add(new CreateBackgroundTasksBatchItem()
             {
