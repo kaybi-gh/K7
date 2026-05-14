@@ -4,6 +4,7 @@
 
 .carousel-container {
     display: flex;
+    align-items: flex-start;
     gap: var(--carousel-gap, 16px);
     padding-inline-start: var(--carousel-margin-start, 16px);
     padding-inline-end: var(--carousel-margin-end, 16px);
@@ -59,16 +60,24 @@
     width: 200px;
     visibility: hidden;
     opacity: 0;
+    height: 0;
+    overflow: hidden;
     transition: visibility 0s, opacity 0.3s ease;
 }
 
 .carousel-loop-back.visible {
     visibility: visible;
     opacity: 1;
+    height: auto;
+    overflow: visible;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
 }
 
 .carousel-loop-back__image {
-    aspect-ratio: 2 / 3;
+    flex: 1;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
