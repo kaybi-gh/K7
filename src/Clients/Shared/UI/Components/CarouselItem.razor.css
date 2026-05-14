@@ -1,5 +1,6 @@
 .carousel-item {
     flex: 0 0 auto;
+    align-self: flex-start;
     min-width: 0;
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
