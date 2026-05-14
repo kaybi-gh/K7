@@ -195,6 +195,7 @@ public partial class BlazorPage : ContentPage
                 NativePlayer.Stop();
                 NativePlayer.ShouldAutoPlay = true;
                 NativePlayer.Source = CreateMediaSourceWithAuth(source.Url);
+                NativePlayer.Play();
 
                 if (source.PendingSeekTime is double seekTime)
                 {

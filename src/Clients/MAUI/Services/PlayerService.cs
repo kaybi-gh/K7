@@ -225,7 +225,6 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         Source = new PlayerSource();
 
         await ShowAsync();
-        Play();
 
         var session = await streamUriService.GetOrCreateSessionAsync(indexedFileId, cancellationToken: cancellationToken);
 
