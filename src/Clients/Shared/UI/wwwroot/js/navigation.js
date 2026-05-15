@@ -358,21 +358,13 @@ var SpatialNav = (function () {
 
         var layer = peekLayer();
         if (layer && layer.type !== 'page') {
-            if (layer.type === 'overlay') {
-                if (layer.onClose) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    invokeCallback(layer.onClose, 'OnLayerClosed');
-                }
-                return;
-            }
             e.preventDefault();
             e.stopImmediatePropagation();
-            var onClose = layer.onClose;
-            popLayer(layer.el);
-            if (onClose) {
-                invokeCallback(onClose, 'OnLayerClosed');
+            if (layer.onClose) {
+                if (layer.type !== 'overlay') popLayer(layer.el);
+                invokeCallback(layer.onClose, 'OnLayerClosed');
             } else {
+                popLayer(layer.el);
                 // Auto-detected layer: trigger close via backdrop click or custom event
                 var closeSelector = layer.el.getAttribute('data-sn-layer-close');
                 var closeTarget = null;
@@ -790,6 +782,14 @@ var SpatialNav = (function () {
 
 // RatingStars JS helper
 window.K7 = window.K7 || {};
+
+K7.setSafeArea = function (top, bottom, left, right) {
+    var s = document.documentElement.style;
+    s.setProperty('--k7-safe-top', top + 'px');
+    s.setProperty('--k7-safe-bottom', bottom + 'px');
+    s.setProperty('--k7-safe-left', left + 'px');
+    s.setProperty('--k7-safe-right', right + 'px');
+};
 
 K7.scrollToElement = function (id) {
     var el = document.getElementById(id);
