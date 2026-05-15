@@ -23,7 +23,7 @@
         <!-- Native MediaElement (audio - hidden, background-capable) -->
         <toolkit:MediaElement x:Name="NativeAudioPlayer"
                               IsVisible="False"
-                              ShouldAutoPlay="False"
+                              ShouldAutoPlay="True"
                               ShouldShowPlaybackControls="False"
                               InputTransparent="True"
                               WidthRequest="0" HeightRequest="0" />

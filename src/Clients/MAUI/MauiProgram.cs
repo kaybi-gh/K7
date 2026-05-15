@@ -32,7 +32,7 @@ public static partial class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseSkiaSharp()
-            .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: false)
+            .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: true)
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -53,6 +53,8 @@ public static partial class MauiProgram
             handlers.AddHandler<BlazorWebView, Platforms.Windows.TransparentBlazorWebViewHandler>();
 #elif ANDROID
             handlers.AddHandler<BlazorWebView, Platforms.Android.TransparentBlazorWebViewHandler>();
+#elif IOS
+            handlers.AddHandler<BlazorWebView, Platforms.iOS.TransparentBlazorWebViewHandler>();
 #endif
         });
 
