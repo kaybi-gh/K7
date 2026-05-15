@@ -23,7 +23,7 @@
 /* Mobile: covers content above bottom nav bar, with dim */
 @media (max-width: 599.98px) {
     .app-nav-backdrop {
-        inset: 0 0 calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)) 0;
+        inset: 0 0 calc(var(--nav-height) + var(--k7-safe-bottom)) 0;
     }
     .app-nav-backdrop.open {
         opacity: 1;
@@ -42,8 +42,8 @@
     z-index: var(--z-drawer);
     background: var(--color-drawer);
     border-bottom: 1px solid var(--color-border);
-    height: calc(var(--nav-height) + env(safe-area-inset-top, 0px));
-    padding-top: env(safe-area-inset-top, 0px);
+    height: calc(var(--nav-height) + var(--k7-safe-top));
+    padding-top: var(--k7-safe-top);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -99,6 +99,12 @@
 /* Spacer */
 .app-nav-spacer {
     flex: 1;
+}
+
+@media (min-width: 600px) {
+    .app-nav-spacer {
+        display: none;
+    }
 }
 
 /* Base link */
@@ -276,7 +282,7 @@
     .app-nav-popover {
         left: 0;
         right: 0;
-        bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+        bottom: calc(var(--nav-height) + var(--k7-safe-bottom));
         max-height: 75dvh;
         overflow-y: auto;
         background: var(--color-surface);
@@ -340,9 +346,9 @@
         bottom: 0;
         border-top: 1px solid var(--color-border);
         border-bottom: none;
-        height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+        height: calc(var(--nav-height) + var(--k7-safe-bottom));
         padding-top: 0;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-bottom: var(--k7-safe-bottom);
         margin-bottom: 0;
     }
 
@@ -425,5 +431,144 @@
 
     ::deep .app-nav-item--search-mobile .app-nav-label {
         font-size: 0.625rem;
+    }
+}
+
+/* ============================================================
+   Navbar player (desktop only)
+   ============================================================ */
+.app-nav-player {
+    display: none;
+}
+
+@media (min-width: 600px) {
+    .app-nav-player {
+        display: flex;
+        flex: 1;
+        justify-content: flex-end;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .app-nav-player ::deep .music-mini-player {
+        background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        box-shadow: none;
+        max-width: 560px;
+        width: auto;
+    }
+
+    .app-nav-player ::deep .mini-player-progress {
+        display: none;
+    }
+
+    .app-nav-player ::deep .mini-player-content {
+        display: flex;
+        padding: 4px 8px 4px 12px;
+        gap: 0;
+        min-height: auto;
+    }
+
+    .app-nav-player ::deep .mini-player-left,
+    .app-nav-player ::deep .mini-player-center,
+    .app-nav-player ::deep .mini-player-right {
+        all: unset;
+        display: contents;
+    }
+
+    .app-nav-player ::deep .mini-player-track-info {
+        flex: 1;
+        gap: 8px;
+        min-width: 0;
+        margin-right: 12px;
+    }
+
+    .app-nav-player ::deep .mini-player-cover {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .app-nav-player ::deep .mini-player-cover-placeholder {
+        width: 28px;
+        height: 28px;
+    }
+
+    .app-nav-player ::deep .mini-player-title {
+        font-size: 0.8rem;
+    }
+
+    .app-nav-player ::deep .mini-player-artist {
+        font-size: 0.625rem;
+    }
+
+    .app-nav-player ::deep .mini-player-controls .k7-icon-btn {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+    }
+
+    .app-nav-player ::deep .mini-player-controls .k7-icon-btn .k7-icon {
+        font-size: 1rem;
+    }
+
+    .app-nav-player ::deep .k7-fab {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        min-height: 30px;
+    }
+
+    .app-nav-player ::deep .k7-fab .k7-icon {
+        font-size: 1rem;
+    }
+
+    .app-nav-player ::deep .mini-player-time,
+    .app-nav-player ::deep .mini-player-rating,
+    .app-nav-player ::deep .mini-player-volume {
+        display: none;
+    }
+
+    .app-nav-player ::deep .mini-player-secondary-controls {
+        display: flex;
+        gap: 0;
+        margin-left: 0;
+    }
+
+    .app-nav-player ::deep .mini-player-secondary-controls .k7-icon-btn {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+    }
+
+    .app-nav-player ::deep .mini-player-secondary-controls .k7-icon {
+        font-size: 1rem;
+    }
+}
+
+/* Narrow desktop: collapse nav labels to icons only */
+@media (min-width: 600px) and (max-width: 899.98px) {
+    .app-nav-main {
+        gap: var(--space-2);
+    }
+
+    .app-nav-item--home .app-nav-label,
+    .app-nav-item--explore .app-nav-label,
+    .app-nav-item--myspace .app-nav-label {
+        display: none;
+    }
+
+    .app-nav-item--home .app-nav-icon,
+    .app-nav-item--explore .app-nav-icon,
+    .app-nav-item--myspace .app-nav-icon {
+        display: flex;
+    }
+
+    ::deep .app-nav-main .k7-btn {
+        padding: var(--space-2);
+        min-width: 36px;
+        justify-content: center;
     }
 }
