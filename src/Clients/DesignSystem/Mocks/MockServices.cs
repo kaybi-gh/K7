@@ -45,6 +45,7 @@ public sealed class MockCustomAuthStateProvider : ICustomAuthenticationStateProv
     public Task LoginAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LoginAsGuestAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
     public Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default) => Task.FromResult(true);
     public Task LogoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

@@ -7,6 +7,7 @@ public interface ICustomAuthenticationStateProvider
     Task LoginAsync(CancellationToken cancellationToken = default);
     Task LoginAsGuestAsync(CancellationToken cancellationToken = default);
     Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default);
+    Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default);
     Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default);
     Task LogoutAsync(CancellationToken cancellationToken = default);
 }
