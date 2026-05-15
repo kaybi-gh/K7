@@ -85,18 +85,18 @@
     overflow: hidden;
 }
 
-.mini-player-cover {
-    border-radius: 4px;
+::deep .mini-player-cover {
+    border-radius: var(--radius-md);
     flex-shrink: 0;
 }
 
-.mini-player-cover-placeholder {
+::deep .mini-player-cover-placeholder {
     width: 48px;
     height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     background: var(--color-bg-gray);
     flex-shrink: 0;
 }
@@ -133,6 +133,15 @@
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+}
+
+.mini-player-fab-wrap {
+    display: flex;
+    align-items: center;
+}
+
+::deep .mini-player-fab-wrap.buffering .k7-icon {
+    animation: k7-spin 0.8s linear infinite;
 }
 
 .mini-player-play-btn {
@@ -275,8 +284,8 @@
     /* Switch back to flex for the card */
     .mini-player-content {
         display: flex;
-        padding: 10px 12px;
-        gap: 10px;
+        padding: 6px 10px;
+        gap: 8px;
     }
 
     .mini-player-left,
@@ -286,11 +295,11 @@
         display: contents;
     }
 
-    /* Hide secondary controls, time, rating */
+    /* Hide secondary controls, time, rating, fullscreen */
     .mini-player-secondary-controls,
     .mini-player-time,
     .mini-player-rating {
-        display: none;
+        display: none !important;
     }
 
     /* Track info fills available space */
@@ -298,21 +307,21 @@
         flex: 1;
     }
 
-    /* Mobile: hide shuffle(1), prev(2), repeat(5) — keep play(3) and next(4) */
-    .mini-player-controls .k7-icon-btn:nth-child(1),
-    .mini-player-controls .k7-icon-btn:nth-child(2),
-    .mini-player-controls .k7-icon-btn:nth-child(5) {
-        display: none;
+    .mini-player-controls .k7-icon-btn {
+        width: 25px;
+        height: 25px;
+        min-width: 25px;
+        min-height: 25px;
+        font-size: 1rem;
     }
 
-    /* Accent pill play/pause */
-    .mini-player-play-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: var(--radius-full);
-        background: var(--color-accent);
-        color: #fff;
-        font-size: 1.1rem;
+    /* Smaller play/pause fab */
+    ::deep .mini-player-controls .k7-fab {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        font-size: 1rem;
     }
 
     /* Thin progress bar — not interactive on mobile */

@@ -39,7 +39,7 @@
     width: 100%;
     max-width: 480px;
     height: 100%;
-    padding: 16px 24px;
+    padding: calc(16px + var(--k7-safe-top)) 24px calc(16px + var(--k7-safe-bottom));
     color: var(--player-text-color, #fff);
     overflow-y: auto;
 }
@@ -285,6 +285,15 @@
     flex-shrink: 0;
 }
 
+.fullscreen-fab-wrap {
+    display: flex;
+    align-items: center;
+}
+
+::deep .fullscreen-fab-wrap.buffering .k7-icon {
+    animation: k7-spin 0.8s linear infinite;
+}
+
 .fullscreen-player-volume {
     display: flex;
     align-items: center;
@@ -436,7 +445,7 @@
 
 @media (max-width: 768px) {
     .fullscreen-player-content {
-        padding: 12px 16px;
+        padding: calc(12px + var(--k7-safe-top)) 16px calc(12px + var(--k7-safe-bottom));
         max-width: 100%;
     }
 
