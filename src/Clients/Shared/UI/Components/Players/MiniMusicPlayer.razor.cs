@@ -32,9 +32,14 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     private double CurrentPercent => Audio.Duration > 0 ? (Audio.CurrentTime / Audio.Duration) * 100 : 0;
     private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
 
-    private string PlayPauseIcon => Audio.PlaybackState == PlaybackState.Playing
-        ? Phosphor.Pause
-        : Phosphor.Play;
+    private string PlayPauseIcon => Audio.PlaybackState switch
+    {
+        PlaybackState.Playing => Phosphor.Pause,
+        PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended => Phosphor.Play,
+        _ => Phosphor.CircleNotch
+    };
+
+    private bool IsBuffering => Audio.PlaybackState is not (PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended);
 
     private string RepeatIcon => Audio.Repeat switch
     {
@@ -103,10 +108,35 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     private void TogglePlayPause()
     {
+        if (_longPressTriggered)
+            return;
+
         if (Audio.PlaybackState == PlaybackState.Playing)
             Audio.Pause();
         else
             Audio.Play();
+    }
+
+    private CancellationTokenSource? _longPressCts;
+    private bool _longPressTriggered;
+
+    private void OnFabPointerDown(PointerEventArgs e)
+    {
+        _longPressTriggered = false;
+        _longPressCts?.Cancel();
+        _longPressCts = new CancellationTokenSource();
+        var cts = _longPressCts;
+        _ = Task.Delay(600, cts.Token).ContinueWith(async _ =>
+        {
+            _longPressTriggered = true;
+            await InvokeAsync(async () => await StopAndHide());
+        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
+    }
+
+    private void OnFabPointerUp(PointerEventArgs e)
+    {
+        _longPressCts?.Cancel();
+        _longPressCts = null;
     }
 
     private async Task OnNext() => await Audio.NextAsync();
