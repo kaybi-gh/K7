@@ -8,10 +8,16 @@
     padding: 0 var(--space-4) var(--space-3);
 }
 
+@media (min-width: 600px) {
+    .mini-player-dock {
+        display: none;
+    }
+}
+
 @media (max-width: 599.98px) {
     .mini-player-dock {
         left: var(--space-3);
         right: var(--space-3);
-        bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-3));
+        bottom: calc(var(--nav-height) + var(--k7-safe-bottom) + var(--space-1));
     }
 }

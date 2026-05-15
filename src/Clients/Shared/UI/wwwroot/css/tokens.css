@@ -81,6 +81,12 @@
     --mobile-footer-height:60px;
     --appbar-height:       56px;
 
+    /* --- Safe area insets (overridden by native code in MAUI) --- */
+    --k7-safe-top:    env(safe-area-inset-top, 0px);
+    --k7-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --k7-safe-left:   env(safe-area-inset-left, 0px);
+    --k7-safe-right:  env(safe-area-inset-right, 0px);
+
     /* --- Breakpoints (for JS usage / reference - use @media in CSS) --- */
     /* xs: 0, sm: 600px, md: 960px, lg: 1280px, xl: 1920px */
 }

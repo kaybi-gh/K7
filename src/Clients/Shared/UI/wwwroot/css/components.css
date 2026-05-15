@@ -407,7 +407,7 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-4);
+  padding: calc(var(--space-4) + var(--k7-safe-top)) var(--space-4) calc(var(--space-4) + var(--k7-safe-bottom));
   backdrop-filter: blur(2px);
   animation: k7-fade-in 0.15s ease;
 }
@@ -461,7 +461,7 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
 /* ── Snackbar / Toast ────────────────────────────────────────────────────────── */
 .k7-snackbar-host {
   position: fixed;
-  bottom: var(--space-6);
+  bottom: calc(var(--space-6) + var(--k7-safe-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-snackbar, 1400);
