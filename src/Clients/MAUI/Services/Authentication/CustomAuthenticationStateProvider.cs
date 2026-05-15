@@ -333,6 +333,18 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         }
     }
 
+    public async Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default)
+    {
+        var refreshToken = _deviceStorageService.Get(PreferenceKeys.REFRESH_TOKEN);
+        if (string.IsNullOrEmpty(refreshToken))
+            return false;
+
+        var success = await TryRefreshTokenAsync(refreshToken);
+        if (success)
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+
+        return success;
+    }
 
     public async Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
