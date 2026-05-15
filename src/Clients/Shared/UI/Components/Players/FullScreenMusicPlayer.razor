@@ -4,11 +4,12 @@
 
 @if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
 {
-    <div class="fullscreen-player"
+    <div class="fullscreen-player" @ref="_playerRef"
+         id="fullscreen-music-player"
          style="@DominantColorStyle"
-         data-sn-layer="fullscreen-music-player"
+         data-sn-layer="overlay"
          data-sn-layer-close="self"
-         @onclick="OnBackdropClick">
+         @onclick="Close">
         @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
         {
             <div class="fullscreen-player-bg"
@@ -104,8 +105,9 @@
                         <div class="fullscreen-player-controls">
                             <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" />
                             <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
-                            <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
-                            <K7IconButton Icon="@Phosphor.Stop" OnClick="StopAndHide" AriaLabel="Stop" />
+                            <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp">
+                                <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                            </div>
                             <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
                             <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" />
                         </div>
