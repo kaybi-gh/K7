@@ -19,6 +19,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 {
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    private ElementReference _playerRef;
     private ElementReference _seekBarRef;
     private bool _isDragging;
     private bool _showVolumeControls = true;
@@ -45,9 +46,14 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         ? $"--dominant-color: {color};"
         : null;
 
-    private string PlayPauseIcon => Audio.PlaybackState == PlaybackState.Playing
-        ? Phosphor.Pause
-        : Phosphor.Play;
+    private string PlayPauseIcon => Audio.PlaybackState switch
+    {
+        PlaybackState.Playing => Phosphor.Pause,
+        PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended => Phosphor.Play,
+        _ => Phosphor.CircleNotch
+    };
+
+    private bool IsBuffering => Audio.PlaybackState is not (PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended);
 
     private string RepeatIcon => Audio.Repeat switch
     {
@@ -117,8 +123,6 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private void Close() => Audio.ToggleFullScreen();
 
-    private void OnBackdropClick() => Audio.ToggleFullScreen();
-
     private async Task StopAndHide()
     {
         Audio.ToggleFullScreen();
@@ -148,8 +152,6 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         _detailsLoadedForMediaId = mediaId;
         _lyricsLrc = null;
         _lyrics = null;
-        _waveformPeaks = null;
-        _waveformMaskStyle = null;
 
         var media = await Server.GetMediaAsync(mediaId.Value);
         if (media is MusicTrackDto track)
@@ -158,6 +160,11 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             _lyrics = track.Lyrics;
             _waveformPeaks = track.WaveformPeaks;
             BuildWaveformMask();
+        }
+        else
+        {
+            _waveformPeaks = null;
+            _waveformMaskStyle = null;
         }
     }
 
@@ -245,10 +252,35 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private void TogglePlayPause()
     {
+        if (_longPressTriggered)
+            return;
+
         if (Audio.PlaybackState == PlaybackState.Playing)
             Audio.Pause();
         else
             Audio.Play();
+    }
+
+    private CancellationTokenSource? _longPressCts;
+    private bool _longPressTriggered;
+
+    private void OnFabPointerDown(PointerEventArgs e)
+    {
+        _longPressTriggered = false;
+        _longPressCts?.Cancel();
+        _longPressCts = new CancellationTokenSource();
+        var cts = _longPressCts;
+        _ = Task.Delay(600, cts.Token).ContinueWith(async _ =>
+        {
+            _longPressTriggered = true;
+            await InvokeAsync(async () => await StopAndHide());
+        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
+    }
+
+    private void OnFabPointerUp(PointerEventArgs e)
+    {
+        _longPressCts?.Cancel();
+        _longPressCts = null;
     }
 
     private async Task OnNext() => await Audio.NextAsync();

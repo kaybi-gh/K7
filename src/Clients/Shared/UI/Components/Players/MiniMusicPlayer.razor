@@ -40,12 +40,10 @@
 
             <div class="mini-player-center">
                 <div class="mini-player-controls">
-                    <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" />
-                    <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
-                    <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
-                    <K7IconButton Icon="@Phosphor.Stop" OnClick="StopAndHide" AriaLabel="Stop" />
+                    <div class="mini-player-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp">
+                        <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                    </div>
                     <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
-                    <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" />
                 </div>
             </div>
 

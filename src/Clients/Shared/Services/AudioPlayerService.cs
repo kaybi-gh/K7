@@ -42,7 +42,15 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public PlaybackState PlaybackState
     {
         get => _playbackState;
-        set { if (_playbackState != value) { _playbackState = value; PlaybackStateChanged?.Invoke(value); } }
+        set
+        {
+            if (_playbackState == value) return;
+            // While buffering, ignore intermediate states (Paused/Idle) from the native player
+            if (_playbackState == PlaybackState.Buffering && value is PlaybackState.Paused or PlaybackState.Idle)
+                return;
+            _playbackState = value;
+            PlaybackStateChanged?.Invoke(value);
+        }
     }
 
     private double _duration;
@@ -378,6 +386,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (track is null) return;
 
         _crossfadeTriggered = false;
+        PlaybackState = PlaybackState.Buffering;
         CurrentTrackChanged?.Invoke(track);
 
         // Reset state
