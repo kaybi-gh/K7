@@ -101,7 +101,8 @@ public partial class TrackContextMenu
         ArtistId = t.ArtistId,
         Genre = t.Genre,
         CoverUrl = ApiClient.GetAbsoluteUri(
-            t.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+            (t.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? t.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         Duration = t.Duration
     };

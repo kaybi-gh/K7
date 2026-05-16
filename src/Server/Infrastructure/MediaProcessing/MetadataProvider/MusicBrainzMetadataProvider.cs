@@ -188,7 +188,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         {
             var picture = new MetadataPicture
             {
-                Type = MetadataPictureType.Poster,
+                Type = MetadataPictureType.Cover,
                 OriginalRemoteUri = new Uri(coverUrl)
             };
             picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
@@ -290,11 +290,26 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                 .FirstOrDefault(r => r.Type == "wikidata")?.Url?.Resource;
             var wikidataId = !string.IsNullOrEmpty(wikidataUrl) ? ExtractQid(wikidataUrl) : null;
 
+            var imageUrl = await TryGetArtistImageUrlAsync(providerId, cancellationToken);
+
+            var members = artist.Relations?
+                .Where(r => r.Type == "member of band" && r.Direction == "backward" && r.Artist is not null)
+                .Select(r => new ExternalMusicArtistMember
+                {
+                    Name = r.Artist!.Name ?? "Unknown",
+                    MusicBrainzArtistId = r.Artist.Id,
+                    Role = r.Attributes is { Count: > 0 } ? string.Join(", ", r.Attributes) : null,
+                    IsActive = r.Ended is not true
+                })
+                .ToList();
+
             return new ExternalMusicArtistDetails
             {
                 Country = country,
                 MusicBrainzArtistId = providerId,
-                WikidataId = wikidataId
+                WikidataId = wikidataId,
+                ImageUrl = imageUrl,
+                Members = members
             };
         }
         catch (Exception ex)
@@ -327,8 +342,27 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private async Task<MbArtistDetail?> FetchArtistAsync(string mbid, CancellationToken ct)
     {
         await _rateLimiter.WaitAsync(Host, ct);
-        var url = $"{BaseUrl}/artist/{Uri.EscapeDataString(mbid)}?inc=url-rels&fmt=json";
+        var url = $"{BaseUrl}/artist/{Uri.EscapeDataString(mbid)}?inc=url-rels+artist-rels&fmt=json";
         return await _httpClient.GetFromJsonAsync<MbArtistDetail>(url, JsonOptions, ct);
+    }
+
+    private async Task<string?> TryGetArtistImageUrlAsync(string artistMbid, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _rateLimiter.WaitAsync(Host, cancellationToken);
+            var url = $"{BaseUrl}/release-group?artist={Uri.EscapeDataString(artistMbid)}&type=album&limit=1&fmt=json";
+            var result = await _httpClient.GetFromJsonAsync<MbReleaseGroupSearchResult>(url, JsonOptions, cancellationToken);
+            var releaseGroupId = result?.ReleaseGroups?.FirstOrDefault()?.Id;
+
+            if (string.IsNullOrEmpty(releaseGroupId)) return null;
+
+            return await TryGetCoverArtUrl($"{CoverArtBaseUrl}/release-group/{releaseGroupId}", cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string? ExtractQid(string wikidataUrl)
@@ -450,6 +484,17 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public List<MbRelation>? Relations { get; init; }
     }
 
+    private record MbReleaseGroupSearchResult
+    {
+        [JsonPropertyName("release-groups")]
+        public List<MbReleaseGroupEntry>? ReleaseGroups { get; init; }
+    }
+
+    private record MbReleaseGroupEntry
+    {
+        public string Id { get; init; } = "";
+    }
+
     private record MbArea
     {
         public string? Name { get; init; }
@@ -458,7 +503,11 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private record MbRelation
     {
         public string? Type { get; init; }
+        public string? Direction { get; init; }
+        public bool? Ended { get; init; }
+        public List<string>? Attributes { get; init; }
         public MbUrl? Url { get; init; }
+        public MbArtist? Artist { get; init; }
     }
 
     private record MbUrl

@@ -37,8 +37,11 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
 
         if (metadata.Pictures is { Count: > 0 })
         {
+            var hasLocalCover = Pictures.Any(p => p.Type == MetadataPictureType.Cover && p.LocalPath is not null);
             foreach (var pic in metadata.Pictures)
             {
+                if (hasLocalCover && pic.Type == MetadataPictureType.Cover)
+                    continue;
                 if (pic.OriginalRemoteUri != null && !Pictures.Any(p => p.OriginalRemoteUri == pic.OriginalRemoteUri))
                     Pictures.Add(pic);
             }

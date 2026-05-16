@@ -17,7 +17,8 @@ public partial class LibraryListItem
 
     private string? GetThumbnailUrl()
     {
-        var picture = Item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+        var picture = Item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? Item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
             ?? Item.Pictures?.FirstOrDefault();
 
         return ApiClient.GetAbsoluteUri(picture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
