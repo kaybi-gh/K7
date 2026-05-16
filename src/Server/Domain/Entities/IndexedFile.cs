@@ -17,6 +17,10 @@ public class IndexedFile : BaseAuditableEntity
     public BaseFileMetadata? FileMetadata { get; set; }
     public Guid? MediaId { get; set; }
     public BaseMedia? Media { get; set; }
+
+    public byte[]? ChromaprintFingerprint { get; set; }
+    public int? ChromaprintDurationSeconds { get; set; }
+    public DateTimeOffset? ChromaprintAnalyzedAt { get; set; }
 }
 
 // Episode:

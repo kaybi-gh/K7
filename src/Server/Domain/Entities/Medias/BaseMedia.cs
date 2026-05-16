@@ -21,4 +21,5 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
 
     public IList<IndexedFile> IndexedFiles { get; set; } = [];
     public IList<UserMediaState> UserMediaStates { get; set; } = [];
+    public IList<MediaSegment> Segments { get; set; } = [];
 }
