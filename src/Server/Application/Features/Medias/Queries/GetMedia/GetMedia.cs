@@ -92,6 +92,7 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
         }
 
         var entity = await query
+            .AsSplitQuery()
             .Where(x => x.Id == request.Id)
             .SingleOrDefaultAsync(cancellationToken);
 

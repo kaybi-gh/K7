@@ -279,6 +279,7 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
             .Include(t => t.PersonRoles).ThenInclude(r => r.Person)
             .Include(t => t.Album).ThenInclude(a => a.PersonRoles).ThenInclude(r => r.Person)
             .Include(t => t.Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
+            .AsSplitQuery()
             .AsNoTracking();
 
         if (userId.HasValue)

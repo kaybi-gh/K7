@@ -54,6 +54,7 @@ public class GetNextEpisodeQueryHandler(IApplicationDbContext context, IUser cur
             .Include(e => e.IndexedFiles)
                 .ThenInclude(f => f.FileMetadata)
             .Include(e => e.Season)
+            .AsSplitQuery()
             .AsQueryable();
 
         if (userId.HasValue)
