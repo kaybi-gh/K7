@@ -4,6 +4,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.External;
+using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
@@ -278,6 +279,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         var artist = await _context.Medias.OfType<MusicArtist>()
             .Include(a => a.ExternalIds)
             .Include(a => a.Pictures)
+            .Include(a => a.PersonRoles)
+                .ThenInclude(pr => pr.Person)
             .FirstOrDefaultAsync(a => a.Id == album.ArtistId, cancellationToken);
 
         if (artist is null) return;
@@ -299,14 +302,14 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             artist.ExternalIds.Add(mbExternalId);
         }
 
-        if (artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(artist.Biography)) return;
+        // Always fetch MusicBrainz details (for members, country, image)
+        ExternalMusicArtistDetails? mbDetails = null;
+        string? mbImageUrl = null;
 
-        var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
-
-        if (wikidataId is null && _artistProviders.TryGetValue("musicbrainz", out var mbProvider))
+        if (_artistProviders.TryGetValue("musicbrainz", out var mbProvider))
         {
             var mbId = mbExternalId?.Value;
-            var mbDetails = !string.IsNullOrEmpty(mbId)
+            mbDetails = !string.IsNullOrEmpty(mbId)
                 ? await mbProvider.FetchByProviderIdAsync(mbId, language, cancellationToken)
                 : await mbProvider.SearchByNameAsync(artist.Title!, language, cancellationToken);
 
@@ -318,11 +321,19 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (!string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(artist.Country))
                     artist.Country = mbDetails.Country;
 
-                wikidataId = mbDetails.WikidataId;
-                if (!string.IsNullOrEmpty(wikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
-                    artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = wikidataId, MediaId = artist.Id });
+                if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
+                    artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
+
+                mbImageUrl = mbDetails.ImageUrl;
+
+                await SyncArtistMembersAsync(artist, mbDetails.Members, cancellationToken);
             }
         }
+
+        // Skip bio/image enrichment if already complete
+        if (artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(artist.Biography)) return;
+
+        var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
 
         if (!string.IsNullOrEmpty(wikidataId) && _artistProviders.TryGetValue("wikidata", out var wdProvider))
         {
@@ -344,6 +355,53 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     artist.Pictures.Add(picture);
                 }
             }
+        }
+
+        if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbImageUrl))
+        {
+            var picture = new MetadataPicture
+            {
+                Type = MetadataPictureType.Poster,
+                OriginalRemoteUri = new Uri(mbImageUrl),
+                MediaId = artist.Id
+            };
+            picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
+            artist.Pictures.Add(picture);
+        }
+    }
+
+    private async Task SyncArtistMembersAsync(MusicArtist artist, IReadOnlyList<ExternalMusicArtistMember>? members, CancellationToken cancellationToken)
+    {
+        if (members is not { Count: > 0 }) return;
+        if (artist.PersonRoles.Count > 0) return;
+
+        foreach (var member in members)
+        {
+            var person = await _context.Persons
+                .FirstOrDefaultAsync(p => p.Name == member.Name, cancellationToken);
+
+            if (person is null)
+            {
+                person = new Person { Name = member.Name };
+                _context.Persons.Add(person);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            if (!string.IsNullOrEmpty(member.MusicBrainzArtistId)
+                && !await _context.ExternalIds.AnyAsync(e => e.PersonId == person.Id && e.ProviderName == "musicbrainz", cancellationToken))
+            {
+                person.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = member.MusicBrainzArtistId, PersonId = person.Id });
+            }
+
+            var role = new MusicArtistMember
+            {
+                Person = person,
+                PersonId = person.Id,
+                MediaId = artist.Id,
+                Role = member.Role,
+                IsActive = member.IsActive
+            };
+            artist.PersonRoles.Add(role);
         }
     }
 }
