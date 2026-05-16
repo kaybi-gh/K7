@@ -145,6 +145,7 @@ public sealed partial class PlexClient : ISourceClient
         {
             var ratingKey = pl.GetProperty("ratingKey").GetString()!;
             var title = pl.GetProperty("title").GetString()!;
+            var playlistType = pl.TryGetProperty("playlistType", out var pt) ? pt.GetString() : null;
 
             var itemsResponse = await _httpClient.GetAsync(
                 $"/playlists/{ratingKey}/items?includeGuids=1", cancellationToken);
@@ -170,6 +171,12 @@ public sealed partial class PlexClient : ISourceClient
             {
                 Id = ratingKey,
                 Title = title,
+                MediaType = playlistType switch
+                {
+                    "audio" => "music",
+                    "video" => "video",
+                    _ => null
+                },
                 Items = playlistItems
             });
         }

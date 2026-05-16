@@ -126,6 +126,7 @@ public sealed class SpotifyClient : ISourceClient
                 {
                     Id = playlistId,
                     Title = title,
+                    MediaType = "music",
                     Items = items
                 });
             }
