@@ -174,7 +174,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             dataQuery = dataQuery.Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value));
         }
 
-        var items = await dataQuery.ToListAsync(cancellationToken);
+        var items = await dataQuery.AsSplitQuery().ToListAsync(cancellationToken);
         var ordered = pageIds.Select(id => items.First(m => m.Id == id)).ToList();
 
         return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);

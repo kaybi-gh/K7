@@ -38,6 +38,7 @@ public class GetCollectionItemsWithPaginationQueryHandler(IApplicationDbContext 
             .Include(i => (i.Media as MusicAlbum)!.Tracks)
             .Where(i => i.CollectionId == request.CollectionId)
             .OrderBy(i => i.Order)
+            .AsSplitQuery()
             .AsNoTracking();
 
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);

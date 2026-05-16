@@ -19,6 +19,7 @@ public class GetCurrentUserQueryHandler(
             .Include(u => u.CapabilityOverrides)
             .Include(u => u.LibraryExclusions)
             .Include(u => u.MediaExclusions)
+            .AsSplitQuery()
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
