@@ -27,5 +27,7 @@
   <data name="Instructions" xml:space="preserve"><value>1. Using a browser on another device, visit:</value></data>
   <data name="CodeLabel" xml:space="preserve"><value>2. And enter the code:</value></data>
   <data name="ScanQrCode" xml:space="preserve"><value>Scan the QR code below</value></data>
+  <data name="Separator" xml:space="preserve"><value>OR</value></data>
+  <data name="ExpiresIn" xml:space="preserve"><value>Expires in {0}</value></data>
 </root>
 
