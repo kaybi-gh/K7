@@ -317,6 +317,7 @@ public partial class BlazorPage : ContentPage
         NativeAudioPlayer.MediaEnded += AudioPlayer_MediaEnded;
         NativeAudioPlayer.MediaFailed += AudioPlayer_MediaFailed;
 
+        _audioPlayerService.CurrentTrackChanged += OnAudioCurrentTrackChanged;
         _audioPlayerService.SourceChanged += OnAudioSourceChanged;
         _audioPlayerService.PlayRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Play); return Task.CompletedTask; };
         _audioPlayerService.PauseRequested += () => { MainThread.BeginInvokeOnMainThread(NativeAudioPlayer.Pause); return Task.CompletedTask; };
@@ -347,6 +348,18 @@ public partial class BlazorPage : ContentPage
                 };
             }
         };
+    }
+
+    private void OnAudioCurrentTrackChanged(AudioQueueItem? track)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (track is null) return;
+
+            NativeAudioPlayer.MetadataTitle = track.Title;
+            NativeAudioPlayer.MetadataArtist = track.Artist ?? "";
+            NativeAudioPlayer.MetadataArtworkUrl = _k7ServerService.GetAbsoluteUri(track.CoverUrl)?.AbsoluteUri ?? "";
+        });
     }
 
     private void OnAudioSourceChanged(PlayerSource source)
