@@ -226,6 +226,51 @@
         }
       }
     },
+    "/api/users/me/preferences/video-player": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUserVideoPlayerSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUserVideoPlayerSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserVideoPlayerSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoPlayerSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me": {
       "get": {
         "tags": [
@@ -2042,6 +2087,40 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{id}/segments": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMediaSegments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaSegmentDto"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -4520,6 +4599,51 @@
         }
       }
     },
+    "/api/server/preferences/video-player": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "DeleteServerVideoPlayerSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetServerVideoPlayerSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateServerVideoPlayerSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoPlayerSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/streams": {
       "get": {
         "tags": [
@@ -4659,6 +4783,40 @@
           "Admin"
         ],
         "operationId": "GetEffectiveServerHomeLayout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/server/preferences/feature-flags": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetServerFeatureFlags",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateServerFeatureFlags",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerFeatureFlagsDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -6602,6 +6760,9 @@
             ]
           }
         }
+      },
+      "IntroSkipBehavior": {
+        "type": "integer"
       },
       "LibraryDto": {
         "required": [
@@ -9420,6 +9581,38 @@
       "MediaOrderingOption": {
         "type": "integer"
       },
+      "MediaSegmentDto": {
+        "required": [
+          "type",
+          "startMs",
+          "endMs"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/MediaSegmentType"
+          },
+          "startMs": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "endMs": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "MediaSegmentType": {
+        "type": "integer"
+      },
       "MediaStateItem": {
         "required": [
           "mediaId"
@@ -10805,6 +10998,26 @@
       "RestrictionOperator": {
         "type": "integer"
       },
+      "ServerFeatureFlagsDto": {
+        "type": "object",
+        "properties": {
+          "introDetectionEnabled": {
+            "type": "boolean"
+          },
+          "transcodingEnabled": {
+            "type": "boolean"
+          },
+          "transmuxingEnabled": {
+            "type": "boolean"
+          },
+          "seekbarThumbnailGenerationEnabled": {
+            "type": "boolean"
+          },
+          "musicAudioAnalysisEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "SmartPlaylistDto": {
         "required": [
           "title"
@@ -11033,6 +11246,12 @@
             "type": "boolean"
           }
         }
+      },
+      "SubtitleFontFamily": {
+        "type": "integer"
+      },
+      "SubtitleFontSize": {
+        "type": "integer"
       },
       "TaskTypeCountDto": {
         "required": [
@@ -11589,6 +11808,51 @@
           },
           "isDefault": {
             "type": "boolean"
+          }
+        }
+      },
+      "VideoPlayerSettingsDto": {
+        "type": "object",
+        "properties": {
+          "subtitleFontFamily": {
+            "$ref": "#/components/schemas/SubtitleFontFamily"
+          },
+          "subtitleFontSize": {
+            "$ref": "#/components/schemas/SubtitleFontSize"
+          },
+          "subtitleFontColor": {
+            "type": "string"
+          },
+          "subtitleBackgroundOpacity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "subtitleShadowEnabled": {
+            "type": "boolean"
+          },
+          "subtitleShadowColor": {
+            "type": "string"
+          },
+          "subtitleShadowBlur": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "showSeekbarThumbnails": {
+            "type": "boolean"
+          },
+          "introSkipBehavior": {
+            "$ref": "#/components/schemas/IntroSkipBehavior"
+          },
+          "outroSkipBehavior": {
+            "$ref": "#/components/schemas/IntroSkipBehavior"
           }
         }
       },
