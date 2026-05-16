@@ -96,8 +96,7 @@ public partial class Person : IDisposable
         {
             if (role.Media is LiteMusicAlbumDto album && seenAlbums.Add(album.Id))
             {
-                var coverUri = album.Pictures
-                    ?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                var coverUri = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                     ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
 
                 if (_backdropUrls.Count < 5

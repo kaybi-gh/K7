@@ -223,7 +223,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         MediaType.Serie => [MetadataPictureType.Poster, MetadataPictureType.Backdrop],
         MediaType.SerieSeason => [MetadataPictureType.Poster],
         MediaType.SerieEpisode => [MetadataPictureType.Still],
-        MediaType.MusicAlbum => [MetadataPictureType.Poster],
+        MediaType.MusicAlbum => [MetadataPictureType.Cover],
         _ => []
     };
 

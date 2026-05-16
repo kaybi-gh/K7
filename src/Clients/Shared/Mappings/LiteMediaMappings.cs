@@ -36,7 +36,8 @@ public static class LiteMediaMappings
                 ?? item.Pictures
             : item.Pictures;
 
-        var bestPicture = pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+        var bestPicture = pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
             ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
             ?? pictureSource?.FirstOrDefault();
 
@@ -105,7 +106,8 @@ public static class LiteMediaMappings
             _ => MediaCardKind.Poster
         };
 
-        var bestPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+        var bestPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
             ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
             ?? item.Pictures?.FirstOrDefault();
 

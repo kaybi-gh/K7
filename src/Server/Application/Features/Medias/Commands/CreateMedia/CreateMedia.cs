@@ -427,7 +427,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 var coverPath = Path.Combine(directory, fileName);
                 if (File.Exists(coverPath))
                 {
-                    picture = new MetadataPicture { Type = MetadataPictureType.Poster, LocalPath = coverPath };
+                    picture = new MetadataPicture { Type = MetadataPictureType.Cover, LocalPath = coverPath };
                     break;
                 }
             }
@@ -444,7 +444,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             Directory.CreateDirectory(coverDirectory);
             var coverPath = Path.Combine(coverDirectory, $"cover{extension}");
             await File.WriteAllBytesAsync(coverPath, tags.CoverArtData, cancellationToken);
-            picture = new MetadataPicture { Type = MetadataPictureType.Poster, LocalPath = coverPath };
+            picture = new MetadataPicture { Type = MetadataPictureType.Cover, LocalPath = coverPath };
         }
 
         if (picture is null) return;
