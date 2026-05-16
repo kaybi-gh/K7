@@ -182,15 +182,13 @@ public static class DependencyInjection
         {
             case "postgres":
                 options.UseNpgsql(connectionString!, x => x
-                    .MigrationsAssembly(DatabaseProvider.Postgres.Assembly)
-                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
+                    .MigrationsAssembly(DatabaseProvider.Postgres.Assembly))
                     .EnableSensitiveDataLogging();
                 break;
 
             case "sqlite":
                 options.UseSqlite(connectionString!, x => x
-                    .MigrationsAssembly(DatabaseProvider.Sqlite.Assembly)
-                    .UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+                    .MigrationsAssembly(DatabaseProvider.Sqlite.Assembly));
                 break;
 
             default:
@@ -202,7 +200,7 @@ public static class DependencyInjection
     {
         return databaseConfiguration.Provider.ToLowerInvariant() switch
         {
-            "postgres" => $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};Include Error Detail=true;",
+            "postgres" => $"User ID={databaseConfiguration.UserID};Password={databaseConfiguration.Password};Server={databaseConfiguration.Server};Port={databaseConfiguration.Port};Database={databaseConfiguration.Name};Include Error Detail=true;Maximum Pool Size=200;Timeout=30;",
             "sqlite" => $"Data Source={databaseConfiguration.Name}.db",
             _ => throw new Exception($"Unsupported database provider: {databaseConfiguration.Provider}")
         };
