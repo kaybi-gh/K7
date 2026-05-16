@@ -113,7 +113,8 @@
 }
 
 .media-card-container:hover .media-card-menu,
-.media-card-container:focus-within .media-card-menu {
+.media-card-container:focus-within .media-card-menu,
+.media-card-menu--open {
     display: block;
 }
 
