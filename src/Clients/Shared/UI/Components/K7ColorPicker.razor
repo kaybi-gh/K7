@@ -1,0 +1,42 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-color-picker @Class">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="k7-color-picker__label" for="@_id">@Label</label>
+    }
+    <div class="k7-color-picker__row">
+        <input type="color"
+               id="@_id"
+               class="k7-color-picker__input focusable"
+               tabindex="0"
+               value="@Value"
+               @oninput="OnInput"
+               @onkeydown="OnKeyDown" />
+        <span class="k7-color-picker__value">@Value</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = "#FFFFFF";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Class { get; set; } = "";
+
+    private readonly string _id = $"k7cp-{Guid.NewGuid():N}";
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        var newValue = e.Value?.ToString() ?? "#FFFFFF";
+        Value = newValue;
+        await ValueChanged.InvokeAsync(newValue);
+    }
+
+    private async Task OnKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Code is "Enter" or "Space")
+        {
+            // Native color input opens on click; Enter/Space triggers it via the browser
+        }
+    }
+}
