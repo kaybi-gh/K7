@@ -26,6 +26,7 @@
   <data name="Seasons" xml:space="preserve"><value>Seasons</value></data>
   <data name="Albums" xml:space="preserve"><value>Albums</value></data>
   <data name="Tracks" xml:space="preserve"><value>Tracks</value></data>
+  <data name="Artists" xml:space="preserve"><value>Artists</value></data>
   <data name="ItemCount" xml:space="preserve"><value>{0} item(s)</value></data>
   <data name="SortTitleAsc" xml:space="preserve"><value>Title A-Z</value></data>
   <data name="SortTitleDesc" xml:space="preserve"><value>Title Z-A</value></data>

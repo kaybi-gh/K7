@@ -44,6 +44,8 @@ public partial class Library : IDisposable
         MediaOrderingOption.ReleaseDateAsc
     ];
 
+    private float GridAspectRatio => _selectedMediaType is MediaType.MusicAlbum or MediaType.MusicTrack ? 1f : 1.5f;
+
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
@@ -274,6 +276,11 @@ public partial class Library : IDisposable
     private void NavigateToItem(LiteMediaDto item)
     {
         Navigation.NavigateTo(GetItemHref(item));
+    }
+
+    private void NavigateToArtists()
+    {
+        Navigation.NavigateTo("/music/artists");
     }
 
     private void OnColumnPickerRequested()
