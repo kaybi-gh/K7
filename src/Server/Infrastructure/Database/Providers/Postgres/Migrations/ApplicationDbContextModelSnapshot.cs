@@ -579,6 +579,51 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicArtistCredit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsGuest")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MusicAlbumId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MusicArtistId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Order")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaId");
+
+                    b.HasIndex("MusicAlbumId");
+
+                    b.HasIndex("MusicArtistId", "MediaId")
+                        .IsUnique();
+
+                    b.ToTable("MusicArtistCredits");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.MetadataPicture", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1845,8 +1890,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<Guid?>("ArtistId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Overview")
                         .HasColumnType("text");
+
+                    b.HasIndex("ArtistId");
 
                     b.ToTable("Medias", t =>
                         {
@@ -1857,11 +1907,30 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasDiscriminator().HasValue(2);
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicArtist", b =>
+                {
+                    b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
+
+                    b.Property<int>("ArtistType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Biography")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue(7);
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicTrack", b =>
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
                     b.Property<Guid>("AlbumId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ArtistId")
                         .HasColumnType("uuid");
 
                     b.Property<int?>("DiscNumber")
@@ -1877,6 +1946,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasColumnType("integer");
 
                     b.HasIndex("AlbumId");
+
+                    b.HasIndex("ArtistId");
+
+                    b.ToTable("Medias", t =>
+                        {
+                            t.Property("ArtistId")
+                                .HasColumnName("MusicTrack_ArtistId");
+                        });
 
                     b.HasDiscriminator().HasValue(3);
                 });
@@ -2166,12 +2243,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasDiscriminator().HasValue(3);
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.PersonRoles.MusicArtist", b =>
+            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.PersonRoles.MusicArtistMember", b =>
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Metadatas.PersonRoles.BasePersonRole");
 
-                    b.Property<bool>("IsGuest")
+                    b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Role")
+                        .HasColumnType("text");
 
                     b.HasDiscriminator().HasValue(2);
                 });
@@ -2504,6 +2584,29 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
 
                     b.Navigation("MusicTrack");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicArtistCredit", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.MusicTrack", "Media")
+                        .WithMany("ArtistCredits")
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.MusicAlbum", null)
+                        .WithMany("ArtistCredits")
+                        .HasForeignKey("MusicAlbumId");
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.MusicArtist", "MusicArtist")
+                        .WithMany("ArtistCredits")
+                        .HasForeignKey("MusicArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
+
+                    b.Navigation("MusicArtist");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.MetadataPicture", b =>
@@ -2859,6 +2962,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Authorization");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicAlbum", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.MusicArtist", "Artist")
+                        .WithMany("Albums")
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Artist");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicTrack", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.MusicAlbum", "Album")
@@ -2867,7 +2980,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("K7.Server.Domain.Entities.Medias.MusicArtist", "Artist")
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Album");
+
+                    b.Navigation("Artist");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.SerieEpisode", b =>
@@ -3072,11 +3192,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicAlbum", b =>
                 {
+                    b.Navigation("ArtistCredits");
+
                     b.Navigation("Tracks");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicArtist", b =>
+                {
+                    b.Navigation("Albums");
+
+                    b.Navigation("ArtistCredits");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicTrack", b =>
                 {
+                    b.Navigation("ArtistCredits");
+
                     b.Navigation("AudioAnalysis");
                 });
 
