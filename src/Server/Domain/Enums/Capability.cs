@@ -12,5 +12,6 @@ public enum Capability
     CanAccessAdmin,
     CanManageLibraries,
     CanManageUsers,
-    CanReportPlaybackProgress
+    CanReportPlaybackProgress,
+    CanTranscode
 }
