@@ -27,5 +27,6 @@
   <data name="ArtistType" xml:space="preserve"><value>Artiste</value></data>
   <data name="AlbumColumn" xml:space="preserve"><value>Album</value></data>
   <data name="Biography" xml:space="preserve"><value>Biographie</value></data>
+  <data name="MembersSection" xml:space="preserve"><value>Membres</value></data>
 </root>
 
