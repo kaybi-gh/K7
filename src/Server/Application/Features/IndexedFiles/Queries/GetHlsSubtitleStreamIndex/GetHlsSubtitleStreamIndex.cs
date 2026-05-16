@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
@@ -46,7 +47,6 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
         Guard.Against.Null(entity.FileMetadata);
-        Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
 
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
@@ -54,7 +54,15 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
             return Results.NotFound();
         }
 
-        var totalDurationMs = entity.FileMetadata.HlsSegments.Sum(s => s.Duration);
+        var totalDurationMs = entity.FileMetadata.HlsSegments is { Count: > 0 } segments
+            ? segments.Sum(s => s.Duration)
+            : entity.FileMetadata switch
+            {
+                VideoFileMetadata v => (long)v.Duration.TotalMilliseconds,
+                AudioFileMetadata a => (long)a.Duration.TotalMilliseconds,
+                _ => throw new InvalidOperationException("Cannot determine duration for HLS subtitle stream")
+            };
+
         var indexPlaylist = GenerateSubtitlePlaylist(totalDurationMs, query.StreamSessionId);
 
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");

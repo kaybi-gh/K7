@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -58,7 +59,6 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
         Guard.Against.Null(entity.FileMetadata);
-        Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
 
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
@@ -66,7 +66,15 @@ public class GetHlsAudioStreamSegmentQueryHandler : IRequestHandler<GetHlsAudioS
             return Results.NotFound("Source file not found");
         }
 
-        var totalDurationMs = entity.FileMetadata.HlsSegments.Sum(s => s.Duration);
+        var totalDurationMs = entity.FileMetadata.HlsSegments is { Count: > 0 } segments
+            ? segments.Sum(s => s.Duration)
+            : entity.FileMetadata switch
+            {
+                VideoFileMetadata v => (long)v.Duration.TotalMilliseconds,
+                AudioFileMetadata a => (long)a.Duration.TotalMilliseconds,
+                _ => throw new InvalidOperationException("Cannot determine duration for HLS audio segment")
+            };
+
         var allSegments = ComputeEqualLengthHlsSegments(totalDurationMs);
 
         if (query.SegmentNumber >= 0 && query.SegmentNumber >= allSegments.Count)
