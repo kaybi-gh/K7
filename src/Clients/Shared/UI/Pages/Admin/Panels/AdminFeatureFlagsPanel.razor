@@ -1,0 +1,28 @@
+@page "/admin/feature-flags"
+@layout AdminLayout
+@inject IStringLocalizer<AdminFeatureFlagsPanel> L
+@inject IServerPreferencesService ServerPreferencesService
+
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["Title"]</h5>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
+}
+else if (_flags is not null)
+{
+    <div class="pa-4 d-flex flex-col gap-4">
+        <div class="d-flex flex-col gap-1">
+            <K7Switch Label="@L["IntroDetection"]" Value="_flags.IntroDetectionEnabled" ValueChanged="v => UpdateFlag(f => f with { IntroDetectionEnabled = v })" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["IntroDetectionDescription"]</span>
+        </div>
+        <K7Switch Label="@L["Transcoding"]" Value="_flags.TranscodingEnabled" ValueChanged="v => UpdateFlag(f => f with { TranscodingEnabled = v })" />
+        <K7Switch Label="@L["Transmuxing"]" Value="_flags.TransmuxingEnabled" ValueChanged="v => UpdateFlag(f => f with { TransmuxingEnabled = v })" />
+        <K7Switch Label="@L["SeekbarThumbnails"]" Value="_flags.SeekbarThumbnailGenerationEnabled" ValueChanged="v => UpdateFlag(f => f with { SeekbarThumbnailGenerationEnabled = v })" />
+        <K7Switch Label="@L["MusicAudioAnalysis"]" Value="_flags.MusicAudioAnalysisEnabled" ValueChanged="v => UpdateFlag(f => f with { MusicAudioAnalysisEnabled = v })" />
+    </div>
+}
