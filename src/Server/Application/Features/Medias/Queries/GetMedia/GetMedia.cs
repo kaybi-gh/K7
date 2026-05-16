@@ -50,7 +50,9 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
                     .ThenInclude(f => f.FileMetadata)
             .Include(x => (x as MusicAlbum)!.Tracks)
                 .ThenInclude(t => t.AudioAnalysis)
+            .Include(x => (x as MusicAlbum)!.Artist)
             .Include(x => (x as MusicTrack)!.AudioAnalysis)
+            .Include(x => (x as MusicTrack)!.Artist)
             // Serie: include seasons with their pictures and episode counts
             .Include(x => (x as Serie)!.Seasons)
                 .ThenInclude(s => s.Pictures)
