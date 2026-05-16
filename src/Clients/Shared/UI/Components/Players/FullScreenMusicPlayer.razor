@@ -105,7 +105,7 @@
                         <div class="fullscreen-player-controls">
                             <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" />
                             <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
-                            <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp">
+                            <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp" @onkeydown="OnFabKeyDown" @onkeyup="OnFabKeyUp">
                                 <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
                             </div>
                             <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
