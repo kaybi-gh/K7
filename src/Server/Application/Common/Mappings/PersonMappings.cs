@@ -63,7 +63,7 @@ public static class PersonMappings
                 Department = crewMember.Department,
                 Job = crewMember.Department
             },
-            MusicArtist musicArtist => new MusicArtistRoleDto()
+            MusicArtistMember musicArtist => new MusicArtistRoleDto()
             {
                 Id = domain.Id,
                 MediaId = domain.MediaId,
@@ -72,7 +72,8 @@ public static class PersonMappings
                 Media = domain.Media.ToLiteMediaDto(),
                 Person = domain.Person.ToLitePersonDto(),
                 ExternalIds = domain.ExternalIds.Select(e => e.ToExternalIdDto()).ToList(),
-                IsGuest = musicArtist.IsGuest
+                Role = musicArtist.Role,
+                IsActive = musicArtist.IsActive
             },
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
         };
@@ -98,14 +99,15 @@ public static class PersonMappings
                 Department = crewMember.Department,
                 Job = crewMember.Department
             },
-            MusicArtist musicArtist => new LiteMusicArtistRoleDto()
+            MusicArtistMember musicArtist => new LiteMusicArtistRoleDto()
             {
                 Id = domain.Id,
                 MediaId = domain.MediaId,
                 Order = domain.Order,
                 PortraitPicture = domain.PortraitPicture?.ToMetadataPictureDto(),
                 Person = domain.Person.ToLitePersonDto(),
-                IsGuest = musicArtist.IsGuest
+                Role = musicArtist.Role,
+                IsActive = musicArtist.IsActive
             },
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
         };

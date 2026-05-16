@@ -89,15 +89,16 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
             topArtists = await musicStates
                 .Join(
-                    context.PersonRoles.OfType<MusicArtist>(),
+                    context.Medias.OfType<MusicTrack>(),
                     s => s.MediaId,
-                    pr => pr.MediaId,
-                    (s, pr) => new { s.PlayCount, pr.PersonId, pr.Person.Name })
-                .GroupBy(x => new { x.PersonId, x.Name })
+                    t => t.Id,
+                    (s, t) => new { s.PlayCount, ArtistId = t.ArtistId ?? t.Album!.ArtistId, ArtistTitle = t.Artist != null ? t.Artist.Title : t.Album!.Artist!.Title })
+                .Where(x => x.ArtistId != null)
+                .GroupBy(x => new { x.ArtistId, x.ArtistTitle })
                 .Select(g => new TopItemDto
                 {
-                    Id = g.Key.PersonId,
-                    Name = g.Key.Name ?? "Unknown artist",
+                    Id = g.Key.ArtistId!.Value,
+                    Name = g.Key.ArtistTitle ?? "Unknown artist",
                     PlayCount = g.Sum(x => x.PlayCount)
                 })
                 .OrderByDescending(x => x.PlayCount)

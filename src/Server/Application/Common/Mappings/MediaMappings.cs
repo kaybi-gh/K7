@@ -46,6 +46,8 @@ public static class MediaMappings
                 IndexedFiles = domain.IndexedFiles.Select(f => f.ToIndexedFileDto()).ToList(),
                 Genres = domain.Genres.ToList(),
                 Overview = album.Overview,
+                ArtistId = album.ArtistId,
+                ArtistName = album.Artist?.Title,
                 Tracks = album.Tracks.Select(t => (LiteMusicTrackDto)t.ToLiteMediaDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
@@ -63,6 +65,8 @@ public static class MediaMappings
                 IndexedFiles = domain.IndexedFiles.Select(f => f.ToIndexedFileDto()).ToList(),
                 Genres = domain.Genres.ToList(),
                 AlbumId = track.AlbumId,
+                ArtistId = track.ArtistId ?? track.Album?.ArtistId,
+                ArtistName = track.Artist?.Title ?? track.Album?.Artist?.Title,
                 TrackNumber = track.TrackNumber,
                 DiscNumber = track.DiscNumber,
                 Lyrics = track.Lyrics,
@@ -74,6 +78,25 @@ public static class MediaMappings
                 Danceability = track.AudioAnalysis?.Danceability,
                 Valence = track.AudioAnalysis?.Valence,
                 WaveformPeaks = track.AudioAnalysis?.WaveformPeaks,
+                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                    ? state.ToUserMediaStateDto()
+                    : null,
+                LastMetadataRefreshedAt = domain.LastMetadataRefreshedAt
+            },
+            MusicArtist artist => new MusicArtistDto()
+            {
+                Id = domain.Id,
+                Title = domain.Title,
+                ReleaseDate = domain.ReleaseDate,
+                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                PersonRoles = domain.PersonRoles.Select(r => r.ToLitePersonRoleDto()).ToList(),
+                Ratings = domain.Ratings.Select(r => r.ToRatingDto()).ToList(),
+                IndexedFiles = domain.IndexedFiles.Select(f => f.ToIndexedFileDto()).ToList(),
+                Genres = domain.Genres.ToList(),
+                ArtistType = artist.ArtistType,
+                Biography = artist.Biography,
+                Country = artist.Country,
+                Albums = artist.Albums.Select(a => (MusicAlbumDto)a.ToMediaDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -204,14 +227,26 @@ public static class MediaMappings
                 IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
                 Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
                 AlbumTitle = track.Album?.Title,
-                ArtistName = track.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name
-                           ?? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.Person?.Name,
-                ArtistPersonId = track.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId
-                               ?? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()?.PersonId,
+                ArtistName = track.Artist?.Title ?? track.Album?.Artist?.Title,
+                ArtistId = track.ArtistId ?? track.Album?.ArtistId,
                 Genre = track.Album?.Genres.FirstOrDefault() ?? domain.Genres.FirstOrDefault(),
                 Bpm = track.AudioAnalysis?.Bpm,
                 MusicalKey = track.AudioAnalysis?.MusicalKey,
                 Energy = track.AudioAnalysis?.Energy,
+                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
+                    ? state.ToUserMediaStateDto()
+                    : null,
+                UserRating = GetUserRating(domain)
+            },
+            MusicArtist artist => new LiteMusicArtistDto()
+            {
+                Id = domain.Id,
+                Title = domain.Title,
+                ReleaseDate = domain.ReleaseDate,
+                Created = domain.Created,
+                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                ArtistType = artist.ArtistType,
+                Country = artist.Country,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -297,6 +332,7 @@ public static class MediaMappings
             MovieDto => new Movie(),
             MusicAlbumDto => new MusicAlbum(),
             MusicTrackDto => new MusicTrack(),
+            MusicArtistDto => new MusicArtist(),
             SerieDto => new Serie(),
             SerieSeasonDto => new SerieSeason(),
             SerieEpisodeDto => new SerieEpisode(),

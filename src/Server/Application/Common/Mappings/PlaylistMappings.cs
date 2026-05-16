@@ -86,9 +86,9 @@ public static class PlaylistMappings
             var media = domain.Media;
             var indexedFile = media?.IndexedFiles.FirstOrDefault();
 
-            var artistRole = media is MusicTrack track
-                ? track.Album?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault()
-                : media?.PersonRoles?.OfType<MusicArtist>().FirstOrDefault();
+            var artist = media is MusicTrack track
+                ? (track.Artist ?? track.Album?.Artist)
+                : (media as MusicAlbum)?.Artist;
 
             var genre = media is MusicTrack t2
                 ? (t2.Album?.Genres?.FirstOrDefault() ?? t2.Genres?.FirstOrDefault())
@@ -100,8 +100,8 @@ public static class PlaylistMappings
                 MediaId = domain.MediaId,
                 Order = domain.Order,
                 MediaTitle = media?.Title,
-                ArtistName = artistRole?.Person?.Name,
-                ArtistPersonId = artistRole?.PersonId,
+                ArtistName = artist?.Title,
+                ArtistId = artist?.Id,
                 AlbumTitle = media is MusicTrack t ? t.Album?.Title : null,
                 Genre = genre,
                 IndexedFileId = indexedFile?.Id,
