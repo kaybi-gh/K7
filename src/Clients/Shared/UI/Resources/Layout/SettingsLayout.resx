@@ -26,4 +26,5 @@
   <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>
   <data name="Home" xml:space="preserve"><value>Accueil</value></data>
   <data name="Hidden" xml:space="preserve"><value>Masqués</value></data>
+  <data name="VideoPlayer" xml:space="preserve"><value>Lecteur video</value></data>
 </root>
