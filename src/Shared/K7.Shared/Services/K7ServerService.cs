@@ -766,4 +766,61 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         var response = await HttpClient.DeleteAsync("api/server/preferences/home-layout", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<IReadOnlyList<MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<MediaSegmentDto>>($"api/medias/{mediaId}/segments", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
+    public async Task<ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<ServerFeatureFlagsDto>("api/server/preferences/feature-flags", _serializerOptions, cancellationToken);
+        return result ?? new ServerFeatureFlagsDto();
+    }
+
+    public async Task UpdateServerFeatureFlagsAsync(ServerFeatureFlagsDto flags, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/server/preferences/feature-flags", flags, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync("api/server/preferences/video-player", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<VideoPlayerSettingsDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateServerVideoPlayerSettingsAsync(VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/server/preferences/video-player", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/server/preferences/video-player", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<VideoPlayerSettingsDto>("api/users/me/preferences/video-player", _serializerOptions, cancellationToken);
+        return result ?? new VideoPlayerSettingsDto();
+    }
+
+    public async Task UpdateUserVideoPlayerSettingsAsync(VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/video-player", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/preferences/video-player", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }
