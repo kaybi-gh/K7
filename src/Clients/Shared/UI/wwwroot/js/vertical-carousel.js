@@ -122,7 +122,12 @@ export function init(rootElement) {
         var targetIdx = e.key === 'ArrowUp' ? idx - 1 : idx + 1;
         var slides = containerNode.children;
 
-        if (targetIdx < 0 || targetIdx >= slides.length) {
+        if (targetIdx < 0) {
+            // Let the event bubble so spatial navigation can move focus to the navbar
+            return;
+        }
+
+        if (targetIdx >= slides.length) {
             e.preventDefault();
             e.stopPropagation();
             return;
