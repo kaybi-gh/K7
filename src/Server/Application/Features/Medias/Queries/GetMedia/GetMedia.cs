@@ -68,6 +68,17 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
             // SerieEpisode: include serie and season for context
             .Include(x => (x as SerieEpisode)!.Serie)
             .Include(x => (x as SerieEpisode)!.Season)
+            // MusicArtist: include albums with tracks
+            .Include(x => (x as MusicArtist)!.Albums)
+                .ThenInclude(a => a.Tracks)
+                    .ThenInclude(t => t.Pictures)
+                        .ThenInclude(p => p.Variants)
+            .Include(x => (x as MusicArtist)!.Albums)
+                .ThenInclude(a => a.Tracks)
+                    .ThenInclude(t => t.IndexedFiles)
+            .Include(x => (x as MusicArtist)!.Albums)
+                .ThenInclude(a => a.Pictures)
+                    .ThenInclude(p => p.Variants)
             .AsQueryable();
 
         if (userId.HasValue)

@@ -185,9 +185,9 @@ public static class SmartPlaylistEvaluator
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => m.PersonRoles.OfType<MusicArtist>().Any(r => r.Person.Name == value),
-            SmartPlaylistOperator.NotEquals => m => !m.PersonRoles.OfType<MusicArtist>().Any(r => r.Person.Name == value),
-            SmartPlaylistOperator.Contains => m => m.PersonRoles.OfType<MusicArtist>().Any(r => EF.Functions.Like(r.Person.Name!, $"%{value}%")),
+            SmartPlaylistOperator.Equals => m => ((MusicTrack)m).Artist!.Title == value || ((MusicTrack)m).Album!.Artist!.Title == value,
+            SmartPlaylistOperator.NotEquals => m => ((MusicTrack)m).Artist!.Title != value && ((MusicTrack)m).Album!.Artist!.Title != value,
+            SmartPlaylistOperator.Contains => m => EF.Functions.Like(((MusicTrack)m).Artist!.Title!, $"%{value}%") || EF.Functions.Like(((MusicTrack)m).Album!.Artist!.Title!, $"%{value}%"),
             _ => _ => true
         };
     }
@@ -265,8 +265,8 @@ public static class SmartPlaylistEvaluator
             SmartPlaylistOrderBy.Year => desc ? query.OrderByDescending(m => m.ReleaseDate) : query.OrderBy(m => m.ReleaseDate),
             SmartPlaylistOrderBy.Random => query.OrderBy(_ => EF.Functions.Random()),
             SmartPlaylistOrderBy.ArtistName => desc
-                ? query.OrderByDescending(m => m.PersonRoles.OfType<MusicArtist>().Select(r => r.Person.Name).FirstOrDefault())
-                : query.OrderBy(m => m.PersonRoles.OfType<MusicArtist>().Select(r => r.Person.Name).FirstOrDefault()),
+                ? query.OrderByDescending(m => ((MusicTrack)m).Artist!.Title ?? ((MusicTrack)m).Album!.Artist!.Title)
+                : query.OrderBy(m => ((MusicTrack)m).Artist!.Title ?? ((MusicTrack)m).Album!.Artist!.Title),
             SmartPlaylistOrderBy.AlbumTitle => desc
                 ? query.OrderByDescending(m => ((MusicTrack)m).Album.Title)
                 : query.OrderBy(m => ((MusicTrack)m).Album.Title),

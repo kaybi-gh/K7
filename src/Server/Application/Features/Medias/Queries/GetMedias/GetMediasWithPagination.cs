@@ -17,6 +17,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
     // TODO - public bool? Seen { get; init; }
     public bool? ContinueWatching { get; init; }
     public Guid[]? PersonIds { get; init; }
+    public Guid[]? ArtistIds { get; init; }
     public string[]? Genres { get; init; }
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
@@ -133,12 +134,19 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         {
             dataQuery = dataQuery
                 .Include(x => ((MusicTrack)x).Album)
-                    .ThenInclude(a => a.PersonRoles)
-                        .ThenInclude(r => r.Person)
+                    .ThenInclude(a => a.Artist)
+                .Include(x => ((MusicTrack)x).Artist)
                 .Include(x => ((MusicTrack)x).Album)
                     .ThenInclude(a => a.Pictures)
                         .ThenInclude(p => p.Variants)
                 .Include(x => ((MusicTrack)x).AudioAnalysis);
+        }
+
+        if (request.MediaTypes?.Contains(MediaType.MusicAlbum) == true
+            || request.MediaTypes == null)
+        {
+            dataQuery = dataQuery
+                .Include(x => ((MusicAlbum)x).Artist);
         }
 
         if (request.MediaTypes?.Contains(MediaType.SerieEpisode) == true
@@ -213,6 +221,13 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         {
             query = query.Where(x => x.PersonRoles.Any(r => request.PersonIds.Contains(r.PersonId))
                 || (x is MusicTrack && ((MusicTrack)x).Album.PersonRoles.Any(r => request.PersonIds.Contains(r.PersonId))));
+        }
+
+        if (request.ArtistIds?.Length > 0)
+        {
+            query = query.Where(x =>
+                (x is MusicTrack && (request.ArtistIds.Contains(((MusicTrack)x).ArtistId!.Value) || request.ArtistIds.Contains(((MusicTrack)x).Album!.ArtistId!.Value)))
+                || (x is MusicAlbum && request.ArtistIds.Contains(((MusicAlbum)x).ArtistId!.Value)));
         }
 
         if (request.Genres?.Length > 0)
