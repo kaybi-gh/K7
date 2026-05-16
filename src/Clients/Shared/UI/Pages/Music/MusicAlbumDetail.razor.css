@@ -1,20 +1,27 @@
 ﻿.album-detail-page {
     position: relative;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
-.album-hero-bg {
-    position: absolute;
+.background-image {
+    position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    height: 400px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(40px) brightness(0.3);
-    transform: scale(1.2);
+    width: 100%;
+    height: 100vh;
     z-index: 0;
     pointer-events: none;
+    background-image: var(--background-picture);
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 80%);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    filter: brightness(0.4);
 }
 
 .album-header {
@@ -22,20 +29,21 @@
     z-index: 1;
     display: flex;
     gap: 32px;
-    padding: 32px 24px;
+    padding: 32px 40px 24px;
     align-items: flex-end;
+    flex-shrink: 0;
 }
 
-.album-detail-cover {
-    width: 240px;
-    height: 240px;
+::deep .album-detail-cover {
+    width: 220px;
+    height: 220px;
     border-radius: 8px;
     box-shadow: var(--media-artwork-shadow, 0 8px 24px rgba(0, 0, 0, 0.5));
 }
 
 .album-detail-cover-placeholder {
-    width: 240px;
-    height: 240px;
+    width: 220px;
+    height: 220px;
     border-radius: 8px;
     background: var(--color-surface);
     display: flex;
@@ -43,12 +51,28 @@
     justify-content: center;
 }
 
+.album-type-label {
+    opacity: 0.7;
+    letter-spacing: 2px;
+}
+
 .album-detail-title {
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.album-artists {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
 }
 
 .album-artist-link {
     text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    opacity: 0.9;
 }
 
 .album-artist-link:hover,
@@ -56,27 +80,104 @@
     text-decoration: underline;
 }
 
+.album-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.875rem;
+    opacity: 0.7;
+}
+
+.album-genres {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.album-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
 .album-tracklist {
     position: relative;
     z-index: 1;
-    padding: 0 24px 24px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 40px;
 }
 
 .disc-header {
-    margin-top: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin-top: 16px;
     margin-bottom: 8px;
+    padding: 8px 0;
     font-weight: 600;
+    background: var(--color-bg);
+}
+
+::deep .k7-table-wrap {
+    overflow-x: visible;
 }
 
 ::deep .cursor-pointer {
     cursor: pointer;
 }
 
+.col-track-number {
+    width: 50px;
+}
+
+.col-duration {
+    width: 100px;
+    text-align: right;
+}
+
+.col-rating {
+    width: 130px;
+}
+
+.col-actions {
+    width: 50px;
+}
+
+.track-number {
+    font-size: 0.875rem;
+    opacity: 0.5;
+}
+
+.track-title-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.track-playing {
+    color: var(--color-accent);
+}
+
+.track-artist {
+    opacity: 0.5;
+}
+
+.track-duration {
+    font-size: 0.875rem;
+    opacity: 0.5;
+    text-align: right;
+}
+
 .album-overview {
-    position: relative;
-    z-index: 1;
-    padding: 0 24px 32px;
+    padding: 16px 0 32px;
     max-width: 800px;
+}
+
+.album-overview-text {
+    opacity: 0.7;
+    line-height: 1.6;
 }
 
 @media (max-width: 600px) {
@@ -84,11 +185,37 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
+        padding: 24px 16px 16px;
+        gap: 16px;
     }
 
-    .album-detail-cover,
+    .album-artists {
+        justify-content: center;
+    }
+
+    .album-meta {
+        justify-content: center;
+    }
+
+    .album-genres {
+        justify-content: center;
+    }
+
+    .album-actions {
+        justify-content: center;
+    }
+
+    ::deep .album-detail-cover,
     .album-detail-cover-placeholder {
-        width: 200px;
-        height: 200px;
+        width: 180px;
+        height: 180px;
+    }
+
+    .album-tracklist {
+        padding: 0 16px 24px;
+    }
+
+    .col-rating {
+        display: none;
     }
 }

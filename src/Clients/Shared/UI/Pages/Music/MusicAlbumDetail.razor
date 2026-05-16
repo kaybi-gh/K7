@@ -9,10 +9,10 @@
 
 @if (_album is not null)
 {
-    <div class="album-detail-page page-scrollable">
+    <div class="album-detail-page">
         @if (_coverUrl is not null)
         {
-            <div class="album-hero-bg" style="background-image: url('@_coverUrl')"></div>
+            <div class="background-image" style="--background-picture: url('@_coverUrl')" />
         }
 
         <div class="album-header">
@@ -34,47 +34,50 @@
             </div>
 
             <div class="album-header-info">
-                <p class="text-overline">@L["AlbumType"]</p>
-                <h4 class="album-detail-title">@_album.Title</h4>
+                <p class="text-overline album-type-label">@L["AlbumType"]</p>
+                <h3 class="album-detail-title">@_album.Title</h3>
 
-                <div class="d-flex align-center mt-1">
+                <div class="album-artists">
                     @foreach (var artist in _artists)
                     {
-                        <a href="@($"/music/artists/{artist.PersonId}")" class="album-artist-link">
-                            <p class="text-subtitle1" Color="primary">@artist.Name</p>
+                        <a href="@($"/music/artists/{artist.PersonId}")" class="album-artist-link focusable">
+                            @artist.Name
                         </a>
                     }
                 </div>
 
-                <div class="d-flex align-center mt-1">
+                <div class="album-meta">
                     @if (_album.ReleaseDate.HasValue)
                     {
-                        <p class="text-sm" Color="secondary">@_album.ReleaseDate.Value.Year</p>
+                        <span>@_album.ReleaseDate.Value.Year</span>
                     }
                     @if (_trackCount > 0)
                     {
-                        <p class="text-sm" Color="secondary">@string.Format(L["TrackCount"], _trackCount)</p>
+                        <span>&bull;</span>
+                        <span>@string.Format(L["TrackCount"], _trackCount)</span>
                     }
                     @if (_totalDuration > 0)
                     {
-                        <p class="text-sm" Color="secondary">· @FormatTotalDuration(_totalDuration)</p>
+                        <span>&bull;</span>
+                        <span>@FormatTotalDuration(_totalDuration)</span>
                     }
                 </div>
 
                 @if (_album.Genres?.Any() == true)
                 {
-                    <div class="d-flex mt-2">
+                    <div class="album-genres">
                         @foreach (var genre in _album.Genres)
                         {
-                            <K7Chip Variant="outlined" Size="sm">@genre</K7Chip>
+                            <K7Chip Variant="text" Size="sm">@genre</K7Chip>
                         }
                     </div>
                 }
 
-                <div class="d-flex mt-3">
+                <div class="album-actions">
                     <K7Button Variant="filled"
                                Color="primary"
                                StartIcon="@Phosphor.Play"
+                               Size="lg"
                                OnClick="PlayAll">
                         @S["PlayAll"]
                     </K7Button>
@@ -84,6 +87,14 @@
                                OnClick="ShuffleAll">
                         @S["Shuffle"]
                     </K7Button>
+                    @if (_artists.Count > 0)
+                    {
+                        <K7Button Variant="text"
+                                   StartIcon="@Phosphor.User"
+                                   Href="@($"/music/artists/{_artists[0].PersonId}")">
+                            @L["GoToArtist"]
+                        </K7Button>
+                    }
                 </div>
             </div>
         </div>
@@ -101,13 +112,13 @@
                           OnRowClick="@(args => OnTrackClick(args))"
                           RowClass="cursor-pointer">
                     <HeaderContent>
-                        <th Style="width: 50px;">#</th>
+                        <th class="col-track-number">#</th>
                         <th>@S["Title"]</th>
-                        <th Style="width: 100px; text-align: right;">
+                        <th class="col-duration">
                             <K7Icon Name="clock" Size="sm" />
                         </th>
-                        <th Style="width: 130px;"></th>
-                        <th Style="width: 50px;"></th>
+                        <th class="col-rating"></th>
+                        <th class="col-actions"></th>
                     </HeaderContent>
                     <RowTemplate>
                         <td>
@@ -119,22 +130,22 @@
                             }
                             else
                             {
-                                <p class="text-sm" Color="secondary">@context.TrackNumber</p>
+                                <span class="track-number">@context.TrackNumber</span>
                             }
                         </td>
                         <td>
-                            <div class="d-flex flex-col">
-                                <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
+                            <div class="track-title-cell">
+                                <span class="@(context.IsPlaying ? "track-playing" : "")">
                                     @context.Title
                                 </span>
                                 @if (!string.IsNullOrEmpty(context.ArtistName))
                                 {
-                                    <span class="text-caption" Color="secondary">@context.ArtistName</span>
+                                    <span class="text-caption track-artist">@context.ArtistName</span>
                                 }
                             </div>
                         </td>
-                        <td Style="text-align: right;">
-                            <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
+                        <td class="col-duration">
+                            <span class="track-duration">@FormatTime(context.Duration)</span>
                         </td>
                         <td>
                             <RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
@@ -145,15 +156,15 @@
                     </RowTemplate>
                 </K7Table>
             }
-        </div>
 
-        @if (!string.IsNullOrEmpty(_album.Overview))
-        {
-            <div class="album-overview">
-                <p class="text-subtitle1 mb-2">@S["About"]</p>
-                <p class="text-sm" Color="secondary">@_album.Overview</p>
-            </div>
-        }
+            @if (!string.IsNullOrEmpty(_album.Overview))
+            {
+                <div class="album-overview">
+                    <p class="text-subtitle1 mb-2">@S["About"]</p>
+                    <p class="text-sm album-overview-text">@_album.Overview</p>
+                </div>
+            }
+        </div>
     </div>
 }
 else if (_loading)
