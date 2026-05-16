@@ -89,8 +89,7 @@ public sealed partial class TautulliClient : ISourceClient
                 if (ratingKey is null) continue;
 
                 var guid = entry.TryGetProperty("guid", out var g) ? g.GetString() : null;
-                var grandparentGuid = entry.TryGetProperty("grandparent_guid", out var gg) ? gg.GetString() : null;
-                var providerIds = ParsePlexGuids(guid, grandparentGuid);
+                var providerIds = ParsePlexGuids(guid);
 
                 var lastPlayedAt = entry.TryGetProperty("stopped", out var stopped) && stopped.ValueKind == JsonValueKind.Number
                     ? DateTimeOffset.FromUnixTimeSeconds(stopped.GetInt64()).UtcDateTime
@@ -159,14 +158,13 @@ public sealed partial class TautulliClient : ISourceClient
         return Task.FromResult(new List<SourcePlaylist>());
     }
 
-    private static Dictionary<string, string> ParsePlexGuids(string? guid, string? grandparentGuid)
+    private static Dictionary<string, string> ParsePlexGuids(string? guid)
     {
         var providerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var g in new[] { guid, grandparentGuid })
+        if (guid is not null)
         {
-            if (g is null) continue;
-            var match = PlexGuidRegex().Match(g);
+            var match = PlexGuidRegex().Match(guid);
             if (match.Success)
             {
                 providerIds.TryAdd(match.Groups[1].Value.ToLowerInvariant(), match.Groups[2].Value);

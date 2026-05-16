@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Responses;
 using K7.Shared.Dtos.Users;
@@ -137,10 +138,10 @@ public sealed class K7ApiClient
         return total;
     }
 
-    public async Task<Guid> CreatePlaylistAsync(string title, CancellationToken cancellationToken = default)
+    public async Task<Guid> CreatePlaylistAsync(string title, MediaType mediaType = MediaType.MusicTrack, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("api/playlists",
-            new CreatePlaylistRequest { Title = title }, cancellationToken);
+            new CreatePlaylistRequest { Title = title, MediaType = mediaType }, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Guid>(JsonOptions, cancellationToken);
     }

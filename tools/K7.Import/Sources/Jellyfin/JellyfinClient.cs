@@ -159,7 +159,7 @@ public sealed class JellyfinClient : ISourceClient
             Id = item.GetProperty("Id").GetString()!,
             Title = item.GetProperty("Name").GetString()!,
             Year = item.TryGetProperty("ProductionYear", out var year) && year.ValueKind == JsonValueKind.Number ? year.GetInt32() : null,
-            ProviderIds = ParseProviderIds(item),
+            ProviderIds = ParseProviderIds(item, jellyfinType),
             PlayCount = playCount,
             LastPlaybackPosition = positionTicks / 10_000_000.0,
             LastPlayedAt = lastPlayedDate,
@@ -180,7 +180,7 @@ public sealed class JellyfinClient : ISourceClient
         };
     }
 
-    private static Dictionary<string, string> ParseProviderIds(JsonElement item)
+    private static Dictionary<string, string> ParseProviderIds(JsonElement item, string? jellyfinType = null)
     {
         var providerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -195,13 +195,15 @@ public sealed class JellyfinClient : ISourceClient
                         "tmdb" => "tmdb",
                         "imdb" => "imdb",
                         "tvdb" => "tvdb",
-                        "musicbrainzalbum" => "musicbrainz",
-                        "musicbrainzartist" => "musicbrainz",
-                        "musicbrainztrack" => "musicbrainz",
-                        "musicbrainzreleasegroup" => "musicbrainz",
+                        "musicbrainztrack" when jellyfinType is "Audio" => "musicbrainz",
+                        "musicbrainzalbum" when jellyfinType is "MusicAlbum" => "musicbrainz",
+                        "musicbrainzreleasegroup" when jellyfinType is "MusicAlbum" => "musicbrainz",
+                        "musicbrainzartist" when jellyfinType is "MusicArtist" => "musicbrainz",
+                        "musicbrainztrack" or "musicbrainzalbum" or "musicbrainzartist" or "musicbrainzreleasegroup" => null,
                         _ => prop.Name.ToLowerInvariant()
                     };
-                    providerIds.TryAdd(key, prop.Value.GetString()!);
+                    if (key is not null)
+                        providerIds.TryAdd(key, prop.Value.GetString()!);
                 }
             }
         }

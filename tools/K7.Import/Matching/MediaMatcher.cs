@@ -45,7 +45,7 @@ public sealed class MediaMatcher
             .ToDictionary(r => (r.Provider.ToLowerInvariant(), r.Value), r => r.MediaId!.Value);
 
         var matched = new Dictionary<string, Guid>();
-        var providerPriority = new[] { "tmdb", "imdb", "tvdb", "musicbrainz" };
+        var providerPriority = new[] { "tmdb", "imdb", "tvdb", "musicbrainz", "isrc", "spotify" };
 
         foreach (var item in items)
         {
