@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -67,7 +67,7 @@ public partial class PlaylistDetail
         Order = item.Order,
         Title = item.MediaTitle ?? S["Untitled"],
         ArtistName = item.ArtistName,
-        ArtistPersonId = item.ArtistPersonId,
+        ArtistId = item.ArtistId,
         AlbumTitle = item.AlbumTitle,
         Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
@@ -124,7 +124,7 @@ public partial class PlaylistDetail
         MediaId = i.MediaId,
         Title = i.Title,
         Artist = i.ArtistName,
-        ArtistPersonId = i.ArtistPersonId,
+        ArtistId = i.ArtistId,
         AlbumTitle = i.AlbumTitle,
         Genre = i.Genre,
         CoverUrl = i.CoverUrl,
@@ -221,7 +221,7 @@ public partial class PlaylistDetail
         public int Order { get; init; }
         public required string Title { get; init; }
         public string? ArtistName { get; init; }
-        public Guid? ArtistPersonId { get; init; }
+        public Guid? ArtistId { get; init; }
         public string? AlbumTitle { get; init; }
         public string? Genre { get; init; }
         public Guid? IndexedFileId { get; init; }

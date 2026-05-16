@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
@@ -21,16 +21,16 @@ public partial class MusicRadio
 
     private static readonly List<RadioTypeInfo> _radioTypes =
     [
-        new("Découverte", "Morceaux que vous n'avez jamais écoutés, proches de vos goûts.", MusicRadioType.Discovery, "compass", "info"),
-        new("Similaire", "Morceaux au son proche de ce que vous écoutez.", MusicRadioType.Sonic, "waves", "primary"),
-        new("Tempo", "Un mix basé sur le BPM de vos morceaux préférés.", MusicRadioType.Tempo, "gauge", "warning"),
-        new("Time Capsule", "Redécouvrez ce que vous écoutiez il y a un an.", MusicRadioType.TimeCapsule, "clock-clockwise", "secondary"),
-        new("Nouveautés", "Les derniers morceaux ajoutés à votre bibliothèque.", MusicRadioType.RecentlyAdded, "sparkle", "success"),
-        new("Artiste", "Un mix centré sur un artiste et ses proches.", MusicRadioType.Artist, "user", "tertiary"),
-        new("Mood : Chill", "Ambiance détendue et calme.", MusicRadioType.Mood, "peace", "info", "chill"),
-        new("Mood : Énergique", "Des morceaux qui bougent.", MusicRadioType.Mood, "lightning", "error", "energetic"),
+        new("D�couverte", "Morceaux que vous n'avez jamais �cout�s, proches de vos go�ts.", MusicRadioType.Discovery, "compass", "info"),
+        new("Similaire", "Morceaux au son proche de ce que vous �coutez.", MusicRadioType.Sonic, "waves", "primary"),
+        new("Tempo", "Un mix bas� sur le BPM de vos morceaux pr�f�r�s.", MusicRadioType.Tempo, "gauge", "warning"),
+        new("Time Capsule", "Red�couvrez ce que vous �coutiez il y a un an.", MusicRadioType.TimeCapsule, "clock-clockwise", "secondary"),
+        new("Nouveaut�s", "Les derniers morceaux ajout�s � votre biblioth�que.", MusicRadioType.RecentlyAdded, "sparkle", "success"),
+        new("Artiste", "Un mix centr� sur un artiste et ses proches.", MusicRadioType.Artist, "user", "tertiary"),
+        new("Mood : Chill", "Ambiance d�tendue et calme.", MusicRadioType.Mood, "peace", "info", "chill"),
+        new("Mood : �nergique", "Des morceaux qui bougent.", MusicRadioType.Mood, "lightning", "error", "energetic"),
         new("Mood : Happy", "De la bonne humeur.", MusicRadioType.Mood, "smiley", "warning", "happy"),
-        new("Mood : Focus", "Concentration et productivité.", MusicRadioType.Mood, "brain", "primary", "focus"),
+        new("Mood : Focus", "Concentration et productivit�.", MusicRadioType.Mood, "brain", "primary", "focus"),
     ];
 
     private async Task PlayRadioAsync(RadioTypeInfo radio)
@@ -79,17 +79,13 @@ public partial class MusicRadio
 
     private TrackViewModel ToViewModel(MusicTrackDto track)
     {
-        var artist = track.PersonRoles?
-            .OfType<LiteMusicArtistRoleDto>()
-            .FirstOrDefault(r => r.Person is not null);
-
         return new()
         {
             Id = track.Id,
             IndexedFileId = track.IndexedFiles?.FirstOrDefault()?.Id,
             Title = track.Title ?? S["Untitled"],
-            ArtistName = artist?.Person?.Name,
-            ArtistPersonId = artist?.Person?.Id,
+            ArtistName = track.ArtistName,
+            ArtistId = track.ArtistId,
             AlbumTitle = null,
             Genre = track.Genres?.FirstOrDefault(),
             CoverUrl = ApiClient.GetAbsoluteUri(
@@ -110,7 +106,7 @@ public partial class MusicRadio
         MediaId = t.Id,
         Title = t.Title,
         Artist = t.ArtistName,
-        ArtistPersonId = t.ArtistPersonId,
+        ArtistId = t.ArtistId,
         AlbumTitle = t.AlbumTitle,
         Genre = t.Genre,
         CoverUrl = t.CoverUrl,
@@ -136,7 +132,7 @@ public partial class MusicRadio
         public Guid? IndexedFileId { get; init; }
         public required string Title { get; init; }
         public string? ArtistName { get; init; }
-        public Guid? ArtistPersonId { get; init; }
+        public Guid? ArtistId { get; init; }
         public string? AlbumTitle { get; init; }
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }

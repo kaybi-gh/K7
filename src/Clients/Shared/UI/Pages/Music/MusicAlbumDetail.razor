@@ -40,7 +40,7 @@
                 <div class="album-artists">
                     @foreach (var artist in _artists)
                     {
-                        <a href="@($"/music/artists/{artist.PersonId}")" class="album-artist-link focusable">
+                        <a href="@($"/music/artists/{artist.Id}")" class="album-artist-link focusable">
                             @artist.Name
                         </a>
                     }
@@ -91,7 +91,7 @@
                     {
                         <K7Button Variant="text"
                                    StartIcon="@Phosphor.User"
-                                   Href="@($"/music/artists/{_artists[0].PersonId}")">
+                                   Href="@($"/music/artists/{_artists[0].Id}")">
                             @L["GoToArtist"]
                         </K7Button>
                     }

@@ -44,7 +44,7 @@ public partial class Library : IDisposable
         MediaOrderingOption.ReleaseDateAsc
     ];
 
-    private float GridAspectRatio => _selectedMediaType is MediaType.MusicAlbum or MediaType.MusicTrack ? 1f : 1.5f;
+    private float GridAspectRatio => _selectedMediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist ? 1f : 1.5f;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -64,7 +64,7 @@ public partial class Library : IDisposable
         _availableMediaTypes = _libraryMediaType switch
         {
             LibraryMediaType.Serie => [MediaType.Serie, MediaType.SerieSeason, MediaType.SerieEpisode],
-            LibraryMediaType.Music => [MediaType.MusicAlbum, MediaType.MusicTrack],
+            LibraryMediaType.Music => [MediaType.MusicArtist, MediaType.MusicAlbum, MediaType.MusicTrack],
             _ => []
         };
 
@@ -72,7 +72,7 @@ public partial class Library : IDisposable
         {
             LibraryMediaType.Movie => MediaType.Movie,
             LibraryMediaType.Serie => MediaType.Serie,
-            LibraryMediaType.Music => MediaType.MusicAlbum,
+            LibraryMediaType.Music => MediaType.MusicArtist,
             _ => _availableMediaTypes.Count > 0 ? _availableMediaTypes[0] : default
         };
 
@@ -290,6 +290,7 @@ public partial class Library : IDisposable
 
     private static string GetItemHref(LiteMediaDto item) => item switch
     {
+        LiteMusicArtistDto artist => $"/music/artists/{artist.Id}",
         LiteMusicAlbumDto album => $"/music/albums/{album.Id}",
         LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}",
         LiteSerieDto serie => $"/series/{serie.Id}",
@@ -300,7 +301,7 @@ public partial class Library : IDisposable
 
     private static MediaCardVariant GetVariant(LiteMediaDto item) => item switch
     {
-        LiteMusicAlbumDto or LiteMusicTrackDto => MediaCardVariant.Cover,
+        LiteMusicAlbumDto or LiteMusicTrackDto or LiteMusicArtistDto => MediaCardVariant.Cover,
         _ => MediaCardVariant.Poster
     };
 
@@ -351,6 +352,7 @@ public partial class Library : IDisposable
         MediaType.Serie => S["MediaTypeSeries"],
         MediaType.SerieSeason => L["Seasons"],
         MediaType.SerieEpisode => L["Episodes"],
+        MediaType.MusicArtist => L["Artists"],
         MediaType.MusicAlbum => L["Albums"],
         MediaType.MusicTrack => L["Tracks"],
         _ => mediaType.ToString()

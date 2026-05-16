@@ -15,7 +15,7 @@ public class AudioQueueItem
     public string? CoverUrl { get; init; }
     public string? CoverDominantColor { get; init; }
     public double? Duration { get; init; }
-    public Guid? ArtistPersonId { get; init; }
+    public Guid? ArtistId { get; init; }
     public string? Genre { get; init; }
     public int? UserRating { get; set; }
 

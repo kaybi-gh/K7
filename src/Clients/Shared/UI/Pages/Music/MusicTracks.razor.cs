@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
@@ -74,7 +74,7 @@ public partial class MusicTracks
         MediaId = t.Id,
         Title = t.Title,
         Artist = t.ArtistName,
-        ArtistPersonId = t.ArtistPersonId,
+        ArtistId = t.ArtistId,
         AlbumTitle = t.AlbumTitle,
         Genre = t.Genre,
         CoverUrl = t.CoverUrl,
@@ -92,7 +92,7 @@ public partial class MusicTracks
         IndexedFileId = track.IndexedFileId,
         Title = track.Title ?? S["Untitled"],
         ArtistName = track.ArtistName,
-        ArtistPersonId = track.ArtistPersonId,
+        ArtistId = track.ArtistId,
         AlbumId = track.AlbumId,
         AlbumTitle = track.AlbumTitle,
         Genre = track.Genre,
@@ -123,7 +123,7 @@ public partial class MusicTracks
         public Guid? IndexedFileId { get; init; }
         public required string Title { get; init; }
         public string? ArtistName { get; init; }
-        public Guid? ArtistPersonId { get; init; }
+        public Guid? ArtistId { get; init; }
         public Guid AlbumId { get; init; }
         public string? AlbumTitle { get; init; }
         public string? Genre { get; init; }

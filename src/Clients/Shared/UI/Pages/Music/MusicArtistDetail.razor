@@ -4,8 +4,8 @@
 @inject IK7ServerService apiClient
 @inject IStringLocalizer<MusicArtistDetail> L
 @inject IStringLocalizer<SharedResource> S
-<PageTitle>@_person?.Name</PageTitle>
-@if (_person is not null)
+<PageTitle>@_artist?.Title</PageTitle>
+@if (_artist is not null)
 {
     <div class="artist-detail-page">
         @if (_portraitUrl is not null)
@@ -19,26 +19,26 @@
                     @if (_portraitUrl is not null)
                     {
                         <K7Image Src="@_portraitUrl"
-                                  Alt="@_person.Name"
+                                  Alt="@_artist.Title"
                                   Class="artist-portrait"
                                   ObjectFit="cover" />
                     }
                     else
                     {
                         <K7Avatar Class="artist-avatar-placeholder">
-                            @(_person.Name?[..1].ToUpperInvariant())
+                            @(_artist.Title?[..1].ToUpperInvariant())
                         </K7Avatar>
                     }
                 </div>
 
                 <div class="artist-hero-info">
                     <p class="text-overline artist-type-label">@L["ArtistType"]</p>
-                    <h2 class="artist-name">@_person.Name</h2>
+                    <h2 class="artist-name">@_artist.Title</h2>
 
-                    @if (!string.IsNullOrEmpty(_person.Biography))
+                    @if (!string.IsNullOrEmpty(_artist.Biography))
                     {
                         <div class="artist-bio overview-clickable focusable" tabindex="0" role="button" @onclick="OpenBiographyDialogAsync">
-                            <p class="artist-bio-text">@_person.Biography</p>
+                            <p class="artist-bio-text">@_artist.Biography</p>
                         </div>
                     }
 
@@ -59,7 +59,6 @@
                                 @S["Shuffle"]
                             </K7Button>
                         }
-                        <K7IconButton Icon="@Phosphor.User" Href="@($"/persons/{_person.Id}")" AriaLabel="@L["ViewPerson"]" />
                     </div>
                 </div>
             </div>

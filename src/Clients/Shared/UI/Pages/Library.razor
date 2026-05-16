@@ -32,10 +32,6 @@
                 <K7Chip Value="@mt" Variant="@(_selectedMediaType.Equals(mt) ? "filled" : "outlined")" Color="primary" Text="@GetMediaTypeLabel(mt)" OnClick="() => OnMediaTypeFilterChanged(mediaType)" />
             }
         }
-        @if (_libraryMediaType == LibraryMediaType.Music)
-        {
-            <K7Chip Variant="outlined" Color="primary" Text="@L["Artists"]" OnClick="NavigateToArtists" />
-        }
         <K7TextField TValue="string" Placeholder="@S["Search"]" Value="@_searchText" ValueChanged="OnSearchTextChanged" Style="max-width: 220px;" />
         <K7Select TValue="MediaOrderingOption" Value="_selectedSort" ValueChanged="OnSortChanged">
             @foreach (var opt in SortOptions)

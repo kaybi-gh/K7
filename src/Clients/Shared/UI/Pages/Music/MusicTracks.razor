@@ -60,9 +60,9 @@ else
                     </div>
                 </td>
                 <td>
-                    @if (context.ArtistPersonId.HasValue)
+                    @if (context.ArtistId.HasValue)
                     {
-                        <a href="@($"/music/artists/{context.ArtistPersonId}")" class="track-link" @onclick:stopPropagation="true">
+                        <a href="@($"/music/artists/{context.ArtistId}")" class="track-link" @onclick:stopPropagation="true">
                             <p class="text-sm" Color="secondary">@context.ArtistName</p>
                         </a>
                     }
