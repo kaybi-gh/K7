@@ -9,6 +9,7 @@ using K7.Import.Sources.Plex;
 using K7.Import.Sources.Spotify;
 using K7.Import.Sources.Tautulli;
 using K7.Import.Sources.Tracearr;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
 using Spectre.Console;
 
@@ -331,8 +332,27 @@ public sealed class ImportCommand
                             var playlistMatches = await matcher.MatchPlaylistItemsAsync(playlist.Items, cancellationToken);
                             if (playlistMatches.Count == 0) continue;
 
+                            var playlistMediaType = playlist.MediaType switch
+                            {
+                                "music" => MediaType.MusicTrack,
+                                _ => null as MediaType?
+                            };
+
+                            if (playlistMediaType is null)
+                            {
+                                var firstMatchedMediaId = playlistMatches.Values.First();
+                                var firstMatchedType = await k7Client.GetMediaTypeAsync(firstMatchedMediaId, cancellationToken);
+                                playlistMediaType = firstMatchedType switch
+                                {
+                                    MediaType.Movie => MediaType.Movie,
+                                    MediaType.SerieEpisode => MediaType.SerieEpisode,
+                                    MediaType.MusicTrack => MediaType.MusicTrack,
+                                    _ => MediaType.Movie
+                                };
+                            }
+
                             ctx.Status($"Creating playlist '{playlist.Title}'...");
-                            var playlistId = await k7Client.CreatePlaylistAsync(playlist.Title, cancellationToken: cancellationToken);
+                            var playlistId = await k7Client.CreatePlaylistAsync(playlist.Title, playlistMediaType.Value, cancellationToken);
 
                             foreach (var item in playlist.Items)
                             {

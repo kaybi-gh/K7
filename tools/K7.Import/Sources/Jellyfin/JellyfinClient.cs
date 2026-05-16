@@ -104,6 +104,7 @@ public sealed class JellyfinClient : ISourceClient
         {
             var playlistId = pl.GetProperty("Id").GetString()!;
             var title = pl.GetProperty("Name").GetString()!;
+            var mediaType = pl.TryGetProperty("MediaType", out var mt) ? mt.GetString() : null;
 
             var itemsResponse = await _httpClient.GetFromJsonAsync<JsonElement>(
                 $"/Playlists/{playlistId}/Items?UserId={userId}&Fields=ProviderIds", cancellationToken);
@@ -113,11 +114,12 @@ public sealed class JellyfinClient : ISourceClient
             {
                 foreach (var item in itemsArr.EnumerateArray())
                 {
+                    var itemType = item.TryGetProperty("Type", out var itp) ? itp.GetString() : null;
                     playlistItems.Add(new SourcePlaylistItem
                     {
                         Id = item.GetProperty("Id").GetString()!,
                         Title = item.GetProperty("Name").GetString()!,
-                        ProviderIds = ParseProviderIds(item)
+                        ProviderIds = ParseProviderIds(item, itemType)
                     });
                 }
             }
@@ -126,6 +128,12 @@ public sealed class JellyfinClient : ISourceClient
             {
                 Id = playlistId,
                 Title = title,
+                MediaType = mediaType switch
+                {
+                    "Audio" => "music",
+                    "Video" => "video",
+                    _ => null
+                },
                 Items = playlistItems
             });
         }

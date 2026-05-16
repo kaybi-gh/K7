@@ -146,6 +146,21 @@ public sealed class K7ApiClient
         return await response.Content.ReadFromJsonAsync<Guid>(JsonOptions, cancellationToken);
     }
 
+    public async Task<MediaType> GetMediaTypeAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetFromJsonAsync<JsonElement>($"api/medias/{mediaId}", JsonOptions, cancellationToken);
+        var typeString = response.GetProperty("$type").GetString();
+        return typeString switch
+        {
+            "Movie" => MediaType.Movie,
+            "SerieEpisode" => MediaType.SerieEpisode,
+            "MusicTrack" => MediaType.MusicTrack,
+            "MusicAlbum" => MediaType.MusicAlbum,
+            "MusicArtist" => MediaType.MusicArtist,
+            _ => MediaType.Movie
+        };
+    }
+
     public async Task AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync($"api/playlists/{playlistId}/items",
