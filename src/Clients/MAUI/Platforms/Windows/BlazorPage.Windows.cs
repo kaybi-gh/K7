@@ -1,5 +1,7 @@
 #if WINDOWS
+using System.Runtime.InteropServices.WindowsRuntime;
 using K7.Clients.Shared.Models;
+using SkiaSharp;
 using Windows.Media;
 using Windows.Media.Playback;
 using Windows.Storage.Streams;
@@ -24,6 +26,12 @@ public partial class BlazorPage
                 await Task.Delay(500);
                 TrySetupSmtc();
             }
+        };
+
+        NativeAudioPlayer.MediaOpened += (_, _) =>
+        {
+            TrySetupSmtc();
+            OnAudioTrackChangedWindows(_audioPlayerService.CurrentTrack);
         };
     }
 
@@ -108,7 +116,7 @@ public partial class BlazorPage
     {
         if (track is null) return;
 
-        MainThread.BeginInvokeOnMainThread(() =>
+        MainThread.BeginInvokeOnMainThread(async () =>
         {
             TrySetupSmtc();
             if (_smtc is null) return;
@@ -126,7 +134,9 @@ public partial class BlazorPage
                     var absoluteUri = _k7ServerService.GetAbsoluteUri(track.CoverUrl);
                     if (absoluteUri is not null)
                     {
-                        updater.Thumbnail = RandomAccessStreamReference.CreateFromUri(absoluteUri);
+                        var thumbnail = await FetchThumbnailAsync(absoluteUri);
+                        if (thumbnail is not null)
+                            updater.Thumbnail = thumbnail;
                     }
                 }
 
@@ -137,6 +147,33 @@ public partial class BlazorPage
                 System.Diagnostics.Trace.WriteLine($"[K7-Audio] SMTC update failed: {ex.Message}");
             }
         });
+    }
+
+    private static async Task<RandomAccessStreamReference?> FetchThumbnailAsync(Uri uri)
+    {
+        try
+        {
+            using var client = new HttpClient();
+            var bytes = await client.GetByteArrayAsync(uri);
+
+            // SMTC does not support WebP - convert to JPEG via SkiaSharp
+            using var original = SKBitmap.Decode(bytes);
+            if (original is null) return null;
+
+            using var image = SKImage.FromBitmap(original);
+            using var encoded = image.Encode(SKEncodedImageFormat.Jpeg, 90);
+            var jpegBytes = encoded.ToArray();
+
+            var stream = new InMemoryRandomAccessStream();
+            await stream.WriteAsync(jpegBytes.AsBuffer());
+            stream.Seek(0);
+            return RandomAccessStreamReference.CreateFromStream(stream);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"[K7-Audio] Thumbnail fetch failed: {ex.Message}");
+            return null;
+        }
     }
 }
 #endif
