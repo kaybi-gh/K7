@@ -300,6 +300,16 @@ var SpatialNav = (function () {
         return ['text', 'password', 'search', 'email', 'number', 'tel', 'url'].indexOf(type) !== -1;
     }
 
+    // Long-press state for Enter/OK on elements inside [data-longpress] containers
+    var _longPressState = null;
+    var LONG_PRESS_MS = 600;
+
+    function cancelLongPress() {
+        if (!_longPressState) return;
+        clearTimeout(_longPressState.timer);
+        _longPressState = null;
+    }
+
     // Enter Handling
 
     function handleEnter(e) {
@@ -310,6 +320,27 @@ var SpatialNav = (function () {
         var overlay = active.closest('.video-controls-overlay');
         if (overlay && overlay.style.opacity === '0') {
             e.preventDefault();
+            return;
+        }
+
+        // Long-press detection for elements inside [data-longpress] containers.
+        // On first Enter keydown, prevent default (stops immediate navigation for <a>)
+        // and start a timer. On repeated keydown, just suppress.
+        var longPressContainer = active.closest('[data-longpress]');
+        if (longPressContainer) {
+            e.preventDefault();
+            if (_longPressState) return; // repeated keydown - ignore
+            _longPressState = {
+                element: active,
+                container: longPressContainer,
+                triggered: false,
+                timer: setTimeout(function () {
+                    if (!_longPressState) return;
+                    _longPressState.triggered = true;
+                    var target = longPressContainer.querySelector('[data-longpress-target] button');
+                    if (target) target.click();
+                }, LONG_PRESS_MS)
+            };
             return;
         }
 
@@ -340,6 +371,27 @@ var SpatialNav = (function () {
             active.click();
             e.preventDefault();
             e.stopImmediatePropagation();
+            return;
+        }
+        // Fallback: any focusable element (e.g. table rows) gets click on Enter
+        if (active.classList.contains('focusable')) {
+            active.click();
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+    }
+
+    function handleKeyUp(e) {
+        if (e.key !== 'Enter') return;
+        if (!_longPressState) return;
+
+        clearTimeout(_longPressState.timer);
+        var state = _longPressState;
+        _longPressState = null;
+
+        if (!state.triggered) {
+            // Short press - perform the default action (navigate for <a>, click for buttons)
+            state.element.click();
         }
     }
 
@@ -752,6 +804,7 @@ var SpatialNav = (function () {
         }
 
         document.addEventListener('keydown', handleKeyDown, true);
+        document.addEventListener('keyup', handleKeyUp, true);
         document.addEventListener('enhancedload', onPageNavigated);
     }
 
