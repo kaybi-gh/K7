@@ -51,6 +51,12 @@ public static class GetMediasWithPaginationQueryUriBuilder
                 queryParams.Add(new(nameof(query.PersonIds), id.ToString()));
         }
 
+        if (query.ArtistIds?.Length > 0)
+        {
+            foreach (var id in query.ArtistIds)
+                queryParams.Add(new(nameof(query.ArtistIds), id.ToString()));
+        }
+
         if (query.Genres?.Length > 0)
         {
             foreach (var g in query.Genres)

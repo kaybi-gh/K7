@@ -7,7 +7,7 @@ namespace K7.Shared.Dtos.Entities.PersonRoles;
 
 [JsonDerivedType(typeof(ActorDto), nameof(Actor))]
 [JsonDerivedType(typeof(CrewMemberDto), nameof(CrewMember))]
-[JsonDerivedType(typeof(MusicArtistRoleDto), nameof(MusicArtist))]
+[JsonDerivedType(typeof(MusicArtistRoleDto), nameof(MusicArtistMember))]
 public abstract record PersonRoleDto
 {
     public Guid Id { get; init; }
