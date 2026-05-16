@@ -6,7 +6,6 @@ using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
-using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
 using K7.Shared.Dtos.Requests;
@@ -155,29 +154,30 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var artistCache = new Dictionary<string, Person>(StringComparer.OrdinalIgnoreCase);
+        var artistCache = new Dictionary<string, Domain.Entities.Medias.MusicArtist>(StringComparer.OrdinalIgnoreCase);
 
         if (artistNames.Count > 0)
         {
             var artistNamesLower = artistNames.Select(n => n.ToLowerInvariant()).ToList();
-            var existingArtists = await context.Persons
-                .Where(p => p.Name != null && artistNamesLower.Contains(p.Name.ToLower()))
+            var existingArtists = await context.Medias.OfType<Domain.Entities.Medias.MusicArtist>()
+                .Where(a => a.Title != null && artistNamesLower.Contains(a.Title.ToLower()))
                 .ToListAsync(cancellationToken);
 
-            foreach (var person in existingArtists)
+            foreach (var artist in existingArtists)
             {
-                artistCache.TryAdd(person.Name, person);
+                if (artist.Title is not null)
+                    artistCache.TryAdd(artist.Title, artist);
             }
 
-            var newArtists = new List<Person>();
+            var newArtists = new List<Domain.Entities.Medias.MusicArtist>();
             foreach (var name in artistNames)
             {
                 if (!artistCache.ContainsKey(name))
                 {
-                    var person = new Person { Name = name };
-                    context.Persons.Add(person);
-                    newArtists.Add(person);
-                    artistCache[name] = person;
+                    var artist = new Domain.Entities.Medias.MusicArtist { Title = name };
+                    context.Medias.Add(artist);
+                    newArtists.Add(artist);
+                    artistCache[name] = artist;
                 }
             }
 
@@ -200,23 +200,16 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
         // Load artist links for existing albums to match by artist+title
         var existingAlbumIds = existingAlbumsList.Select(a => a.Id).ToList();
-        var albumArtistLinks = existingAlbumIds.Count > 0
-            ? await context.PersonRoles.OfType<MusicArtist>()
-                .Where(r => existingAlbumIds.Contains(r.MediaId))
-                .Select(r => new { r.MediaId, ArtistName = r.Person.Name })
-                .ToListAsync(cancellationToken)
-            : [];
-
-        var albumArtistLookup = albumArtistLinks
-            .GroupBy(r => r.MediaId)
-            .ToDictionary(g => g.Key, g => g.First().ArtistName);
+        var albumArtistLookup = existingAlbumsList
+            .Where(a => a.ArtistId != null)
+            .ToDictionary(a => a.Id, a => artistCache.Values.FirstOrDefault(ar => ar.Id == a.ArtistId)?.Title ?? "");
 
         var existingAlbums = new Dictionary<string, MusicAlbum>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var album in existingAlbumsList)
         {
             var artistName = albumArtistLookup.GetValueOrDefault(album.Id, "");
-            var key = NormalizeKey(artistName ?? "", album.Title!);
+            var key = NormalizeKey(artistName, album.Title!);
             existingAlbums.TryAdd(key, album);
         }
 
@@ -249,41 +242,20 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
             newEnrichableMediaIds.AddRange(newAlbums.Select(a => a.Id));
         }
 
-        // 3. Link artists to albums via MusicArtist roles
-        var existingAlbumRoles = await context.PersonRoles
-            .OfType<MusicArtist>()
-            .Where(r => albumCache.Values.Select(a => a.Id).Contains(r.MediaId))
-            .Select(r => new { r.PersonId, r.MediaId })
-            .ToListAsync(cancellationToken);
-
-        var existingAlbumRoleKeys = existingAlbumRoles
-            .Select(r => (r.PersonId, r.MediaId))
-            .ToHashSet();
-
-        var newAlbumRoles = new List<MusicArtist>();
+        // 3. Link artists to albums via ArtistId
         foreach (var group in musicGroups)
         {
             var artistName = group.Items[0].ArtistName;
             var albumKey = NormalizeKey(artistName ?? "", group.Items[0].AlbumName ?? "Unknown Album");
 
-            if (artistName is null || !artistCache.TryGetValue(artistName, out var person)) continue;
+            if (artistName is null || !artistCache.TryGetValue(artistName, out var artist)) continue;
             if (!albumCache.TryGetValue(albumKey, out var album)) continue;
-            if (existingAlbumRoleKeys.Contains((person.Id, album.Id))) continue;
+            if (album.ArtistId == artist.Id) continue;
 
-            existingAlbumRoleKeys.Add((person.Id, album.Id));
-            newAlbumRoles.Add(new MusicArtist
-            {
-                PersonId = person.Id,
-                MediaId = album.Id,
-                IsGuest = false
-            });
+            album.ArtistId = artist.Id;
         }
 
-        if (newAlbumRoles.Count > 0)
-        {
-            context.PersonRoles.AddRange(newAlbumRoles);
-            await context.SaveChangesAsync(cancellationToken);
-        }
+        await context.SaveChangesAsync(cancellationToken);
 
         // 4. Create tracks in batches and link artists
         var pending = new List<(MusicTrack Entity, BatchGroup Group)>();
@@ -323,19 +295,14 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
 
     private void LinkArtistsToTracks(
         List<(MusicTrack Entity, BatchGroup Group)> pending,
-        Dictionary<string, Person> artistCache)
+        Dictionary<string, Domain.Entities.Medias.MusicArtist> artistCache)
     {
         foreach (var (track, group) in pending)
         {
             var artistName = group.Items[0].ArtistName;
-            if (artistName is null || !artistCache.TryGetValue(artistName, out var person)) continue;
+            if (artistName is null || !artistCache.TryGetValue(artistName, out var artist)) continue;
 
-            context.PersonRoles.Add(new MusicArtist
-            {
-                PersonId = person.Id,
-                MediaId = track.Id,
-                IsGuest = false
-            });
+            track.ArtistId = artist.Id;
         }
     }
 
@@ -602,8 +569,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
                 t.Id,
                 t.Title,
                 AlbumTitle = t.Album != null ? t.Album.Title : null,
-                ArtistName = t.PersonRoles.OfType<MusicArtist>().Select(r => r.Person.Name).FirstOrDefault()
-                          ?? (t.Album != null ? t.Album.PersonRoles.OfType<MusicArtist>().Select(r => r.Person.Name).FirstOrDefault() : null)
+                ArtistName = t.Artist != null ? t.Artist.Title : (t.Album != null ? t.Album.Artist!.Title : null)
             })
             .ToListAsync(cancellationToken);
 

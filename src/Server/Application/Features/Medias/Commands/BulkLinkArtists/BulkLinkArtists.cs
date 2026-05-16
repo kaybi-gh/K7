@@ -1,8 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
-using K7.Server.Domain.Entities.Metadatas;
-using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Entities.Medias;
 using K7.Shared.Dtos.Requests;
 
 namespace K7.Server.Application.Features.Medias.Commands.BulkLinkArtists;
@@ -23,70 +22,68 @@ public class BulkLinkArtistsCommandHandler(IApplicationDbContext context)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        // Find or create persons
-        var existingPersons = await context.Persons
-            .Where(p => artistNames.Contains(p.Name))
+        // Find or create MusicArtist media entities
+        var existingArtists = await context.Medias.OfType<MusicArtist>()
+            .Where(a => artistNames.Contains(a.Title!))
             .ToListAsync(cancellationToken);
 
-        var personCache = new Dictionary<string, Person>(StringComparer.OrdinalIgnoreCase);
-        foreach (var person in existingPersons)
+        var artistCache = new Dictionary<string, MusicArtist>(StringComparer.OrdinalIgnoreCase);
+        foreach (var artist in existingArtists)
         {
-            personCache.TryAdd(person.Name, person);
+            if (artist.Title is not null)
+                artistCache.TryAdd(artist.Title, artist);
         }
 
-        var newPersons = new List<Person>();
+        var newArtists = new List<MusicArtist>();
         foreach (var name in artistNames)
         {
-            if (!personCache.ContainsKey(name))
+            if (!artistCache.ContainsKey(name))
             {
-                var person = new Person { Name = name };
-                context.Persons.Add(person);
-                newPersons.Add(person);
-                personCache[name] = person;
+                var artist = new MusicArtist { Title = name };
+                context.Medias.Add(artist);
+                newArtists.Add(artist);
+                artistCache[name] = artist;
             }
         }
 
-        if (newPersons.Count > 0)
+        if (newArtists.Count > 0)
         {
             await context.SaveChangesAsync(cancellationToken);
         }
 
-        // Find existing roles to avoid duplicates
+        // Load target medias
         var mediaIds = request.Items.Select(i => i.MediaId).Distinct().ToList();
-        var personIds = personCache.Values.Select(p => p.Id).ToList();
-
-        var existingRoles = await context.PersonRoles
-            .OfType<MusicArtist>()
-            .Where(r => mediaIds.Contains(r.MediaId) && personIds.Contains(r.PersonId))
-            .Select(r => new { r.PersonId, r.MediaId })
+        var medias = await context.Medias
+            .Where(m => mediaIds.Contains(m.Id))
             .ToListAsync(cancellationToken);
 
-        var existingRoleKeys = existingRoles
-            .Select(r => (r.PersonId, r.MediaId))
-            .ToHashSet();
+        var mediaMap = medias.ToDictionary(m => m.Id);
 
-        // Create missing roles
-        var created = 0;
+        // Link artists to albums/tracks via ArtistId
+        var linked = 0;
         foreach (var item in request.Items)
         {
-            if (!personCache.TryGetValue(item.ArtistName, out var person)) continue;
-            if (existingRoleKeys.Contains((person.Id, item.MediaId))) continue;
+            if (!artistCache.TryGetValue(item.ArtistName, out var artist)) continue;
+            if (!mediaMap.TryGetValue(item.MediaId, out var media)) continue;
 
-            existingRoleKeys.Add((person.Id, item.MediaId));
-            context.PersonRoles.Add(new MusicArtist
+            switch (media)
             {
-                PersonId = person.Id,
-                MediaId = item.MediaId,
-                IsGuest = false
-            });
-            created++;
+                case MusicAlbum album when album.ArtistId != artist.Id:
+                    album.ArtistId = artist.Id;
+                    linked++;
+                    break;
+                case MusicTrack track when track.ArtistId != artist.Id:
+                    track.ArtistId = artist.Id;
+                    linked++;
+                    break;
+            }
         }
 
-        if (created > 0)
+        if (linked > 0)
         {
             await context.SaveChangesAsync(cancellationToken);
         }
 
-        return created;
+        return linked;
     }
 }

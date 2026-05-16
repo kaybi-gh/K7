@@ -136,8 +136,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         {
             if (!string.IsNullOrEmpty(albumArtistName))
             {
-                var albumArtistPerson = await FindOrCreatePersonAsync(albumArtistName, cancellationToken);
-                album.PersonRoles.Add(new MusicArtist { PersonId = albumArtistPerson.Id, IsGuest = false });
+                var artist = await FindOrCreateMusicArtistAsync(albumArtistName, cancellationToken);
+                album.ArtistId = artist.Id;
             }
 
             if (firstTags?.Genres is { Count: > 0 })
@@ -237,8 +237,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             var artistName = tags?.Artists.FirstOrDefault() ?? identification.ArtistName;
             if (!string.IsNullOrEmpty(artistName))
             {
-                var trackArtistPerson = await FindOrCreatePersonAsync(artistName, cancellationToken);
-                track.PersonRoles.Add(new MusicArtist { PersonId = trackArtistPerson.Id, IsGuest = false });
+                var trackArtist = await FindOrCreateMusicArtistAsync(artistName, cancellationToken);
+                track.ArtistId = trackArtist.Id;
             }
 
             track.AddDomainEvent(new MediaCreatedEvent(track));
@@ -370,7 +370,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 a.Title == resolvedAlbumName &&
                 (a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId))
                     || !a.Tracks.Any(t => t.IndexedFiles.Any())) &&
-                (artistName == null || a.PersonRoles.Any(r => r.Person.Name == artistName)) &&
+                (artistName == null || (a.Artist != null && a.Artist.Title == artistName)) &&
                 (releaseYear == null || a.ReleaseDate == null || a.ReleaseDate == releaseYear),
                 cancellationToken);
 
@@ -397,6 +397,20 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         await _context.SaveChangesAsync(cancellationToken);
 
         return person;
+    }
+
+    private async Task<Domain.Entities.Medias.MusicArtist> FindOrCreateMusicArtistAsync(string name, CancellationToken cancellationToken)
+    {
+        var existing = await _context.Medias.OfType<Domain.Entities.Medias.MusicArtist>()
+            .FirstOrDefaultAsync(a => a.Title == name, cancellationToken);
+
+        if (existing is not null) return existing;
+
+        var artist = new Domain.Entities.Medias.MusicArtist { Title = name };
+        _context.Medias.Add(artist);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return artist;
     }
 
     private async Task TryAttachAlbumCoverAsync(
