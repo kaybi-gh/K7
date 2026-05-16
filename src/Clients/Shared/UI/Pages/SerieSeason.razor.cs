@@ -206,7 +206,8 @@ public partial class SerieSeason
             videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             videoMetadata.VideoResolution,
-            videoMetadata.Thumbnails?.Uri?.ToString());
+            videoMetadata.Thumbnails?.Uri?.ToString(),
+            episode.Id);
 
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })

@@ -310,6 +310,7 @@ public sealed class MockMediaService : IMediaService
     public Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RefreshMediaMetadataAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default) => Task.FromResult<LiteSerieEpisodeDto?>(null);
+    public Task<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>>([]);
 }
 
 public sealed class MockLibraryService : ILibraryService
@@ -426,6 +427,9 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
     public Task UpdateHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.VideoPlayerSettingsDto());
+    public Task UpdateUserVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockServerPreferencesService : IServerPreferencesService
@@ -434,6 +438,11 @@ public sealed class MockServerPreferencesService : IServerPreferencesService
     public Task<K7.Shared.Dtos.Home.HomeLayoutDto> GetEffectiveServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.Home.HomeLayoutDto { Rows = [] });
     public Task UpdateServerHomeLayoutAsync(K7.Shared.Dtos.Home.HomeLayoutDto layout, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.ServerFeatureFlagsDto());
+    public Task UpdateServerFeatureFlagsAsync(K7.Shared.Dtos.ServerFeatureFlagsDto flags, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.VideoPlayerSettingsDto?>(null);
+    public Task UpdateServerVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockCollectionService : ICollectionService

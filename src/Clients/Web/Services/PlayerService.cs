@@ -205,7 +205,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     /// </summary>
     private string? _baseManifestUrl;
 
-    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, CancellationToken cancellationToken = default)
+    public async Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, CancellationToken cancellationToken = default)
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
@@ -242,6 +242,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         var playerSource = new PlayerSource
         {
+            MediaId = mediaId,
             Url = _baseManifestUrl,
             MimeType = session.Source.MimeType,
             ThumbnailsUrl = thumbnailsUrl
