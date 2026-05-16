@@ -3,7 +3,6 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
-using K7.Shared.Dtos.Entities.Persons;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -19,7 +18,7 @@ public partial class MusicArtistDetail
     [Inject]
     private IK7DialogService DialogService { get; set; } = default!;
 
-    private PersonDto? _person;
+    private MusicArtistDto? _artist;
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
     private List<TrackViewModel> _tracks = [];
@@ -28,29 +27,19 @@ public partial class MusicArtistDetail
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
-        _person = await k7ServerService.GetPersonAsync(Guid.Parse(Id));
+        var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
 
-        if (_person is not null)
+        if (media is MusicArtistDto artist)
         {
+            _artist = artist;
+
             _portraitUrl = apiClient.GetAbsoluteUri(
-                _person.PortraitPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+                artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+                    .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
-            var roleMedias = _person.Roles.Select(r => r.Media).Where(m => m is not null);
+            var albums = artist.Albums ?? [];
 
-            var playableTracks = roleMedias
-                .OfType<LiteMusicTrackDto>()
-                .Where(t => t.IndexedFileId.HasValue)
-                .DistinctBy(t => t.Id)
-                .ToList();
-
-            var playableAlbumIds = playableTracks
-                .Select(t => t.AlbumId)
-                .ToHashSet();
-
-            _albums = roleMedias
-                .OfType<LiteMusicAlbumDto>()
-                .Where(a => playableAlbumIds.Contains(a.Id))
-                .DistinctBy(a => a.Id)
+            _albums = albums
                 .Select(album => new MediaCardViewModel
                 {
                     Id = album.Id.ToString(),
@@ -62,7 +51,13 @@ public partial class MusicArtistDetail
                 })
                 .ToList();
 
-            _tracks = playableTracks
+            var allTracks = albums
+                .SelectMany(a => a.Tracks ?? [])
+                .Where(t => t.IndexedFileId.HasValue)
+                .DistinctBy(t => t.Id)
+                .ToList();
+
+            _tracks = allTracks
                 .OrderBy(t => t.TrackNumber)
                 .Select(track => new TrackViewModel
                 {
@@ -70,7 +65,7 @@ public partial class MusicArtistDetail
                     IndexedFileId = track.IndexedFileId,
                     Title = track.Title ?? S["Untitled"],
                     TrackNumber = track.TrackNumber,
-                    AlbumTitle = _albums.FirstOrDefault(a => a.Id == track.AlbumId.ToString())?.Title,
+                    AlbumTitle = albums.FirstOrDefault(a => a.Tracks?.Any(t => t.Id == track.Id) == true)?.Title,
                     CoverUrl = apiClient.GetAbsoluteUri(
                         track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                             .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
@@ -112,15 +107,15 @@ public partial class MusicArtistDetail
 
     private Task OpenBiographyDialogAsync()
     {
-        if (_person is null || string.IsNullOrWhiteSpace(_person.Biography)) return Task.CompletedTask;
+        if (_artist is null || string.IsNullOrWhiteSpace(_artist.Biography)) return Task.CompletedTask;
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
         var parameters = new K7DialogParameters
         {
-            { "ContentText", _person.Biography },
+            { "ContentText", _artist.Biography },
             { "ButtonText", S["Cancel"].Value }
         };
-        return DialogService.ShowAsync<OverviewDialog>(_person.Name ?? L["Biography"], parameters, options);
+        return DialogService.ShowAsync<OverviewDialog>(_artist.Title ?? L["Biography"], parameters, options);
     }
 
     private List<AudioQueueItem> BuildQueueItems()
@@ -132,7 +127,7 @@ public partial class MusicArtistDetail
                 IndexedFileId = t.IndexedFileId!.Value,
                 MediaId = t.Id,
                 Title = t.Title,
-                Artist = _person?.Name,
+                Artist = _artist?.Title,
                 AlbumTitle = t.AlbumTitle,
                 CoverUrl = t.CoverUrl,
                 Duration = t.Duration

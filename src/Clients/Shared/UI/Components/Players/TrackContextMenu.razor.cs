@@ -43,12 +43,12 @@ public partial class TrackContextMenu
 
     private async Task RadioArtist()
     {
-        if (Track.ArtistPersonId is null) return;
+        if (Track.ArtistId is null) return;
 
         var result = await K7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
         {
             MediaTypes = [MediaType.MusicTrack],
-            PersonIds = [Track.ArtistPersonId.Value],
+            ArtistIds = [Track.ArtistId.Value],
             PageNumber = 1,
             PageSize = 200
         });
@@ -98,7 +98,7 @@ public partial class TrackContextMenu
         Title = t.Title ?? S["Untitled"],
         Artist = t.ArtistName,
         AlbumTitle = t.AlbumTitle,
-        ArtistPersonId = t.ArtistPersonId,
+        ArtistId = t.ArtistId,
         Genre = t.Genre,
         CoverUrl = ApiClient.GetAbsoluteUri(
             t.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?

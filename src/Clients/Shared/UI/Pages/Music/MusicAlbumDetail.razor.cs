@@ -1,8 +1,7 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
-using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -39,16 +38,11 @@ public partial class MusicAlbumDetail
                 coverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
             _coverDominantColor = coverPicture?.DominantColor;
 
-            _artists = album.PersonRoles?
-                .OfType<LiteMusicArtistRoleDto>()
-                .Where(r => r.Person is not null)
-                .Select(r => new ArtistInfo(r.Person!.Id, r.Person.Name ?? S["UnknownArtist"]))
-                .DistinctBy(a => a.PersonId)
-                .ToList() ?? [];
+            _artists = album.ArtistId.HasValue
+                ? [new ArtistInfo(album.ArtistId.Value, album.ArtistName ?? S["UnknownArtist"])]
+                : [];
 
-            var artistName = _artists.Count > 0
-                ? string.Join(", ", _artists.Select(a => a.Name))
-                : null;
+            var artistName = album.ArtistName;
 
             _tracks = (album.Tracks ?? [])
                 .OrderBy(t => t.TrackNumber)
@@ -59,7 +53,7 @@ public partial class MusicAlbumDetail
                     Title = t.Title ?? S["Untitled"],
                     TrackNumber = t.TrackNumber,
                     ArtistName = artistName,
-                    ArtistPersonId = _artists.FirstOrDefault()?.PersonId,
+                    ArtistId = album.ArtistId,
                     Genre = album.Genres?.FirstOrDefault(),
                     CoverUrl = _coverUrl,
                     CoverDominantColor = _coverDominantColor,
@@ -119,17 +113,13 @@ public partial class MusicAlbumDetail
 
     private AudioQueueItem BuildQueueItem(TrackViewModel t)
     {
-        var artistName = _artists.Count > 0
-            ? string.Join(", ", _artists.Select(a => a.Name))
-            : null;
-
         return new AudioQueueItem
         {
             IndexedFileId = t.IndexedFileId ?? Guid.Empty,
             MediaId = t.Id,
             Title = t.Title,
-            Artist = artistName,
-            ArtistPersonId = t.ArtistPersonId,
+            Artist = t.ArtistName,
+            ArtistId = t.ArtistId,
             AlbumTitle = _album?.Title,
             Genre = t.Genre,
             CoverUrl = t.CoverUrl,
@@ -159,7 +149,7 @@ public partial class MusicAlbumDetail
         return $"{ts.Minutes} min";
     }
 
-    internal sealed record ArtistInfo(Guid PersonId, string Name);
+    internal sealed record ArtistInfo(Guid Id, string Name);
 
     internal sealed record TrackViewModel
     {
@@ -168,7 +158,7 @@ public partial class MusicAlbumDetail
         public required string Title { get; init; }
         public int? TrackNumber { get; init; }
         public string? ArtistName { get; init; }
-        public Guid? ArtistPersonId { get; init; }
+        public Guid? ArtistId { get; init; }
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
         public string? CoverDominantColor { get; init; }

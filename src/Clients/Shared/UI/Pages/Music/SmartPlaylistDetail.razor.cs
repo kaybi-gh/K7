@@ -1,4 +1,4 @@
-ï»¿using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
@@ -51,7 +51,7 @@ public partial class SmartPlaylistDetail
         Order = item.Order,
         Title = item.MediaTitle ?? S["Untitled"],
         ArtistName = item.ArtistName,
-        ArtistPersonId = item.ArtistPersonId,
+        ArtistId = item.ArtistId,
         AlbumTitle = item.AlbumTitle,
         Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
@@ -101,7 +101,7 @@ public partial class SmartPlaylistDetail
         MediaId = i.MediaId,
         Title = i.Title,
         Artist = i.ArtistName,
-        ArtistPersonId = i.ArtistPersonId,
+        ArtistId = i.ArtistId,
         AlbumTitle = i.AlbumTitle,
         Genre = i.Genre,
         CoverUrl = i.CoverUrl,
@@ -180,7 +180,7 @@ public partial class SmartPlaylistDetail
         {
             var field = GetFieldLabel(r.Field);
             var op = GetOperatorLabel(r.Operator);
-            return string.IsNullOrEmpty(r.Value) ? $"{field} {op}" : $"{field} {op} Â« {r.Value} Â»";
+            return string.IsNullOrEmpty(r.Value) ? $"{field} {op}" : $"{field} {op} « {r.Value} »";
         });
 
         var desc = string.Join(condition, rules);
@@ -192,18 +192,18 @@ public partial class SmartPlaylistDetail
     {
         SmartPlaylistField.Title => "Titre",
         SmartPlaylistField.Genre => "Genre",
-        SmartPlaylistField.Year => "AnnÃ©e",
+        SmartPlaylistField.Year => "Année",
         SmartPlaylistField.Rating => "Note",
         SmartPlaylistField.PlayCount => "Nb lectures",
         SmartPlaylistField.DateAdded => "Date d'ajout",
-        SmartPlaylistField.LastPlayed => "DerniÃ¨re lecture",
-        SmartPlaylistField.IsCompleted => "TerminÃ©",
+        SmartPlaylistField.LastPlayed => "Dernière lecture",
+        SmartPlaylistField.IsCompleted => "Terminé",
         SmartPlaylistField.ArtistName => "Artiste",
         SmartPlaylistField.AlbumTitle => "Album",
-        SmartPlaylistField.TrackNumber => "NÂ° piste",
-        SmartPlaylistField.DiscNumber => "NÂ° disque",
+        SmartPlaylistField.TrackNumber => "N° piste",
+        SmartPlaylistField.DiscNumber => "N° disque",
         SmartPlaylistField.Bpm => "BPM",
-        SmartPlaylistField.Duration => "DurÃ©e",
+        SmartPlaylistField.Duration => "Durée",
         SmartPlaylistField.OriginalLanguage => "Langue",
         _ => field.ToString()
     };
@@ -215,8 +215,8 @@ public partial class SmartPlaylistDetail
         SmartPlaylistOperator.Contains => "contient",
         SmartPlaylistOperator.GreaterThan => ">",
         SmartPlaylistOperator.LessThan => "<",
-        SmartPlaylistOperator.GreaterThanOrEqual => "â‰¥",
-        SmartPlaylistOperator.LessThanOrEqual => "â‰¤",
+        SmartPlaylistOperator.GreaterThanOrEqual => "=",
+        SmartPlaylistOperator.LessThanOrEqual => "=",
         SmartPlaylistOperator.InLast => "dans les derniers",
         SmartPlaylistOperator.IsEmpty => "est vide",
         SmartPlaylistOperator.IsNotEmpty => "n'est pas vide",
@@ -235,7 +235,7 @@ public partial class SmartPlaylistDetail
     private static string FormatRelativeTime(DateTimeOffset dateTime)
     {
         var diff = DateTimeOffset.UtcNow - dateTime;
-        if (diff.TotalMinutes < 1) return "Ã  l'instant";
+        if (diff.TotalMinutes < 1) return "à l'instant";
         if (diff.TotalMinutes < 60) return $"il y a {(int)diff.TotalMinutes} min";
         if (diff.TotalHours < 24) return $"il y a {(int)diff.TotalHours} h";
         return $"il y a {(int)diff.TotalDays} j";
@@ -248,7 +248,7 @@ public partial class SmartPlaylistDetail
         public int Order { get; init; }
         public required string Title { get; init; }
         public string? ArtistName { get; init; }
-        public Guid? ArtistPersonId { get; init; }
+        public Guid? ArtistId { get; init; }
         public string? AlbumTitle { get; init; }
         public string? Genre { get; init; }
         public Guid? IndexedFileId { get; init; }

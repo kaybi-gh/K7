@@ -12,6 +12,7 @@ public static class LiteMediaMappings
     {
         var kind = item switch
         {
+            LiteMusicArtistDto => MediaCardKind.Cover,
             LiteMusicAlbumDto => MediaCardKind.Cover,
             LiteMusicTrackDto => MediaCardKind.Cover,
             LiteMovieDto => MediaCardKind.Poster,
