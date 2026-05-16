@@ -61,6 +61,7 @@ public partial class SearchPage
         LiteMovieDto => $"/movies/{media.Id}",
         LiteSerieDto => $"/series/{media.Id}",
         LiteMusicAlbumDto => $"/music/albums/{media.Id}",
+        LiteMusicArtistDto => $"/music/artists/{media.Id}",
         _ => "#"
     };
 

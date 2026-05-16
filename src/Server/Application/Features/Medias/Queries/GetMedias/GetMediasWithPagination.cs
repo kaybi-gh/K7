@@ -183,18 +183,20 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
     private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)
     {
         var includeSeasons = request.MediaTypes?.Contains(MediaType.SerieSeason) == true;
-        query = query.Where(x => x is MusicAlbum || x is Serie || (includeSeasons && x is SerieSeason) || x.IndexedFiles.Any());
+        query = query.Where(x => x is MusicAlbum || x is MusicArtist || x is Serie || (includeSeasons && x is SerieSeason) || x.IndexedFiles.Any());
 
         if (request.LibraryIds?.Length > 0)
         {
             query = query.Where(x =>
                 x is MusicAlbum
                     ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId)))
-                    : x is Serie
-                        ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))))
-                        : x is SerieSeason
-                            ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId)))
-                            : x.IndexedFiles != null && x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId)));
+                    : x is MusicArtist
+                        ? ((MusicArtist)x).Albums.Any(a => a.Tracks.Any(t => t.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))))
+                        : x is Serie
+                            ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))))
+                            : x is SerieSeason
+                                ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId)))
+                                : x.IndexedFiles != null && x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId)));
         }
 
         if (request.Ids?.Length > 0)
