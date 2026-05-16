@@ -30,4 +30,6 @@
   <data name="Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="ActiveStreams" xml:space="preserve"><value>Active streams</value></data>
   <data name="HomeLayout" xml:space="preserve"><value>Home layout</value></data>
+  <data name="FeatureFlags" xml:space="preserve"><value>Feature flags</value></data>
+  <data name="VideoPlayer" xml:space="preserve"><value>Video player</value></data>
 </root>
