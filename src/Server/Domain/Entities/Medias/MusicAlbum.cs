@@ -5,8 +5,11 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
 {
     public string? Overview { get; set; }
 
-    public IList<MusicTrack> Tracks { get; set; } = [];
+    public Guid? ArtistId { get; set; }
+    public MusicArtist? Artist { get; set; }
 
+    public IList<MusicTrack> Tracks { get; set; } = [];
+    public IList<MusicArtistCredit> ArtistCredits { get; set; } = [];
 
 
     public void ApplyMetadata(ExternalMusicAlbumMetadata metadata)
