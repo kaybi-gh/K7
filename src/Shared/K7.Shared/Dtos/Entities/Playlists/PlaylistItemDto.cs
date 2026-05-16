@@ -7,7 +7,7 @@ public sealed record PlaylistItemDto
     public int Order { get; init; }
     public string? MediaTitle { get; init; }
     public string? ArtistName { get; init; }
-    public Guid? ArtistPersonId { get; init; }
+    public Guid? ArtistId { get; init; }
     public string? AlbumTitle { get; init; }
     public string? Genre { get; init; }
     public Guid? IndexedFileId { get; init; }

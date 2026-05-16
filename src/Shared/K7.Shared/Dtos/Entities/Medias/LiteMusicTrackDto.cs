@@ -8,7 +8,7 @@ public sealed record LiteMusicTrackDto : LiteMediaDto
     public double? Duration { get; init; }
     public string? AlbumTitle { get; init; }
     public string? ArtistName { get; init; }
-    public Guid? ArtistPersonId { get; init; }
+    public Guid? ArtistId { get; init; }
     public string? Genre { get; init; }
     public double? Bpm { get; init; }
     public string? MusicalKey { get; init; }
