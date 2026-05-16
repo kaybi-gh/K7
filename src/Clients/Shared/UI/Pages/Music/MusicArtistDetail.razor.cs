@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -22,6 +23,7 @@ public partial class MusicArtistDetail
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
     private List<TrackViewModel> _tracks = [];
+    private List<LitePersonRoleDto> _members = [];
     private bool _loading = true;
 
     protected override async Task OnParametersSetAsync()
@@ -72,6 +74,13 @@ public partial class MusicArtistDetail
                     Duration = track.Duration ?? 0,
                     IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
                 })
+                .ToList();
+
+            _members = (artist.PersonRoles ?? [])
+                .OfType<LiteMusicArtistRoleDto>()
+                .Where(r => r.Person is not null)
+                .OrderBy(r => r.Order ?? int.MaxValue)
+                .Cast<LitePersonRoleDto>()
                 .ToList();
         }
 

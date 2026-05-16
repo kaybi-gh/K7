@@ -44,6 +44,10 @@ else
                 {
                     <div class="person-subtitle"><span class="person-subtitle-inner">@liteActorDto.CharacterName</span></div>
                 }
+                else if (LitePersonRoleDto is LiteMusicArtistRoleDto liteMusicArtistRoleDto && !string.IsNullOrEmpty(liteMusicArtistRoleDto.Role))
+                {
+                    <div class="person-subtitle"><span class="person-subtitle-inner">@liteMusicArtistRoleDto.Role</span></div>
+                }
             </div>
         </div>
     </a>

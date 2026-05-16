@@ -1,5 +1,6 @@
 @page "/music/artists/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.PersonRoles
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject IStringLocalizer<MusicArtistDetail> L
@@ -71,6 +72,20 @@
                         {
                             <CarouselItem @key="album.Id">
                                 <MediaCard Model="album" Variant="MediaCardVariant.Cover" Href="@($"/music/albums/{album.Id}")" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                </div>
+            }
+
+            @if (_members.Count > 0)
+            {
+                <div class="artist-members-section">
+                    <Carousel Title="@L["MembersSection"]">
+                        @foreach (var member in _members)
+                        {
+                            <CarouselItem @key="member.Id">
+                                <PersonRole LitePersonRoleDto="@member" />
                             </CarouselItem>
                         }
                     </Carousel>
