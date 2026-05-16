@@ -310,6 +310,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("ChromaprintAnalyzedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ChromaprintDurationSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<byte[]>("ChromaprintFingerprint")
+                        .HasColumnType("bytea");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
@@ -577,6 +586,36 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasDiscriminator<int>("Type");
 
                     b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MediaSegment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("DetectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("EndMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("StartMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaId");
+
+                    b.HasIndex("MediaId", "Type");
+
+                    b.ToTable("MediaSegments");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicArtistCredit", b =>
@@ -2586,6 +2625,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("MusicTrack");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MediaSegment", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany("Segments")
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MusicArtistCredit", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.MusicTrack", "Media")
@@ -3120,6 +3170,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Pictures");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("Segments");
 
                     b.Navigation("UserMediaStates");
                 });
