@@ -21,7 +21,7 @@
 else
 {
     <div class="media-card @VariantClass" @onfocusin="OnFocused">
-        <div class="media-card-container">
+        <div class="media-card-container" data-longpress="@(ExcludeMenuEnabled ? "true" : null)">
             <a class="media-card-link focusable" href="@Href">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
@@ -65,7 +65,7 @@ else
 
             @if (ExcludeMenuEnabled)
             {
-                <div class="media-card-menu">
+                <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target>
                     <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged">
                         <ActivatorContent>
                             <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
