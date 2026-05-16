@@ -7,5 +7,6 @@ public enum MediaType
     MusicTrack = 3,
     Serie = 4,
     SerieEpisode = 5,
-    SerieSeason = 6
+    SerieSeason = 6,
+    MusicArtist = 7
 }
