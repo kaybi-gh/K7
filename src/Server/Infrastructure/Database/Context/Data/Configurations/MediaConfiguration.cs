@@ -14,6 +14,7 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasValue<Movie>(MediaType.Movie)
             .HasValue<MusicAlbum>(MediaType.MusicAlbum)
             .HasValue<MusicTrack>(MediaType.MusicTrack)
+            .HasValue<MusicArtist>(MediaType.MusicArtist)
             .HasValue<Serie>(MediaType.Serie)
             .HasValue<SerieEpisode>(MediaType.SerieEpisode)
             .HasValue<SerieSeason>(MediaType.SerieSeason);
@@ -37,6 +38,24 @@ public class MovieConfiguration : IEntityTypeConfiguration<Movie>
     }
 }
 
+public class MusicArtistConfiguration : IEntityTypeConfiguration<MusicArtist>
+{
+    public void Configure(EntityTypeBuilder<MusicArtist> builder)
+    {
+        builder
+            .HasMany(a => a.Albums)
+            .WithOne(al => al.Artist)
+            .HasForeignKey(al => al.ArtistId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder
+            .HasMany(a => a.ArtistCredits)
+            .WithOne(c => c.MusicArtist)
+            .HasForeignKey(c => c.MusicArtistId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class MusicAlbumConfiguration : IEntityTypeConfiguration<MusicAlbum>
 {
     public void Configure(EntityTypeBuilder<MusicAlbum> builder)
@@ -46,6 +65,12 @@ public class MusicAlbumConfiguration : IEntityTypeConfiguration<MusicAlbum>
             .WithOne(t => t.Album)
             .HasForeignKey(t => t.AlbumId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(a => a.ArtistCredits)
+            .WithOne(c => c.Media as MusicAlbum!)
+            .HasForeignKey(c => c.MediaId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -53,6 +78,25 @@ public class MusicTrackConfiguration : IEntityTypeConfiguration<MusicTrack>
 {
     public void Configure(EntityTypeBuilder<MusicTrack> builder)
     {
+        builder
+            .HasOne(t => t.Artist)
+            .WithMany()
+            .HasForeignKey(t => t.ArtistId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder
+            .HasMany(t => t.ArtistCredits)
+            .WithOne(c => c.Media as MusicTrack!)
+            .HasForeignKey(c => c.MediaId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class MusicArtistCreditConfiguration : IEntityTypeConfiguration<MusicArtistCredit>
+{
+    public void Configure(EntityTypeBuilder<MusicArtistCredit> builder)
+    {
+        builder.HasIndex(c => new { c.MusicArtistId, c.MediaId }).IsUnique();
     }
 }
 
