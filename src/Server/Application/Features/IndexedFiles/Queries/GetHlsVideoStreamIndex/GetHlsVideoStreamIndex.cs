@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsVideoStreamSegment;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
@@ -56,7 +57,6 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
         Guard.Against.Null(entity.FileMetadata);
-        Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
 
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
@@ -64,39 +64,43 @@ public class GetHlsVideoStreamIndexQueryHandler : IRequestHandler<GetHlsVideoStr
             return Results.NotFound();
         }
 
-        var isTransmuxing = query.VideoResolutionIdentifier == "original";
+        var isTransmuxing = query.VideoResolutionIdentifier == "original"
+            && string.IsNullOrEmpty(query.TranscodingVideoCodec);
+
+        double[] segmentDurations;
+        if (isTransmuxing)
+        {
+            Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
+            segmentDurations = entity.FileMetadata.HlsSegments
+                .Select(s => s.Duration / 1000.0).ToArray();
+        }
+        else
+        {
+            var totalDurationMs = entity.FileMetadata.HlsSegments is { Count: > 0 } segments
+                ? segments.Sum(s => s.Duration)
+                : entity.FileMetadata is VideoFileMetadata v
+                    ? (long)v.Duration.TotalMilliseconds
+                    : throw new InvalidOperationException("Cannot determine duration for HLS transcoding");
+
+            segmentDurations = ComputeEqualLengthSegments(6000, totalDurationMs);
+        }
+
         var indexPlaylist = GenerateHlsIndexContent(
-            entity.FileMetadata.HlsSegments, 
-            isTransmuxing,
+            segmentDurations,
             query.StreamSessionId,
             query.TranscodingVideoCodec);
         return Results.Content(indexPlaylist, "application/vnd.apple.mpegurl");
     }
 
     private static string GenerateHlsIndexContent(
-        IEnumerable<HlsSegment> hlsSegments, 
-        bool isTransmuxing,
+        double[] segmentDurations,
         Guid streamSessionId,
         string? transcodingVideoCodec)
     {
-        var segmentsList = hlsSegments.ToList();
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
         content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
-        
-        double[] segmentDurations;
-        if (isTransmuxing)
-        {
-            // Use native keyframe-based segments
-            segmentDurations = segmentsList.Select(s => s.Duration / 1000.0).ToArray();
-        }
-        else
-        {
-            // Generate equal-length segments (6s each, except last)
-            var totalDurationMs = segmentsList.Sum(s => s.Duration);
-            segmentDurations = ComputeEqualLengthSegments(6000, totalDurationMs);
-        }
-        
+
         // Build query string for segment URLs
         var queryParams = new List<string>
         {

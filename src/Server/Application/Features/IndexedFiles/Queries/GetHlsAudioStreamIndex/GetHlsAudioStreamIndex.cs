@@ -3,6 +3,7 @@ using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
@@ -48,7 +49,6 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
         Guard.Against.NotFound(query.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
         Guard.Against.Null(entity.FileMetadata);
-        Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
 
         var file = new FileInfo(entity.Path);
         if (!file.Exists)
@@ -56,8 +56,17 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
             return Results.NotFound();
         }
 
+        var totalDurationMs = entity.FileMetadata.HlsSegments is { Count: > 0 } segments
+            ? segments.Sum(s => s.Duration)
+            : entity.FileMetadata switch
+            {
+                VideoFileMetadata v => (long)v.Duration.TotalMilliseconds,
+                AudioFileMetadata a => (long)a.Duration.TotalMilliseconds,
+                _ => throw new InvalidOperationException("Cannot determine duration for HLS audio stream")
+            };
+
         var indexPlaylist = GenerateHlsAudioIndexContent(
-            entity.FileMetadata.HlsSegments,
+            totalDurationMs,
             query.StreamSessionId,
             query.TranscodingAudioCodec);
 
@@ -65,16 +74,14 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
     }
 
     private static string GenerateHlsAudioIndexContent(
-        IEnumerable<HlsSegment> hlsSegments,
+        long totalDurationMs,
         Guid streamSessionId,
         string? transcodingAudioCodec)
     {
-        var segmentsList = hlsSegments.ToList();
         var content = new StringBuilder();
         content.AppendLine("#EXTM3U");
         content.AppendLine("#EXT-X-PLAYLIST-TYPE:VOD");
 
-        var totalDurationMs = segmentsList.Sum(s => s.Duration);
         var segmentDurations = ComputeEqualLengthSegments(6000, totalDurationMs);
 
         var queryParams = new List<string>

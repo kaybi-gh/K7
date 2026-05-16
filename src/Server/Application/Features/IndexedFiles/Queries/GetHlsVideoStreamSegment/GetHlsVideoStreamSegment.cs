@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -85,7 +86,8 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             return Results.NotFound("Source file not found");
         }
 
-        var isTransmuxing = query.Quality == "original";
+        var isTransmuxing = query.Quality == "original"
+            && string.IsNullOrEmpty(query.TranscodingVideoCodec);
         List<HlsSegment> allSegments;
 
         if (isTransmuxing)
@@ -117,7 +119,12 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
                         .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
                         .ToListAsync(cancellationToken);
 
-            var totalDurationMs = dbSegments.Sum(s => s.Duration);
+            var totalDurationMs = dbSegments.Count > 0
+                ? dbSegments.Sum(s => s.Duration)
+                : entity.FileMetadata is VideoFileMetadata v
+                    ? (long)v.Duration.TotalMilliseconds
+                    : throw new InvalidOperationException("Cannot determine duration for HLS transcoding");
+
             allSegments = ComputeEqualLengthHlsSegments(totalDurationMs);
         }
 
