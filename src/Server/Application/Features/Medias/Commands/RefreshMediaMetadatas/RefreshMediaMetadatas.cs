@@ -273,77 +273,75 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private async Task EnrichArtistsAsync(MusicAlbum album, ExternalMusicAlbumMetadata metadata, string language, CancellationToken cancellationToken)
     {
         if (metadata.Artists is not { Count: > 0 }) return;
+        if (album.ArtistId is null) return;
 
-        var personIds = album.PersonRoles.Select(pr => pr.PersonId).Distinct().ToList();
-        var persons = await _context.Persons
-            .Include(p => p.ExternalIds)
-            .Include(p => p.PortraitPicture)
-            .Where(p => personIds.Contains(p.Id))
-            .ToListAsync(cancellationToken);
+        var artist = await _context.Medias.OfType<MusicArtist>()
+            .Include(a => a.ExternalIds)
+            .Include(a => a.Pictures)
+            .FirstOrDefaultAsync(a => a.Id == album.ArtistId, cancellationToken);
 
-        foreach (var artistMetadata in metadata.Artists)
+        if (artist is null) return;
+
+        var artistMetadata = metadata.Artists.FirstOrDefault(a =>
+            string.Equals(a.Name, artist.Title, StringComparison.OrdinalIgnoreCase));
+
+        if (artistMetadata is null) return;
+
+        var mbExternalId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
+        if (mbExternalId is null && !string.IsNullOrEmpty(artistMetadata.MusicBrainzArtistId))
         {
-            var person = persons.FirstOrDefault(p =>
-                string.Equals(p.Name, artistMetadata.Name, StringComparison.OrdinalIgnoreCase));
-
-            if (person == null) continue;
-
-            var mbExternalId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
-            if (mbExternalId == null && !string.IsNullOrEmpty(artistMetadata.MusicBrainzArtistId))
+            mbExternalId = new ExternalId
             {
-                mbExternalId = new ExternalId
-                {
-                    ProviderName = "musicbrainz",
-                    Value = artistMetadata.MusicBrainzArtistId,
-                    PersonId = person.Id
-                };
-                person.ExternalIds.Add(mbExternalId);
+                ProviderName = "musicbrainz",
+                Value = artistMetadata.MusicBrainzArtistId,
+                MediaId = artist.Id
+            };
+            artist.ExternalIds.Add(mbExternalId);
+        }
+
+        if (artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(artist.Biography)) return;
+
+        var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
+
+        if (wikidataId is null && _artistProviders.TryGetValue("musicbrainz", out var mbProvider))
+        {
+            var mbId = mbExternalId?.Value;
+            var mbDetails = !string.IsNullOrEmpty(mbId)
+                ? await mbProvider.FetchByProviderIdAsync(mbId, language, cancellationToken)
+                : await mbProvider.SearchByNameAsync(artist.Title!, language, cancellationToken);
+
+            if (mbDetails is not null)
+            {
+                if (!string.IsNullOrEmpty(mbDetails.MusicBrainzArtistId) && !artist.ExternalIds.Any(e => e.ProviderName == "musicbrainz"))
+                    artist.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = mbDetails.MusicBrainzArtistId, MediaId = artist.Id });
+
+                if (!string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(artist.Country))
+                    artist.Country = mbDetails.Country;
+
+                wikidataId = mbDetails.WikidataId;
+                if (!string.IsNullOrEmpty(wikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
+                    artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = wikidataId, MediaId = artist.Id });
             }
+        }
 
-            if (person.PortraitPicture != null && !string.IsNullOrEmpty(person.Biography)) continue;
-
-            var wikidataId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
-
-            if (wikidataId == null && _artistProviders.TryGetValue("musicbrainz", out var mbProvider))
+        if (!string.IsNullOrEmpty(wikidataId) && _artistProviders.TryGetValue("wikidata", out var wdProvider))
+        {
+            var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
+            if (details is not null)
             {
-                var mbId = mbExternalId?.Value;
-                var mbDetails = !string.IsNullOrEmpty(mbId)
-                    ? await mbProvider.FetchByProviderIdAsync(mbId, language, cancellationToken)
-                    : await mbProvider.SearchByNameAsync(person.Name, language, cancellationToken);
+                if (string.IsNullOrEmpty(artist.Biography) && !string.IsNullOrEmpty(details.Biography))
+                    artist.Biography = details.Biography;
 
-                if (mbDetails != null)
+                if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
                 {
-                    if (!string.IsNullOrEmpty(mbDetails.MusicBrainzArtistId) && !person.ExternalIds.Any(e => e.ProviderName == "musicbrainz"))
-                        person.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = mbDetails.MusicBrainzArtistId, PersonId = person.Id });
-
-                    if (!string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(person.BirthPlace))
-                        person.BirthPlace = mbDetails.Country;
-
-                    wikidataId = mbDetails.WikidataId;
-                    if (!string.IsNullOrEmpty(wikidataId))
-                        person.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = wikidataId, PersonId = person.Id });
-                }
-            }
-
-            if (!string.IsNullOrEmpty(wikidataId) && _artistProviders.TryGetValue("wikidata", out var wdProvider))
-            {
-                var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
-                if (details != null)
-                {
-                    if (string.IsNullOrEmpty(person.Biography) && !string.IsNullOrEmpty(details.Biography))
-                        person.Biography = details.Biography;
-
-                    if (person.PortraitPicture == null && !string.IsNullOrEmpty(details.ImageUrl))
+                    var picture = new MetadataPicture
                     {
-                        var picture = new MetadataPicture
-                        {
-                            Type = MetadataPictureType.Portrait,
-                            OriginalRemoteUri = new Uri(details.ImageUrl),
-                            PersonId = person.Id
-                        };
-                        picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
-                        person.PortraitPicture = picture;
-                    }
+                        Type = MetadataPictureType.Poster,
+                        OriginalRemoteUri = new Uri(details.ImageUrl),
+                        MediaId = artist.Id
+                    };
+                    picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
+                    artist.Pictures.Add(picture);
                 }
             }
         }
