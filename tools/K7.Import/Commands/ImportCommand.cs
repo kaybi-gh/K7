@@ -332,7 +332,7 @@ public sealed class ImportCommand
                             if (playlistMatches.Count == 0) continue;
 
                             ctx.Status($"Creating playlist '{playlist.Title}'...");
-                            var playlistId = await k7Client.CreatePlaylistAsync(playlist.Title, cancellationToken);
+                            var playlistId = await k7Client.CreatePlaylistAsync(playlist.Title, cancellationToken: cancellationToken);
 
                             foreach (var item in playlist.Items)
                             {
