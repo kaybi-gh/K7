@@ -108,7 +108,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     private void TogglePlayPause()
     {
-        if (_longPressTriggered)
+        if (_longPressTriggered || _keyHeldDown)
             return;
 
         if (Audio.PlaybackState == PlaybackState.Playing)
@@ -119,6 +119,7 @@ public partial class MiniMusicPlayer : IAsyncDisposable
 
     private CancellationTokenSource? _longPressCts;
     private bool _longPressTriggered;
+    private bool _keyHeldDown;
 
     private void OnFabPointerDown(PointerEventArgs e)
     {
@@ -137,6 +138,45 @@ public partial class MiniMusicPlayer : IAsyncDisposable
     {
         _longPressCts?.Cancel();
         _longPressCts = null;
+    }
+
+    private void OnFabKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key is not ("Enter" or " ")) return;
+        if (e.Repeat) return;
+
+        _keyHeldDown = true;
+        _longPressTriggered = false;
+        _longPressCts?.Cancel();
+        _longPressCts = new CancellationTokenSource();
+        var cts = _longPressCts;
+        _ = Task.Delay(600, cts.Token).ContinueWith(async _ =>
+        {
+            _longPressTriggered = true;
+            await InvokeAsync(async () => await StopAndHide());
+        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current);
+    }
+
+    private void OnFabKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key is not ("Enter" or " ")) return;
+
+        _longPressCts?.Cancel();
+        _longPressCts = null;
+
+        var wasShortPress = _keyHeldDown && !_longPressTriggered;
+        _keyHeldDown = false;
+
+        // Enter fires click on keydown (suppressed by _keyHeldDown), so
+        // we need to manually invoke the action on keyup for short presses.
+        // Space fires click on keyup after this handler, so it works naturally.
+        if (wasShortPress && e.Key is "Enter")
+        {
+            if (Audio.PlaybackState == PlaybackState.Playing)
+                Audio.Pause();
+            else
+                Audio.Play();
+        }
     }
 
     private async Task OnNext() => await Audio.NextAsync();

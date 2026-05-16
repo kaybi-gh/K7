@@ -40,7 +40,7 @@
 
             <div class="mini-player-center">
                 <div class="mini-player-controls">
-                    <div class="mini-player-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp">
+                    <div class="mini-player-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp" @onkeydown="OnFabKeyDown" @onkeyup="OnFabKeyUp">
                         <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
                     </div>
                     <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
