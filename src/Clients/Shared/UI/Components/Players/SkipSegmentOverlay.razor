@@ -1,0 +1,10 @@
+@inject IStringLocalizer<SkipSegmentOverlay> L
+
+@if (_visible && _activeSegment is not null)
+{
+    <div class="skip-overlay">
+        <K7Button Color="primary" OnClick="SkipSegment" StartIcon="@Phosphor.SkipForward">
+            @(_activeSegment.Type == K7.Shared.Enums.MediaSegmentType.Intro ? L["SkipIntro"] : L["SkipOutro"])
+        </K7Button>
+    </div>
+}
