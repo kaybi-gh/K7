@@ -1,0 +1,120 @@
+.device-activation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--space-8);
+}
+
+.device-activation__card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-6);
+    max-width: 1200px;
+    width: 100%;
+}
+
+.device-activation__title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-text);
+}
+
+.device-activation__columns {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--space-8);
+    width: 100%;
+}
+
+.device-activation__col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.device-activation__qr-label {
+    font-size: 1.5rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.device-activation__qr-wrapper {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    display: inline-block;
+    line-height: 0;
+}
+
+.device-activation__separator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.device-activation__separator-line {
+    width: 1px;
+    height: 80px;
+    background: var(--color-border);
+}
+
+.device-activation__separator-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.device-activation__instructions {
+    font-size: 1.4rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.device-activation__url {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    text-align: center;
+}
+
+.device-activation__code-label {
+    font-size: 1.4rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-top: var(--space-4);
+}
+
+.device-activation__code-box {
+    background: var(--color-surface-2);
+    padding: var(--space-4) var(--space-6);
+    border-radius: 8px;
+}
+
+.device-activation__code {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-align: center;
+    color: var(--color-text);
+}
+
+.device-activation__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    max-width: 600px;
+}
+
+.device-activation__timer {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+}

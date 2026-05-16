@@ -5,76 +5,61 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="container">
-    <div class="surface pa-4 pa-sm-8">
-        <div class="d-flex flex-col">
+<div class="device-activation">
+    <div class="device-activation__card">
+        @if (_loading)
+        {
             <K7Icon Name="television" Size="lg" Color="primary" />
-            <h5 class="text-center">@L["Title"]</h5>
+            <h1 class="device-activation__title">@L["Title"]</h1>
+            <K7Spinner Size="lg" />
+            <p class="device-activation__timer">@L["Activating"]</p>
+        }
+        else if (_authorized)
+        {
+            <K7Icon Name="check-circle" Size="lg" Color="success" />
+        }
+        else if (_deviceCode is not null)
+        {
+            <h1 class="device-activation__title">@L["Title"]</h1>
 
-            @if (_loading)
-            {
-                <div class="d-flex flex-col">
-                    <K7Spinner />
-                    <p class="text-sm color-secondary">@L["Activating"]</p>
-                </div>
-            }
-            else if (_authorized)
-            {
-                <K7Icon Name="check-circle" Size="lg" Color="success" />
-            }
-            else if (_deviceCode is not null)
-            {
-                <hr class="k7-divider my-2" />
+            <hr class="k7-divider" />
 
-                <div class="grid">
-                    <div>
-                        <div class="d-flex flex-col">
-                            <p class="text-center color-secondary">
-                                @L["Instructions"]
-                            </p>
-                            <h6 class="text-center color-primary">
-                                @_displayUri
-                            </h6>
-
-                            <p class="mt-4 text-center color-secondary">
-                                @L["CodeLabel"]
-                            </p>
-                            <div class="surface pa-3">
-                                <h4 class="text-center"
-                                         style="letter-spacing:0.2em; font-weight:bold;">
-                                    @_deviceCode.UserCode
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h6 class="color-secondary">OR</h6>
-                    </div>
-
-                    <div>
-                        <div class="d-flex flex-col">
-                            <p class="text-center color-secondary">
-                                @L["ScanQrCode"]
-                            </p>
-                            <div id="device-qr" style="background:white; padding:12px; border-radius:8px; display:inline-block;"></div>
-                        </div>
-                    </div>
+            <div class="device-activation__columns">
+                <div class="device-activation__col">
+                    <p class="device-activation__qr-label">@L["ScanQrCode"]</p>
+                    <div id="device-qr" class="device-activation__qr-wrapper"></div>
                 </div>
 
-                <hr class="k7-divider my-2" />
-
-                <div class="d-flex flex-col" style="width:100%;">
-                    <K7ProgressBar Indeterminate="true" />
-                    <p class="text-sm color-secondary">@L["Activating"]</p>
+                <div class="device-activation__separator">
+                    <div class="device-activation__separator-line"></div>
+                    <span class="device-activation__separator-text">@L["Separator"]</span>
+                    <div class="device-activation__separator-line"></div>
                 </div>
-            }
-            else
-            {
-                <K7Button Variant="filled" Color="primary" OnClick="StartDeviceCodeFlowAsync">
-                    @L["Activate"]
-                </K7Button>
-            }
-        </div>
+
+                <div class="device-activation__col">
+                    <p class="device-activation__instructions">@L["Instructions"]</p>
+                    <p class="device-activation__url">@_displayUri</p>
+                    <p class="device-activation__code-label">@L["CodeLabel"]</p>
+                    <div class="device-activation__code-box">
+                        <p class="device-activation__code">@_deviceCode.UserCode</p>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="k7-divider" />
+
+            <div class="device-activation__footer">
+                <K7ProgressBar Value="@_progress" />
+                <p class="device-activation__timer">@L["ExpiresIn", FormatTime()]</p>
+            </div>
+        }
+        else
+        {
+            <K7Icon Name="television" Size="lg" Color="primary" />
+            <h1 class="device-activation__title">@L["Title"]</h1>
+            <K7Button Variant="filled" Color="primary" OnClick="StartDeviceCodeFlowAsync">
+                @L["Activate"]
+            </K7Button>
+        }
     </div>
 </div>

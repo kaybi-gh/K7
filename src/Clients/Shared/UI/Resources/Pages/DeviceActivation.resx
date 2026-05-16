@@ -27,5 +27,7 @@
   <data name="Instructions" xml:space="preserve"><value>1. Depuis un navigateur sur un autre appareil, visitez :</value></data>
   <data name="CodeLabel" xml:space="preserve"><value>2. Et entrez le code :</value></data>
   <data name="ScanQrCode" xml:space="preserve"><value>Scannez le QR code ci-dessous</value></data>
+  <data name="Separator" xml:space="preserve"><value>OU</value></data>
+  <data name="ExpiresIn" xml:space="preserve"><value>Expire dans {0}</value></data>
 </root>
 
