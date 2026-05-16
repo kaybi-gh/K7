@@ -24,5 +24,8 @@
   <data name="AlbumsSection" xml:space="preserve"><value>Albums</value></data>
   <data name="TracksSection" xml:space="preserve"><value>Morceaux</value></data>
   <data name="ViewPerson" xml:space="preserve"><value>Voir la personne</value></data>
+  <data name="ArtistType" xml:space="preserve"><value>Artiste</value></data>
+  <data name="AlbumColumn" xml:space="preserve"><value>Album</value></data>
+  <data name="Biography" xml:space="preserve"><value>Biographie</value></data>
 </root>
 

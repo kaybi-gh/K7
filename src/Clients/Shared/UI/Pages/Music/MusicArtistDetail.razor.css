@@ -1,44 +1,220 @@
 .artist-detail-page {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-.artist-hero-bg {
-    position: absolute;
+.background-image {
+    position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    height: 300px;
+    width: 100%;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+    background-image: var(--background-picture);
     background-size: cover;
     background-position: center top;
-    filter: blur(40px) brightness(0.3);
-    transform: scale(1.2);
-    pointer-events: none;
-    z-index: 0;
+    background-repeat: no-repeat;
+    mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 70%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 70%);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    filter: brightness(0.35);
 }
 
-.artist-detail-page > .grid {
+.artist-hero-viewport {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    flex-shrink: 0;
+}
+
+.artist-hero {
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    padding: 32px 40px 16px;
+    flex: 1;
+    min-height: 0;
+}
+
+.artist-hero-portrait {
+    flex-shrink: 0;
 }
 
 ::deep .artist-portrait {
-    max-width: 200px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
-    aspect-ratio: 1;
-    box-shadow: var(--media-artwork-shadow, 0 4px 16px rgba(0, 0, 0, 0.4));
+    object-fit: cover;
+    box-shadow: var(--media-artwork-shadow, 0 8px 24px rgba(0, 0, 0, 0.5));
 }
 
-.overview-container {
-    max-width: 600px;
+.artist-avatar-placeholder {
+    width: 160px;
+    height: 160px;
+    font-size: 48px;
+    border-radius: 50%;
 }
 
-.overview-collapsed {
+.artist-type-label {
+    opacity: 0.6;
+    letter-spacing: 2px;
+}
+
+.artist-name {
+    font-weight: 800;
+    letter-spacing: -1px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.artist-bio {
+    max-width: 700px;
+    margin-top: 4px;
+    cursor: pointer;
+    border-radius: var(--radius-md, 8px);
+    padding: 8px;
+    margin-inline: -8px;
+    transition: background-color 0.2s ease;
+}
+
+.artist-bio:hover,
+.artist-bio:focus-visible {
+    background-color: rgba(128, 128, 128, 0.15);
+}
+
+.artist-bio-text {
+    opacity: 0.8;
+    line-height: 1.6;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    font-size: 0.9rem;
 }
 
-.cursor-pointer {
+.artist-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.artist-albums-section {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+::deep .carousel-wrapper {
+    --carousel-margin-start: 40px;
+}
+
+.artist-scroll-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    opacity: 0.4;
+    animation: bounce-hint 2s ease-in-out infinite;
+}
+
+@keyframes bounce-hint {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+}
+
+.artist-section {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.artist-tracks-section {
+    padding: 0 40px 32px;
+}
+
+.section-title {
+    margin-bottom: 8px;
+}
+
+.col-track-number {
+    width: 40px;
+}
+
+.col-album {
+    width: 200px;
+}
+
+.col-duration {
+    width: 80px;
+    text-align: right;
+}
+
+::deep .cursor-pointer {
     cursor: pointer;
+}
+
+.track-number {
+    font-size: 0.875rem;
+    opacity: 0.5;
+}
+
+.track-playing {
+    color: var(--color-accent);
+}
+
+.track-album {
+    font-size: 0.875rem;
+    opacity: 0.5;
+}
+
+.track-duration {
+    font-size: 0.875rem;
+    opacity: 0.5;
+}
+
+@media (max-width: 600px) {
+    .artist-hero {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 24px 16px 12px;
+        gap: 16px;
+    }
+
+    .artist-hero-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .artist-actions {
+        justify-content: center;
+    }
+
+    ::deep .artist-portrait {
+        width: 120px;
+        height: 120px;
+    }
+
+    .artist-avatar-placeholder {
+        width: 120px;
+        height: 120px;
+    }
+
+    .artist-tracks-section {
+        padding: 0 16px 24px;
+    }
+
+    .col-album {
+        display: none;
+    }
 }

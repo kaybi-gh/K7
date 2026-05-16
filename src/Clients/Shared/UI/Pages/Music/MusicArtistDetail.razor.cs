@@ -1,5 +1,6 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Persons;
@@ -15,12 +16,14 @@ public partial class MusicArtistDetail
     [Inject]
     private IAudioPlayerService Audio { get; set; } = default!;
 
+    [Inject]
+    private IK7DialogService DialogService { get; set; } = default!;
+
     private PersonDto? _person;
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
     private List<TrackViewModel> _tracks = [];
     private bool _loading = true;
-    private bool _overviewExpanded;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -85,21 +88,55 @@ public partial class MusicArtistDetail
         var track = args.Item;
         if (track is null) return;
 
-        var queueItems = _tracks
-            .Where(t => t.IndexedFileId.HasValue)
-            .Select(t => new AudioQueueItem
-        {
-            IndexedFileId = t.IndexedFileId!.Value,
-            MediaId = t.Id,
-            Title = t.Title,
-            Artist = _person?.Name,
-            AlbumTitle = t.AlbumTitle,
-            CoverUrl = t.CoverUrl,
-            Duration = t.Duration
-        }).ToList();
-
+        var queueItems = BuildQueueItems();
         var index = queueItems.FindIndex(q => q.MediaId == track.Id);
         await Audio.PlayTracksAsync(queueItems, index >= 0 ? index : 0);
+    }
+
+    private async Task PlayAll()
+    {
+        var queueItems = BuildQueueItems();
+        if (queueItems.Count > 0)
+            await Audio.PlayTracksAsync(queueItems, 0);
+    }
+
+    private async Task ShuffleAll()
+    {
+        var queueItems = BuildQueueItems();
+        if (queueItems.Count > 0)
+        {
+            if (!Audio.Shuffle) Audio.ToggleShuffle();
+            await Audio.PlayTracksAsync(queueItems, 0);
+        }
+    }
+
+    private Task OpenBiographyDialogAsync()
+    {
+        if (_person is null || string.IsNullOrWhiteSpace(_person.Biography)) return Task.CompletedTask;
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
+        var parameters = new K7DialogParameters
+        {
+            { "ContentText", _person.Biography },
+            { "ButtonText", S["Cancel"].Value }
+        };
+        return DialogService.ShowAsync<OverviewDialog>(_person.Name ?? L["Biography"], parameters, options);
+    }
+
+    private List<AudioQueueItem> BuildQueueItems()
+    {
+        return _tracks
+            .Where(t => t.IndexedFileId.HasValue)
+            .Select(t => new AudioQueueItem
+            {
+                IndexedFileId = t.IndexedFileId!.Value,
+                MediaId = t.Id,
+                Title = t.Title,
+                Artist = _person?.Name,
+                AlbumTitle = t.AlbumTitle,
+                CoverUrl = t.CoverUrl,
+                Duration = t.Duration
+            }).ToList();
     }
 
     private static string FormatTime(double seconds)

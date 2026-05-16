@@ -7,55 +7,66 @@
 <PageTitle>@_person?.Name</PageTitle>
 @if (_person is not null)
 {
-    <div class="artist-detail-page page-scrollable">
+    <div class="artist-detail-page">
         @if (_portraitUrl is not null)
         {
-            <div class="artist-hero-bg" style="background-image: url('@_portraitUrl')"></div>
+            <div class="background-image" style="--background-picture: url('@_portraitUrl')" />
         }
 
-        <div class="grid">
-            <div>
-                <div class="d-flex flex-col pa-4">
+        <div class="artist-hero-viewport">
+            <div class="artist-hero">
+                <div class="artist-hero-portrait">
                     @if (_portraitUrl is not null)
                     {
                         <K7Image Src="@_portraitUrl"
                                   Alt="@_person.Name"
                                   Class="artist-portrait"
-                                  Fluid="true"
                                   ObjectFit="cover" />
                     }
                     else
                     {
-                        <K7Avatar Style="width: 200px; height: 200px; font-size: 64px;">
+                        <K7Avatar Class="artist-avatar-placeholder">
                             @(_person.Name?[..1].ToUpperInvariant())
                         </K7Avatar>
                     }
                 </div>
-            </div>
-            <div>
-                <div class="d-flex flex-col pa-4">
-                    <div class="d-flex">
-                        <h4>@_person.Name</h4>
-                        <K7IconButton Icon="@Phosphor.User" Href="@($"/persons/{_person.Id}")" Size="sm" title="@L["ViewPerson"]" />
-                    </div>
+
+                <div class="artist-hero-info">
+                    <p class="text-overline artist-type-label">@L["ArtistType"]</p>
+                    <h2 class="artist-name">@_person.Name</h2>
+
                     @if (!string.IsNullOrEmpty(_person.Biography))
                     {
-                        <div class="overview-container">
-                            <span class="@(_overviewExpanded ? "overview-expanded" : "overview-collapsed")">@_person.Biography</span>
+                        <div class="artist-bio overview-clickable focusable" tabindex="0" role="button" @onclick="OpenBiographyDialogAsync">
+                            <p class="artist-bio-text">@_person.Biography</p>
                         </div>
-                        <K7Button Variant="text"
-                                   Size="sm"
-                                   EndIcon="@(_overviewExpanded ? Phosphor.CaretUp : Phosphor.CaretDown)"
-                                   OnClick="() => _overviewExpanded = !_overviewExpanded">
-                            @(_overviewExpanded ? L["ShowLess"] : L["ShowMore"])
-                        </K7Button>
                     }
+
+                    <div class="artist-actions">
+                        @if (_tracks.Count > 0)
+                        {
+                            <K7Button Variant="filled"
+                                       Color="primary"
+                                       StartIcon="@Phosphor.Play"
+                                       Size="lg"
+                                       OnClick="PlayAll">
+                                @S["PlayAll"]
+                            </K7Button>
+                            <K7Button Variant="outlined"
+                                       Color="primary"
+                                       StartIcon="@Phosphor.Shuffle"
+                                       OnClick="ShuffleAll">
+                                @S["Shuffle"]
+                            </K7Button>
+                        }
+                        <K7IconButton Icon="@Phosphor.User" Href="@($"/persons/{_person.Id}")" AriaLabel="@L["ViewPerson"]" />
+                    </div>
                 </div>
             </div>
 
             @if (_albums.Count > 0)
             {
-                <div>
+                <div class="artist-albums-section">
                     <Carousel Title="@L["AlbumsSection"]">
                         @foreach (var album in _albums)
                         {
@@ -69,43 +80,50 @@
 
             @if (_tracks.Count > 0)
             {
-                <div>
-                    <h6>@L["TracksSection"]</h6>
-                    <K7Table Items="_tracks"
-                              TItem="TrackViewModel"
-                              OnRowClick="@(args => OnTrackClick(args))"
-                              RowClass="cursor-pointer">
-                        <HeaderContent>
-                            <th Style="width: 40px;">#</th>
-                            <th>@S["Title"]</th>
-                            <th>Album</th>
-                            <th Style="width: 80px;">@S["Duration"]</th>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <td>
-                                @if (context.IsPlaying)
-                                {
-                                    <K7Icon Name="equalizer" Size="sm" Color="primary" />
-                                }
-                                else
-                                {
-                                    @context.TrackNumber
-                                }
-                            </td>
-                            <td>
-                                <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
-                            </td>
-                            <td>
-                                <p class="text-sm" Color="secondary">@context.AlbumTitle</p>
-                            </td>
-                            <td>
-                                <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
-                            </td>
-                        </RowTemplate>
-                    </K7Table>
+                <div class="artist-scroll-hint">
+                    <K7Icon Icon="@Phosphor.CaretDown" />
                 </div>
             }
         </div>
+
+        @if (_tracks.Count > 0)
+        {
+            <div class="artist-section artist-tracks-section">
+                <h6 class="section-title">@L["TracksSection"]</h6>
+                <K7Table Items="_tracks"
+                          TItem="TrackViewModel"
+                          OnRowClick="@(args => OnTrackClick(args))"
+                          RowClass="cursor-pointer">
+                    <HeaderContent>
+                        <th class="col-track-number">#</th>
+                        <th>@S["Title"]</th>
+                        <th class="col-album">@L["AlbumColumn"]</th>
+                        <th class="col-duration">@S["Duration"]</th>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <td>
+                            @if (context.IsPlaying)
+                            {
+                                <K7Icon Name="equalizer" Size="sm" Color="primary" />
+                            }
+                            else
+                            {
+                                <span class="track-number">@context.TrackNumber</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="@(context.IsPlaying ? "track-playing" : "")">@context.Title</span>
+                        </td>
+                        <td>
+                            <span class="track-album">@context.AlbumTitle</span>
+                        </td>
+                        <td class="col-duration">
+                            <span class="track-duration">@FormatTime(context.Duration)</span>
+                        </td>
+                    </RowTemplate>
+                </K7Table>
+            </div>
+        }
     </div>
 }
 else if (_loading)
