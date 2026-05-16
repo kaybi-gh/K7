@@ -1,0 +1,28 @@
+.subtitle-preview {
+    width: 100%;
+    max-width: 480px;
+}
+
+.subtitle-preview__scene {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-md, 8px);
+    background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    overflow: hidden;
+    padding: 12px;
+}
+
+.subtitle-preview__text {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-align: center;
+    line-height: 1.4;
+    font-family: inherit;
+    white-space: pre-wrap;
+    max-width: 90%;
+}

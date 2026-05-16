@@ -1,0 +1,85 @@
+@page "/settings/video-player"
+@layout SettingsLayout
+@inject IStringLocalizer<SettingsVideoPlayerPage> L
+@inject IUserPreferencesService UserPreferencesService
+
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["Title"]</h5>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
+}
+else if (_settings is not null)
+{
+    <div class="pa-4 d-flex flex-col gap-4">
+        <K7Select Label="@L["SubtitleFontFamily"]" @bind-Value="_settings.SubtitleFontFamily" TValue="K7.Shared.Enums.SubtitleFontFamily">
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontFamily.Default" Text="@L["FontDefault"]">@L["FontDefault"]</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontFamily.Manrope" Text="Manrope">Manrope</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontFamily.Epilogue" Text="Epilogue">Epilogue</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontFamily.SansSerif" Text="Sans-serif">Sans-serif</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontFamily.Serif" Text="Serif">Serif</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontFamily.Monospace" Text="Monospace">Monospace</K7SelectItem>
+        </K7Select>
+
+        <K7Select Label="@L["SubtitleFontSize"]" @bind-Value="_settings.SubtitleFontSize" TValue="K7.Shared.Enums.SubtitleFontSize">
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontSize.Small" Text="@L["Small"]">@L["Small"]</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontSize.Medium" Text="@L["Medium"]">@L["Medium"]</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.SubtitleFontSize.Large" Text="@L["Large"]">@L["Large"]</K7SelectItem>
+        </K7Select>
+
+        <K7ColorPicker Label="@L["SubtitleFontColor"]" @bind-Value="_settings.SubtitleFontColor" />
+
+        <div class="d-flex flex-col gap-1">
+            <span class="field-label">@L["SubtitleBackgroundOpacity"]</span>
+            <K7Slider TValue="double" Min="0" Max="1" Step="0.1"
+                      Value="_settings.SubtitleBackgroundOpacity"
+                      ValueChanged="v => { _settings.SubtitleBackgroundOpacity = v; }" />
+        </div>
+
+        <K7Switch Label="@L["SubtitleShadow"]" @bind-Value="_settings.SubtitleShadowEnabled" />
+
+        @if (_settings.SubtitleShadowEnabled)
+        {
+            <K7ColorPicker Label="@L["SubtitleShadowColor"]" @bind-Value="_settings.SubtitleShadowColor" />
+
+            <div class="d-flex flex-col gap-1">
+                <span class="field-label">@L["SubtitleShadowBlur"]</span>
+                <K7Slider TValue="double" Min="0" Max="10" Step="0.5"
+                          Value="_settings.SubtitleShadowBlur"
+                          ValueChanged="v => { _settings.SubtitleShadowBlur = v; }" />
+            </div>
+        }
+
+        <SubtitlePreview Family="_settings.SubtitleFontFamily"
+                         Size="_settings.SubtitleFontSize"
+                         FontColor="@_settings.SubtitleFontColor"
+                         BackgroundOpacity="_settings.SubtitleBackgroundOpacity"
+                         ShadowEnabled="_settings.SubtitleShadowEnabled"
+                         ShadowColor="@_settings.SubtitleShadowColor"
+                         ShadowBlur="_settings.SubtitleShadowBlur" />
+
+        <K7Switch Label="@L["ShowSeekbarThumbnails"]" @bind-Value="_settings.ShowSeekbarThumbnails" />
+        <span class="text-caption" style="color: var(--color-text-muted);">@L["ShowSeekbarThumbnailsHint"]</span>
+
+        <K7Select Label="@L["IntroSkipBehavior"]" @bind-Value="_settings.IntroSkipBehavior" TValue="K7.Shared.Enums.IntroSkipBehavior">
+            <K7SelectItem Value="K7.Shared.Enums.IntroSkipBehavior.ShowButton" Text="@L["ShowButton"]">@L["ShowButton"]</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.IntroSkipBehavior.AutoSkip" Text="@L["AutoSkip"]">@L["AutoSkip"]</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.IntroSkipBehavior.Disabled" Text="@L["Disabled"]">@L["Disabled"]</K7SelectItem>
+        </K7Select>
+
+        <K7Select Label="@L["OutroSkipBehavior"]" @bind-Value="_settings.OutroSkipBehavior" TValue="K7.Shared.Enums.IntroSkipBehavior">
+            <K7SelectItem Value="K7.Shared.Enums.IntroSkipBehavior.ShowButton" Text="@L["ShowButton"]">@L["ShowButton"]</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.IntroSkipBehavior.AutoSkip" Text="@L["AutoSkip"]">@L["AutoSkip"]</K7SelectItem>
+            <K7SelectItem Value="K7.Shared.Enums.IntroSkipBehavior.Disabled" Text="@L["Disabled"]">@L["Disabled"]</K7SelectItem>
+        </K7Select>
+
+        <div class="d-flex gap-2">
+            <K7Button Color="primary" OnClick="SaveAsync">@L["Save"]</K7Button>
+            <K7Button OnClick="ResetAsync">@L["ResetToDefault"]</K7Button>
+        </div>
+    </div>
+}
