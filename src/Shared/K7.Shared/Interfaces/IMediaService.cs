@@ -22,4 +22,5 @@ public interface IMediaService
     Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default);
     Task RefreshMediaMetadataAsync(Guid id, CancellationToken cancellationToken = default);
     Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default);
 }

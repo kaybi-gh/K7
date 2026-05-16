@@ -57,6 +57,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<PlaylistItem> PlaylistItems => Set<PlaylistItem>();
     public DbSet<AudioAnalysis> AudioAnalysis => Set<AudioAnalysis>();
+    public DbSet<MediaSegment> MediaSegments => Set<MediaSegment>();
     public DbSet<MusicArtistCredit> MusicArtistCredits => Set<MusicArtistCredit>();
     public DbSet<ServerSetting> ServerSettings => Set<ServerSetting>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
