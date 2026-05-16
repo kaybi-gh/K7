@@ -13,7 +13,7 @@ public class PersonRoleConfiguration : IEntityTypeConfiguration<BasePersonRole>
         builder
             .HasDiscriminator(m => m.Type)
             .HasValue<Actor>(PersonRoleType.Actor)
-            .HasValue<MusicArtist>(PersonRoleType.MusicArtist)
+            .HasValue<MusicArtistMember>(PersonRoleType.MusicArtist)
             .HasValue<VoiceActor>(PersonRoleType.VoiceActor)
             .HasValue<CrewMember>(PersonRoleType.CrewMember);
     }
@@ -22,7 +22,7 @@ public class PersonRoleConfiguration : IEntityTypeConfiguration<BasePersonRole>
     {
     }
 
-    public static void Configure(EntityTypeBuilder<MusicArtist> builder)
+    public static void Configure(EntityTypeBuilder<MusicArtistMember> builder)
     {
     }
 
