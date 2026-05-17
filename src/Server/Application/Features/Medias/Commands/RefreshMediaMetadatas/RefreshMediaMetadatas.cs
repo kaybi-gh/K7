@@ -82,7 +82,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     .FirstOrDefaultAsync(p => p.Name == personRole.Person.Name
                         && p.Birthday == personRole.Person.Birthday, cancellationToken);
 
-                if (existingPerson == null)
+                if (existingPerson is null)
                 {
                     foreach (var externalId in personRole.Person.ExternalIds)
                     {
@@ -91,14 +91,19 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                             .FirstOrDefaultAsync(p => p.ExternalIds.Any(x => x.ProviderName == externalId.ProviderName
                                 && x.Value == externalId.Value), cancellationToken);
 
-                        if (existingPerson != null)
+                        if (existingPerson is not null)
                         {
                             break;
                         }
                     }
                 }
 
-                if (existingPerson != null)
+                // Fallback: match by name only (e.g. Person created by music metadata without birthday)
+                existingPerson ??= await _context.Persons
+                    .Include(p => p.Roles)
+                    .FirstOrDefaultAsync(p => p.Name == personRole.Person.Name, cancellationToken);
+
+                if (existingPerson is not null)
                 {
                     personRole.Person = existingPerson;
                 }
@@ -236,6 +241,11 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     if (existingPerson is not null)
                         break;
                 }
+
+                // Fallback: match by name only (e.g. Person created by music metadata)
+                existingPerson ??= await _context.Persons
+                    .Include(p => p.ExternalIds)
+                    .FirstOrDefaultAsync(p => p.Name == role.Person.Name, cancellationToken);
 
                 if (existingPerson is not null)
                     role.Person = existingPerson;

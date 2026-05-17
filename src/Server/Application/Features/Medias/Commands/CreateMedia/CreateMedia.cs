@@ -384,7 +384,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 (a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == indexedFile.LibraryId))
                     || !a.Tracks.Any(t => t.IndexedFiles.Any())) &&
                 (artistName == null || (a.Artist != null && a.Artist.Title == artistName)) &&
-                (releaseYear == null || a.ReleaseDate == null || a.ReleaseDate == releaseYear),
+                (releaseYear == null || a.ReleaseDate == null || a.ReleaseDate.Value.Year == releaseYear.Value.Year),
                 cancellationToken);
 
         if (existingAlbum is not null)
