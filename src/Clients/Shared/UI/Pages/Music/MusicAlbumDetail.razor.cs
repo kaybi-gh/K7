@@ -14,6 +14,9 @@ public partial class MusicAlbumDetail
     [Inject]
     private IAudioPlayerService Audio { get; set; } = default!;
 
+    [Inject]
+    private IK7Snackbar Snackbar { get; set; } = default!;
+
     private MusicAlbumDto? _album;
     private string? _coverUrl;
     private string? _coverDominantColor;
@@ -151,6 +154,20 @@ public partial class MusicAlbumDetail
     }
 
     internal sealed record ArtistInfo(Guid Id, string Name);
+
+    private async Task RefreshMetadataAsync()
+    {
+        if (_album is null) return;
+        try
+        {
+            await k7ServerService.RefreshMediaMetadataAsync(_album.Id);
+            Snackbar.Add(L["RefreshMetadataSent"], K7Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
 
     internal sealed record TrackViewModel
     {

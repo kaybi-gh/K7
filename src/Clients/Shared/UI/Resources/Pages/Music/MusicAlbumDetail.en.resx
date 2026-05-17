@@ -23,5 +23,7 @@
   <data name="TrackCount" xml:space="preserve"><value>· {0} tracks</value></data>
   <data name="DiscHeader" xml:space="preserve"><value>Disc {0}</value></data>
   <data name="GoToArtist" xml:space="preserve"><value>Go to artist</value></data>
+  <data name="RefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh started in background.</value></data>
 </root>
 
