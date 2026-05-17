@@ -123,8 +123,8 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                         Id = Guid.NewGuid(),
                         MediaId = episode.Id,
                         Type = MediaSegmentType.Intro,
-                        StartMs = match.Value.startMs,
-                        EndMs = match.Value.startMs + match.Value.durationMs,
+                        StartMs = match.Value.fp2StartMs,
+                        EndMs = match.Value.fp2StartMs + match.Value.durationMs,
                         DetectedAt = DateTimeOffset.UtcNow
                     });
                 }
@@ -146,7 +146,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                 var outroMatch = FindMatchingRange(referenceOutroFp, outroFingerprint);
                 if (outroMatch is not null && outroMatch.Value.durationMs >= MinSegmentDurationMs)
                 {
-                    var absoluteStartMs = (long)(duration * (1.0 - OutroSearchPercent)) + outroMatch.Value.startMs;
+                    var absoluteStartMs = (long)(duration * (1.0 - OutroSearchPercent)) + outroMatch.Value.fp2StartMs;
                     episode.Segments.Add(new MediaSegment
                     {
                         Id = Guid.NewGuid(),
@@ -203,41 +203,45 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         MediaSegmentType segmentType,
         bool isOutro)
     {
-        // Try consecutive pairs until we find a matching range.
-        // The first episode of a season often lacks an intro/outro (common in anime),
-        // so we cannot assume episodes[0] vs episodes[1] will work.
-        (long startMs, long durationMs)? match = null;
+        // Find a reference pair by trying consecutive episodes.
+        // The first episode often lacks an intro (common in anime).
+        var refIndex = -1;
 
         for (var i = 0; i < fingerprints.Count - 1; i++)
         {
             var candidate = FindMatchingRange(fingerprints[i].fingerprint, fingerprints[i + 1].fingerprint);
             if (candidate is not null && candidate.Value.durationMs >= MinSegmentDurationMs)
             {
-                match = candidate;
-                _logger.LogDebug("Found {SegmentType} consensus from episodes {Ep1} and {Ep2}",
+                refIndex = i;
+                _logger.LogDebug("Found {SegmentType} reference from episodes {Ep1} and {Ep2}",
                     segmentType, fingerprints[i].episode.EpisodeNumber, fingerprints[i + 1].episode.EpisodeNumber);
                 break;
             }
         }
 
-        if (match is null)
+        if (refIndex < 0)
         {
             _logger.LogDebug("No matching {SegmentType} range found between any consecutive episode pair", segmentType);
             return;
         }
 
-        // Apply the detected range to all episodes
+        // Compare each episode individually against the reference to find its specific position.
+        // Episodes without the segment (e.g., ep1 with no intro) will simply not match.
+        var referenceFp = fingerprints[refIndex].fingerprint;
+        var detectedCount = 0;
+
         foreach (var (episode, file, fp, durationMs) in fingerprints)
         {
-            var startMs = match.Value.startMs;
-            if (isOutro)
-                startMs += (long)(durationMs * (1.0 - OutroSearchPercent));
-
-            var endMs = startMs + match.Value.durationMs;
-
-            // Skip if segment already exists
             if (episode.Segments.Any(s => s.Type == segmentType))
                 continue;
+
+            var match = FindMatchingRange(referenceFp, fp);
+            if (match is null || match.Value.durationMs < MinSegmentDurationMs)
+                continue;
+
+            var startMs = match.Value.fp2StartMs;
+            if (isOutro)
+                startMs += (long)(durationMs * (1.0 - OutroSearchPercent));
 
             episode.Segments.Add(new MediaSegment
             {
@@ -245,13 +249,14 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                 MediaId = episode.Id,
                 Type = segmentType,
                 StartMs = startMs,
-                EndMs = endMs,
+                EndMs = startMs + match.Value.durationMs,
                 DetectedAt = DateTimeOffset.UtcNow
             });
+            detectedCount++;
         }
 
-        _logger.LogInformation("Detected {SegmentType} segment at {StartMs}-{EndMs}ms for {Count} episodes",
-            segmentType, match.Value.startMs, match.Value.startMs + match.Value.durationMs, fingerprints.Count);
+        _logger.LogInformation("Detected {SegmentType} for {Count}/{Total} episodes in season",
+            segmentType, detectedCount, fingerprints.Count);
     }
 
     private async Task<byte[]?> ExtractAndCacheFingerprintAsync(
@@ -282,7 +287,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         return await _chromaprintService.ExtractFingerprintAsync(filePath, startTime, duration, cancellationToken);
     }
 
-    private static (long startMs, long durationMs)? FindMatchingRange(byte[]? fp1, byte[]? fp2)
+    private static (long fp1StartMs, long fp2StartMs, long durationMs)? FindMatchingRange(byte[]? fp1, byte[]? fp2)
     {
         if (fp1 is null || fp2 is null || fp1.Length < sizeof(int) || fp2.Length < sizeof(int))
             return null;
@@ -301,6 +306,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
 
         var bestStart = -1;
         var bestLength = 0;
+        var bestOffset = 0;
 
         // Sliding window comparison: find the longest run of similar fingerprint values
         for (var offset = -(ints2.Length - 1); offset < ints1.Length; offset++)
@@ -334,6 +340,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                     {
                         bestStart = currentStart;
                         bestLength = currentLength;
+                        bestOffset = offset;
                     }
                     currentStart = -1;
                     currentLength = 0;
@@ -345,16 +352,18 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             {
                 bestStart = currentStart;
                 bestLength = currentLength;
+                bestOffset = offset;
             }
         }
 
         if (bestLength < minMatchLength || bestStart < 0)
             return null;
 
-        var startMs = (long)(bestStart * secondsPerItem * 1000);
+        var fp1StartMs = (long)(bestStart * secondsPerItem * 1000);
+        var fp2StartMs = (long)((bestStart - bestOffset) * secondsPerItem * 1000);
         var durationMs = (long)(bestLength * secondsPerItem * 1000);
 
-        return (startMs, durationMs);
+        return (fp1StartMs, fp2StartMs, durationMs);
     }
 
     private static int CountMatchingBits(int a, int b)
