@@ -35,7 +35,6 @@
 
 .artist-hero {
     position: relative;
-    z-index: 1;
     display: flex;
     align-items: flex-end;
     gap: 32px;
@@ -108,7 +107,6 @@
 
 .artist-albums-section {
     position: relative;
-    z-index: 1;
     flex-shrink: 0;
 }
 
@@ -133,7 +131,6 @@
 
 .artist-section {
     position: relative;
-    z-index: 1;
     flex-shrink: 0;
 }
 
