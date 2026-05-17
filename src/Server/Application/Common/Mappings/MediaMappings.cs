@@ -247,6 +247,9 @@ public static class MediaMappings
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 ArtistType = artist.ArtistType,
                 Country = artist.Country,
+                Albums = artist.Albums.Count > 0
+                    ? artist.Albums.Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto()).ToList()
+                    : null,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
