@@ -779,6 +779,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return result ?? [];
     }
 
+    public async Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/medias/{seasonId}/detect-segments", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<ServerFeatureFlagsDto>("api/server/preferences/feature-flags", _serializerOptions, cancellationToken);

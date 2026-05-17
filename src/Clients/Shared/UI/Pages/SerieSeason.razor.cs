@@ -227,4 +227,12 @@ public partial class SerieSeason
         if (_nextSeasonNumber is not null)
             NavigationManager.NavigateTo($"/series/{SerieId}/seasons/{_nextSeasonNumber}");
     }
+
+    private async Task DetectIntrosOutrosAsync()
+    {
+        if (_season is null)
+            return;
+
+        await k7ServerService.DetectMediaSegmentsAsync(_season.Id);
+    }
 }
