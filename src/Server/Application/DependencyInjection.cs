@@ -25,7 +25,7 @@ public static class DependencyInjection
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
             client.DefaultRequestHeaders.UserAgent.ParseAdd($"K7/{version}");
-            client.Timeout = TimeSpan.FromMinutes(3);
+            client.Timeout = TimeSpan.FromMinutes(5);
         }).ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear());
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
