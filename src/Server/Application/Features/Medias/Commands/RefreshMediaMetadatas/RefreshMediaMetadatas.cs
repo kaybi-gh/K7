@@ -1,4 +1,6 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
@@ -25,15 +27,18 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 {
     private readonly IApplicationDbContext _context;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ISender _sender;
     private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
         IServiceProvider serviceProvider,
+        ISender sender,
         IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders)
     {
         _context = context;
         _serviceProvider = serviceProvider;
+        _sender = sender;
         _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
     }
 
@@ -165,7 +170,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
                     artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
 
-                await SyncArtistMembersAsync(artist, mbDetails.Members, cancellationToken);
+                await SyncArtistMembersAsync(artist, mbDetails.Members, request.Language, cancellationToken);
 
                 // Poster from MusicBrainz cover art
                 if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbDetails.ImageUrl))
@@ -397,7 +402,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 mbImageUrl = mbDetails.ImageUrl;
 
-                await SyncArtistMembersAsync(artist, mbDetails.Members, cancellationToken);
+                await SyncArtistMembersAsync(artist, mbDetails.Members, language, cancellationToken);
             }
         }
 
@@ -498,7 +503,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         return artist;
     }
 
-    private async Task SyncArtistMembersAsync(MusicArtist artist, IReadOnlyList<ExternalMusicArtistMember>? members, CancellationToken cancellationToken)
+    private async Task SyncArtistMembersAsync(MusicArtist artist, IReadOnlyList<ExternalMusicArtistMember>? members, string language, CancellationToken cancellationToken)
     {
         if (members is not { Count: > 0 }) return;
         if (artist.PersonRoles.Count > 0) return;
@@ -506,6 +511,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         foreach (var member in members)
         {
             Person? person = null;
+            var isNewPerson = false;
 
             // Try to find by MusicBrainz ExternalId first
             if (!string.IsNullOrEmpty(member.MusicBrainzArtistId))
@@ -526,6 +532,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 person = new Person { Name = member.Name };
                 _context.Persons.Add(person);
                 await _context.SaveChangesAsync(cancellationToken);
+                isNewPerson = true;
             }
 
             if (!string.IsNullOrEmpty(member.MusicBrainzArtistId)
@@ -543,6 +550,26 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 IsActive = member.IsActive
             };
             artist.PersonRoles.Add(role);
+
+            // Queue person metadata enrichment for new persons with a MusicBrainz ID
+            if (isNewPerson && !string.IsNullOrEmpty(member.MusicBrainzArtistId))
+            {
+                await _sender.Send(new CreateBackgroundTaskCommand
+                {
+                    Request = new RefreshPersonMetadataCommand
+                    {
+                        PersonId = person.Id,
+                        ProviderName = "musicbrainz",
+                        ProviderId = member.MusicBrainzArtistId,
+                        Language = language
+                    },
+                    Priority = BackgroundTaskPriority.Low,
+                    TargetEntityId = person.Id,
+                    TargetEntityTypeName = nameof(Person),
+                    MaxAttempts = 3,
+                    ConcurrencyGroup = "musicbrainz"
+                }, cancellationToken);
+            }
         }
     }
 }

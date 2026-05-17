@@ -28,8 +28,10 @@ public class QueueRefreshPersonMetadataCommandHandler(IApplicationDbContext cont
 
         Guard.Against.NotFound(request.PersonId, person);
 
-        var externalId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb");
-        Guard.Against.NotFound(request.PersonId, externalId, $"Person {request.PersonId} has no TMDb external ID.");
+        // Pick the best available provider: prefer tmdb, fallback to musicbrainz
+        var externalId = person.ExternalIds.FirstOrDefault(e => e.ProviderName == "tmdb")
+            ?? person.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
+        Guard.Against.NotFound(request.PersonId, externalId, $"Person {request.PersonId} has no supported external ID.");
 
         // Find language from a library associated with this person's media roles
         var mediaId = person.Roles.Select(r => r.MediaId).FirstOrDefault();
@@ -51,7 +53,7 @@ public class QueueRefreshPersonMetadataCommandHandler(IApplicationDbContext cont
             TargetEntityId = person.Id,
             TargetEntityTypeName = nameof(Person),
             MaxAttempts = 1,
-            ConcurrencyGroup = "tmdb"
+            ConcurrencyGroup = externalId.ProviderName
         }, cancellationToken);
     }
 }
