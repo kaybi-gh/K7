@@ -24,4 +24,6 @@
   <data name="More" xml:space="preserve"><value>Plus</value></data>
   <data name="Less" xml:space="preserve"><value>Moins</value></data>
   <data name="YearsOld" xml:space="preserve"><value>ans</value></data>
+  <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance</value></data>
 </root>

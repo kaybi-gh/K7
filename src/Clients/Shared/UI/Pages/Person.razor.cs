@@ -24,6 +24,8 @@ public partial class Person : IDisposable
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+
     protected override async Task OnInitializedAsync()
     {
         _person = await k7ServerService.GetPersonAsync(Guid.Parse(Id));
@@ -162,6 +164,20 @@ public partial class Person : IDisposable
         var age = today.Year - birthday.Year;
         if (birthday.AddYears(age) > today) age--;
         return age;
+    }
+
+    private async Task RefreshMetadataAsync()
+    {
+        if (_person is null) return;
+        try
+        {
+            await k7ServerService.RefreshPersonMetadataAsync(_person.Id);
+            Snackbar.Add(L["RefreshMetadataSent"], K7Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
     }
 
     public void Dispose() => _backdropTimer?.Dispose();
