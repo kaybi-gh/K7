@@ -7254,6 +7254,15 @@
               "string"
             ]
           },
+          "albums": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiteMusicAlbumDto"
+            }
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -7723,6 +7732,57 @@
             "items": {
               "$ref": "#/components/schemas/MetadataPictureDto"
             }
+          },
+          "userState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserMediaStateDto"
+              }
+            ]
+          },
+          "userRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LiteMusicAlbumDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "created": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "pictures": {
+            "$ref": "#/components/schemas/AnonymousTypeOfintAndintAndintAndIEnumerableOfCollectionItemDto/properties/items/items/properties/media/anyOf/1/properties/pictures"
           },
           "userState": {
             "oneOf": [
