@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,8 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
         var externalId = media.ExternalIds?.FirstOrDefault();
         Guard.Against.NotFound(request.MediaId, externalId, $"Media {request.MediaId} has no external ID.");
 
+        var library = await FindLibraryAsync(media, cancellationToken);
+
         await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new RefreshMediaMetadatasCommand
@@ -37,8 +40,8 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
                 MediaId = media.Id,
                 MetadataProviderExternalId = externalId.Value,
                 MetadataProviderName = externalId.ProviderName,
-                Language = "fr",
-                FallbackLanguage = "en"
+                Language = library?.MetadataLanguage ?? "en",
+                FallbackLanguage = library?.MetadataFallbackLanguage ?? "en"
             },
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = media.Id,
@@ -46,5 +49,25 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
             MaxAttempts = 1,
             ConcurrencyGroup = externalId.ProviderName
         }, cancellationToken);
+    }
+
+    private async Task<Library?> FindLibraryAsync(BaseMedia media, CancellationToken cancellationToken)
+    {
+        // For MusicArtist, IndexedFiles are on albums, not the artist itself
+        if (media is MusicArtist)
+        {
+            var albumId = await context.Medias.OfType<MusicAlbum>()
+                .Where(a => a.ArtistId == media.Id)
+                .Select(a => a.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (albumId == Guid.Empty) return null;
+
+            return await context.Libraries
+                .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == albumId), cancellationToken);
+        }
+
+        return await context.Libraries
+            .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == media.Id), cancellationToken);
     }
 }
