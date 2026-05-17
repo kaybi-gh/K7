@@ -125,7 +125,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 ContentRating = contentRating,
                 Budget = tmdbMovie.Budget > 0 ? tmdbMovie.Budget : null,
                 Revenue = tmdbMovie.Revenue > 0 ? tmdbMovie.Revenue : null,
-                PersonRoles = await ConvertToPersonRolesAsync(tmdbMovie.Credits),
+                PersonRoles = await ConvertToPersonRolesAsync(tmdbMovie.Credits, language),
                 ExternalIds =
                 [
                     new ExternalId()
@@ -217,12 +217,12 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
         return metadataPictures;
     }
 
-    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits credits)
+    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits credits, string language)
     {
         var roles = new List<BasePersonRole>();
         foreach (var role in credits.Cast)
         {
-            var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id);
+            var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id, language);
             var actor = new Actor()
             {
                 Order = role.Order,
@@ -256,7 +256,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
 
         foreach (var role in credits.Crew.Where(x => _wantedCrewRoles.Contains((x.Department, x.Job))))
         {
-            var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id);
+            var imdbPerson = await _tdmbClient.GetPersonAsync(role.Id, language);
             var crewMember = new CrewMember()
             {
                 Department = role.Department,

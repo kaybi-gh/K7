@@ -124,7 +124,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             Network = show.Networks?.FirstOrDefault()?.Name,
             TotalSeasons = show.NumberOfSeasons,
             Genres = [.. show.Genres?.Select(g => g.Name) ?? []],
-            PersonRoles = await ConvertToPersonRolesAsync(show.Credits, cancellationToken),
+            PersonRoles = await ConvertToPersonRolesAsync(show.Credits, language, cancellationToken),
             ExternalIds = BuildExternalIds(providerId, show.ExternalIds),
             Pictures = FetchMetadataPictures(show.Images, language),
             Ratings = show.VoteCount > 0
@@ -353,14 +353,14 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         return pictures;
     }
 
-    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits? credits, CancellationToken cancellationToken)
+    private async Task<IList<BasePersonRole>> ConvertToPersonRolesAsync(Credits? credits, string language, CancellationToken cancellationToken)
     {
         var roles = new List<BasePersonRole>();
         if (credits is null) return roles;
 
         foreach (var role in credits.Cast)
         {
-            var tmdbPerson = await _tmdbClient.GetPersonAsync(role.Id, cancellationToken: cancellationToken);
+            var tmdbPerson = await _tmdbClient.GetPersonAsync(role.Id, language, cancellationToken: cancellationToken);
             var actor = new Actor
             {
                 Order = role.Order,
@@ -387,7 +387,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
 
         foreach (var role in credits.Crew.Where(x => _wantedCrewRoles.Contains((x.Department, x.Job))))
         {
-            var tmdbPerson = await _tmdbClient.GetPersonAsync(role.Id, cancellationToken: cancellationToken);
+            var tmdbPerson = await _tmdbClient.GetPersonAsync(role.Id, language, cancellationToken: cancellationToken);
             var crewMember = new CrewMember
             {
                 Department = role.Department,
