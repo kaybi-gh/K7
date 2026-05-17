@@ -89,9 +89,11 @@ public partial class MusicRadio
             AlbumTitle = null,
             Genre = track.Genres?.FirstOrDefault(),
             CoverUrl = ApiClient.GetAbsoluteUri(
-                track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+                (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                    ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                     .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
-            CoverDominantColor = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
+            CoverDominantColor = (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
             Duration = (track.IndexedFiles?.FirstOrDefault()?.FileMetadata as AudioFileMetadataDto)?.Duration.TotalSeconds ?? 0,
             Bpm = track.Bpm,
             MusicalKey = track.MusicalKey,

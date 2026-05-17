@@ -56,9 +56,11 @@ public partial class SmartPlaylistDetail
         Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
         CoverUrl = ApiClient.GetAbsoluteUri(
-            item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+            (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
-        CoverDominantColor = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
+        CoverDominantColor = (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
         Duration = item.Duration ?? 0,
         UserRating = item.UserRating,
         IsPlaying = Audio.CurrentTrack?.MediaId == item.MediaId
@@ -180,7 +182,7 @@ public partial class SmartPlaylistDetail
         {
             var field = GetFieldLabel(r.Field);
             var op = GetOperatorLabel(r.Operator);
-            return string.IsNullOrEmpty(r.Value) ? $"{field} {op}" : $"{field} {op} « {r.Value} »";
+            return string.IsNullOrEmpty(r.Value) ? $"{field} {op}" : $"{field} {op} ï¿½ {r.Value} ï¿½";
         });
 
         var desc = string.Join(condition, rules);
@@ -192,18 +194,18 @@ public partial class SmartPlaylistDetail
     {
         SmartPlaylistField.Title => "Titre",
         SmartPlaylistField.Genre => "Genre",
-        SmartPlaylistField.Year => "Année",
+        SmartPlaylistField.Year => "Annï¿½e",
         SmartPlaylistField.Rating => "Note",
         SmartPlaylistField.PlayCount => "Nb lectures",
         SmartPlaylistField.DateAdded => "Date d'ajout",
-        SmartPlaylistField.LastPlayed => "Dernière lecture",
-        SmartPlaylistField.IsCompleted => "Terminé",
+        SmartPlaylistField.LastPlayed => "Derniï¿½re lecture",
+        SmartPlaylistField.IsCompleted => "Terminï¿½",
         SmartPlaylistField.ArtistName => "Artiste",
         SmartPlaylistField.AlbumTitle => "Album",
-        SmartPlaylistField.TrackNumber => "N° piste",
-        SmartPlaylistField.DiscNumber => "N° disque",
+        SmartPlaylistField.TrackNumber => "Nï¿½ piste",
+        SmartPlaylistField.DiscNumber => "Nï¿½ disque",
         SmartPlaylistField.Bpm => "BPM",
-        SmartPlaylistField.Duration => "Durée",
+        SmartPlaylistField.Duration => "Durï¿½e",
         SmartPlaylistField.OriginalLanguage => "Langue",
         _ => field.ToString()
     };
@@ -235,7 +237,7 @@ public partial class SmartPlaylistDetail
     private static string FormatRelativeTime(DateTimeOffset dateTime)
     {
         var diff = DateTimeOffset.UtcNow - dateTime;
-        if (diff.TotalMinutes < 1) return "à l'instant";
+        if (diff.TotalMinutes < 1) return "ï¿½ l'instant";
         if (diff.TotalMinutes < 60) return $"il y a {(int)diff.TotalMinutes} min";
         if (diff.TotalHours < 24) return $"il y a {(int)diff.TotalHours} h";
         return $"il y a {(int)diff.TotalDays} j";

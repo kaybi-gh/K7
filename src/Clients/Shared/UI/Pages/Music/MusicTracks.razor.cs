@@ -97,9 +97,11 @@ public partial class MusicTracks
         AlbumTitle = track.AlbumTitle,
         Genre = track.Genre,
         CoverUrl = apiClient.GetAbsoluteUri(
-            track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+            (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                 .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
-        CoverDominantColor = track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
+        CoverDominantColor = (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
         Duration = track.Duration ?? 0,
         UserRating = track.UserRating,
         Bpm = track.Bpm,
