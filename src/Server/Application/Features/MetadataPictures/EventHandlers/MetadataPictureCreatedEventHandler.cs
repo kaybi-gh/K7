@@ -32,7 +32,7 @@ public class MetadataPictureCreatedEventHandler : INotificationHandler<MetadataP
         {
             MetadataPictureType.Backdrop => BackgroundTaskPriority.VeryLow,
             MetadataPictureType.Logo => BackgroundTaskPriority.VeryLow,
-            MetadataPictureType.Poster => BackgroundTaskPriority.Low,
+            MetadataPictureType.Poster or MetadataPictureType.Cover => BackgroundTaskPriority.Low,
             _ => BackgroundTaskPriority.Lowest
         };
 

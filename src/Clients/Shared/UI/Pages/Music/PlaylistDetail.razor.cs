@@ -72,9 +72,11 @@ public partial class PlaylistDetail
         Genre = item.Genre,
         IndexedFileId = item.IndexedFileId,
         CoverUrl = ApiClient.GetAbsoluteUri(
-            item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+            (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
-        CoverDominantColor = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?.DominantColor,
+        CoverDominantColor = (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
         Duration = item.Duration ?? 0,
         UserRating = item.UserRating,
         Bpm = item.Bpm,

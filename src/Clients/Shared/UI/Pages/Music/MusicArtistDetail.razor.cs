@@ -48,7 +48,8 @@ public partial class MusicArtistDetail
                     Title = album.Title,
                     AdditionalInformations = album.ReleaseDate?.Year.ToString(),
                     PictureUrl = apiClient.GetAbsoluteUri(
-                        album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+                        (album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                            ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                             .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
                 })
                 .ToList();
@@ -69,7 +70,8 @@ public partial class MusicArtistDetail
                     TrackNumber = track.TrackNumber,
                     AlbumTitle = albums.FirstOrDefault(a => a.Tracks?.Any(t => t.Id == track.Id) == true)?.Title,
                     CoverUrl = apiClient.GetAbsoluteUri(
-                        track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
+                        (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                            ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                             .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
                     Duration = track.Duration ?? 0,
                     IsPlaying = Audio.CurrentTrack?.MediaId == track.Id

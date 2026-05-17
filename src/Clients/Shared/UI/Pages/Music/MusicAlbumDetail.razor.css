@@ -73,6 +73,11 @@
     font-size: 1rem;
     font-weight: 600;
     opacity: 0.9;
+    color: var(--color-on-bg);
+    padding: 4px 0;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .album-artist-link:hover,
