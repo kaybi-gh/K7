@@ -234,11 +234,24 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             _context.Medias.Add(track);
 
-            var artistName = tags?.Artists.FirstOrDefault() ?? identification.ArtistName;
+            var trackArtists = tags?.Artists ?? [];
+            var artistName = trackArtists.FirstOrDefault() ?? identification.ArtistName;
             if (!string.IsNullOrEmpty(artistName))
             {
                 var trackArtist = await FindOrCreateMusicArtistAsync(artistName, cancellationToken);
                 track.ArtistId = trackArtist.Id;
+            }
+
+            for (var i = 0; i < trackArtists.Count; i++)
+            {
+                var creditArtist = await FindOrCreateMusicArtistAsync(trackArtists[i], cancellationToken);
+                track.ArtistCredits.Add(new MusicArtistCredit
+                {
+                    MusicArtistId = creditArtist.Id,
+                    MediaId = track.Id,
+                    IsGuest = creditArtist.Id != album.ArtistId,
+                    Order = i
+                });
             }
 
             track.AddDomainEvent(new MediaCreatedEvent(track));

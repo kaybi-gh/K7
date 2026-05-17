@@ -229,12 +229,28 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         if (release?.Media == null) return [];
 
+        // Collect album-level artist IDs to determine guest status
+        var albumArtistIds = (release.ArtistCredit ?? [])
+            .Where(ac => ac.Artist is not null)
+            .Select(ac => ac.Artist!.Id)
+            .ToHashSet();
+
         var tracks = new List<ExternalMusicTrackMetadata>();
         foreach (var medium in release.Media.OrderBy(m => m.Position))
         {
             if (medium.Tracks == null) continue;
             foreach (var track in medium.Tracks.OrderBy(t => t.Position))
             {
+                var credits = (track.ArtistCredit ?? [])
+                    .Where(ac => ac.Artist is not null && !string.IsNullOrEmpty(ac.Artist.Id))
+                    .Select(ac => new ExternalMusicTrackArtistCredit
+                    {
+                        Name = ac.Artist!.Name ?? ac.Name ?? "Unknown",
+                        MusicBrainzArtistId = ac.Artist.Id,
+                        IsGuest = !albumArtistIds.Contains(ac.Artist.Id)
+                    })
+                    .ToList();
+
                 tracks.Add(new ExternalMusicTrackMetadata
                 {
                     Title = track.Title ?? track.Recording?.Title ?? "Unknown",
@@ -242,7 +258,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                     DiscNumber = medium.Position,
                     Duration = track.Length.HasValue ? TimeSpan.FromMilliseconds(track.Length.Value) : null,
                     MusicBrainzRecordingId = track.Recording?.Id,
-                    Isrc = track.Recording?.Isrcs?.FirstOrDefault()
+                    Isrc = track.Recording?.Isrcs?.FirstOrDefault(),
+                    ArtistCredits = credits
                 });
             }
         }
@@ -472,6 +489,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         public int Position { get; init; }
         public long? Length { get; init; }
         public MbRecording? Recording { get; init; }
+        [JsonPropertyName("artist-credit")]
+        public List<MbArtistCredit>? ArtistCredit { get; init; }
     }
 
     private record MbRecording

@@ -106,14 +106,30 @@ public partial class Person : IDisposable
             }
 
             // Albums from MusicArtist (via MusicArtistMember role)
-            if (role.Media is LiteMusicArtistDto { Albums: { } albums })
+            if (role.Media is LiteMusicArtistDto artist)
             {
-                foreach (var artistAlbum in albums)
+                if (artist.Albums is { } albums)
                 {
-                    if (seenAlbums.Add(artistAlbum.Id)
-                        && (artistAlbum.Title is null || seenAlbumTitles.Add(artistAlbum.Title)))
+                    foreach (var artistAlbum in albums)
                     {
-                        AddAlbumToDiscography(artistAlbum);
+                        if (seenAlbums.Add(artistAlbum.Id)
+                            && (artistAlbum.Title is null || seenAlbumTitles.Add(artistAlbum.Title)))
+                        {
+                            AddAlbumToDiscography(artistAlbum);
+                        }
+                    }
+                }
+
+                // Albums where this artist appears as a guest (featuring)
+                if (artist.GuestAppearanceAlbums is { } guestAlbums)
+                {
+                    foreach (var guestAlbum in guestAlbums)
+                    {
+                        if (seenAlbums.Add(guestAlbum.Id)
+                            && (guestAlbum.Title is null || seenAlbumTitles.Add(guestAlbum.Title)))
+                        {
+                            AddAlbumToDiscography(guestAlbum);
+                        }
                     }
                 }
             }

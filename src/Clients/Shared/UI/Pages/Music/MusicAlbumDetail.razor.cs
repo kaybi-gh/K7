@@ -50,23 +50,32 @@ public partial class MusicAlbumDetail
 
             _tracks = (album.Tracks ?? [])
                 .OrderBy(t => t.TrackNumber)
-                .Select(t => new TrackViewModel
+                .Select(t =>
                 {
-                    Id = t.Id,
-                    IndexedFileId = t.IndexedFileId,
-                    Title = t.Title ?? S["Untitled"],
-                    TrackNumber = t.TrackNumber,
-                    ArtistName = artistName,
-                    ArtistId = album.ArtistId,
-                    Genre = album.Genres?.FirstOrDefault(),
-                    CoverUrl = _coverUrl,
-                    CoverDominantColor = _coverDominantColor,
-                    Duration = t.Duration ?? 0,
-                    DiscNumber = 1,
-                    Bpm = t.Bpm,
-                    MusicalKey = t.MusicalKey,
-                    Energy = t.Energy,
-                    IsPlaying = Audio.CurrentTrack?.MediaId == t.Id
+                    var guestCredits = (t.ArtistCredits ?? [])
+                        .Where(c => c.IsGuest)
+                        .Select(c => new ArtistInfo(c.ArtistId, c.ArtistName))
+                        .ToList();
+
+                    return new TrackViewModel
+                    {
+                        Id = t.Id,
+                        IndexedFileId = t.IndexedFileId,
+                        Title = t.Title ?? S["Untitled"],
+                        TrackNumber = t.TrackNumber,
+                        ArtistName = artistName,
+                        ArtistId = album.ArtistId,
+                        FeaturedArtists = guestCredits.Count > 0 ? guestCredits : null,
+                        Genre = album.Genres?.FirstOrDefault(),
+                        CoverUrl = _coverUrl,
+                        CoverDominantColor = _coverDominantColor,
+                        Duration = t.Duration ?? 0,
+                        DiscNumber = 1,
+                        Bpm = t.Bpm,
+                        MusicalKey = t.MusicalKey,
+                        Energy = t.Energy,
+                        IsPlaying = Audio.CurrentTrack?.MediaId == t.Id
+                    };
                 })
                 .ToList();
 
@@ -177,6 +186,7 @@ public partial class MusicAlbumDetail
         public int? TrackNumber { get; init; }
         public string? ArtistName { get; init; }
         public Guid? ArtistId { get; init; }
+        public IReadOnlyList<ArtistInfo>? FeaturedArtists { get; init; }
         public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
         public string? CoverDominantColor { get; init; }

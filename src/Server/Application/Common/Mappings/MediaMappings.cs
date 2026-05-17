@@ -233,6 +233,14 @@ public static class MediaMappings
                 Bpm = track.AudioAnalysis?.Bpm,
                 MusicalKey = track.AudioAnalysis?.MusicalKey,
                 Energy = track.AudioAnalysis?.Energy,
+                ArtistCredits = track.ArtistCredits.Count > 0
+                    ? track.ArtistCredits.OrderBy(c => c.Order).Select(c => new MusicArtistCreditDto
+                    {
+                        ArtistId = c.MusicArtistId,
+                        ArtistName = c.MusicArtist?.Title ?? "",
+                        IsGuest = c.IsGuest
+                    }).ToList()
+                    : null,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -249,6 +257,14 @@ public static class MediaMappings
                 Country = artist.Country,
                 Albums = artist.Albums.Count > 0
                     ? artist.Albums.Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto()).ToList()
+                    : null,
+                GuestAppearanceAlbums = artist.ArtistCredits.Count > 0
+                    ? artist.ArtistCredits
+                        .Where(c => c.IsGuest && c.Media is MusicTrack { Album: not null })
+                        .Select(c => ((MusicTrack)c.Media).Album)
+                        .DistinctBy(a => a.Id)
+                        .Select(a => (LiteMusicAlbumDto)a.ToLiteMediaDto())
+                        .ToList() is { Count: > 0 } guestAlbums ? guestAlbums : null
                     : null,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
