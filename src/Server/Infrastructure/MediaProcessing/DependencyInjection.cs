@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<IPersonMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
+        services.AddScoped<IPersonMetadataProvider, MusicBrainzPersonMetadataProvider>();
         services.AddScoped<TMDbSerieMetadataProvider>();
         services.AddKeyedScoped<ISerieMetadataProvider>("tmdb", (sp, _) => sp.GetRequiredService<TMDbSerieMetadataProvider>());
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbSerieMetadataProvider>());
