@@ -13,4 +13,5 @@ public sealed record LiteMusicTrackDto : LiteMediaDto
     public double? Bpm { get; init; }
     public string? MusicalKey { get; init; }
     public double? Energy { get; init; }
+    public IReadOnlyList<MusicArtistCreditDto>? ArtistCredits { get; init; }
 }

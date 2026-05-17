@@ -149,7 +149,21 @@
                                 <span class="@(context.IsPlaying ? "track-playing" : "")">
                                     @context.Title
                                 </span>
-                                @if (!string.IsNullOrEmpty(context.ArtistName))
+                                @if (context.FeaturedArtists is { Count: > 0 })
+                                {
+                                    <span class="text-caption track-artist">
+                                        feat.
+                                        @foreach (var (artist, index) in context.FeaturedArtists.Select((a, i) => (a, i)))
+                                        {
+                                            @if (index > 0)
+                                            {
+                                                <text>, </text>
+                                            }
+                                            <a href="@($"/music/artists/{artist.Id}")" class="track-artist-link" @onclick:stopPropagation="true">@artist.Name</a>
+                                        }
+                                    </span>
+                                }
+                                else if (!string.IsNullOrEmpty(context.ArtistName))
                                 {
                                     <span class="text-caption track-artist">@context.ArtistName</span>
                                 }

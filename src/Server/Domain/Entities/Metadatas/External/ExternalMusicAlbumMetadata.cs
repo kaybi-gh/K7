@@ -23,6 +23,14 @@ public class ExternalMusicTrackMetadata
     public TimeSpan? Duration { get; init; }
     public string? MusicBrainzRecordingId { get; init; }
     public string? Isrc { get; init; }
+    public IList<ExternalMusicTrackArtistCredit> ArtistCredits { get; init; } = [];
+}
+
+public class ExternalMusicTrackArtistCredit
+{
+    public required string Name { get; init; }
+    public required string MusicBrainzArtistId { get; init; }
+    public bool IsGuest { get; init; }
 }
 
 public class ExternalMusicArtistMetadata

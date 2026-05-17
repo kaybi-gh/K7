@@ -137,7 +137,13 @@
                             }
                         </td>
                         <td>
-                            <span class="@(context.IsPlaying ? "track-playing" : "")">@context.Title</span>
+                            <div class="track-title-cell">
+                                <span class="@(context.IsPlaying ? "track-playing" : "")">@context.Title</span>
+                                @if (!string.IsNullOrEmpty(context.FeaturedArtists))
+                                {
+                                    <span class="text-caption track-artist">feat. @context.FeaturedArtists</span>
+                                }
+                            </div>
                         </td>
                         <td>
                             <span class="track-album">@context.AlbumTitle</span>

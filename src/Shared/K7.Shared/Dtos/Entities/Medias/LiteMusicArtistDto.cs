@@ -7,4 +7,5 @@ public sealed record LiteMusicArtistDto : LiteMediaDto
     public MusicArtistType ArtistType { get; init; }
     public string? Country { get; init; }
     public IReadOnlyList<LiteMusicAlbumDto>? Albums { get; init; }
+    public IReadOnlyList<LiteMusicAlbumDto>? GuestAppearanceAlbums { get; init; }
 }

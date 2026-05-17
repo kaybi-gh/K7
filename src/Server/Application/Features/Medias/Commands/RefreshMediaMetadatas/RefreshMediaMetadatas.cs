@@ -133,11 +133,13 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         {
             await _context.Entry(album).Collection(a => a.Tracks).Query()
                 .Include(t => t.ExternalIds)
+                .Include(t => t.ArtistCredits)
                 .LoadAsync(cancellationToken);
 
             album.ApplyMetadata(metadata);
             await EnrichArtistsAsync(album, metadata, request.Language, cancellationToken);
             await PersistTrackExternalIdsAsync(album, metadata, cancellationToken);
+            await SyncTrackArtistCreditsAsync(album, metadata, cancellationToken);
         }
     }
 
@@ -427,6 +429,63 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
             artist.Pictures.Add(picture);
         }
+    }
+
+    private async Task SyncTrackArtistCreditsAsync(MusicAlbum album, ExternalMusicAlbumMetadata metadata, CancellationToken cancellationToken)
+    {
+        if (metadata.Tracks is not { Count: > 0 }) return;
+
+        foreach (var track in album.Tracks)
+        {
+            if (track.ArtistCredits.Count > 0) continue;
+
+            var metadataTrack = metadata.Tracks.FirstOrDefault(mt =>
+                mt.TrackNumber == track.TrackNumber
+                || string.Equals(mt.Title, track.Title, StringComparison.OrdinalIgnoreCase));
+
+            if (metadataTrack?.ArtistCredits is not { Count: > 0 }) continue;
+
+            for (var i = 0; i < metadataTrack.ArtistCredits.Count; i++)
+            {
+                var credit = metadataTrack.ArtistCredits[i];
+                var creditArtist = await FindOrCreateMusicArtistAsync(credit.Name, credit.MusicBrainzArtistId, cancellationToken);
+                track.ArtistCredits.Add(new MusicArtistCredit
+                {
+                    MusicArtistId = creditArtist.Id,
+                    MediaId = track.Id,
+                    IsGuest = credit.IsGuest,
+                    Order = i
+                });
+            }
+        }
+    }
+
+    private async Task<MusicArtist> FindOrCreateMusicArtistAsync(string name, string? musicBrainzId, CancellationToken cancellationToken)
+    {
+        MusicArtist? existing = null;
+
+        if (!string.IsNullOrEmpty(musicBrainzId))
+        {
+            existing = await _context.Medias.OfType<MusicArtist>()
+                .FirstOrDefaultAsync(a => a.ExternalIds.Any(e =>
+                    e.ProviderName == "musicbrainz" && e.Value == musicBrainzId), cancellationToken);
+        }
+
+        existing ??= await _context.Medias.OfType<MusicArtist>()
+            .FirstOrDefaultAsync(a => a.Title == name, cancellationToken);
+
+        if (existing is not null) return existing;
+
+        var artist = new MusicArtist { Title = name };
+        _context.Medias.Add(artist);
+
+        if (!string.IsNullOrEmpty(musicBrainzId))
+        {
+            artist.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = musicBrainzId, MediaId = artist.Id });
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return artist;
     }
 
     private async Task SyncArtistMembersAsync(MusicArtist artist, IReadOnlyList<ExternalMusicArtistMember>? members, CancellationToken cancellationToken)

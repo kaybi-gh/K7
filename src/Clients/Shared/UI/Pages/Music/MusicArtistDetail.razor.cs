@@ -42,7 +42,9 @@ public partial class MusicArtistDetail
                 artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
 
-            var albums = artist.Albums ?? [];
+            var albums = (artist.Albums ?? [])
+                .OrderByDescending(a => a.ReleaseDate)
+                .ToList();
 
             _albums = albums
                 .Select(album => new MediaCardViewModel
@@ -65,19 +67,28 @@ public partial class MusicArtistDetail
 
             _tracks = allTracks
                 .OrderBy(t => t.TrackNumber)
-                .Select(track => new TrackViewModel
+                .Select(track =>
                 {
-                    Id = track.Id,
-                    IndexedFileId = track.IndexedFileId,
-                    Title = track.Title ?? S["Untitled"],
-                    TrackNumber = track.TrackNumber,
-                    AlbumTitle = albums.FirstOrDefault(a => a.Tracks?.Any(t => t.Id == track.Id) == true)?.Title,
-                    CoverUrl = apiClient.GetAbsoluteUri(
-                        (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                            ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
-                            .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
-                    Duration = track.Duration ?? 0,
-                    IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
+                    var guestNames = (track.ArtistCredits ?? [])
+                        .Where(c => c.IsGuest)
+                        .Select(c => c.ArtistName)
+                        .ToList();
+
+                    return new TrackViewModel
+                    {
+                        Id = track.Id,
+                        IndexedFileId = track.IndexedFileId,
+                        Title = track.Title ?? S["Untitled"],
+                        TrackNumber = track.TrackNumber,
+                        AlbumTitle = albums.FirstOrDefault(a => a.Tracks?.Any(t => t.Id == track.Id) == true)?.Title,
+                        FeaturedArtists = guestNames.Count > 0 ? string.Join(", ", guestNames) : null,
+                        CoverUrl = apiClient.GetAbsoluteUri(
+                            (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                                ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
+                                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
+                        Duration = track.Duration ?? 0,
+                        IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
+                    };
                 })
                 .ToList();
 
@@ -178,6 +189,7 @@ public partial class MusicArtistDetail
         public required string Title { get; init; }
         public int? TrackNumber { get; init; }
         public string? AlbumTitle { get; init; }
+        public string? FeaturedArtists { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
         public bool IsPlaying { get; init; }

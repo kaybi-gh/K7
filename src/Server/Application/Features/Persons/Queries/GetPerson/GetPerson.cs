@@ -38,6 +38,12 @@ public class GetPersonQueryHandler : IRequestHandler<GetPersonQuery, Person>
             .ThenInclude(x => (x.Media as MusicArtist)!.Albums)
                 .ThenInclude(a => a.Pictures)
                     .ThenInclude(p => p.Variants)
+        .Include(x => x.Roles)
+            .ThenInclude(x => (x.Media as MusicArtist)!.ArtistCredits)
+                .ThenInclude(c => c.Media)
+                    .ThenInclude(m => (m as MusicTrack)!.Album)
+                        .ThenInclude(a => a.Pictures)
+                            .ThenInclude(p => p.Variants)
         .Where(x => x.Id == request.Id)
         .SingleOrDefaultAsync(cancellationToken);
 
