@@ -19,6 +19,7 @@ public class GetPersonQueryHandler : IRequestHandler<GetPersonQuery, Person>
     {
         var entity = await _context.Persons
         .AsNoTracking()
+        .AsSplitQuery()
         .Include(x => x.ExternalIds)
         .Include(x => x.PortraitPicture)
         .Include(x => x.Roles)

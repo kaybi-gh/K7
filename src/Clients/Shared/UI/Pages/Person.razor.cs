@@ -94,10 +94,13 @@ public partial class Person : IDisposable
         }
 
         var seenAlbums = new HashSet<Guid>();
+        var seenAlbumTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var role in _person.Roles)
         {
             // Albums directly linked via PersonRole (e.g. MusicTrack roles)
-            if (role.Media is LiteMusicAlbumDto album && seenAlbums.Add(album.Id))
+            if (role.Media is LiteMusicAlbumDto album
+                && seenAlbums.Add(album.Id)
+                && (album.Title is null || seenAlbumTitles.Add(album.Title)))
             {
                 AddAlbumToDiscography(album);
             }
@@ -107,13 +110,16 @@ public partial class Person : IDisposable
             {
                 foreach (var artistAlbum in albums)
                 {
-                    if (seenAlbums.Add(artistAlbum.Id))
+                    if (seenAlbums.Add(artistAlbum.Id)
+                        && (artistAlbum.Title is null || seenAlbumTitles.Add(artistAlbum.Title)))
                     {
                         AddAlbumToDiscography(artistAlbum);
                     }
                 }
             }
         }
+
+        _discography.Sort((a, b) => string.Compare(b.AdditionalInformations, a.AdditionalInformations, StringComparison.Ordinal));
 
         if (_backdropUrls.Count > 1)
         {
