@@ -94,25 +94,22 @@ public partial class Person : IDisposable
         var seenAlbums = new HashSet<Guid>();
         foreach (var role in _person.Roles)
         {
+            // Albums directly linked via PersonRole (e.g. MusicTrack roles)
             if (role.Media is LiteMusicAlbumDto album && seenAlbums.Add(album.Id))
             {
-                var coverUri = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                    ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
+                AddAlbumToDiscography(album);
+            }
 
-                if (_backdropUrls.Count < 5
-                    && apiClient.GetAbsoluteUri(coverUri?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is { } coverUrl)
+            // Albums from MusicArtist (via MusicArtistMember role)
+            if (role.Media is LiteMusicArtistDto { Albums: { } albums })
+            {
+                foreach (var artistAlbum in albums)
                 {
-                    _backdropUrls.Add(coverUrl);
+                    if (seenAlbums.Add(artistAlbum.Id))
+                    {
+                        AddAlbumToDiscography(artistAlbum);
+                    }
                 }
-
-                _discography.Add(new MediaCardViewModel
-                {
-                    Id = album.Id.ToString(),
-                    Title = album.Title,
-                    AdditionalInformations = album.ReleaseDate?.Year.ToString(),
-                    PictureUrl = apiClient.GetAbsoluteUri(
-                        coverUri?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-                });
             }
         }
 
@@ -136,6 +133,27 @@ public partial class Person : IDisposable
         parameters["ContentText"] = _person.Biography;
         parameters["ButtonText"] = S["Cancel"].Value;
         return DialogService.ShowAsync<OverviewDialog>(_person.Name ?? string.Empty, parameters, options);
+    }
+
+    private void AddAlbumToDiscography(LiteMusicAlbumDto album)
+    {
+        var coverUri = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+            ?? album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
+
+        if (_backdropUrls.Count < 5
+            && apiClient.GetAbsoluteUri(coverUri?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is { } coverUrl)
+        {
+            _backdropUrls.Add(coverUrl);
+        }
+
+        _discography.Add(new MediaCardViewModel
+        {
+            Id = album.Id.ToString(),
+            Title = album.Title,
+            AdditionalInformations = album.ReleaseDate?.Year.ToString(),
+            PictureUrl = apiClient.GetAbsoluteUri(
+                coverUri?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+        });
     }
 
     private static int Age(DateOnly birthday)
