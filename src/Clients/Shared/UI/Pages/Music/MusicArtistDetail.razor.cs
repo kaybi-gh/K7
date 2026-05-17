@@ -19,6 +19,9 @@ public partial class MusicArtistDetail
     [Inject]
     private IK7DialogService DialogService { get; set; } = default!;
 
+    [Inject]
+    private IK7Snackbar Snackbar { get; set; } = default!;
+
     private MusicArtistDto? _artist;
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
@@ -152,6 +155,20 @@ public partial class MusicArtistDetail
         return ts.Hours > 0
             ? $"{ts.Hours:0}:{ts.Minutes:00}:{ts.Seconds:00}"
             : $"{ts.Minutes:0}:{ts.Seconds:00}";
+    }
+
+    private async Task RefreshMetadataAsync()
+    {
+        if (_artist is null) return;
+        try
+        {
+            await k7ServerService.RefreshMediaMetadataAsync(_artist.Id);
+            Snackbar.Add(L["RefreshMetadataSent"], K7Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
     }
 
     internal sealed record TrackViewModel

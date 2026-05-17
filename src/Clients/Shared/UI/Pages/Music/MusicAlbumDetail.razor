@@ -1,6 +1,7 @@
 @page "/music/albums/{Id}"
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject IStringLocalizer<MusicAlbumDetail> L
@@ -95,6 +96,16 @@
                             @L["GoToArtist"]
                         </K7Button>
                     }
+                    <K7Menu>
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            <AuthorizeView Roles="Administrator">
+                                <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                            </AuthorizeView>
+                        </ChildContent>
+                    </K7Menu>
                 </div>
             </div>
         </div>

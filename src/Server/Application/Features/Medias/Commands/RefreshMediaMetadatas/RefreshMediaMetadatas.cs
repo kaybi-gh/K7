@@ -56,6 +56,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         {
             Movie movie => HandleMovieAsync(request, movie, cancellationToken),
             MusicAlbum album => HandleMusicAlbumAsync(request, album, cancellationToken),
+            MusicArtist artist => HandleMusicArtistAsync(request, artist, cancellationToken),
             Serie serie => HandleSerieAsync(request, serie, cancellationToken),
             _ => throw new NotImplementedException()
         };
@@ -137,6 +138,66 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             album.ApplyMetadata(metadata);
             await EnrichArtistsAsync(album, metadata, request.Language, cancellationToken);
             await PersistTrackExternalIdsAsync(album, metadata, cancellationToken);
+        }
+    }
+
+    private async Task HandleMusicArtistAsync(RefreshMediaMetadatasCommand request, MusicArtist artist, CancellationToken cancellationToken)
+    {
+        var language = request.Language;
+
+        if (_artistProviders.TryGetValue("musicbrainz", out var mbProvider))
+        {
+            var mbDetails = await mbProvider.FetchByProviderIdAsync(
+                request.MetadataProviderExternalId, language, cancellationToken);
+
+            if (mbDetails is not null)
+            {
+                if (!string.IsNullOrEmpty(mbDetails.Country))
+                    artist.Country = mbDetails.Country;
+
+                if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
+                    artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
+
+                await SyncArtistMembersAsync(artist, mbDetails.Members, cancellationToken);
+
+                // Poster from MusicBrainz cover art
+                if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbDetails.ImageUrl))
+                {
+                    var picture = new MetadataPicture
+                    {
+                        Type = MetadataPictureType.Poster,
+                        OriginalRemoteUri = new Uri(mbDetails.ImageUrl),
+                        MediaId = artist.Id
+                    };
+                    picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
+                    artist.Pictures.Add(picture);
+                }
+            }
+        }
+
+        // Bio/image from Wikidata
+        var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
+
+        if (!string.IsNullOrEmpty(wikidataId) && _artistProviders.TryGetValue("wikidata", out var wdProvider))
+        {
+            var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
+            if (details is not null)
+            {
+                if (!string.IsNullOrEmpty(details.Biography))
+                    artist.Biography = details.Biography;
+
+                if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
+                {
+                    var picture = new MetadataPicture
+                    {
+                        Type = MetadataPictureType.Poster,
+                        OriginalRemoteUri = new Uri(details.ImageUrl),
+                        MediaId = artist.Id
+                    };
+                    picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
+                    artist.Pictures.Add(picture);
+                }
+            }
         }
     }
 

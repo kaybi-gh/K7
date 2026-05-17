@@ -28,5 +28,7 @@
   <data name="AlbumColumn" xml:space="preserve"><value>Album</value></data>
   <data name="Biography" xml:space="preserve"><value>Biographie</value></data>
   <data name="MembersSection" xml:space="preserve"><value>Membres</value></data>
+  <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance en tache de fond.</value></data>
 </root>
 

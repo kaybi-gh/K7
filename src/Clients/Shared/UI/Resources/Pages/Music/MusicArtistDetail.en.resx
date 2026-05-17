@@ -28,5 +28,7 @@
   <data name="AlbumColumn" xml:space="preserve"><value>Album</value></data>
   <data name="Biography" xml:space="preserve"><value>Biography</value></data>
   <data name="MembersSection" xml:space="preserve"><value>Members</value></data>
+  <data name="RefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh started in background.</value></data>
 </root>
 
