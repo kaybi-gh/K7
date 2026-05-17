@@ -315,6 +315,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.MissingAudioAnalysis => L["MissingAudioAnalysis"],
         DiagnosticIssue.MissingFiles => L["MissingFiles"],
         DiagnosticIssue.InaccessiblePath => L["InaccessiblePath"],
+        DiagnosticIssue.MissingMembers => L["MissingMembers"],
         _ => issue.ToString()
     };
 
@@ -322,7 +323,7 @@ public partial class AdminDiagnosticsPanel
     {
         DiagnosticIssue.OrphanFile or DiagnosticIssue.MissingFiles or DiagnosticIssue.MissingFileMetadata
             => "error",
-        DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis => "info",
+        DiagnosticIssue.StaleMetadata or DiagnosticIssue.MissingAudioAnalysis or DiagnosticIssue.MissingMembers => "info",
         DiagnosticIssue.InaccessiblePath => "warning",
         _ => "warning"
     };

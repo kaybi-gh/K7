@@ -11,5 +11,6 @@ public enum DiagnosticIssue
     StaleMetadata,
     MissingAudioAnalysis,
     MissingFiles,
-    InaccessiblePath
+    InaccessiblePath,
+    MissingMembers
 }

@@ -41,6 +41,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         if (request.EntityType is null or DiagnosticEntityType.Media)
         {
             items.AddRange(await GetMediaIssuesAsync(request, cancellationToken));
+            items.AddRange(await GetMusicArtistIssuesAsync(request, cancellationToken));
         }
 
         if (request.EntityType is null or DiagnosticEntityType.Library)
@@ -232,8 +233,74 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
         MediaType.Movie => $"/movies/{id}",
         MediaType.Serie => $"/series/{id}",
         MediaType.MusicAlbum => $"/music/albums/{id}",
+        MediaType.MusicArtist => $"/music/artists/{id}",
         _ => null
     };
+
+    private async Task<List<DiagnosticItemDto>> GetMusicArtistIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
+    {
+        var query = _context.Medias.OfType<MusicArtist>()
+            .AsNoTracking()
+            .AsQueryable();
+
+        var artists = await query
+            .Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.LastMetadataRefreshedAt,
+                HasMembers = a.PersonRoles.Any(),
+                HasExternalIds = a.ExternalIds.Any()
+            })
+            .ToListAsync(cancellationToken);
+
+        // Find the library via the artist's albums
+        var artistIds = artists.Select(a => a.Id).ToHashSet();
+        var artistToLibrary = await _context.Medias.OfType<MusicAlbum>()
+            .Where(album => album.ArtistId != null && artistIds.Contains(album.ArtistId.Value))
+            .SelectMany(album => album.IndexedFiles.Select(f => new { ArtistId = album.ArtistId!.Value, f.LibraryId }))
+            .GroupBy(x => x.ArtistId)
+            .Select(g => new { ArtistId = g.Key, LibraryId = g.First().LibraryId })
+            .ToDictionaryAsync(x => x.ArtistId, x => x.LibraryId, cancellationToken);
+
+        if (request.LibraryId.HasValue)
+        {
+            artists = artists.Where(a => artistToLibrary.GetValueOrDefault(a.Id) == request.LibraryId.Value).ToList();
+        }
+
+        var libraryIds = artistToLibrary.Values.Distinct().ToList();
+        var libraryInfo = await _context.Libraries
+            .Where(l => libraryIds.Contains(l.Id))
+            .ToDictionaryAsync(l => l.Id, l => l.Title, cancellationToken);
+
+        return artists.Select(a =>
+        {
+            var issues = new List<DiagnosticIssue>();
+            if (!a.HasMembers) issues.Add(DiagnosticIssue.MissingMembers);
+            if (!a.HasExternalIds) issues.Add(DiagnosticIssue.MissingMetadata);
+
+            if (issues.Count == 0) return null;
+
+            var libraryId = artistToLibrary.GetValueOrDefault(a.Id);
+
+            return new DiagnosticItemDto
+            {
+                EntityId = a.Id,
+                EntityName = a.Title ?? "(untitled)",
+                EntityType = DiagnosticEntityType.Media,
+                LibraryId = libraryId,
+                LibraryTitle = libraryInfo.GetValueOrDefault(libraryId, ""),
+                Issues = issues,
+                Severity = DiagnosticSeverity.Warning,
+                MediaType = MediaType.MusicArtist,
+                MediaUrl = BuildMediaUrl(MediaType.MusicArtist, a.Id),
+                LastMetadataRefreshedAt = a.LastMetadataRefreshedAt
+            };
+        })
+        .Where(dto => dto is not null)
+        .Cast<DiagnosticItemDto>()
+        .ToList();
+    }
 
     private async Task<List<DiagnosticItemDto>> GetScanIssuesAsync(GetDiagnosticItemsQuery request, CancellationToken cancellationToken)
     {

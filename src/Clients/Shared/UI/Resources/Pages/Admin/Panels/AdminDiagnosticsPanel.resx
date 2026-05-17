@@ -39,6 +39,7 @@
   <data name="MissingFileMetadata" xml:space="preserve"><value>Metadonnees fichier manquantes</value></data>
   <data name="MissingHlsSegments" xml:space="preserve"><value>Segments HLS manquants</value></data>
   <data name="MissingAudioAnalysis" xml:space="preserve"><value>Analyse audio manquante</value></data>
+  <data name="MissingMembers" xml:space="preserve"><value>Membres manquants</value></data>
   <data name="BackgroundTasksSection" xml:space="preserve"><value>Taches de fond</value></data>
   <data name="PendingTasks" xml:space="preserve"><value>En attente</value></data>
   <data name="FailedTasks" xml:space="preserve"><value>Echouees</value></data>
