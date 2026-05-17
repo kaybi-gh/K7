@@ -28,4 +28,5 @@
   <data name="EpisodeList" xml:space="preserve"><value>Episodes</value></data>
   <data name="EpisodeNumber" xml:space="preserve"><value>Episode {0}</value></data>
   <data name="Overview" xml:space="preserve"><value>Overview</value></data>
+  <data name="DetectIntrosOutros" xml:space="preserve"><value>Detect intros/outros</value></data>
 </root>

@@ -126,9 +126,22 @@ else if (_season is not null)
                            Class="px-0">
                     @L["BackToSerie"]
                 </K7Button>
-                <h4>
-                    @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
-                </h4>
+                <div class="d-flex align-center gap-2">
+                    <h4>
+                        @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
+                    </h4>
+
+                    <AuthorizeView Roles="Administrator">
+                        <K7Menu>
+                            <ActivatorContent>
+                                <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
+                            </ActivatorContent>
+                            <ChildContent>
+                                <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
+                            </ChildContent>
+                        </K7Menu>
+                    </AuthorizeView>
+                </div>
 
                 @if (!string.IsNullOrEmpty(_season.Overview))
                 {

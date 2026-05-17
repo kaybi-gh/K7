@@ -24,4 +24,5 @@ public interface IMediaService
     Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default);
     Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default);
+    Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default);
 }
