@@ -375,7 +375,20 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         foreach (var member in members)
         {
-            var person = await _context.Persons
+            Person? person = null;
+
+            // Try to find by MusicBrainz ExternalId first
+            if (!string.IsNullOrEmpty(member.MusicBrainzArtistId))
+            {
+                person = await _context.Persons
+                    .Include(p => p.ExternalIds)
+                    .FirstOrDefaultAsync(p => p.ExternalIds.Any(e =>
+                        e.ProviderName == "musicbrainz" && e.Value == member.MusicBrainzArtistId), cancellationToken);
+            }
+
+            // Fallback to name match
+            person ??= await _context.Persons
+                .Include(p => p.ExternalIds)
                 .FirstOrDefaultAsync(p => p.Name == member.Name, cancellationToken);
 
             if (person is null)
@@ -386,7 +399,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
 
             if (!string.IsNullOrEmpty(member.MusicBrainzArtistId)
-                && !await _context.ExternalIds.AnyAsync(e => e.PersonId == person.Id && e.ProviderName == "musicbrainz", cancellationToken))
+                && !person.ExternalIds.Any(e => e.ProviderName == "musicbrainz"))
             {
                 person.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = member.MusicBrainzArtistId, PersonId = person.Id });
             }
