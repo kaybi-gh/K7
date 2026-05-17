@@ -273,7 +273,6 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
     private async Task EnrichArtistsAsync(MusicAlbum album, ExternalMusicAlbumMetadata metadata, string language, CancellationToken cancellationToken)
     {
-        if (metadata.Artists is not { Count: > 0 }) return;
         if (album.ArtistId is null) return;
 
         var artist = await _context.Medias.OfType<MusicArtist>()
@@ -285,13 +284,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         if (artist is null) return;
 
-        var artistMetadata = metadata.Artists.FirstOrDefault(a =>
+        // Try to match artist from metadata to get MusicBrainz ID
+        var artistMetadata = metadata.Artists?.FirstOrDefault(a =>
             string.Equals(a.Name, artist.Title, StringComparison.OrdinalIgnoreCase));
 
-        if (artistMetadata is null) return;
-
         var mbExternalId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
-        if (mbExternalId is null && !string.IsNullOrEmpty(artistMetadata.MusicBrainzArtistId))
+        if (mbExternalId is null && !string.IsNullOrEmpty(artistMetadata?.MusicBrainzArtistId))
         {
             mbExternalId = new ExternalId
             {
