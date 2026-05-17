@@ -303,6 +303,20 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                 })
                 .ToList();
 
+            // Solo artist: link the artist itself as a member
+            if (artist.Type == "Person" && members is not { Count: > 0 })
+            {
+                members =
+                [
+                    new ExternalMusicArtistMember
+                    {
+                        Name = artist.Name ?? "Unknown",
+                        MusicBrainzArtistId = providerId,
+                        IsActive = true
+                    }
+                ];
+            }
+
             return new ExternalMusicArtistDetails
             {
                 Country = country,
@@ -480,6 +494,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
 
     private record MbArtistDetail
     {
+        public string? Name { get; init; }
+        public string? Type { get; init; }
         public MbArea? Area { get; init; }
         public List<MbRelation>? Relations { get; init; }
     }
