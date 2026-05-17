@@ -284,15 +284,18 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         // Each chromaprint integer covers approximately 0.1238 seconds (Chromaprint default)
         const double secondsPerItem = 0.1238;
         const int minMatchLength = 10;
+        const int similarityThreshold = 22; // 22 out of 32 bits matching (~69%)
+        const int maxGap = 4; // Allow up to 4 consecutive mismatches (~0.5s) within a match
 
         var bestStart = -1;
         var bestLength = 0;
 
-        // Sliding window comparison: find the longest contiguous run of similar fingerprint values
+        // Sliding window comparison: find the longest run of similar fingerprint values
         for (var offset = -(ints2.Length - 1); offset < ints1.Length; offset++)
         {
             var currentStart = -1;
             var currentLength = 0;
+            var gapCount = 0;
 
             var i1Start = Math.Max(0, offset);
             var i2Start = Math.Max(0, -offset);
@@ -302,11 +305,16 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             {
                 var similarity = CountMatchingBits(ints1[i1Start + i], ints2[i2Start + i]);
 
-                if (similarity >= 26) // 26 out of 32 bits matching = high similarity
+                if (similarity >= similarityThreshold)
                 {
                     if (currentStart < 0)
                         currentStart = i1Start + i;
-                    currentLength++;
+                    currentLength += 1 + gapCount;
+                    gapCount = 0;
+                }
+                else if (currentStart >= 0 && gapCount < maxGap)
+                {
+                    gapCount++;
                 }
                 else
                 {
@@ -317,6 +325,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                     }
                     currentStart = -1;
                     currentLength = 0;
+                    gapCount = 0;
                 }
             }
 
