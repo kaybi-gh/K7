@@ -3,6 +3,7 @@
 @using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Clients.Shared.UI.Components.Dialogs
+@using Microsoft.AspNetCore.Components.Authorization
 @implements IDisposable
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
@@ -86,6 +87,19 @@ else if (_person is not null)
                                 <p class="person-bio-text">@_person.Biography</p>
                             </div>
                         }
+
+                        <div class="person-actions">
+                            <K7Menu>
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    <AuthorizeView Roles="Administrator">
+                                        <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                    </AuthorizeView>
+                                </ChildContent>
+                            </K7Menu>
+                        </div>
                     </div>
                 </div>
             </div>

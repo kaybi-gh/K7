@@ -14,7 +14,7 @@ using TMDbLib.Client;
 using TMDbLib.Objects.Movies;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
-public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider, IMetadataProviderInfo
+public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider, IMetadataProviderInfo, IPersonMetadataProvider
 {
     public string ProviderName => "tmdb";
     public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Movie, LibraryMediaType.Serie];
@@ -295,6 +295,41 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             roles.RemoveAll(duplicateRoles.Contains);
         }
         return roles;
+    }
+
+    public async Task<ExternalPersonDetails?> FetchPersonAsync(string providerId, string language, CancellationToken cancellationToken = default)
+    {
+        if (!int.TryParse(providerId, out var tmdbId)) return null;
+
+        try
+        {
+            var tmdbPerson = await _tdmbClient.GetPersonAsync(tmdbId, language, cancellationToken: cancellationToken);
+            if (tmdbPerson is null) return null;
+
+            var imageUrl = !string.IsNullOrEmpty(tmdbPerson.ProfilePath)
+                ? _tdmbClient.GetImageUrl("original", tmdbPerson.ProfilePath, true)?.ToString()
+                : null;
+
+            return new ExternalPersonDetails
+            {
+                Biography = tmdbPerson.Biography,
+                Birthday = tmdbPerson.Birthday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Birthday.Value) : null,
+                Deathday = tmdbPerson.Deathday.HasValue ? DateOnly.FromDateTime(tmdbPerson.Deathday.Value) : null,
+                BirthPlace = tmdbPerson.PlaceOfBirth,
+                Gender = tmdbPerson.Gender switch
+                {
+                    TMDbLib.Objects.People.PersonGender.Female => PersonGender.Female,
+                    TMDbLib.Objects.People.PersonGender.Male => PersonGender.Male,
+                    TMDbLib.Objects.People.PersonGender.NonBinary => PersonGender.NonBinary,
+                    _ => PersonGender.NotSpecified,
+                },
+                ImageUrl = imageUrl
+            };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private Person ConvertToPerson(TMDbLib.Objects.People.Person tmdbPerson)

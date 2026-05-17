@@ -233,6 +233,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/persons/{id}/refresh-metadata", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.GetAsync($"api/medias/{serieId}/next-episode?currentEpisodeId={currentEpisodeId}", cancellationToken);

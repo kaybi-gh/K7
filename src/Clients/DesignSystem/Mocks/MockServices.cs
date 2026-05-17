@@ -309,6 +309,7 @@ public sealed class MockMediaService : IMediaService
     public Task ReidentifyIndexedFileAsync(Guid id, ReidentifyIndexedFileRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RefreshMediaMetadataAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default) => Task.FromResult<LiteSerieEpisodeDto?>(null);
     public Task<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>>([]);
 }
