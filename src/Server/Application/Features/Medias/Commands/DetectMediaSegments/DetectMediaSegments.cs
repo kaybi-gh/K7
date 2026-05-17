@@ -203,14 +203,26 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         MediaSegmentType segmentType,
         bool isOutro)
     {
-        // Compare first two episodes to establish the consensus range
-        var (ep1, _, fp1, dur1) = fingerprints[0];
-        var (ep2, _, fp2, dur2) = fingerprints[1];
+        // Try consecutive pairs until we find a matching range.
+        // The first episode of a season often lacks an intro/outro (common in anime),
+        // so we cannot assume episodes[0] vs episodes[1] will work.
+        (long startMs, long durationMs)? match = null;
 
-        var match = FindMatchingRange(fp1, fp2);
-        if (match is null || match.Value.durationMs < MinSegmentDurationMs)
+        for (var i = 0; i < fingerprints.Count - 1; i++)
         {
-            _logger.LogDebug("No matching {SegmentType} range found between episodes", segmentType);
+            var candidate = FindMatchingRange(fingerprints[i].fingerprint, fingerprints[i + 1].fingerprint);
+            if (candidate is not null && candidate.Value.durationMs >= MinSegmentDurationMs)
+            {
+                match = candidate;
+                _logger.LogDebug("Found {SegmentType} consensus from episodes {Ep1} and {Ep2}",
+                    segmentType, fingerprints[i].episode.EpisodeNumber, fingerprints[i + 1].episode.EpisodeNumber);
+                break;
+            }
+        }
+
+        if (match is null)
+        {
+            _logger.LogDebug("No matching {SegmentType} range found between any consecutive episode pair", segmentType);
             return;
         }
 
