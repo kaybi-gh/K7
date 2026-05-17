@@ -24,7 +24,6 @@
 
 .season-header {
     position: relative;
-    z-index: 1;
     display: flex;
     gap: 24px;
     padding: 40px 24px 24px;
@@ -63,7 +62,6 @@
 
 .season-episodes {
     position: relative;
-    z-index: 1;
     padding: 0 24px 32px;
     display: flex;
     flex-direction: column;
@@ -109,7 +107,6 @@
 
 .tv-back-button {
     position: relative;
-    z-index: 1;
     align-self: flex-start;
     margin: 16px 0 0 48px;
     flex-shrink: 0;
@@ -117,7 +114,6 @@
 
 .tv-details {
     position: relative;
-    z-index: 1;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -200,7 +196,6 @@
 
 .tv-carousel-area {
     position: relative;
-    z-index: 1;
     flex-shrink: 0;
     padding-bottom: 32px;
     margin-left: 12px !important;

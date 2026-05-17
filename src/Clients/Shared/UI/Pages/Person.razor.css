@@ -10,7 +10,6 @@
 
 .person-page > *:not(.person-backdrops) {
     position: relative;
-    z-index: 1;
 }
 
 /* Backdrop slideshow */
@@ -63,7 +62,6 @@
 
 .person-hero {
     position: relative;
-    z-index: 1;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;

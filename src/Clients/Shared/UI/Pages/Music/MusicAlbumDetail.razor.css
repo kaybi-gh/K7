@@ -26,7 +26,6 @@
 
 .album-header {
     position: relative;
-    z-index: 1;
     display: flex;
     gap: 32px;
     padding: 32px 40px 24px;
@@ -108,7 +107,6 @@
 
 .album-tracklist {
     position: relative;
-    z-index: 1;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
