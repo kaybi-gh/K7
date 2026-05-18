@@ -13,14 +13,13 @@
 @inject K7.Clients.Shared.Interfaces.ISpatialNavService SpatialNav
 @inject IStringLocalizer<VideoPlayerControlsOverlay> L
 
-<div class="video-controls-overlay" tabindex="0" @ref="_overlayRef"
+<div class="video-controls-overlay @(IsOverlayVisible ? "controls-visible" : "controls-hidden")" tabindex="0" @ref="_overlayRef"
      @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap"
      @ontouchstart="OnTouchStart" @ontouchstart:preventDefault
      @ontouchmove="OnTouchMove" @ontouchmove:preventDefault="@_swipeGestureActive"
      @ontouchend="OnTouchEnd" @ontouchend:preventDefault
      @onkeydown="OnKeyDown" @onkeydown:stopPropagation
-     @onfocusin="OnFocusIn"
-     style="@OverlayStyle">
+     @onfocusin="OnFocusIn">
 
     <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <K7IconButton Icon="@Phosphor.X" OnClick="OnCloseButtonClick" AriaLabel="Close" />
@@ -161,6 +160,8 @@
                 </div>
         </div>
     </div>
+
+    <SkipSegmentOverlay @ref="_skipOverlay" MediaId="@PlayerService.Source?.MediaId" ControlsVisible="@IsOverlayVisible" />
 </div>
 
 @if (_hudText is not null)
@@ -205,12 +206,6 @@
     private bool _isMouseOverControlsBar = false;
 
     private bool IsOverlayVisible => _showOverlay || _isMenuOpen || _isMouseOverVolumeSlider;
-
-    // On native MAUI, Android WebView may skip hit-testing elements with opacity: 0.
-    // Use a near-zero opacity so the overlay remains touchable when hidden.
-    private string OverlayStyle => IsOverlayVisible
-        ? "opacity: 1;"
-        : DeviceService.GetClientType() == ClientType.Web ? "opacity: 0;" : "opacity: 0.01;";
     private bool _isMouseOverVolumeButton = false;
     private bool _isMouseOverVolumeSlider = false;
     private bool _isVolumeSliderVisible = false;
@@ -223,6 +218,7 @@
     private string? _hudText;
     private string _hudIcon = Phosphor.FastForward;
     private ElementReference _overlayRef;
+    private SkipSegmentOverlay? _skipOverlay;
     private DotNetObjectReference<VideoPlayerControlsOverlay>? _dotNetRef;
     private static readonly TimeSpan _overlayTimeoutDesktop = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _overlayTimeoutTv = TimeSpan.FromSeconds(5);
@@ -364,6 +360,11 @@
             switch (code)
             {
                 case "Enter":
+                    if (_skipOverlay?.CanSkip == true)
+                    {
+                        _skipOverlay.SkipSegment();
+                        return;
+                    }
                     ShowOverlay();
                     return;
                 case "ArrowLeft":

@@ -2,9 +2,17 @@
 
 @if (_visible && _activeSegment is not null)
 {
-    <div class="skip-overlay">
+    <div class="skip-overlay @(ControlsVisible ? "persistent" : "")">
         <K7Button Color="primary" OnClick="SkipSegment" StartIcon="@Phosphor.SkipForward">
             @(_activeSegment.Type == K7.Shared.Enums.MediaSegmentType.Intro ? L["SkipIntro"] : L["SkipOutro"])
         </K7Button>
+    </div>
+}
+
+@if (_showSkippedNotification)
+{
+    <div class="skip-notification">
+        <K7Icon Name="@Phosphor.SkipForward" Size="sm" />
+        <span>@(_skippedSegmentType == K7.Shared.Enums.MediaSegmentType.Intro ? L["IntroSkipped"] : L["OutroSkipped"])</span>
     </div>
 }
