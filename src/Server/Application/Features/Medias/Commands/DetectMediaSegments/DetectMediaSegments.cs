@@ -57,6 +57,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
     public async Task Handle(DetectMediaSegmentsCommand request, CancellationToken cancellationToken)
     {
         var season = await _context.Medias
+            .AsNoTracking()
             .OfType<SerieSeason>()
             .Include(s => s.Episodes)
                 .ThenInclude(e => e.IndexedFiles)
@@ -84,23 +85,42 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
 
         var hasExistingSegments = episodes.Any(e => e.Segments.Count > 0);
 
+        List<MediaSegment> newSegments;
         if (hasExistingSegments)
-            await RunIncrementalDetectionAsync(episodes, cancellationToken);
+            newSegments = await RunIncrementalDetectionAsync(episodes, cancellationToken);
         else
-            await RunFullDetectionAsync(episodes, cancellationToken);
+            newSegments = await RunFullDetectionAsync(episodes, cancellationToken);
 
+        if (newSegments.Count == 0)
+            return;
+
+        // Remove existing detected segments for episodes that will get new ones
+        var episodeIds = newSegments.Select(s => s.MediaId).Distinct().ToList();
+        var segmentTypes = newSegments.Select(s => s.Type).Distinct().ToList();
+
+        await _context.MediaSegments
+            .Where(s => episodeIds.Contains(s.MediaId) && segmentTypes.Contains(s.Type))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        _context.MediaSegments.AddRange(newSegments);
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task RunFullDetectionAsync(List<SerieEpisode> episodes, CancellationToken cancellationToken)
+    private async Task<List<MediaSegment>> RunFullDetectionAsync(List<SerieEpisode> episodes, CancellationToken cancellationToken)
     {
+        var segments = new List<MediaSegment>();
         var episodeData = await ExtractAllFingerprintsAsync(episodes, cancellationToken);
 
         if (episodeData.Count < 2)
-            return;
+        {
+            _logger.LogWarning("Only {Count} episodes with valid fingerprints, need at least 2", episodeData.Count);
+            return segments;
+        }
 
-        var introMatches = FindBestMatches(episodeData, isOutro: false);
-        var outroMatches = FindBestMatches(episodeData, isOutro: true);
+        LogFingerprintDiagnostics(episodeData);
+
+        var introMatches = FindBestMatches(episodeData, isOutro: false, _logger);
+        var outroMatches = FindBestMatches(episodeData, isOutro: true, _logger);
 
         _logger.LogInformation(
             "Found intros for {IntroCount}/{Total} and outros for {OutroCount}/{Total} episodes",
@@ -114,7 +134,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                     data.File.Path, introMatch.StartSeconds, introMatch.EndSeconds,
                     data.DurationSeconds, cancellationToken);
 
-                data.Episode.Segments.Add(new MediaSegment
+                segments.Add(new MediaSegment
                 {
                     Id = Guid.NewGuid(),
                     MediaId = data.Episode.Id,
@@ -135,7 +155,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                     data.File.Path, absoluteStart, absoluteEnd,
                     data.DurationSeconds, cancellationToken);
 
-                data.Episode.Segments.Add(new MediaSegment
+                segments.Add(new MediaSegment
                 {
                     Id = Guid.NewGuid(),
                     MediaId = data.Episode.Id,
@@ -146,32 +166,93 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                 });
             }
         }
+
+        return segments;
     }
 
-    private async Task RunIncrementalDetectionAsync(List<SerieEpisode> episodes, CancellationToken cancellationToken)
+    private void LogFingerprintDiagnostics(List<EpisodeData> episodeData)
     {
+        var introLengths = episodeData
+            .Where(e => e.IntroFingerprint is not null)
+            .Select(e => e.IntroFingerprint!.Length)
+            .ToList();
+        var outroLengths = episodeData
+            .Where(e => e.OutroFingerprint is not null)
+            .Select(e => e.OutroFingerprint!.Length)
+            .ToList();
+
+        _logger.LogInformation(
+            "Fingerprint extraction: {Total} episodes, intros: {IntroCount} (min={IntroMin}, max={IntroMax}), outros: {OutroCount} (min={OutroMin}, max={OutroMax})",
+            episodeData.Count,
+            introLengths.Count,
+            introLengths.Count > 0 ? introLengths.Min() : 0,
+            introLengths.Count > 0 ? introLengths.Max() : 0,
+            outroLengths.Count,
+            outroLengths.Count > 0 ? outroLengths.Min() : 0,
+            outroLengths.Count > 0 ? outroLengths.Max() : 0);
+
+        // Diagnostic: PopCount distribution for first pair at shift=0
+        if (episodeData.Count >= 2)
+        {
+            var fp1 = episodeData[0].IntroFingerprint;
+            var fp2 = episodeData[1].IntroFingerprint;
+            if (fp1 is not null && fp2 is not null)
+            {
+                var overlapLen = Math.Min(fp1.Length, fp2.Length);
+                var popCounts = new int[33]; // 0-32 bits
+                for (var i = 0; i < overlapLen; i++)
+                {
+                    var pc = BitOperations.PopCount(fp1[i] ^ fp2[i]);
+                    popCounts[pc]++;
+                }
+
+                var matchingAtThreshold = popCounts.Take(MaxFingerprintPointDifferences + 1).Sum();
+                _logger.LogInformation(
+                    "Diagnostic ep1 vs ep2 at shift=0: overlap={Overlap}, matching (popcount<={Threshold}): {Matching}/{Total} ({Pct:F1}%), popcount[0]={P0}, [1-3]={P13}, [4-6]={P46}, [7-10]={P710}, [11+]={P11}",
+                    overlapLen, MaxFingerprintPointDifferences,
+                    matchingAtThreshold, overlapLen,
+                    overlapLen > 0 ? 100.0 * matchingAtThreshold / overlapLen : 0,
+                    popCounts[0],
+                    popCounts[1] + popCounts[2] + popCounts[3],
+                    popCounts[4] + popCounts[5] + popCounts[6],
+                    popCounts[7] + popCounts[8] + popCounts[9] + popCounts[10],
+                    popCounts.Skip(11).Sum());
+            }
+        }
+    }
+
+    private async Task<List<MediaSegment>> RunIncrementalDetectionAsync(List<SerieEpisode> episodes, CancellationToken cancellationToken)
+    {
+        var segments = new List<MediaSegment>();
         var withSegments = episodes.Where(e => e.Segments.Count > 0).ToList();
         var withoutSegments = episodes.Where(e => e.Segments.Count == 0).ToList();
 
         if (withoutSegments.Count == 0)
-            return;
+            return segments;
 
         var referenceData = await ExtractAllFingerprintsAsync(withSegments, cancellationToken);
         var newData = await ExtractAllFingerprintsAsync(withoutSegments, cancellationToken);
 
         if (referenceData.Count == 0 || newData.Count == 0)
-            return;
+            return segments;
 
         foreach (var newEp in newData)
         {
-            await TryDetectSegmentFromReferencesAsync(
+            var introSegment = await TryDetectSegmentFromReferencesAsync(
                 newEp, referenceData, MediaSegmentType.Intro, cancellationToken);
-            await TryDetectSegmentFromReferencesAsync(
+            if (introSegment is not null)
+                segments.Add(introSegment);
+
+            var outroSegment = await TryDetectSegmentFromReferencesAsync(
                 newEp, referenceData, MediaSegmentType.Outro, cancellationToken);
+            if (outroSegment is not null)
+                segments.Add(outroSegment);
         }
+
+        return segments;
     }
 
-    private async Task TryDetectSegmentFromReferencesAsync(
+    private async Task<MediaSegment?> TryDetectSegmentFromReferencesAsync(
         EpisodeData newEp,
         List<EpisodeData> references,
         MediaSegmentType segmentType,
@@ -180,7 +261,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         var isOutro = segmentType == MediaSegmentType.Outro;
         var newFp = isOutro ? newEp.OutroFingerprint : newEp.IntroFingerprint;
         if (newFp is null)
-            return;
+            return null;
 
         var minDuration = isOutro ? MinOutroDurationSeconds : MinIntroDurationSeconds;
         var maxDuration = isOutro ? MaxOutroDurationSeconds : MaxIntroDurationSeconds;
@@ -210,7 +291,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         }
 
         if (best is null)
-            return;
+            return null;
 
         var startSeconds = best.Value.StartSeconds;
         var endSeconds = best.Value.EndSeconds;
@@ -226,7 +307,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             newEp.File.Path, startSeconds, endSeconds,
             newEp.DurationSeconds, cancellationToken);
 
-        newEp.Episode.Segments.Add(new MediaSegment
+        return new MediaSegment
         {
             Id = Guid.NewGuid(),
             MediaId = newEp.Episode.Id,
@@ -234,7 +315,7 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             StartMs = (long)(start * 1000),
             EndMs = (long)(end * 1000),
             DetectedAt = DateTimeOffset.UtcNow
-        });
+        };
     }
 
     // -- Fingerprint extraction --
@@ -257,8 +338,8 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
 
             var analysisWindow = GetAnalysisWindowSeconds(durationSeconds);
 
-            var introFpBytes = await ExtractAndCacheFingerprintAsync(
-                file, TimeSpan.Zero, TimeSpan.FromSeconds(analysisWindow), cancellationToken);
+            var introFpBytes = await _chromaprintService.ExtractFingerprintAsync(
+                file.Path, TimeSpan.Zero, TimeSpan.FromSeconds(analysisWindow), cancellationToken);
 
             var outroStart = durationSeconds - analysisWindow;
             var outroFpBytes = await _chromaprintService.ExtractFingerprintAsync(
@@ -276,34 +357,19 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
         return result;
     }
 
-    private async Task<byte[]?> ExtractAndCacheFingerprintAsync(
-        IndexedFile file,
-        TimeSpan startTime,
-        TimeSpan duration,
-        CancellationToken cancellationToken)
-    {
-        var fingerprint = await _chromaprintService.ExtractFingerprintAsync(
-            file.Path, startTime, duration, cancellationToken);
-
-        if (fingerprint is not null)
-        {
-            file.ChromaprintFingerprint = fingerprint;
-            file.ChromaprintDurationSeconds = (int)duration.TotalSeconds;
-            file.ChromaprintAnalyzedAt = DateTimeOffset.UtcNow;
-        }
-
-        return fingerprint;
-    }
-
     // -- All-pairs matching --
 
     private static Dictionary<Guid, SegmentMatch> FindBestMatches(
         List<EpisodeData> episodes,
-        bool isOutro)
+        bool isOutro,
+        ILogger logger)
     {
         var bestMatches = new Dictionary<Guid, SegmentMatch>();
         var minDuration = isOutro ? MinOutroDurationSeconds : MinIntroDurationSeconds;
         var maxDuration = isOutro ? MaxOutroDurationSeconds : MaxIntroDurationSeconds;
+        var label = isOutro ? "outro" : "intro";
+        var comparisonsAttempted = 0;
+        var comparisonsWithMatch = 0;
 
         for (var i = 0; i < episodes.Count; i++)
         {
@@ -317,16 +383,22 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
                 if (fpJ is null)
                     continue;
 
-                var match = CompareFingerprints(fpI, fpJ);
+                comparisonsAttempted++;
+                var match = CompareFingerprints(fpI, fpJ, logger, comparisonsAttempted <= 3 ? label : null);
                 if (match is null)
                     continue;
 
+                comparisonsWithMatch++;
                 TryUpdateBestMatch(bestMatches, episodes[i].Episode.Id,
                     match.Value.LhsStartSeconds, match.Value.LhsEndSeconds, minDuration, maxDuration);
                 TryUpdateBestMatch(bestMatches, episodes[j].Episode.Id,
                     match.Value.RhsStartSeconds, match.Value.RhsEndSeconds, minDuration, maxDuration);
             }
         }
+
+        logger.LogInformation(
+            "FindBestMatches ({Label}): {WithMatch}/{Attempted} comparisons produced a match",
+            label, comparisonsWithMatch, comparisonsAttempted);
 
         return bestMatches;
     }
@@ -352,13 +424,24 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
 
     // -- Core fingerprint comparison (inverted index approach from intro-skipper) --
 
-    private static FingerprintMatch? CompareFingerprints(uint[] lhs, uint[] rhs)
+    private static FingerprintMatch? CompareFingerprints(uint[] lhs, uint[] rhs, ILogger? logger = null, string? diagLabel = null)
     {
         if (lhs.Length == 0 || rhs.Length == 0)
+        {
+            if (diagLabel is not null)
+                logger?.LogWarning("CompareFingerprints ({Label}): empty fingerprint - lhs={LhsLen}, rhs={RhsLen}", diagLabel, lhs.Length, rhs.Length);
             return null;
+        }
 
         var rhsIndex = CreateInvertedIndex(rhs);
         var candidateShifts = FindCandidateShifts(lhs, rhsIndex);
+
+        if (diagLabel is not null)
+        {
+            logger?.LogInformation(
+                "CompareFingerprints ({Label}): lhs={LhsLen}, rhs={RhsLen}, rhsIndex={IndexSize}, candidates={ShiftCount}",
+                diagLabel, lhs.Length, rhs.Length, rhsIndex.Count, candidateShifts.Count);
+        }
 
         FingerprintMatch? best = null;
         var bestDuration = 0.0;
@@ -377,6 +460,16 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
             }
         }
 
+        if (diagLabel is not null)
+        {
+            if (best is not null)
+                logger?.LogInformation(
+                    "CompareFingerprints ({Label}): best match {Duration:F2}s at lhs[{Start:F2}..{End:F2}]",
+                    diagLabel, bestDuration, best.Value.LhsStartSeconds, best.Value.LhsEndSeconds);
+            else
+                logger?.LogWarning("CompareFingerprints ({Label}): no match found across {ShiftCount} shifts", diagLabel, candidateShifts.Count);
+        }
+
         return best;
     }
 
@@ -391,6 +484,9 @@ public class DetectMediaSegmentsCommandHandler : IRequestHandler<DetectMediaSegm
     private static HashSet<int> FindCandidateShifts(uint[] lhs, Dictionary<uint, int> rhsIndex)
     {
         var shifts = new HashSet<int>();
+
+        // Always try direct alignment
+        shifts.Add(0);
 
         for (var i = 0; i < lhs.Length; i++)
         {

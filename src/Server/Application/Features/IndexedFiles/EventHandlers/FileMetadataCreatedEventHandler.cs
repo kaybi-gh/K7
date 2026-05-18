@@ -81,21 +81,32 @@ public class FileMetadataCreatedEventHandler : INotificationHandler<FileMetadata
     private async Task TriggerIntroDetectionIfEligibleAsync(IndexedFile indexedFile, CancellationToken cancellationToken)
     {
         if (indexedFile.MediaId is null)
+        {
+            _logger.LogDebug("Intro detection skipped: file {FileId} has no MediaId", indexedFile.Id);
             return;
+        }
 
         var episode = await _context.Medias
             .OfType<SerieEpisode>()
             .FirstOrDefaultAsync(e => e.Id == indexedFile.MediaId, cancellationToken);
 
         if (episode is null)
+        {
+            _logger.LogDebug("Intro detection skipped: media {MediaId} is not a SerieEpisode", indexedFile.MediaId);
             return;
+        }
 
         var episodeCount = await _context.Medias
             .OfType<SerieEpisode>()
             .CountAsync(e => e.SeasonId == episode.SeasonId, cancellationToken);
 
         if (episodeCount < 2)
+        {
+            _logger.LogDebug("Intro detection skipped: season {SeasonId} has only {Count} episode(s)", episode.SeasonId, episodeCount);
             return;
+        }
+
+        _logger.LogInformation("Queuing intro detection for season {SeasonId} ({EpisodeCount} episodes)", episode.SeasonId, episodeCount);
 
         await _sender.Send(new CreateBackgroundTaskCommand
         {

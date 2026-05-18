@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using FFMpegCore;
 using K7.Server.Application.Common.Interfaces;
@@ -21,8 +22,6 @@ public class ChromaprintService(ILogger<ChromaprintService> logger) : IChromapri
 
         try
         {
-            var rawOutput = new List<string>();
-
             var inputArgs = new List<string>();
             if (startTime.HasValue)
                 inputArgs.Add($"-ss {startTime.Value.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}");
@@ -32,26 +31,72 @@ public class ChromaprintService(ILogger<ChromaprintService> logger) : IChromapri
 
             var args = string.Join(" ", inputArgs) + " -f chromaprint -fp_format raw -";
 
-            var exitCode = await SafeProcessRunner.RunAsync(
-                GlobalFFOptions.GetFFMpegBinaryPath(),
-                args,
-                onStdout: line => rawOutput.Add(line),
-                onStderr: line =>
-                {
-                    if (line.Contains("error", StringComparison.OrdinalIgnoreCase))
-                        logger.LogDebug("FFmpeg chromaprint stderr: {Line}", line);
-                },
-                timeout: TimeSpan.FromSeconds(120),
-                cancellationToken: cancellationToken
-            );
-
-            if (exitCode != 0)
+            // FFmpeg's -fp_format raw outputs uint32 values as raw binary to stdout.
+            // We must read stdout as a binary stream, not as text lines.
+            using var process = new Process
             {
-                logger.LogWarning("Chromaprint extraction failed for '{FilePath}' with exit code {ExitCode}", filePath, exitCode);
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = GlobalFFOptions.GetFFMpegBinaryPath(),
+                    Arguments = args,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = false,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            if (!process.Start())
+            {
+                logger.LogWarning("Failed to start FFmpeg for chromaprint extraction");
                 return null;
             }
 
-            return ParseRawFingerprint(rawOutput);
+            // Read binary stdout and drain stderr concurrently
+            var stdoutTask = ReadBinaryStdoutAsync(process, cancellationToken);
+            var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(120));
+
+            try
+            {
+                await process.WaitForExitAsync(timeoutCts.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                logger.LogWarning("Chromaprint extraction timed out for '{FilePath}'", filePath);
+                try { process.Kill(entireProcessTree: true); } catch { }
+                return null;
+            }
+
+            var rawBytes = await stdoutTask;
+            _ = await stderrTask;
+
+            if (process.ExitCode != 0)
+            {
+                logger.LogWarning("Chromaprint extraction failed for '{FilePath}' with exit code {ExitCode}", filePath, process.ExitCode);
+                return null;
+            }
+
+            // Raw fingerprint is an array of uint32 (4 bytes each)
+            var fingerprintLength = rawBytes.Length / sizeof(uint) * sizeof(uint);
+            if (fingerprintLength == 0)
+            {
+                logger.LogWarning("Chromaprint produced 0 fingerprint points for '{FilePath}' ({RawBytes} raw bytes)", filePath, rawBytes.Length);
+                return null;
+            }
+
+            if (fingerprintLength != rawBytes.Length)
+                rawBytes = rawBytes[..fingerprintLength];
+
+            logger.LogDebug("Chromaprint extracted {Points} fingerprint points for '{FilePath}'", fingerprintLength / sizeof(uint), filePath);
+            return rawBytes;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -60,29 +105,10 @@ public class ChromaprintService(ILogger<ChromaprintService> logger) : IChromapri
         }
     }
 
-    private static byte[]? ParseRawFingerprint(List<string> rawOutput)
+    private static async Task<byte[]> ReadBinaryStdoutAsync(Process process, CancellationToken cancellationToken)
     {
-        if (rawOutput.Count == 0)
-            return null;
-
-        var combined = string.Join("", rawOutput).Trim();
-        if (string.IsNullOrEmpty(combined))
-            return null;
-
-        // Raw chromaprint format outputs comma-separated integers
-        var parts = combined.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0)
-            return null;
-
-        using var ms = new MemoryStream(parts.Length * sizeof(int));
-        using var writer = new BinaryWriter(ms);
-
-        foreach (var part in parts)
-        {
-            if (int.TryParse(part.Trim(), out var value))
-                writer.Write(value);
-        }
-
+        using var ms = new MemoryStream();
+        await process.StandardOutput.BaseStream.CopyToAsync(ms, cancellationToken);
         return ms.ToArray();
     }
 }
