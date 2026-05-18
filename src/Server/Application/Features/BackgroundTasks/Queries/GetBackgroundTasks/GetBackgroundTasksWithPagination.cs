@@ -13,6 +13,8 @@ public record GetBackgroundTasksWithPaginationQuery : IRequest<PaginatedList<Bac
     public string[]? Names { get; init; }
     public EnumHashSetQueryParam<BackgroundTaskStatus>? Status { get; init; }
     public EnumHashSetQueryParam<BackgroundTaskPriority>? Priority { get; init; }
+    public string? SortBy { get; init; }
+    public bool? SortDescending { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;
 }
@@ -31,7 +33,7 @@ public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetB
         var query = _context.BackgroundTasks.AsQueryable();
 
         query = ApplyFilters(request, query);
-        var orderedQuery = query.OrderByDescending(x => x.LastModified);
+        var orderedQuery = ApplySorting(request, query);
         return await orderedQuery.PaginatedListAsync(request.PageNumber, request.PageSize);
     }
 
@@ -58,5 +60,26 @@ public class GetBackgroundTasksWithPaginationQueryHandler : IRequestHandler<GetB
         }
 
         return query;
+    }
+
+    private static IOrderedQueryable<BackgroundTask> ApplySorting(GetBackgroundTasksWithPaginationQuery request, IQueryable<BackgroundTask> query)
+    {
+        var descending = request.SortDescending ?? true;
+
+        return request.SortBy?.ToLowerInvariant() switch
+        {
+            "date" => descending
+                ? query.OrderByDescending(x => x.Created)
+                : query.OrderBy(x => x.Created),
+            "duration" => descending
+                ? query.OrderByDescending(x => x.CompletedAt != null && x.StartedAt != null ? x.CompletedAt - x.StartedAt : null)
+                : query.OrderBy(x => x.CompletedAt != null && x.StartedAt != null ? x.CompletedAt - x.StartedAt : null),
+            "name" => descending
+                ? query.OrderByDescending(x => x.Name)
+                : query.OrderBy(x => x.Name),
+            _ => descending
+                ? query.OrderByDescending(x => x.LastModified)
+                : query.OrderBy(x => x.LastModified)
+        };
     }
 }

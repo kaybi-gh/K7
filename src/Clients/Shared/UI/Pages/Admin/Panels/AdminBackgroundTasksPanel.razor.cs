@@ -30,6 +30,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private bool _isSavingSettings;
     private BackgroundTaskStatus? _selectedStatus;
     private string? _selectedTaskType;
+    private string? _selectedSortBy;
+    private bool _sortDescending = true;
     private int _workerCount;
     private Dictionary<string, int> _concurrencyLimits = new();
     private readonly CancellationTokenSource _cts = new();
@@ -88,7 +90,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         try
         {
             var tasks = Enumerable.Range(firstPage, lastPage - firstPage + 1)
-                .Select(page => BackgroundTaskService.GetBackgroundTasksAsync(page, PageSize, statuses, names, cancellationToken));
+                .Select(page => BackgroundTaskService.GetBackgroundTasksAsync(page, PageSize, statuses, names, _selectedSortBy, _sortDescending, cancellationToken));
 
             var results = await Task.WhenAll(tasks);
 
@@ -194,6 +196,45 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     {
         _selectedTaskType = taskType;
         await RefreshTableAsync();
+    }
+
+    private async Task OnSortByChanged(string? sortBy)
+    {
+        _selectedSortBy = sortBy;
+        await RefreshTableAsync();
+    }
+
+    private async Task ToggleSortDirection()
+    {
+        _sortDescending = !_sortDescending;
+        await RefreshTableAsync();
+    }
+
+    private async Task CancelTaskAsync(BackgroundTaskDto task)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["CancelTitle"],
+            string.Format(L["CancelMessage"], task.Name),
+            yesText: L["CancelConfirm"],
+            cancelText: S["Cancel"]);
+
+        if (confirmed is not true)
+            return;
+
+        try
+        {
+            await BackgroundTaskService.CancelBackgroundTaskAsync(task.Id, _cts.Token);
+            Snackbar.Add(L["TaskCancelled"], K7Severity.Success);
+            await Task.WhenAll(RefreshTableAsync(), LoadSummaryAsync());
+        }
+        catch (OperationCanceledException)
+        {
+            // Component disposed
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
     }
 
     private int GetGroupLimit(string name) => _concurrencyLimits.GetValueOrDefault(name, 1);

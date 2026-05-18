@@ -61,6 +61,32 @@
         </ChildContent>
     </K7ExpansionPanel>
 
+    <div class="d-flex align-center flex-wrap" style="gap: var(--space-2);">
+        @if (_summary?.TaskTypeCounts is { Count: > 0 })
+        {
+            <K7Select TValue="string" Value="_selectedTaskType" ValueChanged="OnTaskTypeFilterChanged"
+                      Label="@L["FilterTaskType"]" Clearable="true" FullWidth="false" Style="min-width: 200px;">
+                @foreach (var taskType in _summary.TaskTypeCounts)
+                {
+                    <K7SelectItem TValue="string" Value="@taskType.TaskName">@GetTaskTypeLabel(taskType.TaskName) (@taskType.Count)</K7SelectItem>
+                }
+            </K7Select>
+        }
+
+        <K7Select TValue="string" Value="_selectedSortBy" ValueChanged="OnSortByChanged"
+                  Label="@L["SortBy"]" Clearable="true" FullWidth="false" Style="min-width: 160px;">
+            <K7SelectItem TValue="string" Value="@("date")">@L["SortDate"]</K7SelectItem>
+            <K7SelectItem TValue="string" Value="@("duration")">@L["SortDuration"]</K7SelectItem>
+            <K7SelectItem TValue="string" Value="@("name")">@L["SortName"]</K7SelectItem>
+        </K7Select>
+
+        @if (_selectedSortBy is not null)
+        {
+            <K7IconButton Icon="@(_sortDescending ? Phosphor.SortDescending : Phosphor.SortAscending)"
+                          OnClick="ToggleSortDirection" AriaLabel="@L["ToggleSortDirection"]" />
+        }
+    </div>
+
     <K7DataTable @key="_tableKey" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync" @ref="_tableRef" Height="60vh">
         <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false">
             <CellTemplate>
@@ -87,9 +113,15 @@
             <CellTemplate><span class="text-sm">@(context.Duration.HasValue ? FormatDuration(context.Duration.Value) : "-")</span></CellTemplate>
         </K7DataColumn>
         <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColGroup"]" Property="@(t => t.ConcurrencyGroup ?? "-")" />
-        <K7DataColumn TItem="BackgroundTaskDto" Title="" Width="50px" Hideable="false">
+        <K7DataColumn TItem="BackgroundTaskDto" Title="" Width="90px" Hideable="false">
             <CellTemplate>
-                <K7IconButton Icon="@Phosphor.Info" OnClick="@(() => OpenDetailDialog(context))" AriaLabel="detail" />
+                <div class="d-flex align-center" style="gap: var(--space-1);">
+                    @if (context.Status is BackgroundTaskStatus.Pending or BackgroundTaskStatus.InProgress or BackgroundTaskStatus.WaitingForRetry)
+                    {
+                        <K7IconButton Icon="@Phosphor.Stop" OnClick="@(() => CancelTaskAsync(context))" AriaLabel="@L["Cancel"]" />
+                    }
+                    <K7IconButton Icon="@Phosphor.Info" OnClick="@(() => OpenDetailDialog(context))" AriaLabel="detail" />
+                </div>
             </CellTemplate>
         </K7DataColumn>
     </K7DataTable>
