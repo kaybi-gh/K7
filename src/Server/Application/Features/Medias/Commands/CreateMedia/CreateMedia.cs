@@ -130,7 +130,34 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         var releaseYear = firstTags?.Year != null ? new DateOnly(firstTags.Year.Value, 1, 1) : firstIdentification.ReleaseYear;
         var albumArtistName = firstTags?.AlbumArtists.FirstOrDefault() ?? firstTags?.Artists.FirstOrDefault() ?? firstIdentification.ArtistName;
 
-        var (album, isNewAlbum) = await FindOrCreateAlbumAsync(firstFile, albumName, albumArtistName, releaseYear, cancellationToken);
+        // Search metadata provider for the album external ID upfront (like movies do)
+        var albumIdentification = new MediaIdentification(albumName ?? "Unknown Album")
+        {
+            AlbumName = albumName,
+            ArtistName = albumArtistName,
+            ReleaseYear = releaseYear
+        };
+        var metadataProviderExternalId = await _serviceProvider
+            .GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(library.MetadataProviderName)
+            .SearchAsync(albumIdentification, cancellationToken);
+
+        // Try to find existing album by provider ExternalId first (most reliable)
+        MusicAlbum? existingAlbum = null;
+        if (!string.IsNullOrEmpty(metadataProviderExternalId))
+        {
+            var existingExternalId = await _context.ExternalIds
+                .Include(x => x.Media)
+                .FirstOrDefaultAsync(x => x.Value == metadataProviderExternalId
+                    && x.ProviderName == library.MetadataProviderName
+                    && x.Media != null, cancellationToken);
+
+            existingAlbum = existingExternalId?.Media as MusicAlbum;
+        }
+
+        // Fallback: find by title/artist/year (handles case where ExternalId not yet set)
+        var (album, isNewAlbum) = existingAlbum is not null
+            ? (existingAlbum, false)
+            : await FindOrCreateAlbumAsync(firstFile, albumName, albumArtistName, releaseYear, cancellationToken);
 
         if (isNewAlbum)
         {
@@ -147,23 +174,14 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             await TryAttachAlbumCoverAsync(firstFile, album, firstTags, cancellationToken);
 
-            var albumIdentification = new MediaIdentification(album.Title ?? albumName ?? "Unknown Album")
-            {
-                AlbumName = album.Title,
-                ArtistName = albumArtistName,
-                ReleaseYear = releaseYear
-            };
-            var musicBrainzId = await _serviceProvider
-                .GetRequiredKeyedService<IMetadataProvider<ExternalMusicAlbumMetadata>>(library.MetadataProviderName)
-                .SearchAsync(albumIdentification, cancellationToken);
-            if (!string.IsNullOrEmpty(musicBrainzId))
+            if (!string.IsNullOrEmpty(metadataProviderExternalId))
             {
                 await _sender.Send(new CreateBackgroundTaskCommand
                 {
                     Request = new RefreshMediaMetadatasCommand
                     {
                         MediaId = album.Id,
-                        MetadataProviderExternalId = musicBrainzId,
+                        MetadataProviderExternalId = metadataProviderExternalId,
                         MetadataProviderName = library.MetadataProviderName,
                         Language = library.MetadataLanguage,
                         FallbackLanguage = library.MetadataFallbackLanguage
