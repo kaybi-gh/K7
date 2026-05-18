@@ -638,7 +638,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<RestrictedMediaPreviewDto>>($"api/restriction-profiles/{profileId}/restricted-medias", _serializerOptions, cancellationToken) ?? [];
     }
 
-    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default)
     {
         var uri = $"api/background-tasks?pageNumber={pageNumber}&pageSize={pageSize}";
         if (statuses is { Count: > 0 })
@@ -655,6 +655,10 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
                 uri += $"&names={Uri.EscapeDataString(name)}";
             }
         }
+        if (sortBy is not null)
+        {
+            uri += $"&sortBy={Uri.EscapeDataString(sortBy)}&sortDescending={sortDescending}";
+        }
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<BackgroundTaskDto>>(uri, _serializerOptions, cancellationToken) ?? new PaginatedListDto<BackgroundTaskDto>();
     }
 
@@ -667,6 +671,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task DeleteBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync($"api/background-tasks/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task CancelBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/background-tasks/{id}/cancel", null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

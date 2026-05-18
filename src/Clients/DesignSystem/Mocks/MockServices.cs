@@ -395,9 +395,10 @@ public sealed class MockRatingService : IRatingService
 
 public sealed class MockBackgroundTaskService : IBackgroundTaskService
 {
-    public Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, CancellationToken cancellationToken = default) => Task.FromResult(new PaginatedListDto<BackgroundTaskDto>());
+    public Task<PaginatedListDto<BackgroundTaskDto>> GetBackgroundTasksAsync(int pageNumber = 1, int pageSize = 20, IReadOnlyCollection<BackgroundTaskStatus>? statuses = null, IReadOnlyCollection<string>? names = null, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default) => Task.FromResult(new PaginatedListDto<BackgroundTaskDto>());
     public Task<BackgroundTaskDto> GetBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskDto { Id = Guid.Empty, Name = "" });
     public Task DeleteBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task CancelBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskSettingsDto { WorkerCount = 1, ConcurrencyGroups = [] });
     public Task UpdateSettingsAsync(UpdateBackgroundTaskSettingsRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<BackgroundTaskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskSummaryDto { TotalCount = 0, StatusCounts = [], TaskTypeCounts = [] });

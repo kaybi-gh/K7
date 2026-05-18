@@ -1961,6 +1961,30 @@
         }
       }
     },
+    "/api/medias/{id}/detect-segments": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "DetectMediaSegments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{id}": {
       "get": {
         "tags": [
@@ -4329,6 +4353,30 @@
         }
       }
     },
+    "/api/background-tasks/{id}/cancel": {
+      "post": {
+        "tags": [
+          "BackgroundTasks"
+        ],
+        "operationId": "CancelBackgroundTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/background-tasks/{id}": {
       "delete": {
         "tags": [
@@ -4422,6 +4470,20 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "SortBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "SortDescending",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -7287,6 +7349,15 @@
               "$ref": "#/components/schemas/LiteMusicAlbumDto"
             }
           },
+          "guestAppearanceAlbums": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LiteMusicAlbumDto"
+            }
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -7426,6 +7497,15 @@
               "string"
             ],
             "format": "double"
+          },
+          "artistCredits": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MusicArtistCreditDto"
+            }
           },
           "id": {
             "type": "string",
@@ -7909,6 +7989,15 @@
               "string"
             ],
             "format": "double"
+          },
+          "artistCredits": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MusicArtistCreditDto"
+            }
           },
           "id": {
             "type": "string",
@@ -9903,6 +9992,24 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "MusicArtistCreditDto": {
+        "required": [
+          "artistName"
+        ],
+        "type": "object",
+        "properties": {
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
           }
         }
       },

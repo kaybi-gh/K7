@@ -65,10 +65,23 @@
   <data name="TaskType_GenerateThumbnailsCommand" xml:space="preserve"><value>Video thumbnail generation</value></data>
   <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Library indexing</value></data>
   <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Metadata refresh</value></data>
+  <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Intro/outro detection</value></data>
+  <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Person metadata refresh</value></data>
   <data name="FilterByType" xml:space="preserve"><value>Filter by type</value></data>
   <data name="AllTypes" xml:space="preserve"><value>All types</value></data>
   <data name="TimeJustNow" xml:space="preserve"><value>Just now</value></data>
   <data name="TimeMinutesAgo" xml:space="preserve"><value>{0} min ago</value></data>
   <data name="TimeHoursAgo" xml:space="preserve"><value>{0}h ago</value></data>
   <data name="TimeDaysAgo" xml:space="preserve"><value>{0}d ago</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="CancelTitle" xml:space="preserve"><value>Cancel task</value></data>
+  <data name="CancelMessage" xml:space="preserve"><value>Cancel task '{0}'?</value></data>
+  <data name="CancelConfirm" xml:space="preserve"><value>Cancel task</value></data>
+  <data name="TaskCancelled" xml:space="preserve"><value>Task cancelled.</value></data>
+  <data name="FilterTaskType" xml:space="preserve"><value>Task type</value></data>
+  <data name="SortBy" xml:space="preserve"><value>Sort by</value></data>
+  <data name="SortDate" xml:space="preserve"><value>Date</value></data>
+  <data name="SortDuration" xml:space="preserve"><value>Duration</value></data>
+  <data name="SortName" xml:space="preserve"><value>Name</value></data>
+  <data name="ToggleSortDirection" xml:space="preserve"><value>Toggle sort direction</value></data>
 </root>
