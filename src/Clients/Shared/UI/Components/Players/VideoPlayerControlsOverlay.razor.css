@@ -12,6 +12,10 @@
     outline: none;
 }
 
+    .video-controls-overlay.controls-hidden::before {
+        opacity: 0;
+    }
+
 .hud-indicator {
     position: fixed;
     top: 50%;
@@ -114,6 +118,7 @@
         position: absolute;
         inset: 0;
         opacity: 0.7;
+        transition: opacity 0.3s ease-in-out;
         background: linear-gradient(to bottom, var(--gradient-steps));
         z-index: 99999;
         pointer-events: none;
@@ -131,6 +136,11 @@
     pointer-events: auto;
     z-index: 100005;
 }
+
+    .video-controls-overlay.controls-hidden .controls-bar {
+        opacity: 0;
+        pointer-events: none;
+    }
 
     .controls-bar.top {
         top: 0;

@@ -9,17 +9,28 @@ namespace K7.Clients.Shared.UI.Components.Players;
 
 public partial class SkipSegmentOverlay : IDisposable
 {
+    private static readonly TimeSpan DisplayDuration = TimeSpan.FromSeconds(5);
+
     [Inject] private IPlayerService PlayerService { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
 
     [Parameter] public Guid? MediaId { get; set; }
+    [Parameter] public bool ControlsVisible { get; set; }
+
+    public bool CanSkip => _visible && _activeSegment is not null;
 
     private IReadOnlyList<MediaSegmentDto>? _segments;
     private MediaSegmentDto? _activeSegment;
     private VideoPlayerSettingsDto? _settings;
     private bool _visible;
     private bool _autoSkipped;
+    private bool _dismissed;
+    private bool _showSkippedNotification;
+    private K7.Shared.Enums.MediaSegmentType _skippedSegmentType;
+    private CancellationTokenSource? _notificationCts;
+    private DateTime _lastSkipTime;
+    private DateTime _showTime;
     private Guid? _loadedMediaId;
 
     protected override async Task OnParametersSetAsync()
@@ -28,6 +39,7 @@ public partial class SkipSegmentOverlay : IDisposable
         {
             _loadedMediaId = MediaId;
             _autoSkipped = false;
+            _dismissed = false;
             _activeSegment = null;
             _visible = false;
 
@@ -70,6 +82,7 @@ public partial class SkipSegmentOverlay : IDisposable
         {
             _activeSegment = active;
             _autoSkipped = false;
+            _dismissed = false;
         }
 
         if (active is not null)
@@ -78,15 +91,28 @@ public partial class SkipSegmentOverlay : IDisposable
                 ? _settings.IntroSkipBehavior
                 : _settings.OutroSkipBehavior;
 
-            if (behavior == IntroSkipBehavior.AutoSkip && !_autoSkipped)
+            var inCooldown = (DateTime.UtcNow - _lastSkipTime).TotalSeconds < 3;
+
+            if (behavior == IntroSkipBehavior.AutoSkip && !_autoSkipped && !inCooldown)
             {
                 _autoSkipped = true;
+                _lastSkipTime = DateTime.UtcNow;
                 PlayerService.Seek(active.EndMs / 1000.0);
                 _visible = false;
+                ShowSkippedNotification(active.Type);
             }
-            else if (behavior == IntroSkipBehavior.ShowButton)
+            else if (behavior == IntroSkipBehavior.ShowButton && (!_dismissed || ControlsVisible))
             {
-                _visible = true;
+                if (!_visible)
+                {
+                    _showTime = DateTime.UtcNow;
+                    _visible = true;
+                }
+                else if (!ControlsVisible && (DateTime.UtcNow - _showTime) >= DisplayDuration)
+                {
+                    _visible = false;
+                    _dismissed = true;
+                }
             }
             else
             {
@@ -101,17 +127,46 @@ public partial class SkipSegmentOverlay : IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private void SkipSegment()
+    public void SkipSegment()
     {
         if (_activeSegment is null)
             return;
 
+        _lastSkipTime = DateTime.UtcNow;
         PlayerService.Seek(_activeSegment.EndMs / 1000.0);
         _visible = false;
     }
 
     public void Dispose()
     {
+        _notificationCts?.Cancel();
+        _notificationCts?.Dispose();
         PlayerService.CurrentTimeChanged -= OnTimeChanged;
+    }
+
+    private void ShowSkippedNotification(K7.Shared.Enums.MediaSegmentType type)
+    {
+        _notificationCts?.Cancel();
+        _notificationCts?.Dispose();
+        _notificationCts = new CancellationTokenSource();
+
+        _skippedSegmentType = type;
+        _showSkippedNotification = true;
+
+        var ct = _notificationCts.Token;
+        _ = HideNotificationAfterDelayAsync(ct);
+    }
+
+    private async Task HideNotificationAfterDelayAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(3000, ct);
+            _showSkippedNotification = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+        }
     }
 }
