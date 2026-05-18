@@ -16,6 +16,8 @@ using Microsoft.Extensions.Logging;
 namespace K7.Server.Application.Services;
 public class FileIndexer : IFileIndexer
 {
+    private const int SaveBatchSize = 500;
+
     private readonly ILogger<FileIndexer> _logger;
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -56,7 +58,6 @@ public class FileIndexer : IFileIndexer
             }
 
             IdentifyFiles(library, toBeIdentifiedFiles, backgroundTasks);
-            _context.IndexedFiles.AddRange(addedFiles);
             ProcessAddedFiles(library, addedFiles, backgroundTasks);
             await ProcessUnchangedFilesMissingMetadataAsync(library, unchangedFiles, backgroundTasks, cancellationToken);
             ProcessRemovedFiles(removedFiles, backgroundTasks);
@@ -68,6 +69,18 @@ public class FileIndexer : IFileIndexer
                 _context.IndexedFiles.UpdateRange(unchangedToReIdentify);
             }
 
+            // Save added files in batches to avoid a single massive transaction
+            foreach (var batch in addedFiles.Chunk(SaveBatchSize))
+            {
+                _context.IndexedFiles.AddRange(batch);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                // Detach saved entities to keep the ChangeTracker lean
+                foreach (var file in batch)
+                    _context.Entry(file).State = EntityState.Detached;
+            }
+
+            // Save re-identified and other tracked changes
             await _context.SaveChangesAsync(cancellationToken);
 
             if (backgroundTasks.Count > 0)
