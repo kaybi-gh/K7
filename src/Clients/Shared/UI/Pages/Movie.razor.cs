@@ -247,6 +247,7 @@ public partial class Movie
             {
                 Id = m.Id.ToString(),
                 Title = m.Title,
+                AdditionalInformations = m.ReleaseDate?.Year.ToString(),
                 PictureUrl = apiClient.GetAbsoluteUri(
                     m.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
                         ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
