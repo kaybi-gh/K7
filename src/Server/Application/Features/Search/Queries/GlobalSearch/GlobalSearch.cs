@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Shared.Dtos.Search;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ namespace K7.Server.Application.Features.Search.Queries.GlobalSearch;
 public record GlobalSearchQuery : IRequest<GlobalSearchResultDto>
 {
     public required string Q { get; init; }
+    public string? Studio { get; init; }
     public int PageSize { get; init; } = 10;
 }
 
@@ -35,6 +37,20 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context)
             .OrderBy(m => EF.Functions.Like(m.Title!.ToLower(), request.Q.Trim().ToLower()) ? 0 : 1)
             .Take(limit)
             .AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(request.Studio))
+        {
+            var studio = request.Studio.Trim();
+            mediaQuery = context.Medias
+                .Include(m => m.Pictures)
+                    .ThenInclude(p => p.Variants)
+                .Where(m => (m is Movie && ((Movie)m).Studios.Contains(studio))
+                         || (m is Serie && ((Serie)m).Studios.Contains(studio)))
+                .Where(m => EF.Functions.Like(m.Title!.ToLower(), term))
+                .OrderBy(m => m.Title)
+                .Take(limit)
+                .AsNoTracking();
+        }
 
         var personQuery = context.Persons
             .Include(p => p.PortraitPicture)

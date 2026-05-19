@@ -1,0 +1,19 @@
+.trailer-dialog-content {
+    padding: 0;
+}
+
+.trailer-dialog-frame {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    overflow: hidden;
+    border-radius: 0 0 var(--k7-radius-md) var(--k7-radius-md);
+}
+
+.trailer-dialog-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}

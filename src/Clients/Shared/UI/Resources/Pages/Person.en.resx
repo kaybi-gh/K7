@@ -26,4 +26,5 @@
   <data name="YearsOld" xml:space="preserve"><value>years old</value></data>
   <data name="RefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh queued</value></data>
+  <data name="KnownFor" xml:space="preserve"><value>Known for</value></data>
 </root>

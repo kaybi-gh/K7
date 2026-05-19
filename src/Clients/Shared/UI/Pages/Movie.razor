@@ -93,6 +93,17 @@ else
                             <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
                         }
                     </div>
+                    @if (_movie.Studios?.Count > 0)
+                    {
+                        <span class="text-caption" Style="opacity: 0.4;">|</span>
+                        <div class="d-flex" style="gap: 4px;">
+                            @foreach (var studio in _movie.Studios)
+                            {
+                                var s = studio;
+                                <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
+                            }
+                        </div>
+                    }
                     <span class="text-caption" Style="opacity: 0.4;">|</span>
                     <div class="d-flex">
                         @if (_movie.ReleaseDate.HasValue)
@@ -133,7 +144,10 @@ else
                                OnClick="PlayAsync">@S["Play"]</K7Button>   
                                
                     <K7IconButton Icon="@Phosphor.Sliders" OnClick="OpenPlaybackOptionsAsync" AriaLabel="playback-options" />
-                    <K7IconButton Icon="@Phosphor.FilmSlate" AriaLabel="trailer" />
+                    @if (_movie.Trailers?.Count > 0)
+                    {
+                        <K7IconButton Icon="@Phosphor.FilmSlate" OnClick="OpenTrailerAsync" AriaLabel="trailer" />
+                    }
                     
                     @if (_selectedFile is not null)
                     {
@@ -182,6 +196,21 @@ else
                 {
                     <CarouselItem @key="cast.Id">
                         <PersonRole LitePersonRoleDto="@cast" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
+
+        @if (_similarMedia.Count > 0)
+        {
+            <Carousel Title="@L["SimilarMedia"]">
+                @foreach (var media in _similarMedia)
+                {
+                    <CarouselItem @key="media.Id">
+                        <MediaCard Model="media"
+                                   Href="@($"/movies/{media.Id}")"
+                                   OverlayEnabled="true"
+                                   FooterVisible="true" />
                     </CarouselItem>
                 }
             </Carousel>

@@ -18,6 +18,7 @@ public partial class Person : IDisposable
     private List<string> _backdropUrls = [];
     private List<MediaCardViewModel> _medias = [];
     private List<MediaCardViewModel> _discography = [];
+    private List<PersonKnownForItemDto> _knownFor = [];
     private bool _loading = true;
     private int _activeBackdropIndex;
     private Timer? _backdropTimer;
@@ -147,6 +148,23 @@ public partial class Person : IDisposable
         }
 
         _loading = false;
+
+        _ = LoadKnownForAsync();
+    }
+
+    private async Task LoadKnownForAsync()
+    {
+        if (_person is null) return;
+
+        try
+        {
+            _knownFor = await k7ServerService.GetPersonKnownForAsync(_person.Id);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Non-critical
+        }
     }
 
     private Task OpenBioDialogAsync()
