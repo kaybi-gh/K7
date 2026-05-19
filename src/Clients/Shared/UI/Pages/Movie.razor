@@ -97,7 +97,7 @@ else
                     {
                         <span class="text-caption" Style="opacity: 0.4;">|</span>
                         <div class="d-flex" style="gap: 4px;">
-                            @foreach (var studio in _movie.Studios)
+                            @foreach (var studio in _movie.Studios.Take(3))
                             {
                                 var s = studio;
                                 <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
