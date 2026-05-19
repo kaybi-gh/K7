@@ -320,6 +320,45 @@ public class MediaTranscoder : IMediaTranscoder
 
         _logger.LogInformation("Subtitle extraction completed: {Output}", outputVttPath);
     }
+
+    public async Task RemuxWithAudioTranscodeAsync(
+        string inputFilePath,
+        string outputFilePath,
+        int audioTrackIndex,
+        CancellationToken cancellationToken = default)
+    {
+        var outputDir = Path.GetDirectoryName(outputFilePath)!;
+        Directory.CreateDirectory(outputDir);
+
+        _logger.LogInformation(
+            "Remuxing {Input} -> {Output} with audio track {AudioTrack} transcoded to AAC",
+            inputFilePath, outputFilePath, audioTrackIndex);
+
+        var result = await FFMpegArguments
+            .FromFileInput(inputFilePath, verifyExists: true)
+            .OutputToFile(outputFilePath, overwrite: true, options =>
+            {
+                options.WithCustomArgument("-map 0:v:0");
+                options.WithCustomArgument($"-map 0:a:{audioTrackIndex}");
+                options.WithCustomArgument("-c:v copy");
+                options.WithCustomArgument("-c:a aac");
+                options.WithCustomArgument("-b:a 192k");
+                options.WithCustomArgument("-movflags +faststart");
+            })
+            .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg remux stdout: {Output}", output))
+            .NotifyOnError((error) => _logger.LogDebug("FFmpeg remux stderr: {Error}", error))
+            .CancellableThrough(cancellationToken, timeout: (int)TimeSpan.FromHours(2).TotalMilliseconds)
+            .ProcessAsynchronously(throwOnError: false);
+
+        if (!result || !File.Exists(outputFilePath))
+        {
+            _logger.LogError("Failed to remux {Input} with audio transcode", inputFilePath);
+            throw new InvalidOperationException("FFmpeg failed to remux video with audio transcode to AAC");
+        }
+
+        _logger.LogInformation("Remux with audio transcode completed: {Output} ({Size} bytes)",
+            outputFilePath, new FileInfo(outputFilePath).Length);
+    }
 }
 
 public class AutoScaleArgument : IVideoFilterArgument

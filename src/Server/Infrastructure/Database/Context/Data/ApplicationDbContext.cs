@@ -18,6 +18,7 @@ using K7.Server.Infrastructure.Database.Context.Data.Configurations;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Options;
 
 namespace K7.Server.Infrastructure.Database.Context.Data;
@@ -66,6 +67,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<UserMediaExclusion> UserMediaExclusions => Set<UserMediaExclusion>();
     public DbSet<ContentRestrictionProfile> ContentRestrictionProfiles => Set<ContentRestrictionProfile>();
     public DbSet<LibraryScanIssue> ScanIssues => Set<LibraryScanIssue>();
+    public DbSet<Download> Downloads => Set<Download>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -77,5 +79,35 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
         new MetadataPictureConfiguration(_pathsConfiguration).Configure(builder.Entity<MetadataPicture>());
         new MetadataPictureVariantConfiguration(_pathsConfiguration).Configure(builder.Entity<MetadataPictureVariant>());
+
+        // SQLite cannot ORDER BY DateTimeOffset natively.
+        // Store as ISO 8601 TEXT which sorts lexicographically in chronological order.
+        if (Database.IsSqlite())
+        {
+            var converter = new ValueConverter<DateTimeOffset, string>(
+                v => v.ToString("O"),
+                v => DateTimeOffset.Parse(v));
+
+            var nullableConverter = new ValueConverter<DateTimeOffset?, string?>(
+                v => v.HasValue ? v.Value.ToString("O") : null,
+                v => v != null ? DateTimeOffset.Parse(v) : null);
+
+            foreach (var entityType in builder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTimeOffset))
+                    {
+                        property.SetValueConverter(converter);
+                        property.SetColumnType("TEXT");
+                    }
+                    else if (property.ClrType == typeof(DateTimeOffset?))
+                    {
+                        property.SetValueConverter(nullableConverter);
+                        property.SetColumnType("TEXT");
+                    }
+                }
+            }
+        }
     }
 }

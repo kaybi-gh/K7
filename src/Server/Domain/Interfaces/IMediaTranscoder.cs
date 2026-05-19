@@ -59,4 +59,14 @@ public interface IMediaTranscoder
         int subtitleStreamIndex,
         string outputVttPath,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Remuxes a video file, copying the video stream and transcoding the audio to AAC.
+    /// Used for offline downloads when the source audio codec is not natively supported.
+    /// </summary>
+    Task RemuxWithAudioTranscodeAsync(
+        string inputFilePath,
+        string outputFilePath,
+        int audioTrackIndex,
+        CancellationToken cancellationToken = default);
 }

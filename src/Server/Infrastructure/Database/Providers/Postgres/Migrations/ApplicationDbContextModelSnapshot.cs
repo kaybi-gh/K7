@@ -234,6 +234,75 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("Devices");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Download", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("AudioTrackIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<long?>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("IndexedFileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDirectStream")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OutputPath")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<DateTimeOffset?>("ReadyAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SubtitleTrackIndices")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("IndexedFileId", "DeviceId", "UserId");
+
+                    b.ToTable("Downloads");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2515,6 +2584,32 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
 
                     b.Navigation("WebDeviceDetails");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Download", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.IndexedFile", "IndexedFile")
+                        .WithMany()
+                        .HasForeignKey("IndexedFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Device");
+
+                    b.Navigation("IndexedFile");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
