@@ -75,7 +75,7 @@ public partial class SettingsGeneralPage : IDisposable
 
         if (result == true)
         {
-            // TODO
+            ServerConnectionService.DisconnectAndReset();
         }
     }
 

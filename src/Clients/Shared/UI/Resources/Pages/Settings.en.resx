@@ -34,7 +34,7 @@
   <data name="SetPin" xml:space="preserve"><value>Set a PIN</value></data>
   <data name="SupportedCodecs" xml:space="preserve"><value>Supported codecs</value></data>
   <data name="WarningTitle" xml:space="preserve"><value>Warning</value></data>
-  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changing K7 server URL will remove all elements related to current K7 server (statistics and files).</value></data>
+  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changing the K7 server URL will delete all local data related to the current server (statistics, offline files, preferences). Data on the server will not be affected.</value></data>
   <data name="SetPinDialogTitle" xml:space="preserve"><value>Set a PIN</value></data>
   <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirm PIN</value></data>
   <data name="PinMismatch" xml:space="preserve"><value>PINs do not match.</value></data>
