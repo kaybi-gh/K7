@@ -1,0 +1,79 @@
+@page "/settings/offline"
+@layout SettingsLayout
+@inject IStringLocalizer<SettingsOfflinePage> L
+@inject IDeviceStorageService DeviceStorageService
+@inject IMusicCacheService MusicCacheService
+@inject IOfflineMediaStore OfflineStore
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["Title"]</h5>
+</div>
+
+<div class="pa-4 d-flex flex-col gap-4">
+    @if (_storageInfo is not null)
+    {
+        <div class="storage-overview">
+            <div class="storage-overview-row">
+                <div class="d-flex justify-space-between align-center">
+                    <span class="text-sm text-secondary">@L["Downloads"]</span>
+                    <span class="text-sm">@FormatBytes(_storageInfo.UsedBytes - _storageInfo.CacheBytes) / @FormatBytes(_maxDownloadBytes)</span>
+                </div>
+                <K7ProgressBar Value="@GetDownloadStoragePercent()" Class="mt-1" />
+            </div>
+            <div class="storage-overview-row mt-3">
+                <div class="d-flex justify-space-between align-center">
+                    <span class="text-sm text-secondary">@L["Cache"]</span>
+                    <span class="text-sm">@FormatBytes(_storageInfo.CacheBytes) / @FormatBytes(_maxCacheBytes)</span>
+                </div>
+                <K7ProgressBar Value="@GetCacheStoragePercent()" Class="mt-1" />
+            </div>
+        </div>
+    }
+
+    <h6>@L["StorageLimits"]</h6>
+
+    <K7Select TValue="long" Label="@L["MaxDownloadStorage"]" Value="_maxDownloadBytes" ValueChanged="OnMaxDownloadChanged">
+        <K7SelectItem Value="@(1L * 1024 * 1024 * 1024)" Text="1 GB" />
+        <K7SelectItem Value="@(2L * 1024 * 1024 * 1024)" Text="2 GB" />
+        <K7SelectItem Value="@(5L * 1024 * 1024 * 1024)" Text="5 GB" />
+        <K7SelectItem Value="@(10L * 1024 * 1024 * 1024)" Text="10 GB" />
+        <K7SelectItem Value="@(20L * 1024 * 1024 * 1024)" Text="20 GB" />
+        <K7SelectItem Value="@(50L * 1024 * 1024 * 1024)" Text="50 GB" />
+    </K7Select>
+
+    <K7Select TValue="long" Label="@L["MaxCacheStorage"]" Value="_maxCacheBytes" ValueChanged="OnMaxCacheChanged">
+        <K7SelectItem Value="@(250L * 1024 * 1024)" Text="250 MB" />
+        <K7SelectItem Value="@(500L * 1024 * 1024)" Text="500 MB" />
+        <K7SelectItem Value="@(1L * 1024 * 1024 * 1024)" Text="1 GB" />
+        <K7SelectItem Value="@(2L * 1024 * 1024 * 1024)" Text="2 GB" />
+        <K7SelectItem Value="@(5L * 1024 * 1024 * 1024)" Text="5 GB" />
+    </K7Select>
+
+    <hr class="k7-divider my-2" />
+    <h6>@L["Network"]</h6>
+
+    <K7Switch Label="@L["AllowWifi"]" Value="_allowWifi" ValueChanged="OnAllowWifiChanged" />
+    <K7Switch Label="@L["AllowMobileData"]" Value="_allowMobileData" ValueChanged="OnAllowMobileDataChanged" />
+
+    <hr class="k7-divider my-2" />
+    <h6>@L["MusicCache"]</h6>
+
+    <K7Select TValue="int" Label="@L["LookaheadWifi"]" Value="_lookaheadWifi" ValueChanged="OnLookaheadWifiChanged">
+        <K7SelectItem Value="0" Text="@L["Disabled"]" />
+        <K7SelectItem Value="3" Text="3" />
+        <K7SelectItem Value="5" Text="5" />
+        <K7SelectItem Value="10" Text="10" />
+        <K7SelectItem Value="20" Text="20" />
+        <K7SelectItem Value="50" Text="50" />
+    </K7Select>
+
+    <K7Select TValue="int" Label="@L["LookaheadMobile"]" Value="_lookaheadMobile" ValueChanged="OnLookaheadMobileChanged">
+        <K7SelectItem Value="0" Text="@L["Disabled"]" />
+        <K7SelectItem Value="1" Text="1" />
+        <K7SelectItem Value="3" Text="3" />
+        <K7SelectItem Value="5" Text="5" />
+        <K7SelectItem Value="10" Text="10" />
+    </K7Select>
+</div>
