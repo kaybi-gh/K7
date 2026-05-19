@@ -53,27 +53,6 @@ public class GetSimilarMediaQueryHandler(IApplicationDbContext context)
             }
         }
 
-        // Strategy 2: Supplement with genre overlap if not enough results
-        if (results.Count < request.PageSize && media.Genres.Count > 0)
-        {
-            var existingIds = results.Select(r => r.Id).ToHashSet();
-            existingIds.Add(request.MediaId);
-
-            var genreMatches = await context.Medias
-                .AsNoTracking()
-                .Include(m => m.Pictures)
-                    .ThenInclude(p => p.Variants)
-                .Include(m => m.UserMediaStates)
-                .Where(m => !existingIds.Contains(m.Id))
-                .Where(m => m.Type == media.Type)
-                .Where(m => m.Genres.Any(g => media.Genres.Contains(g)))
-                .OrderByDescending(m => m.Genres.Count(g => media.Genres.Contains(g)))
-                .Take(request.PageSize - results.Count)
-                .ToListAsync(cancellationToken);
-
-            results.AddRange(genreMatches);
-        }
-
         return results
             .DistinctBy(m => m.Id)
             .Take(request.PageSize)

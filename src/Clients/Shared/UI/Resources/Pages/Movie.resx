@@ -32,7 +32,7 @@
   <data name="ReIdentifyFileSent" xml:space="preserve"><value>Ré-identification du fichier envoyée et en cours de traitement par le serveur en tâche de fond.</value></data>
   <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance en tache de fond.</value></data>
-  <data name="SimilarMedia" xml:space="preserve"><value>Titres similaires</value></data>
+  <data name="SimilarMedia" xml:space="preserve"><value>Vous aimerez aussi</value></data>
   <data name="Trailer" xml:space="preserve"><value>Bande-annonce</value></data>
 </root>
 
