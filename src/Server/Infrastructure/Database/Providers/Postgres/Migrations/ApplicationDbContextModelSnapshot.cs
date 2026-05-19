@@ -532,6 +532,24 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("Library_ScanIssues", (string)null);
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
+                {
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProviderName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.PrimitiveCollection<string[]>("RecommendedIds")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.HasKey("MediaId", "ProviderName");
+
+                    b.ToTable("MediaRecommendations");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.AudioAnalysis", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1988,6 +2006,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<long?>("Revenue")
                         .HasColumnType("bigint");
 
+                    b.PrimitiveCollection<string[]>("Studios")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<string>("Tagline")
                         .HasColumnType("text");
 
@@ -2085,6 +2107,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("text");
 
+                    b.PrimitiveCollection<string[]>("Studios")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.ToTable("Medias", t =>
                         {
                             t.Property("ContentRating")
@@ -2095,6 +2121,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                             t.Property("Overview")
                                 .HasColumnName("Serie_Overview");
+
+                            t.Property("Studios")
+                                .HasColumnName("Serie_Studios");
                         });
 
                     b.HasDiscriminator().HasValue(4);
@@ -2709,6 +2738,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany("Recommendations")
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.AudioAnalysis", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.MusicTrack", "MusicTrack")
@@ -2718,6 +2758,42 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
 
                     b.Navigation("MusicTrack");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.BaseMedia", b =>
+                {
+                    b.OwnsMany("K7.Server.Domain.Entities.Metadatas.TrailerInfo", "Trailers", b1 =>
+                        {
+                            b1.Property<Guid>("BaseMediaId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<string>("Key")
+                                .IsRequired();
+
+                            b1.Property<string>("Language");
+
+                            b1.Property<string>("Name")
+                                .IsRequired();
+
+                            b1.Property<string>("Site")
+                                .IsRequired();
+
+                            b1.Property<string>("Type")
+                                .IsRequired();
+
+                            b1.HasKey("BaseMediaId", "__synthesizedOrdinal");
+
+                            b1.ToTable("Medias");
+
+                            b1.ToJson("Trailers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BaseMediaId");
+                        });
+
+                    b.Navigation("Trailers");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MediaSegment", b =>
@@ -3265,6 +3341,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Pictures");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("Recommendations");
 
                     b.Navigation("Segments");
 
