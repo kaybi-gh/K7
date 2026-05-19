@@ -107,7 +107,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             tmdbId,
             language: language,
             includeImageLanguage: $"{language},en,null",
-            extraMethods: TvShowMethods.Credits | TvShowMethods.Images | TvShowMethods.ContentRatings | TvShowMethods.ExternalIds,
+            extraMethods: TvShowMethods.Credits | TvShowMethods.Images | TvShowMethods.ContentRatings | TvShowMethods.ExternalIds | TvShowMethods.Videos | TvShowMethods.Recommendations,
             cancellationToken: cancellationToken);
 
         var contentRating = ExtractContentRating(show.ContentRatings, language);
@@ -124,6 +124,18 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             Network = show.Networks?.FirstOrDefault()?.Name,
             TotalSeasons = show.NumberOfSeasons,
             Genres = [.. show.Genres?.Select(g => g.Name) ?? []],
+            Studios = [.. show.ProductionCompanies?.Select(c => c.Name) ?? []],
+            Trailers = [.. show.Videos?.Results?
+                .Where(v => v.Site == "YouTube" && v.Type is "Trailer" or "Teaser")
+                .Select(v => new TrailerInfo
+                {
+                    Key = v.Key,
+                    Name = v.Name,
+                    Site = v.Site,
+                    Type = v.Type,
+                    Language = v.Iso_639_1
+                }) ?? []],
+            RecommendedExternalIds = [.. show.Recommendations?.Results?.Select(r => r.Id.ToString()) ?? []],
             PersonRoles = await ConvertToPersonRolesAsync(show.Credits, language, cancellationToken),
             ExternalIds = BuildExternalIds(providerId, show.ExternalIds),
             Pictures = FetchMetadataPictures(show.Images, language),

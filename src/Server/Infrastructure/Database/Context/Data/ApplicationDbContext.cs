@@ -66,6 +66,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<UserLibraryExclusion> UserLibraryExclusions => Set<UserLibraryExclusion>();
     public DbSet<UserMediaExclusion> UserMediaExclusions => Set<UserMediaExclusion>();
     public DbSet<ContentRestrictionProfile> ContentRestrictionProfiles => Set<ContentRestrictionProfile>();
+    public DbSet<MediaRecommendation> MediaRecommendations => Set<MediaRecommendation>();
     public DbSet<LibraryScanIssue> ScanIssues => Set<LibraryScanIssue>();
     public DbSet<Download> Downloads => Set<Download>();
 

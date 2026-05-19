@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Metadatas.External;
+﻿using K7.Server.Domain.Entities.Metadatas;
+using K7.Server.Domain.Entities.Metadatas.External;
 
 namespace K7.Server.Domain.Entities.Medias;
 public class Movie() : BaseMedia(MediaType.Movie)
@@ -9,6 +10,7 @@ public class Movie() : BaseMedia(MediaType.Movie)
     public string? ContentRating { get; set; }
     public long? Budget { get; set; }
     public long? Revenue { get; set; }
+    public IList<string> Studios { get; set; } = [];
 
 
 
@@ -28,6 +30,18 @@ public class Movie() : BaseMedia(MediaType.Movie)
         {
             Genres.Clear();
             foreach (var genre in metadata.Genres) Genres.Add(genre);
+        }
+
+        if (metadata.Studios?.Count > 0)
+        {
+            Studios.Clear();
+            foreach (var studio in metadata.Studios) Studios.Add(studio);
+        }
+
+        if (metadata.Trailers?.Count > 0)
+        {
+            Trailers.Clear();
+            foreach (var trailer in metadata.Trailers) Trailers.Add(trailer);
         }
 
         if (metadata.PersonRoles?.Count > 0)

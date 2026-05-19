@@ -1,4 +1,5 @@
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Ratings;
@@ -30,6 +31,8 @@ public static class MediaMappings
                 ContentRating = movie.ContentRating,
                 Budget = movie.Budget,
                 Revenue = movie.Revenue,
+                Studios = movie.Studios.ToList(),
+                Trailers = domain.Trailers.Select(t => t.ToTrailerDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -117,6 +120,8 @@ public static class MediaMappings
                 OriginalLanguage = serie.OriginalLanguage,
                 ContentRating = serie.ContentRating,
                 Network = serie.Network,
+                Studios = serie.Studios.ToList(),
+                Trailers = domain.Trailers.Select(t => t.ToTrailerDto()).ToList(),
                 Seasons = serie.Seasons
                     .OrderBy(s => s.SeasonNumber)
                     .Select(s => new LiteSerieSeasonDto
@@ -357,6 +362,18 @@ public static class MediaMappings
             SerieSeasonDto => new SerieSeason(),
             SerieEpisodeDto => new SerieEpisode(),
             _ => throw new NotSupportedException($"Unknown type: {dto.GetType().Name}")
+        };
+    }
+
+    extension(TrailerInfo domain)
+    {
+        public TrailerDto ToTrailerDto() => new()
+        {
+            Key = domain.Key,
+            Name = domain.Name,
+            Site = domain.Site,
+            Type = domain.Type,
+            Language = domain.Language
         };
     }
 

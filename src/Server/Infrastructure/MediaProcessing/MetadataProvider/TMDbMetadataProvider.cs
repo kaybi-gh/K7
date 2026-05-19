@@ -109,7 +109,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
     {
         try
         {
-            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: $"{language},en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates, cancellationToken: cancellationToken);
+            var tmdbMovie = await _tdmbClient.GetMovieAsync(metadataProviderExternalId, language, includeImageLanguage: $"{language},en,null", extraMethods: MovieMethods.ExternalIds | MovieMethods.Credits | MovieMethods.Images | MovieMethods.ReleaseDates | MovieMethods.Videos | MovieMethods.Recommendations, cancellationToken: cancellationToken);
 
             var contentRating = ExtractContentRating(tmdbMovie.ReleaseDates, language);
 
@@ -119,12 +119,24 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 OriginalTitle = tmdbMovie.OriginalTitle,
                 ReleaseDate = tmdbMovie.ReleaseDate.HasValue ? DateOnly.FromDateTime(tmdbMovie.ReleaseDate.Value) : null,
                 Genres = [.. tmdbMovie.Genres.Select(g => g.Name)],
+                Studios = [.. tmdbMovie.ProductionCompanies?.Select(c => c.Name) ?? []],
                 OriginalLanguage = tmdbMovie.OriginalLanguage,
                 Overview = tmdbMovie.Overview,
                 Tagline = tmdbMovie.Tagline,
                 ContentRating = contentRating,
                 Budget = tmdbMovie.Budget > 0 ? tmdbMovie.Budget : null,
                 Revenue = tmdbMovie.Revenue > 0 ? tmdbMovie.Revenue : null,
+                Trailers = [.. tmdbMovie.Videos?.Results?
+                    .Where(v => v.Site == "YouTube" && v.Type is "Trailer" or "Teaser")
+                    .Select(v => new TrailerInfo
+                    {
+                        Key = v.Key,
+                        Name = v.Name,
+                        Site = v.Site,
+                        Type = v.Type,
+                        Language = v.Iso_639_1
+                    }) ?? []],
+                RecommendedExternalIds = [.. tmdbMovie.Recommendations?.Results?.Select(r => r.Id.ToString()) ?? []],
                 PersonRoles = await ConvertToPersonRolesAsync(tmdbMovie.Credits, language),
                 ExternalIds =
                 [

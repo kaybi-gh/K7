@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Medias;
+﻿using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -23,6 +24,17 @@ public class MediaConfiguration : IEntityTypeConfiguration<BaseMedia>
             .HasMany(m => m.IndexedFiles)
             .WithOne(i => i.Media)
             .HasForeignKey(i => i.MediaId);
+
+        builder
+            .HasMany(m => m.Recommendations)
+            .WithOne(r => r.Media)
+            .HasForeignKey(r => r.MediaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.OwnsMany(m => m.Trailers, trailers =>
+        {
+            trailers.ToJson();
+        });
 
         builder.HasIndex(e => e.Type);
         builder.HasIndex(e => e.Title);

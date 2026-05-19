@@ -8,4 +8,6 @@ public sealed record MovieDto : MediaDto
     public string? ContentRating { get; init; }
     public long? Budget { get; init; }
     public long? Revenue { get; init; }
+    public IReadOnlyList<string>? Studios { get; init; }
+    public IReadOnlyList<TrailerDto>? Trailers { get; init; }
 }
