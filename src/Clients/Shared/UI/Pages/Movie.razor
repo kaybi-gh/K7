@@ -203,6 +203,7 @@ else
 
         @if (_similarMedia.Count > 0)
         {
+            <div style="margin-top: var(--space-6);">
             <Carousel Title="@L["SimilarMedia"]">
                 @foreach (var media in _similarMedia)
                 {
@@ -214,6 +215,7 @@ else
                     </CarouselItem>
                 }
             </Carousel>
+            </div>
         }
         </div>
     }
