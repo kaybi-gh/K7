@@ -2,8 +2,7 @@
 
 <div class="k7-dialog-content trailer-dialog-content">
     <div class="trailer-dialog-frame">
-        <iframe @ref="_iframeRef"
-                src="@_embedUrl"
+        <iframe src="@_embedUrl"
                 tabindex="0"
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowfullscreen
@@ -16,28 +15,10 @@
     [Parameter] public string TrailerKey { get; set; } = string.Empty;
     [Parameter] public string TrailerSite { get; set; } = "YouTube";
 
-    private ElementReference _iframeRef;
-
     private string _embedUrl => TrailerSite switch
     {
         "YouTube" => $"https://www.youtube-nocookie.com/embed/{TrailerKey}?autoplay=1&enablejsapi=1",
         "Vimeo" => $"https://player.vimeo.com/video/{TrailerKey}?autoplay=1",
         _ => $"https://www.youtube-nocookie.com/embed/{TrailerKey}?autoplay=1&enablejsapi=1"
     };
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Task.Delay(300);
-            try
-            {
-                await _iframeRef.FocusAsync();
-            }
-            catch
-            {
-                // Focus is best-effort
-            }
-        }
-    }
 }
