@@ -27,5 +27,8 @@
   <data name="HideForUserDialogTitle" xml:space="preserve"><value>Masquer pour un utilisateur</value></data>
   <data name="EmptyStateTitle" xml:space="preserve"><value>Rien à afficher</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Votre bibliothèque est vide, ou aucun contenu ne vous est accessible.</value></data>
+  <data name="OfflineTitle" xml:space="preserve"><value>Vous etes hors-ligne</value></data>
+  <data name="OfflineSubtitle" xml:space="preserve"><value>Impossible de joindre le serveur. Vos telechargements restent accessibles.</value></data>
+  <data name="GoToDownloads" xml:space="preserve"><value>Voir mes telechargements</value></data>
 </root>
 

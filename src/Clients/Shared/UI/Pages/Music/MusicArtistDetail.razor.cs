@@ -159,6 +159,24 @@ public partial class MusicArtistDetail
             }).ToList();
     }
 
+    private IReadOnlyList<DownloadRequest> GetDownloadRequests()
+    {
+        return _tracks
+            .Where(t => t.IndexedFileId.HasValue)
+            .Select(t => new DownloadRequest
+            {
+                IndexedFileId = t.IndexedFileId!.Value,
+                MediaId = t.Id,
+                Title = t.Title,
+                Artist = _artist?.Title,
+                AlbumTitle = t.AlbumTitle,
+                CoverUrl = t.CoverUrl,
+                MediaType = MediaType.MusicTrack,
+                IsCacheItem = false
+            })
+            .ToList();
+    }
+
     private static string FormatTime(double seconds)
     {
         if (seconds <= 0) return "";

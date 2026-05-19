@@ -154,6 +154,24 @@ public partial class MusicAlbumDetail
             : $"{ts.Minutes:0}:{ts.Seconds:00}";
     }
 
+    private IReadOnlyList<DownloadRequest> GetDownloadRequests()
+    {
+        return _tracks
+            .Where(t => t.IndexedFileId.HasValue)
+            .Select(t => new DownloadRequest
+            {
+                IndexedFileId = t.IndexedFileId!.Value,
+                MediaId = t.Id,
+                Title = t.Title,
+                Artist = t.ArtistName,
+                AlbumTitle = _album?.Title,
+                CoverUrl = t.CoverUrl,
+                MediaType = MediaType.MusicTrack,
+                IsCacheItem = false
+            })
+            .ToList();
+    }
+
     private static string FormatTotalDuration(double totalSeconds)
     {
         var ts = TimeSpan.FromSeconds(totalSeconds);

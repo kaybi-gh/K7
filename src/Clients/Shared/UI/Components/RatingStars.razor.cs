@@ -1,4 +1,5 @@
-﻿using K7.Clients.Shared.Interfaces;
+﻿using System.Net.Http;
+using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -106,14 +107,7 @@ public partial class RatingStars : IAsyncDisposable
     public async Task OnEditCommit()
     {
         var rating = _currentValue.HasValue ? _currentValue.Value : 0;
-        try
-        {
-            await K7ServerService.RateMediaAsync(MediaId, rating);
-        }
-        catch
-        {
-            // Silently fail - optimistic UI
-        }
+        await RateAsync(rating);
     }
 
     [JSInvokable("OnEditCancel")]
@@ -136,10 +130,25 @@ public partial class RatingStars : IAsyncDisposable
         var newValue = stars * 2;
         _currentValue = newValue > 0 ? newValue : null;
         await ValueChanged.InvokeAsync(_currentValue);
+        await RateAsync(newValue);
+    }
 
+    private async Task RateAsync(int value)
+    {
         try
         {
-            await K7ServerService.RateMediaAsync(MediaId, newValue);
+            if (Connectivity.IsOnline)
+            {
+                await K7ServerService.RateMediaAsync(MediaId, value);
+            }
+            else
+            {
+                await PlaybackJournal.RecordRatingAsync(MediaId, value);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            await PlaybackJournal.RecordRatingAsync(MediaId, value);
         }
         catch
         {

@@ -1,3 +1,4 @@
+using System.Net.Http;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Services;
@@ -27,8 +28,10 @@ public partial class Home : IDisposable
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
+    [Inject] private IConnectivityService ConnectivityService { get; set; } = default!;
 
     private bool isLoading { get; set; } = true;
+    private bool _isOffline;
     private bool _canTrackProgress;
     private bool _canExclude;
     private bool _isAdmin;
@@ -51,6 +54,18 @@ public partial class Home : IDisposable
         try
         {
             layout = await PreferencesService.GetHomeLayoutAsync();
+        }
+        catch (HttpRequestException)
+        {
+            _isOffline = true;
+            isLoading = false;
+            return;
+        }
+        catch (TaskCanceledException)
+        {
+            _isOffline = true;
+            isLoading = false;
+            return;
         }
         catch
         {

@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
@@ -197,7 +198,8 @@ public partial class SerieSeason
 
         PlaybackProgressTracker.StartTracking(episode.Id,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
-            Guid.Parse(SerieId));
+            Guid.Parse(SerieId),
+            indexedFile.Id);
 
         await PlayerService.PlayIndexedFileAsync(
             indexedFile.Id,
@@ -234,5 +236,20 @@ public partial class SerieSeason
             return;
 
         await k7ServerService.DetectMediaSegmentsAsync(_season.Id);
+    }
+
+    private IReadOnlyList<DownloadRequest> GetDownloadRequests()
+    {
+        return _episodes
+            .Where(e => e.IndexedFileId.HasValue)
+            .Select(e => new DownloadRequest
+            {
+                IndexedFileId = e.IndexedFileId!.Value,
+                MediaId = e.Id,
+                Title = e.Title ?? $"E{e.EpisodeNumber}",
+                MediaType = MediaType.SerieEpisode,
+                IsCacheItem = false
+            })
+            .ToList();
     }
 }

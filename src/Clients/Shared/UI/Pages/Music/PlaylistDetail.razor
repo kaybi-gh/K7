@@ -59,6 +59,7 @@
                                Disabled="@(_items.Count == 0)">
                         @S["Shuffle"]
                     </K7Button>
+                    <DownloadAllButton Items="GetDownloadRequests()" />
                     <K7IconButton Icon="@Phosphor.Pencil"
                                    OnClick="OpenEditDialog" />
                     <K7IconButton Icon="@Phosphor.Trash" Color="error"

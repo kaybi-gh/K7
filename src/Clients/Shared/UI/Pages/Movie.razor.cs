@@ -88,7 +88,7 @@ public partial class Movie
         var videoResolution = videoMetadata.VideoResolution;
         var thumbnailsUrl = videoMetadata.Thumbnails?.Uri?.ToString();
 
-        PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress));
+        PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress), indexedFileId: indexedFileId);
 
         await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id);
 

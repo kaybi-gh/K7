@@ -19,22 +19,11 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PageTitle" xml:space="preserve"><value>My downloads</value></data>
-  <data name="NotAvailableOnWeb" xml:space="preserve"><value>Downloads are only available on the mobile app.</value></data>
-  <data name="StorageUsed" xml:space="preserve"><value>Storage used</value></data>
-  <data name="CacheUsed" xml:space="preserve"><value>Cache</value></data>
-  <data name="Items" xml:space="preserve"><value>items</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Download queue</value></data>
   <data name="ActiveDownloads" xml:space="preserve"><value>Active downloads</value></data>
-  <data name="Music" xml:space="preserve"><value>Music</value></data>
-  <data name="Videos" xml:space="preserve"><value>Videos</value></data>
-  <data name="NoDownloads" xml:space="preserve"><value>No downloads yet. Download media to listen or watch offline.</value></data>
+  <data name="EmptyQueue" xml:space="preserve"><value>No active downloads</value></data>
+  <data name="CancelAll" xml:space="preserve"><value>Cancel all</value></data>
   <data name="StatusQueued" xml:space="preserve"><value>Queued</value></data>
   <data name="StatusPreparing" xml:space="preserve"><value>Preparing...</value></data>
   <data name="StatusDownloading" xml:space="preserve"><value>Downloading</value></data>
-  <data name="ActiveDownloadsCount" xml:space="preserve"><value>{0} downloads in progress</value></data>
-  <data name="TapToView" xml:space="preserve"><value>Tap to view details</value></data>
-  <data name="Tracks" xml:space="preserve"><value>tracks</value></data>
-  <data name="All" xml:space="preserve"><value>All</value></data>
-  <data name="SearchPlaceholder" xml:space="preserve"><value>Search downloads...</value></data>
-  <data name="Downloads" xml:space="preserve"><value>Downloads</value></data>
 </root>

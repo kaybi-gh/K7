@@ -1,21 +1,215 @@
 @page "/my-space/downloads"
 @layout MySpaceLayout
+@using K7.Server.Domain.Enums
 @inject IStringLocalizer<MySpaceDownloadsPage> L
 @inject IDeviceService DeviceService
+@inject IDownloadManager DownloadManager
+@inject IOfflineMediaStore OfflineStore
+@inject IPlayerService PlayerService
+@inject IAudioPlayerService AudioPlayerService
+@inject IMusicCacheService MusicCacheService
+@inject IDeviceStorageService DeviceStorageService
+@inject NavigationManager Navigation
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
 <div class="page-scrollable">
-    <div class="d-flex flex-col align-center pa-16">
-    @if (DeviceService.GetClientType() != ClientType.Web)
+    @if (DeviceService.GetClientType() == ClientType.Web)
     {
-        <K7Icon Icon="@Phosphor.DownloadSimple" Style="font-size: 64px; opacity: 0.3;" />
-        <h6>@L["PageTitle"]</h6>
+        <div class="d-flex flex-col align-center pa-16">
+            <K7Icon Icon="@Phosphor.DownloadSimple" Style="font-size: 64px; opacity: 0.3;" />
+            <p class="text-sm" Color="secondary">@L["NotAvailableOnWeb"]</p>
+        </div>
     }
     else
     {
-        <K7Icon Icon="@Phosphor.DownloadSimple" Style="font-size: 64px; opacity: 0.3;" />
-        <p class="text-sm" Color="secondary">@L["NotAvailableOnWeb"]</p>
+        <div class="downloads-page pa-4">
+            @if (_storageInfo is not null)
+            {
+                <div class="downloads-storage mb-4">
+                    <div class="downloads-storage-row">
+                        <div class="d-flex justify-space-between align-center">
+                            <span class="text-sm text-secondary">@L["Downloads"]</span>
+                            <span class="text-sm">@FormatBytes(_storageInfo.UsedBytes - _storageInfo.CacheBytes) / @FormatBytes(_maxDownloadBytes)</span>
+                        </div>
+                        <K7ProgressBar Value="@GetDownloadStoragePercent()" Class="mt-1" />
+                    </div>
+                    <div class="downloads-storage-row mt-3">
+                        <div class="d-flex justify-space-between align-center">
+                            <span class="text-sm text-secondary">@L["CacheUsed"]</span>
+                            <span class="text-sm">@FormatBytes(_storageInfo.CacheBytes) / @FormatBytes(_maxCacheBytes)</span>
+                        </div>
+                        <K7ProgressBar Value="@GetCacheStoragePercent()" Class="mt-1" />
+                    </div>
+                </div>
+            }
+
+            @if (_activeCount > 0)
+            {
+                <div class="downloads-active-card mb-4" @onclick="NavigateToQueue">
+                    <div class="d-flex align-center gap-3">
+                        <div class="downloads-active-icon">
+                            <K7Icon Icon="@Phosphor.ArrowDown" />
+                        </div>
+                        <div>
+                            <p class="text-body-2 font-weight-medium">@string.Format(L["ActiveDownloadsCount"], _activeCount)</p>
+                            <p class="text-caption text-secondary">@L["TapToView"]</p>
+                        </div>
+                    </div>
+                    <K7Icon Icon="@Phosphor.CaretRight" Class="text-secondary" />
+                </div>
+            }
+
+            @if (_musicGroups.Count > 0 || _videoItems.Count > 0 || _cachedItems.Count > 0)
+            {
+                <div class="downloads-filter-bar mb-3">
+                    <button class="downloads-filter-chip @(_activeTab == DownloadTab.All ? "downloads-filter-chip--active" : "")"
+                            @onclick="() => SetTab(DownloadTab.All)">
+                        @L["All"]
+                    </button>
+                    @if (_musicGroups.Count > 0)
+                    {
+                        <button class="downloads-filter-chip @(_activeTab == DownloadTab.Music ? "downloads-filter-chip--active" : "")"
+                                @onclick="() => SetTab(DownloadTab.Music)">
+                            @L["Music"] (@_musicGroups.Count)
+                        </button>
+                    }
+                    @if (_videoItems.Count > 0)
+                    {
+                        <button class="downloads-filter-chip @(_activeTab == DownloadTab.Videos ? "downloads-filter-chip--active" : "")"
+                                @onclick="() => SetTab(DownloadTab.Videos)">
+                            @L["Videos"] (@_videoItems.Count)
+                        </button>
+                    }
+                    @if (_cachedItems.Count > 0)
+                    {
+                        <button class="downloads-filter-chip @(_activeTab == DownloadTab.Cache ? "downloads-filter-chip--active" : "")"
+                                @onclick="() => SetTab(DownloadTab.Cache)">
+                            @L["CacheUsed"] (@_cachedItems.Count)
+                        </button>
+                    }
+                </div>
+
+                <input type="text"
+                       class="downloads-search-input mb-3"
+                       placeholder="@L["SearchPlaceholder"]"
+                       @bind="_searchQuery"
+                       @bind:event="oninput" />
+            }
+
+            @if (_activeTab is DownloadTab.All or DownloadTab.Music && FilteredMusicGroups.Count > 0)
+            {
+                @if (_activeTab == DownloadTab.All)
+                {
+                    <h6 class="mt-2 mb-3">@L["Music"]</h6>
+                }
+                <div class="downloads-table">
+                    @foreach (var group in FilteredMusicGroups)
+                    {
+                        <div class="downloads-table-row">
+                            <div class="d-flex align-center gap-3">
+                                @if (!string.IsNullOrEmpty(group.CoverUrl))
+                                {
+                                    <img src="@DeviceService.GetLocalFileUrl(group.CoverUrl)" alt="" class="download-group-cover" />
+                                }
+                                else
+                                {
+                                    <div class="download-group-cover-placeholder">
+                                        <K7Icon Icon="@Phosphor.MusicNote" />
+                                    </div>
+                                }
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <p class="text-body-2 font-weight-medium text-truncate">@group.Title</p>
+                                    @if (!string.IsNullOrEmpty(group.Subtitle))
+                                    {
+                                        <p class="text-caption text-secondary text-truncate">@group.Subtitle</p>
+                                    }
+                                    <p class="text-caption text-secondary">@group.Items.Count @L["Tracks"] - @FormatBytes(group.TotalSize)</p>
+                                </div>
+                                <K7IconButton Icon="@Phosphor.Play" Size="sm" OnClick="() => PlayGroupAsync(group)" AriaLabel="play" />
+                                <K7IconButton Icon="@Phosphor.Trash" Size="sm" Color="error" OnClick="() => RemoveGroupAsync(group)" AriaLabel="remove" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_activeTab is DownloadTab.All or DownloadTab.Videos && FilteredVideoItems.Count > 0)
+            {
+                @if (_activeTab == DownloadTab.All)
+                {
+                    <h6 class="mt-4 mb-3">@L["Videos"]</h6>
+                }
+                <div class="downloads-table">
+                    @foreach (var item in FilteredVideoItems)
+                    {
+                        <div class="downloads-table-row">
+                            <div class="d-flex align-center gap-3">
+                                @if (!string.IsNullOrEmpty(item.CoverLocalPath))
+                                {
+                                    <img src="@DeviceService.GetLocalFileUrl(item.CoverLocalPath)" alt="" class="download-group-cover download-group-cover--video" />
+                                }
+                                else
+                                {
+                                    <div class="download-group-cover-placeholder download-group-cover--video">
+                                        <K7Icon Icon="@Phosphor.FilmSlate" />
+                                    </div>
+                                }
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <p class="text-body-2 font-weight-medium text-truncate">@item.Title</p>
+                                    <p class="text-caption text-secondary">@FormatBytes(item.FileSize)</p>
+                                </div>
+                                <K7IconButton Icon="@Phosphor.Play" Size="sm" OnClick="() => PlayVideoAsync(item)" AriaLabel="play" />
+                                <K7IconButton Icon="@Phosphor.Trash" Size="sm" Color="error" OnClick="() => RemoveAsync(item.IndexedFileId)" AriaLabel="remove" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_activeTab is DownloadTab.All or DownloadTab.Cache && _cachedItems.Count > 0)
+            {
+                @if (_activeTab == DownloadTab.All)
+                {
+                    <h6 class="mt-4 mb-3">@L["CacheUsed"]</h6>
+                }
+                <div class="downloads-table">
+                    @foreach (var group in _cachedGroups)
+                    {
+                        <div class="downloads-table-row">
+                            <div class="d-flex align-center gap-3">
+                                @if (!string.IsNullOrEmpty(group.CoverUrl))
+                                {
+                                    <img src="@DeviceService.GetLocalFileUrl(group.CoverUrl)" alt="" class="download-group-cover" />
+                                }
+                                else
+                                {
+                                    <div class="download-group-cover-placeholder">
+                                        <K7Icon Icon="@Phosphor.MusicNote" />
+                                    </div>
+                                }
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <p class="text-body-2 font-weight-medium text-truncate">@group.Title</p>
+                                    @if (!string.IsNullOrEmpty(group.Subtitle))
+                                    {
+                                        <p class="text-caption text-secondary text-truncate">@group.Subtitle</p>
+                                    }
+                                    <p class="text-caption text-secondary">@group.Items.Count @L["Tracks"] - @FormatBytes(group.TotalSize)</p>
+                                </div>
+                                <K7IconButton Icon="@Phosphor.Play" Size="sm" OnClick="() => PlayGroupAsync(group)" AriaLabel="play" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_activeCount == 0 && _musicGroups.Count == 0 && _videoItems.Count == 0 && _cachedItems.Count == 0)
+            {
+                <div class="d-flex flex-col align-center pa-16">
+                    <K7Icon Icon="@Phosphor.DownloadSimple" Style="font-size: 64px; opacity: 0.3;" />
+                    <p class="text-sm text-secondary mt-2">@L["NoDownloads"]</p>
+                </div>
+            }
+        </div>
     }
-    </div>
 </div>

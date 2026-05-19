@@ -24,7 +24,9 @@
   <data name="AddServer" xml:space="preserve"><value>Ajouter un utilisateur</value></data>
   <data name="SingleUserMode" xml:space="preserve"><value>Je suis le seul utilisateur de cet appareil</value></data>
   <data name="SessionExpired" xml:space="preserve"><value>La session de {0} a expiré. Veuillez vous reconnecter.</value></data>
+  <data name="ServerUnreachable" xml:space="preserve"><value>Impossible de joindre le serveur. Verifiez votre connexion.</value></data>
   <data name="EnterPin" xml:space="preserve"><value>Entrer le PIN</value></data>
   <data name="IncorrectPin" xml:space="preserve"><value>PIN incorrect.</value></data>
+  <data name="ContinueOffline" xml:space="preserve"><value>Continuer hors ligne</value></data>
 </root>
 

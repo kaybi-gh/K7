@@ -1,0 +1,29 @@
+@using K7.Clients.Shared.Interfaces
+@using K7.Server.Domain.Enums
+@inject IDeviceService DeviceService
+@inject IDownloadManager DownloadManager
+@inject IOfflineMediaStore OfflineStore
+@inject IK7Snackbar Snackbar
+@inject IStringLocalizer<DownloadButton> L
+
+@if (DeviceService.GetClientType() != ClientType.Web)
+{
+    @if (_isDownloaded)
+    {
+        <button type="button" class="k7-icon-btn k7-icon-btn--sm k7-download-btn k7-download-btn--done focusable" aria-label="@L["Downloaded"]" @onclick="RemoveDownloadAsync" @onclick:stopPropagation="true">
+            <i class="ph-fill ph-check-circle"></i>
+        </button>
+    }
+    else if (_isDownloading)
+    {
+        <button type="button" class="k7-icon-btn k7-icon-btn--sm k7-download-btn k7-download-btn--active focusable" aria-label="@L["Downloading"]" disabled @onclick:stopPropagation="true">
+            <i class="ph ph-circle-notch k7-spin"></i>
+        </button>
+    }
+    else
+    {
+        <button type="button" class="k7-icon-btn k7-icon-btn--sm k7-download-btn focusable" aria-label="@L["DownloadOffline"]" @onclick="StartDownloadAsync" @onclick:stopPropagation="true">
+            <i class="ph ph-download-simple"></i>
+        </button>
+    }
+}

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -19,14 +19,11 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PageTitle" xml:space="preserve"><value>Who's watching? - K7</value></data>
-  <data name="Header" xml:space="preserve"><value>Who's watching?</value></data>
-  <data name="AddServer" xml:space="preserve"><value>Add a user</value></data>
-  <data name="SingleUserMode" xml:space="preserve"><value>I'm the only user on this device</value></data>
-  <data name="SessionExpired" xml:space="preserve"><value>Session for {0} has expired. Please sign in again.</value></data>
-  <data name="ServerUnreachable" xml:space="preserve"><value>Can't reach the server. Check your connection.</value></data>
-  <data name="EnterPin" xml:space="preserve"><value>Enter PIN</value></data>
-  <data name="IncorrectPin" xml:space="preserve"><value>Incorrect PIN.</value></data>
-  <data name="ContinueOffline" xml:space="preserve"><value>Continue offline</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>File d'attente</value></data>
+  <data name="ActiveDownloads" xml:space="preserve"><value>Telechargements actifs</value></data>
+  <data name="EmptyQueue" xml:space="preserve"><value>Aucun telechargement actif</value></data>
+  <data name="CancelAll" xml:space="preserve"><value>Tout annuler</value></data>
+  <data name="StatusQueued" xml:space="preserve"><value>En attente</value></data>
+  <data name="StatusPreparing" xml:space="preserve"><value>Preparation...</value></data>
+  <data name="StatusDownloading" xml:space="preserve"><value>Telechargement</value></data>
 </root>
-

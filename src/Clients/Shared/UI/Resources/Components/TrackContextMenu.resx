@@ -29,5 +29,7 @@
   <data name="AddToPlaylistTitle" xml:space="preserve"><value>Ajouter à une playlist</value></data>
   <data name="RadioArtistSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="RadioGenreSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
+  <data name="DownloadOffline" xml:space="preserve"><value>Telecharger hors-ligne</value></data>
+  <data name="DownloadQueued" xml:space="preserve"><value>'{0}' en file d'attente</value></data>
 </root>
 

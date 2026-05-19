@@ -1,4 +1,5 @@
 ﻿using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -67,5 +68,12 @@ public partial class EpisodeListItem
         };
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
         await DialogService.ShowAsync<IndexedFilesDialog>(S["IndexedVersions"], parameters, options);
+    }
+
+    private VideoFileMetadataDto? GetVideoMetadata()
+    {
+        return _fullEpisode?.IndexedFiles?
+            .FirstOrDefault(f => f.Id == Episode.IndexedFileId)
+            ?.FileMetadata as VideoFileMetadataDto;
     }
 }

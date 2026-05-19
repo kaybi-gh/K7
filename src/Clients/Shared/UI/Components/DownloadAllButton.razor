@@ -1,0 +1,17 @@
+@using K7.Clients.Shared.Interfaces
+@using K7.Server.Domain.Enums
+@inject IDeviceService DeviceService
+@inject IDownloadManager DownloadManager
+@inject IK7Snackbar Snackbar
+@inject IStringLocalizer<DownloadAllButton> L
+
+@if (DeviceService.GetClientType() != ClientType.Web && Items.Count > 0)
+{
+    <K7Button Variant="@Variant"
+               StartIcon="@Phosphor.DownloadSimple"
+               OnClick="DownloadAllAsync"
+               Disabled="_isEnqueuing"
+               Size="@Size">
+        @L["DownloadAll"]
+    </K7Button>
+}

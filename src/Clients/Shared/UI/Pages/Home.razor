@@ -4,7 +4,18 @@
 <PageTitle>@L["PageTitle"]</PageTitle>
 
 <div class="home-page @(_isTv ? "home-page--tv" : "")">
-    @if (_isTv)
+    @if (_isOffline)
+    {
+        <div class="home-offline-banner">
+            <K7Icon Icon="@Phosphor.WifiSlash" Style="font-size: 48px; opacity: 0.4;" />
+            <p class="home-offline-banner__title">@L["OfflineTitle"]</p>
+            <p class="home-offline-banner__subtitle">@L["OfflineSubtitle"]</p>
+            <K7Button Href="/my-space/downloads" Variant="filled" Color="primary">
+                @L["GoToDownloads"]
+            </K7Button>
+        </div>
+    }
+    else if (_isTv)
     {
         <HomeTvHero Model="_focusedItem" />
     }

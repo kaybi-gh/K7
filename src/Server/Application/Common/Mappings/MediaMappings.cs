@@ -321,6 +321,7 @@ public static class MediaMappings
                     .Where(p => p.Type == MetadataPictureType.Still)
                     .Select(p => (Guid?)p.Id)
                     .FirstOrDefault(),
+                IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
                 SeriePictures = episode.Serie?.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
                 SeasonPictures = episode.Season?.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state

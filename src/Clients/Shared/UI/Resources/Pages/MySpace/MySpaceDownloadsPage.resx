@@ -19,6 +19,22 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PageTitle" xml:space="preserve"><value>Mes téléchargements</value></data>
-  <data name="NotAvailableOnWeb" xml:space="preserve"><value>Les téléchargements ne sont disponibles que sur l'application mobile.</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Mes telechargements</value></data>
+  <data name="NotAvailableOnWeb" xml:space="preserve"><value>Les telechargements ne sont disponibles que sur l'application mobile.</value></data>
+  <data name="StorageUsed" xml:space="preserve"><value>Stockage utilise</value></data>
+  <data name="CacheUsed" xml:space="preserve"><value>Cache</value></data>
+  <data name="Items" xml:space="preserve"><value>elements</value></data>
+  <data name="ActiveDownloads" xml:space="preserve"><value>Telechargements actifs</value></data>
+  <data name="Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="Videos" xml:space="preserve"><value>Videos</value></data>
+  <data name="NoDownloads" xml:space="preserve"><value>Aucun telechargement. Telechargez des medias pour ecouter ou regarder hors-ligne.</value></data>
+  <data name="StatusQueued" xml:space="preserve"><value>En attente</value></data>
+  <data name="StatusPreparing" xml:space="preserve"><value>Preparation...</value></data>
+  <data name="StatusDownloading" xml:space="preserve"><value>Telechargement</value></data>
+  <data name="ActiveDownloadsCount" xml:space="preserve"><value>{0} telechargements en cours</value></data>
+  <data name="TapToView" xml:space="preserve"><value>Appuyez pour voir les details</value></data>
+  <data name="Tracks" xml:space="preserve"><value>titres</value></data>
+  <data name="All" xml:space="preserve"><value>Tout</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Rechercher dans les telechargements...</value></data>
+  <data name="Downloads" xml:space="preserve"><value>Telechargements</value></data>
 </root>

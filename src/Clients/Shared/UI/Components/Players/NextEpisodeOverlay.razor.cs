@@ -157,7 +157,8 @@ public partial class NextEpisodeOverlay : IDisposable
 
         PlaybackProgressTracker.StartTracking(nextEpisodeId,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
-            serieId);
+            serieId,
+            indexedFile.Id);
 
         await PlayerService.PlayIndexedFileAsync(
             indexedFile.Id,
