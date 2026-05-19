@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Hors-ligne</value></data>
+  <data name="Title" xml:space="preserve"><value>Telechargements et cache</value></data>
+  <data name="Downloads" xml:space="preserve"><value>Telechargements</value></data>
+  <data name="Cache" xml:space="preserve"><value>Cache</value></data>
+  <data name="StorageLimits" xml:space="preserve"><value>Limites de stockage</value></data>
+  <data name="MaxDownloadStorage" xml:space="preserve"><value>Stockage max telechargements</value></data>
+  <data name="MaxCacheStorage" xml:space="preserve"><value>Stockage max cache</value></data>
+  <data name="Network" xml:space="preserve"><value>Reseau</value></data>
+  <data name="AllowWifi" xml:space="preserve"><value>Autoriser le telechargement en Wi-Fi</value></data>
+  <data name="AllowMobileData" xml:space="preserve"><value>Autoriser le telechargement en donnees mobiles</value></data>
+  <data name="MusicCache" xml:space="preserve"><value>Cache musical</value></data>
+  <data name="LookaheadWifi" xml:space="preserve"><value>Titres a mettre en cache (Wi-Fi)</value></data>
+  <data name="LookaheadMobile" xml:space="preserve"><value>Titres a mettre en cache (mobile)</value></data>
+  <data name="Disabled" xml:space="preserve"><value>Desactive</value></data>
+</root>

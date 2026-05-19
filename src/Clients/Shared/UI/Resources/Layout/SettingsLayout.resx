@@ -27,4 +27,5 @@
   <data name="Home" xml:space="preserve"><value>Accueil</value></data>
   <data name="Hidden" xml:space="preserve"><value>Masqués</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur video</value></data>
+  <data name="Offline" xml:space="preserve"><value>Hors-ligne</value></data>
 </root>
