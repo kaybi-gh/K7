@@ -28,9 +28,16 @@ public partial class Movie
     private AudioFileTrackDto? _selectedAudioFileTrack;
     private SubtitleFileTrackDto? _selectedSubtitleFileTrack;
     private List<MediaCardViewModel> _similarMedia = [];
+    private string? _previousId;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        if (_previousId == Id) return;
+        _previousId = Id;
+
+        isLoading = true;
+        _similarMedia = [];
+
         _movie = await k7ServerService.GetMovieAsync(Guid.Parse(Id));
         if (_movie != null)
         {
@@ -48,7 +55,6 @@ public partial class Movie
                 _selectedSubtitleFileTrack = vMeta.SubtitleTracks?.FirstOrDefault(x => x.IsDefault);
             }
         }
-        base.OnInitialized();
         isLoading = false;
 
         _ = LoadSimilarMediaAsync();
