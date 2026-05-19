@@ -119,6 +119,20 @@ namespace K7.Clients.MAUI.Services
             throw new InvalidOperationException($"Cannot fetch {nameof(WebDeviceDetailsDto)} from MAUI device.");
         }
 
+        public string? GetLocalFileUrl(string? localPath)
+        {
+            if (string.IsNullOrEmpty(localPath))
+                return null;
+
+            var downloadsBase = Path.Combine(FileSystem.AppDataDirectory, "downloads");
+            if (!localPath.StartsWith(downloadsBase, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var relativePath = localPath[downloadsBase.Length..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var normalizedPath = relativePath.Replace('\\', '/');
+            return $"https://k7-local-files/{normalizedPath}";
+        }
+
         private static DeviceType MapDeviceType(DeviceIdiom deviceIdiom)
         {
             return deviceIdiom switch

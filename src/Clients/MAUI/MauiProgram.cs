@@ -1,4 +1,5 @@
 using K7.Clients.MAUI.Constants;
+using K7.Clients.MAUI.Data;
 using K7.Clients.MAUI.Services;
 using K7.Clients.MAUI.Services.Authentication;
 using K7.Clients.Shared.Interfaces;
@@ -89,6 +90,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IDiagnosticsService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IUserPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IDownloadService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<K7ServerManagerService>();
 
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
@@ -105,6 +107,19 @@ public static partial class MauiProgram
         builder.Services.AddSingleton(new MediaCacheStore(maxEntries: 32));
         builder.Services.AddSingleton<PlaybackProgressTracker>();
         builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
+
+        // Offline playback services
+        builder.Services.AddDbContextFactory<Data.OfflineMediaDbContext>(options =>
+        {
+            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "k7-offline.db");
+            options.UseSqlite($"Data Source={dbPath}");
+        });
+        builder.Services.AddSingleton<IConnectivityService, ConnectivityService>();
+        builder.Services.AddSingleton<IOfflineMediaStore, OfflineMediaStore>();
+        builder.Services.AddSingleton<IPlaybackJournal, PlaybackJournal>();
+        builder.Services.AddSingleton<IDownloadManager, Services.DownloadManager>();
+        builder.Services.AddSingleton<IMusicCacheService, MusicCacheService>();
+        builder.Services.AddSingleton<PlaybackSyncService>();
 
         builder.Services.AddSingleton<K7DialogService>();
         builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
@@ -126,6 +141,16 @@ public static partial class MauiProgram
         System.Diagnostics.Debug.WriteLine("K7 MAUI - builder.Build() completed");
 
         app.Services.GetRequiredService<AudioPlaybackProgressTracker>();
+
+        // Ensure offline DB is created
+        var offlineDbFactory = app.Services.GetRequiredService<IDbContextFactory<OfflineMediaDbContext>>();
+        using (var db = offlineDbFactory.CreateDbContext())
+        {
+            db.Database.EnsureCreated();
+        }
+
+        // Initialize playback sync serviceRembo
+        app.Services.GetRequiredService<PlaybackSyncService>();
 
         System.Diagnostics.Debug.WriteLine("K7 MAUI - CreateMauiApp returning");
         return app;

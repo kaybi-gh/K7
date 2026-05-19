@@ -172,6 +172,8 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         throw new InvalidOperationException($"Cannot fetch {nameof(NativeDeviceDetailsDto)} from web device.");
     }
 
+    public string? GetLocalFileUrl(string? localPath) => null;
+
     internal sealed record ParsedUserAgent
     {
         public string? BrowserName { get; init; }

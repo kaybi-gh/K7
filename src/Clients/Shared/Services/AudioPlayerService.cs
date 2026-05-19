@@ -396,16 +396,29 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         await ShowAsync();
 
-        var session = await streamUriService.GetOrCreateSessionAsync(track.IndexedFileId, cancellationToken: cancellationToken);
+        PlayerSource source;
 
-        if (session.Source is null)
-            throw new InvalidOperationException("Streaming session did not return a source URI.");
-
-        var source = new PlayerSource
+        if (!string.IsNullOrEmpty(track.LocalPath))
         {
-            Url = session.Source.Uri.OriginalString,
-            MimeType = session.Source.MimeType
-        };
+            source = new PlayerSource
+            {
+                Url = track.LocalPath,
+                MimeType = "audio/mpeg"
+            };
+        }
+        else
+        {
+            var session = await streamUriService.GetOrCreateSessionAsync(track.IndexedFileId, cancellationToken: cancellationToken);
+
+            if (session.Source is null)
+                throw new InvalidOperationException("Streaming session did not return a source URI.");
+
+            source = new PlayerSource
+            {
+                Url = session.Source.Uri.OriginalString,
+                MimeType = session.Source.MimeType
+            };
+        }
 
         SourceChanged?.Invoke(source);
     }

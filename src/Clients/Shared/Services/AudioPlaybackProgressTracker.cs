@@ -11,8 +11,11 @@ public class AudioPlaybackProgressTracker : IDisposable
     private readonly IAudioPlayerService _audio;
     private readonly IStreamingService _serverService;
     private readonly IDeviceStorageService _deviceStorage;
+    private readonly IConnectivityService _connectivity;
+    private readonly IPlaybackJournal _journal;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
+    private Guid? _currentIndexedFileId;
     private Guid _sessionId;
     private Guid _referenceId;
     private bool _disposed;
@@ -23,11 +26,18 @@ public class AudioPlaybackProgressTracker : IDisposable
     private static readonly TimeSpan ReportInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan InitialDelay = TimeSpan.FromSeconds(3);
 
-    public AudioPlaybackProgressTracker(IAudioPlayerService audio, IStreamingService serverService, IDeviceStorageService deviceStorage)
+    public AudioPlaybackProgressTracker(
+        IAudioPlayerService audio,
+        IStreamingService serverService,
+        IDeviceStorageService deviceStorage,
+        IConnectivityService connectivity,
+        IPlaybackJournal journal)
     {
         _audio = audio;
         _serverService = serverService;
         _deviceStorage = deviceStorage;
+        _connectivity = connectivity;
+        _journal = journal;
 
         _audio.CurrentTrackChanged += OnTrackChanged;
         _audio.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -39,6 +49,7 @@ public class AudioPlaybackProgressTracker : IDisposable
     {
         // Capture old track values synchronously (before the service resets them)
         var prevMediaId = _currentMediaId;
+        var prevIndexedFileId = _currentIndexedFileId;
         var prevSessionId = _sessionId;
         var prevPosition = _audio.CurrentTime;
         var prevDuration = _audio.Duration;
@@ -46,9 +57,10 @@ public class AudioPlaybackProgressTracker : IDisposable
         StopTimer();
 
         if (prevMediaId.HasValue && prevDuration > 0)
-            _ = SendReportAsync(prevMediaId.Value, prevSessionId, prevPosition, prevDuration, PlaybackState.Ended);
+            _ = SendReportAsync(prevMediaId.Value, prevIndexedFileId, prevSessionId, prevPosition, prevDuration, PlaybackState.Ended);
 
         _currentMediaId = newTrack?.MediaId;
+        _currentIndexedFileId = newTrack?.IndexedFileId;
 
         if (newTrack is not null)
         {
@@ -87,12 +99,21 @@ public class AudioPlaybackProgressTracker : IDisposable
         var duration = _audio.Duration;
         if (duration <= 0) return;
 
-        await SendReportAsync(mediaId, _sessionId, position, duration, _lastState);
+        await SendReportAsync(mediaId, _currentIndexedFileId, _sessionId, position, duration, _lastState);
     }
 
-    private async Task SendReportAsync(Guid mediaId, Guid sessionId, double position, double duration, PlaybackState state)
+    private async Task SendReportAsync(Guid mediaId, Guid? indexedFileId, Guid sessionId, double position, double duration, PlaybackState state)
     {
         if (!_canReport) return;
+
+        if (!_connectivity.IsOnline && indexedFileId.HasValue)
+        {
+            if (state == PlaybackState.Ended)
+                await _journal.RecordCompletedAsync(mediaId, indexedFileId.Value, duration);
+            else
+                await _journal.RecordProgressAsync(mediaId, indexedFileId.Value, position, duration);
+            return;
+        }
 
         try
         {
@@ -102,7 +123,13 @@ public class AudioPlaybackProgressTracker : IDisposable
         }
         catch
         {
-            // Silent - fire and forget
+            if (indexedFileId.HasValue)
+            {
+                if (state == PlaybackState.Ended)
+                    await _journal.RecordCompletedAsync(mediaId, indexedFileId.Value, duration);
+                else
+                    await _journal.RecordProgressAsync(mediaId, indexedFileId.Value, position, duration);
+            }
         }
     }
 

@@ -61,6 +61,9 @@ builder.Services.AddSingleton<IServerInfoService, MockServerInfoService>();
 builder.Services.AddSingleton<IUserPreferencesService, MockUserPreferencesService>();
 builder.Services.AddSingleton<IServerPreferencesService, MockServerPreferencesService>();
 
+builder.Services.AddSingleton<IConnectivityService, MockConnectivityService>();
+builder.Services.AddSingleton<IPlaybackJournal, MockPlaybackJournal>();
+
 // Concrete services whose dependencies are satisfied by the mocks above
 builder.Services.AddSingleton<PlaybackProgressTracker>();
 builder.Services.AddHttpClient();

@@ -376,6 +376,11 @@ public partial class BlazorPage : ContentPage
 
     private MediaSource CreateMediaSourceWithAuth(string url)
     {
+        if (File.Exists(url))
+        {
+            return MediaSource.FromFile(url);
+        }
+
         var authHeader = _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization;
         if (authHeader is not null)
         {

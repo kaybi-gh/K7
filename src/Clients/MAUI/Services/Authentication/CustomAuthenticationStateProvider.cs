@@ -243,6 +243,22 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         return Task.CompletedTask;
     }
 
+    public void SignInOffline(LocalUser user)
+    {
+        var claims = new List<Claim>
+        {
+            new(Claims.Subject, user.IdentityUserId),
+            new(Claims.Name, user.UserName),
+            new(ClaimTypes.Role, "User")
+        };
+
+        if (!string.IsNullOrEmpty(user.Email))
+            claims.Add(new Claim(ClaimTypes.Email, user.Email));
+
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity(claims, "Offline", Claims.Name, ClaimTypes.Role));
+        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
+    }
+
     private async Task TryRestoreSessionAsync()
     {
         if (!_localUserService.IsSingleUserMode)
@@ -255,6 +271,14 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         try
         {
             await RestoreUserInBackgroundAsync(lastUser);
+        }
+        catch (HttpRequestException)
+        {
+            SignInOffline(lastUser);
+        }
+        catch (TaskCanceledException)
+        {
+            SignInOffline(lastUser);
         }
         catch
         {
@@ -326,6 +350,14 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             }
 
             return true;
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (TaskCanceledException)
+        {
+            throw;
         }
         catch
         {

@@ -15,11 +15,14 @@ public class PlaybackProgressTracker : IDisposable
     private readonly IPlayerService _playerService;
     private readonly IStreamingService _serverService;
     private readonly IDeviceStorageService _deviceStorage;
+    private readonly IConnectivityService _connectivity;
+    private readonly IPlaybackJournal _journal;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid? _currentSerieId;
     private Guid _sessionId;
     private Guid _referenceId;
+    private Guid? _currentIndexedFileId;
     private double _lastReportedPosition;
     private double _lastKnownTime;
     private bool _isAuthenticated;
@@ -33,11 +36,18 @@ public class PlaybackProgressTracker : IDisposable
     public Guid? CurrentMediaId => _currentMediaId;
     public Guid? CurrentSerieId => _currentSerieId;
 
-    public PlaybackProgressTracker(IPlayerService playerService, IStreamingService serverService, IDeviceStorageService deviceStorage)
+    public PlaybackProgressTracker(
+        IPlayerService playerService,
+        IStreamingService serverService,
+        IDeviceStorageService deviceStorage,
+        IConnectivityService connectivity,
+        IPlaybackJournal journal)
     {
         _playerService = playerService;
         _serverService = serverService;
         _deviceStorage = deviceStorage;
+        _connectivity = connectivity;
+        _journal = journal;
 
         _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged += OnCurrentTimeChanged;
@@ -49,11 +59,12 @@ public class PlaybackProgressTracker : IDisposable
     /// <param name="mediaId">The media being played.</param>
     /// <param name="isAuthenticated">Whether the current user is authenticated. When false, progress is not reported.</param>
     /// <param name="serieId">Optional serie ID when playing a serie episode.</param>
-    public void StartTracking(Guid mediaId, bool isAuthenticated = true, Guid? serieId = null)
+    public void StartTracking(Guid mediaId, bool isAuthenticated = true, Guid? serieId = null, Guid? indexedFileId = null)
     {
         StopTimer();
         _currentMediaId = mediaId;
         _currentSerieId = serieId;
+        _currentIndexedFileId = indexedFileId;
         _sessionId = Guid.NewGuid();
         _referenceId = Guid.NewGuid();
         _lastReportedPosition = 0;
@@ -133,6 +144,12 @@ public class PlaybackProgressTracker : IDisposable
 
         _lastReportedPosition = position;
 
+        if (!_connectivity.IsOnline && _currentIndexedFileId.HasValue)
+        {
+            await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration);
+            return;
+        }
+
         try
         {
             var deviceIdStr = _deviceStorage.Get(PreferenceKeys.DEVICE_ID);
@@ -149,6 +166,10 @@ public class PlaybackProgressTracker : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to report playback progress: {ex.Message}");
+            if (_currentIndexedFileId.HasValue)
+            {
+                await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration);
+            }
         }
     }
 

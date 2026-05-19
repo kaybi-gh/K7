@@ -22,4 +22,10 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<bool> SINGLE_USER_MODE = new("SingleUserMode");
     public static readonly PreferenceKey<string> LAST_ACTIVE_USER_ID = new("LastActiveUserId");
     public static readonly PreferenceKey<string> NEXT_EPISODE_BEHAVIOR = new("NextEpisodeBehavior");
+    public static readonly PreferenceKey<long> MAX_DOWNLOAD_STORAGE_BYTES = new("MaxDownloadStorageBytes");
+    public static readonly PreferenceKey<long> MAX_CACHE_STORAGE_BYTES = new("MaxCacheStorageBytes");
+    public static readonly PreferenceKey<bool> DOWNLOAD_ALLOW_MOBILE_DATA = new("DownloadAllowMobileData");
+    public static readonly PreferenceKey<bool> DOWNLOAD_ALLOW_WIFI = new("DownloadAllowWifi");
+    public static readonly PreferenceKey<int> CACHE_LOOKAHEAD_WIFI = new("CacheLookaheadWifi");
+    public static readonly PreferenceKey<int> CACHE_LOOKAHEAD_MOBILE = new("CacheLookaheadMobile");
 }

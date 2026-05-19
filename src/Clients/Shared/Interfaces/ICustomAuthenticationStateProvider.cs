@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using K7.Clients.Shared.Models;
 
 namespace K7.Clients.Shared.Interfaces;
 
@@ -9,6 +9,7 @@ public interface ICustomAuthenticationStateProvider
     Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default);
     Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default);
     Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default);
+    void SignInOffline(LocalUser user);
     Task LogoutAsync(CancellationToken cancellationToken = default);
 }
 
