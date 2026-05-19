@@ -92,6 +92,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IDownloadService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<K7ServerManagerService>();
+        builder.Services.AddSingleton<IServerConnectionService>(sp => sp.GetRequiredService<K7ServerManagerService>());
 
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
         builder.Services.AddSingleton<IBrightnessService, BrightnessService>();
@@ -210,18 +211,7 @@ public static partial class MauiProgram
 
                 if (!string.IsNullOrEmpty(serverUrl))
                 {
-                    options.AddRegistration(new OpenIddictClientRegistration
-                    {
-                        Issuer = new Uri(serverUrl, UriKind.Absolute),
-                        ProviderName = "K7",
-                        ClientId = "k7-native",
-#if ANDROID || IOS || MACCATALYST
-                        RedirectUri = new Uri("k7://callback/login", UriKind.Absolute),
-#else
-                        RedirectUri = new Uri("http://localhost/", UriKind.Absolute),
-#endif
-                        Scopes = { Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess, "api" }
-                    });
+                    options.AddRegistration(CreateK7Registration(serverUrl));
                 }
             });
 
@@ -249,6 +239,23 @@ public static partial class MauiProgram
 #endif
 
         services.AddScoped<IMauiInitializeScopedService, MauiDatabaseInitializer>();
+    }
+
+    internal static OpenIddictClientRegistration CreateK7Registration(string serverUrl)
+    {
+        return new OpenIddictClientRegistration
+        {
+            Issuer = new Uri(serverUrl, UriKind.Absolute),
+            ProviderName = "K7",
+            RegistrationId = $"K7:{serverUrl}",
+            ClientId = "k7-native",
+#if ANDROID || IOS || MACCATALYST
+            RedirectUri = new Uri("k7://callback/login", UriKind.Absolute),
+#else
+            RedirectUri = new Uri("http://localhost/", UriKind.Absolute),
+#endif
+            Scopes = { Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess, "api" }
+        };
     }
 
     static partial void ConfigurePlatformServices(this IServiceCollection services);
