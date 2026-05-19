@@ -50,6 +50,7 @@ public partial class SetupPage : ContentPage
 
         Preferences.Set(PreferenceKeys.K7_SERVER_URL, k7ServerUrl);
         _k7ServerManagerService.UpdateBaseAddress(k7ServerUrl);
+        _k7ServerManagerService.EnsureOpenIddictRegistration(k7ServerUrl);
 
         try
         {
@@ -59,13 +60,6 @@ public partial class SetupPage : ContentPage
         }
         catch { }
 
-        InfoLabel.Text = "Server saved. Restarting...";
-        await Task.Delay(500);
-
-#if ANDROID
-        Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
-#else
-        Application.Current!.Quit();
-#endif
+        ((App)Application.Current!).Restart();
     }
 }

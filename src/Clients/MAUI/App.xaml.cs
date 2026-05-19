@@ -83,7 +83,12 @@ public partial class App : Application
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            AppReadySignal.Reset();
+#if ANDROID
+            Platform.CurrentActivity?.Recreate();
+#else
             Current!.Windows[0]!.Page = GetStartPage();
+#endif
         });
     }
 }
