@@ -16,6 +16,9 @@ public class ExternalMovieMetadata : IExternalMetadata
     public long? Revenue { get; init; }
 
     public IList<string> Genres { get; init; } = [];
+    public IList<string> Studios { get; init; } = [];
+    public IList<TrailerInfo> Trailers { get; init; } = [];
+    public IList<string> RecommendedExternalIds { get; init; } = [];
     public IList<BasePersonRole> PersonRoles { get; init; } = [];
     public IList<ExternalId> ExternalIds { get; init; } = [];
     public IList<MetadataPicture> Pictures { get; init; } = [];

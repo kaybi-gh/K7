@@ -7,5 +7,7 @@ public sealed record SerieDto : MediaDto
     public string? OriginalLanguage { get; init; }
     public string? ContentRating { get; init; }
     public string? Network { get; init; }
+    public IReadOnlyList<string>? Studios { get; init; }
+    public IReadOnlyList<TrailerDto>? Trailers { get; init; }
     public IReadOnlyList<LiteSerieSeasonDto>? Seasons { get; init; }
 }

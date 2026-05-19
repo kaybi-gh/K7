@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Metadatas.External;
+﻿using K7.Server.Domain.Entities.Metadatas;
+using K7.Server.Domain.Entities.Metadatas.External;
 
 namespace K7.Server.Domain.Entities.Medias;
 
@@ -11,6 +12,7 @@ public class Serie() : BaseMedia(MediaType.Serie)
     public string? ContentRating { get; set; }
     public string? Status { get; set; }
     public string? Network { get; set; }
+    public IList<string> Studios { get; set; } = [];
 
 
 
@@ -29,6 +31,18 @@ public class Serie() : BaseMedia(MediaType.Serie)
         {
             Genres.Clear();
             foreach (var genre in metadata.Genres) Genres.Add(genre);
+        }
+
+        if (metadata.Studios?.Count > 0)
+        {
+            Studios.Clear();
+            foreach (var studio in metadata.Studios) Studios.Add(studio);
+        }
+
+        if (metadata.Trailers?.Count > 0)
+        {
+            Trailers.Clear();
+            foreach (var trailer in metadata.Trailers) Trailers.Add(trailer);
         }
 
         if (metadata.PersonRoles?.Count > 0)

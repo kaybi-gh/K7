@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+﻿using K7.Server.Domain.Entities.Metadatas;
+using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Users;
 
@@ -17,6 +18,8 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public IList<BaseRating> Ratings { get; set; } = [];
     public IList<BasePersonRole> PersonRoles { get; set; } = [];
     public IList<string> Genres { get; set; } = []; // TODO - Use typed tags instead
+    public IList<TrailerInfo> Trailers { get; set; } = [];
+    public IList<MediaRecommendation> Recommendations { get; set; } = [];
     public DateTimeOffset? LastMetadataRefreshedAt { get; set; }
 
     public IList<IndexedFile> IndexedFiles { get; set; } = [];

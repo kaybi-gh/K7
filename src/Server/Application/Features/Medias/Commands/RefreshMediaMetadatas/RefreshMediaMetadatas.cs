@@ -116,6 +116,26 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
             movie.ApplyMetadata(metadata);
 
+            if (metadata.RecommendedExternalIds.Count > 0)
+            {
+                var existing = await _context.MediaRecommendations
+                    .FirstOrDefaultAsync(r => r.MediaId == movie.Id && r.ProviderName == provider.ProviderName, cancellationToken);
+
+                if (existing is not null)
+                {
+                    existing.RecommendedIds = [.. metadata.RecommendedExternalIds];
+                }
+                else
+                {
+                    _context.MediaRecommendations.Add(new MediaRecommendation
+                    {
+                        MediaId = movie.Id,
+                        ProviderName = provider.ProviderName,
+                        RecommendedIds = [.. metadata.RecommendedExternalIds]
+                    });
+                }
+            }
+
             foreach (var rating in metadata.Ratings)
             {
                 var existing = movie.Ratings.OfType<MetadataProviderRating>()
@@ -228,6 +248,26 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
             request.MetadataProviderExternalId, request.Language, cancellationToken);
         serie.ApplyMetadata(serieMetadata);
+
+        if (serieMetadata.RecommendedExternalIds.Count > 0)
+        {
+            var existing = await _context.MediaRecommendations
+                .FirstOrDefaultAsync(r => r.MediaId == serie.Id && r.ProviderName == metadataProvider.ProviderName, cancellationToken);
+
+            if (existing is not null)
+            {
+                existing.RecommendedIds = [.. serieMetadata.RecommendedExternalIds];
+            }
+            else
+            {
+                _context.MediaRecommendations.Add(new MediaRecommendation
+                {
+                    MediaId = serie.Id,
+                    ProviderName = metadataProvider.ProviderName,
+                    RecommendedIds = [.. serieMetadata.RecommendedExternalIds]
+                });
+            }
+        }
 
         // Person dedup
         if (serieMetadata.PersonRoles?.Count > 0)

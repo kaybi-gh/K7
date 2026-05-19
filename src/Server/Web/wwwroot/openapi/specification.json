@@ -8963,6 +8963,24 @@
             ],
             "format": "int64"
           },
+          "studios": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "trailers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TrailerDto"
+            }
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -9512,6 +9530,24 @@
               "null",
               "string"
             ]
+          },
+          "studios": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "trailers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TrailerDto"
+            }
           },
           "seasons": {
             "type": [
@@ -11757,6 +11793,35 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "TrailerDto": {
+        "required": [
+          "key",
+          "name",
+          "site",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "site": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
