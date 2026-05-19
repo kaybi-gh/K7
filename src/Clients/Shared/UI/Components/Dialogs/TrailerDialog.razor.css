@@ -1,13 +1,13 @@
 .trailer-dialog-content {
     padding: 0;
+    flex: 1;
 }
 
 .trailer-dialog-frame {
     position: relative;
     width: 100%;
-    padding-bottom: 56.25%;
+    height: 100%;
     overflow: hidden;
-    border-radius: 0 0 var(--k7-radius-md) var(--k7-radius-md);
 }
 
 .trailer-dialog-iframe {

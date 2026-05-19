@@ -3,23 +3,33 @@
 
 @foreach (var entry in _dialogs.Where(d => !d.Result.IsCompleted))
 {
-    <div class="k7-dialog-backdrop"
+    <div class="k7-dialog-backdrop @(entry.Options?.FullScreen == true ? "k7-dialog-backdrop--fullscreen" : "")"
          @key="entry.Id"
          @ref="entry.BackdropRef"
          data-sn-layer="dialog"
          data-sn-layer-close="self"
          @onclick="() => OnBackdropClick(entry)">
-        <div class="k7-dialog-paper @GetSizeClass(entry.Options?.MaxWidth) @(entry.Options?.FullWidth == true ? "k7-dialog--full" : "")"
+        <div class="k7-dialog-paper @GetPaperClasses(entry)"
              @onclick:stopPropagation="true">
-            <div class="k7-dialog-header">
-                <h6 class="k7-dialog-title">@entry.Title</h6>
-                @if (entry.Options?.CloseButton != false)
-                {
-                    <K7IconButton Icon="@Phosphor.X" Size="sm"
-                                  AriaLabel="Close"
-                                  OnClick="() => entry.Cancel()" />
-                }
-            </div>
+            @if (entry.Options?.FullScreen != true)
+            {
+                <div class="k7-dialog-header">
+                    <h6 class="k7-dialog-title">@entry.Title</h6>
+                    @if (entry.Options?.CloseButton != false)
+                    {
+                        <K7IconButton Icon="@Phosphor.X" Size="sm"
+                                      AriaLabel="Close"
+                                      OnClick="() => entry.Cancel()" />
+                    }
+                </div>
+            }
+            else if (entry.Options?.CloseButton != false)
+            {
+                <K7IconButton Icon="@Phosphor.X" Size="sm"
+                              AriaLabel="Close"
+                              Class="k7-dialog-close-floating"
+                              OnClick="() => entry.Cancel()" />
+            }
             <CascadingValue Value="@((IK7DialogInstance)entry)" IsFixed="true">
                 <DynamicComponent Type="entry.Type" Parameters="entry.ComponentParameters" />
             </CascadingValue>

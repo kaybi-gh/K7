@@ -221,7 +221,7 @@ public partial class Movie
             { x => x.TrailerKey, trailer.Key },
             { x => x.TrailerSite, trailer.Site ?? "YouTube" }
         };
-        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseButton = true };
+        var options = new K7DialogOptions { FullScreen = true, CloseOnEscapeKey = true, CloseButton = true };
         return DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
     }
 
