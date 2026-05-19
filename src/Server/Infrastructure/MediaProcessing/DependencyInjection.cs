@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IMusicArtistMetadataProvider>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddScoped<IMusicArtistMetadataProvider, WikidataMetadataProvider>();
+        services.AddScoped<IPersonCreditsProvider, TMDbPersonCreditsProvider>();
 
         services.AddSignalR();
         return services;

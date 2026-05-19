@@ -38,5 +38,6 @@ public enum MediaOrderingOption
     TitleAsc,
     TitleDesc,
     TrackNumberAsc,
-    TrackNumberDesc
+    TrackNumberDesc,
+    RecommendedForYou
 }

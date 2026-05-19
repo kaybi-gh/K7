@@ -1053,6 +1053,13 @@
             }
           },
           {
+            "name": "Studio",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "PageSize",
             "in": "query",
             "required": true,
@@ -1589,6 +1596,30 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/known-for": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "GetPersonKnownFor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -2192,6 +2223,30 @@
           {
             "name": "currentEpisodeId",
             "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{id}/similar": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetSimilarMedia",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",

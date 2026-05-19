@@ -57,6 +57,17 @@ else if (_serie is not null)
                             <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
                         }
                     </div>
+                    @if (_serie.Studios?.Count > 0)
+                    {
+                        <span class="text-caption" Style="opacity: 0.4;">|</span>
+                        <div class="d-flex" style="gap: 4px;">
+                            @foreach (var studio in _serie.Studios)
+                            {
+                                var s = studio;
+                                <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
+                            }
+                        </div>
+                    }
 
                     <div class="d-flex align-center">
                         @if (_serie.ReleaseDate.HasValue)
@@ -97,7 +108,10 @@ else if (_serie is not null)
                     </div>
 
                     <div class="d-flex">
-                        <K7IconButton Icon="@Phosphor.FilmSlate" AriaLabel="trailer" />
+                        @if (_serie.Trailers?.Count > 0)
+                        {
+                            <K7IconButton Icon="@Phosphor.FilmSlate" OnClick="OpenTrailerAsync" AriaLabel="trailer" />
+                        }
 
                             <AuthorizeView Roles="User,Administrator">
                                 <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-watched" />
@@ -157,6 +171,21 @@ else if (_serie is not null)
                 {
                     <CarouselItem @key="cast.Id">
                         <PersonRole LitePersonRoleDto="@cast" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
+
+        @if (_similarMedia.Count > 0)
+        {
+            <Carousel Title="@L["SimilarMedia"]">
+                @foreach (var media in _similarMedia)
+                {
+                    <CarouselItem @key="media.Id">
+                        <MediaCard Model="media"
+                                   Href="@($"/series/{media.Id}")"
+                                   OverlayEnabled="true"
+                                   FooterVisible="true" />
                     </CarouselItem>
                 }
             </Carousel>

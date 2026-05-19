@@ -1,6 +1,7 @@
 @page "/persons/{Id}"
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.Persons
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Clients.Shared.UI.Components.Dialogs
 @using Microsoft.AspNetCore.Components.Authorization
@@ -143,6 +144,36 @@ else if (_person is not null)
                                            ProgressEnabled="true"
                                            WatchedStatusEnabled="true"
                                            FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                }
+
+                @if (_knownFor.Count > 0)
+                {
+                    <Carousel Title="@L["KnownFor"]">
+                        @foreach (var item in _knownFor)
+                        {
+                            <CarouselItem @key="item.ExternalId">
+                                <div class="known-for-card">
+                                    @if (item.PosterUrl is not null)
+                                    {
+                                        <img src="@item.PosterUrl" alt="@item.Title" class="known-for-poster" />
+                                    }
+                                    else
+                                    {
+                                        <div class="known-for-poster known-for-poster--placeholder">
+                                            <K7Icon Name="film-slate" />
+                                        </div>
+                                    }
+                                    <div class="known-for-info">
+                                        <span class="known-for-title">@item.Title</span>
+                                        @if (item.Year.HasValue)
+                                        {
+                                            <span class="known-for-year">@item.Year</span>
+                                        }
+                                    </div>
+                                </div>
                             </CarouselItem>
                         }
                     </Carousel>

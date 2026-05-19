@@ -340,3 +340,47 @@
         --carousel-margin-start: 80px;
     }
 }
+
+/* Known For cards */
+.known-for-card {
+    display: flex;
+    flex-direction: column;
+    width: 150px;
+    gap: var(--space-2);
+}
+
+.known-for-poster {
+    width: 150px;
+    height: 225px;
+    border-radius: var(--k7-radius-md);
+    object-fit: cover;
+}
+
+.known-for-poster--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--k7-surface-variant);
+    color: var(--k7-on-surface-variant);
+    font-size: 2rem;
+}
+
+.known-for-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 var(--space-1);
+}
+
+.known-for-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.known-for-year {
+    font-size: var(--text-xs);
+    opacity: 0.6;
+}

@@ -27,6 +27,7 @@ public partial class Movie
     private IndexedFileDto? _selectedFile;
     private AudioFileTrackDto? _selectedAudioFileTrack;
     private SubtitleFileTrackDto? _selectedSubtitleFileTrack;
+    private List<MediaCardViewModel> _similarMedia = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -49,6 +50,8 @@ public partial class Movie
         }
         base.OnInitialized();
         isLoading = false;
+
+        _ = LoadSimilarMediaAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -205,6 +208,48 @@ public partial class Movie
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
+
+    private Task OpenTrailerAsync()
+    {
+        if (_movie?.Trailers is not { Count: > 0 }) return Task.CompletedTask;
+
+        var trailer = _movie.Trailers.FirstOrDefault(t => t.Type == "Trailer") ?? _movie.Trailers[0];
+        var parameters = new K7DialogParameters<TrailerDialog>
+        {
+            { x => x.TrailerKey, trailer.Key },
+            { x => x.TrailerSite, trailer.Site ?? "YouTube" }
+        };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseButton = true };
+        return DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
+    }
+
+    private void NavigateToStudio(string studio)
+    {
+        NavigationManager.NavigateTo($"/search?studio={Uri.EscapeDataString(studio)}");
+    }
+
+    private async Task LoadSimilarMediaAsync()
+    {
+        if (_movie is null) return;
+
+        try
+        {
+            var similar = await k7ServerService.GetSimilarMediaAsync(_movie.Id);
+            _similarMedia = similar.Select(m => new MediaCardViewModel
+            {
+                Id = m.Id.ToString(),
+                Title = m.Title,
+                PictureUrl = apiClient.GetAbsoluteUri(
+                    m.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                        ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+            }).ToList();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Non-critical - silently ignore if similar media fails
         }
     }
 }

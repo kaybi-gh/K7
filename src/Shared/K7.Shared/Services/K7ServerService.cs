@@ -795,6 +795,18 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<LiteMediaDto>>($"api/medias/{mediaId}/similar", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
+    public async Task<List<PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<PersonKnownForItemDto>>($"api/persons/{personId}/known-for", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
     public async Task<ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<ServerFeatureFlagsDto>("api/server/preferences/feature-flags", _serializerOptions, cancellationToken);

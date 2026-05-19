@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -19,12 +19,7 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Discography" xml:space="preserve"><value>Discographie</value></data>
-  <data name="Filmography" xml:space="preserve"><value>Filmographie</value></data>
-  <data name="More" xml:space="preserve"><value>Plus</value></data>
-  <data name="Less" xml:space="preserve"><value>Moins</value></data>
-  <data name="YearsOld" xml:space="preserve"><value>ans</value></data>
-  <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
-  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance</value></data>
-  <data name="KnownFor" xml:space="preserve"><value>Connu(e) pour</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Discover</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Based on your recent streams</value></data>
+  <data name="EmptyState" xml:space="preserve"><value>Watch some movies or series to get personalized recommendations.</value></data>
 </root>
