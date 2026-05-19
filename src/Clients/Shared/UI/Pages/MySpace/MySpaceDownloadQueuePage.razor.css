@@ -1,0 +1,44 @@
+::deep .download-queue-k7table .k7-table tbody tr:nth-child(odd) {
+    background: var(--color-surface-variant);
+}
+
+::deep .download-queue-k7table .k7-table tbody tr:nth-child(even) {
+    background: transparent;
+}
+
+.download-queue-col-cover {
+    width: 56px;
+}
+
+.download-queue-cover {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.download-queue-cover-placeholder {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+}
+
+.download-queue-col-progress {
+    min-width: 180px;
+}
+
+.download-queue-size {
+    font-variant-numeric: tabular-nums;
+    display: block;
+    margin-top: 4px;
+}
+
+.download-queue-col-actions {
+    width: 48px;
+    text-align: center;
+}

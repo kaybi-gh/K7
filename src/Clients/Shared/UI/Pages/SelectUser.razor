@@ -8,7 +8,16 @@
 <div class="select-user-page">
     @if (_loading)
     {
-        <K7Spinner />
+        <div class="d-flex flex-col align-center gap-4">
+            <K7Spinner />
+            @if (_showOfflineButton)
+            {
+                <K7Button Variant="text" Color="secondary" OnClick="ContinueOfflineAsync">
+                    <K7Icon Icon="@Phosphor.WifiSlash" Class="mr-2" />
+                    @L["ContinueOffline"]
+                </K7Button>
+            }
+        </div>
     }
     else
     {

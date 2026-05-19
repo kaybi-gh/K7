@@ -131,6 +131,8 @@ else if (_season is not null)
                         @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
                     </h4>
 
+                    <DownloadAllButton Items="GetDownloadRequests()" Size="sm" />
+
                     <AuthorizeView Roles="Administrator">
                         <K7Menu>
                             <ActivatorContent>

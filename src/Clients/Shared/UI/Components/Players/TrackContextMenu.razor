@@ -2,6 +2,8 @@
 @inject IMediaService K7ServerService
 @inject IK7ServerService ApiClient
 @inject IFeatureAccessService FeatureAccess
+@inject IDownloadManager DownloadManager
+@inject IDeviceService DeviceService
 @inject IK7Snackbar Snackbar
 @inject IK7DialogService DialogService
 @inject IStringLocalizer<TrackContextMenu> L
@@ -19,6 +21,11 @@
         {
             <hr class="k7-divider" />
             <K7MenuItem Icon="plus-circle" OnClick="AddToPlaylist">@L["AddToPlaylist"]</K7MenuItem>
+        }
+        @if (DeviceService.GetClientType() != ClientType.Web)
+        {
+            <hr class="k7-divider" />
+            <K7MenuItem Icon="download-simple" OnClick="DownloadOffline">@L["DownloadOffline"]</K7MenuItem>
         }
         @if (!string.IsNullOrEmpty(Track.Artist))
         {

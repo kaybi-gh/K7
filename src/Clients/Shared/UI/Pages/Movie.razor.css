@@ -106,7 +106,7 @@
     position: relative;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .mobile-layout .hero-page-stack {
@@ -137,7 +137,6 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: hidden;
     flex-shrink: 0;
 }
 

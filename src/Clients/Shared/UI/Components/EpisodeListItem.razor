@@ -1,3 +1,4 @@
+@using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
 
 <div class="episode-item focusable @(IsExpanded ? "episode-item--expanded" : "")" tabindex="0" role="button" @onclick="OnToggleExpand" @onkeydown="OnKeyDown">
@@ -65,6 +66,15 @@
                            Size="sm">
                     @(Episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Resume"] : S["Play"])
                 </K7Button>
+                @if (Episode.IndexedFileId.HasValue)
+                {
+                    <DownloadButton IndexedFileId="Episode.IndexedFileId.Value"
+                                    MediaId="Episode.Id"
+                                    Title="@(Episode.Title ?? $"E{Episode.EpisodeNumber}")"
+                                    MediaType="MediaType.SerieEpisode"
+                                    CoverUrl="@StillUrl"
+                                    VideoMetadata="@GetVideoMetadata()" />
+                }
                 @if (_fullEpisode?.IndexedFiles is { Count: > 0 })
                 {
                     <K7Menu>

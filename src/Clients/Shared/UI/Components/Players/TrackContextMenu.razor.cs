@@ -106,4 +106,20 @@ public partial class TrackContextMenu
                 .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         Duration = t.Duration
     };
+
+    private async Task DownloadOffline()
+    {
+        await DownloadManager.EnqueueAsync(new DownloadRequest
+        {
+            IndexedFileId = Track.IndexedFileId,
+            MediaId = Track.MediaId,
+            Title = Track.Title,
+            Artist = Track.Artist,
+            AlbumTitle = Track.AlbumTitle,
+            CoverUrl = Track.CoverUrl,
+            MediaType = MediaType.MusicTrack,
+            IsCacheItem = false
+        });
+        Snackbar.Add(string.Format(L["DownloadQueued"], Track.Title), K7Severity.Info);
+    }
 }

@@ -1,0 +1,81 @@
+@page "/my-space/downloads/queue"
+@layout MySpaceLayout
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<MySpaceDownloadQueuePage> L
+@inject IDownloadManager DownloadManager
+@inject NavigationManager Navigation
+@inject IDeviceService DeviceService
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="page-scrollable">
+    <div class="download-queue-page pa-4">
+        <div class="d-flex align-center gap-2 mb-4">
+            <K7IconButton Icon="@Phosphor.ArrowLeft" Size="sm" OnClick="GoBack" AriaLabel="back" />
+            <h6>@L["ActiveDownloads"]</h6>
+        </div>
+
+        @if (_items.Count == 0)
+        {
+            <div class="d-flex flex-col align-center pa-16">
+                <K7Icon Icon="@Phosphor.Queue" Style="font-size: 48px; opacity: 0.3;" />
+                <p class="text-sm text-secondary mt-2">@L["EmptyQueue"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-end mb-2">
+                <K7Button Variant="text" Size="sm" Color="error" OnClick="CancelAllAsync">@L["CancelAll"]</K7Button>
+            </div>
+
+            <K7Table TItem="DownloadQueueItem" Items="_items" Hover="true" Class="download-queue-k7table">
+                <HeaderContent>
+                    <th class="download-queue-col-cover"></th>
+                    <th>@L["Title"]</th>
+                    <th>@L["Progress"]</th>
+                    <th class="download-queue-col-actions"></th>
+                </HeaderContent>
+                <RowTemplate>
+                    <td class="download-queue-col-cover">
+                        @if (!string.IsNullOrEmpty(context.Request.CoverUrl))
+                        {
+                            <img src="@context.Request.CoverUrl" alt="" class="download-queue-cover" />
+                        }
+                        else
+                        {
+                            <div class="download-queue-cover-placeholder">
+                                <K7Icon Icon="@(context.Request.MediaType is MediaType.Movie or MediaType.SerieEpisode ? Phosphor.FilmSlate : Phosphor.MusicNote)" />
+                            </div>
+                        }
+                    </td>
+                    <td>
+                        <p class="text-body-2 font-weight-medium text-truncate">@context.Request.Title</p>
+                        @if (!string.IsNullOrEmpty(context.Request.Artist))
+                        {
+                            <p class="text-caption text-secondary text-truncate">@context.Request.Artist</p>
+                        }
+                    </td>
+                    <td class="download-queue-col-progress">
+                        @if (context.Status == DownloadItemStatus.Downloading)
+                        {
+                            <K7ProgressBar Value="@(context.Progress * 100)" />
+                            <span class="text-caption text-secondary download-queue-size">
+                                @if (context.TotalBytes.HasValue)
+                                {
+                                    @FormatBytes(context.DownloadedBytes) @:/ @FormatBytes(context.TotalBytes.Value)
+                                }
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-caption text-secondary">@GetStatusLabel(context.Status)</span>
+                        }
+                    </td>
+                    <td class="download-queue-col-actions">
+                        <K7IconButton Icon="@Phosphor.X" Size="sm" OnClick="() => CancelAsync(context.DownloadId)" AriaLabel="cancel" />
+                    </td>
+                </RowTemplate>
+            </K7Table>
+        }
+    </div>
+</div>

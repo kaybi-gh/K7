@@ -1,4 +1,5 @@
 @page "/movies/{id}"
+@using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.PersonRoles
 @using K7.Shared.Dtos.Entities.Metadatas.Files;
 @using Microsoft.AspNetCore.Components.Authorization
@@ -134,6 +135,18 @@ else
                     <K7IconButton Icon="@Phosphor.Sliders" OnClick="OpenPlaybackOptionsAsync" AriaLabel="playback-options" />
                     <K7IconButton Icon="@Phosphor.FilmSlate" AriaLabel="trailer" />
                     
+                    @if (_selectedFile is not null)
+                    {
+                        <DownloadButton IndexedFileId="_selectedFile.Id"
+                                        MediaId="_movie!.Id"
+                                        Title="@(_movie.Title ?? string.Empty)"
+                                        MediaType="MediaType.Movie"
+                                        CoverUrl="@(apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Poster)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri)"
+                                        VideoMetadata="@(_selectedFile.FileMetadata as VideoFileMetadataDto)"
+                                        AudioTrackIndex="_selectedAudioFileTrack?.Index"
+                                        SubtitleTrackIndices="@(_selectedSubtitleFileTrack is not null ? [_selectedSubtitleFileTrack.Index] : null)" />
+                    }
+
                     <AuthorizeView Roles="User,Administrator">
                         <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-shown" />
                     </AuthorizeView>

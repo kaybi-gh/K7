@@ -1,0 +1,36 @@
+@using K7.Shared.Dtos.Entities.Metadatas.Files
+@using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<DownloadOptionsDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col data-nav-col">
+        @if (videoMetadata != null)
+        {
+            <K7Select TValue="AudioFileTrackDto" @bind-Value="SelectedAudioTrack" Label="@L["AudioTrack"]" Variant="filled">
+                @if (videoMetadata.AudioTracks != null)
+                {
+                    @foreach (var track in videoMetadata.AudioTracks)
+                    {
+                        <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</K7SelectItem>
+                    }
+                }
+            </K7Select>
+
+            <K7Select TValue="SubtitleFileTrackDto" @bind-Value="SelectedSubtitleTrack" Label="@L["SubtitleTrack"]" Variant="filled" Clearable="true">
+                @if (videoMetadata.SubtitleTracks != null)
+                {
+                    @foreach (var track in videoMetadata.SubtitleTracks)
+                    {
+                        <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec}")</K7SelectItem>
+                    }
+                }
+            </K7Select>
+        }
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Confirm" Class="mx-2">@L["Download"]</K7Button>
+</div>

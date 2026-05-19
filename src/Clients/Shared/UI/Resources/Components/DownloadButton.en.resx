@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -19,17 +19,10 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PlayNext" xml:space="preserve"><value>Play next</value></data>
-  <data name="AddToQueue" xml:space="preserve"><value>Add to queue</value></data>
-  <data name="AddToPlaylist" xml:space="preserve"><value>Add to a playlist</value></data>
-  <data name="RadioArtist" xml:space="preserve"><value>Radio {0}</value></data>
-  <data name="RadioGenre" xml:space="preserve"><value>Radio {0}</value></data>
-  <data name="PlayNextSnackbar" xml:space="preserve"><value>'{0}' playing next</value></data>
-  <data name="AddedToQueueSnackbar" xml:space="preserve"><value>'{0}' added to queue</value></data>
-  <data name="AddToPlaylistTitle" xml:space="preserve"><value>Add to a playlist</value></data>
-  <data name="RadioArtistSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
-  <data name="RadioGenreSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
-  <data name="DownloadOffline" xml:space="preserve"><value>Download offline</value></data>
+  <data name="Downloaded" xml:space="preserve"><value>Downloaded</value></data>
+  <data name="Downloading" xml:space="preserve"><value>Downloading</value></data>
+  <data name="DownloadOffline" xml:space="preserve"><value>Download for offline</value></data>
   <data name="DownloadQueued" xml:space="preserve"><value>'{0}' queued for download</value></data>
+  <data name="DownloadRemoved" xml:space="preserve"><value>'{0}' removed from downloads</value></data>
+  <data name="DownloadOptions" xml:space="preserve"><value>Download options</value></data>
 </root>
-

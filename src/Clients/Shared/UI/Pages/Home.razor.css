@@ -59,3 +59,26 @@
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
 }
+
+.home-offline-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 80px 16px;
+    text-align: center;
+}
+
+.home-offline-banner__title {
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.home-offline-banner__subtitle {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    max-width: 300px;
+}

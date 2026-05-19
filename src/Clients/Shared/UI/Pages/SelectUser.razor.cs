@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Enums;
+﻿using System.Net.Http;
+using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -20,6 +21,9 @@ public partial class SelectUser
     private bool _singleUserMode;
     private bool _loading;
     private bool _isTv;
+    private bool _showOfflineButton;
+    private LocalUser? _pendingUser;
+    private CancellationTokenSource? _offlineTimerCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,11 +59,16 @@ public partial class SelectUser
         }
 
         _loading = true;
+        _showOfflineButton = false;
+        _pendingUser = user;
         StateHasChanged();
+
+        StartOfflineTimer();
 
         try
         {
             var success = await AuthService.SwitchToUserAsync(user.RefreshToken);
+            CancelOfflineTimer();
             if (success)
             {
                 LocalUserService.SetLastActiveId(user.IdentityUserId);
@@ -73,13 +82,69 @@ public partial class SelectUser
                 _loading = false;
             }
         }
+        catch (HttpRequestException)
+        {
+            CancelOfflineTimer();
+            AuthService.SignInOffline(user);
+            LocalUserService.SetLastActiveId(user.IdentityUserId);
+            Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
+            Navigation.NavigateTo("/");
+        }
+        catch (TaskCanceledException)
+        {
+            CancelOfflineTimer();
+            AuthService.SignInOffline(user);
+            LocalUserService.SetLastActiveId(user.IdentityUserId);
+            Snackbar.Add(L["ServerUnreachable"], K7Severity.Warning);
+            Navigation.NavigateTo("/");
+        }
         catch (Exception ex)
         {
+            CancelOfflineTimer();
             Snackbar.Add(ex.Message, K7Severity.Error);
             _loading = false;
         }
 
         StateHasChanged();
+    }
+
+    private void StartOfflineTimer()
+    {
+        _offlineTimerCts?.Cancel();
+        _offlineTimerCts = new CancellationTokenSource();
+        var token = _offlineTimerCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3), token);
+            if (!token.IsCancellationRequested)
+            {
+                await InvokeAsync(() =>
+                {
+                    _showOfflineButton = true;
+                    StateHasChanged();
+                });
+            }
+        }, token);
+    }
+
+    private void CancelOfflineTimer()
+    {
+        _offlineTimerCts?.Cancel();
+        _offlineTimerCts?.Dispose();
+        _offlineTimerCts = null;
+    }
+
+    private Task ContinueOfflineAsync()
+    {
+        if (_pendingUser is null)
+            return Task.CompletedTask;
+
+        CancelOfflineTimer();
+        AuthService.SignInOffline(_pendingUser);
+        LocalUserService.SetLastActiveId(_pendingUser.IdentityUserId);
+        Navigation.NavigateTo("/");
+        return Task.CompletedTask;
     }
 
     private async Task<bool> PromptPinAsync(LocalUser user)

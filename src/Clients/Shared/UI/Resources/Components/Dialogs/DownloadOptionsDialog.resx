@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -19,14 +19,7 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PageTitle" xml:space="preserve"><value>Who's watching? - K7</value></data>
-  <data name="Header" xml:space="preserve"><value>Who's watching?</value></data>
-  <data name="AddServer" xml:space="preserve"><value>Add a user</value></data>
-  <data name="SingleUserMode" xml:space="preserve"><value>I'm the only user on this device</value></data>
-  <data name="SessionExpired" xml:space="preserve"><value>Session for {0} has expired. Please sign in again.</value></data>
-  <data name="ServerUnreachable" xml:space="preserve"><value>Can't reach the server. Check your connection.</value></data>
-  <data name="EnterPin" xml:space="preserve"><value>Enter PIN</value></data>
-  <data name="IncorrectPin" xml:space="preserve"><value>Incorrect PIN.</value></data>
-  <data name="ContinueOffline" xml:space="preserve"><value>Continue offline</value></data>
+  <data name="AudioTrack" xml:space="preserve"><value>Piste audio</value></data>
+  <data name="SubtitleTrack" xml:space="preserve"><value>Sous-titres</value></data>
+  <data name="Download" xml:space="preserve"><value>Telecharger</value></data>
 </root>
-

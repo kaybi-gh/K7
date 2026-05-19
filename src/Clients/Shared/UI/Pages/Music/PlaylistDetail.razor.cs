@@ -216,6 +216,24 @@ public partial class PlaylistDetail
         return $"{ts.Minutes} min";
     }
 
+    private IReadOnlyList<DownloadRequest> GetDownloadRequests()
+    {
+        return _items
+            .Where(i => i.IndexedFileId.HasValue)
+            .Select(i => new DownloadRequest
+            {
+                IndexedFileId = i.IndexedFileId!.Value,
+                MediaId = i.MediaId,
+                Title = i.Title,
+                Artist = i.ArtistName,
+                AlbumTitle = i.AlbumTitle,
+                CoverUrl = i.CoverUrl,
+                MediaType = MediaType.MusicTrack,
+                IsCacheItem = false
+            })
+            .ToList();
+    }
+
     internal sealed record PlaylistItemViewModel
     {
         public Guid Id { get; init; }
