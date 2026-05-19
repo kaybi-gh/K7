@@ -59,6 +59,16 @@ public partial class K7DialogHost : IDisposable
             entry.Cancel();
     }
 
+    private static string GetPaperClasses(K7DialogEntry entry)
+    {
+        if (entry.Options?.FullScreen == true)
+            return "k7-dialog--fullscreen";
+
+        var size = GetSizeClass(entry.Options?.MaxWidth);
+        var full = entry.Options?.FullWidth == true ? "k7-dialog--full" : "";
+        return $"{size} {full}";
+    }
+
     private static string GetSizeClass(K7DialogMaxWidth? maxWidth) => maxWidth switch
     {
         K7DialogMaxWidth.ExtraExtraSmall or K7DialogMaxWidth.ExtraSmall => "k7-dialog--xs",

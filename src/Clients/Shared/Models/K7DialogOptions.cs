@@ -15,6 +15,7 @@ public sealed class K7DialogOptions
 {
     public K7DialogMaxWidth MaxWidth { get; init; } = K7DialogMaxWidth.Small;
     public bool FullWidth { get; init; }
+    public bool FullScreen { get; init; }
     public bool CloseOnEscapeKey { get; init; } = true;
     public bool CloseButton { get; init; } = true;
     public bool BackdropClick { get; init; } = true;

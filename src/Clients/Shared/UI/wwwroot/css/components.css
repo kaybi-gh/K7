@@ -430,6 +430,23 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
 .k7-dialog--lg { max-width: 900px; }
 .k7-dialog--xl { max-width: 1200px; }
 .k7-dialog--full { max-width: 100%; width: 100%; margin: var(--space-4); }
+.k7-dialog-backdrop--fullscreen { padding: 0; }
+.k7-dialog--fullscreen {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  max-height: 100vh;
+  border-radius: 0;
+  position: relative;
+}
+.k7-dialog-close-floating {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+}
 .k7-dialog-header {
   display: flex;
   align-items: center;
