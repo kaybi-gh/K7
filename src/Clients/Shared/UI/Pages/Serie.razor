@@ -61,7 +61,7 @@ else if (_serie is not null)
                     {
                         <span class="text-caption" Style="opacity: 0.4;">|</span>
                         <div class="d-flex" style="gap: 4px;">
-                            @foreach (var studio in _serie.Studios)
+                            @foreach (var studio in _serie.Studios.Take(3))
                             {
                                 var s = studio;
                                 <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>

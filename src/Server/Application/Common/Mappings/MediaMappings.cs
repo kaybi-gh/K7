@@ -31,8 +31,8 @@ public static class MediaMappings
                 ContentRating = movie.ContentRating,
                 Budget = movie.Budget,
                 Revenue = movie.Revenue,
-                Studios = movie.Studios.ToList(),
-                Trailers = domain.Trailers.Select(t => t.ToTrailerDto()).ToList(),
+                Studios = movie.Studios?.ToList() ?? [],
+                Trailers = domain.Trailers?.Select(t => t.ToTrailerDto()).ToList() ?? [],
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -120,8 +120,8 @@ public static class MediaMappings
                 OriginalLanguage = serie.OriginalLanguage,
                 ContentRating = serie.ContentRating,
                 Network = serie.Network,
-                Studios = serie.Studios.ToList(),
-                Trailers = domain.Trailers.Select(t => t.ToTrailerDto()).ToList(),
+                Studios = serie.Studios?.ToList() ?? [],
+                Trailers = domain.Trailers?.Select(t => t.ToTrailerDto()).ToList() ?? [],
                 Seasons = serie.Seasons
                     .OrderBy(s => s.SeasonNumber)
                     .Select(s => new LiteSerieSeasonDto
