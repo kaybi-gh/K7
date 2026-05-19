@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.Services.K7Server;
@@ -48,5 +49,10 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
     public Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("User switching is not supported in the web client.");
+    }
+
+    public void SignInOffline(LocalUser user)
+    {
+        // Not applicable for web client
     }
 }

@@ -47,6 +47,7 @@ public sealed class MockCustomAuthStateProvider : ICustomAuthenticationStateProv
     public Task LoginWithDeviceCodeAsync(Func<DeviceCodeInfo, Task> onDeviceCodeReceived, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<bool> TryRefreshAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
     public Task<bool> SwitchToUserAsync(string refreshToken, CancellationToken cancellationToken = default) => Task.FromResult(true);
+    public void SignInOffline(LocalUser user) { }
     public Task LogoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
@@ -68,6 +69,7 @@ public sealed class MockDeviceService : IDeviceService
     public Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync() => Task.FromResult(new List<MediaFormatDto>());
     public Task<bool> GetHdrSupportAsync() => Task.FromResult(false);
     public Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync() => Task.FromResult(new CreateDeviceRequest { PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities() });
+    public string? GetLocalFileUrl(string? localPath) => null;
 }
 
 public sealed class MockDeviceStorageService : IDeviceStorageService
@@ -463,4 +465,24 @@ public sealed class MockCollectionService : ICollectionService
 public sealed class MockSearchService : ISearchService
 {
     public Task<GlobalSearchResultDto?> GlobalSearchAsync(string q, int pageSize = 10, CancellationToken cancellationToken = default) => Task.FromResult<GlobalSearchResultDto?>(new GlobalSearchResultDto());
+}
+
+public sealed class MockConnectivityService : IConnectivityService
+{
+    public bool IsOnline => true;
+    public bool IsWifi => true;
+    public bool IsCellular => false;
+#pragma warning disable CS0067
+    public event Action<bool>? ConnectivityChanged;
+#pragma warning restore CS0067
+}
+
+public sealed class MockPlaybackJournal : IPlaybackJournal
+{
+    public Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordRatingAsync(Guid mediaId, int value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PendingPlaybackEvent>>([]);
+    public Task MarkSyncedAsync(IEnumerable<Guid> eventIds, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

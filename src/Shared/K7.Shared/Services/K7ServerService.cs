@@ -21,7 +21,7 @@ using K7.Shared.Dtos.Home;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -844,5 +844,30 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var response = await HttpClient.DeleteAsync("api/users/me/preferences/video-player", cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    // IDownloadService
+
+    public async Task<DownloadDto> PrepareDownloadAsync(PrepareDownloadRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/downloads/prepare", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<DownloadDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<DownloadDto> GetDownloadAsync(Guid downloadId, CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<DownloadDto>($"api/downloads/{downloadId}", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task DeleteDownloadAsync(Guid downloadId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/downloads/{downloadId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public string GetDownloadFileUrl(Guid downloadId)
+    {
+        return $"api/downloads/{downloadId}/file";
     }
 }

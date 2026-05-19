@@ -19,6 +19,9 @@ public class AudioQueueItem
     public string? Genre { get; init; }
     public int? UserRating { get; set; }
 
+    // Offline playback
+    public string? LocalPath { get; init; }
+
     // Audio analysis (for adaptive crossfade & harmonic transitions)
     public double? Bpm { get; init; }
     public string? MusicalKey { get; init; }

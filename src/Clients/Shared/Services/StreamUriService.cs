@@ -11,16 +11,46 @@ public class StreamUriService : IStreamUriService
     private readonly IStreamingService _streamingService;
     private readonly IK7ServerService _k7ServerService;
     private readonly IDeviceStorageService _deviceStorageService;
+    private readonly IOfflineMediaStore? _offlineStore;
+    private readonly IMusicCacheService? _musicCache;
 
-    public StreamUriService(IStreamingService streamingService, IK7ServerService k7ServerService, IDeviceStorageService deviceStorageService)
+    public StreamUriService(
+        IStreamingService streamingService,
+        IK7ServerService k7ServerService,
+        IDeviceStorageService deviceStorageService,
+        IOfflineMediaStore? offlineStore = null,
+        IMusicCacheService? musicCache = null)
     {
         _streamingService = streamingService;
         _k7ServerService = k7ServerService;
         _deviceStorageService = deviceStorageService;
+        _offlineStore = offlineStore;
+        _musicCache = musicCache;
     }
 
     public async Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
     {
+        // Check offline store first (explicit downloads)
+        if (_offlineStore is not null)
+        {
+            var offlineItem = await _offlineStore.GetByIndexedFileIdAsync(indexedFileId, cancellationToken);
+            if (offlineItem is not null && File.Exists(offlineItem.MediaLocalPath))
+            {
+                return CreateOfflineSession(indexedFileId, offlineItem.MediaLocalPath);
+            }
+        }
+
+        // Check music cache (lookahead cached tracks)
+        if (_musicCache is not null)
+        {
+            var cachedPath = await _musicCache.GetCachedTrackPathAsync(indexedFileId, cancellationToken);
+            if (cachedPath is not null && File.Exists(cachedPath))
+            {
+                return CreateOfflineSession(indexedFileId, cachedPath);
+            }
+        }
+
+        // Fallback to server streaming
         var storedDeviceId = _deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
 
         if (!string.IsNullOrWhiteSpace(storedDeviceId))
@@ -44,5 +74,36 @@ public class StreamUriService : IStreamUriService
         }
 
         throw new InvalidOperationException($"Missing {nameof(PreferenceKeys.DEVICE_ID)}");
+    }
+
+    private static StreamingSessionDto CreateOfflineSession(Guid indexedFileId, string localPath)
+    {
+        return new StreamingSessionDto
+        {
+            Id = Guid.NewGuid(),
+            IndexedFileId = indexedFileId,
+            PlaybackSettings = new PlaybackSettingsDto(),
+            Source = new IndexedFileStreamUri
+            {
+                Uri = new Uri(localPath),
+                MimeType = GetMimeTypeFromExtension(localPath)
+            }
+        };
+    }
+
+    private static string GetMimeTypeFromExtension(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        return ext switch
+        {
+            ".mp4" or ".m4v" => "video/mp4",
+            ".m4a" => "audio/mp4",
+            ".webm" => "video/webm",
+            ".mkv" => "video/x-matroska",
+            ".mp3" => "audio/mpeg",
+            ".flac" => "audio/flac",
+            ".ogg" or ".opus" => "audio/ogg",
+            _ => "application/octet-stream"
+        };
     }
 }
