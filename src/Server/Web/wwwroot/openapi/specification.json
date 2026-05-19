@@ -3587,6 +3587,128 @@
         }
       }
     },
+    "/api/downloads/{id}": {
+      "delete": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "DeleteDownload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "GetDownload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/downloads/{id}/file": {
+      "get": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "GetDownloadFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "GetDownloadFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/downloads/prepare": {
+      "post": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "PrepareDownload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareDownloadCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/diagnostics/fix": {
       "post": {
         "tags": [
@@ -6457,6 +6579,66 @@
       "DiagnosticSeverity": {
         "type": "integer"
       },
+      "DownloadDto": {
+        "required": [
+          "id",
+          "indexedFileId",
+          "deviceId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "indexedFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DownloadStatus"
+          },
+          "isDirectStream": {
+            "type": "boolean"
+          },
+          "fileSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "contentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "readyAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failureReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DownloadStatus": {
+        "type": "integer"
+      },
       "ExternalIdDto": {
         "required": [
           "providerName",
@@ -7694,6 +7876,13 @@
             ],
             "format": "uuid"
           },
+          "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "seriePictures": {
             "type": [
               "null",
@@ -8425,6 +8614,13 @@
             "format": "date"
           },
           "stillImageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "indexedFileId": {
             "type": [
               "null",
               "string"
@@ -11031,6 +11227,46 @@
           }
         }
       },
+      "PrepareDownloadCommand": {
+        "required": [
+          "indexedFileId",
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "indexedFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "audioTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "subtitleTrackIndices": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        }
+      },
       "ProgressConflictMode": {
         "type": "integer"
       },
@@ -12251,6 +12487,9 @@
     },
     {
       "name": "FileSystem"
+    },
+    {
+      "name": "Downloads"
     },
     {
       "name": "Diagnostics"
