@@ -82,7 +82,9 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
 
         if (!File.Exists(vttCachePath))
         {
-            return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+            return Results.Problem(
+                detail: "Subtitle format could not be converted to WebVTT",
+                statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         // Read the full VTT and extract the segment for the requested time range
@@ -129,6 +131,13 @@ public class GetHlsSubtitleStreamSegmentQueryHandler : IRequestHandler<GetHlsSub
                     trackIndex, inputPath);
                 File.Delete(vttCachePath);
             }
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Subtitle extraction failed for track {Track} from {Input} - format may not be convertible to WebVTT",
+                trackIndex, inputPath);
         }
         finally
         {
