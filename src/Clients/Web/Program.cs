@@ -63,6 +63,7 @@ builder.Services.AddSingleton<IOfflineMediaStore, NoOpOfflineMediaStore>();
 builder.Services.AddSingleton<IConnectivityService, NoOpConnectivityService>();
 builder.Services.AddSingleton<IPlaybackJournal, NoOpPlaybackJournal>();
 builder.Services.AddSingleton<IMusicCacheService, NoOpMusicCacheService>();
+builder.Services.AddSingleton<IServerConnectionService, NoOpServerConnectionService>();
 
 builder.Services.AddSingleton<K7DialogService>();
 builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
