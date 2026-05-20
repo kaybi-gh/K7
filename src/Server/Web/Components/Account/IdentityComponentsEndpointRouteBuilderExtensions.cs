@@ -42,6 +42,23 @@ namespace K7.Server.Web.Components.Account
                 return TypedResults.Challenge(properties, [provider]);
             });
 
+            accountGroup.MapPost("/PerformSetupExternalLogin", (
+                HttpContext context,
+                [FromServices] SignInManager<ApplicationUser> signInManager,
+                [FromForm] string provider) =>
+            {
+                IEnumerable<KeyValuePair<string, StringValues>> query = [
+                    new("Action", "SetupCallback")];
+
+                var redirectUrl = UriHelper.BuildRelative(
+                    context.Request.PathBase,
+                    "/setup/external-login",
+                    QueryString.Create(query));
+
+                var properties = signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+                return TypedResults.Challenge(properties, [provider]);
+            });
+
             accountGroup.MapGet("/AutoLogin", (
                 HttpContext context,
                 [FromServices] SignInManager<ApplicationUser> signInManager,

@@ -51,7 +51,7 @@
     <value>Afficher le mot de passe</value>
   </data>
   <data name="CompleteSetup" xml:space="preserve">
-    <value>Terminer la configuration</value>
+    <value>Creer le compte admin localement</value>
   </data>
   <data name="EmailRequired" xml:space="preserve">
     <value>L'adresse e-mail est requise.</value>
@@ -67,5 +67,11 @@
   </data>
   <data name="PasswordsMismatch" xml:space="preserve">
     <value>Les mots de passe ne correspondent pas.</value>
+  </data>
+  <data name="CreateAdminWith" xml:space="preserve">
+    <value>Creer le compte admin avec {0}</value>
+  </data>
+  <data name="Or" xml:space="preserve">
+    <value>ou</value>
   </data>
 </root>
