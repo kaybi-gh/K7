@@ -5,7 +5,10 @@ using K7.Server.Domain.Settings;
 namespace K7.Server.Application.Features.TrackSelectionPreferences.Commands.DeleteUserTrackSelectionPreferences;
 
 [Authorize]
-public record DeleteUserTrackSelectionPreferencesCommand : IRequest;
+public record DeleteUserTrackSelectionPreferencesCommand : IRequest
+{
+    public Guid? LibraryId { get; init; }
+}
 
 public class DeleteUserTrackSelectionPreferencesCommandHandler(IUserSettingsService userSettingsService, IUser currentUser)
     : IRequestHandler<DeleteUserTrackSelectionPreferencesCommand>
@@ -13,6 +16,9 @@ public class DeleteUserTrackSelectionPreferencesCommandHandler(IUserSettingsServ
     public async Task Handle(DeleteUserTrackSelectionPreferencesCommand request, CancellationToken cancellationToken)
     {
         var userId = Guard.Against.Null(currentUser.Id);
-        await userSettingsService.RemoveAsync(userId, UserSettingKeys.TrackSelectionPreferences, cancellationToken);
+        var key = request.LibraryId is { } libraryId
+            ? new SettingKey<string>($"TrackSelectionPreferences:Library:{libraryId}")
+            : UserSettingKeys.TrackSelectionPreferences;
+        await userSettingsService.RemoveAsync(userId, key, cancellationToken);
     }
 }

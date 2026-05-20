@@ -437,6 +437,9 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task<K7.Shared.Dtos.VideoPlayerSettingsDto> GetEffectiveVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.VideoPlayerSettingsDto());
     public Task UpdateUserVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.TrackSelectionPreferencesDto> GetEffectiveTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.TrackSelectionPreferencesDto());
+    public Task UpdateUserTrackSelectionPreferencesAsync(K7.Shared.Dtos.TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockServerPreferencesService : IServerPreferencesService
@@ -450,6 +453,9 @@ public sealed class MockServerPreferencesService : IServerPreferencesService
     public Task<K7.Shared.Dtos.VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.VideoPlayerSettingsDto?>(null);
     public Task UpdateServerVideoPlayerSettingsAsync(K7.Shared.Dtos.VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.TrackSelectionPreferencesDto?> GetServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult<K7.Shared.Dtos.TrackSelectionPreferencesDto?>(null);
+    public Task UpdateServerTrackSelectionPreferencesAsync(K7.Shared.Dtos.TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockCollectionService : ICollectionService

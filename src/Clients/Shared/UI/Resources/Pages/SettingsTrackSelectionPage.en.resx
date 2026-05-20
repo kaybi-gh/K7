@@ -31,6 +31,10 @@
   <data name="SubForcedOnly" xml:space="preserve"><value>Forced only</value></data>
   <data name="SubFull" xml:space="preserve"><value>Full</value></data>
   <data name="SubHearingImpaired" xml:space="preserve"><value>SDH (hearing impaired)</value></data>
+  <data name="Scope" xml:space="preserve"><value>Scope</value></data>
+  <data name="ScopeGlobal" xml:space="preserve"><value>Global (all libraries)</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="ResetToDefault" xml:space="preserve"><value>Reset to default</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Preferences saved</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Preferences reset</value></data>
 </root>

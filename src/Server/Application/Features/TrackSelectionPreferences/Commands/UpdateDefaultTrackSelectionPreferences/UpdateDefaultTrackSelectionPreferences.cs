@@ -11,6 +11,7 @@ namespace K7.Server.Application.Features.TrackSelectionPreferences.Commands.Upda
 public record UpdateDefaultTrackSelectionPreferencesCommand : IRequest
 {
     public required TrackSelectionPreferencesDto Settings { get; init; }
+    public Guid? LibraryId { get; init; }
 }
 
 public class UpdateDefaultTrackSelectionPreferencesCommandHandler(IServerSettingsService serverSettingsService)
@@ -19,6 +20,9 @@ public class UpdateDefaultTrackSelectionPreferencesCommandHandler(IServerSetting
     public async Task Handle(UpdateDefaultTrackSelectionPreferencesCommand request, CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(request.Settings);
-        await serverSettingsService.SetAsync(ServerSettingKeys.TrackSelectionPreferences, json, cancellationToken);
+        var key = request.LibraryId is { } libraryId
+            ? new SettingKey<string>($"TrackSelectionPreferences:Library:{libraryId}")
+            : ServerSettingKeys.TrackSelectionPreferences;
+        await serverSettingsService.SetAsync(key, json, cancellationToken);
     }
 }

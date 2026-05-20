@@ -232,6 +232,16 @@
           "Users"
         ],
         "operationId": "DeleteUserTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -243,6 +253,16 @@
           "Users"
         ],
         "operationId": "GetUserTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -254,6 +274,16 @@
           "Users"
         ],
         "operationId": "UpdateUserTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1098,6 +1128,13 @@
             }
           },
           {
+            "name": "Studio",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "PageSize",
             "in": "query",
             "required": true,
@@ -1634,6 +1671,30 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/known-for": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "GetPersonKnownFor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -2237,6 +2298,30 @@
           {
             "name": "currentEpisodeId",
             "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{id}/similar": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetSimilarMedia",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
@@ -3632,6 +3717,128 @@
         }
       }
     },
+    "/api/downloads/{id}": {
+      "delete": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "DeleteDownload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "GetDownload",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/downloads/{id}/file": {
+      "get": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "GetDownloadFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "GetDownloadFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/downloads/prepare": {
+      "post": {
+        "tags": [
+          "Downloads"
+        ],
+        "operationId": "PrepareDownload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareDownloadCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/diagnostics/fix": {
       "post": {
         "tags": [
@@ -4736,6 +4943,16 @@
           "Admin"
         ],
         "operationId": "DeleteServerTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -4747,6 +4964,16 @@
           "Admin"
         ],
         "operationId": "GetServerTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -4758,6 +4985,16 @@
           "Admin"
         ],
         "operationId": "UpdateServerTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -5085,6 +5322,28 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "deviceType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "thumbnailUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamDecision": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StreamDecisionDto"
+              }
             ]
           },
           "startedAt": {
@@ -6547,6 +6806,66 @@
       "DiagnosticSeverity": {
         "type": "integer"
       },
+      "DownloadDto": {
+        "required": [
+          "id",
+          "indexedFileId",
+          "deviceId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "indexedFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DownloadStatus"
+          },
+          "isDirectStream": {
+            "type": "boolean"
+          },
+          "fileSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "contentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "readyAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failureReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DownloadStatus": {
+        "type": "integer"
+      },
       "ExternalIdDto": {
         "required": [
           "providerName",
@@ -7784,6 +8103,13 @@
             ],
             "format": "uuid"
           },
+          "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "seriePictures": {
             "type": [
               "null",
@@ -8521,6 +8847,13 @@
             ],
             "format": "uuid"
           },
+          "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "seriePictures": {
             "type": [
               "null",
@@ -8856,6 +9189,24 @@
               "string"
             ],
             "format": "int64"
+          },
+          "studios": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "trailers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TrailerDto"
+            }
           },
           "id": {
             "type": "string",
@@ -9406,6 +9757,24 @@
               "null",
               "string"
             ]
+          },
+          "studios": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "trailers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TrailerDto"
+            }
           },
           "seasons": {
             "type": [
@@ -10828,6 +11197,9 @@
           }
         }
       },
+      "PlaybackMode": {
+        "type": "integer"
+      },
       "PlaybackSessionItem": {
         "required": [
           "mediaId",
@@ -11117,6 +11489,46 @@
             ],
             "items": {
               "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          }
+        }
+      },
+      "PrepareDownloadCommand": {
+        "required": [
+          "indexedFileId",
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "indexedFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "audioTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "subtitleTrackIndices": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           }
         }
@@ -11450,6 +11862,65 @@
           }
         }
       },
+      "StreamDecisionDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/PlaybackMode"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/TranscodeReason"
+          },
+          "sourceVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceAudioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamAudioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceResolution": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "selectedAudioTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "bitrate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "StreamQualityDto": {
         "type": "object",
         "properties": {
@@ -11645,6 +12116,38 @@
             "type": "string"
           }
         }
+      },
+      "TrailerDto": {
+        "required": [
+          "key",
+          "name",
+          "site",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "site": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TranscodeReason": {
+        "type": "integer"
       },
       "UpdateBackgroundTaskSettingsRequest": {
         "type": "object",
@@ -12373,6 +12876,9 @@
     },
     {
       "name": "FileSystem"
+    },
+    {
+      "name": "Downloads"
     },
     {
       "name": "Diagnostics"

@@ -12,10 +12,11 @@ public class GetUserTrackSelectionPreferences : IEndpoint
         var groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapGet("/api/users/me/preferences/track-selection", async (
+            [FromQuery] Guid? libraryId,
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var result = await sender.Send(new GetEffectiveTrackSelectionPreferencesQuery(), cancellationToken);
+            var result = await sender.Send(new GetEffectiveTrackSelectionPreferencesQuery { LibraryId = libraryId }, cancellationToken);
             return Results.Ok(result);
         })
         .RequireAuthorization(Policies.GuestOrAbove)

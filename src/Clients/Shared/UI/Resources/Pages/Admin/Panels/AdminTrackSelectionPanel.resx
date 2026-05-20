@@ -31,6 +31,10 @@
   <data name="SubForcedOnly" xml:space="preserve"><value>Forces uniquement</value></data>
   <data name="SubFull" xml:space="preserve"><value>Complets</value></data>
   <data name="SubHearingImpaired" xml:space="preserve"><value>SDH (sourds et malentendants)</value></data>
+  <data name="Scope" xml:space="preserve"><value>Portee</value></data>
+  <data name="ScopeGlobal" xml:space="preserve"><value>Global (toutes les librairies)</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
   <data name="Reset" xml:space="preserve"><value>Reinitialiser</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Preferences serveur enregistrees</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Preferences serveur reinitialisees</value></data>
 </root>

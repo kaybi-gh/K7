@@ -12,10 +12,11 @@ public class DeleteUserTrackSelectionPreferences : IEndpoint
         var groupName = type.Namespace!.Split('.').Last();
 
         endpointRouteBuilder.MapDelete("/api/users/me/preferences/track-selection", async (
+            [FromQuery] Guid? libraryId,
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {
-            await sender.Send(new DeleteUserTrackSelectionPreferencesCommand(), cancellationToken);
+            await sender.Send(new DeleteUserTrackSelectionPreferencesCommand { LibraryId = libraryId }, cancellationToken);
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.UserOrAbove)

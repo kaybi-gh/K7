@@ -14,10 +14,11 @@ public class UpdateServerTrackSelectionPreferences : IEndpoint
 
         endpointRouteBuilder.MapPut("/api/server/preferences/track-selection", async (
             [FromBody] TrackSelectionPreferencesDto settings,
+            [FromQuery] Guid? libraryId,
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {
-            await sender.Send(new UpdateDefaultTrackSelectionPreferencesCommand { Settings = settings }, cancellationToken);
+            await sender.Send(new UpdateDefaultTrackSelectionPreferencesCommand { Settings = settings, LibraryId = libraryId }, cancellationToken);
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.AdminOnly)
