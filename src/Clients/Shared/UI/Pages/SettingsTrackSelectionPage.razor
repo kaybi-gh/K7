@@ -4,6 +4,7 @@
 @using K7.Shared.Enums
 @inject IStringLocalizer<SettingsTrackSelectionPage> L
 @inject IUserPreferencesService UserPreferencesService
+@inject ILibraryService LibraryService
 
 <div class="d-flex pa-4" style="width: 100%">
     <h5>@L["Title"]</h5>
@@ -15,50 +16,64 @@
         <K7Spinner />
     </div>
 }
-else if (_preferences is not null)
+else
 {
     <div class="pa-4 d-flex flex-col gap-4">
-        <span class="text-caption" style="color: var(--color-text-muted);">@L["Description"]</span>
-
-        <K7LanguageSelect Label="@L["PreferredAudioLanguage"]"
-                          @bind-Value="_preferences.PreferredAudioLanguage" />
-
-        <K7LanguageSelect Label="@L["FallbackAudioLanguage"]"
-                          @bind-Value="_preferences.FallbackAudioLanguage" />
-
-        <K7Select Label="@L["SubtitleWhenPreferredAudio"]"
-                  @bind-Value="_preferences.SubtitleWhenPreferredAudio"
-                  TValue="SubtitlePreference">
-            <K7SelectItem Value="SubtitlePreference.Off" Text="@L["SubOff"]">@L["SubOff"]</K7SelectItem>
-            <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@L["SubForcedOnly"]">@L["SubForcedOnly"]</K7SelectItem>
-            <K7SelectItem Value="SubtitlePreference.Full" Text="@L["SubFull"]">@L["SubFull"]</K7SelectItem>
-            <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@L["SubHearingImpaired"]">@L["SubHearingImpaired"]</K7SelectItem>
+        <K7Select Label="@L["Scope"]"
+                  TValue="Guid?"
+                  Value="_selectedLibraryId"
+                  ValueChanged="OnLibraryScopeChanged">
+            <K7SelectItem TValue="Guid?" Value="@((Guid?)null)" Text="@L["ScopeGlobal"]">@L["ScopeGlobal"]</K7SelectItem>
+            @foreach (var lib in _libraries)
+            {
+                <K7SelectItem TValue="Guid?" Value="@lib.Id" Text="@lib.Title">@lib.Title</K7SelectItem>
+            }
         </K7Select>
 
-        @if (_preferences.SubtitleWhenPreferredAudio != SubtitlePreference.Off)
+        @if (_preferences is not null)
         {
-            <K7LanguageSelect Label="@L["SubtitleLanguageWhenPreferredAudio"]"
-                              @bind-Value="_preferences.SubtitleLanguageWhenPreferredAudio" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["Description"]</span>
+
+            <K7LanguageSelect Label="@L["PreferredAudioLanguage"]"
+                              @bind-Value="_preferences.PreferredAudioLanguage" />
+
+            <K7LanguageSelect Label="@L["FallbackAudioLanguage"]"
+                              @bind-Value="_preferences.FallbackAudioLanguage" />
+
+            <K7Select Label="@L["SubtitleWhenPreferredAudio"]"
+                      @bind-Value="_preferences.SubtitleWhenPreferredAudio"
+                      TValue="SubtitlePreference">
+                <K7SelectItem Value="SubtitlePreference.Off" Text="@L["SubOff"]">@L["SubOff"]</K7SelectItem>
+                <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@L["SubForcedOnly"]">@L["SubForcedOnly"]</K7SelectItem>
+                <K7SelectItem Value="SubtitlePreference.Full" Text="@L["SubFull"]">@L["SubFull"]</K7SelectItem>
+                <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@L["SubHearingImpaired"]">@L["SubHearingImpaired"]</K7SelectItem>
+            </K7Select>
+
+            @if (_preferences.SubtitleWhenPreferredAudio != SubtitlePreference.Off)
+            {
+                <K7LanguageSelect Label="@L["SubtitleLanguageWhenPreferredAudio"]"
+                                  @bind-Value="_preferences.SubtitleLanguageWhenPreferredAudio" />
+            }
+
+            <K7Select Label="@L["SubtitleWhenOtherAudio"]"
+                      @bind-Value="_preferences.SubtitleWhenOtherAudio"
+                      TValue="SubtitlePreference">
+                <K7SelectItem Value="SubtitlePreference.Off" Text="@L["SubOff"]">@L["SubOff"]</K7SelectItem>
+                <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@L["SubForcedOnly"]">@L["SubForcedOnly"]</K7SelectItem>
+                <K7SelectItem Value="SubtitlePreference.Full" Text="@L["SubFull"]">@L["SubFull"]</K7SelectItem>
+                <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@L["SubHearingImpaired"]">@L["SubHearingImpaired"]</K7SelectItem>
+            </K7Select>
+
+            @if (_preferences.SubtitleWhenOtherAudio != SubtitlePreference.Off)
+            {
+                <K7LanguageSelect Label="@L["SubtitleLanguageWhenOtherAudio"]"
+                                  @bind-Value="_preferences.SubtitleLanguageWhenOtherAudio" />
+            }
+
+            <div class="d-flex gap-2">
+                <K7Button Color="primary" OnClick="SaveAsync">@L["Save"]</K7Button>
+                <K7Button OnClick="ResetAsync">@L["ResetToDefault"]</K7Button>
+            </div>
         }
-
-        <K7Select Label="@L["SubtitleWhenOtherAudio"]"
-                  @bind-Value="_preferences.SubtitleWhenOtherAudio"
-                  TValue="SubtitlePreference">
-            <K7SelectItem Value="SubtitlePreference.Off" Text="@L["SubOff"]">@L["SubOff"]</K7SelectItem>
-            <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@L["SubForcedOnly"]">@L["SubForcedOnly"]</K7SelectItem>
-            <K7SelectItem Value="SubtitlePreference.Full" Text="@L["SubFull"]">@L["SubFull"]</K7SelectItem>
-            <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@L["SubHearingImpaired"]">@L["SubHearingImpaired"]</K7SelectItem>
-        </K7Select>
-
-        @if (_preferences.SubtitleWhenOtherAudio != SubtitlePreference.Off)
-        {
-            <K7LanguageSelect Label="@L["SubtitleLanguageWhenOtherAudio"]"
-                              @bind-Value="_preferences.SubtitleLanguageWhenOtherAudio" />
-        }
-
-        <div class="d-flex gap-2">
-            <K7Button Color="primary" OnClick="SaveAsync">@L["Save"]</K7Button>
-            <K7Button OnClick="ResetAsync">@L["ResetToDefault"]</K7Button>
-        </div>
     </div>
 }
