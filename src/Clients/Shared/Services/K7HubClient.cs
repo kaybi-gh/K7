@@ -1,3 +1,4 @@
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Notifications;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -21,6 +22,7 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<List<MediaBatchItem>>? MediaBatchAdded;
     public event Action<Guid, int, int, int>? LibraryScanCompleted;
     public event Action? BackgroundTaskUpdated;
+    public event Action<IReadOnlyList<ActiveStreamDto>>? ActiveStreamsUpdated;
 
     public async Task EnsureStartedAsync(Uri baseUri, string userId, string? deviceId = null, string? accessToken = null)
     {
@@ -102,6 +104,11 @@ public sealed class K7HubClient : IAsyncDisposable
                 BackgroundTaskUpdated?.Invoke();
             });
 
+            _hubConnection.On<IReadOnlyList<ActiveStreamDto>>("ReceiveActiveStreamsUpdated", (streams) =>
+            {
+                ActiveStreamsUpdated?.Invoke(streams);
+            });
+
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await _hubConnection.StartAsync(cts.Token);
             _started = true;
@@ -111,6 +118,18 @@ public sealed class K7HubClient : IAsyncDisposable
         {
             _lock.Release();
         }
+    }
+
+    public async Task JoinAdminStreamsGroupAsync()
+    {
+        if (_hubConnection?.State == HubConnectionState.Connected)
+            await _hubConnection.InvokeAsync("JoinAdminStreamsGroup");
+    }
+
+    public async Task LeaveAdminStreamsGroupAsync()
+    {
+        if (_hubConnection?.State == HubConnectionState.Connected)
+            await _hubConnection.InvokeAsync("LeaveAdminStreamsGroup");
     }
 
     public async ValueTask DisposeAsync()

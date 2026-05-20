@@ -2,58 +2,37 @@
 @layout AdminLayout
 @inject IStringLocalizer<AdminActiveStreamsPanel> L
 @inject IServerInfoService K7ServerService
+@inject K7HubClient HubClient
 @implements IDisposable
 
-<div class="d-flex pa-4" style="width: 100%">
+<div class="streams-header">
     <h5>@L["Title"]</h5>
-    <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="FetchStreamsAsync" AriaLabel="@L["Title"]" />
+    @if (_streams is not null)
+    {
+        <span class="streams-count">@string.Format(L["StreamCount"], _streams.Count)</span>
+    }
+    <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="FetchStreamsAsync" AriaLabel="@L["Refresh"]" />
 </div>
 
 @if (_loading)
 {
-    <div class="d-flex flex-col pa-16">
+    <div class="streams-empty">
         <K7Spinner />
     </div>
 }
 else if (_streams is null || _streams.Count == 0)
 {
-    <div class="d-flex flex-col pa-16">
-        <K7Icon Name="circle" Style="font-size: 64px; opacity: 0.3;" />
-        <h6 Color="default" Style="opacity: 0.5;">@L["NoActiveStreams"]</h6>
+    <div class="streams-empty">
+        <K7Icon Icon="@Phosphor.Broadcast" Style="font-size: 64px; opacity: 0.3;" />
+        <h6 style="opacity: 0.5;">@L["NoActiveStreams"]</h6>
     </div>
 }
 else
 {
-    <div class="pa-4">
-        <K7Table Items="@_streams">
-            <HeaderContent>
-                <th>@L["User"]</th>
-                <th>@L["Media"]</th>
-                <th>@L["Device"]</th>
-                <th>@L["Progress"]</th>
-                <th>@L["StartedAt"]</th>
-            </HeaderContent>
-            <RowTemplate Context="stream">
-                <td DataLabel="@L["User"]">@(stream.UserName ?? "-")</td>
-                <td DataLabel="@L["Media"]">
-                    @if (stream.MediaId.HasValue && GetMediaRoute(stream) is string route)
-                    {
-                        <a href="@route">@stream.MediaTitle</a>
-                    }
-                    else
-                    {
-                        @(stream.MediaTitle ?? "-")
-                    }
-                </td>
-                <td DataLabel="@L["Device"]">@(stream.DeviceName ?? "-")</td>
-                <td DataLabel="@L["Progress"]">
-                    @if (stream.Duration > 0)
-                    {
-                        <K7ProgressBar Value="@(stream.Position / stream.Duration * 100)" />
-                    }
-                </td>
-                <td DataLabel="@L["StartedAt"]">@stream.StartedAt.ToLocalTime().ToString("g")</td>
-            </RowTemplate>
-        </K7Table>
+    <div class="streams-grid">
+        @foreach (var stream in _streams)
+        {
+            <AdminStreamCard Stream="stream" />
+        }
     </div>
 }

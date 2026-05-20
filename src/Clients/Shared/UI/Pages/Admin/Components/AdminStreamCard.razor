@@ -1,0 +1,82 @@
+@inject IStringLocalizer<AdminStreamCard> L
+
+<K7Paper Outlined="true" Class="@($"stream-card {CardVariantClass}")">
+    <div class="stream-card__thumbnail">
+        @if (!string.IsNullOrEmpty(Stream.ThumbnailUrl))
+        {
+            <K7Image Src="@Stream.ThumbnailUrl" Alt="@Stream.MediaTitle" Class="stream-card__image" ObjectFit="cover" />
+        }
+        else
+        {
+            <div class="stream-card__placeholder">
+                <K7Icon Icon="@PlaceholderIcon" />
+            </div>
+        }
+
+        @if (Stream.StreamDecision is not null)
+        {
+            <div class="stream-card__mode-badge @ModeBadgeClass">
+                @ModeLabel
+            </div>
+        }
+    </div>
+
+    <div class="stream-card__content">
+        <div class="stream-card__header">
+            <a class="stream-card__title focusable" href="@MediaRoute">@(Stream.MediaTitle ?? "-")</a>
+            @if (Stream.State == (int)K7.Server.Domain.Enums.PlaybackState.Paused)
+            {
+                <K7Chip Size="sm" Color="warning" Variant="filled">@L["Paused"]</K7Chip>
+            }
+            else if (Stream.State == (int)K7.Server.Domain.Enums.PlaybackState.Buffering)
+            {
+                <K7Chip Size="sm" Color="info" Variant="filled">@L["Buffering"]</K7Chip>
+            }
+        </div>
+
+        <div class="stream-card__meta">
+            <div class="stream-card__meta-row">
+                <K7Avatar Size="sm">@UserInitial</K7Avatar>
+                <a class="stream-card__link focusable" href="/admin/users#@Stream.UserId">@(Stream.UserName ?? "-")</a>
+            </div>
+
+            <div class="stream-card__meta-row">
+                <K7Icon Icon="@Phosphor.Devices" Size="sm" />
+                <a class="stream-card__link focusable" href="/admin/devices?focus=@Stream.DeviceId">@DeviceLabel</a>
+            </div>
+        </div>
+
+        @if (Stream.StreamDecision is { } decision && decision.Mode != K7.Shared.Enums.PlaybackMode.Direct)
+        {
+            <div class="stream-card__tracks">
+                @if (decision.SourceVideoCodec is not null)
+                {
+                    <span class="stream-card__track">
+                        <span class="stream-card__track-label">@L["Video"]</span>
+                        <span class="stream-card__track-value">@decision.SourceVideoCodec.ToUpperInvariant() @L["Arrow"] @((decision.StreamVideoCodec ?? "COPY").ToUpperInvariant())</span>
+                    </span>
+                }
+                @if (decision.SourceAudioCodec is not null)
+                {
+                    <span class="stream-card__track">
+                        <span class="stream-card__track-label">@L["Audio"]</span>
+                        <span class="stream-card__track-value">@decision.SourceAudioCodec.ToUpperInvariant() @L["Arrow"] @((decision.StreamAudioCodec ?? "COPY").ToUpperInvariant())</span>
+                    </span>
+                }
+                @if (decision.Reason != K7.Server.Domain.Enums.TranscodeReason.None)
+                {
+                    <span class="stream-card__reason">@FormatReason(decision.Reason)</span>
+                }
+            </div>
+        }
+
+        <div class="stream-card__progress">
+            <K7ProgressBar Value="@ProgressPercent" />
+            <div class="stream-card__times">
+                <span>@FormatTime(Stream.Position)</span>
+                <span>@FormatTime(Stream.Duration)</span>
+            </div>
+        </div>
+
+    </div>
+</K7Paper>

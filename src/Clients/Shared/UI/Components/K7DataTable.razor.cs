@@ -19,6 +19,8 @@ public partial class K7DataTable<TItem>
     [Parameter] public int OverscanCount { get; set; } = 10;
     [Parameter] public bool ShowToolbar { get; set; } = true;
     [Parameter] public string? Height { get; set; }
+    [Parameter] public Func<TItem, string?>? RowId { get; set; }
+    [Parameter] public Func<TItem, string?>? RowClass { get; set; }
 
     private readonly List<K7DataColumn<TItem>> _columns = [];
     private Virtualize<TItem>? _virtualizeRef;

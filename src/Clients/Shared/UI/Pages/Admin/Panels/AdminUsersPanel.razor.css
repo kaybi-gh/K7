@@ -1,9 +1,4 @@
-﻿::deep .current-device {
-    border-color: var(--color-accent);
-    border-width: 2px;
-}
-
-::deep .device-highlighted {
+::deep .row-highlighted {
     animation: highlight-fade 3s ease-out;
 }
 
