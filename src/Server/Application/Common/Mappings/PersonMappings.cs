@@ -21,6 +21,7 @@ public static class PersonMappings
             BirthPlace = domain.BirthPlace,
             Roles = domain.Roles.Select(r => r.ToPersonRoleDto()).ToList(),
             ExternalIds = domain.ExternalIds.Select(e => e.ToExternalIdDto()).ToList(),
+            LockedFields = domain.LockedFields.ToList(),
             PortraitPicture = domain.PortraitPicture?.ToMetadataPictureDto()
         };
 

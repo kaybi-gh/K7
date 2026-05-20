@@ -26,6 +26,7 @@ public partial class K7TextField<TValue> : IDisposable
     [Parameter] public string Style { get; set; } = "";
     [Parameter] public string HelperText { get; set; } = "";
     [Parameter] public bool Clearable { get; set; }
+    [Parameter] public Func<TValue?, string?>? Validation { get; set; }
 
     private readonly string _id = $"k7tf-{Guid.NewGuid():N}";
     private bool _hasError;
@@ -74,11 +75,21 @@ public partial class K7TextField<TValue> : IDisposable
         {
             _hasError = true;
             _errorText = string.IsNullOrEmpty(RequiredError) ? "Required" : RequiredError;
+            return;
         }
-        else
+
+        if (Validation is not null)
         {
-            _hasError = false;
+            var error = Validation(val);
+            if (error is not null)
+            {
+                _hasError = true;
+                _errorText = error;
+                return;
+            }
         }
+
+        _hasError = false;
     }
 
     public void Dispose() => _debounceTimer?.Dispose();

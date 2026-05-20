@@ -9,7 +9,6 @@
     overflow: hidden;
     border-radius: var(--radius-sm);
     width: 100%;
-    will-change: transform;
 }
 
 .media-card-link:focus-visible {

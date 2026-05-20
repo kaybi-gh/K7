@@ -1,0 +1,78 @@
+.edit-metadata-dialog {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.field-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.field-row :deep(.k7-text-field) {
+    flex: 1;
+}
+
+.field-label {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    flex: 1;
+    padding: 8px 0;
+}
+
+::deep .lock-btn {
+    margin-top: 8px;
+    flex-shrink: 0;
+}
+
+.pictures-section {
+    margin-top: 12px;
+}
+
+.pictures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.picture-item {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.picture-item img {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    display: block;
+}
+
+.picture-type {
+    display: block;
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 2px 4px;
+    color: var(--color-text-secondary);
+    background: var(--color-surface);
+}
+
+.picture-item ::deep .picture-delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border-radius: 50%;
+}
+
+.upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}

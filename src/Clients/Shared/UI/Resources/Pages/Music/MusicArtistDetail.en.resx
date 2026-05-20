@@ -30,5 +30,6 @@
   <data name="MembersSection" xml:space="preserve"><value>Members</value></data>
   <data name="RefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh started in background.</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Edit metadata</value></data>
 </root>
 

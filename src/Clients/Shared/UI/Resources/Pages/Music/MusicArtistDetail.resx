@@ -30,5 +30,6 @@
   <data name="MembersSection" xml:space="preserve"><value>Membres</value></data>
   <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance en tache de fond.</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
 </root>
 

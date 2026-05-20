@@ -91,4 +91,5 @@
   <data name="NoResults" xml:space="preserve"><value>No results</value></data>
   <data name="JumpIndex" xml:space="preserve"><value>Jump index</value></data>
   <data name="ViewMode" xml:space="preserve"><value>View mode</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Edit metadata</value></data>
 </root>

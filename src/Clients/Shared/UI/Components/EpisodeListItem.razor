@@ -1,5 +1,6 @@
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="episode-item focusable @(IsExpanded ? "episode-item--expanded" : "")" tabindex="0" role="button" @onclick="OnToggleExpand" @onkeydown="OnKeyDown">
     <div class="episode-item-main">
@@ -82,6 +83,9 @@
                             <button type="button" class="k7-icon-btn k7-icon-btn--sm focusable" aria-label="Menu"><i class="ph ph-dots-three"></i></button>
                         </ActivatorContent>
                         <ChildContent>
+                            <AuthorizeView Roles="Administrator">
+                                <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@S["EditMetadata"]</K7MenuItem>
+                            </AuthorizeView>
                             <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@S["IndexedVersions"]</K7MenuItem>
                         </ChildContent>
                     </K7Menu>

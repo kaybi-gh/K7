@@ -14,17 +14,20 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
 
     public void ApplyMetadata(ExternalMusicAlbumMetadata metadata)
     {
-        Title = metadata.Title ?? Title;
-        ReleaseDate = metadata.ReleaseDate ?? ReleaseDate;
-        Overview = metadata.Overview ?? Overview;
+        if (!IsFieldLocked(nameof(Title)))
+            Title = metadata.Title ?? Title;
+        if (!IsFieldLocked(nameof(ReleaseDate)))
+            ReleaseDate = metadata.ReleaseDate ?? ReleaseDate;
+        if (!IsFieldLocked(nameof(Overview)))
+            Overview = metadata.Overview ?? Overview;
 
-        if (metadata.Genres is { Count: > 0 })
+        if (!IsFieldLocked(nameof(Genres)) && metadata.Genres is { Count: > 0 })
         {
             Genres.Clear();
             foreach (var genre in metadata.Genres) Genres.Add(genre);
         }
 
-        if (metadata.ExternalIds is { Count: > 0 })
+        if (!IsFieldLocked(nameof(ExternalIds)) && metadata.ExternalIds is { Count: > 0 })
         {
             foreach (var externalId in metadata.ExternalIds)
             {
@@ -35,7 +38,7 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
             }
         }
 
-        if (metadata.Pictures is { Count: > 0 })
+        if (!IsFieldLocked(nameof(Pictures)) && metadata.Pictures is { Count: > 0 })
         {
             var hasLocalCover = Pictures.Any(p => p.Type == MetadataPictureType.Cover && p.LocalPath is not null);
             foreach (var pic in metadata.Pictures)

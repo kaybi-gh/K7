@@ -97,6 +97,7 @@ else if (_person is not null)
                                 <ChildContent>
                                     <AuthorizeView Roles="Administrator">
                                         <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
                                     </AuthorizeView>
                                 </ChildContent>
                             </K7Menu>
@@ -155,25 +156,8 @@ else if (_person is not null)
                         @foreach (var item in _knownFor)
                         {
                             <CarouselItem @key="item.ExternalId">
-                                <div class="known-for-card">
-                                    @if (item.PosterUrl is not null)
-                                    {
-                                        <img src="@item.PosterUrl" alt="@item.Title" class="known-for-poster" />
-                                    }
-                                    else
-                                    {
-                                        <div class="known-for-poster known-for-poster--placeholder">
-                                            <K7Icon Name="film-slate" />
-                                        </div>
-                                    }
-                                    <div class="known-for-info">
-                                        <span class="known-for-title">@item.Title</span>
-                                        @if (item.Year.HasValue)
-                                        {
-                                            <span class="known-for-year">@item.Year</span>
-                                        }
-                                    </div>
-                                </div>
+                                <MediaCard Model="@(new MediaCardViewModel { Id = item.ExternalId, Title = item.Title, PictureUrl = item.PosterUrl, AdditionalInformations = item.Year?.ToString() })"
+                                           FooterVisible="true" />
                             </CarouselItem>
                         }
                     </Carousel>

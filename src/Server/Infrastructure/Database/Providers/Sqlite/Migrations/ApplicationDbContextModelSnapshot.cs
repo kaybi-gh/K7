@@ -661,6 +661,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
+                    b.PrimitiveCollection<string>("LockedFields")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("OriginalTitle")
                         .HasColumnType("TEXT");
 
@@ -1003,6 +1007,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.PrimitiveCollection<string>("LockedFields")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")

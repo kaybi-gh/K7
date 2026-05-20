@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Components;
@@ -13,6 +14,9 @@ public partial class MusicAlbumDetail
 
     [Inject]
     private IAudioPlayerService Audio { get; set; } = default!;
+
+    [Inject]
+    private IK7DialogService DialogService { get; set; } = default!;
 
     [Inject]
     private IK7Snackbar Snackbar { get; set; } = default!;
@@ -193,6 +197,30 @@ public partial class MusicAlbumDetail
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
+
+    private async Task OpenEditMetadataDialogAsync()
+    {
+        if (_album is null) return;
+
+        var parameters = new K7DialogParameters<EditMetadataDialog>
+        {
+            { x => x.Media, _album }
+        };
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditMetadataDialog>(L["EditMetadata"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
+            if (media is MusicAlbumDto album)
+            {
+                _album = album;
+                StateHasChanged();
+            }
         }
     }
 

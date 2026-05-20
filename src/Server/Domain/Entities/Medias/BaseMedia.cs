@@ -22,7 +22,11 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public IList<MediaRecommendation> Recommendations { get; set; } = [];
     public DateTimeOffset? LastMetadataRefreshedAt { get; set; }
 
+    public IList<string> LockedFields { get; set; } = [];
+
     public IList<IndexedFile> IndexedFiles { get; set; } = [];
     public IList<UserMediaState> UserMediaStates { get; set; } = [];
     public IList<MediaSegment> Segments { get; set; } = [];
+
+    public bool IsFieldLocked(string fieldName) => LockedFields.Contains(fieldName);
 }

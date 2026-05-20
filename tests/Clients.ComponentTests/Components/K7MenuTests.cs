@@ -15,7 +15,7 @@ public class K7MenuTests
         ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
 
         // Act
-        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.Label, "Test"));
+        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.ActivatorContent, "Test"));
 
         // Assert
         var dropdown = cut.Find(".k7-menu-dropdown");
@@ -30,10 +30,10 @@ public class K7MenuTests
         var spatialNav = Substitute.For<ISpatialNavService>();
         ctx.Services.AddSingleton(spatialNav);
 
-        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.Label, "Test"));
+        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.ActivatorContent, "Test"));
 
         // Act
-        var button = cut.Find("button");
+        var button = cut.Find(".k7-menu-activator");
         await cut.InvokeAsync(() => button.Click());
 
         // Assert
@@ -51,10 +51,10 @@ public class K7MenuTests
         var spatialNav = Substitute.For<ISpatialNavService>();
         ctx.Services.AddSingleton(spatialNav);
 
-        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.Label, "Test"));
+        var cut = ctx.Render<K7Menu>(p => p.Add(m => m.ActivatorContent, "Test"));
 
         // Act - open then close
-        var button = cut.Find("button");
+        var button = cut.Find(".k7-menu-activator");
         await cut.InvokeAsync(() => button.Click());
         await cut.InvokeAsync(() => button.Click());
 

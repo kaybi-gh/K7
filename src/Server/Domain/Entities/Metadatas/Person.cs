@@ -12,7 +12,11 @@ public class Person : BaseAuditableEntity
 
     public IList<BasePersonRole> Roles { get; set; } = [];
     public IList<ExternalId> ExternalIds { get; set; } = [];
+    public IList<string> LockedFields { get; set; } = [];
     public MetadataPicture? PortraitPicture { get; set; }
+
+    public bool IsFieldLocked(string fieldName) => LockedFields.Contains(fieldName);
+
     // TODO - Rating is only associated to Medias right now, do we want to able able to rate persons?
     // public ICollection<BaseRating>? Ratings { get; set; }
 }
