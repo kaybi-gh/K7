@@ -1,5 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 @using K7.Shared
+@using System.Globalization
 
 <K7Select TValue="string" Value="@Value" ValueChanged="@ValueChanged" Label="@Label" Variant="@Variant" Class="@Class">
     <SelectedContent>
@@ -7,14 +8,14 @@
         @if (selected is not null)
         {
             <span class="fi fi-@selected.CountryCode"></span>
-            @selected.NativeLabel
+            @GetDisplayText(selected)
         }
     </SelectedContent>
     <ChildContent>
         @foreach (var lang in Languages)
         {
-            <K7SelectItem TValue="string" Value="@lang.Code" Text="@lang.NativeLabel">
-                <span class="fi fi-@lang.CountryCode"></span> @lang.NativeLabel
+            <K7SelectItem TValue="string" Value="@lang.Code" Text="@GetDisplayText(lang)">
+                <span class="fi fi-@lang.CountryCode"></span> @GetDisplayText(lang)
             </K7SelectItem>
         }
     </ChildContent>
@@ -32,4 +33,23 @@
     /// Use SupportedLanguages.Interface for UI-only language selection.
     /// </summary>
     [Parameter] public IReadOnlyList<LanguageOption> Languages { get; set; } = SupportedLanguages.Metadata;
+
+    private static string GetDisplayText(LanguageOption lang)
+    {
+        try
+        {
+            var culture = CultureInfo.GetCultureInfo(lang.Code);
+            var translated = culture.DisplayName;
+            if (string.IsNullOrEmpty(translated) || string.Equals(translated, lang.NativeLabel, StringComparison.OrdinalIgnoreCase))
+            {
+                return lang.NativeLabel;
+            }
+
+            return $"{lang.NativeLabel} ({translated})";
+        }
+        catch
+        {
+            return lang.NativeLabel;
+        }
+    }
 }
