@@ -58,3 +58,8 @@ public class NoOpMusicCacheService : IMusicCacheService
     public Task<string?> GetCachedTrackPathAsync(Guid indexedFileId, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task InvalidateCacheAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
+
+public class NoOpServerConnectionService : IServerConnectionService
+{
+    public void DisconnectAndReset() { }
+}

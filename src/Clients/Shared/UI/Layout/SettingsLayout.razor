@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @layout MainLayout
 @inject IStringLocalizer<SettingsLayout> L
+@inject IDeviceService DeviceService
 
 <SidebarLayout Title="@L["Title"]">
     <SidebarContent>
@@ -29,10 +30,13 @@
                 <span class="nav-icon"><K7Icon Icon="@Phosphor.Translate" /></span>
                 <span class="nav-label">@L["TrackSelection"]</span>
             </NavLink>
-            <NavLink class="nav-link focusable" href="/settings/offline">
-                <span class="nav-icon"><K7Icon Icon="@Phosphor.CloudArrowDown" /></span>
-                <span class="nav-label">@L["Offline"]</span>
-            </NavLink>
+            @if (DeviceService.GetClientType() == ClientType.Native)
+            {
+                <NavLink class="nav-link focusable" href="/settings/offline">
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.CloudArrowDown" /></span>
+                    <span class="nav-label">@L["Offline"]</span>
+                </NavLink>
+            }
         </nav>
     </SidebarContent>
     <ChildContent>
