@@ -8,6 +8,7 @@ public class PlaybackSessionDetails : BaseEntity
     public bool? IsTranscode { get; set; }
     public string? VideoDecision { get; set; }
     public string? AudioDecision { get; set; }
+    public Enums.TranscodeReason? TranscodeReason { get; set; }
     public int? Bitrate { get; set; }
     public string? SourceVideoCodec { get; set; }
     public string? SourceAudioCodec { get; set; }

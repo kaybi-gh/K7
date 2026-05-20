@@ -5087,6 +5087,30 @@
         }
       }
     },
+    "/api/admin/streams/{sessionId}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "StopStream",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/settings/default-language": {
       "put": {
         "tags": [
@@ -5172,6 +5196,28 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "deviceType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "thumbnailUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamDecision": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StreamDecisionDto"
+              }
             ]
           },
           "startedAt": {
@@ -11025,6 +11071,9 @@
           }
         }
       },
+      "PlaybackMode": {
+        "type": "integer"
+      },
       "PlaybackSessionItem": {
         "required": [
           "mediaId",
@@ -11687,6 +11736,65 @@
           }
         }
       },
+      "StreamDecisionDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/PlaybackMode"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/TranscodeReason"
+          },
+          "sourceVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceAudioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamAudioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceResolution": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "selectedAudioTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "bitrate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "StreamQualityDto": {
         "type": "object",
         "properties": {
@@ -11879,6 +11987,9 @@
             ]
           }
         }
+      },
+      "TranscodeReason": {
+        "type": "integer"
       },
       "UpdateBackgroundTaskSettingsRequest": {
         "type": "object",

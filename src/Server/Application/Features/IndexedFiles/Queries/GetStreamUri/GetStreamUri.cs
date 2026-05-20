@@ -11,6 +11,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
+using K7.Shared.Enums;
 using K7.Shared.QueryBuilders;
 using Microsoft.Extensions.Logging;
 
@@ -29,17 +30,20 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
     private readonly ISender _sender;
+    private readonly IActiveStreamTracker _activeStreamTracker;
     private readonly ILogger<GetStreamUriQueryHandler> _logger;
 
     public GetStreamUriQueryHandler(
         IApplicationDbContext context,
         IMediaAccessGuard accessGuard,
         ISender sender,
+        IActiveStreamTracker activeStreamTracker,
         ILogger<GetStreamUriQueryHandler> logger)
     {
         _context = context;
         _accessGuard = accessGuard;
         _sender = sender;
+        _activeStreamTracker = activeStreamTracker;
         _logger = logger;
     }
 
@@ -66,7 +70,9 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 .Reference(a => a.AudioTrack)
                 .LoadAsync(cancellationToken);
 
-            return GetAudioFileStreamUri(device, indexedFile, audioFileMetadata, request);
+            var (uri, decision) = GetAudioFileStreamUri(device, indexedFile, audioFileMetadata, request);
+            _activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
+            return uri;
         }
 
         if (indexedFile.FileMetadata is VideoFileMetadata videoFileMetadata)
@@ -103,13 +109,15 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 }, cancellationToken);
             }
 
-            return GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable);
+            var (uri, decision) = GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable);
+            _activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
+            return uri;
         }
 
         throw new InvalidOperationException();
     }
 
-    private static IndexedFileStreamUri GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable)
+    private static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable)
     {
         AudioFileTrack selectedAudioTrack;
         if (request.AudioTrackIndex is int audioIdx)
@@ -137,6 +145,10 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
         var videoDirectSupported = supportedVideoFormats.Any(x => x.Container == videoFileMetadata.Container && x.VideoCodec == selectedVideoTrack.Codec);
 
+        var sourceResolution = selectedVideoTrack.Width > 0 && selectedVideoTrack.Height > 0
+            ? $"{selectedVideoTrack.Width}x{selectedVideoTrack.Height}"
+            : null;
+
         // If both audio and video are directly supported (container + codec), return a direct-stream URL
         if (audioDirectSupported && videoDirectSupported)
         {
@@ -144,11 +156,22 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 ? directMime
                 : "application/octet-stream";
 
-            return new IndexedFileStreamUri
+            var decision = new StreamDecisionDto
+            {
+                Mode = PlaybackMode.Direct,
+                SourceVideoCodec = selectedVideoTrack.Codec,
+                SourceAudioCodec = selectedAudioTrack.Codec,
+                StreamVideoCodec = selectedVideoTrack.Codec,
+                StreamAudioCodec = selectedAudioTrack.Codec,
+                SourceResolution = sourceResolution,
+                SelectedAudioTrackIndex = selectedAudioTrack.Index
+            };
+
+            return (new IndexedFileStreamUri
             {
                 Uri = new Uri(GetIndexedFileDirectStreamQueryUriBuilder.Build(indexedFile.Id), UriKind.Relative),
                 MimeType = mimeType
-            };
+            }, decision);
         }
 
         // Otherwise we go through HLS
@@ -159,7 +182,8 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
         // When HLS segments aren't available, force transcoding to avoid the "original"
         // quality path which requires keyframe-based segments from the database
-        if (!hlsSegmentsAvailable && !requiresVideoTranscoding)
+        var forcedByMissingSegments = !hlsSegmentsAvailable && !requiresVideoTranscoding;
+        if (forcedByMissingSegments)
         {
             requiresVideoTranscoding = true;
         }
@@ -189,7 +213,28 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             }
         }
 
-        return new()
+        // Build stream decision
+        var selectedAudioNeedsTranscode = audioTrackTranscodings?.ContainsKey(selectedAudioTrack.Index) == true;
+        var streamAudioCodec = selectedAudioNeedsTranscode
+            ? audioTrackTranscodings![selectedAudioTrack.Index]
+            : selectedAudioTrack.Codec;
+
+        var reason = BuildVideoTranscodeReason(requiresVideoTranscoding, forcedByMissingSegments, videoCodecSupported, selectedAudioNeedsTranscode);
+        var mode = requiresVideoTranscoding ? PlaybackMode.Transcode : PlaybackMode.Transmux;
+
+        var hlsDecision = new StreamDecisionDto
+        {
+            Mode = mode,
+            Reason = reason,
+            SourceVideoCodec = selectedVideoTrack.Codec,
+            SourceAudioCodec = selectedAudioTrack.Codec,
+            StreamVideoCodec = requiresVideoTranscoding ? videoTranscodingMediaFormat?.VideoCodec : selectedVideoTrack.Codec,
+            StreamAudioCodec = streamAudioCodec,
+            SourceResolution = sourceResolution,
+            SelectedAudioTrackIndex = selectedAudioTrack.Index
+        };
+
+        return (new IndexedFileStreamUri
         {
             Uri = new Uri(GetHlsStreamManifestQueryUriBuilder.Build(new GetHlsStreamManifestQuery()
             {
@@ -200,7 +245,25 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 DefaultAudioTrackIndex = request.AudioTrackIndex
             }), UriKind.Relative),
             MimeType = "application/vnd.apple.mpegurl"
-        };
+        }, hlsDecision);
+    }
+
+    private static TranscodeReason BuildVideoTranscodeReason(bool requiresVideoTranscoding, bool forcedByMissingSegments, bool videoCodecSupported, bool audioNeedsTranscode)
+    {
+        var reason = TranscodeReason.None;
+
+        if (requiresVideoTranscoding)
+        {
+            if (forcedByMissingSegments)
+                reason |= TranscodeReason.HlsSegmentsUnavailable;
+            else if (!videoCodecSupported)
+                reason |= TranscodeReason.VideoCodecNotSupported;
+        }
+
+        if (audioNeedsTranscode)
+            reason |= TranscodeReason.AudioCodecNotSupported;
+
+        return reason != TranscodeReason.None ? reason : TranscodeReason.ContainerNotSupported;
     }
 
     // Codecs that work inside fMP4 segments (HLS with ISO BMFF), ordered by preference.
@@ -226,7 +289,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         return supportedVideoCodecs.OfType<VideoMediaFormat>().First(); // TODO - Implement prioritizing algorithm (cost vs size vs quality)
     }
 
-    private static IndexedFileStreamUri GetAudioFileStreamUri(Device device, IndexedFile indexedFile, AudioFileMetadata audioFileMetadata, GetStreamUriQuery request)
+    private static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetAudioFileStreamUri(Device device, IndexedFile indexedFile, AudioFileMetadata audioFileMetadata, GetStreamUriQuery request)
     {
         var audioTrack = audioFileMetadata.AudioTrack
             ?? throw new InvalidOperationException($"Indexed file '{indexedFile.Id}' has no audio track metadata.");
@@ -242,18 +305,35 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 ? mime
                 : "application/octet-stream";
 
-            return new IndexedFileStreamUri
+            var decision = new StreamDecisionDto
+            {
+                Mode = PlaybackMode.Direct,
+                SourceAudioCodec = audioTrack.Codec,
+                StreamAudioCodec = audioTrack.Codec,
+                SelectedAudioTrackIndex = audioTrack.Index
+            };
+
+            return (new IndexedFileStreamUri
             {
                 Uri = new Uri(GetIndexedFileDirectStreamQueryUriBuilder.Build(indexedFile.Id), UriKind.Relative),
                 MimeType = mimeType
-            };
+            }, decision);
         }
 
         // Transcode via HLS
         var fallbackFormat = GetDeviceBestSupportedAudioMediaFormat(
             [.. device.PlaybackCapabilities.SupportedMediaFormats.Where(x => x.Type == MediaFormatType.Audio)]);
 
-        return new IndexedFileStreamUri
+        var transcodeDecision = new StreamDecisionDto
+        {
+            Mode = PlaybackMode.Transcode,
+            Reason = TranscodeReason.AudioCodecNotSupported,
+            SourceAudioCodec = audioTrack.Codec,
+            StreamAudioCodec = fallbackFormat.Codec,
+            SelectedAudioTrackIndex = audioTrack.Index
+        };
+
+        return (new IndexedFileStreamUri
         {
             Uri = new Uri(GetHlsStreamManifestQueryUriBuilder.Build(new GetHlsStreamManifestQuery()
             {
@@ -262,6 +342,6 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 AudioTrackTranscodings = new Dictionary<int, string> { [audioTrack.Index] = fallbackFormat.Codec }
             }), UriKind.Relative),
             MimeType = "application/vnd.apple.mpegurl"
-        };
+        }, transcodeDecision);
     }
 }

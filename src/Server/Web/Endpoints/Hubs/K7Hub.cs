@@ -94,6 +94,26 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger) : Hub<IK7HubClient>
         await Clients.Caller.ReceiveIndexedFileStreamUri(uri);
     }
 
+    // --- Admin stream monitoring ---
+
+    public const string AdminStreamsGroup = "admin-streams";
+
+    public async Task JoinAdminStreamsGroup()
+    {
+        if (!Context.User?.IsInRole("Administrator") ?? true)
+        {
+            logger.LogWarning("Non-admin user attempted to join admin-streams group. ConnectionId='{ConnectionId}'", Context.ConnectionId);
+            return;
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, AdminStreamsGroup);
+    }
+
+    public async Task LeaveAdminStreamsGroup()
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, AdminStreamsGroup);
+    }
+
     /// <summary>
     /// Resolves the identity user ID from cookie auth or query string fallback.
     /// </summary>

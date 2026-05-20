@@ -1394,6 +1394,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<int?>("TranscodeReason")
+                        .HasColumnType("integer");
+
                     b.Property<string>("VideoDecision")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");

@@ -152,10 +152,10 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
 
         if (request.State is PlaybackState.Playing or PlaybackState.Buffering)
         {
-            var deviceName = request.DeviceId.HasValue
+            var device = request.DeviceId.HasValue
                 ? await _context.Devices
                     .Where(d => d.Id == request.DeviceId.Value)
-                    .Select(d => d.DeviceName)
+                    .Select(d => new { d.DeviceName, DeviceType = d.DeviceType.ToString() })
                     .FirstOrDefaultAsync(cancellationToken)
                 : null;
 
@@ -163,6 +163,45 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
             var userName = !string.IsNullOrEmpty(identityId)
                 ? await _identityService.GetUserNameAsync(identityId)
                 : null;
+
+            string? thumbnailUrl = null;
+            var thumbnailPictureId = await _context.Medias
+                .Where(m => m.Id == request.MediaId)
+                .SelectMany(m => m.Pictures)
+                .Where(p => p.Type == MetadataPictureType.Backdrop
+                    || p.Type == MetadataPictureType.Still
+                    || p.Type == MetadataPictureType.Poster
+                    || p.Type == MetadataPictureType.Cover)
+                .OrderBy(p => p.Type)
+                .Select(p => (Guid?)p.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            // Fallback to parent (album/serie) pictures for tracks/episodes
+            if (!thumbnailPictureId.HasValue && media is MusicTrack mt)
+            {
+                thumbnailPictureId = await _context.Medias
+                    .Where(m => m.Id == mt.AlbumId)
+                    .SelectMany(m => m.Pictures)
+                    .Where(p => p.Type == MetadataPictureType.Cover || p.Type == MetadataPictureType.Poster)
+                    .OrderBy(p => p.Type)
+                    .Select(p => (Guid?)p.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+            else if (!thumbnailPictureId.HasValue && media is SerieEpisode episode)
+            {
+                thumbnailPictureId = await _context.Medias
+                    .Where(m => m.Id == episode.SerieId)
+                    .SelectMany(m => m.Pictures)
+                    .Where(p => p.Type == MetadataPictureType.Backdrop || p.Type == MetadataPictureType.Poster)
+                    .OrderBy(p => p.Type)
+                    .Select(p => (Guid?)p.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+
+            if (thumbnailPictureId.HasValue)
+            {
+                thumbnailUrl = $"/api/metadata-pictures/{thumbnailPictureId.Value}?size=Small";
+            }
 
             _activeStreamTracker.Upsert(request.SessionId, new ActiveStreamInfo
             {
@@ -177,7 +216,9 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
                     : media is SerieEpisode ep ? ep.SerieId
                     : null,
                 DeviceId = request.DeviceId,
-                DeviceName = deviceName,
+                DeviceName = device?.DeviceName,
+                DeviceType = device?.DeviceType,
+                ThumbnailUrl = thumbnailUrl,
                 StartedAt = session.StartedAt,
                 Position = request.Position,
                 Duration = request.Duration,
