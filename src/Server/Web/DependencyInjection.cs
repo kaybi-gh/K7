@@ -88,6 +88,7 @@ public static class DependencyInjection
         services.AddSingleton<ILibraryNotifier, LibraryNotifier>();
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();
         services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
+        services.AddHostedService<AdminStreamNotifier>();
         services.AddScoped<K7SnackbarService>();
         services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         services.AddSignalR();

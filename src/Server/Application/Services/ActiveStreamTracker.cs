@@ -15,6 +15,9 @@ public sealed record ActiveStreamInfo
     public Guid? ParentId { get; set; }
     public Guid? DeviceId { get; set; }
     public string? DeviceName { get; set; }
+    public string? DeviceType { get; set; }
+    public string? ThumbnailUrl { get; set; }
+    public StreamDecisionDto? StreamDecision { get; set; }
     public DateTime StartedAt { get; init; }
     public double Position { get; set; }
     public double Duration { get; set; }
@@ -25,6 +28,7 @@ public sealed record ActiveStreamInfo
 public interface IActiveStreamTracker
 {
     void Upsert(Guid sessionId, ActiveStreamInfo info);
+    void UpdateStreamDecision(Guid sessionId, StreamDecisionDto decision);
     void Remove(Guid sessionId);
     IReadOnlyList<ActiveStreamInfo> GetActiveStreams();
 }
@@ -37,7 +41,23 @@ public class ActiveStreamTracker : IActiveStreamTracker
     public void Upsert(Guid sessionId, ActiveStreamInfo info)
     {
         info.LastUpdatedAt = DateTime.UtcNow;
+
+        if (_streams.TryGetValue(sessionId, out var existing))
+        {
+            info.ThumbnailUrl ??= existing.ThumbnailUrl;
+            info.StreamDecision ??= existing.StreamDecision;
+            info.DeviceType ??= existing.DeviceType;
+        }
+
         _streams[sessionId] = info;
+    }
+
+    public void UpdateStreamDecision(Guid sessionId, StreamDecisionDto decision)
+    {
+        if (_streams.TryGetValue(sessionId, out var info))
+        {
+            info.StreamDecision = decision;
+        }
     }
 
     public void Remove(Guid sessionId)
