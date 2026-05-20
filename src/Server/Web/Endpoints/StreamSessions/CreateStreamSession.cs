@@ -20,15 +20,20 @@ public class CreateStreamSession : IEndpoint
             var session = await sender.Send(command, cancellationToken);
 
             // Negotiate the initial stream (direct-play vs HLS)
-            var streamUri = await sender.Send(new GetStreamUriQuery
+            var query = new GetStreamUriQuery
             {
                 Id = session.IndexedFileId,
                 DeviceId = command.DeviceId,
                 StreamSessionId = session.Id,
                 AudioTrackIndex = command.AudioTrackIndex
-            }, cancellationToken);
+            };
+
+            var streamUri = await sender.Send(query, cancellationToken);
 
             session.Source = streamUri;
+            session.PlaybackSettings.AudioTrackIndex = query.AudioTrackIndex ?? 0;
+            session.PlaybackSettings.SubtitleTrackIndex = query.SubtitleTrackIndex;
+
             return Results.Created($"/api/stream-sessions/{session.Id}", session);
         })
         .RequireAuthorization(Policies.GuestOrAbove)

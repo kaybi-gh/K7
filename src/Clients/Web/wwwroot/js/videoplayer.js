@@ -144,7 +144,7 @@ window.stop = function (id) {
     players[id]?.currentTime(0);
 }
 
-window.changeSource = function (id, src, type) {
+window.changeSource = function (id, src, type, subtitleSlug) {
     const player = players[id];
     if (player) {
         player.src({ src: src, type: type });
@@ -156,6 +156,11 @@ window.changeSource = function (id, src, type) {
                 });
             }
         });
+        if (subtitleSlug) {
+            player.one('loadedmetadata', function () {
+                window.switchSubtitleTrack(id, subtitleSlug);
+            });
+        }
     }
 }
 

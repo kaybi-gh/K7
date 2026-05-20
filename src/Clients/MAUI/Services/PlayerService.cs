@@ -233,6 +233,13 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
             throw new InvalidOperationException("Streaming session did not return a source URI.");
         }
 
+        // Update selected tracks based on server's auto-selection
+        _selectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
+            ?? _selectedAudioTrack;
+        _selectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
+            ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
+            : null;
+
         _baseManifestUrl = session.Source.Uri.OriginalString;
 
         var playerSource = new PlayerSource

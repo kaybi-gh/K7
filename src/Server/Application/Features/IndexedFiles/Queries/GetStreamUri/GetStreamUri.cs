@@ -26,6 +26,7 @@ public record GetStreamUriQuery : IRequest<IndexedFileStreamUri>
     public Guid? DeviceId { get; set; }
     public Guid StreamSessionId { get; set; }
     public int? AudioTrackIndex { get; set; }
+    public int? SubtitleTrackIndex { get; set; }
 };
 
 public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, IndexedFileStreamUri>
@@ -137,6 +138,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos);
                 request.AudioTrackIndex = selection.AudioTrackIndex;
                 subtitleTrackIndex = selection.SubtitleTrackIndex;
+                request.SubtitleTrackIndex = subtitleTrackIndex;
             }
 
             var (uri, decision) = GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable, subtitleTrackIndex);
