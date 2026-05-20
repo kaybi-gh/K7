@@ -79,7 +79,7 @@
                 {
                     <Virtualize Items="Items" Context="item" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" @ref="_virtualizeRef">
-                        <tr class="focusable" tabindex="0" role="row"
+                        <tr id="@(RowId?.Invoke(item))" class="focusable @(RowClass?.Invoke(item))" tabindex="0" role="row"
                             @onclick="() => OnRowClicked(item)"
                             @onkeydown="e => OnRowKeyDown(e, item)">
                             @foreach (var col in VisibleColumns)
@@ -97,7 +97,7 @@
                     <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" @ref="_virtualizeRef">
                         <ItemContent>
-                            <tr class="focusable" tabindex="0" role="row"
+                            <tr id="@(RowId?.Invoke(item))" class="focusable @(RowClass?.Invoke(item))" tabindex="0" role="row"
                                 @onclick="() => OnRowClicked(item)"
                                 @onkeydown="e => OnRowKeyDown(e, item)">
                                 @foreach (var col in VisibleColumns)

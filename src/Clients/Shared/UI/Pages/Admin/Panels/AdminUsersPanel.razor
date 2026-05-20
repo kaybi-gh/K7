@@ -25,7 +25,8 @@ else if (_users.Count == 0)
 }
 else
 {
-    <K7DataTable TItem="UserDto" Items="_users" RowHeight="60" Height="60vh">
+    <K7DataTable TItem="UserDto" Items="_users" RowHeight="60" Height="60vh"
+                 RowId="@(u => $"user-{u.Id}")" RowClass="@(u => u.Id == _highlightedUserId ? "row-highlighted" : null)">
         <K7DataColumn TItem="UserDto" Title="@L["HeaderUser"]" Hideable="false">
             <CellTemplate>
                 <div class="d-flex flex-col" style="@(!context.IsActive ? "opacity: 0.5;" : "")">

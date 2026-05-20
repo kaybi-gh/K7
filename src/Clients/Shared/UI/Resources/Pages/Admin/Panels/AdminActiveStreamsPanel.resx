@@ -21,9 +21,6 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Flux actifs</value></data>
   <data name="NoActiveStreams" xml:space="preserve"><value>Aucun flux actif</value></data>
-  <data name="User" xml:space="preserve"><value>Utilisateur</value></data>
-  <data name="Media" xml:space="preserve"><value>Média</value></data>
-  <data name="Device" xml:space="preserve"><value>Appareil</value></data>
-  <data name="Progress" xml:space="preserve"><value>Progression</value></data>
-  <data name="StartedAt" xml:space="preserve"><value>Démarré à</value></data>
+  <data name="StreamCount" xml:space="preserve"><value>{0} flux</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Rafraichir</value></data>
 </root>

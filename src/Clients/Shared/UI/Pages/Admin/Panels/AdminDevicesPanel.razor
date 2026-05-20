@@ -23,8 +23,9 @@
     <ListTemplate Context="device">
         @{
             var isCurrent = IsCurrentDevice(device);
+            var isFocused = device.Id == _focusedDeviceId;
         }
-        <K7Paper Outlined="true" Class="@(isCurrent ? "current-device" : "")">
+        <K7Paper id="@($"device-{device.Id}")" Outlined="true" Class="@GetDeviceClass(isCurrent, isFocused)">
             <div class="k7-card-content">
                 <div class="d-flex align-center">
                     <K7Icon Name="@GetDeviceIcon(device.DeviceType)" Size="lg" Color="@(isCurrent ? "primary" : "default")" />

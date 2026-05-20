@@ -3,6 +3,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Devices;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
@@ -11,10 +12,14 @@ public partial class AdminDevicesPanel
     [Inject] private IDeviceApiService K7ServerService { get; set; } = default!;
     [Inject] private IDeviceStorageService DeviceStorageService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     private bool _isLoading = true;
     private K7.Shared.Dtos.PaginatedListDto<DeviceDto>? _devices;
     private string? _currentDeviceId;
+    private Guid? _focusedDeviceId;
+    private bool _shouldScrollToFocused;
 
     private IList<DeviceDto> _deviceItems => _devices?.Items?.ToList() ?? [];
 
@@ -30,6 +35,35 @@ public partial class AdminDevicesPanel
         finally
         {
             _isLoading = false;
+        }
+
+        ParseFocusParam();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldScrollToFocused && _focusedDeviceId is not null)
+        {
+            _shouldScrollToFocused = false;
+            await JSRuntime.InvokeVoidAsync("K7.scrollToElement", $"device-{_focusedDeviceId}");
+        }
+    }
+
+    private void ParseFocusParam()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = uri.Query;
+        if (!string.IsNullOrEmpty(query))
+        {
+            var focusParam = query.TrimStart('?').Split('&')
+                .Select(p => p.Split('=', 2))
+                .FirstOrDefault(p => p.Length == 2 && p[0] == "focus");
+
+            if (focusParam is not null && Guid.TryParse(Uri.UnescapeDataString(focusParam[1]), out var deviceId))
+            {
+                _focusedDeviceId = deviceId;
+                _shouldScrollToFocused = true;
+            }
         }
     }
 
@@ -67,4 +101,15 @@ public partial class AdminDevicesPanel
         DeviceType.Watch => "watch",
         _ => "devices"
     };
+
+    private static string GetDeviceClass(bool isCurrent, bool isFocused)
+    {
+        return (isCurrent, isFocused) switch
+        {
+            (true, true) => "current-device device-highlighted",
+            (true, false) => "current-device",
+            (false, true) => "device-highlighted",
+            _ => ""
+        };
+    }
 }

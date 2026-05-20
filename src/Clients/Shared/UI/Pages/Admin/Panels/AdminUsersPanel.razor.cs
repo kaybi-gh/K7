@@ -5,6 +5,7 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 
@@ -15,14 +16,39 @@ public partial class AdminUsersPanel
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<UserDto> _users = [];
     private Guid? _currentUserId;
+    private Guid? _highlightedUserId;
+    private bool _shouldScrollToHighlighted;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        ParseFragment();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldScrollToHighlighted && _highlightedUserId is not null)
+        {
+            _shouldScrollToHighlighted = false;
+            await JSRuntime.InvokeVoidAsync("K7.scrollToElement", $"user-{_highlightedUserId}");
+        }
+    }
+
+    private void ParseFragment()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var fragment = uri.Fragment.TrimStart('#');
+        if (Guid.TryParse(fragment, out var userId) && _users.Any(u => u.Id == userId))
+        {
+            _highlightedUserId = userId;
+            _shouldScrollToHighlighted = true;
+        }
     }
 
     private async Task LoadData()
