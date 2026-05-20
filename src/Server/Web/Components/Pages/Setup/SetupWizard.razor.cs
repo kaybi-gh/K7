@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Infrastructure.Configuration;
 using K7.Server.Web.Components.Account;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Server.Web.Components.Pages.Setup;
@@ -8,13 +10,19 @@ namespace K7.Server.Web.Components.Pages.Setup;
 public partial class SetupWizard
 {
     private string? _statusMessage;
+    private AuthenticationScheme[] _externalProviders = [];
 
     [SupplyParameterFromForm]
     private InputModel? Input { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Input ??= new();
+
+        if (AuthConfig.Value.Oidc.Enabled)
+        {
+            _externalProviders = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
+        }
     }
 
     private async Task OnSubmitAsync()

@@ -1,13 +1,17 @@
 @page "/setup"
 @layout SetupLayout
 @using K7.Server.Application.Common.Interfaces
+@using K7.Server.Infrastructure.Configuration
 @using K7.Server.Infrastructure.Database.Context.Identity
+@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
 @inject ISetupService SetupService
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 @inject K7.Server.Web.Components.Account.IdentityRedirectManager RedirectManager
+@inject IOptions<AuthenticationConfiguration> AuthConfig
 @inject IStringLocalizer<SetupWizard> L
 
 <PageTitle>@L["PageTitle"] - K7</PageTitle>
@@ -56,6 +60,22 @@
                 <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["CompleteSetup"]</button>
             </div>
         </EditForm>
+
+        @if (_externalProviders.Length > 0)
+        {
+            <p class="auth-or">@L["Or"]</p>
+            <form action="/Account/PerformSetupExternalLogin" method="post" style="width: 100%;">
+                <AntiforgeryToken />
+                <div class="auth-form-stack">
+                    @foreach (var provider in _externalProviders)
+                    {
+                        <button class="k7-btn k7-btn--outlined focusable" style="width:100%;" name="provider" value="@provider.Name" type="submit">
+                            @L["CreateAdminWith", provider.DisplayName ?? provider.Name]
+                        </button>
+                    }
+                </div>
+            </form>
+        }
     </div>
 </div>
 

@@ -51,7 +51,7 @@
     <value>Show Password</value>
   </data>
   <data name="CompleteSetup" xml:space="preserve">
-    <value>Complete setup</value>
+    <value>Create local admin account</value>
   </data>
   <data name="EmailRequired" xml:space="preserve">
     <value>Email is required.</value>
@@ -67,5 +67,11 @@
   </data>
   <data name="PasswordsMismatch" xml:space="preserve">
     <value>Passwords do not match.</value>
+  </data>
+  <data name="CreateAdminWith" xml:space="preserve">
+    <value>Create admin account with {0}</value>
+  </data>
+  <data name="Or" xml:space="preserve">
+    <value>or</value>
   </data>
 </root>

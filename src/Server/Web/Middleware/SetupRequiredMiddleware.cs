@@ -39,11 +39,16 @@ public class SetupRequiredMiddleware(RequestDelegate next)
     private static bool IsAllowedDuringSetup(PathString path)
     {
         return path.StartsWithSegments("/api/setup")
+            || path.StartsWithSegments("/api/authentication/callback")
             || path.StartsWithSegments("/health")
             || path.StartsWithSegments("/_framework")
             || path.StartsWithSegments("/_blazor")
             || path.StartsWithSegments("/_content")
-            || path == "/setup";
+            || path.StartsWithSegments("/Account/PerformSetupExternalLogin")
+            || path.StartsWithSegments("/setup")
+            || path.StartsWithSegments("/css")
+            || path.StartsWithSegments("/js")
+            || path.StartsWithSegments("/dist");
     }
 }
 
