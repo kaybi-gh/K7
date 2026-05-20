@@ -23,6 +23,9 @@
   <data name="Subtitles" xml:space="preserve"><value>Sous-titres</value></data>
   <data name="SubtitlesOff" xml:space="preserve"><value>Désactivés</value></data>
   <data name="ForcedSuffix" xml:space="preserve"><value> (Forcé)</value></data>
+  <data name="SubtitleTypeFull" xml:space="preserve"><value>Complet</value></data>
+  <data name="SubtitleTypeForced" xml:space="preserve"><value>Forcé</value></data>
+  <data name="SubtitleTypeHearingImpaired" xml:space="preserve"><value>SDH</value></data>
   <data name="Quality" xml:space="preserve"><value>Qualité</value></data>
   <data name="Speed" xml:space="preserve"><value>Vitesse</value></data>
   <data name="SpeedNormal" xml:space="preserve"><value>Normal</value></data>

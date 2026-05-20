@@ -32,4 +32,5 @@
   <data name="HomeLayout" xml:space="preserve"><value>Home layout</value></data>
   <data name="FeatureFlags" xml:space="preserve"><value>Feature flags</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Video player</value></data>
+  <data name="TrackSelection" xml:space="preserve"><value>Audio &amp; subtitles</value></data>
 </root>

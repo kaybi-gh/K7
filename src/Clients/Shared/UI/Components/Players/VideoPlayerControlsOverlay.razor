@@ -1,5 +1,6 @@
 @using K7.Clients.Shared.Models
 @using K7.Server.Domain.Enums
+@using K7.Shared
 @using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
 @using Microsoft.JSInterop
 @using System.Timers
@@ -74,7 +75,12 @@
                             {
                                 <K7MenuItem OnClick="@(() => OnAudioTrackSelected(track))"
                                              Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
-                                    @($"{track.Language} - {track.Name} ({track.Codec} {track.ChannelLayout})")
+                                    @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                    @if (audioLang is not null)
+                                    {
+                                        <span class="fi fi-@audioLang.CountryCode"></span>
+                                    }
+                                    @GetAudioTrackLabel(track)
                                 </K7MenuItem>
                             }
                             </ChildContent>
@@ -96,7 +102,12 @@
                             {
                                 <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
                                              Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? "check-circle" : null)">
-                                    @($"{track.Language} - {track.Name}{(track.IsForced ? L["ForcedSuffix"] : "")} ({track.Codec})")
+                                    @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                    @if (subLang is not null)
+                                    {
+                                        <span class="fi fi-@subLang.CountryCode"></span>
+                                    }
+                                    @GetSubtitleTrackLabel(track)
                                 </K7MenuItem>
                             }
                             </ChildContent>
@@ -794,6 +805,34 @@
         AspectRatioMode.Stretch => L["AspectRatioStretch"],
         _ => mode.ToString()
     };
+
+    private string GetAudioTrackLabel(AudioFileTrackDto track)
+    {
+        var language = SupportedLanguages.GetDisplayLabel(track.Language ?? "und");
+        var details = !string.IsNullOrEmpty(track.ChannelLayout)
+            ? $"{track.Codec} {track.ChannelLayout}"
+            : track.Codec;
+
+        // Show the title tag if it provides extra info beyond the language
+        if (!string.IsNullOrEmpty(track.Name)
+            && !string.Equals(track.Name, track.Language, StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{language} - {track.Name} ({details})";
+        }
+
+        return $"{language} ({details})";
+    }
+
+    private string GetSubtitleTrackLabel(SubtitleFileTrackDto track)
+    {
+        var language = SupportedLanguages.GetDisplayLabel(track.Language ?? "und");
+        var type = track.IsHearingImpaired
+            ? L["SubtitleTypeHearingImpaired"]
+            : track.IsForced
+                ? L["SubtitleTypeForced"]
+                : L["SubtitleTypeFull"];
+        return $"{language} - {type} ({track.Codec})";
+    }
 
     private async Task OnAudioTrackSelected(AudioFileTrackDto track)
     {
