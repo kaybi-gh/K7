@@ -5087,30 +5087,6 @@
         }
       }
     },
-    "/api/admin/streams/{sessionId}": {
-      "delete": {
-        "tags": [
-          "Admin"
-        ],
-        "operationId": "StopStream",
-        "parameters": [
-          {
-            "name": "sessionId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/admin/settings/default-language": {
       "put": {
         "tags": [
