@@ -1,0 +1,28 @@
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
+{
+    /// <inheritdoc />
+    public partial class AddIsHearingImpairedToSubtitleTrack : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AddColumn<bool>(
+                name: "IsHearingImpaired",
+                table: "FileTracks",
+                type: "boolean",
+                nullable: true);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "IsHearingImpaired",
+                table: "FileTracks");
+        }
+    }
+}

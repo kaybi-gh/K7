@@ -26,6 +26,7 @@ public static class GetHlsStreamManifestQueryUriBuilder
             { nameof(query.StreamSessionId), query.StreamSessionId.ToString() },
             { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec },
             { nameof(query.DefaultAudioTrackIndex), query.DefaultAudioTrackIndex?.ToString() },
+            { nameof(query.DefaultSubtitleTrackIndex), query.DefaultSubtitleTrackIndex?.ToString() },
             { nameof(query.Quality), query.Quality },
             { nameof(query.AudioTrackTranscodings), SerializeAudioTrackTranscodings(query.AudioTrackTranscodings) }
         };
@@ -75,6 +76,7 @@ public record GetHlsStreamManifestQuery : IRequest<IResult>
     public required Guid StreamSessionId { get; set; }
     public string? TranscodingVideoCodec { get; set; }
     public int? DefaultAudioTrackIndex { get; set; }
+    public int? DefaultSubtitleTrackIndex { get; set; }
     public string? Quality { get; set; }
     public Dictionary<int, string>? AudioTrackTranscodings { get; set; }
 };
@@ -275,7 +277,9 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         foreach (var track in textSubtitleTracks)
         {
-            var isDefault = track == textSubtitleTracks[0] && track.IsDefault;
+            var isDefault = query.DefaultSubtitleTrackIndex is { } defaultSubIdx
+                ? track.Index == defaultSubIdx
+                : track == textSubtitleTracks[0] && track.IsDefault;
             var trackName = !string.IsNullOrEmpty(track.Name) ? track.Name : $"Subtitle {track.Index}";
             var trackSlug = $"sub-{track.Index}";
             var language = !string.IsNullOrEmpty(track.Language) ? track.Language : "und";

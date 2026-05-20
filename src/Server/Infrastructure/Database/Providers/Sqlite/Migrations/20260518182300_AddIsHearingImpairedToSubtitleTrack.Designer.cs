@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260518182300_AddIsHearingImpairedToSubtitleTrack")]
+    partial class AddIsHearingImpairedToSubtitleTrack
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
@@ -41,14 +44,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("AttemptCount")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("CompletedAt")
+                    b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConcurrencyGroup")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -57,8 +59,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("ErrorDetails")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -71,7 +72,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("NextRetryAfter")
+                    b.Property<DateTimeOffset?>("NextRetryAfter")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Priority")
@@ -85,7 +86,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("StartedAt")
+                    b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
@@ -120,8 +121,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -134,8 +134,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<bool>("IsPublic")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -192,8 +191,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("ClientType")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -214,15 +212,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double>("DisplayWidth")
                         .HasColumnType("REAL");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastSeen")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastSeen")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("OperatingSystem")
@@ -236,92 +232,19 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("Devices");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Download", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("AudioTrackIndex")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Created")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long?>("FileSize")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("IndexedFileId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDirectStream")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("LastModified")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("OutputPath")
-                        .HasMaxLength(1024)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ReadyAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("SubtitleTrackIndices")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeviceId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("IndexedFileId", "DeviceId", "UserId");
-
-                    b.ToTable("Downloads");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -385,7 +308,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ChromaprintAnalyzedAt")
+                    b.Property<DateTimeOffset?>("ChromaprintAnalyzedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("ChromaprintDurationSeconds")
@@ -394,8 +317,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<byte[]>("ChromaprintFingerprint")
                         .HasColumnType("BLOB");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -408,8 +330,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<uint>("Hash")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -450,8 +371,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -463,8 +383,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("Icon")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -518,8 +437,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DetectedAt")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("DetectedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ErrorMessage")
@@ -541,24 +459,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasDatabaseName("IX_Library_ScanIssues_LibraryId");
 
                     b.ToTable("Library_ScanIssues", (string)null);
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
-                {
-                    b.Property<Guid>("MediaId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ProviderName")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.PrimitiveCollection<string>("RecommendedIds")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("MediaId", "ProviderName");
-
-                    b.ToTable("MediaRecommendations");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.AudioAnalysis", b =>
@@ -588,8 +488,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("ChromaprintFingerprint")
                         .HasColumnType("text");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -601,8 +500,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double?>("Energy")
                         .HasColumnType("REAL");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -640,8 +538,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -651,11 +548,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastMetadataRefreshedAt")
+                    b.Property<DateTimeOffset?>("LastMetadataRefreshedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -696,8 +592,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DetectedAt")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("DetectedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<long>("EndMs")
@@ -727,8 +622,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -737,8 +631,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<bool>("IsGuest")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -777,8 +670,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid?>("CollectionId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -787,8 +679,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("DominantColor")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -852,8 +743,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -862,8 +752,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("Height")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -900,8 +789,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -910,8 +798,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid>("IndexedFileId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -938,8 +825,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -951,8 +837,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<bool>("IsDefault")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -985,8 +870,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<DateOnly?>("Birthday")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -998,8 +882,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int>("Gender")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1020,15 +903,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1065,8 +946,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -1081,8 +961,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasMaxLength(13)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1142,15 +1021,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1188,8 +1065,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -1199,8 +1075,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1266,8 +1141,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -1279,8 +1153,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid>("IndexedFileId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1323,8 +1196,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -1336,8 +1208,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double>("DurationSeconds")
                         .HasColumnType("REAL");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1434,9 +1305,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("TranscodeReason")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("VideoDecision")
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");
@@ -1458,8 +1326,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid?>("ContentRestrictionProfileId")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -1471,8 +1338,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1576,8 +1442,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Created")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -1589,8 +1454,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<DateTime?>("LastInteractedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastModified")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
@@ -1652,7 +1516,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("LockoutEnd")
+                    b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NormalizedEmail")
@@ -2049,10 +1913,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<long?>("Revenue")
                         .HasColumnType("INTEGER");
 
-                    b.PrimitiveCollection<string>("Studios")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Tagline")
                         .HasColumnType("TEXT");
 
@@ -2150,10 +2010,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Studios")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.ToTable("Medias", t =>
                         {
                             t.Property("ContentRating")
@@ -2164,9 +2020,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                             t.Property("Overview")
                                 .HasColumnName("Serie_Overview");
-
-                            t.Property("Studios")
-                                .HasColumnName("Serie_Studios");
                         });
 
                     b.HasDiscriminator().HasValue(4);
@@ -2460,7 +2313,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Playlists.Playlist");
 
-                    b.Property<string>("LastEvaluatedAt")
+                    b.Property<DateTimeOffset?>("LastEvaluatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Limit")
@@ -2661,32 +2514,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("WebDeviceDetails");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Download", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
-                        .WithMany()
-                        .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.IndexedFile", "IndexedFile")
-                        .WithMany()
-                        .HasForeignKey("IndexedFileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Device");
-
-                    b.Navigation("IndexedFile");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -2784,17 +2611,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.MediaRecommendation", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
-                        .WithMany("Recommendations")
-                        .HasForeignKey("MediaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Media");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.AudioAnalysis", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.MusicTrack", "MusicTrack")
@@ -2804,42 +2620,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired();
 
                     b.Navigation("MusicTrack");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Medias.BaseMedia", b =>
-                {
-                    b.OwnsMany("K7.Server.Domain.Entities.Metadatas.TrailerInfo", "Trailers", b1 =>
-                        {
-                            b1.Property<Guid>("BaseMediaId");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAddOrUpdate();
-
-                            b1.Property<string>("Key")
-                                .IsRequired();
-
-                            b1.Property<string>("Language");
-
-                            b1.Property<string>("Name")
-                                .IsRequired();
-
-                            b1.Property<string>("Site")
-                                .IsRequired();
-
-                            b1.Property<string>("Type")
-                                .IsRequired();
-
-                            b1.HasKey("BaseMediaId", "__synthesizedOrdinal");
-
-                            b1.ToTable("Medias");
-
-                            b1.ToJson("Trailers");
-
-                            b1.WithOwner()
-                                .HasForeignKey("BaseMediaId");
-                        });
-
-                    b.Navigation("Trailers");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.MediaSegment", b =>
@@ -3387,8 +3167,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Pictures");
 
                     b.Navigation("Ratings");
-
-                    b.Navigation("Recommendations");
 
                     b.Navigation("Segments");
 
