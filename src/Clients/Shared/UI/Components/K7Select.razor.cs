@@ -32,15 +32,15 @@ public partial class K7Select<TValue> : IAsyncDisposable
     {
         get
         {
-            if (Value is null)
-                return string.IsNullOrEmpty(Placeholder) ? "" : Placeholder;
-
             if (ToStringFunc is not null)
                 return ToStringFunc(Value) ?? "";
 
             var item = _items.FirstOrDefault(i => EqualityComparer<TValue>.Default.Equals(i.Value, Value));
             if (item?.DisplayText is not null)
                 return item.DisplayText;
+
+            if (Value is null)
+                return string.IsNullOrEmpty(Placeholder) ? "" : Placeholder;
 
             return Value.ToString() ?? "";
         }
