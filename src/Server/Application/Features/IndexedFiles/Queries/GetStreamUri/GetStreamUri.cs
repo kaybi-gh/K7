@@ -1,7 +1,10 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStreamManifest;
+using K7.Server.Application.Features.TrackSelectionPreferences.Queries.GetEffectiveTrackSelectionPreferences;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
@@ -85,6 +88,10 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 .Collection(v => v.VideoTracks)
                 .LoadAsync(cancellationToken);
 
+            await _context.Entry(videoFileMetadata)
+                .Collection(v => v.SubtitleTracks)
+                .LoadAsync(cancellationToken);
+
             var hlsSegmentsAvailable = await _context.HlsSegments
                 .AnyAsync(s => s.IndexedFileId == request.Id, cancellationToken);
 
@@ -109,7 +116,30 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 }, cancellationToken);
             }
 
-            var (uri, decision) = GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable);
+            // Resolve track selection preferences when no explicit audio track index is specified
+            int? subtitleTrackIndex = null;
+            if (request.AudioTrackIndex is null)
+            {
+                var preferences = await _sender.Send(
+                    new GetEffectiveTrackSelectionPreferencesQuery { LibraryId = indexedFile.LibraryId },
+                    cancellationToken);
+
+                var audioDtos = videoFileMetadata.AudioTracks
+                    .OrderBy(t => t.Index)
+                    .Select(t => t.ToAudioFileTrackDto())
+                    .ToList();
+
+                var subtitleDtos = videoFileMetadata.SubtitleTracks
+                    .OrderBy(t => t.Index)
+                    .Select(t => t.ToSubtitleFileTrackDto())
+                    .ToList();
+
+                var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos);
+                request.AudioTrackIndex = selection.AudioTrackIndex;
+                subtitleTrackIndex = selection.SubtitleTrackIndex;
+            }
+
+            var (uri, decision) = GetVideoFileStreamUri(device, indexedFile, videoFileMetadata, request, hlsSegmentsAvailable, subtitleTrackIndex);
             _activeStreamTracker.UpdateStreamDecision(request.StreamSessionId, decision);
             return uri;
         }
@@ -117,7 +147,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         throw new InvalidOperationException();
     }
 
-    private static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable)
+    private static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable, int? subtitleTrackIndex)
     {
         AudioFileTrack selectedAudioTrack;
         if (request.AudioTrackIndex is int audioIdx)
@@ -242,7 +272,8 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 StreamSessionId = request.StreamSessionId,
                 TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec,
                 AudioTrackTranscodings = audioTrackTranscodings,
-                DefaultAudioTrackIndex = request.AudioTrackIndex
+                DefaultAudioTrackIndex = request.AudioTrackIndex,
+                DefaultSubtitleTrackIndex = subtitleTrackIndex
             }), UriKind.Relative),
             MimeType = "application/vnd.apple.mpegurl"
         }, hlsDecision);

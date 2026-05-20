@@ -2280,6 +2280,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<bool>("IsForced")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsHearingImpaired")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsTextBased")
                         .HasColumnType("boolean");
 

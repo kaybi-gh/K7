@@ -9,4 +9,5 @@ public static class ServerSettingKeys
     public static readonly SettingKey<string> HomeLayout = new("HomeLayout");
     public static readonly SettingKey<string> FeatureFlags = new("FeatureFlags");
     public static readonly SettingKey<string> VideoPlayerSettings = new("VideoPlayerSettings");
+    public static readonly SettingKey<string> TrackSelectionPreferences = new("TrackSelectionPreferences");
 }

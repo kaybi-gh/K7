@@ -7,5 +7,5 @@ public sealed record SubtitleFileTrackDto : FileTrackDto
     public required string Codec { get; init; }
     public bool IsTextBased { get; init; }
     public bool IsForced { get; init; }
-
+    public bool IsHearingImpaired { get; init; }
 }

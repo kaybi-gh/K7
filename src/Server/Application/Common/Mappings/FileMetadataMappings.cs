@@ -90,7 +90,8 @@ public static class FileMetadataMappings
             Language = domain.Language,
             Codec = domain.Codec,
             IsTextBased = domain.IsTextBased,
-            IsForced = domain.IsForced
+            IsForced = domain.IsForced,
+            IsHearingImpaired = domain.IsHearingImpaired
         };
     }
 

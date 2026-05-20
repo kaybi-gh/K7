@@ -17,4 +17,9 @@ public class SubtitleFileTrack() : BaseFileTrack(FileTrackType.Subtitle)
     /// Indicates a forced subtitle track (e.g. foreign language dialogue only).
     /// </summary>
     public bool IsForced { get; set; }
+
+    /// <summary>
+    /// Indicates a hearing-impaired / SDH subtitle track.
+    /// </summary>
+    public bool IsHearingImpaired { get; set; }
 }
