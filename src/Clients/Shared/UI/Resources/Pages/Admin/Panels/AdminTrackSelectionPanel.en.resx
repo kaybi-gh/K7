@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Audio &amp; subtitles (server default)</value></data>
+  <data name="Description" xml:space="preserve"><value>Default preferences for all users. Each user can override these in their settings.</value></data>
+  <data name="PreferredAudioLanguage" xml:space="preserve"><value>Preferred audio language</value></data>
+  <data name="FallbackAudioLanguage" xml:space="preserve"><value>Fallback audio language</value></data>
+  <data name="SubtitleWhenPreferredAudio" xml:space="preserve"><value>Subtitles when preferred audio</value></data>
+  <data name="SubtitleLanguageWhenPreferredAudio" xml:space="preserve"><value>Subtitle language (preferred audio)</value></data>
+  <data name="SubtitleWhenOtherAudio" xml:space="preserve"><value>Subtitles when other audio</value></data>
+  <data name="SubtitleLanguageWhenOtherAudio" xml:space="preserve"><value>Subtitle language (other audio)</value></data>
+  <data name="SubOff" xml:space="preserve"><value>Off</value></data>
+  <data name="SubForcedOnly" xml:space="preserve"><value>Forced only</value></data>
+  <data name="SubFull" xml:space="preserve"><value>Full</value></data>
+  <data name="SubHearingImpaired" xml:space="preserve"><value>SDH (hearing impaired)</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Reset" xml:space="preserve"><value>Reset</value></data>
+</root>

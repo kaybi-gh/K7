@@ -14,4 +14,7 @@ public interface IServerPreferencesService
     Task<VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);
     Task UpdateServerVideoPlayerSettingsAsync(VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default);
     Task DeleteServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);
+    Task<TrackSelectionPreferencesDto?> GetServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default);
+    Task UpdateServerTrackSelectionPreferencesAsync(TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default);
+    Task DeleteServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default);
 }

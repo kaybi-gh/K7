@@ -858,6 +858,63 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<TrackSelectionPreferencesDto> GetEffectiveTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default)
+    {
+        var url = libraryId.HasValue
+            ? $"api/users/me/preferences/track-selection?libraryId={libraryId.Value}"
+            : "api/users/me/preferences/track-selection";
+        var result = await HttpClient.GetFromJsonAsync<TrackSelectionPreferencesDto>(url, _serializerOptions, cancellationToken);
+        return result ?? new TrackSelectionPreferencesDto();
+    }
+
+    public async Task UpdateUserTrackSelectionPreferencesAsync(TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default)
+    {
+        var url = libraryId.HasValue
+            ? $"api/users/me/preferences/track-selection?libraryId={libraryId.Value}"
+            : "api/users/me/preferences/track-selection";
+        var response = await HttpClient.PutAsJsonAsync(url, preferences, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default)
+    {
+        var url = libraryId.HasValue
+            ? $"api/users/me/preferences/track-selection?libraryId={libraryId.Value}"
+            : "api/users/me/preferences/track-selection";
+        var response = await HttpClient.DeleteAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<TrackSelectionPreferencesDto?> GetServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default)
+    {
+        var url = libraryId.HasValue
+            ? $"api/server/preferences/track-selection?libraryId={libraryId.Value}"
+            : "api/server/preferences/track-selection";
+        var response = await HttpClient.GetAsync(url, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TrackSelectionPreferencesDto>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateServerTrackSelectionPreferencesAsync(TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default)
+    {
+        var url = libraryId.HasValue
+            ? $"api/server/preferences/track-selection?libraryId={libraryId.Value}"
+            : "api/server/preferences/track-selection";
+        var response = await HttpClient.PutAsJsonAsync(url, preferences, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default)
+    {
+        var url = libraryId.HasValue
+            ? $"api/server/preferences/track-selection?libraryId={libraryId.Value}"
+            : "api/server/preferences/track-selection";
+        var response = await HttpClient.DeleteAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     // IDownloadService
 
     public async Task<DownloadDto> PrepareDownloadAsync(PrepareDownloadRequest request, CancellationToken cancellationToken = default)
