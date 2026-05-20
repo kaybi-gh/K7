@@ -8,6 +8,7 @@ using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Application.Common.Configuration;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using Microsoft.Extensions.Options;
 using FFMpegCore.Enums;
 
@@ -34,7 +35,7 @@ public class MediaAnalysisService : IMediaAnalysisService
         {
             Index = primaryAudio.Index,
             IsDefault = true,
-            Language = primaryAudio.Language,
+            Language = LanguageNormalizer.NormalizeOrPassthrough(primaryAudio.Language),
             Name = primaryAudio.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? primaryAudio.Language,
             Codec = primaryAudio.CodecName,
             Channels = primaryAudio.Channels,
@@ -264,7 +265,7 @@ public class MediaAnalysisService : IMediaAnalysisService
         {
             Index = x.Index,
             IsDefault = IsDefaultTrack(hasDefaultAudio, x.Disposition, x.Index),
-            Language = x.Language,
+            Language = LanguageNormalizer.NormalizeOrPassthrough(x.Language),
             Name = x.Tags?.FirstOrDefault(x => x.Key == "title").Value ?? x.Language,
             Codec = x.CodecName,
             Channels = x.Channels,
@@ -315,11 +316,12 @@ public class MediaAnalysisService : IMediaAnalysisService
         {
             Index = x.Index,
             IsDefault = IsDefaultTrack(hasDefaultSub, x.Disposition, x.Index),
-            Language = x.Language,
+            Language = LanguageNormalizer.NormalizeOrPassthrough(x.Language),
             Name = x.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? x.Language,
             Codec = x.CodecName,
             IsTextBased = TextBasedSubtitleCodecs.Contains(x.CodecName),
-            IsForced = x.Disposition?.Any(d => d.Key == "forced" && d.Value) ?? false
+            IsForced = x.Disposition?.Any(d => d.Key == "forced" && d.Value) ?? false,
+            IsHearingImpaired = x.Disposition?.Any(d => d.Key == "hearing_impaired" && d.Value) ?? false
         })];
     }
 }
