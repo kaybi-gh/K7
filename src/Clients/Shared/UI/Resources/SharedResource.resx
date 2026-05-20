@@ -91,4 +91,5 @@
   <data name="NoResults" xml:space="preserve"><value>Aucun resultat</value></data>
   <data name="JumpIndex" xml:space="preserve"><value>Index de navigation</value></data>
   <data name="ViewMode" xml:space="preserve"><value>Mode d'affichage</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
 </root>

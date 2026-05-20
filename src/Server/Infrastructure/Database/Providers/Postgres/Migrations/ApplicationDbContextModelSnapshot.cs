@@ -646,6 +646,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
+                    b.PrimitiveCollection<string[]>("LockedFields")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<string>("OriginalTitle")
                         .HasColumnType("text");
 
@@ -976,6 +980,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
+
+                    b.PrimitiveCollection<string[]>("LockedFields")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<string>("Name")
                         .IsRequired()

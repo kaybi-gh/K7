@@ -29,4 +29,5 @@
   <data name="EpisodeNumber" xml:space="preserve"><value>Episode {0}</value></data>
   <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
   <data name="DetectIntrosOutros" xml:space="preserve"><value>Detecter les intros/outros</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
 </root>

@@ -34,5 +34,6 @@
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh queued as background task.</value></data>
   <data name="SimilarMedia" xml:space="preserve"><value>You might also like</value></data>
   <data name="Trailer" xml:space="preserve"><value>Trailer</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Edit metadata</value></data>
 </root>
 

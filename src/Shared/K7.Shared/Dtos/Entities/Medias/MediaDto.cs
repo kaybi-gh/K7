@@ -21,6 +21,7 @@ public abstract record MediaDto
     public IReadOnlyList<RatingDto>? Ratings { get; init; }
     public IReadOnlyList<IndexedFileDto>? IndexedFiles { get; init; }
     public IReadOnlyList<string>? Genres { get; init; }
+    public IReadOnlyList<string>? LockedFields { get; init; }
     public UserMediaStateDto? UserState { get; init; }
     public DateTimeOffset? LastMetadataRefreshedAt { get; init; }
 }

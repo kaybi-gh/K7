@@ -27,4 +27,5 @@
   <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance</value></data>
   <data name="KnownFor" xml:space="preserve"><value>Connu(e) pour</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
 </root>

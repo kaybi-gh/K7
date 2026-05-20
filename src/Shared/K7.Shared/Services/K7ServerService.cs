@@ -233,10 +233,80 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateMediaMetadataAsync(Guid id, UpdateMediaMetadataRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/medias/{id}/metadata", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> UploadMediaPictureAsync(Guid mediaId, Stream stream, string fileName, MetadataPictureType pictureType, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StreamContent(stream), "file", fileName);
+        var response = await HttpClient.PostAsync($"api/medias/{mediaId}/pictures?pictureType={pictureType}", content, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task DeleteMediaPictureAsync(Guid mediaId, Guid pictureId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/medias/{mediaId}/pictures/{pictureId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<IReadOnlyList<ProviderImageDto>> GetMediaProviderImagesAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync($"api/medias/{mediaId}/provider-images", cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<ProviderImageDto>>(_serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<Guid> ImportMediaPictureFromUrlAsync(Guid mediaId, ImportMediaPictureFromUrlRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/medias/{mediaId}/pictures/import", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
     public async Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsync($"api/persons/{id}/refresh-metadata", null, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdatePersonMetadataAsync(Guid id, UpdatePersonMetadataRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/persons/{id}/metadata", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> UploadPersonPictureAsync(Guid personId, Stream stream, string fileName, MetadataPictureType pictureType, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StreamContent(stream), "file", fileName);
+        var response = await HttpClient.PostAsync($"api/persons/{personId}/pictures?pictureType={pictureType}", content, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task DeletePersonPictureAsync(Guid personId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/persons/{personId}/pictures", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> ImportPersonPictureFromUrlAsync(Guid personId, ImportMediaPictureFromUrlRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"api/persons/{personId}/pictures/import", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ProviderImageDto>> GetPersonProviderImagesAsync(Guid personId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync($"api/persons/{personId}/provider-images", cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<ProviderImageDto>>(_serializerOptions, cancellationToken) ?? [];
     }
 
     public async Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default)

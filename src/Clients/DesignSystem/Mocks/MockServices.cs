@@ -311,7 +311,17 @@ public sealed class MockMediaService : IMediaService
     public Task ReidentifyIndexedFileAsync(Guid id, ReidentifyIndexedFileRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ReidentifyMediaAsync(Guid id, ReidentifyMediaRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RefreshMediaMetadataAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateMediaMetadataAsync(Guid id, UpdateMediaMetadataRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<Guid> UploadMediaPictureAsync(Guid mediaId, Stream stream, string fileName, MetadataPictureType pictureType, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task DeleteMediaPictureAsync(Guid mediaId, Guid pictureId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<IReadOnlyList<ProviderImageDto>> GetMediaProviderImagesAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ProviderImageDto>>([]);
+    public Task<Guid> ImportMediaPictureFromUrlAsync(Guid mediaId, ImportMediaPictureFromUrlRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task RefreshPersonMetadataAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdatePersonMetadataAsync(Guid id, UpdatePersonMetadataRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<Guid> UploadPersonPictureAsync(Guid personId, Stream stream, string fileName, MetadataPictureType pictureType, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task DeletePersonPictureAsync(Guid personId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<Guid> ImportPersonPictureFromUrlAsync(Guid personId, ImportMediaPictureFromUrlRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task<IReadOnlyList<ProviderImageDto>> GetPersonProviderImagesAsync(Guid personId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ProviderImageDto>>([]);
     public Task<LiteSerieEpisodeDto?> GetNextEpisodeAsync(Guid serieId, Guid currentEpisodeId, CancellationToken cancellationToken = default) => Task.FromResult<LiteSerieEpisodeDto?>(null);
     public Task<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>>([]);
     public Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default) => Task.CompletedTask;

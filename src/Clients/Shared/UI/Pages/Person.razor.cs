@@ -220,5 +220,25 @@ public partial class Person : IDisposable
         }
     }
 
+    private async Task OpenEditMetadataDialogAsync()
+    {
+        if (_person is null) return;
+
+        var parameters = new K7DialogParameters<EditMetadataDialog>
+        {
+            { x => x.Person, _person }
+        };
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditMetadataDialog>(L["EditMetadata"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            _person = await k7ServerService.GetPersonAsync(Guid.Parse(Id));
+            StateHasChanged();
+        }
+    }
+
     public void Dispose() => _backdropTimer?.Dispose();
 }

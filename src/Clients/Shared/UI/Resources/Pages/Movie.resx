@@ -34,5 +34,6 @@
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance en tache de fond.</value></data>
   <data name="SimilarMedia" xml:space="preserve"><value>Vous aimerez aussi</value></data>
   <data name="Trailer" xml:space="preserve"><value>Bande-annonce</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
 </root>
 

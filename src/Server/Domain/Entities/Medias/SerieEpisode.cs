@@ -19,12 +19,16 @@ public class SerieEpisode() : BaseMedia(MediaType.SerieEpisode)
 
     public void ApplyMetadata(ExternalEpisodeMetadata metadata)
     {
-        Title = metadata.Title ?? Title;
-        Overview = metadata.Overview ?? Overview;
-        AirDate = metadata.AirDate ?? AirDate;
-        Runtime = metadata.Runtime ?? Runtime;
+        if (!IsFieldLocked(nameof(Title)))
+            Title = metadata.Title ?? Title;
+        if (!IsFieldLocked(nameof(Overview)))
+            Overview = metadata.Overview ?? Overview;
+        if (!IsFieldLocked(nameof(AirDate)))
+            AirDate = metadata.AirDate ?? AirDate;
+        if (!IsFieldLocked(nameof(Runtime)))
+            Runtime = metadata.Runtime ?? Runtime;
 
-        if (metadata.ExternalIds?.Count > 0)
+        if (!IsFieldLocked(nameof(ExternalIds)) && metadata.ExternalIds?.Count > 0)
         {
             ExternalIds.Clear();
             foreach (var ex in metadata.ExternalIds) ExternalIds.Add(ex);

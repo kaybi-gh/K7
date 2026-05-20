@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Titre</value></data>
+  <data name="Name" xml:space="preserve"><value>Nom</value></data>
+  <data name="OriginalTitle" xml:space="preserve"><value>Titre original</value></data>
+  <data name="ReleaseDate" xml:space="preserve"><value>Date de sortie</value></data>
+  <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
+  <data name="Genres" xml:space="preserve"><value>Genres</value></data>
+  <data name="GenresHelper" xml:space="preserve"><value>Separes par des virgules</value></data>
+  <data name="Tagline" xml:space="preserve"><value>Slogan</value></data>
+  <data name="OriginalLanguage" xml:space="preserve"><value>Langue originale</value></data>
+  <data name="ContentRating" xml:space="preserve"><value>Classification</value></data>
+  <data name="Budget" xml:space="preserve"><value>Budget</value></data>
+  <data name="Revenue" xml:space="preserve"><value>Recettes</value></data>
+  <data name="Status" xml:space="preserve"><value>Statut</value></data>
+  <data name="Network" xml:space="preserve"><value>Chaine</value></data>
+  <data name="AirDate" xml:space="preserve"><value>Date de diffusion</value></data>
+  <data name="Runtime" xml:space="preserve"><value>Duree (min)</value></data>
+  <data name="Biography" xml:space="preserve"><value>Biographie</value></data>
+  <data name="Country" xml:space="preserve"><value>Pays</value></data>
+  <data name="Birthday" xml:space="preserve"><value>Date de naissance</value></data>
+  <data name="Deathday" xml:space="preserve"><value>Date de deces</value></data>
+  <data name="BirthPlace" xml:space="preserve"><value>Lieu de naissance</value></data>
+  <data name="TrackNumber" xml:space="preserve"><value>Numero de piste</value></data>
+  <data name="DiscNumber" xml:space="preserve"><value>Numero de disque</value></data>
+  <data name="Lyrics" xml:space="preserve"><value>Paroles</value></data>
+  <data name="Pictures" xml:space="preserve"><value>Images (verrouiller empeche l'ecrasement au rafraichissement)</value></data>
+  <data name="LockField" xml:space="preserve"><value>Verrouiller le champ (empecher le rafraichissement de l'ecraser)</value></data>
+  <data name="UnlockField" xml:space="preserve"><value>Deverrouiller le champ (autoriser la mise a jour au rafraichissement)</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="DialogTitle" xml:space="preserve"><value>Modifier les metadonnees</value></data>
+  <data name="PictureType" xml:space="preserve"><value>Type d'image</value></data>
+  <data name="UploadPicture" xml:space="preserve"><value>Choisir une image...</value></data>
+  <data name="Upload" xml:space="preserve"><value>Envoyer</value></data>
+  <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="PictureUploaded" xml:space="preserve"><value>Image envoyee avec succes</value></data>
+  <data name="PictureDeleted" xml:space="preserve"><value>Image supprimee avec succes</value></data>
+</root>

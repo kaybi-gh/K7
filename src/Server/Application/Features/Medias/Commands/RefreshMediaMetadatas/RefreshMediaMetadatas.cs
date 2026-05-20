@@ -184,16 +184,18 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
             if (mbDetails is not null)
             {
-                if (!string.IsNullOrEmpty(mbDetails.Country))
+                if (!artist.IsFieldLocked(nameof(MusicArtist.Country)) && !string.IsNullOrEmpty(mbDetails.Country))
                     artist.Country = mbDetails.Country;
 
-                if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
+                if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds))
+                    && !string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
                     artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
 
                 await SyncArtistMembersAsync(artist, mbDetails.Members, request.Language, cancellationToken);
 
                 // Poster from MusicBrainz cover art
-                if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbDetails.ImageUrl))
+                if (!artist.IsFieldLocked(nameof(MusicArtist.Pictures))
+                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbDetails.ImageUrl))
                 {
                     var picture = new MetadataPicture
                     {
@@ -215,10 +217,11 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
             if (details is not null)
             {
-                if (!string.IsNullOrEmpty(details.Biography))
+                if (!artist.IsFieldLocked(nameof(MusicArtist.Biography)) && !string.IsNullOrEmpty(details.Biography))
                     artist.Biography = details.Biography;
 
-                if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
+                if (!artist.IsFieldLocked(nameof(MusicArtist.Pictures))
+                    && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
                 {
                     var picture = new MetadataPicture
                     {
@@ -270,7 +273,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
 
         // Person dedup
-        if (serieMetadata.PersonRoles?.Count > 0)
+        if (!serie.IsFieldLocked(nameof(Serie.PersonRoles)) && serieMetadata.PersonRoles?.Count > 0)
         {
             serie.PersonRoles.Clear();
             foreach (var role in serieMetadata.PersonRoles)
@@ -334,7 +337,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                 episode.ApplyMetadata(episodeMetadata);
 
-                if (!string.IsNullOrEmpty(episodeMetadata.StillImageUrl))
+                if (!string.IsNullOrEmpty(episodeMetadata.StillImageUrl) && !episode.IsFieldLocked(nameof(SerieEpisode.Pictures)))
                 {
                     var stillPicture = new MetadataPicture
                     {
@@ -361,6 +364,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
         foreach (var track in album.Tracks)
         {
+            if (track.IsFieldLocked(nameof(MusicTrack.ExternalIds))) continue;
+
             var metadataTrack = metadata.Tracks.FirstOrDefault(mt =>
                 string.Equals(mt.Title, track.Title, StringComparison.OrdinalIgnoreCase)
                 || mt.TrackNumber == track.TrackNumber);
@@ -407,7 +412,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             string.Equals(a.Name, artist.Title, StringComparison.OrdinalIgnoreCase));
 
         var mbExternalId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz");
-        if (mbExternalId is null && !string.IsNullOrEmpty(artistMetadata?.MusicBrainzArtistId))
+        if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds)) && mbExternalId is null && !string.IsNullOrEmpty(artistMetadata?.MusicBrainzArtistId))
         {
             mbExternalId = new ExternalId
             {
@@ -431,14 +436,17 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
             if (mbDetails is not null)
             {
-                if (!string.IsNullOrEmpty(mbDetails.MusicBrainzArtistId) && !artist.ExternalIds.Any(e => e.ProviderName == "musicbrainz"))
-                    artist.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = mbDetails.MusicBrainzArtistId, MediaId = artist.Id });
+                if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds)))
+                {
+                    if (!string.IsNullOrEmpty(mbDetails.MusicBrainzArtistId) && !artist.ExternalIds.Any(e => e.ProviderName == "musicbrainz"))
+                        artist.ExternalIds.Add(new ExternalId { ProviderName = "musicbrainz", Value = mbDetails.MusicBrainzArtistId, MediaId = artist.Id });
 
-                if (!string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(artist.Country))
+                    if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
+                        artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
+                }
+
+                if (!artist.IsFieldLocked(nameof(MusicArtist.Country)) && !string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(artist.Country))
                     artist.Country = mbDetails.Country;
-
-                if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
-                    artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
 
                 mbImageUrl = mbDetails.ImageUrl;
 
@@ -446,8 +454,11 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        // Skip bio/image enrichment if already complete
-        if (artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(artist.Biography)) return;
+        // Skip bio/image enrichment if already complete or locked
+        var biographyLocked = artist.IsFieldLocked(nameof(MusicArtist.Biography));
+        var picturesLocked = artist.IsFieldLocked(nameof(MusicArtist.Pictures));
+        if ((picturesLocked || artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster))
+            && (biographyLocked || !string.IsNullOrEmpty(artist.Biography))) return;
 
         var wikidataId = artist.ExternalIds.FirstOrDefault(e => e.ProviderName == "wikidata")?.Value;
 
@@ -456,10 +467,10 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             var details = await wdProvider.FetchByProviderIdAsync(wikidataId, language, cancellationToken);
             if (details is not null)
             {
-                if (string.IsNullOrEmpty(artist.Biography) && !string.IsNullOrEmpty(details.Biography))
+                if (!biographyLocked && string.IsNullOrEmpty(artist.Biography) && !string.IsNullOrEmpty(details.Biography))
                     artist.Biography = details.Biography;
 
-                if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
+                if (!picturesLocked && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(details.ImageUrl))
                 {
                     var picture = new MetadataPicture
                     {
@@ -473,7 +484,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
-        if (!artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbImageUrl))
+        if (!picturesLocked && !artist.Pictures.Any(p => p.Type == MetadataPictureType.Poster) && !string.IsNullOrEmpty(mbImageUrl))
         {
             var picture = new MetadataPicture
             {

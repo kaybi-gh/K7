@@ -15,6 +15,7 @@ public sealed record PersonDto
 
     public IReadOnlyList<PersonRoleDto> Roles { get; init; } = [];
     public IReadOnlyList<ExternalIdDto> ExternalIds { get; init; } = [];
+    public IReadOnlyList<string> LockedFields { get; init; } = [];
     public MetadataPictureDto? PortraitPicture { get; init; }
 
 }

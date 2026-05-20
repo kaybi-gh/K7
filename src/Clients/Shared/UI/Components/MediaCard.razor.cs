@@ -9,7 +9,7 @@ public partial class MediaCard
     [Parameter] public bool Skeleton { get; set; }
     [Parameter] public MediaCardViewModel Model { get; set; } = default!;
     [Parameter] public MediaCardVariant Variant { get; set; } = MediaCardVariant.Poster;
-    [Parameter] public string Href { get; set; } = "#";
+    [Parameter] public string? Href { get; set; }
     [Parameter] public bool OverlayEnabled { get; set; }
     [Parameter] public bool ProgressEnabled { get; set; }
     [Parameter] public bool WatchedStatusEnabled { get; set; }

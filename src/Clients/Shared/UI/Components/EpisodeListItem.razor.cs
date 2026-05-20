@@ -76,4 +76,25 @@ public partial class EpisodeListItem
             .FirstOrDefault(f => f.Id == Episode.IndexedFileId)
             ?.FileMetadata as VideoFileMetadataDto;
     }
+
+    private async Task OpenEditMetadataDialogAsync()
+    {
+        if (_fullEpisode is null) return;
+
+        var parameters = new K7DialogParameters<EditMetadataDialog>
+        {
+            { x => x.Media, _fullEpisode }
+        };
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditMetadataDialog>(S["EditMetadata"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            var media = await K7ServerService.GetMediaAsync(Episode.Id);
+            _fullEpisode = media as SerieEpisodeDto;
+            StateHasChanged();
+        }
+    }
 }

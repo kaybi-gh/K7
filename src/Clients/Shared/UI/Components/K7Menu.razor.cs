@@ -7,6 +7,7 @@ namespace K7.Clients.Shared.UI.Components;
 public partial class K7Menu : IAsyncDisposable
 {
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     [Parameter, EditorRequired] public RenderFragment ActivatorContent { get; set; } = default!;
     [Parameter] public RenderFragment? ChildContent { get; set; }
@@ -26,6 +27,7 @@ public partial class K7Menu : IAsyncDisposable
         await OpenChanged.InvokeAsync(false);
         try
         {
+            await JS.InvokeVoidAsync("K7.resetDropdown", _root);
             await SpatialNav.PopLayerAsync(_dropdown);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
@@ -48,6 +50,7 @@ public partial class K7Menu : IAsyncDisposable
             _closeCallbackRef = DotNetObjectReference.Create(new LayerCloseCallback(Close));
             try
             {
+                await JS.InvokeVoidAsync("K7.positionDropdown", _root, _dropdown);
                 await SpatialNav.PushLayerAsync(_dropdown, "popover", new SpatialNavLayerOptions
                 {
                     OnClose = _closeCallbackRef

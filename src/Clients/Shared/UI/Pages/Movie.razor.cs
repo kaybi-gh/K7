@@ -259,4 +259,24 @@ public partial class Movie
             // Non-critical - silently ignore if similar media fails
         }
     }
+
+    private async Task OpenEditMetadataDialogAsync()
+    {
+        if (_movie is null) return;
+
+        var parameters = new K7DialogParameters<EditMetadataDialog>
+        {
+            { x => x.Media, _movie }
+        };
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditMetadataDialog>(L["EditMetadata"], parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            _movie = await k7ServerService.GetMovieAsync(Guid.Parse(Id));
+            StateHasChanged();
+        }
+    }
 }
