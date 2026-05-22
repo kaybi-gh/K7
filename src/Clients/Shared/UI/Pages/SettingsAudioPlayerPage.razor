@@ -1,23 +1,25 @@
 @page "/settings/audio-player"
 @layout SettingsLayout
+@inject IStringLocalizer<SettingsAudioPlayerPage> L
 @inject IAudioPlayerService AudioPlayerService
-@inject ISleepTimerService SleepTimerService
 @inject AutoplayService AutoplayService
+@inject IDeviceStorageService DeviceStorage
+@inject IK7Snackbar Snackbar
 
 <div class="d-flex pa-4" style="width: 100%">
-    <h5>Audio Player</h5>
+    <h5>@L["Title"]</h5>
 </div>
 
 <div class="pa-4 d-flex flex-col gap-6">
     @* Loudness Normalization *@
     <section class="d-flex flex-col gap-3">
-        <h6>Loudness Normalization</h6>
-        <K7Switch Label="Enable loudness normalization" @bind-Value="_loudnessEnabled" />
+        <h6>@L["LoudnessNormalization"]</h6>
+        <K7Switch Label="@L["EnableLoudness"]" @bind-Value="_loudnessEnabled" />
 
         @if (_loudnessEnabled)
         {
             <div class="d-flex flex-col gap-1">
-                <span class="field-label">Target loudness (LUFS)</span>
+                <span class="field-label">@L["TargetLoudness"]</span>
                 <K7Slider TValue="double" Min="-26" Max="-6" Step="1"
                           Value="_targetLufs"
                           ValueChanged="v => { _targetLufs = v; }" />
@@ -25,33 +27,33 @@
             </div>
 
             <div class="d-flex flex-col gap-1">
-                <span class="field-label">Pre-amp (dB)</span>
+                <span class="field-label">@L["PreAmp"]</span>
                 <K7Slider TValue="double" Min="-6" Max="6" Step="0.5"
                           Value="_preampDb"
                           ValueChanged="v => { _preampDb = v; }" />
                 <span class="text-caption" style="color: var(--color-text-muted);">@(_preampDb.ToString("F1")) dB</span>
             </div>
 
-            <K7Switch Label="Enable limiter (prevents clipping)" @bind-Value="_limiterEnabled" />
+            <K7Switch Label="@L["EnableLimiter"]" @bind-Value="_limiterEnabled" />
         }
     </section>
 
     @* Equalizer *@
     <section class="d-flex flex-col gap-3">
-        <h6>Equalizer</h6>
-        <K7Switch Label="Enable equalizer" @bind-Value="_eqEnabled" />
+        <h6>@L["Equalizer"]</h6>
+        <K7Switch Label="@L["EnableEqualizer"]" @bind-Value="_eqEnabled" />
 
         @if (_eqEnabled)
         {
             <div class="d-flex flex-col gap-2">
-                <K7Select Label="Preset" @bind-Value="_eqPresetName" TValue="string">
-                    <K7SelectItem Value="@("flat")" Text="Flat">Flat</K7SelectItem>
-                    <K7SelectItem Value="@("bass-boost")" Text="Bass Boost">Bass Boost</K7SelectItem>
-                    <K7SelectItem Value="@("treble-boost")" Text="Treble Boost">Treble Boost</K7SelectItem>
-                    <K7SelectItem Value="@("vocal")" Text="Vocal">Vocal</K7SelectItem>
-                    <K7SelectItem Value="@("rock")" Text="Rock">Rock</K7SelectItem>
-                    <K7SelectItem Value="@("electronic")" Text="Electronic">Electronic</K7SelectItem>
-                    <K7SelectItem Value="@("custom")" Text="Custom">Custom</K7SelectItem>
+                <K7Select Label="@L["Preset"]" Value="_eqPresetName" ValueChanged="OnPresetChanged" TValue="string">
+                    <K7SelectItem Value="@("flat")" Text="@L["PresetFlat"]">@L["PresetFlat"]</K7SelectItem>
+                    <K7SelectItem Value="@("bass-boost")" Text="@L["PresetBassBoost"]">@L["PresetBassBoost"]</K7SelectItem>
+                    <K7SelectItem Value="@("treble-boost")" Text="@L["PresetTrebleBoost"]">@L["PresetTrebleBoost"]</K7SelectItem>
+                    <K7SelectItem Value="@("vocal")" Text="@L["PresetVocal"]">@L["PresetVocal"]</K7SelectItem>
+                    <K7SelectItem Value="@("rock")" Text="@L["PresetRock"]">@L["PresetRock"]</K7SelectItem>
+                    <K7SelectItem Value="@("electronic")" Text="@L["PresetElectronic"]">@L["PresetElectronic"]</K7SelectItem>
+                    <K7SelectItem Value="@("custom")" Text="@L["PresetCustom"]">@L["PresetCustom"]</K7SelectItem>
                 </K7Select>
             </div>
 
@@ -61,9 +63,9 @@
                     var index = i;
                     <div class="eq-band">
                         <K7Slider TValue="double" Min="-12" Max="12" Step="0.5"
+                                  Vertical="true"
                                   Value="_eqBands[index]"
-                                  ValueChanged="v => OnBandChanged(index, v)"
-                                  Vertical="true" />
+                                  ValueChanged="v => OnBandChanged(index, v)" />
                         <span class="text-caption">@EqFrequencyLabels[index]</span>
                     </div>
                 }
@@ -73,47 +75,83 @@
 
     @* Crossfade *@
     <section class="d-flex flex-col gap-3">
-        <h6>Crossfade</h6>
+        <h6>@L["Crossfade"]</h6>
         <div class="d-flex flex-col gap-1">
-            <span class="field-label">Duration</span>
+            <span class="field-label">@L["CrossfadeDuration"]</span>
             <K7Slider TValue="double" Min="0" Max="12" Step="1"
                       Value="_crossfadeDuration"
                       ValueChanged="v => { _crossfadeDuration = v; }" />
             <span class="text-caption" style="color: var(--color-text-muted);">
-                @(_crossfadeDuration > 0 ? $"{_crossfadeDuration:F0}s" : "Disabled")
+                @if (_crossfadeDuration > 0)
+                {
+                    @($"{_crossfadeDuration:F0}s")
+                }
+                else if (_adaptiveCrossfade)
+                {
+                    @L["CrossfadeAdaptiveAuto"]
+                }
+                else
+                {
+                    @L["CrossfadeDisabled"]
+                }
             </span>
         </div>
-        <K7Switch Label="Adaptive crossfade (uses BPM, key, energy)" @bind-Value="_adaptiveCrossfade" />
+        <K7Switch Label="@L["AdaptiveCrossfade"]" @bind-Value="_adaptiveCrossfade" />
+        @if (_adaptiveCrossfade)
+        {
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["AdaptiveCrossfadeHint"]</span>
+        }
     </section>
 
     @* Autoplay *@
     <section class="d-flex flex-col gap-3">
-        <h6>Autoplay</h6>
-        <K7Switch Label="Play similar tracks when queue ends" @bind-Value="_autoplayEnabled" />
+        <h6>@L["Autoplay"]</h6>
+        <K7Switch Label="@L["AutoplayDescription"]" @bind-Value="_autoplayEnabled" />
     </section>
 
-    @* Sleep Timer *@
+    @* Streaming Quality *@
     <section class="d-flex flex-col gap-3">
-        <h6>Sleep Timer</h6>
-        @if (SleepTimerService.IsActive)
-        {
-            <span class="text-body">Timer active: @FormatRemaining(SleepTimerService.Remaining)</span>
-            <K7Button OnClick="CancelSleepTimer">Cancel</K7Button>
-        }
-        else
-        {
-            <div class="d-flex gap-2 flex-wrap">
-                <K7Button OnClick="() => StartSleepTimer(15)">15 min</K7Button>
-                <K7Button OnClick="() => StartSleepTimer(30)">30 min</K7Button>
-                <K7Button OnClick="() => StartSleepTimer(45)">45 min</K7Button>
-                <K7Button OnClick="() => StartSleepTimer(60)">1 hour</K7Button>
-                <K7Button OnClick="StartSleepTimerEndOfTrack">End of track</K7Button>
-            </div>
-        }
+        <h6>@L["StreamingQuality"]</h6>
+        <K7Select Label="@L["QualityWifi"]" @bind-Value="_streamingQualityWifi" TValue="int">
+            <K7SelectItem Value="0" Text="@L["Original"]">@L["Original"]</K7SelectItem>
+            <K7SelectItem Value="320" Text="320 kbps">320 kbps</K7SelectItem>
+            <K7SelectItem Value="256" Text="256 kbps">256 kbps</K7SelectItem>
+            <K7SelectItem Value="192" Text="192 kbps">192 kbps</K7SelectItem>
+            <K7SelectItem Value="128" Text="128 kbps">128 kbps</K7SelectItem>
+        </K7Select>
+        <K7Select Label="@L["QualityMobile"]" @bind-Value="_streamingQualityMobile" TValue="int">
+            <K7SelectItem Value="0" Text="@L["Original"]">@L["Original"]</K7SelectItem>
+            <K7SelectItem Value="320" Text="320 kbps">320 kbps</K7SelectItem>
+            <K7SelectItem Value="256" Text="256 kbps">256 kbps</K7SelectItem>
+            <K7SelectItem Value="192" Text="192 kbps">192 kbps</K7SelectItem>
+            <K7SelectItem Value="128" Text="128 kbps">128 kbps</K7SelectItem>
+        </K7Select>
+        <K7Switch Label="@L["DownmixToStereo"]" @bind-Value="_downmixToStereo" />
+    </section>
+
+    @* Player UX *@
+    <section class="d-flex flex-col gap-3">
+        <h6>@L["PlayerBehavior"]</h6>
+        <K7Switch Label="@L["ShowFullscreenOnPlay"]" @bind-Value="_showFullscreenOnPlay" />
+        <K7Switch Label="@L["KeepScreenOn"]" @bind-Value="_keepScreenOn" />
+        <div class="d-flex flex-col gap-1">
+            <span class="field-label">@L["SkipBackDuration"]</span>
+            <K7Slider TValue="int" Min="5" Max="30" Step="5"
+                      Value="_skipBackSeconds"
+                      ValueChanged="v => { _skipBackSeconds = v; }" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@(_skipBackSeconds)s</span>
+        </div>
+        <div class="d-flex flex-col gap-1">
+            <span class="field-label">@L["SkipForwardDuration"]</span>
+            <K7Slider TValue="int" Min="5" Max="30" Step="5"
+                      Value="_skipForwardSeconds"
+                      ValueChanged="v => { _skipForwardSeconds = v; }" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@(_skipForwardSeconds)s</span>
+        </div>
     </section>
 
     <div class="d-flex gap-2">
-        <K7Button Color="primary" OnClick="SaveAsync">Save</K7Button>
-        <K7Button OnClick="ResetAsync">Reset to default</K7Button>
+        <K7Button Color="primary" OnClick="SaveAsync">@L["Save"]</K7Button>
+        <K7Button OnClick="ResetAsync">@L["ResetToDefault"]</K7Button>
     </div>
 </div>
