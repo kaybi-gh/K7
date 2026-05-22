@@ -1,6 +1,11 @@
 @inject IAudioPlayerService Audio
 @inject IMediaService Server
 @inject IDeviceService DeviceService
+@inject ISleepTimerService SleepTimer
+@inject IPlaylistService PlaylistService
+@inject IK7DialogService DialogService
+@inject IK7Snackbar Snackbar
+@inject NavigationManager Navigation
 
 @if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
 {
@@ -21,28 +26,73 @@
             <div class="fullscreen-player-header">
                 <K7IconButton Icon="@Phosphor.CaretDown" OnClick="Close" AriaLabel="@S["Close"]" />
                 <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
+                @if (SleepTimer.IsActive)
+                {
+                    <span class="sleep-timer-badge"><K7Icon Icon="@Phosphor.Timer" Size="sm" /> @FormatRemaining(SleepTimer.Remaining)</span>
+                }
                 <K7IconButton Icon="@Phosphor.TextAlignLeft" OnClick="ToggleLyrics" AriaLabel="Lyrics" Color="@(_view == FullScreenView.Lyrics ? "active" : "")" />
                 <K7IconButton Icon="@Phosphor.Queue" OnClick="ToggleQueue" AriaLabel="Queue" Color="@(_view == FullScreenView.Queue ? "active" : "")" />
+                <K7Menu Open="_menuOpen" OpenChanged="v => { _menuOpen = v; _sleepTimerSubmenuOpen = false; StateHasChanged(); }">
+                    <ActivatorContent>
+                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="More" Focusable="false" />
+                    </ActivatorContent>
+                    <ChildContent>
+                        @if (_sleepTimerSubmenuOpen)
+                        {
+                            <K7MenuItem Icon="@Phosphor.CaretLeft" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = false">@S["Back"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(15)">15 min</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(30)">30 min</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(45)">45 min</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(60)">1h</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(90)">1h30</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="StartSleepTimerEndOfTrack">@S["EndOfTrack"]</K7MenuItem>
+                        }
+                        else
+                        {
+                            @if (SleepTimer.IsActive)
+                            {
+                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="CancelSleepTimer">@S["CancelSleepTimer"] (@FormatRemaining(SleepTimer.Remaining))</K7MenuItem>
+                            }
+                            else
+                            {
+                                <K7MenuItem Icon="@Phosphor.Timer" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = true">@S["SleepTimer"]</K7MenuItem>
+                            }
+                            <K7MenuItem Icon="@Phosphor.ShareNetwork" OnClick="ShareTrack">@S["Share"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.FloppyDisk" OnClick="SaveQueueAsPlaylist">@S["SaveQueueAsPlaylist"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Plus" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
+                        }
+                    </ChildContent>
+                </K7Menu>
             </div>
 
             @if (_view == FullScreenView.Player)
             {
                 <div class="fullscreen-player-view">
-                    <div class="fullscreen-player-artwork">
-                        @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
-                        {
-                            <K7Image Src="@Audio.CurrentTrack.CoverUrl"
-                                      Alt="@($"{Audio.CurrentTrack.Title} - {Audio.CurrentTrack.Artist}")"
-                                      ObjectFit="cover"
-                                      Class="artwork-image" />
-                        }
-                        else
-                        {
-                            <div class="artwork-placeholder">
-                                <K7Icon Icon="@Phosphor.MusicNote"
-                                         Style="font-size: 96px;" />
-                            </div>
-                        }
+                    <div class="fullscreen-player-artwork @(_visualizerEnabled ? "visualizer-active" : "")">
+                        <div class="artwork-canvas-wrap">
+                            @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+                            {
+                                <K7Image Src="@Audio.CurrentTrack.CoverUrl"
+                                          Alt="@($"{Audio.CurrentTrack.Title} - {Audio.CurrentTrack.Artist}")"
+                                          ObjectFit="cover"
+                                          Class="artwork-image" />
+                            }
+                            else
+                            {
+                                <div class="artwork-placeholder">
+                                    <K7Icon Icon="@Phosphor.MusicNote"
+                                             Style="font-size: 96px;" />
+                                </div>
+                            }
+                            @if (_visualizerEnabled)
+                            {
+                                <canvas @ref="_visualizerCanvas" class="visualizer-canvas"></canvas>
+                            }
+                        </div>
                     </div>
 
                     <div class="fullscreen-player-details">
@@ -51,7 +101,7 @@
                             <span class="fullscreen-player-artist">@Audio.CurrentTrack.Artist</span>
                             @if (!string.IsNullOrEmpty(Audio.CurrentTrack.AlbumTitle))
                             {
-                                <span class="fullscreen-player-album">@Audio.CurrentTrack.AlbumTitle</span>
+                                <span class="fullscreen-player-album">@Audio.CurrentTrack.AlbumTitle@if (_trackDetails?.ReleaseDate is { } date) { <text> (@date.Year)</text> }</span>
                             }
                             <RatingStars
                                 MediaId="Audio.CurrentTrack.MediaId"
@@ -103,13 +153,13 @@
                         </div>
 
                         <div class="fullscreen-player-controls">
-                            <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" />
+                            <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" Color="@(Audio.Shuffle ? "active" : "")" Disabled="@(Audio.Queue.Count <= 1)" />
                             <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
                             <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp" @onkeydown="OnFabKeyDown" @onkeyup="OnFabKeyUp">
                                 <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
                             </div>
                             <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
-                            <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" />
+                            <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" Color="@(Audio.Repeat != RepeatMode.Off ? "active" : "")" />
                         </div>
 
                         @if (_showVolumeControls)
@@ -134,56 +184,244 @@
                                      CurrentTime="Audio.CurrentTime"
                                      SeekRequested="OnLyricsSeek" />
             }
-            else
+            else if (_view == FullScreenView.Queue)
             {
                 <div class="fullscreen-player-queue">
-                    <div class="queue-header">
-                        <span class="queue-title">File d'attente</span>
-                        <span class="queue-count">@Audio.Queue.Count morceaux</span>
-                    </div>
-                    <div class="queue-list">
-                        @for (var i = 0; i < Audio.Queue.Count; i++)
-                        {
-                            var index = i;
-                            var track = Audio.Queue[i];
-                            var isCurrent = i == Audio.CurrentIndex;
+                    <K7Tabs TValue="QueueTab" Tabs="_queueTabOptions" Value="_queueTab" ValueChanged="v => { _queueTab = v; StateHasChanged(); }" Class="queue-tabs" />
 
-                            <div class="queue-item focusable @(isCurrent ? "queue-item-current" : "")"
-                                 tabindex="0" role="button"
-                                 @onclick="() => PlayFromQueue(index)"
-                                 @onkeydown="(e) => OnQueueItemKeyDown(e, index)">
-                                <div class="queue-item-index">
-                                    @if (isCurrent)
+                    @if (_queueTab == QueueTab.Previous)
+                    {
+                        <div class="queue-list">
+                            @for (var i = 0; i < Audio.CurrentIndex; i++)
+                            {
+                                var index = i;
+                                var track = Audio.Queue[i];
+                                <div class="queue-item focusable"
+                                     tabindex="0" role="button"
+                                     @onclick="() => PlayFromQueue(index)"
+                                     @onkeydown="(e) => OnQueueItemKeyDown(e, index)">
+                                    <div class="queue-item-index"><span>@(i + 1)</span></div>
+                                    @if (!string.IsNullOrEmpty(track.CoverUrl))
                                     {
-                                        <K7Icon Icon="@Phosphor.Equalizer"
-                                                 Size="sm"
-                                                 Color="primary" />
+                                        <K7Image Src="@track.CoverUrl" Alt="Cover" Width="40" ObjectFit="cover" Class="queue-item-cover" loading="lazy" />
                                     }
                                     else
                                     {
-                                        <span>@(i + 1)</span>
+                                        <K7Icon Icon="@Phosphor.MusicNote" Class="queue-item-cover-placeholder" />
+                                    }
+                                    <div class="queue-item-info">
+                                        <span class="queue-item-title">@track.Title</span>
+                                        <span class="queue-item-artist">@track.Artist</span>
+                                    </div>
+                                    <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
+                                </div>
+                            }
+                            @if (Audio.CurrentIndex == 0)
+                            {
+                                <div class="queue-empty">@S["NoPreviousTracks"]</div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="queue-list">
+                            @if (Audio.CurrentIndex < Audio.Queue.Count)
+                            {
+                                var currentTrack = Audio.Queue[Audio.CurrentIndex];
+                                <div class="queue-item queue-item-current">
+                                    <div class="queue-item-index">
+                                        <K7Icon Icon="@Phosphor.Equalizer" Size="sm" Color="primary" />
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(currentTrack.CoverUrl))
+                                    {
+                                        <K7Image Src="@currentTrack.CoverUrl" Alt="Cover" Width="40" ObjectFit="cover" Class="queue-item-cover" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <K7Icon Icon="@Phosphor.MusicNote" Class="queue-item-cover-placeholder" />
+                                    }
+                                    <div class="queue-item-info">
+                                        <span class="queue-item-title">@currentTrack.Title</span>
+                                        <span class="queue-item-artist">@currentTrack.Artist</span>
+                                    </div>
+                                    <span class="queue-item-duration">@FormatTime(currentTrack.Duration ?? 0)</span>
+                                </div>
+                            }
+                            @for (var i = Audio.CurrentIndex + 1; i < Audio.Queue.Count; i++)
+                            {
+                                var index = i;
+                                var track = Audio.Queue[i];
+                                <div class="queue-item focusable"
+                                     tabindex="0" role="button"
+                                     @onclick="() => PlayFromQueue(index)"
+                                     @onkeydown="(e) => OnQueueItemKeyDown(e, index)">
+                                    <div class="queue-item-index"><span>@(i + 1)</span></div>
+                                    @if (!string.IsNullOrEmpty(track.CoverUrl))
+                                    {
+                                        <K7Image Src="@track.CoverUrl" Alt="Cover" Width="40" ObjectFit="cover" Class="queue-item-cover" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <K7Icon Icon="@Phosphor.MusicNote" Class="queue-item-cover-placeholder" />
+                                    }
+                                    <div class="queue-item-info">
+                                        <span class="queue-item-title">@track.Title</span>
+                                        <span class="queue-item-artist">@track.Artist</span>
+                                    </div>
+                                    <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
+                                    <K7IconButton Icon="@Phosphor.X" OnClick="() => Audio.RemoveFromQueue(index)" Class="queue-item-remove" />
+                                </div>
+                            }
+                            @if (Audio.CurrentIndex >= Audio.Queue.Count - 1)
+                            {
+                                <div class="queue-empty">@S["NoUpcomingTracks"]</div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else if (_view == FullScreenView.Info)
+            {
+                <div class="fullscreen-player-info-panel">
+                    <div class="info-panel-header">
+                        <K7IconButton Icon="@Phosphor.CaretLeft" OnClick="() => { _view = FullScreenView.Player; }" AriaLabel="@S["Back"]" />
+                        <span class="info-panel-title">@S["TrackInfo"]</span>
+                    </div>
+                    <div class="info-panel-content">
+                        @if (_trackDetails is not null)
+                        {
+                            <div class="info-section">
+                                <span class="info-section-title">@S["AudioDetails"]</span>
+                                @if (_audioMetadata is not null)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Codec"]</span>
+                                        <span class="info-value">@_audioMetadata.AudioTrack?.Codec.ToUpperInvariant()</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Container"]</span>
+                                        <span class="info-value">@_audioMetadata.Container.ToUpperInvariant()</span>
+                                    </div>
+                                    @if (_audioMetadata.AudioTrack?.SampleRateHz is not null)
+                                    {
+                                        <div class="info-row">
+                                            <span class="info-label">@S["SampleRate"]</span>
+                                            <span class="info-value">@($"{_audioMetadata.AudioTrack.SampleRateHz / 1000.0:0.#} kHz")</span>
+                                        </div>
+                                    }
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Channels"]</span>
+                                        <span class="info-value">@FormatChannels(_audioMetadata.AudioTrack)</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Duration"]</span>
+                                        <span class="info-value">@FormatDuration(_audioMetadata.Duration)</span>
+                                    </div>
+                                    @if (_fileSize > 0)
+                                    {
+                                        <div class="info-row">
+                                            <span class="info-label">@S["FileSize"]</span>
+                                            <span class="info-value">@FormatFileSize(_fileSize)</span>
+                                        </div>
+                                    }
+                                    @if (_fileSize > 0 && _audioMetadata.Duration.TotalSeconds > 0)
+                                    {
+                                        <div class="info-row">
+                                            <span class="info-label">@S["Bitrate"]</span>
+                                            <span class="info-value">@($"{(int)(_fileSize * 8 / _audioMetadata.Duration.TotalSeconds / 1000)} kbps")</span>
+                                        </div>
+                                    }
+                                }
+                            </div>
+
+                            @if (HasTrackProperties)
+                            {
+                            <div class="info-section">
+                                <span class="info-section-title">@S["TrackProperties"]</span>
+                                @if (_trackDetails.Bpm is > 0)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">BPM</span>
+                                        <span class="info-value">@_trackDetails.Bpm</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(_trackDetails.MusicalKey))
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Key"]</span>
+                                        <span class="info-value">@_trackDetails.MusicalKey</span>
+                                    </div>
+                                }
+                                @if (_trackDetails.LoudnessLufs is not null)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Loudness"]</span>
+                                        <span class="info-value">@($"{_trackDetails.LoudnessLufs:F1} LUFS")</span>
+                                    </div>
+                                }
+                                @if (_trackDetails.ReplayGainTrackGain is not null)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">ReplayGain</span>
+                                        <span class="info-value">@($"{_trackDetails.ReplayGainTrackGain:+0.00;-0.00} dB")</span>
+                                    </div>
+                                }
+                                @if (_trackDetails.Energy is not null)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Energy"]</span>
+                                        <span class="info-value">@($"{_trackDetails.Energy:P0}")</span>
+                                    </div>
+                                }
+                                @if (_trackDetails.Danceability is not null)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Danceability"]</span>
+                                        <span class="info-value">@($"{_trackDetails.Danceability:P0}")</span>
+                                    </div>
+                                }
+                                @if (_trackDetails.Valence is not null)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-label">@S["Valence"]</span>
+                                        <span class="info-value">@($"{_trackDetails.Valence:P0}")</span>
+                                    </div>
+                                }
+                            </div>
+                            }
+
+                            @if (_trackDetails.UserState?.PlayCount is > 0 || _trackDetails.TotalPlayCount > 0)
+                            {
+                                <div class="info-section">
+                                    <span class="info-section-title">@S["ListeningStats"]</span>
+                                    @if (_trackDetails.UserState?.PlayCount is > 0)
+                                    {
+                                        <div class="info-row">
+                                            <span class="info-label">@S["PlayCount"]</span>
+                                            <span class="info-value">@_trackDetails.UserState.PlayCount</span>
+                                        </div>
+                                    }
+                                    @if (_trackDetails.TotalPlayCount > 0)
+                                    {
+                                        <div class="info-row">
+                                            <span class="info-label">@S["TotalPlayCount"]</span>
+                                            <span class="info-value">@_trackDetails.TotalPlayCount</span>
+                                        </div>
+                                    }
+                                    @if (_trackDetails.UserState?.LastInteractedAt is not null)
+                                    {
+                                        <div class="info-row">
+                                            <span class="info-label">@S["LastPlayed"]</span>
+                                            <span class="info-value">@_trackDetails.UserState.LastInteractedAt.Value.ToString("d")</span>
+                                        </div>
                                     }
                                 </div>
-                                @if (!string.IsNullOrEmpty(track.CoverUrl))
-                                {
-                                    <K7Image Src="@track.CoverUrl"
-                                              Alt="Cover"
-                                              Width="40"
-                                              ObjectFit="cover"
-                                              Class="queue-item-cover"
-                                              loading="lazy" />
-                                }
-                                else
-                                {
-                                    <K7Icon Icon="@Phosphor.MusicNote"
-                                             Class="queue-item-cover-placeholder" />
-                                }
-                                <div class="queue-item-info">
-                                    <span class="queue-item-title">@track.Title</span>
-                                    <span class="queue-item-artist">@track.Artist</span>
-                                </div>
-                                <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
-                                <K7IconButton Icon="@Phosphor.X" OnClick="() => Audio.RemoveFromQueue(index)" Class="queue-item-remove" />
+                            }
+                        }
+                        else
+                        {
+                            <div class="info-loading">
+                                <K7Spinner />
                             </div>
                         }
                     </div>

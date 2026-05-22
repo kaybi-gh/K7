@@ -4,16 +4,20 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Entities.Metadatas.Files;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using K7.Clients.Shared.UI;
+using K7.Clients.Shared.UI.Components.Dialogs;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
-public enum FullScreenView { Player, Lyrics, Queue }
+public enum FullScreenView { Player, Lyrics, Queue, Info }
+public enum QueueTab { UpNext, Previous }
 
 public partial class FullScreenMusicPlayer : IAsyncDisposable
 {
@@ -34,6 +38,18 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private string? _prevWaveformState;
     private Guid? _detailsLoadedForMediaId;
     private DotNetObjectReference<FullScreenMusicPlayer>? _dotNetRef;
+    private bool _menuOpen;
+    private bool _sleepTimerSubmenuOpen;
+    private bool _visualizerEnabled;
+    private ElementReference _visualizerCanvas;
+    private MusicTrackDto? _trackDetails;
+    private AudioFileMetadataDto? _audioMetadata;
+    private long _fileSize;
+    private QueueTab _queueTab;
+    private IReadOnlyList<TabOption<QueueTab>> _queueTabOptions => [
+        new(QueueTab.UpNext, S["UpNext"]),
+        new(QueueTab.Previous, S["Previous"])
+    ];
 
     private double DisplayPercent => _isScrubbing && Audio.Duration > 0
         ? (_scrubTime / Audio.Duration) * 100
@@ -61,6 +77,10 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         _ => Phosphor.Repeat
     };
 
+    private bool HasTrackProperties => _trackDetails is { } t &&
+        (t.Bpm is > 0 || !string.IsNullOrEmpty(t.MusicalKey) || t.LoudnessLufs is not null ||
+         t.ReplayGainTrackGain is not null || t.Energy is not null || t.Danceability is not null || t.Valence is not null);
+
     private string VolumeIcon => Audio.IsMuted || Audio.Volume <= 0
         ? Phosphor.SpeakerX
         : Audio.Volume < 0.5
@@ -80,6 +100,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         Audio.VolumeChanged += OnVolumeStateChanged;
         Audio.IsMutedChanged += OnMutedStateChanged;
         Audio.IsFullScreenVisibleChanged += OnFullScreenVisibilityChanged;
+        SleepTimer.TimerChanged += OnSleepTimerChanged;
 
         var deviceType = await DeviceService.GetDeviceTypeAsync();
         _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
@@ -114,10 +135,19 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         Audio.VolumeChanged -= OnVolumeStateChanged;
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsFullScreenVisibleChanged -= OnFullScreenVisibilityChanged;
+        SleepTimer.TimerChanged -= OnSleepTimerChanged;
 
         try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _seekBarRef); }
         catch (JSDisconnectedException) { }
         catch (InvalidOperationException) { }
+
+        if (_visualizerEnabled)
+        {
+            try { await JS.InvokeVoidAsync("K7.Visualizer.stop"); }
+            catch (JSDisconnectedException) { }
+            catch (InvalidOperationException) { }
+        }
+
         _dotNetRef?.Dispose();
     }
 
@@ -152,14 +182,25 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         _detailsLoadedForMediaId = mediaId;
         _lyricsLrc = null;
         _lyrics = null;
+        _trackDetails = null;
+        _audioMetadata = null;
+        _fileSize = 0;
 
         var media = await Server.GetMediaAsync(mediaId.Value);
         if (media is MusicTrackDto track)
         {
+            _trackDetails = track;
             _lyricsLrc = track.LyricsLrc;
             _lyrics = track.Lyrics;
             _waveformPeaks = track.WaveformPeaks;
             BuildWaveformMask();
+
+            var indexedFile = track.IndexedFiles?.FirstOrDefault();
+            if (indexedFile is not null)
+            {
+                _fileSize = indexedFile.Size;
+                _audioMetadata = indexedFile.FileMetadata as AudioFileMetadataDto;
+            }
         }
         else
         {
@@ -385,10 +426,10 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             switch (e.Code)
             {
                 case "ArrowRight":
-                    _scrubTime = Math.Min(_scrubTime + 5, Audio.Duration);
+                    _scrubTime = Math.Min(_scrubTime + Audio.SkipForwardSeconds, Audio.Duration);
                     break;
                 case "ArrowLeft":
-                    _scrubTime = Math.Max(_scrubTime - 5, 0);
+                    _scrubTime = Math.Max(_scrubTime - Audio.SkipBackSeconds, 0);
                     break;
             }
             return;
@@ -397,10 +438,10 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         switch (e.Code)
         {
             case "ArrowRight":
-                Audio.Seek(Math.Min(Audio.CurrentTime + 5, Audio.Duration));
+                Audio.Seek(Math.Min(Audio.CurrentTime + Audio.SkipForwardSeconds, Audio.Duration));
                 break;
             case "ArrowLeft":
-                Audio.Seek(Math.Max(Audio.CurrentTime - 5, 0));
+                Audio.Seek(Math.Max(Audio.CurrentTime - Audio.SkipBackSeconds, 0));
                 break;
         }
     }
@@ -452,12 +493,114 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private void OnRepeatChanged(RepeatMode _) => InvokeAsync(StateHasChanged);
     private void OnVolumeStateChanged(double _) => InvokeAsync(StateHasChanged);
     private void OnMutedStateChanged(bool _) => InvokeAsync(StateHasChanged);
+    private void OnSleepTimerChanged() => InvokeAsync(StateHasChanged);
     private void OnFullScreenVisibilityChanged() => InvokeAsync(async () =>
     {
         if (Audio.IsFullScreenVisible)
             await LoadTrackDetailsAsync();
         StateHasChanged();
     });
+
+    private void StartSleepTimer(int minutes)
+    {
+        SleepTimer.Start(SleepTimerMode.Duration, TimeSpan.FromMinutes(minutes));
+        _sleepTimerSubmenuOpen = false;
+        _menuOpen = false;
+    }
+
+    private void StartSleepTimerEndOfTrack()
+    {
+        SleepTimer.Start(SleepTimerMode.EndOfTrack);
+        _sleepTimerSubmenuOpen = false;
+        _menuOpen = false;
+    }
+
+    private void CancelSleepTimer()
+    {
+        SleepTimer.Cancel();
+        _menuOpen = false;
+    }
+
+    private static string FormatRemaining(TimeSpan remaining)
+    {
+        if (remaining.TotalHours >= 1)
+            return $"{remaining.Hours}:{remaining.Minutes:00}:{remaining.Seconds:00}";
+        return $"{remaining.Minutes}:{remaining.Seconds:00}";
+    }
+
+    private async Task ShareTrack()
+    {
+        _menuOpen = false;
+        var track = Audio.CurrentTrack;
+        if (track is null) return;
+
+        var url = $"{Navigation.BaseUri}music/albums/{_trackDetails?.AlbumId ?? track.MediaId}?track={track.MediaId}";
+        var shared = await JS.InvokeAsync<bool>("K7.shareOrCopy", url);
+        Snackbar.Add(S[shared ? "Shared" : "CopiedToClipboard"], K7Severity.Success);
+    }
+
+    private void GoToArtist()
+    {
+        _menuOpen = false;
+        var artistId = Audio.CurrentTrack?.ArtistId ?? _trackDetails?.ArtistId;
+        if (artistId is null) return;
+        Audio.ToggleFullScreen();
+        Navigation.NavigateTo($"/music/artists/{artistId}");
+    }
+
+    private void GoToAlbum()
+    {
+        _menuOpen = false;
+        var albumId = _trackDetails?.AlbumId;
+        if (albumId is null) return;
+        Audio.ToggleFullScreen();
+        Navigation.NavigateTo($"/music/albums/{albumId}");
+    }
+
+    private async Task SaveQueueAsPlaylist()
+    {
+        _menuOpen = false;
+        if (Audio.Queue.Count == 0) return;
+
+        var reference = await DialogService.ShowAsync<CreatePlaylistDialog>(S["SaveQueueAsPlaylist"]);
+        var result = await reference.Result;
+        if (result.Canceled || result.Data is not Guid playlistId) return;
+
+        foreach (var item in Audio.Queue)
+        {
+            await PlaylistService.AddPlaylistItemAsync(playlistId, item.MediaId);
+        }
+
+        Snackbar.Add(S["QueueSavedAsPlaylist"], K7Severity.Success);
+    }
+
+    private async Task AddToPlaylist()
+    {
+        _menuOpen = false;
+        var track = Audio.CurrentTrack;
+        if (track is null) return;
+
+        var parameters = new K7DialogParameters { ["MediaId"] = track.MediaId };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<AddToPlaylistDialog>(S["AddToPlaylist"], parameters, options);
+    }
+
+    private async Task ToggleVisualizer()
+    {
+        _menuOpen = false;
+        _visualizerEnabled = !_visualizerEnabled;
+        StateHasChanged();
+
+        if (_visualizerEnabled)
+        {
+            await Task.Yield();
+            await JS.InvokeVoidAsync("K7.Visualizer.start", _visualizerCanvas);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("K7.Visualizer.stop");
+        }
+    }
 
     private static string FormatTime(double seconds)
     {
@@ -468,5 +611,38 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         return ts.Hours > 0
             ? $"{ts.Hours:0}:{ts.Minutes:00}:{ts.Seconds:00}"
             : $"{ts.Minutes:0}:{ts.Seconds:00}";
+    }
+
+    private async Task ShowTrackInfo()
+    {
+        _menuOpen = false;
+        _view = FullScreenView.Info;
+        await LoadTrackDetailsAsync();
+    }
+
+    private static string FormatChannels(AudioFileTrackDto? audioTrack)
+    {
+        if (audioTrack is null) return "-";
+        if (!string.IsNullOrEmpty(audioTrack.ChannelLayout))
+            return $"{audioTrack.Channels} ({audioTrack.ChannelLayout})";
+        return audioTrack.Channels.ToString();
+    }
+
+    private static string FormatDuration(TimeSpan duration)
+    {
+        return duration.Hours > 0
+            ? $"{duration.Hours}:{duration.Minutes:00}:{duration.Seconds:00}"
+            : $"{duration.Minutes}:{duration.Seconds:00}";
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        return bytes switch
+        {
+            >= 1_073_741_824 => $"{bytes / 1_073_741_824.0:F1} GB",
+            >= 1_048_576 => $"{bytes / 1_048_576.0:F1} MB",
+            >= 1024 => $"{bytes / 1024.0:F0} KB",
+            _ => $"{bytes} B"
+        };
     }
 }
