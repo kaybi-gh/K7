@@ -15,8 +15,10 @@ public class GetMedia : IEndpoint
 
         endpointRouteBuilder.MapGet("/api/medias/{id}", async ([FromServices] ISender sender, Guid id) =>
         {
-            var media = await sender.Send(new GetMediaQuery(id));
-            return media.ToMediaDto();
+            var result = await sender.Send(new GetMediaQuery(id));
+            var dto = result.Media.ToMediaDto();
+            dto.TotalPlayCount = result.TotalPlayCount;
+            return dto;
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
