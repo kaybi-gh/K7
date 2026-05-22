@@ -14,7 +14,7 @@ using TMDbLib.Client;
 using TMDbLib.Objects.Movies;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
-public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider, IMetadataProviderInfo, IPersonMetadataProvider
+public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, ISearchableMetadataProvider, IMetadataProviderInfo, IPersonMetadataProvider, IMetadataImageProvider, IPersonImageProvider
 {
     public string ProviderName => "tmdb";
     public IReadOnlyList<LibraryMediaType> SupportedMediaTypes { get; } = [LibraryMediaType.Movie, LibraryMediaType.Serie];
@@ -322,6 +322,10 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                 ? _tdmbClient.GetImageUrl("original", tmdbPerson.ProfilePath, true)?.ToString()
                 : null;
 
+            var additionalIds = new List<ExternalIdEntry>();
+            if (!string.IsNullOrEmpty(tmdbPerson.ImdbId))
+                additionalIds.Add(new ExternalIdEntry("imdb", tmdbPerson.ImdbId));
+
             return new ExternalPersonDetails
             {
                 Biography = tmdbPerson.Biography,
@@ -335,7 +339,8 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
                     TMDbLib.Objects.People.PersonGender.NonBinary => PersonGender.NonBinary,
                     _ => PersonGender.NotSpecified,
                 },
-                ImageUrl = imageUrl
+                ImageUrl = imageUrl,
+                AdditionalExternalIds = additionalIds
             };
         }
         catch (Exception)
@@ -419,5 +424,125 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             .SelectMany(r => r.ReleaseDates ?? [])
             .Select(r => r.Certification)
             .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));
+    }
+
+    public bool SupportsMediaType(MediaType mediaType) => mediaType is MediaType.Movie;
+
+    public async Task<IReadOnlyList<ProviderImageDto>> GetImagesAsync(ImageProviderContext context, CancellationToken cancellationToken = default)
+    {
+        var results = new List<ProviderImageDto>();
+
+        try
+        {
+            var movie = await _tdmbClient.GetMovieAsync(context.ProviderId, context.Language,
+                includeImageLanguage: $"{context.Language},en,null",
+                extraMethods: MovieMethods.Images,
+                cancellationToken: cancellationToken);
+
+            if (movie?.Images is null)
+                return results;
+
+            foreach (var img in movie.Images.Posters.OrderByDescending(x => x.VoteAverage))
+            {
+                var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
+                var thumbUrl = _tdmbClient.GetImageUrl("w300", img.FilePath, true)?.ToString();
+                if (url is null || thumbUrl is null) continue;
+
+                results.Add(new ProviderImageDto
+                {
+                    Url = url,
+                    ThumbnailUrl = thumbUrl,
+                    Type = MetadataPictureType.Poster,
+                    Width = img.Width,
+                    Height = img.Height,
+                    VoteAverage = img.VoteAverage,
+                    Language = img.Iso_639_1
+                });
+            }
+
+            foreach (var img in movie.Images.Backdrops.OrderByDescending(x => x.VoteAverage))
+            {
+                var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
+                var thumbUrl = _tdmbClient.GetImageUrl("w780", img.FilePath, true)?.ToString();
+                if (url is null || thumbUrl is null) continue;
+
+                results.Add(new ProviderImageDto
+                {
+                    Url = url,
+                    ThumbnailUrl = thumbUrl,
+                    Type = MetadataPictureType.Backdrop,
+                    Width = img.Width,
+                    Height = img.Height,
+                    VoteAverage = img.VoteAverage,
+                    Language = img.Iso_639_1
+                });
+            }
+
+            foreach (var img in movie.Images.Logos.OrderByDescending(x => x.VoteAverage))
+            {
+                var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
+                var thumbUrl = _tdmbClient.GetImageUrl("w300", img.FilePath, true)?.ToString();
+                if (url is null || thumbUrl is null) continue;
+
+                results.Add(new ProviderImageDto
+                {
+                    Url = url,
+                    ThumbnailUrl = thumbUrl,
+                    Type = MetadataPictureType.Logo,
+                    Width = img.Width,
+                    Height = img.Height,
+                    VoteAverage = img.VoteAverage,
+                    Language = img.Iso_639_1
+                });
+            }
+        }
+        catch (Exception)
+        {
+            // Provider unavailable - return empty list
+        }
+
+        return results;
+    }
+
+    public async Task<IReadOnlyList<ProviderImageDto>> GetPersonImagesAsync(string providerId, string language, CancellationToken cancellationToken = default)
+    {
+        var results = new List<ProviderImageDto>();
+
+        if (!int.TryParse(providerId, out var tmdbId))
+            return results;
+
+        try
+        {
+            var person = await _tdmbClient.GetPersonAsync(tmdbId,
+                TMDbLib.Objects.People.PersonMethods.Images,
+                cancellationToken: cancellationToken);
+
+            if (person?.Images?.Profiles is null)
+                return results;
+
+            foreach (var img in person.Images.Profiles.OrderByDescending(x => x.VoteAverage))
+            {
+                var url = _tdmbClient.GetImageUrl("original", img.FilePath, true)?.ToString();
+                var thumbUrl = _tdmbClient.GetImageUrl("w185", img.FilePath, true)?.ToString();
+                if (url is null || thumbUrl is null) continue;
+
+                results.Add(new ProviderImageDto
+                {
+                    Url = url,
+                    ThumbnailUrl = thumbUrl,
+                    Type = MetadataPictureType.Portrait,
+                    Width = img.Width,
+                    Height = img.Height,
+                    VoteAverage = img.VoteAverage,
+                    Language = img.Iso_639_1
+                });
+            }
+        }
+        catch (Exception)
+        {
+            // Provider unavailable
+        }
+
+        return results;
     }
 }

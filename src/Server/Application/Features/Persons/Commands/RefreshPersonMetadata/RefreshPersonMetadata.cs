@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
+using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
@@ -65,6 +66,12 @@ public class RefreshPersonMetadataCommandHandler(
                 picture.AddDomainEvent(new MetadataPictureCreatedEvent(picture));
                 person.PortraitPicture = picture;
             }
+        }
+
+        foreach (var entry in details.AdditionalExternalIds)
+        {
+            if (!person.ExternalIds.Any(e => e.ProviderName == entry.ProviderName))
+                person.ExternalIds.Add(new ExternalId { ProviderName = entry.ProviderName, Value = entry.Value, PersonId = person.Id });
         }
 
         await context.SaveChangesAsync(cancellationToken);
