@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Audio player</value></data>
+  <data name="LoudnessNormalization" xml:space="preserve"><value>Loudness normalization</value></data>
+  <data name="EnableLoudness" xml:space="preserve"><value>Enable loudness normalization</value></data>
+  <data name="TargetLoudness" xml:space="preserve"><value>Target loudness (LUFS)</value></data>
+  <data name="PreAmp" xml:space="preserve"><value>Pre-amp (dB)</value></data>
+  <data name="EnableLimiter" xml:space="preserve"><value>Enable limiter (prevents clipping)</value></data>
+  <data name="Equalizer" xml:space="preserve"><value>Equalizer</value></data>
+  <data name="EnableEqualizer" xml:space="preserve"><value>Enable equalizer</value></data>
+  <data name="Preset" xml:space="preserve"><value>Preset</value></data>
+  <data name="PresetFlat" xml:space="preserve"><value>Flat</value></data>
+  <data name="PresetBassBoost" xml:space="preserve"><value>Bass Boost</value></data>
+  <data name="PresetTrebleBoost" xml:space="preserve"><value>Treble Boost</value></data>
+  <data name="PresetVocal" xml:space="preserve"><value>Vocal</value></data>
+  <data name="PresetRock" xml:space="preserve"><value>Rock</value></data>
+  <data name="PresetElectronic" xml:space="preserve"><value>Electronic</value></data>
+  <data name="PresetCustom" xml:space="preserve"><value>Custom</value></data>
+  <data name="Crossfade" xml:space="preserve"><value>Crossfade</value></data>
+  <data name="CrossfadeDuration" xml:space="preserve"><value>Duration</value></data>
+  <data name="CrossfadeDisabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="AdaptiveCrossfade" xml:space="preserve"><value>Adaptive crossfade (uses BPM, key, energy)</value></data>
+  <data name="AdaptiveCrossfadeHint" xml:space="preserve"><value>Crossfade duration will be automatically calculated based on track analysis.</value></data>
+  <data name="CrossfadeAdaptiveAuto" xml:space="preserve"><value>Automatic (adaptive)</value></data>
+  <data name="Autoplay" xml:space="preserve"><value>Autoplay</value></data>
+  <data name="AutoplayDescription" xml:space="preserve"><value>Play similar tracks when queue ends</value></data>
+  <data name="SleepTimer" xml:space="preserve"><value>Sleep timer</value></data>
+  <data name="TimerActive" xml:space="preserve"><value>Timer active: {0}</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Minutes" xml:space="preserve"><value>{0} min</value></data>
+  <data name="OneHour" xml:space="preserve"><value>1 hour</value></data>
+  <data name="EndOfTrack" xml:space="preserve"><value>End of track</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Saved" xml:space="preserve"><value>Settings saved</value></data>
+  <data name="ResetToDefault" xml:space="preserve"><value>Reset to defaults</value></data>
+  <data name="StreamingQuality" xml:space="preserve"><value>Streaming quality</value></data>
+  <data name="QualityWifi" xml:space="preserve"><value>Wi-Fi quality</value></data>
+  <data name="QualityMobile" xml:space="preserve"><value>Mobile quality</value></data>
+  <data name="Original" xml:space="preserve"><value>Original (no transcoding)</value></data>
+  <data name="DownmixToStereo" xml:space="preserve"><value>Downmix to stereo</value></data>
+  <data name="PlayerBehavior" xml:space="preserve"><value>Player behavior</value></data>
+  <data name="ShowFullscreenOnPlay" xml:space="preserve"><value>Show fullscreen on play</value></data>
+  <data name="KeepScreenOn" xml:space="preserve"><value>Keep screen on</value></data>
+  <data name="SkipBackDuration" xml:space="preserve"><value>Skip back duration</value></data>
+  <data name="SkipForwardDuration" xml:space="preserve"><value>Skip forward duration</value></data>
+</root>

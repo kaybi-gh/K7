@@ -1,12 +1,23 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Shared;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsAudioPlayerPage : IDisposable
+public partial class SettingsAudioPlayerPage
 {
     private static readonly string[] EqFrequencyLabels =
         ["31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
+
+    private static readonly Dictionary<string, double[]> EqPresetBands = new()
+    {
+        ["flat"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ["bass-boost"] = [6, 5, 4, 2, 0, 0, 0, 0, 0, 0],
+        ["treble-boost"] = [0, 0, 0, 0, 0, 1, 3, 5, 6, 7],
+        ["vocal"] = [-2, -1, 0, 3, 5, 5, 3, 0, -1, -2],
+        ["rock"] = [5, 4, 2, 0, -1, -1, 0, 2, 4, 5],
+        ["electronic"] = [5, 4, 1, 0, -2, 0, 1, 3, 5, 5],
+    };
 
     private bool _loudnessEnabled;
     private double _targetLufs;
@@ -18,6 +29,13 @@ public partial class SettingsAudioPlayerPage : IDisposable
     private double _crossfadeDuration;
     private bool _adaptiveCrossfade;
     private bool _autoplayEnabled;
+    private int _streamingQualityWifi;
+    private int _streamingQualityMobile;
+    private bool _downmixToStereo;
+    private bool _showFullscreenOnPlay;
+    private bool _keepScreenOn;
+    private int _skipBackSeconds;
+    private int _skipForwardSeconds;
 
     protected override void OnInitialized()
     {
@@ -31,14 +49,26 @@ public partial class SettingsAudioPlayerPage : IDisposable
         _crossfadeDuration = AudioPlayerService.CrossfadeDuration;
         _adaptiveCrossfade = AudioPlayerService.AdaptiveCrossfade;
         _autoplayEnabled = AutoplayService.Enabled;
-
-        SleepTimerService.TimerChanged += OnTimerChanged;
+        _streamingQualityWifi = DeviceStorage.Get(PreferenceKeys.STREAMING_QUALITY_WIFI, 0);
+        _streamingQualityMobile = DeviceStorage.Get(PreferenceKeys.STREAMING_QUALITY_MOBILE, 0);
+        _downmixToStereo = DeviceStorage.Get(PreferenceKeys.DOWNMIX_TO_STEREO, false);
+        _showFullscreenOnPlay = AudioPlayerService.ShowFullscreenOnPlay;
+        _keepScreenOn = AudioPlayerService.KeepScreenOn;
+        _skipBackSeconds = AudioPlayerService.SkipBackSeconds;
+        _skipForwardSeconds = AudioPlayerService.SkipForwardSeconds;
     }
 
     private void OnBandChanged(int index, double value)
     {
         _eqBands[index] = value;
         _eqPresetName = "custom";
+    }
+
+    private void OnPresetChanged(string preset)
+    {
+        _eqPresetName = preset;
+        if (EqPresetBands.TryGetValue(preset, out var bands))
+            _eqBands = (double[])bands.Clone();
     }
 
     private Task SaveAsync()
@@ -57,6 +87,17 @@ public partial class SettingsAudioPlayerPage : IDisposable
 
         AutoplayService.SetEnabled(_autoplayEnabled);
 
+        DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_WIFI, _streamingQualityWifi);
+        DeviceStorage.Set(PreferenceKeys.STREAMING_QUALITY_MOBILE, _streamingQualityMobile);
+        DeviceStorage.Set(PreferenceKeys.DOWNMIX_TO_STEREO, _downmixToStereo);
+
+        AudioPlayerService.SetShowFullscreenOnPlay(_showFullscreenOnPlay);
+        AudioPlayerService.SetKeepScreenOn(_keepScreenOn);
+        AudioPlayerService.SetSkipBackSeconds(_skipBackSeconds);
+        AudioPlayerService.SetSkipForwardSeconds(_skipForwardSeconds);
+
+        Snackbar.Add(L["Saved"], K7Severity.Success);
+
         return Task.CompletedTask;
     }
 
@@ -72,39 +113,14 @@ public partial class SettingsAudioPlayerPage : IDisposable
         _crossfadeDuration = 6.0;
         _adaptiveCrossfade = true;
         _autoplayEnabled = true;
+        _streamingQualityWifi = 0;
+        _streamingQualityMobile = 0;
+        _downmixToStereo = false;
+        _showFullscreenOnPlay = false;
+        _keepScreenOn = false;
+        _skipBackSeconds = 5;
+        _skipForwardSeconds = 5;
         StateHasChanged();
         return Task.CompletedTask;
-    }
-
-    private void StartSleepTimer(int minutes)
-    {
-        SleepTimerService.Start(SleepTimerMode.Duration, TimeSpan.FromMinutes(minutes));
-    }
-
-    private void StartSleepTimerEndOfTrack()
-    {
-        SleepTimerService.Start(SleepTimerMode.EndOfTrack);
-    }
-
-    private void CancelSleepTimer()
-    {
-        SleepTimerService.Cancel();
-    }
-
-    private static string FormatRemaining(TimeSpan remaining)
-    {
-        if (remaining.TotalHours >= 1)
-            return $"{(int)remaining.TotalHours}h {remaining.Minutes}m";
-        return $"{remaining.Minutes}m {remaining.Seconds}s";
-    }
-
-    private void OnTimerChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        SleepTimerService.TimerChanged -= OnTimerChanged;
     }
 }
