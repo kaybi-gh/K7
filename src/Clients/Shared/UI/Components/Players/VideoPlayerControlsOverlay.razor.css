@@ -144,6 +144,7 @@
 
     .controls-bar.top {
         top: 0;
+        justify-content: flex-end;
         padding-top: calc(0.5rem + var(--k7-safe-top));
         padding-left: calc(0.5rem + var(--k7-safe-left));
         padding-right: calc(0.5rem + var(--k7-safe-right));
@@ -206,13 +207,14 @@
     left: 50%;
     transform: translateX(-50%);
     padding: 0;
-    border-radius: 12px;
+    border-radius: 1rem;
     background: rgba(30, 30, 30, 0.92);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     touch-action: none;
     user-select: none;
     z-index: 100010;
+    overflow: hidden;
 }
 
 .volume-slider-container {
@@ -253,17 +255,19 @@
     left: 50% !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: min(15rem, 50vh) !important;
-    height: 3.5rem !important;
+    width: min(15rem, 30vh) !important;
+    height: 3rem !important;
     transform: translate(-50%, -50%) rotate(-90deg) !important;
     border-radius: 1rem !important;
     cursor: row-resize !important;
 }
 
-::deep .volume-slider .k7-slider-wrap {
+::deep .k7-slider-wrap.volume-slider {
     position: absolute !important;
     inset: 0 !important;
     contain: paint !important;
+    overflow: hidden !important;
+    border-radius: 1rem !important;
 }
 
 ::deep .volume-slider .k7-range::-webkit-slider-runnable-track {
