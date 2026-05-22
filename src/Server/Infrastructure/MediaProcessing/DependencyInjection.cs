@@ -36,18 +36,26 @@ public static class DependencyInjection
         services.AddScoped<TMDbMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMovieMetadata>>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddKeyedScoped<IMetadataProvider<ExternalMovieMetadata>>("tmdb", (sp, _) => sp.GetRequiredService<TMDbMetadataProvider>());
+        services.AddKeyedScoped<IMetadataProvider<ExternalMovieMetadata>>("imdb", (sp, _) => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
         services.AddScoped<IPersonMetadataProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
-        services.AddScoped<IPersonMetadataProvider, MusicBrainzPersonMetadataProvider>();
+        services.AddScoped<IMetadataImageProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
+        services.AddScoped<IPersonImageProvider>(sp => sp.GetRequiredService<TMDbMetadataProvider>());
+        services.AddScoped<MusicBrainzPersonMetadataProvider>();
+        services.AddScoped<IPersonMetadataProvider>(sp => sp.GetRequiredService<MusicBrainzPersonMetadataProvider>());
+        services.AddScoped<IPersonImageProvider>(sp => sp.GetRequiredService<MusicBrainzPersonMetadataProvider>());
         services.AddScoped<TMDbSerieMetadataProvider>();
         services.AddKeyedScoped<ISerieMetadataProvider>("tmdb", (sp, _) => sp.GetRequiredService<TMDbSerieMetadataProvider>());
+        services.AddKeyedScoped<ISerieMetadataProvider>("imdb", (sp, _) => sp.GetRequiredService<TMDbSerieMetadataProvider>());
         services.AddScoped<ISearchableMetadataProvider>(sp => sp.GetRequiredService<TMDbSerieMetadataProvider>());
+        services.AddScoped<IMetadataImageProvider>(sp => sp.GetRequiredService<TMDbSerieMetadataProvider>());
         services.AddScoped<MusicBrainzMetadataProvider>();
         services.AddScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddKeyedScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>("musicbrainz", (sp, _) => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddScoped<IMusicArtistMetadataProvider>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
+        services.AddScoped<IMetadataImageProvider>(sp => sp.GetRequiredService<MusicBrainzMetadataProvider>());
         services.AddScoped<IMusicArtistMetadataProvider, WikidataMetadataProvider>();
         services.AddScoped<IPersonCreditsProvider, TMDbPersonCreditsProvider>();
 
