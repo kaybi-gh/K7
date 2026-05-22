@@ -187,9 +187,17 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 if (!artist.IsFieldLocked(nameof(MusicArtist.Country)) && !string.IsNullOrEmpty(mbDetails.Country))
                     artist.Country = mbDetails.Country;
 
-                if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds))
-                    && !string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
-                    artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
+                if (!artist.IsFieldLocked(nameof(MusicArtist.ExternalIds)))
+                {
+                    if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
+                        artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
+
+                    if (!string.IsNullOrEmpty(mbDetails.SpotifyId) && !artist.ExternalIds.Any(e => e.ProviderName == "spotify"))
+                        artist.ExternalIds.Add(new ExternalId { ProviderName = "spotify", Value = mbDetails.SpotifyId, MediaId = artist.Id });
+
+                    if (!string.IsNullOrEmpty(mbDetails.ImdbId) && !artist.ExternalIds.Any(e => e.ProviderName == "imdb"))
+                        artist.ExternalIds.Add(new ExternalId { ProviderName = "imdb", Value = mbDetails.ImdbId, MediaId = artist.Id });
+                }
 
                 await SyncArtistMembersAsync(artist, mbDetails.Members, request.Language, cancellationToken);
 
@@ -443,6 +451,12 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                     if (!string.IsNullOrEmpty(mbDetails.WikidataId) && !artist.ExternalIds.Any(e => e.ProviderName == "wikidata"))
                         artist.ExternalIds.Add(new ExternalId { ProviderName = "wikidata", Value = mbDetails.WikidataId, MediaId = artist.Id });
+
+                    if (!string.IsNullOrEmpty(mbDetails.SpotifyId) && !artist.ExternalIds.Any(e => e.ProviderName == "spotify"))
+                        artist.ExternalIds.Add(new ExternalId { ProviderName = "spotify", Value = mbDetails.SpotifyId, MediaId = artist.Id });
+
+                    if (!string.IsNullOrEmpty(mbDetails.ImdbId) && !artist.ExternalIds.Any(e => e.ProviderName == "imdb"))
+                        artist.ExternalIds.Add(new ExternalId { ProviderName = "imdb", Value = mbDetails.ImdbId, MediaId = artist.Id });
                 }
 
                 if (!artist.IsFieldLocked(nameof(MusicArtist.Country)) && !string.IsNullOrEmpty(mbDetails.Country) && string.IsNullOrEmpty(artist.Country))

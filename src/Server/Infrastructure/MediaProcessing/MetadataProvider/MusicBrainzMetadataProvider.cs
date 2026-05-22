@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.External;
@@ -9,11 +10,12 @@ using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using K7.Server.Domain.ValueObjects;
+using K7.Shared.Dtos.Entities.Metadatas;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 
-public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider, IMetadataProviderInfo
+public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumMetadata>, IMusicArtistMetadataProvider, IMetadataProviderInfo, IMetadataImageProvider
 {
     private const string BaseUrl = "https://musicbrainz.org/ws/2";
     private const string CoverArtBaseUrl = "https://coverartarchive.org";
@@ -82,15 +84,37 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             : null;
 
         // 4. Build metadata
+        var externalIds = new List<ExternalId>
+        {
+            new() { ProviderName = "musicbrainz", Value = releaseGroupId }
+        };
+
+        if (releaseGroup?.Relations is not null)
+        {
+            var wikidataUrl = releaseGroup.Relations.FirstOrDefault(r => r.Type == "wikidata")?.Url?.Resource;
+            if (!string.IsNullOrEmpty(wikidataUrl))
+            {
+                var qid = ExtractQid(wikidataUrl);
+                if (qid is not null)
+                    externalIds.Add(new ExternalId { ProviderName = "wikidata", Value = qid });
+            }
+
+            var spotifyUrl = releaseGroup.Relations
+                .FirstOrDefault(r => r.Type == "streaming music" && r.Url?.Resource?.Contains("spotify.com") == true)?.Url?.Resource;
+            if (!string.IsNullOrEmpty(spotifyUrl))
+            {
+                var spotifyId = ExtractSpotifyId(spotifyUrl);
+                if (spotifyId is not null)
+                    externalIds.Add(new ExternalId { ProviderName = "spotify", Value = spotifyId });
+            }
+        }
+
         var metadata = new ExternalMusicAlbumMetadata
         {
             Title = releaseGroup?.Title ?? release?.Title,
             ReleaseDate = ParseDate(releaseGroup?.FirstReleaseDate ?? release?.Date),
             Genres = ExtractGenres(releaseGroup?.Genres),
-            ExternalIds =
-            [
-                new ExternalId { ProviderName = "musicbrainz", Value = releaseGroupId }
-            ],
+            ExternalIds = externalIds,
             Tracks = ExtractTracks(release),
             Artists = ExtractArtists(release),
             Pictures = await FetchCoverArtAsync(releaseGroupId, releaseId, cancellationToken)
@@ -129,7 +153,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         try
         {
-            var url = $"{BaseUrl}/release-group/{releaseGroupId}?inc=genres+tags&fmt=json";
+            var url = $"{BaseUrl}/release-group/{releaseGroupId}?inc=genres+tags+url-rels&fmt=json";
             await _rateLimiter.WaitAsync(Host, cancellationToken);
             return await _httpClient.GetFromJsonAsync<MbReleaseGroup>(url, JsonOptions, cancellationToken);
         }
@@ -307,6 +331,14 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                 .FirstOrDefault(r => r.Type == "wikidata")?.Url?.Resource;
             var wikidataId = !string.IsNullOrEmpty(wikidataUrl) ? ExtractQid(wikidataUrl) : null;
 
+            var spotifyUrl = artist.Relations?
+                .FirstOrDefault(r => r.Type == "streaming music" && r.Url?.Resource?.Contains("spotify.com") == true)?.Url?.Resource;
+            var spotifyId = !string.IsNullOrEmpty(spotifyUrl) ? ExtractSpotifyId(spotifyUrl) : null;
+
+            var imdbUrl = artist.Relations?
+                .FirstOrDefault(r => r.Type == "IMDb")?.Url?.Resource;
+            var imdbId = !string.IsNullOrEmpty(imdbUrl) ? ExtractImdbId(imdbUrl) : null;
+
             var imageUrl = await TryGetArtistImageUrlAsync(providerId, cancellationToken);
 
             var members = artist.Relations?
@@ -339,6 +371,8 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                 Country = country,
                 MusicBrainzArtistId = providerId,
                 WikidataId = wikidataId,
+                SpotifyId = spotifyId,
+                ImdbId = imdbId,
                 ImageUrl = imageUrl,
                 Members = members
             };
@@ -404,6 +438,148 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         return qid.StartsWith('Q') ? qid : null;
     }
 
+    private static string? ExtractSpotifyId(string spotifyUrl)
+    {
+        // e.g. https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb
+        var segments = new Uri(spotifyUrl).AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length >= 2 ? segments[^1] : null;
+    }
+
+    private static string? ExtractImdbId(string imdbUrl)
+    {
+        // e.g. https://www.imdb.com/name/nm0000093/
+        var segments = new Uri(imdbUrl).AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.Length >= 2 ? segments[^1] : null;
+    }
+
+    public bool SupportsMediaType(MediaType mediaType) => mediaType is MediaType.MusicAlbum or MediaType.MusicArtist;
+
+    public async Task<IReadOnlyList<ProviderImageDto>> GetImagesAsync(ImageProviderContext context, CancellationToken cancellationToken = default)
+    {
+        return context.MediaType switch
+        {
+            MediaType.MusicAlbum => await FetchReleaseGroupImagesAsync(context.ProviderId, cancellationToken),
+            MediaType.MusicArtist => await FetchArtistImagesAsync(context.ProviderId, cancellationToken),
+            _ => []
+        };
+    }
+
+    private async Task<IReadOnlyList<ProviderImageDto>> FetchReleaseGroupImagesAsync(string releaseGroupId, CancellationToken cancellationToken)
+    {
+        var results = new List<ProviderImageDto>();
+
+        try
+        {
+            var coverArtUrl = $"{CoverArtBaseUrl}/release-group/{releaseGroupId}";
+            await _rateLimiter.WaitAsync(Host, cancellationToken);
+            var response = await _httpClient.GetAsync(coverArtUrl, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                return results;
+
+            var coverArt = await response.Content.ReadFromJsonAsync<CoverArtResponse>(JsonOptions, cancellationToken);
+            if (coverArt?.Images is null)
+                return results;
+
+            AddCoverArtImages(results, coverArt.Images);
+        }
+        catch
+        {
+            // Cover Art Archive unavailable
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyList<ProviderImageDto>> FetchArtistImagesAsync(string artistMbid, CancellationToken cancellationToken)
+    {
+        var results = new List<ProviderImageDto>();
+
+        try
+        {
+            await _rateLimiter.WaitAsync(Host, cancellationToken);
+            var url = $"{BaseUrl}/release-group?artist={Uri.EscapeDataString(artistMbid)}&type=album&limit=10&fmt=json";
+            var searchResult = await _httpClient.GetFromJsonAsync<MbReleaseGroupSearchResult>(url, JsonOptions, cancellationToken);
+
+            if (searchResult?.ReleaseGroups is null)
+                return results;
+
+            foreach (var rg in searchResult.ReleaseGroups)
+            {
+                if (string.IsNullOrEmpty(rg.Id)) continue;
+
+                try
+                {
+                    var coverArtUrl = $"{CoverArtBaseUrl}/release-group/{rg.Id}";
+                    await _rateLimiter.WaitAsync(Host, cancellationToken);
+                    var response = await _httpClient.GetAsync(coverArtUrl, cancellationToken);
+
+                    if (!response.IsSuccessStatusCode)
+                        continue;
+
+                    var coverArt = await response.Content.ReadFromJsonAsync<CoverArtResponse>(JsonOptions, cancellationToken);
+                    if (coverArt?.Images is null)
+                        continue;
+
+                    AddCoverArtImages(results, coverArt.Images);
+                }
+                catch
+                {
+                    // Skip unavailable cover art
+                }
+            }
+        }
+        catch
+        {
+            // MusicBrainz or Cover Art Archive unavailable
+        }
+
+        return results;
+    }
+
+    private static void AddCoverArtImages(List<ProviderImageDto> results, List<CoverArtImage> images)
+    {
+        foreach (var img in images)
+        {
+            if (string.IsNullOrEmpty(img.Image)) continue;
+
+            var isFront = img.Front == true;
+            var thumbUrl = img.Thumbnails?.Large ?? img.Thumbnails?.Small ?? img.Image;
+
+            results.Add(new ProviderImageDto
+            {
+                Url = img.Image,
+                ThumbnailUrl = thumbUrl,
+                Type = MetadataPictureType.Cover,
+                Width = 0,
+                Height = 0,
+                VoteAverage = isFront ? 10 : 0,
+                Language = null
+            });
+        }
+    }
+
+    private record CoverArtResponse
+    {
+        public List<CoverArtImage>? Images { get; init; }
+    }
+
+    private record CoverArtImage
+    {
+        public string? Image { get; init; }
+        public bool? Front { get; init; }
+        public bool? Back { get; init; }
+        public CoverArtThumbnails? Thumbnails { get; init; }
+    }
+
+    private record CoverArtThumbnails
+    {
+        public string? Small { get; init; }
+        public string? Large { get; init; }
+        [JsonPropertyName("1200")]
+        public string? ExtraLarge { get; init; }
+    }
+
     #region MusicBrainz API DTOs
 
     private record MbReleaseSearchResult
@@ -432,6 +608,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         [JsonPropertyName("first-release-date")]
         public string? FirstReleaseDate { get; init; }
         public List<MbGenre>? Genres { get; init; }
+        public List<MbRelation>? Relations { get; init; }
     }
 
     private record MbGenre

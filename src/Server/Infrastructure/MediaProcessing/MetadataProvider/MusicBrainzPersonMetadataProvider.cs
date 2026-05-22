@@ -2,17 +2,20 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Metadatas.External;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
+using K7.Shared.Dtos.Entities.Metadatas;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Infrastructure.MediaProcessing.MetadataProvider;
 
-public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider
+public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider, IPersonImageProvider
 {
     private const string MusicBrainzBaseUrl = "https://musicbrainz.org/ws/2";
+    private const string CoverArtBaseUrl = "https://coverartarchive.org";
     private const string WikidataBaseUrl = "https://www.wikidata.org/w/api.php";
     private const string Host = "musicbrainz.org";
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -73,6 +76,8 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider
                     biography = await FetchWikipediaBiographyAsync(qid, language, cancellationToken);
             }
 
+            var additionalIds = ExtractExternalIds(artist.Relations, wikidataUrl);
+
             return new ExternalPersonDetails
             {
                 Birthday = birthday,
@@ -80,7 +85,8 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider
                 BirthPlace = birthPlace,
                 Gender = gender,
                 ImageUrl = imageUrl,
-                Biography = biography
+                Biography = biography,
+                AdditionalExternalIds = additionalIds
             };
         }
         catch (Exception ex)
@@ -206,6 +212,131 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider
         return qid.StartsWith('Q') ? qid : null;
     }
 
+    private static List<ExternalIdEntry> ExtractExternalIds(List<MbRelation>? relations, string? wikidataUrl)
+    {
+        var ids = new List<ExternalIdEntry>();
+
+        if (!string.IsNullOrEmpty(wikidataUrl))
+        {
+            var qid = ExtractQid(wikidataUrl);
+            if (qid is not null)
+                ids.Add(new ExternalIdEntry("wikidata", qid));
+        }
+
+        if (relations is null) return ids;
+
+        var spotifyUrl = relations
+            .FirstOrDefault(r => r.Type == "streaming music" && r.Url?.Resource?.Contains("spotify.com") == true)?.Url?.Resource;
+        if (!string.IsNullOrEmpty(spotifyUrl))
+        {
+            var segments = new Uri(spotifyUrl).AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 2)
+                ids.Add(new ExternalIdEntry("spotify", segments[^1]));
+        }
+
+        var imdbUrl = relations
+            .FirstOrDefault(r => r.Type == "IMDb")?.Url?.Resource;
+        if (!string.IsNullOrEmpty(imdbUrl))
+        {
+            var segments = new Uri(imdbUrl).AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 2)
+                ids.Add(new ExternalIdEntry("imdb", segments[^1]));
+        }
+
+        return ids;
+    }
+
+    public async Task<IReadOnlyList<ProviderImageDto>> GetPersonImagesAsync(string providerId, string language, CancellationToken cancellationToken = default)
+    {
+        var results = new List<ProviderImageDto>();
+
+        try
+        {
+            var artist = await FetchArtistAsync(providerId, cancellationToken);
+            if (artist is null)
+                return results;
+
+            // 1. Try Wikidata portrait image
+            var wikidataUrl = artist.Relations?
+                .FirstOrDefault(r => r.Type == "wikidata")?.Url?.Resource;
+            if (!string.IsNullOrEmpty(wikidataUrl))
+            {
+                var qid = ExtractQid(wikidataUrl);
+                if (qid is not null)
+                {
+                    var imageUrl = await FetchWikidataImageAsync(qid, cancellationToken);
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        var thumbUrl = imageUrl.Contains("Special:FilePath")
+                            ? imageUrl + "?width=300"
+                            : imageUrl;
+
+                        results.Add(new ProviderImageDto
+                        {
+                            Url = imageUrl,
+                            ThumbnailUrl = thumbUrl,
+                            Type = MetadataPictureType.Portrait,
+                            Width = 0,
+                            Height = 0,
+                            VoteAverage = 10,
+                            Language = null
+                        });
+                    }
+                }
+            }
+
+            // 2. Fetch album covers from CoverArtArchive as additional options
+            await _rateLimiter.WaitAsync(Host, cancellationToken);
+            var rgUrl = $"{MusicBrainzBaseUrl}/release-group?artist={Uri.EscapeDataString(providerId)}&type=album&limit=5&fmt=json";
+            var rgResult = await _httpClient.GetFromJsonAsync<MbReleaseGroupSearchResult>(rgUrl, JsonOptions, cancellationToken);
+
+            if (rgResult?.ReleaseGroups is not null)
+            {
+                foreach (var rg in rgResult.ReleaseGroups)
+                {
+                    if (string.IsNullOrEmpty(rg.Id)) continue;
+
+                    try
+                    {
+                        await _rateLimiter.WaitAsync(Host, cancellationToken);
+                        var coverUrl = $"{CoverArtBaseUrl}/release-group/{rg.Id}";
+                        var response = await _httpClient.GetAsync(coverUrl, cancellationToken);
+                        if (!response.IsSuccessStatusCode) continue;
+
+                        var coverArt = await response.Content.ReadFromJsonAsync<CoverArtResponse>(JsonOptions, cancellationToken);
+                        var frontImage = coverArt?.Images?.FirstOrDefault(i => i.Front == true)
+                            ?? coverArt?.Images?.FirstOrDefault();
+
+                        if (frontImage?.Image is not null)
+                        {
+                            var thumb = frontImage.Thumbnails?.Large ?? frontImage.Thumbnails?.Small ?? frontImage.Image;
+                            results.Add(new ProviderImageDto
+                            {
+                                Url = frontImage.Image,
+                                ThumbnailUrl = thumb,
+                                Type = MetadataPictureType.Portrait,
+                                Width = 0,
+                                Height = 0,
+                                VoteAverage = 5,
+                                Language = null
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        // Skip unavailable cover art
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MusicBrainz person images fetch failed for {Id}", providerId);
+        }
+
+        return results;
+    }
+
     #region MusicBrainz DTOs
 
     private record MbPersonArtist
@@ -242,6 +373,37 @@ public class MusicBrainzPersonMetadataProvider : IPersonMetadataProvider
     private record MbUrl
     {
         public string? Resource { get; init; }
+    }
+
+    private record MbReleaseGroupSearchResult
+    {
+        [JsonPropertyName("release-groups")]
+        public List<MbReleaseGroupEntry>? ReleaseGroups { get; init; }
+    }
+
+    private record MbReleaseGroupEntry
+    {
+        public string Id { get; init; } = "";
+    }
+
+    private record CoverArtResponse
+    {
+        public List<CoverArtImage>? Images { get; init; }
+    }
+
+    private record CoverArtImage
+    {
+        public string? Image { get; init; }
+        public bool? Front { get; init; }
+        public CoverArtThumbnails? Thumbnails { get; init; }
+    }
+
+    private record CoverArtThumbnails
+    {
+        public string? Small { get; init; }
+        public string? Large { get; init; }
+        [JsonPropertyName("1200")]
+        public string? ExtraLarge { get; init; }
     }
 
     #endregion
