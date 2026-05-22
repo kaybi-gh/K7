@@ -5,12 +5,14 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedia;
 
-public record GetMediaQuery(Guid Id) : IRequest<BaseMedia>;
+public record GetMediaResult(BaseMedia Media, int TotalPlayCount);
+
+public record GetMediaQuery(Guid Id) : IRequest<GetMediaResult>;
 
 public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUser, IMediaAccessGuard accessGuard)
-    : IRequestHandler<GetMediaQuery, BaseMedia>
+    : IRequestHandler<GetMediaQuery, GetMediaResult>
 {
-    public async Task<BaseMedia> Handle(GetMediaQuery request, CancellationToken cancellationToken)
+    public async Task<GetMediaResult> Handle(GetMediaQuery request, CancellationToken cancellationToken)
     {
         await accessGuard.EnsureAccessAsync(request.Id, cancellationToken);
 
@@ -104,6 +106,11 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
             .SingleOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
-        return entity;
+
+        var totalPlayCount = await context.UserMediaStates
+            .Where(s => s.MediaId == request.Id && s.PlayCount > 0)
+            .SumAsync(s => s.PlayCount, cancellationToken);
+
+        return new GetMediaResult(entity, totalPlayCount);
     }
 }

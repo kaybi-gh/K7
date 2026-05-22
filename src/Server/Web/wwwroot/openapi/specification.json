@@ -9703,6 +9703,14 @@
               }
             ]
           },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -9838,6 +9846,14 @@
               }
             ]
           },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -9968,6 +9984,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -10215,6 +10239,14 @@
               }
             ]
           },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -10378,6 +10410,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -10544,6 +10584,14 @@
               }
             ]
           },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "lastMetadataRefreshedAt": {
             "type": [
               "null",
@@ -10683,6 +10731,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -11008,6 +11064,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [

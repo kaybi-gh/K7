@@ -55,11 +55,16 @@ public class StreamUriService : IStreamUriService
 
         if (!string.IsNullOrWhiteSpace(storedDeviceId))
         {
+            var maxBitrate = _deviceStorageService.Get(PreferenceKeys.STREAMING_QUALITY_WIFI, 0);
+            var downmix = _deviceStorageService.Get(PreferenceKeys.DOWNMIX_TO_STEREO, false);
+
             var request = new CreateStreamSessionRequest
             {
                 IndexedFileId = indexedFileId,
                 DeviceId = Guid.Parse(storedDeviceId),
-                AudioTrackIndex = audioTrackIndex
+                AudioTrackIndex = audioTrackIndex,
+                MaxAudioBitrate = maxBitrate > 0 ? maxBitrate : null,
+                DownmixToStereo = downmix
             };
 
             var session = await _streamingService.CreateStreamSessionAsync(request, cancellationToken)
