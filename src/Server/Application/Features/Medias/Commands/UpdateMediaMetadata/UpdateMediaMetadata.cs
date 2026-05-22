@@ -1,7 +1,9 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Shared.Dtos.Entities;
 
 namespace K7.Server.Application.Features.Medias.Commands.UpdateMediaMetadata;
 
@@ -42,6 +44,7 @@ public record UpdateMediaMetadataCommand : IRequest
     public int? DiscNumber { get; init; }
     public string? Lyrics { get; init; }
     public string? LyricsLrc { get; init; }
+    public IList<ExternalIdEditDto>? ExternalIds { get; init; }
 }
 
 public class UpdateMediaMetadataCommandHandler : IRequestHandler<UpdateMediaMetadataCommand>
@@ -56,6 +59,7 @@ public class UpdateMediaMetadataCommandHandler : IRequestHandler<UpdateMediaMeta
     public async Task Handle(UpdateMediaMetadataCommand request, CancellationToken cancellationToken)
     {
         var media = await _context.Medias
+            .Include(m => m.ExternalIds)
             .FirstOrDefaultAsync(m => m.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, media);
@@ -117,6 +121,13 @@ public class UpdateMediaMetadataCommandHandler : IRequestHandler<UpdateMediaMeta
                 if (request.Lyrics is not null) track.Lyrics = request.Lyrics;
                 if (request.LyricsLrc is not null) track.LyricsLrc = request.LyricsLrc;
                 break;
+        }
+
+        if (request.ExternalIds is not null)
+        {
+            media.ExternalIds.Clear();
+            foreach (var dto in request.ExternalIds)
+                media.ExternalIds.Add(new ExternalId { ProviderName = dto.ProviderName, Value = dto.Value, MediaId = media.Id });
         }
 
         await _context.SaveChangesAsync(cancellationToken);

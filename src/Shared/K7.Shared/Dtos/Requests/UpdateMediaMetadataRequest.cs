@@ -1,3 +1,5 @@
+using K7.Shared.Dtos.Entities;
+
 namespace K7.Shared.Dtos.Requests;
 
 public sealed record UpdateMediaMetadataRequest
@@ -23,4 +25,5 @@ public sealed record UpdateMediaMetadataRequest
     public int? DiscNumber { get; init; }
     public string? Lyrics { get; init; }
     public string? LyricsLrc { get; init; }
+    public IList<ExternalIdEditDto>? ExternalIds { get; init; }
 }
