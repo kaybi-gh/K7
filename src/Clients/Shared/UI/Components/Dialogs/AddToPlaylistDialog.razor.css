@@ -1,0 +1,47 @@
+.playlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-height: 400px;
+    overflow-y: auto;
+    padding: var(--space-2) 0;
+}
+
+.playlist-tile {
+    cursor: pointer;
+    border-radius: var(--radius-md);
+}
+
+.playlist-tile:hover ::deep .k7-paper,
+.playlist-tile:focus-visible ::deep .k7-paper {
+    background: var(--color-surface-hover);
+    box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+::deep .playlist-tile-paper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    width: 100%;
+    background: var(--color-surface-elevated, rgba(255, 255, 255, 0.05));
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.playlist-tile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.playlist-tile-title {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playlist-tile-count {
+    color: var(--color-text-muted);
+}

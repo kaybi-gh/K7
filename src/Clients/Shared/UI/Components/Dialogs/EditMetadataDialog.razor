@@ -3,14 +3,7 @@
 @using K7.Server.Domain.Enums
 
 <div class="k7-dialog-content edit-metadata-dialog">
-    <div class="dialog-tabs">
-        <button class="dialog-tab @(_activeTab == 0 ? "dialog-tab--active" : "")" @onclick="@(() => _activeTab = 0)">
-            @L["TabMetadata"]
-        </button>
-        <button class="dialog-tab @(_activeTab == 1 ? "dialog-tab--active" : "")" @onclick="@(() => _activeTab = 1)">
-            @L["TabImages"]
-        </button>
-    </div>
+    <K7Tabs TValue="int" Tabs="_tabOptions" Value="_activeTab" ValueChanged="v => _activeTab = v" Class="mb-3" />
 
     @if (_activeTab == 0)
     {

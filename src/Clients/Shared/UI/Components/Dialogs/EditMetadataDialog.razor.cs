@@ -87,6 +87,10 @@ public partial class EditMetadataDialog
 
     // Tabs
     private int _activeTab;
+    private IReadOnlyList<TabOption<int>> _tabOptions => [
+        new(0, L["TabMetadata"]),
+        new(1, L["TabImages"])
+    ];
 
     // Picture upload
     private MetadataPictureType _uploadPictureType = MetadataPictureType.Poster;

@@ -22,6 +22,7 @@
   <data name="NameLabel" xml:space="preserve"><value>Playlist name</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Name is required</value></data>
   <data name="DescriptionOptional" xml:space="preserve"><value>Description (optional)</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Media type</value></data>
   <data name="Creating" xml:space="preserve"><value>Creating...</value></data>
   <data name="Created" xml:space="preserve"><value>Playlist created</value></data>
   <data name="Error" xml:space="preserve"><value>Error while creating</value></data>

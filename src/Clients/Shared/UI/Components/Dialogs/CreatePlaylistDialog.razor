@@ -16,10 +16,10 @@
                           Lines="3"
                           MaxLength="2000" />
             <K7Select TValue="MediaType" @bind-Value="_mediaType" Label="@L["MediaType"]"
-                       Variant="outlined">
-                <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack">@S["MediaTypeMusic"]</K7SelectItem>
-                <K7SelectItem TValue="MediaType" Value="MediaType.Movie">@S["MediaTypeMovies"]</K7SelectItem>
-                <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode">@S["MediaTypeTVShows"]</K7SelectItem>
+                       Variant="outlined" ToStringFunc="MediaTypeToString">
+                <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusic"]">@S["MediaTypeMusic"]</K7SelectItem>
+                <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
+                <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeSeries"]">@S["MediaTypeSeries"]</K7SelectItem>
             </K7Select>
         </div>
     </div>

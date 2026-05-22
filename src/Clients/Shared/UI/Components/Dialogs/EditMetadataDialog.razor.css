@@ -3,34 +3,6 @@
     overflow-y: auto;
 }
 
-.dialog-tabs {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--color-border);
-    margin-bottom: 12px;
-}
-
-.dialog-tab {
-    padding: 8px 16px;
-    border: none;
-    background: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.dialog-tab:hover {
-    color: var(--color-text-primary);
-}
-
-.dialog-tab--active {
-    color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
-}
-
 .field-row {
     display: flex;
     align-items: center;
