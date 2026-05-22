@@ -40,7 +40,9 @@
                             <div class="volume-slider-popover">
                                 <div class="volume-slider-container">
                                     <K7Slider TValue="double"
+                                    Min="0" Max="1"
                                     Step="0.01"
+                                    Immediate="true"
                                     Value="@PlayerService.Volume"
                                     ValueChanged="PlayerService.SetVolume"
                                     Class="volume-slider" />
