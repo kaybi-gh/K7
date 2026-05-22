@@ -16,6 +16,14 @@ public partial class CreatePlaylistDialog
     private MediaType _mediaType = MediaType.MusicTrack;
     private bool _isSubmitting;
 
+    private string MediaTypeToString(MediaType value) => value switch
+    {
+        MediaType.MusicTrack => S["MediaTypeMusic"],
+        MediaType.Movie => S["MediaTypeMovies"],
+        MediaType.SerieEpisode => S["MediaTypeSeries"],
+        _ => ""
+    };
+
     private void Cancel() => Dialog.Cancel();
 
     private async Task SubmitAsync()

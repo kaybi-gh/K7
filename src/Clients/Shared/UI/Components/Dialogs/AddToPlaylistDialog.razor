@@ -17,20 +17,20 @@
         }
         else
         {
-            <ul class="k7-list">
+            <div class="playlist-list">
                 @foreach (var playlist in _playlists)
                 {
-                    <li T="LitePlaylistDto" OnClick="() => SelectPlaylist(playlist)">
-                        <div class="d-flex align-center">
+                    <div class="playlist-tile focusable" tabindex="0" role="button" @onclick="() => SelectPlaylist(playlist)">
+                        <K7Paper Elevation="2" Class="playlist-tile-paper">
                             <K7Icon Icon="@Phosphor.Queue" Color="primary" />
-                            <div class="d-flex flex-col">
-                                <span>@playlist.Title</span>
-                                <span class="text-caption" Color="secondary">@string.Format(L["TrackCount"], playlist.ItemCount)</span>
+                            <div class="playlist-tile-info">
+                                <span class="playlist-tile-title">@playlist.Title</span>
+                                <span class="text-caption playlist-tile-count">@string.Format(L["TrackCount"], playlist.ItemCount)</span>
                             </div>
-                        </div>
-                    </li>
+                        </K7Paper>
+                    </div>
                 }
-            </ul>
+            </div>
             <hr class="k7-divider my-2" />
             <K7Button Variant="text"
                        Color="primary"
