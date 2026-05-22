@@ -9,12 +9,14 @@ public partial class K7MenuItem
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public EventCallback OnClick { get; set; }
     [Parameter] public string Class { get; set; } = "";
+    [Parameter] public bool PreventClose { get; set; }
 
     [CascadingParameter] private K7Menu? ParentMenu { get; set; }
 
     private async Task OnItemClick()
     {
-        ParentMenu?.Close();
+        if (!PreventClose)
+            ParentMenu?.Close();
         await OnClick.InvokeAsync();
     }
 }

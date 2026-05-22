@@ -382,6 +382,20 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
   border: none;
 }
 
+.k7-slider-wrap--vertical {
+  width: auto;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+}
+.k7-range--vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  height: 100%;
+  width: 4px;
+  flex: 1;
+}
+
 /* checkbox */
 .k7-checkbox-wrap {
   display: inline-flex;

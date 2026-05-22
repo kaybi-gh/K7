@@ -1,0 +1,37 @@
+@namespace K7.Clients.Shared.UI.Components
+@typeparam TValue
+
+<div class="k7-tabs @Class" role="tablist">
+    @foreach (var tab in Tabs)
+    {
+        var t = tab;
+        var isActive = EqualityComparer<TValue>.Default.Equals(t.Value, Value);
+        <button type="button"
+                class="k7-tab focusable @(isActive ? "k7-tab--active" : "")"
+                role="tab"
+                aria-selected="@isActive"
+                @onclick="() => OnTabClicked(t.Value)">
+            @if (t.Icon is not null)
+            {
+                <K7Icon Icon="@t.Icon" Size="sm" />
+            }
+            @if (t.Label is not null)
+            {
+                <span>@t.Label</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<TabOption<TValue>> Tabs { get; set; } = [];
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private async Task OnTabClicked(TValue value)
+    {
+        if (EqualityComparer<TValue>.Default.Equals(value, Value)) return;
+        await ValueChanged.InvokeAsync(value);
+    }
+}
