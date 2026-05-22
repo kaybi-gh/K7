@@ -37,7 +37,8 @@ public partial class AudioPlayer : IAsyncDisposable
                 await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
                 await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
             }
-            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeDuration);
+            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeTriggerWindow);
+            await JSRuntime.InvokeVoidAsync("audioSetKeepScreenOn", AudioPlayerService.KeepScreenOn);
         }
     }
 
@@ -55,8 +56,11 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.SourceChanged += OnSourceChanged;
         AudioPlayerService.IsVisibleChanged += OnVisibilityChanged;
         AudioPlayerService.CrossfadeRequested += OnCrossfadeRequested;
+        AudioPlayerService.GaplessPrebufferRequested += OnGaplessPrebufferRequested;
         AudioPlayerService.LoudnessSettingsChanged += OnLoudnessSettingsChanged;
         AudioPlayerService.EqSettingsChanged += OnEqSettingsChanged;
+        AudioPlayerService.CrossfadeDurationChanged += OnCrossfadeDurationChanged;
+        AudioPlayerService.PlayerUxSettingsChanged += OnPlayerUxSettingsChanged;
     }
 
     public async ValueTask DisposeAsync()
@@ -73,8 +77,11 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.SourceChanged -= OnSourceChanged;
         AudioPlayerService.IsVisibleChanged -= OnVisibilityChanged;
         AudioPlayerService.CrossfadeRequested -= OnCrossfadeRequested;
+        AudioPlayerService.GaplessPrebufferRequested -= OnGaplessPrebufferRequested;
         AudioPlayerService.LoudnessSettingsChanged -= OnLoudnessSettingsChanged;
         AudioPlayerService.EqSettingsChanged -= OnEqSettingsChanged;
+        AudioPlayerService.CrossfadeDurationChanged -= OnCrossfadeDurationChanged;
+        AudioPlayerService.PlayerUxSettingsChanged -= OnPlayerUxSettingsChanged;
 
         if (_isInitialized)
         {
@@ -141,6 +148,18 @@ public partial class AudioPlayer : IAsyncDisposable
         await AudioPlayerService.OnCrossfadeNeededAsync();
     }
 
+    [JSInvokable]
+    public async Task OnGaplessPrebufferNeeded()
+    {
+        await AudioPlayerService.OnGaplessPrebufferNeededAsync();
+    }
+
+    private async Task OnGaplessPrebufferRequested(PlayerSource source)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(source.Url)) return;
+        await JSRuntime.InvokeVoidAsync("audioGaplessPrebuffer", source.Url, source.MimeType);
+    }
+
     private async Task OnCrossfadeRequested(PlayerSource source, double duration)
     {
         if (!_isInitialized || string.IsNullOrEmpty(source.Url)) return;
@@ -203,7 +222,7 @@ public partial class AudioPlayer : IAsyncDisposable
 
             await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
             await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
-            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeDuration);
+            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeTriggerWindow);
             await PushLoudnessSettingsAsync();
             await PushEqSettingsAsync();
         }
@@ -228,6 +247,26 @@ public partial class AudioPlayer : IAsyncDisposable
     private async void OnEqSettingsChanged()
     {
         await PushEqSettingsAsync();
+    }
+
+    private async void OnCrossfadeDurationChanged()
+    {
+        if (!_isInitialized) return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeTriggerWindow);
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    private async void OnPlayerUxSettingsChanged()
+    {
+        if (!_isInitialized) return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("audioSetKeepScreenOn", AudioPlayerService.KeepScreenOn);
+        }
+        catch (JSDisconnectedException) { }
     }
 
     // --- MediaSession API ---
@@ -295,10 +334,10 @@ public partial class AudioPlayer : IAsyncDisposable
                     AudioPlayerService.Play();
                 break;
             case "SeekForward":
-                AudioPlayerService.Seek(Math.Min(AudioPlayerService.CurrentTime + 5, AudioPlayerService.Duration));
+                AudioPlayerService.Seek(Math.Min(AudioPlayerService.CurrentTime + AudioPlayerService.SkipForwardSeconds, AudioPlayerService.Duration));
                 break;
             case "SeekBackward":
-                AudioPlayerService.Seek(Math.Max(AudioPlayerService.CurrentTime - 5, 0));
+                AudioPlayerService.Seek(Math.Max(AudioPlayerService.CurrentTime - AudioPlayerService.SkipBackSeconds, 0));
                 break;
             case "NextTrack":
                 await AudioPlayerService.NextAsync();
