@@ -844,6 +844,103 @@ K7.setSafeArea = function (top, bottom, left, right) {
     s.setProperty('--k7-safe-right', right + 'px');
 };
 
+K7.positionDropdown = function (root, dropdown) {
+    if (!root || !dropdown) return;
+    root.classList.remove('k7-menu--upward');
+
+    var isSubmenu = !!root.closest('.k7-menu-dropdown');
+    // .k7-menu-activator uses display:contents so has no box - use its first child or root
+    var activatorEl = root.querySelector('.k7-menu-activator');
+    var anchor = (activatorEl && activatorEl.firstElementChild) || root;
+    var anchorRect = anchor.getBoundingClientRect();
+    var gap = 4;
+
+    // Use fixed positioning to escape stacking contexts
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = '';
+    dropdown.style.bottom = '';
+    dropdown.style.left = '';
+    dropdown.style.right = '';
+    dropdown.style.maxHeight = '';
+
+    // Measure dropdown size
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.opacity = '0';
+    dropdown.style.display = 'block';
+    var ddRect = dropdown.getBoundingClientRect();
+    dropdown.style.display = '';
+    dropdown.style.visibility = '';
+    dropdown.style.opacity = '';
+
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+
+    if (isSubmenu) {
+        // Submenu: open to the left of the parent menu item
+        var parentDropdown = root.closest('.k7-menu-dropdown');
+        var parentRect = parentDropdown.getBoundingClientRect();
+
+        // Horizontal: prefer left of parent, flip right if not enough space
+        var leftOfParent = parentRect.left - ddRect.width - gap;
+        if (leftOfParent >= 8) {
+            dropdown.style.left = leftOfParent + 'px';
+        } else {
+            // Try right of parent
+            var rightOfParent = parentRect.right + gap;
+            if (rightOfParent + ddRect.width <= vw - 8) {
+                dropdown.style.left = rightOfParent + 'px';
+            } else {
+                dropdown.style.left = '8px';
+            }
+        }
+
+        // Vertical: align top with anchor, shift if overflows
+        var top = anchorRect.top;
+        if (top + ddRect.height > vh - 8) {
+            top = vh - ddRect.height - 8;
+        }
+        if (top < 8) top = 8;
+        dropdown.style.top = top + 'px';
+        dropdown.style.maxHeight = 'min(320px, calc(100vh - 80px))';
+        dropdown.style.overflowY = 'auto';
+    } else {
+        // Root menu: open below/above the activator
+        var spaceBelow = vh - anchorRect.bottom - gap;
+        var spaceAbove = anchorRect.top - gap;
+        var placeAbove = spaceBelow < ddRect.height && spaceAbove > spaceBelow;
+
+        if (placeAbove) {
+            root.classList.add('k7-menu--upward');
+            dropdown.style.bottom = (vh - anchorRect.top + gap) + 'px';
+        } else {
+            dropdown.style.top = (anchorRect.bottom + gap) + 'px';
+        }
+
+        // Horizontal: align right edge to anchor right, shift if overflows
+        var left = anchorRect.right - ddRect.width;
+        if (left < 8) {
+            left = 8;
+        }
+        if (left + ddRect.width > vw - 8) {
+            left = vw - ddRect.width - 8;
+        }
+        dropdown.style.left = left + 'px';
+    }
+};
+
+K7.resetDropdown = function (root) {
+    if (!root) return;
+    root.classList.remove('k7-menu--upward');
+    var dropdown = root.querySelector('.k7-menu-dropdown');
+    if (dropdown) {
+        dropdown.style.position = '';
+        dropdown.style.top = '';
+        dropdown.style.bottom = '';
+        dropdown.style.left = '';
+        dropdown.style.right = '';
+    }
+};
+
 K7.scrollToElement = function (id) {
     var el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });

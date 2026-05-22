@@ -631,9 +631,7 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
 .k7-menu { position: relative; display: inline-block; }
 .k7-menu-activator { display: contents; }
 .k7-menu-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  position: fixed;
   z-index: var(--z-dropdown, 1000);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -652,19 +650,12 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
   transform: translateY(0);
 }
 .k7-menu--upward > .k7-menu-dropdown {
-  top: auto;
-  bottom: calc(100% + 4px);
   transform: translateY(4px);
 }
 .k7-menu--upward.k7-menu--open > .k7-menu-dropdown {
   transform: translateY(0);
 }
 .k7-menu-dropdown .k7-menu > .k7-menu-dropdown {
-  top: 0;
-  bottom: auto;
-  right: calc(100% + 4px);
-  left: auto;
-  transform: translateX(4px);
   max-height: min(320px, calc(100vh - 80px));
   overflow-y: auto;
 }
@@ -672,11 +663,6 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
   opacity: 1;
   visibility: visible;
   transform: translateX(0);
-}
-/* Sub-menus inside an upward menu anchor to the bottom so they open upward */
-.k7-menu--upward > .k7-menu-dropdown .k7-menu > .k7-menu-dropdown {
-  top: auto;
-  bottom: 0;
 }
 .k7-menu-item {
   display: flex;
