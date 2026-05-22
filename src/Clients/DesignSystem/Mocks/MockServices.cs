@@ -258,6 +258,27 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public void ToggleAdaptiveCrossfade() { }
     public void SetCrossfadeDuration(double seconds) { }
     public Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    // Loudness normalization
+    public event Action? LoudnessSettingsChanged;
+    public bool LoudnessEnabled => true;
+    public double LoudnessTargetLufs => -14.0;
+    public double LoudnessPreampDb => 0.0;
+    public bool LimiterEnabled => true;
+    public void SetLoudnessEnabled(bool enabled) => LoudnessSettingsChanged?.Invoke();
+    public void SetLoudnessTargetLufs(double lufs) => LoudnessSettingsChanged?.Invoke();
+    public void SetLoudnessPreampDb(double db) => LoudnessSettingsChanged?.Invoke();
+    public void SetLimiterEnabled(bool enabled) => LoudnessSettingsChanged?.Invoke();
+
+    // EQ
+    public event Action? EqSettingsChanged;
+    public bool EqEnabled => false;
+    public double[] EqBands => new double[10];
+    public string? EqPresetName => null;
+    public void SetEqEnabled(bool enabled) => EqSettingsChanged?.Invoke();
+    public void SetEqBands(double[] bands) => EqSettingsChanged?.Invoke();
+    public void SetEqPresetName(string? name) => EqSettingsChanged?.Invoke();
+
     public void ToggleFullScreen() { _isFullScreenVisible = !_isFullScreenVisible; IsFullScreenVisibleChanged?.Invoke(); }
     public Task ShowAsync() { _audioVisible = true; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }
     public Task HideAsync() { _audioVisible = false; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }

@@ -48,9 +48,24 @@ public class AudioAnalysis : BaseAuditableEntity
     // Inferred from mode (major/minor), tempo, and harmonic content.
     public double? Valence { get; set; }
 
-    // Normalized amplitude peaks (0.0–1.0) sampled across the track duration.
+    // Normalized amplitude peaks (0.0-1.0) sampled across the track duration.
     // Used to render waveform visualization in the player UI.
     public float[]? WaveformPeaks { get; set; }
+
+    // MixRamp: time (seconds) from track start until audio reaches threshold dB.
+    // Used for sweet fades - overlapping transitions during quiet portions.
+    public double? FadeInDuration { get; set; }
+
+    // MixRamp: time (seconds) before track end where audio drops below threshold dB.
+    // The crossfade can begin at this point for a musically-aware transition.
+    public double? FadeOutDuration { get; set; }
+
+    // ReplayGain track gain (dB) parsed from file tags. Fallback for loudness normalization
+    // when LoudnessLufs is not yet computed from signal analysis.
+    public double? ReplayGainTrackGain { get; set; }
+
+    // ReplayGain album gain (dB) parsed from file tags.
+    public double? ReplayGainAlbumGain { get; set; }
 
     // When the analysis was performed. Null if not yet analyzed.
     public DateTime? AnalyzedAt { get; set; }

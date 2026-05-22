@@ -14,4 +14,6 @@ public sealed record AudioTagData
     public double? Bpm { get; init; }
     public byte[]? CoverArtData { get; init; }
     public string? CoverArtMimeType { get; init; }
+    public double? ReplayGainTrackGain { get; init; }
+    public double? ReplayGainAlbumGain { get; init; }
 }

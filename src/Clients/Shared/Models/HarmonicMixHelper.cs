@@ -6,6 +6,7 @@ public static class HarmonicMixHelper
 {
     /// <summary>
     /// Computes an adaptive crossfade duration (in seconds) between two tracks.
+    /// - When MixRamp data is available (FadeOutDuration/FadeInDuration), uses the overlap point
     /// - Harmonically compatible + similar BPM -> longer crossfade (smooth blend)
     /// - Large energy gap -> shorter crossfade (clean cut)
     /// - No analysis data -> default crossfade
@@ -14,6 +15,17 @@ public static class HarmonicMixHelper
     public static double ComputeCrossfadeDuration(AudioQueueItem current, AudioQueueItem next, double baseDuration = 6.0)
     {
         if (baseDuration <= 0) return 0;
+
+        // Same album -> no crossfade (gapless playback)
+        if (current.AlbumTitle is not null && current.AlbumTitle == next.AlbumTitle)
+            return 0;
+
+        // Sweet fades (MixRamp): use analyzed fade points when both tracks have data
+        if (current.FadeOutDuration.HasValue && next.FadeInDuration.HasValue)
+        {
+            var overlap = Math.Min(current.FadeOutDuration.Value, next.FadeInDuration.Value);
+            return Math.Clamp(overlap, 1.0, 12.0);
+        }
 
         var factor = 1.0;
 
@@ -40,10 +52,6 @@ public static class HarmonicMixHelper
             else if (energyGap < 0.15)
                 factor += 0.2; // Similar energy -> smooth blend
         }
-
-        // Same album -> no crossfade (gapless playback)
-        if (current.AlbumTitle is not null && current.AlbumTitle == next.AlbumTitle)
-            return 0;
 
         return Math.Clamp(baseDuration * factor, 1.0, 12.0);
     }

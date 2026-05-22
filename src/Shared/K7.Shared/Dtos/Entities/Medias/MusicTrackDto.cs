@@ -16,4 +16,7 @@ public sealed record MusicTrackDto : MediaDto
     public double? Danceability { get; init; }
     public double? Valence { get; init; }
     public float[]? WaveformPeaks { get; init; }
+    public double? FadeInDuration { get; init; }
+    public double? FadeOutDuration { get; init; }
+    public double? ReplayGainTrackGain { get; init; }
 }

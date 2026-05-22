@@ -87,6 +87,9 @@ public static class MediaMappings
                 Danceability = track.AudioAnalysis?.Danceability,
                 Valence = track.AudioAnalysis?.Valence,
                 WaveformPeaks = track.AudioAnalysis?.WaveformPeaks,
+                FadeInDuration = track.AudioAnalysis?.FadeInDuration,
+                FadeOutDuration = track.AudioAnalysis?.FadeOutDuration,
+                ReplayGainTrackGain = track.AudioAnalysis?.ReplayGainTrackGain,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -252,6 +255,10 @@ public static class MediaMappings
                 Bpm = track.AudioAnalysis?.Bpm,
                 MusicalKey = track.AudioAnalysis?.MusicalKey,
                 Energy = track.AudioAnalysis?.Energy,
+                LoudnessLufs = track.AudioAnalysis?.LoudnessLufs,
+                FadeInDuration = track.AudioAnalysis?.FadeInDuration,
+                FadeOutDuration = track.AudioAnalysis?.FadeOutDuration,
+                ReplayGainTrackGain = track.AudioAnalysis?.ReplayGainTrackGain,
                 ArtistCredits = track.ArtistCredits.Count > 0
                     ? track.ArtistCredits.OrderBy(c => c.Order).Select(c => new MusicArtistCreditDto
                     {

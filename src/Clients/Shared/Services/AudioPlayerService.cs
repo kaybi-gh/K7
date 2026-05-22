@@ -119,6 +119,26 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     private bool _crossfadeTriggered;
 
+    // Loudness normalization state
+    public event Action? LoudnessSettingsChanged;
+    private bool _loudnessEnabled = deviceStorageService.Get(PreferenceKeys.LOUDNESS_ENABLED, true);
+    private double _loudnessTargetLufs = deviceStorageService.Get(PreferenceKeys.LOUDNESS_TARGET_LUFS, -14.0);
+    private double _loudnessPreampDb = deviceStorageService.Get(PreferenceKeys.LOUDNESS_PREAMP_DB, 0.0);
+    private bool _limiterEnabled = deviceStorageService.Get(PreferenceKeys.LOUDNESS_LIMITER_ENABLED, true);
+    public bool LoudnessEnabled => _loudnessEnabled;
+    public double LoudnessTargetLufs => _loudnessTargetLufs;
+    public double LoudnessPreampDb => _loudnessPreampDb;
+    public bool LimiterEnabled => _limiterEnabled;
+
+    // EQ state
+    public event Action? EqSettingsChanged;
+    private bool _eqEnabled = deviceStorageService.Get(PreferenceKeys.EQ_ENABLED, false);
+    private double[] _eqBands = ParseEqBands(deviceStorageService.Get(PreferenceKeys.EQ_BANDS_JSON, null));
+    private string? _eqPresetName = deviceStorageService.Get(PreferenceKeys.EQ_PRESET_NAME, null);
+    public bool EqEnabled => _eqEnabled;
+    public double[] EqBands => _eqBands;
+    public string? EqPresetName => _eqPresetName;
+
     // Queue state
     private readonly List<AudioQueueItem> _queue = [];
     private readonly List<int> _shuffleOrder = [];
@@ -329,6 +349,68 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         _crossfadeDuration = Math.Clamp(seconds, 0, 12);
         deviceStorageService.Set(PreferenceKeys.PLAYER_CROSSFADE_DURATION, _crossfadeDuration);
+    }
+
+    public void SetLoudnessEnabled(bool enabled)
+    {
+        _loudnessEnabled = enabled;
+        deviceStorageService.Set(PreferenceKeys.LOUDNESS_ENABLED, enabled);
+        LoudnessSettingsChanged?.Invoke();
+    }
+
+    public void SetLoudnessTargetLufs(double lufs)
+    {
+        _loudnessTargetLufs = Math.Clamp(lufs, -26.0, -6.0);
+        deviceStorageService.Set(PreferenceKeys.LOUDNESS_TARGET_LUFS, _loudnessTargetLufs);
+        LoudnessSettingsChanged?.Invoke();
+    }
+
+    public void SetLoudnessPreampDb(double db)
+    {
+        _loudnessPreampDb = Math.Clamp(db, -6.0, 6.0);
+        deviceStorageService.Set(PreferenceKeys.LOUDNESS_PREAMP_DB, _loudnessPreampDb);
+        LoudnessSettingsChanged?.Invoke();
+    }
+
+    public void SetLimiterEnabled(bool enabled)
+    {
+        _limiterEnabled = enabled;
+        deviceStorageService.Set(PreferenceKeys.LOUDNESS_LIMITER_ENABLED, enabled);
+        LoudnessSettingsChanged?.Invoke();
+    }
+
+    public void SetEqEnabled(bool enabled)
+    {
+        _eqEnabled = enabled;
+        deviceStorageService.Set(PreferenceKeys.EQ_ENABLED, enabled);
+        EqSettingsChanged?.Invoke();
+    }
+
+    public void SetEqBands(double[] bands)
+    {
+        _eqBands = bands;
+        deviceStorageService.Set(PreferenceKeys.EQ_BANDS_JSON, System.Text.Json.JsonSerializer.Serialize(bands));
+        EqSettingsChanged?.Invoke();
+    }
+
+    public void SetEqPresetName(string? name)
+    {
+        _eqPresetName = name;
+        deviceStorageService.Set(PreferenceKeys.EQ_PRESET_NAME, name ?? string.Empty);
+        EqSettingsChanged?.Invoke();
+    }
+
+    private static double[] ParseEqBands(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return new double[10];
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<double[]>(json) ?? new double[10];
+        }
+        catch
+        {
+            return new double[10];
+        }
     }
 
     public async Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default)

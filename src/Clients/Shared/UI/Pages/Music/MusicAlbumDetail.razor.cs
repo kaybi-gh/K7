@@ -78,6 +78,10 @@ public partial class MusicAlbumDetail
                         Bpm = t.Bpm,
                         MusicalKey = t.MusicalKey,
                         Energy = t.Energy,
+                        LoudnessLufs = t.LoudnessLufs,
+                        FadeInDuration = t.FadeInDuration,
+                        FadeOutDuration = t.FadeOutDuration,
+                        ReplayGainTrackGain = t.ReplayGainTrackGain,
                         IsPlaying = Audio.CurrentTrack?.MediaId == t.Id
                     };
                 })
@@ -145,7 +149,11 @@ public partial class MusicAlbumDetail
             UserRating = t.UserRating,
             Bpm = t.Bpm,
             MusicalKey = t.MusicalKey,
-            Energy = t.Energy
+            Energy = t.Energy,
+            LoudnessLufs = t.LoudnessLufs,
+            FadeInDuration = t.FadeInDuration,
+            FadeOutDuration = t.FadeOutDuration,
+            ReplayGainTrackGain = t.ReplayGainTrackGain
         };
     }
 
@@ -242,6 +250,10 @@ public partial class MusicAlbumDetail
         public double? Bpm { get; init; }
         public string? MusicalKey { get; init; }
         public double? Energy { get; init; }
+        public double? LoudnessLufs { get; init; }
+        public double? FadeInDuration { get; init; }
+        public double? FadeOutDuration { get; init; }
+        public double? ReplayGainTrackGain { get; init; }
         public bool IsPlaying { get; init; }
     }
 }

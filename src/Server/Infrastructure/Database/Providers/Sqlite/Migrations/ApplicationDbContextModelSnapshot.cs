@@ -601,6 +601,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double?>("Energy")
                         .HasColumnType("REAL");
 
+                    b.Property<double?>("FadeInDuration")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("FadeOutDuration")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("LastModified")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -619,6 +625,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<string>("MusicalKey")
                         .HasColumnType("TEXT");
+
+                    b.Property<double?>("ReplayGainAlbumGain")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("ReplayGainTrackGain")
+                        .HasColumnType("REAL");
 
                     b.Property<double?>("Valence")
                         .HasColumnType("REAL");

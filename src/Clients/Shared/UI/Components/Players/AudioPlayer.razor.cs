@@ -55,6 +55,8 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.SourceChanged += OnSourceChanged;
         AudioPlayerService.IsVisibleChanged += OnVisibilityChanged;
         AudioPlayerService.CrossfadeRequested += OnCrossfadeRequested;
+        AudioPlayerService.LoudnessSettingsChanged += OnLoudnessSettingsChanged;
+        AudioPlayerService.EqSettingsChanged += OnEqSettingsChanged;
     }
 
     public async ValueTask DisposeAsync()
@@ -71,6 +73,8 @@ public partial class AudioPlayer : IAsyncDisposable
         AudioPlayerService.SourceChanged -= OnSourceChanged;
         AudioPlayerService.IsVisibleChanged -= OnVisibilityChanged;
         AudioPlayerService.CrossfadeRequested -= OnCrossfadeRequested;
+        AudioPlayerService.LoudnessSettingsChanged -= OnLoudnessSettingsChanged;
+        AudioPlayerService.EqSettingsChanged -= OnEqSettingsChanged;
 
         if (_isInitialized)
         {
@@ -200,7 +204,12 @@ public partial class AudioPlayer : IAsyncDisposable
             await JSRuntime.InvokeVoidAsync("audioSetVolume", AudioPlayerService.Volume);
             await JSRuntime.InvokeVoidAsync("audioSetMuted", AudioPlayerService.IsMuted);
             await JSRuntime.InvokeVoidAsync("audioSetCrossfadeDuration", AudioPlayerService.CrossfadeDuration);
+            await PushLoudnessSettingsAsync();
+            await PushEqSettingsAsync();
         }
+
+        // Push per-track loudness data for normalization
+        await PushTrackLoudnessAsync();
 
         await JSRuntime.InvokeVoidAsync("audioChangeSource", source.Url, source.MimeType);
         await InvokeAsync(StateHasChanged);
@@ -209,6 +218,16 @@ public partial class AudioPlayer : IAsyncDisposable
     private async void OnVisibilityChanged()
     {
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async void OnLoudnessSettingsChanged()
+    {
+        await PushLoudnessSettingsAsync();
+    }
+
+    private async void OnEqSettingsChanged()
+    {
+        await PushEqSettingsAsync();
     }
 
     // --- MediaSession API ---
@@ -298,5 +317,32 @@ public partial class AudioPlayer : IAsyncDisposable
                 AudioPlayerService.SetVolume(Math.Max(AudioPlayerService.Volume - 0.05, 0.0));
                 break;
         }
+    }
+
+    private async Task PushLoudnessSettingsAsync()
+    {
+        if (!_isInitialized) return;
+        await JSRuntime.InvokeVoidAsync("audioSetLoudness",
+            AudioPlayerService.LoudnessEnabled,
+            AudioPlayerService.LoudnessTargetLufs,
+            AudioPlayerService.LoudnessPreampDb,
+            AudioPlayerService.LimiterEnabled);
+    }
+
+    private async Task PushTrackLoudnessAsync()
+    {
+        if (!_isInitialized) return;
+        var track = AudioPlayerService.CurrentTrack;
+        await JSRuntime.InvokeVoidAsync("audioSetTrackLoudness",
+            track?.LoudnessLufs,
+            track?.ReplayGainTrackGain);
+    }
+
+    private async Task PushEqSettingsAsync()
+    {
+        if (!_isInitialized) return;
+        await JSRuntime.InvokeVoidAsync("audioSetEq",
+            AudioPlayerService.EqEnabled,
+            AudioPlayerService.EqBands);
     }
 }

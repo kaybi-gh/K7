@@ -1,0 +1,119 @@
+@page "/settings/audio-player"
+@layout SettingsLayout
+@inject IAudioPlayerService AudioPlayerService
+@inject ISleepTimerService SleepTimerService
+@inject AutoplayService AutoplayService
+
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>Audio Player</h5>
+</div>
+
+<div class="pa-4 d-flex flex-col gap-6">
+    @* Loudness Normalization *@
+    <section class="d-flex flex-col gap-3">
+        <h6>Loudness Normalization</h6>
+        <K7Switch Label="Enable loudness normalization" @bind-Value="_loudnessEnabled" />
+
+        @if (_loudnessEnabled)
+        {
+            <div class="d-flex flex-col gap-1">
+                <span class="field-label">Target loudness (LUFS)</span>
+                <K7Slider TValue="double" Min="-26" Max="-6" Step="1"
+                          Value="_targetLufs"
+                          ValueChanged="v => { _targetLufs = v; }" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@(_targetLufs.ToString("F0")) LUFS</span>
+            </div>
+
+            <div class="d-flex flex-col gap-1">
+                <span class="field-label">Pre-amp (dB)</span>
+                <K7Slider TValue="double" Min="-6" Max="6" Step="0.5"
+                          Value="_preampDb"
+                          ValueChanged="v => { _preampDb = v; }" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@(_preampDb.ToString("F1")) dB</span>
+            </div>
+
+            <K7Switch Label="Enable limiter (prevents clipping)" @bind-Value="_limiterEnabled" />
+        }
+    </section>
+
+    @* Equalizer *@
+    <section class="d-flex flex-col gap-3">
+        <h6>Equalizer</h6>
+        <K7Switch Label="Enable equalizer" @bind-Value="_eqEnabled" />
+
+        @if (_eqEnabled)
+        {
+            <div class="d-flex flex-col gap-2">
+                <K7Select Label="Preset" @bind-Value="_eqPresetName" TValue="string">
+                    <K7SelectItem Value="@("flat")" Text="Flat">Flat</K7SelectItem>
+                    <K7SelectItem Value="@("bass-boost")" Text="Bass Boost">Bass Boost</K7SelectItem>
+                    <K7SelectItem Value="@("treble-boost")" Text="Treble Boost">Treble Boost</K7SelectItem>
+                    <K7SelectItem Value="@("vocal")" Text="Vocal">Vocal</K7SelectItem>
+                    <K7SelectItem Value="@("rock")" Text="Rock">Rock</K7SelectItem>
+                    <K7SelectItem Value="@("electronic")" Text="Electronic">Electronic</K7SelectItem>
+                    <K7SelectItem Value="@("custom")" Text="Custom">Custom</K7SelectItem>
+                </K7Select>
+            </div>
+
+            <div class="eq-bands">
+                @for (var i = 0; i < _eqBands.Length; i++)
+                {
+                    var index = i;
+                    <div class="eq-band">
+                        <K7Slider TValue="double" Min="-12" Max="12" Step="0.5"
+                                  Value="_eqBands[index]"
+                                  ValueChanged="v => OnBandChanged(index, v)"
+                                  Vertical="true" />
+                        <span class="text-caption">@EqFrequencyLabels[index]</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    @* Crossfade *@
+    <section class="d-flex flex-col gap-3">
+        <h6>Crossfade</h6>
+        <div class="d-flex flex-col gap-1">
+            <span class="field-label">Duration</span>
+            <K7Slider TValue="double" Min="0" Max="12" Step="1"
+                      Value="_crossfadeDuration"
+                      ValueChanged="v => { _crossfadeDuration = v; }" />
+            <span class="text-caption" style="color: var(--color-text-muted);">
+                @(_crossfadeDuration > 0 ? $"{_crossfadeDuration:F0}s" : "Disabled")
+            </span>
+        </div>
+        <K7Switch Label="Adaptive crossfade (uses BPM, key, energy)" @bind-Value="_adaptiveCrossfade" />
+    </section>
+
+    @* Autoplay *@
+    <section class="d-flex flex-col gap-3">
+        <h6>Autoplay</h6>
+        <K7Switch Label="Play similar tracks when queue ends" @bind-Value="_autoplayEnabled" />
+    </section>
+
+    @* Sleep Timer *@
+    <section class="d-flex flex-col gap-3">
+        <h6>Sleep Timer</h6>
+        @if (SleepTimerService.IsActive)
+        {
+            <span class="text-body">Timer active: @FormatRemaining(SleepTimerService.Remaining)</span>
+            <K7Button OnClick="CancelSleepTimer">Cancel</K7Button>
+        }
+        else
+        {
+            <div class="d-flex gap-2 flex-wrap">
+                <K7Button OnClick="() => StartSleepTimer(15)">15 min</K7Button>
+                <K7Button OnClick="() => StartSleepTimer(30)">30 min</K7Button>
+                <K7Button OnClick="() => StartSleepTimer(45)">45 min</K7Button>
+                <K7Button OnClick="() => StartSleepTimer(60)">1 hour</K7Button>
+                <K7Button OnClick="StartSleepTimerEndOfTrack">End of track</K7Button>
+            </div>
+        }
+    </section>
+
+    <div class="d-flex gap-2">
+        <K7Button Color="primary" OnClick="SaveAsync">Save</K7Button>
+        <K7Button OnClick="ResetAsync">Reset to default</K7Button>
+    </div>
+</div>
