@@ -146,6 +146,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public event Action<RepeatMode>? RepeatModeChanged;
     public event Action<bool>? ShuffleChanged;
     public event Func<PlayerSource, double, Task>? CrossfadeRequested;
+    public event Action? CrossfadeDurationChanged;
     public event Action? IsFullScreenVisibleChanged;
 
     public bool IsMuted { get; set; }
@@ -163,6 +164,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public bool Shuffle => false;
     public bool AdaptiveCrossfade => false;
     public double CrossfadeDuration => 0;
+    public double CrossfadeTriggerWindow => 0;
     private bool _isFullScreenVisible;
     public bool IsFullScreenVisible => _isFullScreenVisible;
     public PlaybackState PlaybackState { get; set; } = PlaybackState.Idle;
@@ -278,6 +280,21 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public void SetEqEnabled(bool enabled) => EqSettingsChanged?.Invoke();
     public void SetEqBands(double[] bands) => EqSettingsChanged?.Invoke();
     public void SetEqPresetName(string? name) => EqSettingsChanged?.Invoke();
+
+    // Player UX settings
+    public event Action? PlayerUxSettingsChanged;
+    public bool ShowFullscreenOnPlay => false;
+    public int SkipBackSeconds => 5;
+    public int SkipForwardSeconds => 15;
+    public bool KeepScreenOn => false;
+    public void SetShowFullscreenOnPlay(bool value) => PlayerUxSettingsChanged?.Invoke();
+    public void SetSkipBackSeconds(int value) => PlayerUxSettingsChanged?.Invoke();
+    public void SetSkipForwardSeconds(int value) => PlayerUxSettingsChanged?.Invoke();
+    public void SetKeepScreenOn(bool value) => PlayerUxSettingsChanged?.Invoke();
+
+    // Gapless
+    public event Func<PlayerSource, Task>? GaplessPrebufferRequested;
+    public Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     public void ToggleFullScreen() { _isFullScreenVisible = !_isFullScreenVisible; IsFullScreenVisibleChanged?.Invoke(); }
     public Task ShowAsync() { _audioVisible = true; IsVisibleChanged?.Invoke(); return Task.CompletedTask; }

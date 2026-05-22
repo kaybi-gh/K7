@@ -5,10 +5,18 @@ let audioState = {
     crossfadeDuration: 0,
     crossfadeTimer: null,
     crossfadePending: false,
+    crossfadeActive: false,
     stateDebounceTimer: null,
+    // Generation counter: incremented whenever the active element changes
+    generation: 0,
+    // Gapless prebuffer
+    gaplessNextElement: null,
+    gaplessNextSource: null,
+    gaplessPrebuffered: false,
     // Web Audio API nodes
     audioContext: null,
     sourceNode: null,
+    fadeGainNode: null,
     crossfadeSourceNode: null,
     gainNode: null,
     loudnessGainNode: null,
@@ -24,7 +32,9 @@ let audioState = {
     trackReplayGain: null,
     // EQ settings
     eqEnabled: false,
-    eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    // Seek suppression
+    lastSeekTime: 0
 };
 
 function notifyPlaybackState(dotNetRef, state) {
@@ -47,6 +57,22 @@ function notifyPlaybackState(dotNetRef, state) {
 }
 
 window.K7 = window.K7 || {};
+window.K7.shareOrCopy = async function (text) {
+    if (navigator.share) {
+        try {
+            await navigator.share({ text });
+            return true;
+        } catch (e) {
+            if (e.name !== 'AbortError') console.warn('Share failed', e);
+        }
+    }
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (e) {
+        console.warn('Clipboard write failed', e);
+    }
+    return false;
+};
 window.K7.scrollIntoViewSmooth = function (el) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
@@ -135,6 +161,11 @@ function initAudioGraph(element) {
     const source = ctx.createMediaElementSource(element);
     audioState.sourceNode = source;
 
+    // Fade gain node (used for crossfade volume control, not visible to user)
+    const fadeGain = ctx.createGain();
+    fadeGain.gain.value = 1.0;
+    audioState.fadeGainNode = fadeGain;
+
     // Loudness gain node (for ReplayGain / LUFS normalization)
     const loudnessGain = ctx.createGain();
     loudnessGain.gain.value = 1.0;
@@ -170,8 +201,9 @@ function initAudioGraph(element) {
     analyser.fftSize = 256;
     audioState.analyserNode = analyser;
 
-    // Connect signal chain: source -> loudness -> EQ -> limiter -> master -> analyser -> destination
-    source.connect(loudnessGain);
+    // Connect signal chain: source -> fadeGain -> loudness -> EQ -> limiter -> master -> analyser -> destination
+    source.connect(fadeGain);
+    fadeGain.connect(loudnessGain);
 
     // Chain EQ filters
     let prevNode = loudnessGain;
@@ -276,7 +308,12 @@ window.initAudioPlayer = function (dotNetRef) {
     // Initialize Web Audio API context and signal chain
     initAudioGraph(el);
 
+    const initGen = audioState.generation;
+
     el.addEventListener('timeupdate', () => {
+        // Ignore if this element is no longer the active one
+        if (initGen !== audioState.generation) return;
+        if (audioState.crossfadeActive) return;
         dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
             .catch(e => console.error('OnTimeUpdated failed', e));
 
@@ -284,6 +321,7 @@ window.initAudioPlayer = function (dotNetRef) {
         if (audioState.crossfadeDuration > 0
             && !audioState.crossfadePending
             && !audioState.crossfadeTimer
+            && (Date.now() - audioState.lastSeekTime) > 1500
             && isFinite(el.duration)
             && el.duration > 0) {
             const remaining = el.duration - el.currentTime;
@@ -296,6 +334,7 @@ window.initAudioPlayer = function (dotNetRef) {
     });
 
     el.addEventListener('durationchange', () => {
+        if (initGen !== audioState.generation) return;
         if (isFinite(el.duration)) {
             dotNetRef.invokeMethodAsync('OnDurationChanged', el.duration)
                 .catch(e => console.error('OnDurationChanged failed', e));
@@ -303,6 +342,7 @@ window.initAudioPlayer = function (dotNetRef) {
     });
 
     el.addEventListener('progress', () => {
+        if (initGen !== audioState.generation) return;
         const buffered = el.buffered;
         let bufferedEnd = 0;
         if (buffered && buffered.length > 0) {
@@ -313,32 +353,39 @@ window.initAudioPlayer = function (dotNetRef) {
     });
 
     el.addEventListener('volumechange', () => {
+        if (initGen !== audioState.generation) return;
         dotNetRef.invokeMethodAsync('OnVolumeChanged', el.volume, el.muted)
             .catch(e => console.error('OnVolumeChanged failed', e));
     });
 
     el.addEventListener('play', () => {
+        if (initGen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'playing');
     });
 
     el.addEventListener('playing', () => {
+        if (initGen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'playing');
     });
 
     el.addEventListener('pause', () => {
+        if (initGen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'paused');
     });
 
     el.addEventListener('waiting', () => {
+        if (initGen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'buffering');
     });
 
     el.addEventListener('ended', () => {
+        if (initGen !== audioState.generation) return;
         dotNetRef.invokeMethodAsync('OnTrackEnded')
             .catch(e => console.error('OnTrackEnded failed', e));
     });
 
     el.addEventListener('error', () => {
+        if (initGen !== audioState.generation) return;
         const code = el.error ? el.error.code : -1;
         const msg = el.error ? el.error.message : 'unknown';
         console.error('Audio error', code, msg);
@@ -373,10 +420,12 @@ window.disposeAudioPlayer = function () {
         audioState.audioContext = null;
     }
     audioState.loudnessGainNode = null;
+    audioState.fadeGainNode = null;
     audioState.gainNode = null;
     audioState.limiterNode = null;
     audioState.analyserNode = null;
     audioState.eqFilters = [];
+    audioState.crossfadeActive = false;
     audioState.dotNetRef = null;
 };
 
@@ -404,6 +453,8 @@ window.audioStop = function () {
 window.audioSeek = function (seconds) {
     const el = audioState.element;
     if (el && isFinite(seconds)) {
+        audioState.lastSeekTime = Date.now();
+        audioState.crossfadePending = false;
         el.currentTime = seconds;
     }
 };
@@ -430,6 +481,28 @@ window.audioChangeSource = function (src, mimeType) {
 
     resumeAudioContext();
     audioState.crossfadePending = false;
+    audioState.crossfadeActive = false;
+
+    // Check if we have a prebuffered gapless element for this source
+    if (audioState.gaplessPrebuffered
+        && audioState.gaplessNextSource
+        && audioState.gaplessNextSource.src === src) {
+        audioGaplessSwitch();
+        return;
+    }
+
+    // Discard stale prebuffer
+    if (audioState.gaplessNextElement) {
+        audioState.gaplessNextElement.src = '';
+        audioState.gaplessNextElement = null;
+        audioState.gaplessNextSource = null;
+        audioState.gaplessPrebuffered = false;
+    }
+
+    // Reset fade gain in case a previous crossfade left it at 0
+    if (audioState.fadeGainNode) {
+        audioState.fadeGainNode.gain.value = 1.0;
+    }
 
     el.src = src;
     el.load();
@@ -444,6 +517,73 @@ window.audioSetCrossfadeDuration = function (seconds) {
     audioState.crossfadeDuration = seconds;
 };
 
+window.audioGaplessPrebuffer = function (src, mimeType) {
+    // Discard any previous prebuffer
+    if (audioState.gaplessNextElement) {
+        audioState.gaplessNextElement.src = '';
+        audioState.gaplessNextElement = null;
+        audioState.gaplessNextSource = null;
+    }
+    audioState.gaplessPrebuffered = false;
+
+    const nextEl = new Audio();
+    nextEl.preload = 'auto';
+    nextEl.crossOrigin = 'anonymous';
+    nextEl.src = src;
+    nextEl.load();
+    audioState.gaplessNextElement = nextEl;
+    audioState.gaplessNextSource = { src, mimeType };
+
+    nextEl.addEventListener('canplaythrough', () => {
+        audioState.gaplessPrebuffered = true;
+    }, { once: true });
+};
+
+window.audioGaplessSwitch = function () {
+    // Instantly switch to the prebuffered element (no overlap)
+    const nextEl = audioState.gaplessNextElement;
+    if (!nextEl || !audioState.gaplessPrebuffered) return false;
+
+    const ctx = audioState.audioContext;
+    const currentEl = audioState.element;
+
+    // Stop current
+    if (currentEl) {
+        currentEl.pause();
+        currentEl.src = '';
+    }
+    if (audioState.sourceNode) {
+        audioState.sourceNode.disconnect();
+    }
+    if (audioState.fadeGainNode) {
+        audioState.fadeGainNode.disconnect();
+    }
+
+    // Wire next into audio graph
+    let nextSource = null;
+    if (ctx) {
+        resumeAudioContext();
+        nextSource = ctx.createMediaElementSource(nextEl);
+        const newFadeGain = ctx.createGain();
+        newFadeGain.gain.value = 1.0;
+        nextSource.connect(newFadeGain);
+        newFadeGain.connect(audioState.loudnessGainNode);
+        audioState.fadeGainNode = newFadeGain;
+    }
+
+    audioState.element = nextEl;
+    audioState.sourceNode = nextSource;
+    audioState.gaplessNextElement = null;
+    audioState.gaplessNextSource = null;
+    audioState.gaplessPrebuffered = false;
+    audioState.crossfadePending = false;
+
+    audioState.generation++;
+    attachEventsToElement(nextEl, audioState.dotNetRef);
+    nextEl.play().catch(e => console.warn('Gapless play prevented', e));
+    return true;
+};
+
 window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
     const duration = fadeDuration !== undefined && fadeDuration > 0 ? fadeDuration : audioState.crossfadeDuration;
     if (duration <= 0 || !audioState.element) {
@@ -455,6 +595,10 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
     resumeAudioContext();
     const ctx = audioState.audioContext;
     const currentEl = audioState.element;
+    const dotNetRef = audioState.dotNetRef;
+
+    // Mark crossfade active so old element's timeupdate is ignored
+    audioState.crossfadeActive = true;
 
     // Create next audio element with its own Web Audio pipeline
     const nextEl = new Audio();
@@ -481,6 +625,32 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
     const steps = (duration * 1000) / stepMs;
     let step = 0;
 
+    // Report new track's time updates during crossfade
+    const crossfadeTimeHandler = () => {
+        if (dotNetRef) {
+            dotNetRef.invokeMethodAsync('OnTimeUpdated', nextEl.currentTime)
+                .catch(e => console.error('OnTimeUpdated failed', e));
+        }
+    };
+    const crossfadeDurationHandler = () => {
+        if (isFinite(nextEl.duration) && dotNetRef) {
+            dotNetRef.invokeMethodAsync('OnDurationChanged', nextEl.duration)
+                .catch(e => console.error('OnDurationChanged failed', e));
+        }
+    };
+    nextEl.addEventListener('timeupdate', crossfadeTimeHandler);
+    nextEl.addEventListener('durationchange', crossfadeDurationHandler);
+
+    // Notify .NET of new duration immediately once available
+    if (isFinite(nextEl.duration) && dotNetRef) {
+        dotNetRef.invokeMethodAsync('OnDurationChanged', nextEl.duration)
+            .catch(() => {});
+    }
+    // Reset time to 0 for the new track
+    if (dotNetRef) {
+        dotNetRef.invokeMethodAsync('OnTimeUpdated', 0).catch(() => {});
+    }
+
     // Use an equal-power crossfade curve for smoother transitions
     nextEl.play().catch(e => console.warn('Crossfade next play prevented', e));
 
@@ -492,37 +662,49 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
         const fadeOut = Math.cos(ratio * Math.PI / 2);
         const fadeIn = Math.sin(ratio * Math.PI / 2);
 
-        // Fade the current source node's output
-        if (audioState.sourceNode && audioState.sourceNode.gain) {
-            audioState.sourceNode.gain.value = fadeOut;
-        } else {
-            // Fallback: manipulate element volume directly
-            currentEl.volume = Math.max(0, fadeOut);
+        // Fade out current via Web Audio GainNode (not element.volume)
+        if (audioState.fadeGainNode) {
+            audioState.fadeGainNode.gain.value = fadeOut;
         }
 
         if (nextGain) {
             nextGain.gain.value = fadeIn;
-        } else {
-            nextEl.volume = Math.min(1, fadeIn);
         }
 
         if (step >= steps) {
             clearInterval(audioState.crossfadeTimer);
             audioState.crossfadeTimer = null;
             audioState.crossfadePending = false;
+            audioState.crossfadeActive = false;
+
+            // Increment generation BEFORE pausing old element to prevent stale pause event
+            audioState.generation++;
 
             // Disconnect old source
             if (audioState.sourceNode) {
                 audioState.sourceNode.disconnect();
             }
+            if (audioState.fadeGainNode) {
+                audioState.fadeGainNode.disconnect();
+            }
             currentEl.pause();
             currentEl.src = '';
 
-            // Promote next element: reconnect nextSource directly to loudnessGain
-            if (nextGain && nextSource) {
-                nextGain.disconnect();
-                nextSource.disconnect();
-                nextSource.connect(audioState.loudnessGainNode);
+            // Remove temporary event listeners from next element
+            nextEl.removeEventListener('timeupdate', crossfadeTimeHandler);
+            nextEl.removeEventListener('durationchange', crossfadeDurationHandler);
+
+            // Promote next element: create new fadeGain and reconnect
+            if (ctx && nextSource) {
+                if (nextGain) {
+                    nextGain.disconnect();
+                    nextSource.disconnect();
+                }
+                const newFadeGain = ctx.createGain();
+                newFadeGain.gain.value = 1.0;
+                nextSource.connect(newFadeGain);
+                newFadeGain.connect(audioState.loudnessGainNode);
+                audioState.fadeGainNode = newFadeGain;
             }
 
             // Swap state
@@ -544,7 +726,12 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
 function attachEventsToElement(el, dotNetRef) {
     if (!dotNetRef) return;
 
+    const gen = audioState.generation;
+
     el.addEventListener('timeupdate', () => {
+        // Ignore if this listener belongs to a stale generation
+        if (gen !== audioState.generation) return;
+        if (audioState.crossfadeActive) return;
         dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
             .catch(e => console.error('OnTimeUpdated failed', e));
 
@@ -552,6 +739,7 @@ function attachEventsToElement(el, dotNetRef) {
         if (audioState.crossfadeDuration > 0
             && !audioState.crossfadePending
             && !audioState.crossfadeTimer
+            && (Date.now() - audioState.lastSeekTime) > 1500
             && isFinite(el.duration)
             && el.duration > 0) {
             const remaining = el.duration - el.currentTime;
@@ -561,9 +749,24 @@ function attachEventsToElement(el, dotNetRef) {
                     .catch(e => console.error('OnCrossfadeNeeded failed', e));
             }
         }
+
+        // Gapless prebuffer: when crossfade is 0, prebuffer next track ~10s before end
+        if (audioState.crossfadeDuration === 0
+            && !audioState.gaplessPrebuffered
+            && !audioState.gaplessNextElement
+            && !audioState.crossfadePending
+            && isFinite(el.duration)
+            && el.duration > 0) {
+            const remaining = el.duration - el.currentTime;
+            if (remaining <= 10 && remaining > 0) {
+                dotNetRef.invokeMethodAsync('OnGaplessPrebufferNeeded')
+                    .catch(e => console.error('OnGaplessPrebufferNeeded failed', e));
+            }
+        }
     });
 
     el.addEventListener('durationchange', () => {
+        if (gen !== audioState.generation) return;
         if (isFinite(el.duration)) {
             dotNetRef.invokeMethodAsync('OnDurationChanged', el.duration)
                 .catch(e => console.error('OnDurationChanged failed', e));
@@ -571,6 +774,7 @@ function attachEventsToElement(el, dotNetRef) {
     });
 
     el.addEventListener('progress', () => {
+        if (gen !== audioState.generation) return;
         const buffered = el.buffered;
         let bufferedEnd = 0;
         if (buffered && buffered.length > 0) {
@@ -581,34 +785,114 @@ function attachEventsToElement(el, dotNetRef) {
     });
 
     el.addEventListener('volumechange', () => {
+        if (gen !== audioState.generation) return;
         dotNetRef.invokeMethodAsync('OnVolumeChanged', el.volume, el.muted)
             .catch(e => console.error('OnVolumeChanged failed', e));
     });
 
     el.addEventListener('play', () => {
+        if (gen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'playing');
     });
 
     el.addEventListener('playing', () => {
+        if (gen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'playing');
     });
 
     el.addEventListener('pause', () => {
+        if (gen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'paused');
     });
 
     el.addEventListener('waiting', () => {
+        if (gen !== audioState.generation) return;
         notifyPlaybackState(dotNetRef, 'buffering');
     });
 
     el.addEventListener('ended', () => {
+        if (gen !== audioState.generation) return;
         dotNetRef.invokeMethodAsync('OnTrackEnded')
             .catch(e => console.error('OnTrackEnded failed', e));
     });
 
     el.addEventListener('error', () => {
+        if (gen !== audioState.generation) return;
         const code = el.error ? el.error.code : -1;
         const msg = el.error ? el.error.message : 'unknown';
         console.error('Audio error', code, msg);
     });
 }
+
+// Wake Lock (keep screen on)
+let _wakeLock = null;
+
+window.audioSetKeepScreenOn = async function (enabled) {
+    if (enabled && 'wakeLock' in navigator) {
+        try {
+            _wakeLock = await navigator.wakeLock.request('screen');
+            _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+        } catch (e) {
+            console.warn('WakeLock request failed', e);
+        }
+    } else if (_wakeLock) {
+        await _wakeLock.release();
+        _wakeLock = null;
+    }
+};
+
+// Visualizer
+window.K7.Visualizer = {
+    _animId: null,
+    _canvas: null,
+    _ctx: null,
+
+    start: function (canvasEl) {
+        this.stop();
+        this._canvas = canvasEl;
+        if (!canvasEl) return;
+        this._ctx = canvasEl.getContext('2d');
+        this._loop();
+    },
+
+    stop: function () {
+        if (this._animId) {
+            cancelAnimationFrame(this._animId);
+            this._animId = null;
+        }
+        this._canvas = null;
+        this._ctx = null;
+    },
+
+    _loop: function () {
+        if (!this._canvas || !this._ctx || !audioState.analyserNode) return;
+
+        const ctx = this._ctx;
+        const canvas = this._canvas;
+        const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+
+        const data = new Uint8Array(audioState.analyserNode.frequencyBinCount);
+        audioState.analyserNode.getByteFrequencyData(data);
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw frequency bars
+        const barCount = 64;
+        const step = Math.floor(data.length / barCount);
+        const barWidth = w / barCount;
+        const gap = 2;
+
+        for (let i = 0; i < barCount; i++) {
+            const value = data[i * step] / 255;
+            const barHeight = value * h * 0.8;
+            const x = i * barWidth;
+            const y = h - barHeight;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, ' + (0.4 + value * 0.6) + ')';
+            ctx.fillRect(x + gap / 2, y, barWidth - gap, barHeight);
+        }
+
+        this._animId = requestAnimationFrame(() => this._loop());
+    }
+};

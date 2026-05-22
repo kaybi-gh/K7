@@ -23,6 +23,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public event Action? IsVisibleChanged;
     public event Action? IsFullScreenVisibleChanged;
     public event Func<PlayerSource, double, Task>? CrossfadeRequested;
+    public event Func<PlayerSource, Task>? GaplessPrebufferRequested;
 #pragma warning restore CS0067
     public event Action<PlaybackState>? PlaybackStateChanged;
     public event Action<double>? DurationChanged;
@@ -114,8 +115,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     private bool _adaptiveCrossfade = deviceStorageService.Get(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, true);
     public bool AdaptiveCrossfade => _adaptiveCrossfade;
 
+    public event Action? CrossfadeDurationChanged;
     private double _crossfadeDuration = deviceStorageService.Get(PreferenceKeys.PLAYER_CROSSFADE_DURATION, 6.0);
     public double CrossfadeDuration => _crossfadeDuration;
+
+    /// <summary>The duration JS uses to detect when to trigger crossfade. Non-zero when adaptive is on even if user slider is at 0.</summary>
+    public double CrossfadeTriggerWindow => _crossfadeDuration > 0
+        ? _crossfadeDuration
+        : _adaptiveCrossfade ? 8.0 : 0;
 
     private bool _crossfadeTriggered;
 
@@ -190,6 +197,49 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         IsFullScreenVisible = !IsFullScreenVisible;
         IsFullScreenVisibleChanged?.Invoke();
+    }
+
+    // Player UX preferences
+    public event Action? PlayerUxSettingsChanged;
+
+    private bool _showFullscreenOnPlay = deviceStorageService.Get(PreferenceKeys.SHOW_FULLSCREEN_ON_PLAY, false);
+    public bool ShowFullscreenOnPlay => _showFullscreenOnPlay;
+
+    private int _skipBackSeconds = deviceStorageService.Get(PreferenceKeys.SKIP_BACK_SECONDS, 5);
+    public int SkipBackSeconds => _skipBackSeconds;
+
+    private int _skipForwardSeconds = deviceStorageService.Get(PreferenceKeys.SKIP_FORWARD_SECONDS, 5);
+    public int SkipForwardSeconds => _skipForwardSeconds;
+
+    private bool _keepScreenOn = deviceStorageService.Get(PreferenceKeys.KEEP_SCREEN_ON, false);
+    public bool KeepScreenOn => _keepScreenOn;
+
+    public void SetShowFullscreenOnPlay(bool enabled)
+    {
+        _showFullscreenOnPlay = enabled;
+        deviceStorageService.Set(PreferenceKeys.SHOW_FULLSCREEN_ON_PLAY, enabled);
+        PlayerUxSettingsChanged?.Invoke();
+    }
+
+    public void SetSkipBackSeconds(int seconds)
+    {
+        _skipBackSeconds = seconds;
+        deviceStorageService.Set(PreferenceKeys.SKIP_BACK_SECONDS, seconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
+
+    public void SetSkipForwardSeconds(int seconds)
+    {
+        _skipForwardSeconds = seconds;
+        deviceStorageService.Set(PreferenceKeys.SKIP_FORWARD_SECONDS, seconds);
+        PlayerUxSettingsChanged?.Invoke();
+    }
+
+    public void SetKeepScreenOn(bool enabled)
+    {
+        _keepScreenOn = enabled;
+        deviceStorageService.Set(PreferenceKeys.KEEP_SCREEN_ON, enabled);
+        PlayerUxSettingsChanged?.Invoke();
     }
 
     // Queue management
@@ -343,12 +393,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     {
         _adaptiveCrossfade = !_adaptiveCrossfade;
         deviceStorageService.Set(PreferenceKeys.PLAYER_ADAPTIVE_CROSSFADE, _adaptiveCrossfade);
+        CrossfadeDurationChanged?.Invoke();
     }
 
     public void SetCrossfadeDuration(double seconds)
     {
         _crossfadeDuration = Math.Clamp(seconds, 0, 12);
         deviceStorageService.Set(PreferenceKeys.PLAYER_CROSSFADE_DURATION, _crossfadeDuration);
+        CrossfadeDurationChanged?.Invoke();
     }
 
     public void SetLoudnessEnabled(bool enabled)
@@ -434,12 +486,43 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         var duration = _crossfadeDuration;
         if (_adaptiveCrossfade && CurrentTrack is not null)
-            duration = HarmonicMixHelper.ComputeCrossfadeDuration(CurrentTrack, nextTrack, _crossfadeDuration);
+        {
+            var baseDuration = _crossfadeDuration > 0 ? _crossfadeDuration : 6.0;
+            duration = HarmonicMixHelper.ComputeCrossfadeDuration(CurrentTrack, nextTrack, baseDuration);
+        }
 
         _crossfadeTriggered = true;
         _currentIndex = nextIndex.Value;
         CurrentTrackChanged?.Invoke(CurrentTrack);
         CrossfadeRequested?.Invoke(source, duration);
+    }
+
+    private bool _gaplessPrebufferTriggered;
+
+    public async Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default)
+    {
+        if (_gaplessPrebufferTriggered || _crossfadeTriggered || _queue.Count == 0) return;
+        if (_repeat == RepeatMode.One) return;
+
+        var nextIndex = PeekNextIndex();
+        if (nextIndex is null) return;
+
+        var nextTrack = _queue[nextIndex.Value];
+
+        PlayerSource source;
+        if (!string.IsNullOrEmpty(nextTrack.LocalPath))
+        {
+            source = new PlayerSource { Url = nextTrack.LocalPath, MimeType = "audio/mpeg" };
+        }
+        else
+        {
+            var session = await streamUriService.GetOrCreateSessionAsync(nextTrack.IndexedFileId, cancellationToken: cancellationToken);
+            if (session.Source is null) return;
+            source = new PlayerSource { Url = session.Source.Uri.OriginalString, MimeType = session.Source.MimeType };
+        }
+
+        _gaplessPrebufferTriggered = true;
+        GaplessPrebufferRequested?.Invoke(source);
     }
 
     // Called by the component when JS reports track ended
@@ -468,6 +551,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         if (track is null) return;
 
         _crossfadeTriggered = false;
+        _gaplessPrebufferTriggered = false;
         PlaybackState = PlaybackState.Buffering;
         CurrentTrackChanged?.Invoke(track);
 
@@ -477,6 +561,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         BufferedTime = 0;
 
         await ShowAsync();
+
+        if (_showFullscreenOnPlay && !IsFullScreenVisible)
+            ToggleFullScreen();
 
         PlayerSource source;
 
@@ -519,6 +606,28 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
                 return _shuffleOrder.Count > 0 ? _shuffleOrder[0] : null;
             }
 
+            return null;
+        }
+
+        var next = _currentIndex + 1;
+        if (next < _queue.Count)
+            return next;
+
+        if (_repeat == RepeatMode.All)
+            return 0;
+
+        return null;
+    }
+
+    private int? PeekNextIndex()
+    {
+        if (_shuffle)
+        {
+            var nextPos = _shufflePosition + 1;
+            if (nextPos < _shuffleOrder.Count)
+                return _shuffleOrder[nextPos];
+            if (_repeat == RepeatMode.All && _shuffleOrder.Count > 0)
+                return _shuffleOrder[0];
             return null;
         }
 

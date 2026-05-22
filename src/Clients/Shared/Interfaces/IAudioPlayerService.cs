@@ -75,10 +75,14 @@ public interface IAudioPlayerService
     // Crossfade
     bool AdaptiveCrossfade { get; }
     double CrossfadeDuration { get; }
+    double CrossfadeTriggerWindow { get; }
     event Func<PlayerSource, double, Task>? CrossfadeRequested;
+    event Action? CrossfadeDurationChanged;
+    event Func<PlayerSource, Task>? GaplessPrebufferRequested;
     void ToggleAdaptiveCrossfade();
     void SetCrossfadeDuration(double seconds);
     Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default);
+    Task OnGaplessPrebufferNeededAsync(CancellationToken cancellationToken = default);
 
     // Loudness normalization
     bool LoudnessEnabled { get; }
@@ -102,8 +106,19 @@ public interface IAudioPlayerService
 
     // Full screen
     bool IsFullScreenVisible { get; }
+    bool ShowFullscreenOnPlay { get; }
     event Action? IsFullScreenVisibleChanged;
     void ToggleFullScreen();
+    void SetShowFullscreenOnPlay(bool enabled);
+
+    // Player UX preferences
+    int SkipBackSeconds { get; }
+    int SkipForwardSeconds { get; }
+    bool KeepScreenOn { get; }
+    void SetSkipBackSeconds(int seconds);
+    void SetSkipForwardSeconds(int seconds);
+    void SetKeepScreenOn(bool enabled);
+    event Action? PlayerUxSettingsChanged;
 
     // Visibility
     Task ShowAsync();
