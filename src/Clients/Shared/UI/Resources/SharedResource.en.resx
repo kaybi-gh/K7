@@ -92,4 +92,37 @@
   <data name="JumpIndex" xml:space="preserve"><value>Jump index</value></data>
   <data name="ViewMode" xml:space="preserve"><value>View mode</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Edit metadata</value></data>
+  <data name="SleepTimer" xml:space="preserve"><value>Sleep timer</value></data>
+  <data name="EndOfTrack" xml:space="preserve"><value>End of track</value></data>
+  <data name="CancelSleepTimer" xml:space="preserve"><value>Cancel sleep timer</value></data>
+  <data name="Share" xml:space="preserve"><value>Share</value></data>
+  <data name="Shared" xml:space="preserve"><value>Shared</value></data>
+  <data name="CopiedToClipboard" xml:space="preserve"><value>Copied to clipboard</value></data>
+  <data name="SaveQueueAsPlaylist" xml:space="preserve"><value>Save queue as playlist</value></data>
+  <data name="QueueSavedAsPlaylist" xml:space="preserve"><value>Queue saved as playlist</value></data>
+  <data name="Visualizer" xml:space="preserve"><value>Enable Visualizer</value></data>
+  <data name="DisableVisualizer" xml:space="preserve"><value>Disable Visualizer</value></data>
+  <data name="TrackInfo" xml:space="preserve"><value>Track Info</value></data>
+  <data name="AudioDetails" xml:space="preserve"><value>Audio Details</value></data>
+  <data name="Codec" xml:space="preserve"><value>Codec</value></data>
+  <data name="Container" xml:space="preserve"><value>Container</value></data>
+  <data name="SampleRate" xml:space="preserve"><value>Sample Rate</value></data>
+  <data name="Channels" xml:space="preserve"><value>Channels</value></data>
+  <data name="FileSize" xml:space="preserve"><value>File Size</value></data>
+  <data name="Bitrate" xml:space="preserve"><value>Bitrate</value></data>
+  <data name="TrackProperties" xml:space="preserve"><value>Track Properties</value></data>
+  <data name="Key" xml:space="preserve"><value>Key</value></data>
+  <data name="Loudness" xml:space="preserve"><value>Loudness</value></data>
+  <data name="Energy" xml:space="preserve"><value>Energy</value></data>
+  <data name="Danceability" xml:space="preserve"><value>Danceability</value></data>
+  <data name="Valence" xml:space="preserve"><value>Valence</value></data>
+  <data name="ListeningStats" xml:space="preserve"><value>Listening Stats</value></data>
+  <data name="PlayCount" xml:space="preserve"><value>Play Count</value></data>  <data name="TotalPlayCount" xml:space="preserve"><value>Total plays</value></data>  <data name="LastPlayed" xml:space="preserve"><value>Last Played</value></data>
+  <data name="UpNext" xml:space="preserve"><value>Up Next</value></data>
+  <data name="NoPreviousTracks" xml:space="preserve"><value>No previous tracks</value></data>
+  <data name="NoUpcomingTracks" xml:space="preserve"><value>No upcoming tracks</value></data>
+  <data name="Back" xml:space="preserve"><value>Back</value></data>
+  <data name="GoToArtist" xml:space="preserve"><value>Go to artist</value></data>
+  <data name="GoToAlbum" xml:space="preserve"><value>Go to album</value></data>
+  <data name="AddToPlaylist" xml:space="preserve"><value>Add to playlist...</value></data>
 </root>
