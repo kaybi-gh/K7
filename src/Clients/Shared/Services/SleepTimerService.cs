@@ -7,6 +7,7 @@ namespace K7.Clients.Shared.Services;
 public class SleepTimerService(IAudioPlayerService audioPlayerService) : ISleepTimerService, IDisposable
 {
     private Timer? _timer;
+    private Timer? _tickTimer;
     private DateTime _expiresAt;
 
     public bool IsActive { get; private set; }
@@ -28,12 +29,14 @@ public class SleepTimerService(IAudioPlayerService audioPlayerService) : ISleepT
             case SleepTimerMode.Duration when duration.HasValue:
                 _expiresAt = DateTime.UtcNow + duration.Value;
                 _timer = new Timer(OnTimerElapsed, null, duration.Value, Timeout.InfiniteTimeSpan);
+                _tickTimer = new Timer(_ => TimerChanged?.Invoke(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
                 break;
 
             case SleepTimerMode.EndOfTrack:
                 audioPlayerService.CurrentTrackChanged += OnTrackChangedForSleep;
                 _expiresAt = DateTime.UtcNow + TimeSpan.FromSeconds(
                     Math.Max(audioPlayerService.Duration - audioPlayerService.CurrentTime, 0));
+                _tickTimer = new Timer(_ => TimerChanged?.Invoke(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
                 break;
 
             case SleepTimerMode.EndOfQueue:
@@ -54,6 +57,8 @@ public class SleepTimerService(IAudioPlayerService audioPlayerService) : ISleepT
     {
         _timer?.Dispose();
         _timer = null;
+        _tickTimer?.Dispose();
+        _tickTimer = null;
         audioPlayerService.CurrentTrackChanged -= OnTrackChangedForSleep;
         audioPlayerService.PlaybackStateChanged -= OnPlaybackStateChangedForSleep;
         IsActive = false;
@@ -90,6 +95,7 @@ public class SleepTimerService(IAudioPlayerService audioPlayerService) : ISleepT
     public void Dispose()
     {
         _timer?.Dispose();
+        _tickTimer?.Dispose();
         audioPlayerService.CurrentTrackChanged -= OnTrackChangedForSleep;
         audioPlayerService.PlaybackStateChanged -= OnPlaybackStateChangedForSleep;
     }
