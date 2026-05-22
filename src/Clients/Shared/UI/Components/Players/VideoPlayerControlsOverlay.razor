@@ -22,7 +22,7 @@
      @onkeydown="OnKeyDown" @onkeydown:stopPropagation
      @onfocusin="OnFocusIn">
 
-    <div class="controls-bar top" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
+    <div class="controls-bar top d-flex align-right" @onclick:stopPropagation @ontouchstart:stopPropagation @ontouchmove:stopPropagation @ontouchend:stopPropagation @onmouseover="OnControlsBarMouseEnter" @onmouseout="OnControlsBarMouseOut">
         <K7IconButton Icon="@Phosphor.X" OnClick="OnCloseButtonClick" AriaLabel="Close" />
     </div>
 
