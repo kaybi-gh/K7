@@ -1,4 +1,5 @@
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 
 namespace K7.Shared.Dtos.Requests;
 
@@ -11,4 +12,5 @@ public sealed record UpdatePersonMetadataRequest
     public DateOnly? Birthday { get; init; }
     public DateOnly? Deathday { get; init; }
     public string? BirthPlace { get; init; }
+    public IList<ExternalIdEditDto>? ExternalIds { get; init; }
 }

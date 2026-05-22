@@ -23,6 +23,7 @@
   <data name="Name" xml:space="preserve"><value>Name</value></data>
   <data name="OriginalTitle" xml:space="preserve"><value>Original title</value></data>
   <data name="ReleaseDate" xml:space="preserve"><value>Release date</value></data>
+  <data name="FormationDate" xml:space="preserve"><value>Formation date</value></data>
   <data name="Overview" xml:space="preserve"><value>Overview</value></data>
   <data name="Genres" xml:space="preserve"><value>Genres</value></data>
   <data name="GenresHelper" xml:space="preserve"><value>Comma-separated</value></data>
@@ -55,4 +56,13 @@
   <data name="Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="PictureUploaded" xml:space="preserve"><value>Picture uploaded successfully</value></data>
   <data name="PictureDeleted" xml:space="preserve"><value>Picture deleted successfully</value></data>
+  <data name="BrowseProviderImages" xml:space="preserve"><value>Browse provider images</value></data>
+  <data name="ImportSelected" xml:space="preserve"><value>Import selection</value></data>
+  <data name="TabMetadata" xml:space="preserve"><value>Metadata</value></data>
+  <data name="TabImages" xml:space="preserve"><value>Images</value></data>
+  <data name="ProviderImportSuccess" xml:space="preserve"><value>Picture imported successfully</value></data>
+  <data name="ExternalIds" xml:space="preserve"><value>External IDs</value></data>
+  <data name="Provider" xml:space="preserve"><value>Provider</value></data>
+  <data name="Value" xml:space="preserve"><value>Value</value></data>
+  <data name="AddExternalId" xml:space="preserve"><value>Add an ID</value></data>
 </root>

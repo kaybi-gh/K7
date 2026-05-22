@@ -3,19 +3,28 @@
 @using K7.Server.Domain.Enums
 
 <div class="k7-dialog-content edit-metadata-dialog">
+    <div class="dialog-tabs">
+        <button class="dialog-tab @(_activeTab == 0 ? "dialog-tab--active" : "")" @onclick="@(() => _activeTab = 0)">
+            @L["TabMetadata"]
+        </button>
+        <button class="dialog-tab @(_activeTab == 1 ? "dialog-tab--active" : "")" @onclick="@(() => _activeTab = 1)">
+            @L["TabImages"]
+        </button>
+    </div>
+
+    @if (_activeTab == 0)
+    {
     <div class="d-flex flex-col">
         <div class="field-row">
-            <K7TextField @bind-Value="_title" Label="@(_isPersonMode ? L["Name"] : L["Title"])" Variant="outlined" />
-            <K7IconButton Icon="@GetLockIcon("Title")" OnClick="@(() => ToggleLock("Title"))"
-                          Title="@GetLockTooltip("Title")" Class="lock-btn" />
+            <K7TextField @bind-Value="_title" Label="@(_isPersonMode ? L["Name"] : L["Title"])" Variant="outlined" MaxLength="500" />
+            <K7IconButton Icon="@GetLockIcon("Title")" OnClick="@(() => ToggleLock("Title"))" Title="@GetLockTooltip("Title")" Class="@GetLockClass("Title")" />
         </div>
 
         @if (_showOriginalTitle)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_originalTitle" Label="@L["OriginalTitle"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("OriginalTitle")" OnClick="@(() => ToggleLock("OriginalTitle"))"
-                              Title="@GetLockTooltip("OriginalTitle")" Class="lock-btn" />
+                <K7TextField @bind-Value="_originalTitle" Label="@L["OriginalTitle"]" Variant="outlined" MaxLength="500" />
+                <K7IconButton Icon="@GetLockIcon("OriginalTitle")" OnClick="@(() => ToggleLock("OriginalTitle"))" Title="@GetLockTooltip("OriginalTitle")" Class="@GetLockClass("OriginalTitle")" />
             </div>
         }
 
@@ -23,18 +32,17 @@
         {
             <div class="field-row">
                 <K7TextField TValue="string" Value="@_releaseDateStr" ValueChanged="OnReleaseDateChanged"
-                             Label="@L["ReleaseDate"]" Variant="outlined" HelperText="YYYY-MM-DD" />
-                <K7IconButton Icon="@GetLockIcon("ReleaseDate")" OnClick="@(() => ToggleLock("ReleaseDate"))"
-                              Title="@GetLockTooltip("ReleaseDate")" Class="lock-btn" />
+                             Label="@_releaseDateLabel" Variant="outlined" HelperText="YYYY-MM-DD"
+                             Validation="ValidateDate" />
+                <K7IconButton Icon="@GetLockIcon("ReleaseDate")" OnClick="@(() => ToggleLock("ReleaseDate"))" Title="@GetLockTooltip("ReleaseDate")" Class="@GetLockClass("ReleaseDate")" />
             </div>
         }
 
         @if (_showOverview)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_overview" Label="@L["Overview"]" Variant="outlined" Lines="4" />
-                <K7IconButton Icon="@GetLockIcon("Overview")" OnClick="@(() => ToggleLock("Overview"))"
-                              Title="@GetLockTooltip("Overview")" Class="lock-btn" />
+                <K7TextField @bind-Value="_overview" Label="@L["Overview"]" Variant="outlined" Lines="4" MaxLength="10000" />
+                <K7IconButton Icon="@GetLockIcon("Overview")" OnClick="@(() => ToggleLock("Overview"))" Title="@GetLockTooltip("Overview")" Class="@GetLockClass("Overview")" />
             </div>
         }
 
@@ -43,35 +51,32 @@
             <div class="field-row">
                 <K7TextField @bind-Value="_genresStr" Label="@L["Genres"]" Variant="outlined"
                              HelperText="@L["GenresHelper"]" />
-                <K7IconButton Icon="@GetLockIcon("Genres")" OnClick="@(() => ToggleLock("Genres"))"
-                              Title="@GetLockTooltip("Genres")" Class="lock-btn" />
+                <K7IconButton Icon="@GetLockIcon("Genres")" OnClick="@(() => ToggleLock("Genres"))" Title="@GetLockTooltip("Genres")" Class="@GetLockClass("Genres")" />
             </div>
         }
 
         @if (_showTagline)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_tagline" Label="@L["Tagline"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("Tagline")" OnClick="@(() => ToggleLock("Tagline"))"
-                              Title="@GetLockTooltip("Tagline")" Class="lock-btn" />
+                <K7TextField @bind-Value="_tagline" Label="@L["Tagline"]" Variant="outlined" MaxLength="1000" />
+                <K7IconButton Icon="@GetLockIcon("Tagline")" OnClick="@(() => ToggleLock("Tagline"))" Title="@GetLockTooltip("Tagline")" Class="@GetLockClass("Tagline")" />
             </div>
         }
 
         @if (_showOriginalLanguage)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_originalLanguage" Label="@L["OriginalLanguage"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("OriginalLanguage")" OnClick="@(() => ToggleLock("OriginalLanguage"))"
-                              Title="@GetLockTooltip("OriginalLanguage")" Class="lock-btn" />
+                <K7LanguageSelect Value="@_originalLanguage" ValueChanged="@(v => _originalLanguage = v)"
+                                  Label="@L["OriginalLanguage"]" Variant="outlined" />
+                <K7IconButton Icon="@GetLockIcon("OriginalLanguage")" OnClick="@(() => ToggleLock("OriginalLanguage"))" Title="@GetLockTooltip("OriginalLanguage")" Class="@GetLockClass("OriginalLanguage")" />
             </div>
         }
 
         @if (_showContentRating)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_contentRating" Label="@L["ContentRating"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("ContentRating")" OnClick="@(() => ToggleLock("ContentRating"))"
-                              Title="@GetLockTooltip("ContentRating")" Class="lock-btn" />
+                <K7TextField @bind-Value="_contentRating" Label="@L["ContentRating"]" Variant="outlined" MaxLength="50" />
+                <K7IconButton Icon="@GetLockIcon("ContentRating")" OnClick="@(() => ToggleLock("ContentRating"))" Title="@GetLockTooltip("ContentRating")" Class="@GetLockClass("ContentRating")" />
             </div>
         }
 
@@ -79,41 +84,27 @@
         {
             <div class="field-row">
                 <K7TextField TValue="long?" @bind-Value="_budget" Label="@L["Budget"]" Variant="outlined" Type="number" />
-                <K7IconButton Icon="@GetLockIcon("Budget")" OnClick="@(() => ToggleLock("Budget"))"
-                              Title="@GetLockTooltip("Budget")" Class="lock-btn" />
+                <K7IconButton Icon="@GetLockIcon("Budget")" OnClick="@(() => ToggleLock("Budget"))" Title="@GetLockTooltip("Budget")" Class="@GetLockClass("Budget")" />
             </div>
             <div class="field-row">
                 <K7TextField TValue="long?" @bind-Value="_revenue" Label="@L["Revenue"]" Variant="outlined" Type="number" />
-                <K7IconButton Icon="@GetLockIcon("Revenue")" OnClick="@(() => ToggleLock("Revenue"))"
-                              Title="@GetLockTooltip("Revenue")" Class="lock-btn" />
+                <K7IconButton Icon="@GetLockIcon("Revenue")" OnClick="@(() => ToggleLock("Revenue"))" Title="@GetLockTooltip("Revenue")" Class="@GetLockClass("Revenue")" />
             </div>
         }
 
         @if (_showStatus)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_status" Label="@L["Status"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("Status")" OnClick="@(() => ToggleLock("Status"))"
-                              Title="@GetLockTooltip("Status")" Class="lock-btn" />
+                <K7TextField @bind-Value="_status" Label="@L["Status"]" Variant="outlined" MaxLength="50" />
+                <K7IconButton Icon="@GetLockIcon("Status")" OnClick="@(() => ToggleLock("Status"))" Title="@GetLockTooltip("Status")" Class="@GetLockClass("Status")" />
             </div>
         }
 
         @if (_showNetwork)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_network" Label="@L["Network"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("Network")" OnClick="@(() => ToggleLock("Network"))"
-                              Title="@GetLockTooltip("Network")" Class="lock-btn" />
-            </div>
-        }
-
-        @if (_showAirDate)
-        {
-            <div class="field-row">
-                <K7TextField TValue="string" Value="@_airDateStr" ValueChanged="OnAirDateChanged"
-                             Label="@L["AirDate"]" Variant="outlined" HelperText="YYYY-MM-DD" />
-                <K7IconButton Icon="@GetLockIcon("AirDate")" OnClick="@(() => ToggleLock("AirDate"))"
-                              Title="@GetLockTooltip("AirDate")" Class="lock-btn" />
+                <K7TextField @bind-Value="_network" Label="@L["Network"]" Variant="outlined" MaxLength="200" />
+                <K7IconButton Icon="@GetLockIcon("Network")" OnClick="@(() => ToggleLock("Network"))" Title="@GetLockTooltip("Network")" Class="@GetLockClass("Network")" />
             </div>
         }
 
@@ -121,26 +112,23 @@
         {
             <div class="field-row">
                 <K7TextField TValue="int?" @bind-Value="_runtime" Label="@L["Runtime"]" Variant="outlined" Type="number" />
-                <K7IconButton Icon="@GetLockIcon("Runtime")" OnClick="@(() => ToggleLock("Runtime"))"
-                              Title="@GetLockTooltip("Runtime")" Class="lock-btn" />
+                <K7IconButton Icon="@GetLockIcon("Runtime")" OnClick="@(() => ToggleLock("Runtime"))" Title="@GetLockTooltip("Runtime")" Class="@GetLockClass("Runtime")" />
             </div>
         }
 
         @if (_showBiography)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_biography" Label="@L["Biography"]" Variant="outlined" Lines="4" />
-                <K7IconButton Icon="@GetLockIcon("Biography")" OnClick="@(() => ToggleLock("Biography"))"
-                              Title="@GetLockTooltip("Biography")" Class="lock-btn" />
+                <K7TextField @bind-Value="_biography" Label="@L["Biography"]" Variant="outlined" Lines="4" MaxLength="50000" />
+                <K7IconButton Icon="@GetLockIcon("Biography")" OnClick="@(() => ToggleLock("Biography"))" Title="@GetLockTooltip("Biography")" Class="@GetLockClass("Biography")" />
             </div>
         }
 
         @if (_showCountry)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_country" Label="@L["Country"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("Country")" OnClick="@(() => ToggleLock("Country"))"
-                              Title="@GetLockTooltip("Country")" Class="lock-btn" />
+                <K7TextField @bind-Value="_country" Label="@L["Country"]" Variant="outlined" MaxLength="100" />
+                <K7IconButton Icon="@GetLockIcon("Country")" OnClick="@(() => ToggleLock("Country"))" Title="@GetLockTooltip("Country")" Class="@GetLockClass("Country")" />
             </div>
         }
 
@@ -148,9 +136,9 @@
         {
             <div class="field-row">
                 <K7TextField TValue="string" Value="@_birthdayStr" ValueChanged="@(v => _birthdayStr = v)"
-                             Label="@L["Birthday"]" Variant="outlined" HelperText="YYYY-MM-DD" />
-                <K7IconButton Icon="@GetLockIcon("Birthday")" OnClick="@(() => ToggleLock("Birthday"))"
-                              Title="@GetLockTooltip("Birthday")" Class="lock-btn" />
+                             Label="@L["Birthday"]" Variant="outlined" HelperText="YYYY-MM-DD"
+                             Validation="ValidateDate" />
+                <K7IconButton Icon="@GetLockIcon("Birthday")" OnClick="@(() => ToggleLock("Birthday"))" Title="@GetLockTooltip("Birthday")" Class="@GetLockClass("Birthday")" />
             </div>
         }
 
@@ -158,18 +146,17 @@
         {
             <div class="field-row">
                 <K7TextField TValue="string" Value="@_deathdayStr" ValueChanged="@(v => _deathdayStr = v)"
-                             Label="@L["Deathday"]" Variant="outlined" HelperText="YYYY-MM-DD" />
-                <K7IconButton Icon="@GetLockIcon("Deathday")" OnClick="@(() => ToggleLock("Deathday"))"
-                              Title="@GetLockTooltip("Deathday")" Class="lock-btn" />
+                             Label="@L["Deathday"]" Variant="outlined" HelperText="YYYY-MM-DD"
+                             Validation="ValidateDate" />
+                <K7IconButton Icon="@GetLockIcon("Deathday")" OnClick="@(() => ToggleLock("Deathday"))" Title="@GetLockTooltip("Deathday")" Class="@GetLockClass("Deathday")" />
             </div>
         }
 
         @if (_showBirthPlace)
         {
             <div class="field-row">
-                <K7TextField @bind-Value="_birthPlace" Label="@L["BirthPlace"]" Variant="outlined" />
-                <K7IconButton Icon="@GetLockIcon("BirthPlace")" OnClick="@(() => ToggleLock("BirthPlace"))"
-                              Title="@GetLockTooltip("BirthPlace")" Class="lock-btn" />
+                <K7TextField @bind-Value="_birthPlace" Label="@L["BirthPlace"]" Variant="outlined" MaxLength="200" />
+                <K7IconButton Icon="@GetLockIcon("BirthPlace")" OnClick="@(() => ToggleLock("BirthPlace"))" Title="@GetLockTooltip("BirthPlace")" Class="@GetLockClass("BirthPlace")" />
             </div>
         }
 
@@ -177,13 +164,11 @@
         {
             <div class="field-row">
                 <K7TextField TValue="int?" @bind-Value="_trackNumber" Label="@L["TrackNumber"]" Variant="outlined" Type="number" />
-                <K7IconButton Icon="@GetLockIcon("TrackNumber")" OnClick="@(() => ToggleLock("TrackNumber"))"
-                              Title="@GetLockTooltip("TrackNumber")" Class="lock-btn" />
+                <K7IconButton Icon="@GetLockIcon("TrackNumber")" OnClick="@(() => ToggleLock("TrackNumber"))" Title="@GetLockTooltip("TrackNumber")" Class="@GetLockClass("TrackNumber")" />
             </div>
             <div class="field-row">
                 <K7TextField TValue="int?" @bind-Value="_discNumber" Label="@L["DiscNumber"]" Variant="outlined" Type="number" />
-                <K7IconButton Icon="@GetLockIcon("DiscNumber")" OnClick="@(() => ToggleLock("DiscNumber"))"
-                              Title="@GetLockTooltip("DiscNumber")" Class="lock-btn" />
+                <K7IconButton Icon="@GetLockIcon("DiscNumber")" OnClick="@(() => ToggleLock("DiscNumber"))" Title="@GetLockTooltip("DiscNumber")" Class="@GetLockClass("DiscNumber")" />
             </div>
         }
 
@@ -191,23 +176,54 @@
         {
             <div class="field-row">
                 <K7TextField @bind-Value="_lyrics" Label="@L["Lyrics"]" Variant="outlined" Lines="4" />
-                <K7IconButton Icon="@GetLockIcon("Lyrics")" OnClick="@(() => ToggleLock("Lyrics"))"
-                              Title="@GetLockTooltip("Lyrics")" Class="lock-btn" />
+                <K7IconButton Icon="@GetLockIcon("Lyrics")" OnClick="@(() => ToggleLock("Lyrics"))" Title="@GetLockTooltip("Lyrics")" Class="@GetLockClass("Lyrics")" />
             </div>
         }
 
-        @if (!_isPersonMode && Media?.Pictures is { Count: > 0 })
+        @if (_externalIds.Count > 0 || _isPersonMode || Media is not null)
+        {
+            <div class="external-ids-section">
+                <div class="field-row external-ids-header">
+                    <span class="external-ids-label">@L["ExternalIds"]</span>
+                    <K7IconButton Icon="@GetLockIcon("ExternalIds")" OnClick="@(() => ToggleLock("ExternalIds"))" Title="@GetLockTooltip("ExternalIds")" Class="@GetLockClass("ExternalIds")" />
+                </div>
+                @foreach (var entry in _externalIds)
+                {
+                    <div class="field-row external-id-row">
+                        <K7TextField @bind-Value="entry.ProviderName" Label="@L["Provider"]" Variant="outlined" Class="external-id-provider" />
+                        <K7TextField @bind-Value="entry.Value" Label="@L["Value"]" Variant="outlined" Class="external-id-value" />
+                        <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => RemoveExternalId(entry))" Title="@L["Delete"]" />
+                    </div>
+                }
+                <K7Button Variant="text" StartIcon="@Phosphor.Plus" OnClick="AddExternalId" Class="add-external-id-btn">
+                    @L["AddExternalId"]
+                </K7Button>
+            </div>
+        }
+    </div>
+    }
+
+    @if (_activeTab == 1)
+    {
+    <div class="d-flex flex-col images-tab">
+        <div class="image-locks">
+            @foreach (var type in _allowedPictureTypes)
+            {
+                <div class="image-lock-row">
+                    <span class="image-lock-label">@type</span>
+                    <K7IconButton Icon="@GetLockIcon($"Pictures:{type}")" OnClick="@(() => ToggleLock($"Pictures:{type}"))"
+                                  Title="@GetLockTooltip($"Pictures:{type}")" Class="@GetLockClass($"Pictures:{type}")" />
+                </div>
+            }
+        </div>
+
+        @if (Media?.Pictures is { Count: > 0 })
         {
             <div class="pictures-section">
-                <div class="field-row">
-                    <span class="field-label">@L["Pictures"]</span>
-                    <K7IconButton Icon="@GetLockIcon("Pictures")" OnClick="@(() => ToggleLock("Pictures"))"
-                                  Title="@GetLockTooltip("Pictures")" Class="lock-btn" />
-                </div>
                 <div class="pictures-grid">
                     @foreach (var pic in Media.Pictures)
                     {
-                        <div class="picture-item">
+                        <div class="picture-item @GetPictureItemClass(pic.Type)">
                             <img src="@pic.GetUri(K7.Server.Domain.Enums.MetadataPictureSize.Small)" alt="@pic.Type" loading="lazy" />
                             <span class="picture-type">@pic.Type</span>
                             <K7IconButton Icon="@Phosphor.Trash" Class="picture-delete-btn"
@@ -217,17 +233,27 @@
                 </div>
             </div>
         }
+        else if (Person?.PortraitPicture is not null)
+        {
+            <div class="pictures-section">
+                <div class="pictures-grid">
+                    <div class="picture-item picture-item--poster">
+                        <img src="@Person.PortraitPicture.GetUri(K7.Server.Domain.Enums.MetadataPictureSize.Small)" alt="Portrait" loading="lazy" />
+                        <span class="picture-type">@MetadataPictureType.Portrait</span>
+                        <K7IconButton Icon="@Phosphor.Trash" Class="picture-delete-btn"
+                                      OnClick="@(() => DeletePictureAsync(Person.PortraitPicture.Id))" Title="@L["Delete"]" />
+                    </div>
+                </div>
+            </div>
+        }
 
         <div class="upload-section">
             <div class="d-flex align-center gap-2">
                 <K7Select TValue="MetadataPictureType" @bind-Value="_uploadPictureType" Label="@L["PictureType"]" Variant="outlined">
-                    <K7SelectItem TValue="MetadataPictureType" Value="MetadataPictureType.Poster">Poster</K7SelectItem>
-                    <K7SelectItem TValue="MetadataPictureType" Value="MetadataPictureType.Backdrop">Backdrop</K7SelectItem>
-                    <K7SelectItem TValue="MetadataPictureType" Value="MetadataPictureType.Thumbnail">Thumbnail</K7SelectItem>
-                    <K7SelectItem TValue="MetadataPictureType" Value="MetadataPictureType.Logo">Logo</K7SelectItem>
-                    <K7SelectItem TValue="MetadataPictureType" Value="MetadataPictureType.Portrait">Portrait</K7SelectItem>
-                    <K7SelectItem TValue="MetadataPictureType" Value="MetadataPictureType.Still">Still</K7SelectItem>
-                    <K7SelectItem TValue="MetadataPictureType" Value="MetadataPictureType.Cover">Cover</K7SelectItem>
+                    @foreach (var type in _allowedPictureTypes)
+                    {
+                        <K7SelectItem TValue="MetadataPictureType" Value="@type">@type</K7SelectItem>
+                    }
                 </K7Select>
             </div>
             <div class="d-flex align-center gap-2">
@@ -245,7 +271,54 @@
                 }
             </div>
         </div>
+
+        @if (_canBrowseProviderImages)
+        {
+            <div class="provider-images-section">
+                <K7Button Variant="outlined" Size="small" OnClick="LoadProviderImagesAsync"
+                          Disabled="@_isLoadingProviderImages">
+                    <K7Icon Icon="@Phosphor.MagnifyingGlass" />
+                    @L["BrowseProviderImages"]
+                </K7Button>
+                @if (_isLoadingProviderImages)
+                {
+                    <K7Spinner Size="sm" />
+                }
+                @if (_providerImages is { Count: > 0 })
+                {
+                    <div class="provider-images-tabs">
+                        @foreach (var type in _providerImages.Select(i => i.Type).Distinct())
+                        {
+                            <K7Button Variant="@(_providerImageFilter == type ? "filled" : "text")" Size="small"
+                                      OnClick="@(() => _providerImageFilter = type)">
+                                @type (@_providerImages.Count(i => i.Type == type))
+                            </K7Button>
+                        }
+                    </div>
+                    <div class="provider-images-grid @GetProviderGridClass()">
+                        @foreach (var img in _providerImages.Where(i => i.Type == _providerImageFilter))
+                        {
+                            <div class="provider-image-item focusable @(_selectedProviderImage == img ? "provider-image-item--selected" : "")"
+                                 tabindex="0" role="button"
+                                 @onclick="@(() => _selectedProviderImage = img)"
+                                 @onkeydown="@(e => { if (e.Key is "Enter" or " ") _selectedProviderImage = img; })">
+                                <img src="@img.ThumbnailUrl" alt="@img.Type" loading="lazy" />
+                                <span class="provider-image-meta">@(img.Width)x@(img.Height)</span>
+                            </div>
+                        }
+                    </div>
+                    @if (_selectedProviderImage is not null)
+                    {
+                        <K7Button Variant="filled" Size="small" OnClick="ImportProviderImageAsync"
+                                  Disabled="@_isImportingProviderImage">
+                            @L["ImportSelected"]
+                        </K7Button>
+                    }
+                }
+            </div>
+        }
     </div>
+    }
 
     <div class="k7-dialog-actions">
         <K7Button Variant="text" OnClick="Cancel">@L["Cancel"]</K7Button>

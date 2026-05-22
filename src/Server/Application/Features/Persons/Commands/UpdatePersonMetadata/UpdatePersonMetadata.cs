@@ -1,8 +1,10 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 
 namespace K7.Server.Application.Features.Persons.Commands.UpdatePersonMetadata;
 
@@ -18,6 +20,7 @@ public record UpdatePersonMetadataCommand : IRequest
     public DateOnly? Birthday { get; init; }
     public DateOnly? Deathday { get; init; }
     public string? BirthPlace { get; init; }
+    public IList<ExternalIdEditDto>? ExternalIds { get; init; }
 }
 
 public class UpdatePersonMetadataCommandHandler : IRequestHandler<UpdatePersonMetadataCommand>
@@ -32,6 +35,7 @@ public class UpdatePersonMetadataCommandHandler : IRequestHandler<UpdatePersonMe
     public async Task Handle(UpdatePersonMetadataCommand request, CancellationToken cancellationToken)
     {
         var person = await _context.Persons
+            .Include(p => p.ExternalIds)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, person);
@@ -50,6 +54,13 @@ public class UpdatePersonMetadataCommandHandler : IRequestHandler<UpdatePersonMe
             person.Deathday = request.Deathday;
         if (request.BirthPlace is not null)
             person.BirthPlace = request.BirthPlace;
+
+        if (request.ExternalIds is not null)
+        {
+            person.ExternalIds.Clear();
+            foreach (var dto in request.ExternalIds)
+                person.ExternalIds.Add(new ExternalId { ProviderName = dto.ProviderName, Value = dto.Value, PersonId = person.Id });
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
     }
