@@ -5,7 +5,26 @@ let audioState = {
     crossfadeDuration: 0,
     crossfadeTimer: null,
     crossfadePending: false,
-    stateDebounceTimer: null
+    stateDebounceTimer: null,
+    // Web Audio API nodes
+    audioContext: null,
+    sourceNode: null,
+    crossfadeSourceNode: null,
+    gainNode: null,
+    loudnessGainNode: null,
+    eqFilters: [],
+    limiterNode: null,
+    analyserNode: null,
+    // Loudness settings
+    loudnessEnabled: false,
+    loudnessTargetLufs: -18,
+    loudnessPreampDb: 0,
+    limiterEnabled: true,
+    trackLoudnessLufs: null,
+    trackReplayGain: null,
+    // EQ settings
+    eqEnabled: false,
+    eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 };
 
 function notifyPlaybackState(dotNetRef, state) {
@@ -105,6 +124,143 @@ window.K7._onKeyDown = function (e) {
     }
 };
 
+// EQ band center frequencies (Hz)
+const EQ_FREQUENCIES = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+
+function initAudioGraph(element) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    audioState.audioContext = ctx;
+
+    // Source: MediaElementSource from the <audio> element
+    const source = ctx.createMediaElementSource(element);
+    audioState.sourceNode = source;
+
+    // Loudness gain node (for ReplayGain / LUFS normalization)
+    const loudnessGain = ctx.createGain();
+    loudnessGain.gain.value = 1.0;
+    audioState.loudnessGainNode = loudnessGain;
+
+    // 10-band parametric EQ
+    const eqFilters = EQ_FREQUENCIES.map(freq => {
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'peaking';
+        filter.frequency.value = freq;
+        filter.Q.value = 1.4; // moderate bandwidth
+        filter.gain.value = 0;
+        return filter;
+    });
+    audioState.eqFilters = eqFilters;
+
+    // Limiter (DynamicsCompressor configured as a brick-wall limiter)
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -1.0; // dBFS
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.01;
+    audioState.limiterNode = limiter;
+
+    // Master volume gain (user volume control)
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 1.0;
+    audioState.gainNode = masterGain;
+
+    // Analyser (for future visualizer)
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    audioState.analyserNode = analyser;
+
+    // Connect signal chain: source -> loudness -> EQ -> limiter -> master -> analyser -> destination
+    source.connect(loudnessGain);
+
+    // Chain EQ filters
+    let prevNode = loudnessGain;
+    for (const filter of eqFilters) {
+        prevNode.connect(filter);
+        prevNode = filter;
+    }
+
+    prevNode.connect(limiter);
+    limiter.connect(masterGain);
+    masterGain.connect(analyser);
+    analyser.connect(ctx.destination);
+}
+
+function resumeAudioContext() {
+    if (audioState.audioContext && audioState.audioContext.state === 'suspended') {
+        audioState.audioContext.resume();
+    }
+}
+
+function computeLoudnessGain() {
+    if (!audioState.loudnessEnabled || !audioState.loudnessGainNode) {
+        if (audioState.loudnessGainNode) {
+            audioState.loudnessGainNode.gain.value = 1.0;
+        }
+        return;
+    }
+
+    let gainDb = 0;
+    if (audioState.trackLoudnessLufs !== null) {
+        gainDb = audioState.loudnessTargetLufs - audioState.trackLoudnessLufs + audioState.loudnessPreampDb;
+    } else if (audioState.trackReplayGain !== null) {
+        gainDb = audioState.trackReplayGain + audioState.loudnessPreampDb;
+    }
+
+    // Convert dB to linear gain, clamped to prevent extreme values
+    gainDb = Math.max(-20, Math.min(20, gainDb));
+    const linearGain = Math.pow(10, gainDb / 20);
+    audioState.loudnessGainNode.gain.value = linearGain;
+}
+
+function applyEqBands() {
+    const filters = audioState.eqFilters;
+    const bands = audioState.eqBands;
+    if (!filters || filters.length === 0) return;
+
+    for (let i = 0; i < filters.length; i++) {
+        filters[i].gain.value = audioState.eqEnabled ? (bands[i] || 0) : 0;
+    }
+}
+
+function applyLimiter() {
+    if (!audioState.limiterNode) return;
+    // When disabled, set threshold very high so it never activates
+    audioState.limiterNode.threshold.value = audioState.limiterEnabled ? -1.0 : 0;
+}
+
+// Public APIs for .NET interop
+
+window.audioSetLoudness = function (enabled, targetLufs, preampDb, limiterEnabled) {
+    audioState.loudnessEnabled = enabled;
+    audioState.loudnessTargetLufs = targetLufs;
+    audioState.loudnessPreampDb = preampDb;
+    audioState.limiterEnabled = limiterEnabled;
+    computeLoudnessGain();
+    applyLimiter();
+};
+
+window.audioSetTrackLoudness = function (loudnessLufs, replayGain) {
+    audioState.trackLoudnessLufs = loudnessLufs;
+    audioState.trackReplayGain = replayGain;
+    computeLoudnessGain();
+};
+
+window.audioSetEq = function (enabled, bands) {
+    audioState.eqEnabled = enabled;
+    if (bands && bands.length === 10) {
+        audioState.eqBands = bands;
+    }
+    applyEqBands();
+};
+
+window.audioGetAnalyserData = function () {
+    if (!audioState.analyserNode) return null;
+    const data = new Uint8Array(audioState.analyserNode.frequencyBinCount);
+    audioState.analyserNode.getByteFrequencyData(data);
+    return Array.from(data);
+};
+
 window.initAudioPlayer = function (dotNetRef) {
     if (audioState.element) {
         disposeAudioPlayer();
@@ -112,9 +268,13 @@ window.initAudioPlayer = function (dotNetRef) {
 
     const el = new Audio();
     el.preload = 'auto';
+    el.crossOrigin = 'anonymous';
 
     audioState.element = el;
     audioState.dotNetRef = dotNetRef;
+
+    // Initialize Web Audio API context and signal chain
+    initAudioGraph(el);
 
     el.addEventListener('timeupdate', () => {
         dotNetRef.invokeMethodAsync('OnTimeUpdated', el.currentTime)
@@ -190,22 +350,40 @@ window.disposeAudioPlayer = function () {
         clearInterval(audioState.crossfadeTimer);
         audioState.crossfadeTimer = null;
     }
+    if (audioState.crossfadeSourceNode) {
+        audioState.crossfadeSourceNode.disconnect();
+        audioState.crossfadeSourceNode = null;
+    }
     if (audioState.crossfadeElement) {
         audioState.crossfadeElement.pause();
         audioState.crossfadeElement.src = '';
         audioState.crossfadeElement = null;
+    }
+    if (audioState.sourceNode) {
+        audioState.sourceNode.disconnect();
+        audioState.sourceNode = null;
     }
     if (audioState.element) {
         audioState.element.pause();
         audioState.element.src = '';
         audioState.element = null;
     }
+    if (audioState.audioContext) {
+        audioState.audioContext.close().catch(() => {});
+        audioState.audioContext = null;
+    }
+    audioState.loudnessGainNode = null;
+    audioState.gainNode = null;
+    audioState.limiterNode = null;
+    audioState.analyserNode = null;
+    audioState.eqFilters = [];
     audioState.dotNetRef = null;
 };
 
 window.audioPlay = function () {
     const el = audioState.element;
     if (!el) return;
+    resumeAudioContext();
     const promise = el.play();
     if (promise) {
         promise.catch(e => console.warn('Audio play prevented', e));
@@ -231,8 +409,12 @@ window.audioSeek = function (seconds) {
 };
 
 window.audioSetVolume = function (volume) {
+    const v = Math.max(0, Math.min(1, volume));
+    if (audioState.gainNode) {
+        audioState.gainNode.gain.value = v;
+    }
     if (audioState.element) {
-        audioState.element.volume = Math.max(0, Math.min(1, volume));
+        audioState.element.volume = 1.0; // always 1.0 when using Web Audio gain
     }
 };
 
@@ -246,6 +428,7 @@ window.audioChangeSource = function (src, mimeType) {
     const el = audioState.element;
     if (!el) return;
 
+    resumeAudioContext();
     audioState.crossfadePending = false;
 
     el.src = src;
@@ -269,45 +452,88 @@ window.audioStartCrossfade = function (nextSrc, nextMimeType, fadeDuration) {
         return;
     }
 
+    resumeAudioContext();
+    const ctx = audioState.audioContext;
     const currentEl = audioState.element;
+
+    // Create next audio element with its own Web Audio pipeline
     const nextEl = new Audio();
     nextEl.preload = 'auto';
-    nextEl.volume = 0;
+    nextEl.crossOrigin = 'anonymous';
     nextEl.src = nextSrc;
 
     audioState.crossfadeElement = nextEl;
 
+    // Create a temporary gain for the next element during crossfade
+    let nextSource = null;
+    let nextGain = null;
+    if (ctx) {
+        nextSource = ctx.createMediaElementSource(nextEl);
+        nextGain = ctx.createGain();
+        nextGain.gain.value = 0;
+        // Connect next through the same chain: nextSource -> nextGain -> loudness -> (rest of chain)
+        nextSource.connect(nextGain);
+        nextGain.connect(audioState.loudnessGainNode);
+        audioState.crossfadeSourceNode = nextSource;
+    }
+
     const stepMs = 50;
     const steps = (duration * 1000) / stepMs;
     let step = 0;
-    const startVolume = currentEl.volume;
 
+    // Use an equal-power crossfade curve for smoother transitions
     nextEl.play().catch(e => console.warn('Crossfade next play prevented', e));
 
     audioState.crossfadeTimer = setInterval(() => {
         step++;
         const ratio = step / steps;
 
-        currentEl.volume = Math.max(0, startVolume * (1 - ratio));
-        nextEl.volume = Math.min(startVolume, startVolume * ratio);
+        // Equal-power fade: cos/sin curves
+        const fadeOut = Math.cos(ratio * Math.PI / 2);
+        const fadeIn = Math.sin(ratio * Math.PI / 2);
+
+        // Fade the current source node's output
+        if (audioState.sourceNode && audioState.sourceNode.gain) {
+            audioState.sourceNode.gain.value = fadeOut;
+        } else {
+            // Fallback: manipulate element volume directly
+            currentEl.volume = Math.max(0, fadeOut);
+        }
+
+        if (nextGain) {
+            nextGain.gain.value = fadeIn;
+        } else {
+            nextEl.volume = Math.min(1, fadeIn);
+        }
 
         if (step >= steps) {
             clearInterval(audioState.crossfadeTimer);
             audioState.crossfadeTimer = null;
             audioState.crossfadePending = false;
 
+            // Disconnect old source
+            if (audioState.sourceNode) {
+                audioState.sourceNode.disconnect();
+            }
             currentEl.pause();
             currentEl.src = '';
 
-            // Swap: next becomes current
-            nextEl.volume = startVolume;
-            audioState.element = nextEl;
-            audioState.crossfadeElement = null;
+            // Promote next element: reconnect nextSource directly to loudnessGain
+            if (nextGain && nextSource) {
+                nextGain.disconnect();
+                nextSource.disconnect();
+                nextSource.connect(audioState.loudnessGainNode);
+            }
 
-            // Re-attach events to new element
+            // Swap state
+            audioState.element = nextEl;
+            audioState.sourceNode = nextSource;
+            audioState.crossfadeElement = null;
+            audioState.crossfadeSourceNode = null;
+
+            // Re-attach DOM events to new element
             attachEventsToElement(nextEl, audioState.dotNetRef);
 
-            // New element is already playing - notify .NET
             if (!nextEl.paused && audioState.dotNetRef) {
                 notifyPlaybackState(audioState.dotNetRef, 'playing');
             }

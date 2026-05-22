@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
@@ -13,6 +14,8 @@ public class AnalyzeMusicTrackAudioCommandHandler(
     IApplicationDbContext context,
     IAudioAnalyzer audioAnalyzer,
     IWaveformGenerator waveformGenerator,
+    IFadeAnalyzer fadeAnalyzer,
+    IAudioTagReader audioTagReader,
     ILogger<AnalyzeMusicTrackAudioCommandHandler> logger) : IRequestHandler<AnalyzeMusicTrackAudioCommand>
 {
     public async Task Handle(AnalyzeMusicTrackAudioCommand request, CancellationToken cancellationToken)
@@ -48,17 +51,35 @@ public class AnalyzeMusicTrackAudioCommandHandler(
         // Waveform peaks via ffmpeg (always available)
         var waveformPeaks = await waveformGenerator.GenerateAsync(filePath, cancellationToken: cancellationToken);
 
-        if (analysis is null && waveformPeaks is null)
+        // MixRamp fade detection via ffmpeg silencedetect
+        var fadeResult = await fadeAnalyzer.AnalyzeAsync(filePath, cancellationToken);
+
+        // ReplayGain from file tags
+        var tags = audioTagReader.ReadTags(filePath, includeCoverArt: false);
+
+        if (analysis is null && waveformPeaks is null && fadeResult is null && tags?.ReplayGainTrackGain is null)
             return;
 
         analysis ??= new AudioAnalysis { AnalyzedAt = DateTime.UtcNow };
         analysis.WaveformPeaks = waveformPeaks;
         analysis.MusicTrackId = track.Id;
 
+        if (fadeResult is not null)
+        {
+            analysis.FadeInDuration = fadeResult.FadeInDuration;
+            analysis.FadeOutDuration = fadeResult.FadeOutDuration;
+        }
+
+        if (tags is not null)
+        {
+            analysis.ReplayGainTrackGain = tags.ReplayGainTrackGain;
+            analysis.ReplayGainAlbumGain = tags.ReplayGainAlbumGain;
+        }
+
         context.AudioAnalysis.Add(analysis);
         await context.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Audio analysis completed for '{Title}' (BPM={Bpm}, Key={Key}, Waveform={HasWaveform})",
-            track.Title, analysis.Bpm, analysis.MusicalKey, waveformPeaks is not null);
+        logger.LogInformation("Audio analysis completed for '{Title}' (BPM={Bpm}, Key={Key}, FadeOut={FadeOut}s)",
+            track.Title, analysis.Bpm, analysis.MusicalKey, analysis.FadeOutDuration);
     }
 }

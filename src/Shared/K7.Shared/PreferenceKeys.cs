@@ -28,4 +28,33 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<bool> DOWNLOAD_ALLOW_WIFI = new("DownloadAllowWifi");
     public static readonly PreferenceKey<int> CACHE_LOOKAHEAD_WIFI = new("CacheLookaheadWifi");
     public static readonly PreferenceKey<int> CACHE_LOOKAHEAD_MOBILE = new("CacheLookaheadMobile");
+
+    // Loudness normalization
+    public static readonly PreferenceKey<bool> LOUDNESS_ENABLED = new("LoudnessEnabled");
+    public static readonly PreferenceKey<double> LOUDNESS_TARGET_LUFS = new("LoudnessTargetLufs");
+    public static readonly PreferenceKey<double> LOUDNESS_PREAMP_DB = new("LoudnessPreampDb");
+    public static readonly PreferenceKey<bool> LOUDNESS_LIMITER_ENABLED = new("LoudnessLimiterEnabled");
+
+    // Equalizer
+    public static readonly PreferenceKey<bool> EQ_ENABLED = new("EqEnabled");
+    public static readonly PreferenceKey<string> EQ_BANDS_JSON = new("EqBandsJson");
+    public static readonly PreferenceKey<string> EQ_PRESET_NAME = new("EqPresetName");
+
+    // Streaming quality
+    public static readonly PreferenceKey<int> STREAMING_QUALITY_WIFI = new("StreamingQualityWifi");
+    public static readonly PreferenceKey<int> STREAMING_QUALITY_MOBILE = new("StreamingQualityMobile");
+    public static readonly PreferenceKey<bool> DOWNMIX_TO_STEREO = new("DownmixToStereo");
+
+    // Player UX
+    public static readonly PreferenceKey<bool> SHOW_FULLSCREEN_ON_PLAY = new("ShowFullscreenOnPlay");
+    public static readonly PreferenceKey<bool> KEEP_SCREEN_ON = new("KeepScreenOn");
+    public static readonly PreferenceKey<int> SKIP_BACK_SECONDS = new("SkipBackSeconds");
+    public static readonly PreferenceKey<int> SKIP_FORWARD_SECONDS = new("SkipForwardSeconds");
+
+    // Sleep timer
+    public static readonly PreferenceKey<string> SLEEP_TIMER_MODE = new("SleepTimerMode");
+
+    // Autoplay / Radio
+    public static readonly PreferenceKey<bool> AUTOPLAY_ENABLED = new("AutoplayEnabled");
+    public static readonly PreferenceKey<int> RADIO_DEVIATION_DEGREE = new("RadioDeviationDegree");
 }

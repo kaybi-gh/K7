@@ -53,7 +53,9 @@ public class TagLibAudioTagReader : IAudioTagReader
                 Lyrics = NullIfEmpty(tag.Lyrics),
                 Bpm = tag.BeatsPerMinute > 0 ? tag.BeatsPerMinute : null,
                 CoverArtData = coverData,
-                CoverArtMimeType = coverMime
+                CoverArtMimeType = coverMime,
+                ReplayGainTrackGain = ExtractReplayGain(tag.ReplayGainTrackGain),
+                ReplayGainAlbumGain = ExtractReplayGain(tag.ReplayGainAlbumGain)
             };
         }
         catch (Exception ex)
@@ -65,4 +67,7 @@ public class TagLibAudioTagReader : IAudioTagReader
 
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static double? ExtractReplayGain(double replayGainValue)
+        => double.IsNaN(replayGainValue) ? null : replayGainValue;
 }

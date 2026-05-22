@@ -80,6 +80,26 @@ public interface IAudioPlayerService
     void SetCrossfadeDuration(double seconds);
     Task OnCrossfadeNeededAsync(CancellationToken cancellationToken = default);
 
+    // Loudness normalization
+    bool LoudnessEnabled { get; }
+    double LoudnessTargetLufs { get; }
+    double LoudnessPreampDb { get; }
+    bool LimiterEnabled { get; }
+    void SetLoudnessEnabled(bool enabled);
+    void SetLoudnessTargetLufs(double lufs);
+    void SetLoudnessPreampDb(double db);
+    void SetLimiterEnabled(bool enabled);
+    event Action? LoudnessSettingsChanged;
+
+    // Equalizer
+    bool EqEnabled { get; }
+    double[] EqBands { get; }
+    string? EqPresetName { get; }
+    void SetEqEnabled(bool enabled);
+    void SetEqBands(double[] bands);
+    void SetEqPresetName(string? name);
+    event Action? EqSettingsChanged;
+
     // Full screen
     bool IsFullScreenVisible { get; }
     event Action? IsFullScreenVisibleChanged;

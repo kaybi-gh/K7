@@ -1,0 +1,19 @@
+.eq-bands {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+.eq-band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.eq-band .text-caption {
+    color: var(--color-text-muted);
+    font-size: 0.7rem;
+}

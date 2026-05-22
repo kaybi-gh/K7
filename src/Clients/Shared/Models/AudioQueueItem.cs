@@ -26,4 +26,12 @@ public class AudioQueueItem
     public double? Bpm { get; init; }
     public string? MusicalKey { get; init; }
     public double? Energy { get; init; }
+
+    // Sweet fades (MixRamp-style transition data)
+    public double? FadeInDuration { get; init; }
+    public double? FadeOutDuration { get; init; }
+
+    // Loudness normalization
+    public double? LoudnessLufs { get; init; }
+    public double? ReplayGainTrackGain { get; init; }
 }

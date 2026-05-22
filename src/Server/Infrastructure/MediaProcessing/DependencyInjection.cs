@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddSingleton<IAudioTagReader, TagLibAudioTagReader>();
         services.AddSingleton<IAudioAnalyzer, EssentiaAudioAnalyzer>();
         services.AddSingleton<IWaveformGenerator, FfmpegWaveformGenerator>();
+        services.AddSingleton<IFadeAnalyzer, FfmpegFadeAnalyzer>();
         services.AddSingleton<IChromaprintService, ChromaprintService>();
         services.AddSingleton<ISegmentDetectionService, SegmentDetectionService>();
         services.AddHostedService<TranscodeJobCleanupService>();
