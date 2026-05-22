@@ -12,6 +12,7 @@ public partial class K7Slider<TValue>
     [Parameter] public TValue? Step { get; set; }
     [Parameter] public bool Immediate { get; set; }
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Vertical { get; set; }
     [Parameter] public string Class { get; set; } = "";
 
     private TValue? _currentValue;

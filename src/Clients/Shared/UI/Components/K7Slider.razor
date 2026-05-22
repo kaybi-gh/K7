@@ -1,9 +1,9 @@
 @namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
 
-<div class="k7-slider-wrap @Class">
+<div class="k7-slider-wrap @(Vertical ? "k7-slider-wrap--vertical" : "") @Class">
     <input type="range"
-           class="k7-range focusable"
+           class="k7-range focusable @(Vertical ? "k7-range--vertical" : "")"
            min="@MinString"
            max="@MaxString"
            step="@StepString"
