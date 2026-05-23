@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Empty" xml:space="preserve"><value>No notification rules configured</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Create a rule to receive notifications when events occur on your server.</value></data>
+  <data name="CreateRule" xml:space="preserve"><value>Create rule</value></data>
+  <data name="EditRule" xml:space="preserve"><value>Edit rule</value></data>
+  <data name="HeaderName" xml:space="preserve"><value>Name</value></data>
+  <data name="HeaderProvider" xml:space="preserve"><value>Provider</value></data>
+  <data name="HeaderEnabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="HeaderActions" xml:space="preserve"><value>Actions</value></data>
+  <data name="AriaCreate" xml:space="preserve"><value>Create notification rule</value></data>
+  <data name="AriaTest" xml:space="preserve"><value>Test notification</value></data>
+  <data name="AriaEdit" xml:space="preserve"><value>Edit rule</value></data>
+  <data name="AriaDelete" xml:space="preserve"><value>Delete rule</value></data>
+  <data name="RuleCreated" xml:space="preserve"><value>Rule created successfully</value></data>
+  <data name="RuleUpdated" xml:space="preserve"><value>Rule updated</value></data>
+  <data name="RuleDeleted" xml:space="preserve"><value>Rule deleted</value></data>
+  <data name="TestSuccess" xml:space="preserve"><value>Test notification sent successfully</value></data>
+  <data name="TestFailed" xml:space="preserve"><value>Failed to send test notification</value></data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve"><value>Delete rule</value></data>
+  <data name="ConfirmDeleteMessage" xml:space="preserve"><value>Are you sure you want to delete the rule "{0}"?</value></data>
+</root>

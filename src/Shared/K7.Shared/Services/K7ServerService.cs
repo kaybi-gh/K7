@@ -3,6 +3,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Diagnostics;
+using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Interfaces;
@@ -21,7 +22,7 @@ using K7.Shared.Dtos.Home;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -1008,5 +1009,46 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public string GetDownloadFileUrl(Guid downloadId)
     {
         return $"api/downloads/{downloadId}/file";
+    }
+
+    public async Task<List<NotificationRuleDto>> GetNotificationRulesAsync(CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<NotificationRuleDto>>("api/notifications/rules", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<NotificationRuleDto> GetNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<NotificationRuleDto>($"api/notifications/rules/{id}", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<Guid> CreateNotificationRuleAsync(CreateNotificationRuleRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/notifications/rules", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateNotificationRuleAsync(Guid id, UpdateNotificationRuleRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/notifications/rules/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/notifications/rules/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> TestNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/notifications/rules/{id}/test", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<bool>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<List<NotificationEventDescriptorDto>> GetAvailableEventsAsync(CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<NotificationEventDescriptorDto>>("api/notifications/events", _serializerOptions, cancellationToken))!;
     }
 }

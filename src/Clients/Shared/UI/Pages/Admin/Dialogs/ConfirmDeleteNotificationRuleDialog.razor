@@ -1,0 +1,9 @@
+@inject IStringLocalizer<ConfirmDeleteNotificationRuleDialog> L
+
+<div class="k7-dialog-content">
+    <span>@string.Format(L["Message"], DisplayName)</span>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+    <K7Button Color="error" Variant="filled" OnClick="Confirm">@L["Delete"]</K7Button>
+</div>

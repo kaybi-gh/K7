@@ -8,6 +8,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Collections;
+using K7.Server.Domain.Entities.Notifications;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
@@ -69,6 +70,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<MediaRecommendation> MediaRecommendations => Set<MediaRecommendation>();
     public DbSet<LibraryScanIssue> ScanIssues => Set<LibraryScanIssue>();
     public DbSet<Download> Downloads => Set<Download>();
+    public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

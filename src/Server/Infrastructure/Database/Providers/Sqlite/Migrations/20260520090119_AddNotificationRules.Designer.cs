@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260520090119_AddNotificationRules")]
+    partial class AddNotificationRules
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
@@ -601,12 +604,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double?>("Energy")
                         .HasColumnType("REAL");
 
-                    b.Property<double?>("FadeInDuration")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("FadeOutDuration")
-                        .HasColumnType("REAL");
-
                     b.Property<string>("LastModified")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -625,12 +622,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<string>("MusicalKey")
                         .HasColumnType("TEXT");
-
-                    b.Property<double?>("ReplayGainAlbumGain")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("ReplayGainTrackGain")
-                        .HasColumnType("REAL");
 
                     b.Property<double?>("Valence")
                         .HasColumnType("REAL");
@@ -671,10 +662,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
-                        .HasColumnType("TEXT");
-
-                    b.PrimitiveCollection<string>("LockedFields")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OriginalTitle")
@@ -1019,10 +1006,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModifiedBy")
-                        .HasColumnType("TEXT");
-
-                    b.PrimitiveCollection<string>("LockedFields")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -2395,9 +2378,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsForced")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsHearingImpaired")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsTextBased")

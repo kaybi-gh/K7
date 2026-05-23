@@ -33,4 +33,5 @@
   <data name="FeatureFlags" xml:space="preserve"><value>Fonctionnalites</value></data>
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur video</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
+  <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
 </root>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Name" xml:space="preserve"><value>Nom</value></data>
+  <data name="NameRequired" xml:space="preserve"><value>Le nom est requis</value></data>
+  <data name="Provider" xml:space="preserve"><value>Fournisseur</value></data>
+  <data name="Event" xml:space="preserve"><value>Evenement</value></data>
+  <data name="WebhookUrl" xml:space="preserve"><value>URL du webhook</value></data>
+  <data name="WebhookUrlRequired" xml:space="preserve"><value>L'URL est requise</value></data>
+  <data name="HttpMethod" xml:space="preserve"><value>Methode HTTP</value></data>
+  <data name="PayloadTemplate" xml:space="preserve"><value>Modele de payload (JSON)</value></data>
+  <data name="PayloadTemplateHelper" xml:space="preserve"><value>Utilisez {{variable}} pour inserer des valeurs dynamiques</value></data>
+  <data name="AvailableParams" xml:space="preserve"><value>Parametres disponibles :</value></data>
+  <data name="Conditions" xml:space="preserve"><value>Conditions (avance)</value></data>
+  <data name="ConditionsJson" xml:space="preserve"><value>Conditions (JSON)</value></data>
+  <data name="ConditionsHelper" xml:space="preserve"><value>Format: [{"parameter":"...", "operator":"...", "value":"..."}]</value></data>
+  <data name="ConditionsLogic" xml:space="preserve"><value>Logique des conditions</value></data>
+  <data name="ConditionsLogicHelper" xml:space="preserve"><value>Ex: 1 and (2 or 3). Par defaut: toutes les conditions doivent etre vraies.</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Create" xml:space="preserve"><value>Creer</value></data>
+  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
+</root>
