@@ -2,11 +2,14 @@
 using System.Security.Cryptography.X509Certificates;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Configuration;
+using K7.Server.Domain.Enums;
+using K7.Server.Domain.Interfaces;
 using K7.Server.Infrastructure.Configuration;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Data.Interceptors;
 using K7.Server.Infrastructure.Database.Context.Identity;
 using K7.Server.Infrastructure.Database.Context.Services;
+using K7.Server.Infrastructure.Database.Context.Notifications;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -169,6 +172,9 @@ public static class DependencyInjection
         services.AddScoped<IServerSettingsService, ServerSettingsService>();
         services.AddScoped<IUserSettingsService, UserSettingsService>();
         services.AddScoped<ISetupService, SetupService>();
+
+        // Notification providers
+        services.AddKeyedSingleton<INotificationProvider, WebhookNotificationProvider>(NotificationProviderType.Webhook);
 
         return services;
     }

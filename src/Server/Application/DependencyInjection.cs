@@ -2,8 +2,13 @@
 using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Medias.Services;
+using K7.Server.Application.Features.Notifications.EventHandlers;
+using K7.Server.Application.Features.Notifications.Services;
+using K7.Server.Application.Features.Notifications.Services.Descriptors;
 using K7.Server.Application.Services;
+using K7.Server.Domain.Common;
 using K7.Server.Domain.Entities.Metadatas.External;
+using K7.Server.Domain.Events;
 using K7.Server.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -58,6 +63,29 @@ public static class DependencyInjection
         });
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
+
+        // Outbound Notifications
+        services.AddSingleton<NotificationConditionEvaluator>();
+        services.AddSingleton<NotificationPayloadRenderer>();
+        services.AddSingleton<NotificationEventDataSerializer>();
+        services.AddScoped<OutboundNotificationDispatcher>();
+
+        services.AddSingleton<INotificationEventDescriptor, MediaCreatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, LibraryCreatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, MediaPlaybackCompletedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, PlaylistCreatedEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, LibraryFilesIndexTriggeredEventDescriptor>();
+        services.AddSingleton<INotificationEventDescriptor, DeviceCreatedEventDescriptor>();
+
+        // Register outbound notification handler for each event type
+        services.AddTransient<INotificationHandler<MediaCreatedEvent>, OutboundNotificationEventHandler<MediaCreatedEvent>>();
+        services.AddTransient<INotificationHandler<LibraryCreatedEvent>, OutboundNotificationEventHandler<LibraryCreatedEvent>>();
+        services.AddTransient<INotificationHandler<LibraryDeletedEvent>, OutboundNotificationEventHandler<LibraryDeletedEvent>>();
+        services.AddTransient<INotificationHandler<LibraryFilesIndexTriggeredEvent>, OutboundNotificationEventHandler<LibraryFilesIndexTriggeredEvent>>();
+        services.AddTransient<INotificationHandler<PlaylistCreatedEvent>, OutboundNotificationEventHandler<PlaylistCreatedEvent>>();
+        services.AddTransient<INotificationHandler<PlaylistDeletedEvent>, OutboundNotificationEventHandler<PlaylistDeletedEvent>>();
+        services.AddTransient<INotificationHandler<DeviceCreatedEvent>, OutboundNotificationEventHandler<DeviceCreatedEvent>>();
+        services.AddTransient<INotificationHandler<CollectionCreatedEvent>, OutboundNotificationEventHandler<CollectionCreatedEvent>>();
 
         return services;
     }

@@ -1049,6 +1049,61 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Notifications.NotificationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Conditions")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConditionsLogic")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventTypeName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PayloadTemplate")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderConfig")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ProviderType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsEnabled", "EventTypeName")
+                        .HasDatabaseName("IX_NotificationRules_IsEnabled_EventTypeName");
+
+                    b.ToTable("NotificationRules");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Playlists.Playlist", b =>
                 {
                     b.Property<Guid>("Id")

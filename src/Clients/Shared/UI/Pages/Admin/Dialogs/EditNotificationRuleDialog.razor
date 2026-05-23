@@ -1,0 +1,68 @@
+@using K7.Shared.Dtos.Notifications
+@inject IStringLocalizer<EditNotificationRuleDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-3 mt-2">
+        <K7TextField @bind-Value="_name" Label="@L["Name"]" Variant="outlined"
+                      Required="true" RequiredError="@L["NameRequired"]" />
+
+        <K7Select TValue="string" @bind-Value="_providerType" Label="@L["Provider"]" Variant="outlined">
+            <K7SelectItem Value="@("Webhook")">Webhook</K7SelectItem>
+        </K7Select>
+
+        <K7Select TValue="string" Value="_eventTypeName" Label="@L["Event"]" Variant="outlined"
+                   ValueChanged="OnEventChanged">
+            @foreach (var evt in AvailableEvents)
+            {
+                <K7SelectItem Value="@evt.EventTypeName">@evt.DisplayName</K7SelectItem>
+            }
+        </K7Select>
+
+        @if (_providerType == "Webhook")
+        {
+            <K7TextField @bind-Value="_webhookUrl" Label="@L["WebhookUrl"]" Variant="outlined"
+                          Required="true" RequiredError="@L["WebhookUrlRequired"]" />
+            <K7Select TValue="string" @bind-Value="_webhookMethod" Label="@L["HttpMethod"]" Variant="outlined">
+                <K7SelectItem Value="@("POST")">POST</K7SelectItem>
+                <K7SelectItem Value="@("PUT")">PUT</K7SelectItem>
+            </K7Select>
+        }
+
+        <K7TextField @bind-Value="_payloadTemplate" Label="@L["PayloadTemplate"]" Variant="outlined"
+                      Lines="6" HelperText="@L["PayloadTemplateHelper"]" />
+
+        @if (_selectedEvent is not null)
+        {
+            <div class="notification-params-hint">
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["AvailableParams"]</span>
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    @foreach (var param in _selectedEvent.Parameters)
+                    {
+                        <K7Chip Size="sm" Color="default" OnClick="@(() => InsertParam(param.Name))">
+                            @("{{" + param.Name + "}}")
+                        </K7Chip>
+                    }
+                </div>
+            </div>
+        }
+
+        <K7ExpansionPanel Title="@L["Conditions"]">
+            <K7TextField @bind-Value="_conditions" Label="@L["ConditionsJson"]" Variant="outlined"
+                          Lines="4" HelperText="@L["ConditionsHelper"]" />
+            <K7TextField @bind-Value="_conditionsLogic" Label="@L["ConditionsLogic"]" Variant="outlined"
+                          HelperText="@L["ConditionsLogicHelper"]" />
+        </K7ExpansionPanel>
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit"
+               Disabled="@(!IsValid || _isSubmitting)">
+        @if (_isSubmitting)
+        {
+            <K7Spinner Size="sm" />
+        }
+        @(_isEditMode ? L["Save"] : L["Create"])
+    </K7Button>
+</div>
