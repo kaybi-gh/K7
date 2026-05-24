@@ -8,6 +8,7 @@
             Items="_libraryItems"
             Loading="_isLoading"
             DefaultItemWidth="300"
+            DefaultSpacing="16"
             GridItemAspectRatio="null"
             PersistenceKey="admin-libraries">
     <ToolbarContent>
@@ -18,7 +19,7 @@
         </K7Button>
     </ToolbarContent>
     <GridTemplate Context="library">
-        <K7Paper Outlined="true" Class="library-card">
+        <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
             <div class="library-card__header">
                 <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)" Size="lg" Color="primary" />
                 <div class="library-card__title">
@@ -30,7 +31,7 @@
                 <K7Icon Icon="@Phosphor.Folder" Size="sm" />
                 <span>@library.RootPath</span>
             </div>
-            <div class="library-card__stats">
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:0.8125rem;color:var(--color-text-secondary)">
                 @{
                     var stats = GetStats(library.Id);
                 }
@@ -57,7 +58,7 @@
                     @string.Format(L["IssueCount"], issueCount)
                 </K7Chip>
             }
-            <div class="library-card__actions">
+            <div style="display:flex;gap:4px;border-top:1px solid var(--color-border);padding-top:8px;margin-top:auto">
                 <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
                 <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))" AriaLabel="@L["AriaEdit"]" />
                 <K7IconButton Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))" AriaLabel="@L["AriaUserAccess"]" />
