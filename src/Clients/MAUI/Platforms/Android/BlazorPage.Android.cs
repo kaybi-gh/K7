@@ -1,6 +1,5 @@
 using AndroidX.Media3.Common;
 using CommunityToolkit.Maui.Views;
-using K7.Clients.Shared.Models;
 using Log = Android.Util.Log;
 
 namespace K7.Clients.MAUI;
@@ -8,102 +7,11 @@ namespace K7.Clients.MAUI;
 public partial class BlazorPage
 {
     private const string Tag = "K7-Player";
-    private AudioNavListener? _audioNavListener;
-    private bool _isHandlingNavTransition;
 
     partial void InitializePlayerPlatform()
     {
         _playerService.SwitchAudioTrackRequested += OnSwitchAudioTrack;
         _playerService.SwitchSubtitleTrackRequested += OnSwitchSubtitleTrack;
-        _audioPlayerService.CurrentTrackChanged += OnAudioCurrentTrackChangedAndroid;
-    }
-
-    private void OnAudioCurrentTrackChangedAndroid(AudioQueueItem? track)
-    {
-        if (track is null) return;
-
-        // Wait for the toolkit to set the source, then inject nav placeholders
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(300);
-            MainThread.BeginInvokeOnMainThread(SetupAudioNavigation);
-        });
-    }
-
-    private void SetupAudioNavigation()
-    {
-        var player = GetPlayer(NativeAudioPlayer);
-        if (player is null)
-        {
-            Log.Warn(Tag, "Cannot set up audio navigation: player is null");
-            return;
-        }
-
-        // Remove previous listener
-        if (_audioNavListener is not null)
-        {
-            player.RemoveListener(_audioNavListener);
-            _audioNavListener.Dispose();
-        }
-
-        // The toolkit sets a single MediaItem. Add placeholders before/after
-        // to make COMMAND_SEEK_TO_PREVIOUS and COMMAND_SEEK_TO_NEXT available.
-        var itemCount = player.MediaItemCount;
-        if (itemCount == 0) return;
-
-        _isHandlingNavTransition = false;
-
-        var placeholder = new MediaItem.Builder()
-            .SetMediaId("k7-nav-placeholder")!
-            .SetUri("k7://nav-placeholder")!
-            .Build();
-
-        // Insert placeholder before current (index 0)
-        player.AddMediaItem(0, placeholder);
-        // Insert placeholder after current (now at index 1, so add at index 2)
-        player.AddMediaItem(2, placeholder);
-
-        // Move playback to index 1 (the real track), keeping current position
-        var pos = player.CurrentPosition;
-        player.SeekTo(1, pos);
-
-        // Attach listener to intercept nav
-        _audioNavListener = new AudioNavListener(this);
-        player.AddListener(_audioNavListener);
-
-        Log.Info(Tag, "Audio navigation placeholders set up");
-    }
-
-    private void OnAudioNavTransition(int newIndex)
-    {
-        if (_isHandlingNavTransition) return;
-        _isHandlingNavTransition = true;
-
-        if (newIndex < 1)
-        {
-            Log.Info(Tag, "Audio nav: previous track");
-            _ = _audioPlayerService.PreviousAsync();
-        }
-        else if (newIndex > 1)
-        {
-            Log.Info(Tag, "Audio nav: next track");
-            _ = _audioPlayerService.NextAsync();
-        }
-    }
-
-    private sealed class AudioNavListener(BlazorPage page) : Java.Lang.Object, IPlayerListener
-    {
-        public void OnMediaItemTransition(MediaItem? mediaItem, int reason)
-        {
-            var player = GetPlayer(page.NativeAudioPlayer);
-            if (player is null) return;
-
-            var index = player.CurrentMediaItemIndex;
-            if (index != 1)
-            {
-                page.OnAudioNavTransition(index);
-            }
-        }
     }
 
     private static void SetImmersiveMode(Android.App.Activity activity)
