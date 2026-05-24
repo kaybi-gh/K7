@@ -110,3 +110,7 @@
     gap: var(--grid-gap);
     padding: 0 16px 16px;
 }
+
+.browse-view-simple-grid > ::deep * {
+    height: 100%;
+}
