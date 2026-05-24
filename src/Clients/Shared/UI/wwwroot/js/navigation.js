@@ -166,11 +166,13 @@ var SpatialNav = (function () {
         _refreshTimer = setTimeout(function () {
             _refreshTimer = null;
             if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+            lockActivatableInputs();
         }, 100);
     }
 
     function refresh() {
         if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+        lockActivatableInputs();
     }
 
     // Focusable Discovery
@@ -286,9 +288,16 @@ var SpatialNav = (function () {
     function isEditing(el) { return el && el.hasAttribute('data-sn-editing'); }
     function startEditing(el) {
         el.setAttribute('data-sn-editing', 'true');
+        if (isTextInput(el)) {
+            el.removeAttribute('readonly');
+            el.focus();
+        }
     }
     function stopEditing(el) {
         el.removeAttribute('data-sn-editing');
+        if (isTextInput(el)) {
+            el.setAttribute('readonly', '');
+        }
     }
     function isActivatable(el) { return el && el.hasAttribute('data-sn-activatable'); }
 
@@ -298,6 +307,17 @@ var SpatialNav = (function () {
         if (tag !== 'input') return false;
         var type = (el.getAttribute('type') || 'text').toLowerCase();
         return ['text', 'password', 'search', 'email', 'number', 'tel', 'url'].indexOf(type) !== -1;
+    }
+
+    // Ensure activatable text inputs are readonly when not being edited
+    function lockActivatableInputs() {
+        var els = document.querySelectorAll('[data-sn-activatable]');
+        for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            if (isTextInput(el) && !isEditing(el)) {
+                el.setAttribute('readonly', '');
+            }
+        }
     }
 
     // Long-press state for Enter/OK on elements inside [data-longpress] containers
@@ -315,6 +335,9 @@ var SpatialNav = (function () {
     function handleEnter(e) {
         var active = document.activeElement;
         if (!active || active === document.body) return;
+
+        // Textareas need Enter for line breaks (only when in edit mode)
+        if (active.tagName && active.tagName.toLowerCase() === 'textarea' && isEditing(active)) return;
 
         // If inside a hidden overlay, suppress button click but let keydown reach Blazor
         var overlay = active.closest('.video-controls-overlay');
@@ -508,13 +531,19 @@ var SpatialNav = (function () {
             window.__snBlurAdded = true;
             document.addEventListener('blur', function (ev) {
                 if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-sn-editing')) {
-                    ev.target.removeAttribute('data-sn-editing');
+                    stopEditing(ev.target);
+                    if (window.SpatialNavigation) SpatialNavigation.resume();
                 }
             }, true);
         }
 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1) {
             var el = document.activeElement;
+            // Text inputs/textareas: only let arrows through when in edit mode
+            if (el && isTextInput(el) && isEditing(el)) {
+                if (window.SpatialNavigation) SpatialNavigation.pause();
+                return;
+            }
             // When overlay is hidden, block spatial navigation so arrows go to Blazor for seek/volume
             var hiddenOverlay = el && el.closest('.video-controls-overlay');
             if (hiddenOverlay && hiddenOverlay.style.opacity === '0') {
@@ -806,6 +835,15 @@ var SpatialNav = (function () {
         document.addEventListener('keydown', handleKeyDown, true);
         document.addEventListener('keyup', handleKeyUp, true);
         document.addEventListener('enhancedload', onPageNavigated);
+
+        // Mouse click on activatable text inputs immediately enters edit mode
+        document.addEventListener('mousedown', function (e) {
+            var el = e.target;
+            if (el && isTextInput(el) && isActivatable(el) && !isEditing(el)) {
+                startEditing(el);
+                if (window.SpatialNavigation) SpatialNavigation.pause();
+            }
+        }, true);
     }
 
     // Public API

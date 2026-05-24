@@ -60,6 +60,11 @@ public partial class FolderBrowserDialog
         _selectedEntry = dir;
     }
 
+    private void OnItemClick(DirectoryEntryDto dir)
+    {
+        _selectedEntry = dir;
+    }
+
     private async Task NavigateUp()
     {
         if (string.IsNullOrEmpty(_currentPath))

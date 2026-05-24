@@ -3,11 +3,8 @@
 
 <div class="k7-dialog-content">
         <div class="d-flex flex-col">
-            @* Current path display + parent navigation *@
-            <div class="d-flex align-center">
-                <button type="button" class="k7-icon-btn" @onclick="NavigateUp" aria-label="navigate up"><i class="ph ph-arrow-up"></i></button>
-                <K7TextField @bind-Value="_currentPath" Label="@L["PathLabel"]" Variant="outlined" ReadOnly="true" />
-            </div>
+            @* Current path display *@
+            <K7TextField @bind-Value="_currentPath" Label="@L["PathLabel"]" Variant="outlined" ReadOnly="true" />
 
             @if (_isLoading)
             {
@@ -15,32 +12,37 @@
             }
 
             @* Directory list *@
-            <ul class="k7-list">
-                @if (_directories != null)
+            <div class="folder-list">
+                @if (!string.IsNullOrEmpty(_currentPath))
                 {
-                    @foreach (var dir in _directories)
-                    {
-                        <li Value="dir" OnClick="() => SelectDirectory(dir)">
-                            
-                                <div class="d-flex align-center">
-                                    <K7Icon Icon="@Phosphor.Folder" Color="warning" Size="sm" />
-                                    <span Style="flex: 1;">@dir.Name</span>
-                                    <button type="button" class="k7-icon-btn" @onclick="() => NavigateInto(dir)" aria-label="navigate into"><i class="ph ph-caret-right"></i></button>
-                                </div>
-                            
-                        </li>
-                    }
-
-                    @if (_directories.Count == 0)
-                    {
-                        <li Value="@((DirectoryEntryDto?)null)">
-                            
-                                <span Color="secondary" Typo="Typo.body2">@L["NoSubfolders"]</span>
-                            
-                        </li>
-                    }
+                    <div class="folder-item focusable folder-item--parent"
+                         tabindex="0"
+                         role="button"
+                         @onclick="NavigateUp">
+                        <K7Icon Icon="@Phosphor.ArrowBendUpLeft" Size="sm" />
+                        <span class="folder-item__name">..</span>
+                    </div>
                 }
-            </ul>
+                @if (_directories is { Count: > 0 })
+                {
+                    <Virtualize Items="_directories" Context="dir" ItemSize="40">
+                        <div class="folder-item focusable @(_selectedEntry == dir ? "folder-item--selected" : "")"
+                             tabindex="0"
+                             role="button"
+                             @onclick="() => NavigateInto(dir)">
+                            <K7Icon Icon="@Phosphor.Folder" Color="warning" Size="sm" />
+                            <span class="folder-item__name">@dir.Name</span>
+                            <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="folder-item__chevron" />
+                        </div>
+                    </Virtualize>
+                }
+                else if (_directories is { Count: 0 })
+                {
+                    <div class="folder-item folder-item--empty">
+                        <span class="text-sm text-secondary">@L["NoSubfolders"]</span>
+                    </div>
+                }
+            </div>
         </div>
     </div>
     <div class="k7-dialog-actions">
