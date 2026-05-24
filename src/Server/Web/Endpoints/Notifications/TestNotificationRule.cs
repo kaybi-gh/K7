@@ -13,8 +13,8 @@ public class TestNotificationRule : IEndpoint
 
         endpointRouteBuilder.MapPost("/api/notifications/rules/{id}/test", async ([FromServices] ISender sender, Guid id, CancellationToken cancellationToken) =>
         {
-            var success = await sender.Send(new TestNotificationRuleCommand(id), cancellationToken);
-            return Results.Ok(new { Success = success });
+            var result = await sender.Send(new TestNotificationRuleCommand(id), cancellationToken);
+            return Results.Ok(new { result.Success, result.Error });
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)

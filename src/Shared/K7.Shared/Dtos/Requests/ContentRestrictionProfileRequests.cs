@@ -1,4 +1,4 @@
-using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Rules;
 
 namespace K7.Shared.Dtos.Requests;
 
@@ -6,21 +6,12 @@ public sealed record CreateContentRestrictionProfileRequest
 {
     public required string Name { get; init; }
     public string? Description { get; init; }
-    public RestrictionMatchCondition MatchCondition { get; init; }
-    public required IReadOnlyList<ContentRestrictionRuleRequest> Rules { get; init; }
+    public required RuleGroupDto RuleFilter { get; init; }
 }
 
 public sealed record UpdateContentRestrictionProfileRequest
 {
     public required string Name { get; init; }
     public string? Description { get; init; }
-    public RestrictionMatchCondition MatchCondition { get; init; }
-    public required IReadOnlyList<ContentRestrictionRuleRequest> Rules { get; init; }
-}
-
-public sealed record ContentRestrictionRuleRequest
-{
-    public RestrictionField Field { get; init; }
-    public RestrictionOperator Operator { get; init; }
-    public string? Value { get; init; }
+    public required RuleGroupDto RuleFilter { get; init; }
 }

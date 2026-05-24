@@ -1,5 +1,6 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Rules;
 
 namespace K7.Shared.Dtos.Entities.Playlists;
 
@@ -10,8 +11,7 @@ public sealed record SmartPlaylistDto
     public string? Description { get; init; }
     public Guid UserId { get; init; }
     public MediaType MediaType { get; init; }
-    public SmartPlaylistMatchCondition MatchCondition { get; init; }
-    public IReadOnlyList<SmartPlaylistRuleDto> Rules { get; init; } = [];
+    public RuleGroupDto RuleFilter { get; init; } = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
     public int? Limit { get; init; }
     public SmartPlaylistOrderBy OrderBy { get; init; }
     public bool OrderDescending { get; init; }

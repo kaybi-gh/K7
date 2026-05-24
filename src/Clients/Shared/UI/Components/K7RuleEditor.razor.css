@@ -1,0 +1,44 @@
+.k7-rule-editor {
+    display: flex;
+    flex-direction: column;
+}
+
+.k7-rule-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: var(--k7-radius-md);
+    border: 1px solid var(--k7-outline);
+}
+
+.k7-rule-group--nested {
+    margin-top: 0.5rem;
+    background: var(--k7-surface-container);
+}
+
+.k7-rule-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.k7-rule-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-left: 0.75rem;
+}
+
+.k7-rule-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.k7-rule-group-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}

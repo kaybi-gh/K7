@@ -1,68 +1,212 @@
 @using K7.Shared.Dtos.Notifications
+@using K7.Shared.Dtos.Rules
+@using K7.Server.Domain.Enums
 @inject IStringLocalizer<EditNotificationRuleDialog> L
 @inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
-    <div class="d-flex flex-col gap-3 mt-2">
-        <K7TextField @bind-Value="_name" Label="@L["Name"]" Variant="outlined"
-                      Required="true" RequiredError="@L["NameRequired"]" />
+    <div class="d-flex mb-6 align-center">
+        <K7Chip Color="@(_activeStep >= 0 ? "primary" : "default")" Size="sm"
+                OnClick="@(() => GoToStep(0))" Style="cursor: pointer;">@L["StepCategory"]</K7Chip>
+        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
+        <K7Chip Color="@(_activeStep >= 1 ? "primary" : "default")" Size="sm"
+                OnClick="@(() => GoToStep(1))" Style="@(CanGoToStep(1) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["StepEvents"]</K7Chip>
+        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
+        <K7Chip Color="@(_activeStep >= 2 ? "primary" : "default")" Size="sm"
+                OnClick="@(() => GoToStep(2))" Style="@(CanGoToStep(2) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["StepMessage"]</K7Chip>
+        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
+        <K7Chip Color="@(_activeStep >= 3 ? "primary" : "default")" Size="sm"
+                OnClick="@(() => GoToStep(3))" Style="@(CanGoToStep(3) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["StepProvider"]</K7Chip>
+    </div>
 
-        <K7Select TValue="string" @bind-Value="_providerType" Label="@L["Provider"]" Variant="outlined">
-            <K7SelectItem Value="@("Webhook")">Webhook</K7SelectItem>
-        </K7Select>
-
-        <K7Select TValue="string" Value="_eventTypeName" Label="@L["Event"]" Variant="outlined"
-                   ValueChanged="OnEventChanged">
-            @foreach (var evt in AvailableEvents)
+    @* Step 0: Choose entity/category *@
+    @if (_activeStep == 0)
+    {
+        <h6>@L["SelectCategory"]</h6>
+        <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3);">
+            @foreach (var category in AvailableCategories)
             {
-                <K7SelectItem Value="@evt.EventTypeName">@evt.DisplayName</K7SelectItem>
+                <K7Paper Outlined="true"
+                         Class="@GetCategoryCardClass(category)"
+                         Style="cursor: pointer;"
+                         @onclick="() => SelectCategory(category)"
+                         @onkeydown="@(e => OnCategoryKeyDown(e, category))"
+                         tabindex="0"
+                         role="button"
+                         aria-pressed="@(_selectedCategory == category ? "true" : "false")">
+                    <div style="display: flex; flex-direction: column; align-items: center; padding: var(--space-4); text-align: center;">
+                        <K7Icon Icon="@GetCategoryIcon(category)" Size="lg" Color="@GetCategoryColor(category)" />
+                        <div class="text-sm text-bold" style="margin-top: var(--space-3);">@GetCategoryLabel(category)</div>
+                        <div class="text-xs" style="color: var(--color-text-muted); margin-top: var(--space-1);">@GetCategoryEventCount(category)</div>
+                    </div>
+                </K7Paper>
             }
-        </K7Select>
+        </div>
+    }
 
-        @if (_providerType == "Webhook")
+    @* Step 1: Select events within chosen category *@
+    @if (_activeStep == 1)
+    {
+        <h6>@L["SelectEvents"]</h6>
+        <p class="text-sm mb-3" style="color: var(--color-text-muted);">@L["SelectEventsHelper"]</p>
+        <div class="d-flex flex-col gap-2">
+            @foreach (var evt in EventsForSelectedCategory)
+            {
+                <K7Switch Value="@IsEventSelected(evt.EventTypeName)"
+                           ValueChanged="@(v => OnEventToggled(evt.EventTypeName, v))"
+                           Label="@evt.DisplayName" />
+            }
+        </div>
+    }
+
+    @* Step 2: Message templates *@
+    @if (_activeStep == 2)
+    {
+        <h6>@L["MessageTemplates"]</h6>
+
+        <div class="d-flex gap-3 mb-4 align-center justify-between">
+            <div class="d-flex gap-3">
+                <K7Chip Color="@(_payloadFormat == "Structured" ? "primary" : "default")"
+                        OnClick="@(() => _payloadFormat = "Structured")" Style="cursor: pointer;">
+                    @L["FormatStructured"]
+                </K7Chip>
+                <K7Chip Color="@(_payloadFormat == "RawJson" ? "primary" : "default")"
+                        OnClick="@(() => _payloadFormat = "RawJson")" Style="cursor: pointer;">
+                    @L["FormatRawJson"]
+                </K7Chip>
+            </div>
+            <K7ButtonGroup TValue="bool" Options="_previewModeOptions" Value="_isPreviewMode"
+                            ValueChanged="@(v => _isPreviewMode = v)" AriaLabel="@L["EditPreview"]" />
+        </div>
+
+        @if (!_isPreviewMode)
         {
-            <K7TextField @bind-Value="_webhookUrl" Label="@L["WebhookUrl"]" Variant="outlined"
-                          Required="true" RequiredError="@L["WebhookUrlRequired"]" />
-            <K7Select TValue="string" @bind-Value="_webhookMethod" Label="@L["HttpMethod"]" Variant="outlined">
-                <K7SelectItem Value="@("POST")">POST</K7SelectItem>
-                <K7SelectItem Value="@("PUT")">PUT</K7SelectItem>
-            </K7Select>
+            @if (_payloadFormat == "Structured")
+            {
+                <div class="d-flex flex-col gap-3">
+                    <div class="d-flex align-center justify-between">
+                        <K7TextField @bind-Value="_titleTemplate" Label="@L["TitleTemplate"]" Variant="outlined"
+                                      HelperText="@L["TitleTemplateHelper"]" Style="flex: 1;" />
+                        @if (HasDefaultTemplates)
+                        {
+                            <K7Button Variant="text" Color="primary" Size="sm" OnClick="ApplyDefaultTemplates" Class="ml-2">
+                                @L["UseDefaultTemplate"]
+                            </K7Button>
+                        }
+                    </div>
+                    <K7TextField @bind-Value="_bodyTemplate" Label="@L["BodyTemplate"]" Variant="outlined"
+                                  Lines="4" HelperText="@L["BodyTemplateHelper"]" />
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-col gap-3">
+                    <K7TextField @bind-Value="_rawJsonTemplate" Label="@L["RawJsonTemplate"]" Variant="outlined"
+                                  Lines="8" HelperText="@L["RawJsonTemplateHelper"]" Validation="ValidateRawJson" />
+                </div>
+            }
+        }
+        else
+        {
+            <K7Paper Outlined="true" Class="pa-4">
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["PreviewNote"]</span>
+                @if (_payloadFormat == "Structured")
+                {
+                    <p class="text-bold mt-2">@RenderPreview(_titleTemplate)</p>
+                    <p class="mt-1" style="white-space: pre-wrap;">@RenderPreview(_bodyTemplate)</p>
+                }
+                else
+                {
+                    <pre class="mt-2" style="white-space: pre-wrap; word-break: break-all; font-size: 0.85em;">@RenderPreview(_rawJsonTemplate)</pre>
+                }
+            </K7Paper>
         }
 
-        <K7TextField @bind-Value="_payloadTemplate" Label="@L["PayloadTemplate"]" Variant="outlined"
-                      Lines="6" HelperText="@L["PayloadTemplateHelper"]" />
-
-        @if (_selectedEvent is not null)
+        @if (AvailableParameters.Count > 0)
         {
-            <div class="notification-params-hint">
-                <span class="text-caption" style="color: var(--color-text-muted);">@L["AvailableParams"]</span>
+            <div class="mt-3">
+                @if (EventParameters.Count > 0)
+                {
+                    <span class="text-caption" style="color: var(--color-text-muted);">@L["EventParams"]</span>
+                    <div class="d-flex flex-wrap gap-1 mt-1 mb-3">
+                        @foreach (var param in EventParameters)
+                        {
+                            <span title="@GetParamTooltip(param)">
+                                <K7Chip Size="sm" Color="default" OnClick="@(() => InsertParam(param.Name))">
+                                    @("{{" + param.Name + "}}")
+                                </K7Chip>
+                            </span>
+                        }
+                    </div>
+                }
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["GlobalParams"]</span>
                 <div class="d-flex flex-wrap gap-1 mt-1">
-                    @foreach (var param in _selectedEvent.Parameters)
+                    @foreach (var param in GlobalParameters)
                     {
-                        <K7Chip Size="sm" Color="default" OnClick="@(() => InsertParam(param.Name))">
-                            @("{{" + param.Name + "}}")
-                        </K7Chip>
+                        <span title="@GetParamTooltip(param)">
+                            <K7Chip Size="sm" Color="default" OnClick="@(() => InsertParam(param.Name))">
+                                @("{{" + param.Name + "}}")
+                            </K7Chip>
+                        </span>
                     }
                 </div>
             </div>
         }
 
-        <K7ExpansionPanel Title="@L["Conditions"]">
-            <K7TextField @bind-Value="_conditions" Label="@L["ConditionsJson"]" Variant="outlined"
-                          Lines="4" HelperText="@L["ConditionsHelper"]" />
-            <K7TextField @bind-Value="_conditionsLogic" Label="@L["ConditionsLogic"]" Variant="outlined"
-                          HelperText="@L["ConditionsLogicHelper"]" />
+        <K7ExpansionPanel Text="@L["Conditions"]" Class="mt-4" Style="overflow: visible;">
+            <K7RuleEditor Value="@(_ruleFilter ?? new RuleGroupDto())"
+                          ValueChanged="@(v => _ruleFilter = v.Items.Count > 0 ? v : null)"
+                          FieldDescriptors="GetConditionFieldDescriptors()" />
         </K7ExpansionPanel>
-    </div>
-</div>
-<div class="k7-dialog-actions">
-    <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
-    <K7Button Color="primary" Variant="filled" OnClick="Submit"
-               Disabled="@(!IsValid || _isSubmitting)">
+    }
+
+    @* Step 3: Provider configuration *@
+    @if (_activeStep == 3)
+    {
+        <h6>@L["ProviderConfig"]</h6>
+        <div class="d-flex flex-col gap-3 mt-2">
+            <K7TextField @bind-Value="_name" Label="@L["Name"]" Variant="outlined"
+                          Required="true" RequiredError="@L["NameRequired"]" />
+
+            <K7Select TValue="string" @bind-Value="_providerType" Label="@L["Provider"]" Variant="outlined">
+                <K7SelectItem Value="@("Webhook")">Webhook</K7SelectItem>
+            </K7Select>
+
+            @if (_providerType == "Webhook")
+            {
+                <K7TextField @bind-Value="_webhookUrl" Label="@L["WebhookUrl"]" Variant="outlined"
+                              Required="true" RequiredError="@L["WebhookUrlRequired"]" />
+                <K7Select TValue="string" @bind-Value="_webhookMethod" Label="@L["HttpMethod"]" Variant="outlined">
+                    <K7SelectItem Value="@("POST")">POST</K7SelectItem>
+                    <K7SelectItem Value="@("PUT")">PUT</K7SelectItem>
+                </K7Select>
+            }
+        </div>
+
         @if (_isSubmitting)
         {
-            <K7Spinner Size="sm" />
+            <K7ProgressBar Indeterminate="true" Class="mt-4" />
         }
-        @(_isEditMode ? L["Save"] : L["Create"])
-    </K7Button>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    @if (_activeStep > 0)
+    {
+        <K7Button OnClick="PreviousStep" Variant="outlined">@S["Previous"]</K7Button>
+    }
+    @if (_activeStep < 3)
+    {
+        <K7Button Color="primary" Variant="filled" OnClick="NextStep" Disabled="!CanAdvance()">@S["Next"]</K7Button>
+    }
+    else
+    {
+        <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="@(!IsValid || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <K7Spinner Size="sm" />
+            }
+            @(_isEditMode ? L["Save"] : L["Create"])
+        </K7Button>
+    }
 </div>

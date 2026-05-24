@@ -26,7 +26,7 @@
 
                 <div class="d-flex mt-1">
                     <p class="text-sm" Color="secondary">
-                        @_smartPlaylist.Rules.Count règle@(_smartPlaylist.Rules.Count > 1 ? "s" : "")
+                        @_smartPlaylist.RuleFilter.Items.Count regle@(_smartPlaylist.RuleFilter.Items.Count > 1 ? "s" : "")
                         · @_smartPlaylist.ItemCount @S["Tracks"]
                     </p>
                     @if (_smartPlaylist.LastEvaluatedAt.HasValue)

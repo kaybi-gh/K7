@@ -18,10 +18,10 @@
 }
 else if (_rules.Count == 0)
 {
-    <div class="surface pa-8 d-flex flex-column align-center">
-        <K7Icon Name="bell" Size="lg" Color="secondary" />
-        <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
-        <p class="text-caption mt-2" style="color: var(--color-text-muted);">@L["EmptyHint"]</p>
+    <div class="empty-state">
+        <K7Icon Icon="@Phosphor.Bell" Style="font-size: 64px; opacity: 0.3;" />
+        <h6 class="empty-state__title">@L["Empty"]</h6>
+        <p class="empty-state__hint">@L["EmptyHint"]</p>
     </div>
 }
 else
@@ -32,7 +32,7 @@ else
             <CellTemplate>
                 <div class="d-flex flex-col">
                     <p>@context.Name</p>
-                    <span class="text-caption" style="color: var(--color-text-muted);">@GetEventDisplayName(context.EventTypeName)</span>
+                    <span class="text-caption" style="color: var(--color-text-muted);">@GetEventDisplayNames(context.EventTypeNames)</span>
                 </div>
             </CellTemplate>
         </K7DataColumn>

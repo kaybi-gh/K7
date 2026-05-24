@@ -1,9 +1,11 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using K7.Shared.Dtos.Rules;
 
 namespace K7.Server.Application.Features.SmartPlaylists.Commands.CreateSmartPlaylist;
 
@@ -13,18 +15,10 @@ public record CreateSmartPlaylistCommand : IRequest<Guid>
     public required string Title { get; init; }
     public string? Description { get; init; }
     public required MediaType MediaType { get; init; }
-    public SmartPlaylistMatchCondition MatchCondition { get; init; }
-    public IReadOnlyList<SmartPlaylistRuleCommand> Rules { get; init; } = [];
+    public RuleGroupDto RuleFilter { get; init; } = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
     public int? Limit { get; init; }
     public SmartPlaylistOrderBy OrderBy { get; init; } = SmartPlaylistOrderBy.DateAdded;
     public bool OrderDescending { get; init; } = true;
-}
-
-public record SmartPlaylistRuleCommand
-{
-    public SmartPlaylistField Field { get; init; }
-    public SmartPlaylistOperator Operator { get; init; }
-    public string? Value { get; init; }
 }
 
 public class CreateSmartPlaylistCommandHandler(IApplicationDbContext context, IUser currentUser)
@@ -39,13 +33,7 @@ public class CreateSmartPlaylistCommandHandler(IApplicationDbContext context, IU
             Description = request.Description,
             UserId = currentUser.Id!.Value,
             MediaType = request.MediaType,
-            MatchCondition = request.MatchCondition,
-            Rules = request.Rules.Select(r => new SmartPlaylistRule
-            {
-                Field = r.Field,
-                Operator = r.Operator,
-                Value = r.Value
-            }).ToList(),
+            RuleFilter = request.RuleFilter.ToRuleGroup(),
             Limit = request.Limit,
             OrderBy = request.OrderBy,
             OrderDescending = request.OrderDescending

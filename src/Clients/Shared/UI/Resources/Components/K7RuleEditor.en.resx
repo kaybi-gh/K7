@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="MatchAll" xml:space="preserve"><value>All</value></data>
+  <data name="MatchAny" xml:space="preserve"><value>Any</value></data>
+  <data name="AddRule" xml:space="preserve"><value>Add condition</value></data>
+  <data name="AddGroup" xml:space="preserve"><value>Add group</value></data>
+  <data name="OpEquals" xml:space="preserve"><value>is</value></data>
+  <data name="OpNotEquals" xml:space="preserve"><value>is not</value></data>
+  <data name="OpContains" xml:space="preserve"><value>contains</value></data>
+  <data name="OpNotContains" xml:space="preserve"><value>does not contain</value></data>
+  <data name="OpGreaterThan" xml:space="preserve"><value>greater than</value></data>
+  <data name="OpLessThan" xml:space="preserve"><value>less than</value></data>
+  <data name="OpGreaterThanOrEqual" xml:space="preserve"><value>greater than or equal</value></data>
+  <data name="OpLessThanOrEqual" xml:space="preserve"><value>less than or equal</value></data>
+  <data name="OpBeginsWith" xml:space="preserve"><value>begins with</value></data>
+  <data name="OpEndsWith" xml:space="preserve"><value>ends with</value></data>
+  <data name="OpInLast" xml:space="preserve"><value>in last</value></data>
+  <data name="OpIsEmpty" xml:space="preserve"><value>is empty</value></data>
+  <data name="OpIsNotEmpty" xml:space="preserve"><value>is not empty</value></data>
+</root>

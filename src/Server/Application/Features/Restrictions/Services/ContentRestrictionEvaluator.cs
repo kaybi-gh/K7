@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Restrictions;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.ValueObjects;
 
 namespace K7.Server.Application.Features.Restrictions.Services;
 
@@ -11,23 +12,10 @@ public static class ContentRestrictionEvaluator
         IQueryable<BaseMedia> query,
         ContentRestrictionProfile profile)
     {
-        if (profile.Rules.Count == 0)
+        if (profile.RuleFilter.Items.Count == 0)
             return query;
 
-        var predicates = profile.Rules
-            .Select(BuildPredicate)
-            .ToList();
-
-        Expression<Func<BaseMedia, bool>> restricted;
-        if (profile.MatchCondition == RestrictionMatchCondition.All)
-        {
-            restricted = predicates.Aggregate(CombineAnd);
-        }
-        else
-        {
-            restricted = predicates.Aggregate(CombineOr);
-        }
-
+        var restricted = BuildGroupPredicate(profile.RuleFilter);
         return query.Where(Negate(restricted));
     }
 
@@ -35,85 +23,96 @@ public static class ContentRestrictionEvaluator
         IQueryable<BaseMedia> query,
         ContentRestrictionProfile profile)
     {
-        if (profile.Rules.Count == 0)
+        if (profile.RuleFilter.Items.Count == 0)
             return query.Where(_ => false);
 
-        var predicates = profile.Rules
-            .Select(BuildPredicate)
-            .ToList();
-
-        Expression<Func<BaseMedia, bool>> restricted;
-        if (profile.MatchCondition == RestrictionMatchCondition.All)
-        {
-            restricted = predicates.Aggregate(CombineAnd);
-        }
-        else
-        {
-            restricted = predicates.Aggregate(CombineOr);
-        }
-
+        var restricted = BuildGroupPredicate(profile.RuleFilter);
         return query.Where(restricted);
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildPredicate(ContentRestrictionRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildGroupPredicate(RuleGroup group)
+    {
+        var predicates = new List<Expression<Func<BaseMedia, bool>>>();
+
+        foreach (var item in group.Items)
+        {
+            switch (item)
+            {
+                case ConditionRuleItem rule:
+                    predicates.Add(BuildRulePredicate(rule));
+                    break;
+                case NestedGroupItem nested:
+                    var nestedGroup = new RuleGroup { MatchCondition = nested.MatchCondition, Items = nested.Items };
+                    predicates.Add(BuildGroupPredicate(nestedGroup));
+                    break;
+            }
+        }
+
+        if (predicates.Count == 0)
+            return _ => true;
+
+        return group.MatchCondition == RuleMatchCondition.All
+            ? predicates.Aggregate(CombineAnd)
+            : predicates.Aggregate(CombineOr);
+    }
+
+    private static Expression<Func<BaseMedia, bool>> BuildRulePredicate(ConditionRuleItem rule)
     {
         return rule.Field switch
         {
-            RestrictionField.Genre => BuildGenrePredicate(rule),
-            RestrictionField.ContentRating => BuildContentRatingPredicate(rule),
-            RestrictionField.ReleaseYear => BuildReleaseYearPredicate(rule),
+            nameof(RestrictionField.Genre) => BuildGenrePredicate(rule),
+            nameof(RestrictionField.ContentRating) => BuildContentRatingPredicate(rule),
+            nameof(RestrictionField.ReleaseYear) => BuildReleaseYearPredicate(rule),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildGenrePredicate(ContentRestrictionRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildGenrePredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            RestrictionOperator.Equals => m => m.Genres.Any(g => g == value),
-            RestrictionOperator.NotEquals => m => !m.Genres.Any(g => g == value),
-            RestrictionOperator.Contains => m => m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
-            RestrictionOperator.NotContains => m => !m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
-            RestrictionOperator.IsEmpty => m => !m.Genres.Any(),
-            RestrictionOperator.IsNotEmpty => m => m.Genres.Any(),
+            RuleOperator.Equals => m => m.Genres.Any(g => g == value),
+            RuleOperator.NotEquals => m => !m.Genres.Any(g => g == value),
+            RuleOperator.Contains => m => m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
+            RuleOperator.NotContains => m => !m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
+            RuleOperator.IsEmpty => m => !m.Genres.Any(),
+            RuleOperator.IsNotEmpty => m => m.Genres.Any(),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildContentRatingPredicate(ContentRestrictionRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildContentRatingPredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            RestrictionOperator.Equals => m => m is Movie && ((Movie)m).ContentRating == value,
-            RestrictionOperator.NotEquals => m => !(m is Movie) || ((Movie)m).ContentRating != value,
-            RestrictionOperator.Contains => m => m is Movie && ((Movie)m).ContentRating != null && EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"),
-            RestrictionOperator.NotContains => m => !(m is Movie) || ((Movie)m).ContentRating == null || !EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"),
-            RestrictionOperator.IsEmpty => m => !(m is Movie) || ((Movie)m).ContentRating == null || ((Movie)m).ContentRating == "",
-            RestrictionOperator.IsNotEmpty => m => m is Movie && ((Movie)m).ContentRating != null && ((Movie)m).ContentRating != "",
+            RuleOperator.Equals => m => m is Movie && ((Movie)m).ContentRating == value,
+            RuleOperator.NotEquals => m => !(m is Movie) || ((Movie)m).ContentRating != value,
+            RuleOperator.Contains => m => m is Movie && ((Movie)m).ContentRating != null && EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"),
+            RuleOperator.NotContains => m => !(m is Movie) || ((Movie)m).ContentRating == null || !EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"),
+            RuleOperator.IsEmpty => m => !(m is Movie) || ((Movie)m).ContentRating == null || ((Movie)m).ContentRating == "",
+            RuleOperator.IsNotEmpty => m => m is Movie && ((Movie)m).ContentRating != null && ((Movie)m).ContentRating != "",
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildReleaseYearPredicate(ContentRestrictionRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildReleaseYearPredicate(ConditionRuleItem rule)
     {
-        if (rule.Operator == RestrictionOperator.IsEmpty)
+        if (rule.Operator == RuleOperator.IsEmpty)
             return m => m.ReleaseDate == null;
-        if (rule.Operator == RestrictionOperator.IsNotEmpty)
+        if (rule.Operator == RuleOperator.IsNotEmpty)
             return m => m.ReleaseDate != null;
 
         if (!int.TryParse(rule.Value, out var year)) return _ => true;
         return rule.Operator switch
         {
-            RestrictionOperator.Equals => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year == year,
-            RestrictionOperator.NotEquals => m => m.ReleaseDate == null || m.ReleaseDate.Value.Year != year,
-            RestrictionOperator.GreaterThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year > year,
-            RestrictionOperator.LessThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year < year,
-            RestrictionOperator.GreaterThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year >= year,
-            RestrictionOperator.LessThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year <= year,
-            RestrictionOperator.IsEmpty => m => m.ReleaseDate == null,
-            RestrictionOperator.IsNotEmpty => m => m.ReleaseDate != null,
+            RuleOperator.Equals => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year == year,
+            RuleOperator.NotEquals => m => m.ReleaseDate == null || m.ReleaseDate.Value.Year != year,
+            RuleOperator.GreaterThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year > year,
+            RuleOperator.LessThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year < year,
+            RuleOperator.GreaterThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year >= year,
+            RuleOperator.LessThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year <= year,
             _ => _ => true
         };
     }

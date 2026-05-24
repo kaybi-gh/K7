@@ -19,21 +19,49 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
+  <data name="StepCategory" xml:space="preserve"><value>Categorie</value></data>
+  <data name="StepEvents" xml:space="preserve"><value>Evenements</value></data>
+  <data name="StepMessage" xml:space="preserve"><value>Message</value></data>
+  <data name="StepProvider" xml:space="preserve"><value>Fournisseur</value></data>
+  <data name="SelectCategory" xml:space="preserve"><value>Quel type d'entite souhaitez-vous surveiller ?</value></data>
+  <data name="SelectEvents" xml:space="preserve"><value>Quels evenements souhaitez-vous suivre ?</value></data>
+  <data name="SelectEventsHelper" xml:space="preserve"><value>Selectionnez un ou plusieurs evenements pour lesquels vous souhaitez recevoir des notifications.</value></data>
+  <data name="CategoryPlayback" xml:space="preserve"><value>Lecture</value></data>
+  <data name="CategoryLibrary" xml:space="preserve"><value>Bibliotheque</value></data>
+  <data name="CategoryMedia" xml:space="preserve"><value>Media</value></data>
+  <data name="CategoryPlaylist" xml:space="preserve"><value>Playlist</value></data>
+  <data name="CategoryDevice" xml:space="preserve"><value>Appareil</value></data>
+  <data name="CategoryDownload" xml:space="preserve"><value>Telechargement</value></data>
+  <data name="CategorySystem" xml:space="preserve"><value>Systeme</value></data>
+  <data name="EventCount" xml:space="preserve"><value>{0} evenement(s)</value></data>
   <data name="Name" xml:space="preserve"><value>Nom</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Le nom est requis</value></data>
   <data name="Provider" xml:space="preserve"><value>Fournisseur</value></data>
-  <data name="Event" xml:space="preserve"><value>Evenement</value></data>
+  <data name="ProviderConfig" xml:space="preserve"><value>Configuration du fournisseur</value></data>
   <data name="WebhookUrl" xml:space="preserve"><value>URL du webhook</value></data>
   <data name="WebhookUrlRequired" xml:space="preserve"><value>L'URL est requise</value></data>
   <data name="HttpMethod" xml:space="preserve"><value>Methode HTTP</value></data>
-  <data name="PayloadTemplate" xml:space="preserve"><value>Modele de payload (JSON)</value></data>
-  <data name="PayloadTemplateHelper" xml:space="preserve"><value>Utilisez {{variable}} pour inserer des valeurs dynamiques</value></data>
+  <data name="MessageTemplates" xml:space="preserve"><value>Message</value></data>
+  <data name="FormatStructured" xml:space="preserve"><value>Titre + Corps</value></data>
+  <data name="FormatRawJson" xml:space="preserve"><value>JSON brut</value></data>
+  <data name="TitleTemplate" xml:space="preserve"><value>Titre</value></data>
+  <data name="TitleTemplateHelper" xml:space="preserve"><value>Titre de la notification. Utilisez {{variable}} pour les valeurs dynamiques.</value></data>
+  <data name="BodyTemplate" xml:space="preserve"><value>Corps du message</value></data>
+  <data name="BodyTemplateHelper" xml:space="preserve"><value>Corps de la notification. Utilisez {{variable}} pour les valeurs dynamiques.</value></data>
+  <data name="UseDefaultTemplate" xml:space="preserve"><value>Utiliser le modele par defaut</value></data>
+  <data name="RawJsonTemplate" xml:space="preserve"><value>Payload JSON</value></data>
+  <data name="RawJsonTemplateHelper" xml:space="preserve"><value>JSON envoye tel quel au webhook. Utilisez {{variable}} pour les valeurs dynamiques.</value></data>
   <data name="AvailableParams" xml:space="preserve"><value>Parametres disponibles :</value></data>
+  <data name="EventParams" xml:space="preserve"><value>Parametres de l'evenement :</value></data>
+  <data name="GlobalParams" xml:space="preserve"><value>Parametres globaux :</value></data>
+  <data name="EditPreview" xml:space="preserve"><value>Editer / Previsualiser</value></data>
+  <data name="PreviewNote" xml:space="preserve"><value>Apercu avec des donnees d'exemple :</value></data>
   <data name="Conditions" xml:space="preserve"><value>Conditions (avance)</value></data>
   <data name="ConditionsJson" xml:space="preserve"><value>Conditions (JSON)</value></data>
   <data name="ConditionsHelper" xml:space="preserve"><value>Format: [{"parameter":"...", "operator":"...", "value":"..."}]</value></data>
   <data name="ConditionsLogic" xml:space="preserve"><value>Logique des conditions</value></data>
   <data name="ConditionsLogicHelper" xml:space="preserve"><value>Ex: 1 and (2 or 3). Par defaut: toutes les conditions doivent etre vraies.</value></data>
+  <data name="InvalidJson" xml:space="preserve"><value>Le JSON n'est pas valide</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
   <data name="Create" xml:space="preserve"><value>Creer</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>

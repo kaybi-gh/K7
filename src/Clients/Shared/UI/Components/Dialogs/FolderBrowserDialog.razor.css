@@ -1,0 +1,68 @@
+.folder-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+}
+
+.folder-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.12s;
+}
+
+.folder-item:nth-child(even) {
+    background-color: var(--color-surface-variant, rgba(255, 255, 255, 0.03));
+}
+
+.folder-item--parent {
+    border-bottom: 1px solid var(--color-border);
+    opacity: 0.7;
+}
+
+.folder-item--parent:hover {
+    opacity: 1;
+}
+
+.folder-item:hover {
+    background-color: var(--color-hover, rgba(255, 255, 255, 0.06));
+}
+
+.folder-item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.folder-item--selected {
+    background-color: var(--color-accent-subtle, rgba(var(--color-accent-rgb), 0.1));
+}
+
+.folder-item--selected:nth-child(even) {
+    background-color: var(--color-accent-subtle, rgba(var(--color-accent-rgb), 0.1));
+}
+
+.folder-item__name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.folder-item--empty {
+    justify-content: center;
+    padding: 24px 12px;
+    cursor: default;
+}
+
+.folder-item--empty:hover {
+    background-color: transparent;
+}
+
+.folder-item__chevron {
+    opacity: 0.4;
+    margin-left: auto;
+}

@@ -49,13 +49,7 @@ public static class PlaylistMappings
             Description = domain.Description,
             UserId = domain.UserId,
             MediaType = domain.MediaType,
-            MatchCondition = domain.MatchCondition,
-            Rules = domain.Rules.Select(r => new SmartPlaylistRuleDto
-            {
-                Field = r.Field,
-                Operator = r.Operator,
-                Value = r.Value
-            }).ToList(),
+            RuleFilter = domain.RuleFilter.ToRuleGroupDto(),
             Limit = domain.Limit,
             OrderBy = domain.OrderBy,
             OrderDescending = domain.OrderDescending,
@@ -72,7 +66,7 @@ public static class PlaylistMappings
             Title = domain.Title,
             Description = domain.Description,
             MediaType = domain.MediaType,
-            RuleCount = domain.Rules.Count,
+            RuleCount = domain.RuleFilter.Items.Count,
             CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
             Created = domain.Created,
             LastModified = domain.LastModified
