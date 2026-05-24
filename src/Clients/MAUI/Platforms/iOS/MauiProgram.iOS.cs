@@ -8,5 +8,7 @@ public static partial class MauiProgram
     {
         services.AddSingleton<ICodecService, CodecService>();
         services.AddSingleton<IDeviceIdService, DeviceIdService>();
+        services.AddSingleton<NativeAudioService>();
+        services.AddSingleton<NowPlayingService>();
     }
 }
