@@ -1055,10 +1055,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Conditions")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ConditionsLogic")
+                    b.Property<string>("BodyTemplate")
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("Created")
@@ -1067,10 +1064,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("EventTypeName")
+                    b.Property<string>("EventTypeNames")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("boolean");
@@ -1086,8 +1082,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("PayloadTemplate")
-                        .HasColumnType("text");
+                    b.Property<int>("PayloadFormat")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ProviderConfig")
                         .IsRequired()
@@ -1096,10 +1092,19 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int>("ProviderType")
                         .HasColumnType("integer");
 
+                    b.Property<string>("RawJsonTemplate")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RuleFilter")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("TitleTemplate")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("IsEnabled", "EventTypeName")
-                        .HasDatabaseName("IX_NotificationRules_IsEnabled_EventTypeName");
+                    b.HasIndex("IsEnabled")
+                        .HasDatabaseName("IX_NotificationRules_IsEnabled");
 
                     b.ToTable("NotificationRules");
                 });
@@ -1245,13 +1250,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<int>("MatchCondition")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RuleFilter")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 
@@ -2501,14 +2507,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int?>("Limit")
                         .HasColumnType("integer");
 
-                    b.Property<int>("MatchCondition")
-                        .HasColumnType("integer");
-
                     b.Property<int>("OrderBy")
                         .HasColumnType("integer");
 
                     b.Property<bool>("OrderDescending")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("RuleFilter")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.HasDiscriminator().HasValue("SmartPlaylist");
                 });
@@ -3042,34 +3049,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Media");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>
-                {
-                    b.OwnsMany("K7.Server.Domain.Entities.Restrictions.ContentRestrictionRule", "Rules", b1 =>
-                        {
-                            b1.Property<Guid>("ContentRestrictionProfileId");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAdd();
-
-                            b1.Property<int>("Field");
-
-                            b1.Property<int>("Operator");
-
-                            b1.Property<string>("Value");
-
-                            b1.HasKey("ContentRestrictionProfileId", "__synthesizedOrdinal");
-
-                            b1.ToTable("ContentRestrictionProfiles");
-
-                            b1.ToJson("Rules");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ContentRestrictionProfileId");
-                        });
-
-                    b.Navigation("Rules");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
@@ -3349,34 +3328,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .WithMany("VideoTracks")
                         .HasForeignKey("VideoFileMetadataId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Playlists.SmartPlaylist", b =>
-                {
-                    b.OwnsMany("K7.Server.Domain.Entities.Playlists.SmartPlaylistRule", "Rules", b1 =>
-                        {
-                            b1.Property<Guid>("SmartPlaylistId");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAdd();
-
-                            b1.Property<int>("Field");
-
-                            b1.Property<int>("Operator");
-
-                            b1.Property<string>("Value");
-
-                            b1.HasKey("SmartPlaylistId", "__synthesizedOrdinal");
-
-                            b1.ToTable("Playlists");
-
-                            b1.ToJson("Rules");
-
-                            b1.WithOwner()
-                                .HasForeignKey("SmartPlaylistId");
-                        });
-
-                    b.Navigation("Rules");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Ratings.UserRating", b =>
