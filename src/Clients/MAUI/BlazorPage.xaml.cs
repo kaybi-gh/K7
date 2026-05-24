@@ -310,6 +310,11 @@ public partial class BlazorPage : ContentPage
 
     private void InitializeAudioPlayer()
     {
+#if ANDROID || IOS
+        // On Android/iOS, native services (K7MediaLibraryService / NativeAudioService)
+        // handle audio playback directly. Skip MediaElement wiring.
+        return;
+#else
         NativeAudioPlayer.Volume = _audioPlayerService.Volume;
         NativeAudioPlayer.ShouldMute = _audioPlayerService.IsMuted;
 
@@ -348,6 +353,7 @@ public partial class BlazorPage : ContentPage
                 };
             }
         };
+#endif
     }
 
     private void OnAudioCurrentTrackChanged(AudioQueueItem? track)
