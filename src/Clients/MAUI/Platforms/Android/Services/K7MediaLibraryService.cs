@@ -7,8 +7,10 @@ using AndroidX.Media3.Common;
 using AndroidX.Media3.ExoPlayer;
 using AndroidX.Media3.Session;
 using Google.Common.Util.Concurrent;
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Log = Android.Util.Log;
 
@@ -21,16 +23,22 @@ namespace K7.Clients.MAUI.Platforms.Android.Services;
     ForegroundServiceType = ForegroundService.TypeMediaPlayback,
     Exported = true)]
 [IntentFilter(["androidx.media3.session.MediaLibraryService"])]
-public class K7MediaLibraryService : MediaLibraryService, MediaLibraryService.MediaLibrarySession.ICallback
+public class K7MediaLibraryService : MediaLibraryService,
+    MediaLibraryService.MediaLibrarySession.ICallback,
+    IPlayerListener
 {
     private const string Tag = "K7-MediaLibrary";
     private const string RootId = "k7_root";
 
     private IExoPlayer? _player;
+    private K7ForwardingPlayer? _forwardingPlayer;
     private MediaLibrarySession? _session;
 
     private IMediaBrowseService? _mediaBrowseService;
     private IAudioPlayerService? _audioPlayerService;
+    private IStreamUriService? _streamUriService;
+
+    private bool _updatingFromPlayer;
 
     public override void OnCreate()
     {
@@ -46,12 +54,24 @@ public class K7MediaLibraryService : MediaLibraryService, MediaLibraryService.Me
 
         _mediaBrowseService = services.GetRequiredService<IMediaBrowseService>();
         _audioPlayerService = services.GetRequiredService<IAudioPlayerService>();
+        _streamUriService = services.GetRequiredService<IStreamUriService>();
 
         _player = new ExoPlayerBuilder(this)!
             .Build()!;
 
-        _session = new MediaLibrarySession.Builder(this, _player, this)!
+        _player.AddListener(this);
+
+        _forwardingPlayer = new K7ForwardingPlayer(
+            _player,
+            hasNext: () => _audioPlayerService.CurrentIndex < _audioPlayerService.Queue.Count - 1,
+            hasPrevious: () => _audioPlayerService.CurrentIndex > 0 || _audioPlayerService.CurrentTime > 3,
+            onSeekToNext: () => _ = _audioPlayerService.NextAsync(),
+            onSeekToPrevious: () => _ = _audioPlayerService.PreviousAsync());
+
+        _session = new MediaLibrarySession.Builder(this, _forwardingPlayer, this)!
             .Build()!;
+
+        SubscribeToAudioPlayerEvents();
     }
 
     public override MediaLibrarySession? OnGetSessionFromMediaLibraryService(
@@ -67,8 +87,11 @@ public class K7MediaLibraryService : MediaLibraryService, MediaLibraryService.Me
 
     public override void OnDestroy()
     {
+        UnsubscribeFromAudioPlayerEvents();
         _session?.Release();
+        _player?.RemoveListener(this);
         _player?.Release();
+        _forwardingPlayer = null;
         _session = null;
         _player = null;
         base.OnDestroy();
@@ -78,6 +101,186 @@ public class K7MediaLibraryService : MediaLibraryService, MediaLibraryService.Me
     public override IBinder? OnBind(Intent? intent)
     {
         return base.OnBind(intent);
+    }
+
+    // --- IPlayerListener: ExoPlayer state -> IAudioPlayerService ---
+
+    public void OnPlaybackStateChanged(int playbackState)
+    {
+        if (_audioPlayerService is null) return;
+
+        _updatingFromPlayer = true;
+        // Player state constants: Idle=1, Buffering=2, Ready=3, Ended=4
+        _audioPlayerService.PlaybackState = playbackState switch
+        {
+            3 => _player?.IsPlaying == true
+                ? PlaybackState.Playing
+                : PlaybackState.Paused,
+            2 => PlaybackState.Buffering,
+            4 => PlaybackState.Ended,
+            _ => PlaybackState.Idle,
+        };
+        _updatingFromPlayer = false;
+    }
+
+    public void OnIsPlayingChanged(bool isPlaying)
+    {
+        if (_audioPlayerService is null) return;
+
+        _updatingFromPlayer = true;
+        _audioPlayerService.PlaybackState = isPlaying
+            ? PlaybackState.Playing
+            : PlaybackState.Paused;
+        _updatingFromPlayer = false;
+
+        if (isPlaying)
+            StartPositionUpdates();
+        else
+            StopPositionUpdates();
+    }
+
+    public void OnMediaItemTransition(MediaItem? mediaItem, int reason)
+    {
+        if (_audioPlayerService is null || _player is null) return;
+
+        var duration = _player.Duration;
+        if (duration > 0)
+        {
+            _updatingFromPlayer = true;
+            _audioPlayerService.Duration = duration / 1000.0;
+            _updatingFromPlayer = false;
+        }
+    }
+
+    // --- IAudioPlayerService events -> ExoPlayer ---
+
+    private void SubscribeToAudioPlayerEvents()
+    {
+        if (_audioPlayerService is null) return;
+
+        _audioPlayerService.SourceChanged += OnSourceChanged;
+        _audioPlayerService.PlayRequested += OnPlayRequested;
+        _audioPlayerService.PauseRequested += OnPauseRequested;
+        _audioPlayerService.StopRequested += OnStopRequested;
+        _audioPlayerService.SeekRequested += OnSeekRequested;
+        _audioPlayerService.CurrentTrackChanged += OnCurrentTrackChanged;
+    }
+
+    private void UnsubscribeFromAudioPlayerEvents()
+    {
+        if (_audioPlayerService is null) return;
+
+        _audioPlayerService.SourceChanged -= OnSourceChanged;
+        _audioPlayerService.PlayRequested -= OnPlayRequested;
+        _audioPlayerService.PauseRequested -= OnPauseRequested;
+        _audioPlayerService.StopRequested -= OnStopRequested;
+        _audioPlayerService.SeekRequested -= OnSeekRequested;
+        _audioPlayerService.CurrentTrackChanged -= OnCurrentTrackChanged;
+    }
+
+    private void OnSourceChanged(PlayerSource source)
+    {
+        if (_player is null || string.IsNullOrEmpty(source.Url)) return;
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var builder = MediaItem.FromUri(source.Url)!.BuildUpon()!;
+
+            if (_pendingTrack is not null)
+            {
+                var metadataBuilder = new MediaMetadata.Builder()
+                    .SetTitle(_pendingTrack.Title)!
+                    .SetArtist(_pendingTrack.Artist)!
+                    .SetAlbumTitle(_pendingTrack.AlbumTitle)!
+                    .SetIsPlayable(Java.Lang.Boolean.ValueOf(true))!;
+
+                if (_pendingTrack.CoverUrl is not null)
+                {
+                    var absoluteUri = IPlatformApplication.Current?.Services?
+                        .GetService<IK7ServerService>()?.GetAbsoluteUri(_pendingTrack.CoverUrl);
+                    if (absoluteUri is not null)
+                        metadataBuilder.SetArtworkUri(global::Android.Net.Uri.Parse(absoluteUri.AbsoluteUri));
+                }
+
+                builder.SetMediaId(_pendingTrack.MediaId.ToString())!
+                    .SetMediaMetadata(metadataBuilder.Build()!);
+            }
+
+            _player.SetMediaItem(builder.Build()!);
+            _player.Prepare();
+            _player.PlayWhenReady = true;
+        });
+    }
+
+    private Task OnPlayRequested()
+    {
+        if (_updatingFromPlayer) return Task.CompletedTask;
+        MainThread.BeginInvokeOnMainThread(() => _player?.Play());
+        return Task.CompletedTask;
+    }
+
+    private Task OnPauseRequested()
+    {
+        if (_updatingFromPlayer) return Task.CompletedTask;
+        MainThread.BeginInvokeOnMainThread(() => _player?.Pause());
+        return Task.CompletedTask;
+    }
+
+    private Task OnStopRequested()
+    {
+        if (_updatingFromPlayer) return Task.CompletedTask;
+        MainThread.BeginInvokeOnMainThread(() => _player?.Stop());
+        return Task.CompletedTask;
+    }
+
+    private Task OnSeekRequested(double positionSeconds)
+    {
+        if (_updatingFromPlayer) return Task.CompletedTask;
+        MainThread.BeginInvokeOnMainThread(() =>
+            _player?.SeekTo((long)(positionSeconds * 1000)));
+        return Task.CompletedTask;
+    }
+
+    private AudioQueueItem? _pendingTrack;
+
+    private void OnCurrentTrackChanged(AudioQueueItem? track)
+    {
+        _pendingTrack = track;
+    }
+
+    // --- Position tracking ---
+
+    private System.Timers.Timer? _positionTimer;
+
+    private void StartPositionUpdates()
+    {
+        if (_positionTimer is not null) return;
+
+        _positionTimer = new System.Timers.Timer(500);
+        _positionTimer.Elapsed += (_, _) =>
+        {
+            if (_player is null || _audioPlayerService is null) return;
+
+            var position = _player.CurrentPosition / 1000.0;
+            var duration = _player.Duration / 1000.0;
+            var buffered = _player.BufferedPosition / 1000.0;
+
+            _updatingFromPlayer = true;
+            _audioPlayerService.CurrentTime = position;
+            if (duration > 0)
+                _audioPlayerService.Duration = duration;
+            if (buffered > 0)
+                _audioPlayerService.BufferedTime = buffered;
+            _updatingFromPlayer = false;
+        };
+        _positionTimer.Start();
+    }
+
+    private void StopPositionUpdates()
+    {
+        _positionTimer?.Stop();
+        _positionTimer?.Dispose();
+        _positionTimer = null;
     }
 
     public IListenableFuture? OnGetLibraryRoot(
@@ -194,12 +397,11 @@ public class K7MediaLibraryService : MediaLibraryService, MediaLibraryService.Me
         });
     }
 
-    private static async Task<string?> GetStreamUrl(AudioQueueItem track)
+    private async Task<string?> GetStreamUrl(AudioQueueItem track)
     {
-        var streamService = IPlatformApplication.Current?.Services?.GetService<IStreamUriService>();
-        if (streamService is null) return null;
+        if (_streamUriService is null) return null;
 
-        var streamSession = await streamService.GetOrCreateSessionAsync(track.IndexedFileId);
+        var streamSession = await _streamUriService.GetOrCreateSessionAsync(track.IndexedFileId);
         return streamSession.Source?.Uri.AbsoluteUri;
     }
 
