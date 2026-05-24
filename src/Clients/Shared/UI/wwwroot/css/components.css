@@ -473,6 +473,7 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
 .k7-dialog-title { font-size: var(--text-lg); font-weight: 600; margin: 0; flex: 1; }
 .k7-dialog-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--space-5);
   display: flex;

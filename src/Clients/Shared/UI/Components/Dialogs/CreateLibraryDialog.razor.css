@@ -1,0 +1,42 @@
+::deep .k7-paper--selected {
+    border-color: var(--color-accent);
+    border-width: 2px;
+    background-color: var(--color-accent-subtle);
+}
+
+.media-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4);
+    text-align: center;
+    gap: var(--space-2);
+}
+
+.picker-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.picker-row__label {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    width: 100px;
+    flex-shrink: 0;
+}
+
+.picker-row__value {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+}
+
+.picker-row__icon-preview {
+    font-size: 1.4rem;
+    color: var(--color-text-primary);
+}

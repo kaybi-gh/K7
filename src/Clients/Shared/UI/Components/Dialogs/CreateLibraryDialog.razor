@@ -3,46 +3,61 @@
 
 <div class="k7-dialog-content">
         @* Step indicators *@
-        <div class="d-flex mb-6">
-            <K7Chip Color="@(_activeStep >= 0 ? "primary" : "default")" Size="sm">@L["Step1"]</K7Chip>
+        <div class="d-flex mb-6 align-center">
+            <K7Chip Color="@(_activeStep >= 0 ? "primary" : "default")" Size="sm"
+                    OnClick="@(() => GoToStep(0))" Style="cursor: pointer;">@L["Step1"]</K7Chip>
             <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
-            <K7Chip Color="@(_activeStep >= 1 ? "primary" : "default")" Size="sm">@L["Step2"]</K7Chip>
+            <K7Chip Color="@(_activeStep >= 1 ? "primary" : "default")" Size="sm"
+                    OnClick="@(() => GoToStep(1))" Style="@(CanGoToStep(1) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["Step2"]</K7Chip>
             <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
-            <K7Chip Color="@(_activeStep >= 2 ? "primary" : "default")" Size="sm">@L["Step3"]</K7Chip>
+            <K7Chip Color="@(_activeStep >= 2 ? "primary" : "default")" Size="sm"
+                    OnClick="@(() => GoToStep(2))" Style="@(CanGoToStep(2) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["Step3"]</K7Chip>
         </div>
 
         @* Step 1: Choose media type *@
         @if (_activeStep == 0)
         {
             <h6>@L["SelectContentType"]</h6>
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: var(--space-3);">
-                <div>
-                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Movie)" Style="cursor: pointer;" tabindex="0" role="button" @onclick="() => SelectMediaType(LibraryMediaType.Movie)">
-                        <div class="d-flex flex-column align-center pa-6">
-                            <K7Icon Icon="@Phosphor.FilmStrip" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
-                            <h6>@S["MediaTypeMovies"]</h6>
-                            <p class="text-sm" Color="secondary">@L["MovieDescription"]</p>
-                        </div>
+            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3);">
+                <K7Paper Outlined="true"
+                         Class="@GetMediaTypeCardClass(LibraryMediaType.Movie)"
+                         Style="cursor: pointer;"
+                         @onclick="() => SelectMediaType(LibraryMediaType.Movie)"
+                         tabindex="0"
+                         role="button"
+                         aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Movie ? "true" : "false")">
+                    <div class="media-type-card">
+                        <K7Icon Icon="@Phosphor.FilmStrip" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
+                        <div class="text-sm text-bold">@S["MediaTypeMovies"]</div>
+                        <div class="text-xs" style="color: var(--color-text-muted);">@L["MovieDescription"]</div>
                     </div>
-                </div>
-                <div>
-                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Serie)" Style="cursor: pointer;" tabindex="0" role="button" @onclick="() => SelectMediaType(LibraryMediaType.Serie)">
-                        <div class="d-flex flex-column align-center pa-6">
-                            <K7Icon Icon="@Phosphor.Television" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
-                            <h6>@S["MediaTypeSeries"]</h6>
-                            <p class="text-sm" Color="secondary">@L["SeriesDescription"]</p>
-                        </div>
+                </K7Paper>
+                <K7Paper Outlined="true"
+                         Class="@GetMediaTypeCardClass(LibraryMediaType.Serie)"
+                         Style="cursor: pointer;"
+                         @onclick="() => SelectMediaType(LibraryMediaType.Serie)"
+                         tabindex="0"
+                         role="button"
+                         aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Serie ? "true" : "false")">
+                    <div class="media-type-card">
+                        <K7Icon Icon="@Phosphor.Television" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
+                        <div class="text-sm text-bold">@S["MediaTypeSeries"]</div>
+                        <div class="text-xs" style="color: var(--color-text-muted);">@L["SeriesDescription"]</div>
                     </div>
-                </div>
-                <div>
-                    <div class="k7-card k7-card--outlined @GetMediaTypeCardClass(LibraryMediaType.Music)" Style="cursor: pointer;" tabindex="0" role="button" @onclick="() => SelectMediaType(LibraryMediaType.Music)">
-                        <div class="d-flex flex-column align-center pa-6">
-                            <K7Icon Icon="@Phosphor.MusicNote" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
-                            <h6>@S["MediaTypeMusic"]</h6>
-                            <p class="text-sm" Color="secondary">@L["MusicDescription"]</p>
-                        </div>
+                </K7Paper>
+                <K7Paper Outlined="true"
+                         Class="@GetMediaTypeCardClass(LibraryMediaType.Music)"
+                         Style="cursor: pointer;"
+                         @onclick="() => SelectMediaType(LibraryMediaType.Music)"
+                         tabindex="0"
+                         role="button"
+                         aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Music ? "true" : "false")">
+                    <div class="media-type-card">
+                        <K7Icon Icon="@Phosphor.MusicNote" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
+                        <div class="text-sm text-bold">@S["MediaTypeMusic"]</div>
+                        <div class="text-xs" style="color: var(--color-text-muted);">@L["MusicDescription"]</div>
                     </div>
-                </div>
+                </K7Paper>
             </div>
         }
 
@@ -57,21 +72,27 @@
                 <K7TextField @bind-Value="_description" Label="@L["DescriptionLabel"]" Variant="outlined"
                              HelperText="@L["DescriptionHelper"]" />
 
-                <div class="form-section">
-                    <label class="form-label">@L["IconLabel"]</label>
-                    <K7IconPicker @bind-Value="_icon" SearchPlaceholder="@(L["IconSearch"])" />
+                <div class="picker-row">
+                    <span class="picker-row__label">@L["IconLabel"]</span>
+                    <div class="picker-row__value">
+                        @if (!string.IsNullOrEmpty(_icon))
+                        {
+                            <i class="@_icon picker-row__icon-preview" aria-hidden="true"></i>
+                        }
+                        else
+                        {
+                            <span class="text-sm text-secondary">@L["IconNone"]</span>
+                        }
+                    </div>
+                    <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPickerAsync">@L["IconChange"]</K7Button>
                 </div>
 
-                <div class="d-flex">
-                    <K7TextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="outlined"
-                                  Required="true" RequiredError="@L["PathRequired"]"
-                                  Placeholder="@L["PathPlaceholder"]"
-                                  HelperText="@L["PathHelper"]"
-                                  Style="flex: 1;" />
-                    <K7Button Variant="outlined" StartIcon="@Phosphor.Folder" OnClick="BrowseFolderAsync" Class="mb-6">
-                        @L["Browse"]
-                    </K7Button>
-                </div>
+                <K7TextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="outlined"
+                              Required="true" RequiredError="@L["PathRequired"]"
+                              Placeholder="@L["PathPlaceholder"]"
+                              HelperText="@L["PathHelper"]"
+                              AdornmentIcon="@Phosphor.FolderOpen"
+                              OnAdornmentClick="BrowseFolderAsync" />
 
                 <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
                     @foreach (var provider in _availableProviders)

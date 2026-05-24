@@ -47,5 +47,7 @@
   <data name="DescriptionHelper" xml:space="preserve"><value>Optional - displayed on the library card</value></data>
   <data name="IconLabel" xml:space="preserve"><value>Icon</value></data>
   <data name="IconSearch" xml:space="preserve"><value>Search an icon...</value></data>
+  <data name="IconChange" xml:space="preserve"><value>Change</value></data>
+  <data name="IconNone" xml:space="preserve"><value>None</value></data>
 </root>
 

@@ -15,6 +15,7 @@ public partial class CreateLibraryDialog
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
     private int _activeStep;
+    private int _maxVisitedStep;
     private LibraryMediaType _selectedMediaType;
     private bool _mediaTypeSelected;
     private string _title = "";
@@ -41,7 +42,7 @@ public partial class CreateLibraryDialog
     private string GetMediaTypeCardClass(LibraryMediaType type)
     {
         return _mediaTypeSelected && _selectedMediaType == type
-            ? "border-4 border-accent"
+            ? "k7-paper--selected"
             : "";
     }
 
@@ -67,16 +68,42 @@ public partial class CreateLibraryDialog
         _ => true
     };
 
+    private bool CanGoToStep(int step) => step <= _maxVisitedStep;
+
+    private void GoToStep(int step)
+    {
+        if (step <= _maxVisitedStep)
+            _activeStep = step;
+    }
+
     private void NextStep()
     {
         if (CanAdvance() && _activeStep < 2)
+        {
             _activeStep++;
+            if (_activeStep > _maxVisitedStep)
+                _maxVisitedStep = _activeStep;
+        }
     }
 
     private void PreviousStep()
     {
         if (_activeStep > 0)
             _activeStep--;
+    }
+
+    private async Task OpenIconPickerAsync()
+    {
+        var parameters = new K7DialogParameters<K7IconPickerDialog>();
+        parameters.Add(x => x.InitialValue, _icon);
+        parameters.Add(x => x.SearchPlaceholder, L["IconSearch"].Value);
+        parameters.Add(x => x.CancelText, S["Cancel"].Value);
+        parameters.Add(x => x.ConfirmText, S["Confirm"].Value);
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<K7IconPickerDialog>(L["IconLabel"].Value, parameters, options);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            _icon = result.Data as string;
     }
 
     private async Task BrowseFolderAsync()
