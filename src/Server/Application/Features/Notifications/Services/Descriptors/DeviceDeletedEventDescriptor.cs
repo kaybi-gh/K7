@@ -3,13 +3,13 @@ using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 
-public class DeviceCreatedEventDescriptor : INotificationEventDescriptor
+public class DeviceDeletedEventDescriptor : INotificationEventDescriptor
 {
-    public string EventTypeName => nameof(DeviceCreatedEvent);
-    public string DisplayName => "New Device Connected";
+    public string EventTypeName => nameof(DeviceDeletedEvent);
+    public string DisplayName => "Device Removed";
     public NotificationEventCategory Category => NotificationEventCategory.Device;
-    public string DefaultTitleTemplate => "New Device";
-    public string DefaultBodyTemplate => "{{Device.DeviceName}} ({{Device.DeviceType}})";
+    public string DefaultTitleTemplate => "Device Removed";
+    public string DefaultBodyTemplate => "{{Device.DeviceName}} has been removed";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
         new("Device.DeviceName", "Device Name", "String"),
@@ -17,8 +17,5 @@ public class DeviceCreatedEventDescriptor : INotificationEventDescriptor
         new("Device.ClientType", "Client Type", "String"),
         new("Device.OperatingSystem", "Operating System", "String"),
         new("Device.OperatingSystemVersion", "OS Version", "String"),
-        new("Device.DisplayWidth", "Display Width", "Float"),
-        new("Device.DisplayHeight", "Display Height", "Float"),
-        new("Device.DeviceUniqueId", "Device Unique ID", "String"),
     ];
 }

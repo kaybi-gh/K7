@@ -3,12 +3,12 @@ using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 
-public class MediaCreatedEventDescriptor : INotificationEventDescriptor
+public class MediaAddedEventDescriptor : INotificationEventDescriptor
 {
-    public string EventTypeName => nameof(MediaCreatedEvent);
-    public string DisplayName => "Media File Detected";
+    public string EventTypeName => nameof(MediaAddedEvent);
+    public string DisplayName => "Media Added";
     public NotificationEventCategory Category => NotificationEventCategory.Media;
-    public string DefaultTitleTemplate => "New Media Detected";
+    public string DefaultTitleTemplate => "New Media Added";
     public string DefaultBodyTemplate => "{{Media.Title}} ({{Media.Type}})";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
@@ -17,6 +17,7 @@ public class MediaCreatedEventDescriptor : INotificationEventDescriptor
         new("Media.Type", "Media Type", "String"),
         new("Media.ReleaseDate", "Release Date", "String"),
         new("Media.Genres.Count", "Genres Count", "Int"),
-        new("Media.IndexedFiles.Count", "Files Count", "Int"),
+        new("PictureUrl", "Picture URL (poster or cover)", "String"),
+        new("BackdropUrl", "Backdrop Image URL", "String"),
     ];
 }

@@ -67,7 +67,17 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         };
 
         await metadataUpdate;
+
+        var isFirstRefresh = media.LastMetadataRefreshedAt is null;
         media.LastMetadataRefreshedAt = DateTimeOffset.UtcNow;
+
+        media.AddDomainEvent(new MediaMetadataRefreshedEvent(media));
+
+        if (isFirstRefresh)
+        {
+            media.AddDomainEvent(new MediaAddedEvent(media));
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
     }
 

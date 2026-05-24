@@ -15,9 +15,10 @@ public class CreateNotificationRuleCommandValidator : AbstractValidator<CreateNo
             .Must(v => Enum.TryParse<NotificationProviderType>(v, ignoreCase: true, out _))
                 .WithMessage("Invalid provider type.");
 
-        RuleFor(v => v.EventTypeName)
+        RuleFor(v => v.EventTypeNames)
             .NotEmpty()
-            .MaximumLength(200);
+            .Must(v => v.Count <= 50)
+                .WithMessage("Maximum 50 event types per rule.");
 
         RuleFor(v => v.ProviderConfig)
             .NotEmpty();

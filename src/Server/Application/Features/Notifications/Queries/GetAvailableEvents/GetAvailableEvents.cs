@@ -7,6 +7,9 @@ namespace K7.Server.Application.Features.Notifications.Queries.GetAvailableEvent
 public record NotificationEventDescriptorDto(
     string EventTypeName,
     string DisplayName,
+    string Category,
+    string DefaultTitleTemplate,
+    string DefaultBodyTemplate,
     IReadOnlyList<NotificationParameterInfoDto> Parameters);
 
 public record NotificationParameterInfoDto(string Name, string DisplayName, string ValueType);
@@ -25,10 +28,19 @@ public class GetAvailableEventsQueryHandler : IRequestHandler<GetAvailableEvents
 
     public Task<IEnumerable<NotificationEventDescriptorDto>> Handle(GetAvailableEventsQuery request, CancellationToken cancellationToken)
     {
+        var globalParams = GlobalNotificationParameters.All
+            .Select(p => new NotificationParameterInfoDto(p.Name, p.DisplayName, p.ValueType))
+            .ToList();
+
         var result = _descriptors.Select(d => new NotificationEventDescriptorDto(
             d.EventTypeName,
             d.DisplayName,
-            d.Parameters.Select(p => new NotificationParameterInfoDto(p.Name, p.DisplayName, p.ValueType)).ToList()));
+            d.Category.ToString(),
+            d.DefaultTitleTemplate,
+            d.DefaultBodyTemplate,
+            d.Parameters.Select(p => new NotificationParameterInfoDto(p.Name, p.DisplayName, p.ValueType))
+                .Concat(globalParams)
+                .ToList()));
 
         return Task.FromResult(result);
     }
