@@ -68,14 +68,14 @@
     {
         @switch (_currentMode)
         {
-            case BrowseViewMode.Grid when GridTemplate is not null:
+            case BrowseViewMode.Grid when GridTemplate is not null && GridItemAspectRatio is not null:
                 @if (UseProvider)
                 {
                     <K7VirtualGrid TItem="TItem"
                                    ItemsProvider="WrappedItemsProvider"
                                    ItemWidth="_itemWidth"
                                    Spacing="_spacing"
-                                   AspectRatio="GridItemAspectRatio"
+                                   AspectRatio="GridItemAspectRatio.Value"
                                    FooterHeight="GridFooterHeight"
                                    OverscanCount="OverscanCount"
                                    @ref="_gridComponentRef">
@@ -89,13 +89,22 @@
                                    Items="Items"
                                    ItemWidth="_itemWidth"
                                    Spacing="_spacing"
-                                   AspectRatio="GridItemAspectRatio"
+                                   AspectRatio="GridItemAspectRatio.Value"
                                    FooterHeight="GridFooterHeight"
                                    OverscanCount="OverscanCount"
                                    @ref="_gridComponentRef">
                         <ItemTemplate>@GridTemplate(context)</ItemTemplate>
                     </K7VirtualGrid>
                 }
+                break;
+
+            case BrowseViewMode.Grid when GridTemplate is not null && GridItemAspectRatio is null:
+                <div class="browse-view-simple-grid" style="--item-width: @(_itemWidth)px; --grid-gap: @(_spacing)px;">
+                    @foreach (var item in Items!)
+                    {
+                        @GridTemplate(item)
+                    }
+                </div>
                 break;
 
             case BrowseViewMode.Table:

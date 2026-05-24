@@ -35,7 +35,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public int DefaultItemWidth { get; set; } = 160;
     [Parameter] public int DefaultSpacing { get; set; } = 6;
     [Parameter] public float ListItemHeight { get; set; } = 64;
-    [Parameter] public float GridItemAspectRatio { get; set; } = 1.5f;
+    [Parameter] public float? GridItemAspectRatio { get; set; } = 1.5f;
     [Parameter] public int GridFooterHeight { get; set; } = 44;
     [Parameter] public int OverscanCount { get; set; } = 4;
 

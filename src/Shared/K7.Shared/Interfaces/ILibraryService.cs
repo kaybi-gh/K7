@@ -8,6 +8,7 @@ namespace K7.Shared.Interfaces;
 public interface ILibraryService
 {
     Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default);
+    Task<List<LibraryStatisticsDto>> GetLibraryStatisticsAsync(CancellationToken cancellationToken = default);
     Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default);
     Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default);
     Task DeleteLibraryAsync(Guid id, CancellationToken cancellationToken = default);

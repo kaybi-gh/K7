@@ -370,6 +370,7 @@ public sealed class MockMediaService : IMediaService
 public sealed class MockLibraryService : ILibraryService
 {
     public Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryDto>());
+    public Task<List<LibraryStatisticsDto>> GetLibraryStatisticsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryStatisticsDto>());
     public Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteLibraryAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;

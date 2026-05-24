@@ -325,6 +325,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return libraries ?? [];
     }
 
+    public async Task<List<LibraryStatisticsDto>> GetLibraryStatisticsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<LibraryStatisticsDto>>("api/libraries/statistics", _serializerOptions, cancellationToken) ?? [];
+    }
+
     public async Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync("api/libraries", request, _serializerOptions, cancellationToken);
@@ -1040,11 +1045,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<bool> TestNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<TestNotificationRuleResponse> TestNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsync($"api/notifications/rules/{id}/test", null, cancellationToken);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<bool>(_serializerOptions, cancellationToken);
+        return (await response.Content.ReadFromJsonAsync<TestNotificationRuleResponse>(_serializerOptions, cancellationToken))!;
     }
 
     public async Task<List<NotificationEventDescriptorDto>> GetAvailableEventsAsync(CancellationToken cancellationToken = default)
