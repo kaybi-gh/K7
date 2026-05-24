@@ -49,6 +49,8 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         var session = await _context.MediaPlaybackSessions
             .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken);
 
+        var previousState = session?.State ?? PlaybackState.Unknown;
+
         if (session is null)
         {
             session = new MediaPlaybackSession
@@ -146,6 +148,41 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
                 state.LastPlaybackPosition = request.Position;
                 state.ProgressPercentage = Math.Clamp(progress * 100, 0, 100);
             }
+        }
+
+        if (request.State != previousState)
+        {
+            var libraryTitle = await _context.IndexedFiles
+                .Where(f => f.MediaId == request.MediaId)
+                .Join(_context.Libraries, f => f.LibraryId, l => l.Id, (_, l) => l.Title)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var deviceInfo = request.DeviceId.HasValue
+                ? await _context.Devices
+                    .Where(d => d.Id == request.DeviceId.Value)
+                    .Select(d => new { d.DeviceName, DeviceType = d.DeviceType.ToString() })
+                    .FirstOrDefaultAsync(cancellationToken)
+                : null;
+
+            var identityId = _currentUser.IdentityId;
+            var notifUserName = !string.IsNullOrEmpty(identityId)
+                ? await _identityService.GetUserNameAsync(identityId)
+                : null;
+
+            session.AddDomainEvent(new PlaybackStateChangedEvent(
+                request.State,
+                previousState,
+                userId,
+                notifUserName,
+                request.MediaId,
+                media.Title ?? "",
+                media.Type.ToString(),
+                request.SessionId,
+                request.Position,
+                request.Duration,
+                libraryTitle,
+                deviceInfo?.DeviceName,
+                deviceInfo?.DeviceType));
         }
 
         await _context.SaveChangesAsync(cancellationToken);

@@ -52,10 +52,15 @@ public class WebhookNotificationProvider : INotificationProvider
             _logger.LogWarning("Webhook to {Url} returned {StatusCode}", config.Url, response.StatusCode);
             return false;
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Webhook to {Url} failed", config.Url);
-            return false;
+            throw;
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogError(ex, "Webhook to {Url} timed out", config.Url);
+            throw;
         }
     }
 

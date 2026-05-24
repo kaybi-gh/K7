@@ -3,13 +3,13 @@ using K7.Server.Domain.Events;
 
 namespace K7.Server.Application.Features.Notifications.Services.Descriptors;
 
-public class PlaylistCreatedEventDescriptor : INotificationEventDescriptor
+public class PlaylistItemRemovedEventDescriptor : INotificationEventDescriptor
 {
-    public string EventTypeName => nameof(PlaylistCreatedEvent);
-    public string DisplayName => "Playlist Created";
+    public string EventTypeName => nameof(PlaylistItemRemovedEvent);
+    public string DisplayName => "Track Removed from Playlist";
     public NotificationEventCategory Category => NotificationEventCategory.Playlist;
-    public string DefaultTitleTemplate => "Playlist Created";
-    public string DefaultBodyTemplate => "{{Playlist.Title}}";
+    public string DefaultTitleTemplate => "Track Removed";
+    public string DefaultBodyTemplate => "Track removed from {{Playlist.Title}}";
     public IReadOnlyList<NotificationParameterInfo> Parameters { get; } =
     [
         new("Playlist.Title", "Playlist Title", "String"),

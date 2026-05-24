@@ -14,7 +14,8 @@ public class OutboundNotificationEventHandler<TEvent>(
 {
     public Task Handle(TEvent notification, CancellationToken cancellationToken)
     {
-        var eventTypeName = notification.GetType().Name;
+        var rawName = notification.GetType().Name;
+        var eventTypeName = rawName.IndexOf('`') is var idx and >= 0 ? rawName[..idx] : rawName;
         var eventData = serializer.Serialize(notification);
 
         _ = Task.Run(async () =>
