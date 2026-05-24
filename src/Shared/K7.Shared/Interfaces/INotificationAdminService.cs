@@ -9,6 +9,6 @@ public interface INotificationAdminService
     Task<Guid> CreateNotificationRuleAsync(CreateNotificationRuleRequest request, CancellationToken cancellationToken = default);
     Task UpdateNotificationRuleAsync(Guid id, UpdateNotificationRuleRequest request, CancellationToken cancellationToken = default);
     Task DeleteNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<bool> TestNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<TestNotificationRuleResponse> TestNotificationRuleAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<NotificationEventDescriptorDto>> GetAvailableEventsAsync(CancellationToken cancellationToken = default);
 }

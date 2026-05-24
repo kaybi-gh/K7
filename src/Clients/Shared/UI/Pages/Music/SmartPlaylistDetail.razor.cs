@@ -4,6 +4,7 @@ using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
+using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -140,8 +141,7 @@ public partial class SmartPlaylistDetail
             { x => x.InitialTitle, _smartPlaylist.Title },
             { x => x.InitialDescription, _smartPlaylist.Description },
             { x => x.InitialMediaType, _smartPlaylist.MediaType },
-            { x => x.InitialMatchCondition, _smartPlaylist.MatchCondition },
-            { x => x.InitialRules, _smartPlaylist.Rules.ToList() },
+            { x => x.InitialRuleFilter, _smartPlaylist.RuleFilter },
             { x => x.InitialLimit, _smartPlaylist.Limit },
             { x => x.InitialOrderBy, _smartPlaylist.OrderBy },
             { x => x.InitialOrderDescending, _smartPlaylist.OrderDescending }
@@ -175,12 +175,13 @@ public partial class SmartPlaylistDetail
 
     private string BuildRulesDescription(SmartPlaylistDto sp)
     {
-        if (sp.Rules.Count == 0) return L["NoRules"];
+        var items = sp.RuleFilter.Items.OfType<ConditionRuleItemDto>().ToList();
+        if (items.Count == 0) return L["NoRules"];
 
-        var condition = sp.MatchCondition == SmartPlaylistMatchCondition.All ? " ET " : " OU ";
-        var rules = sp.Rules.Select(r =>
+        var condition = sp.RuleFilter.MatchCondition == RuleMatchCondition.All ? " ET " : " OU ";
+        var rules = items.Select(r =>
         {
-            var field = GetFieldLabel(r.Field);
+            var field = Enum.TryParse<SmartPlaylistField>(r.Field, out var f) ? GetFieldLabel(f) : r.Field;
             var op = GetOperatorLabel(r.Operator);
             return string.IsNullOrEmpty(r.Value) ? $"{field} {op}" : $"{field} {op} � {r.Value} �";
         });
@@ -210,18 +211,21 @@ public partial class SmartPlaylistDetail
         _ => field.ToString()
     };
 
-    private static string GetOperatorLabel(SmartPlaylistOperator op) => op switch
+    private static string GetOperatorLabel(RuleOperator op) => op switch
     {
-        SmartPlaylistOperator.Equals => "est",
-        SmartPlaylistOperator.NotEquals => "n'est pas",
-        SmartPlaylistOperator.Contains => "contient",
-        SmartPlaylistOperator.GreaterThan => ">",
-        SmartPlaylistOperator.LessThan => "<",
-        SmartPlaylistOperator.GreaterThanOrEqual => "=",
-        SmartPlaylistOperator.LessThanOrEqual => "=",
-        SmartPlaylistOperator.InLast => "dans les derniers",
-        SmartPlaylistOperator.IsEmpty => "est vide",
-        SmartPlaylistOperator.IsNotEmpty => "n'est pas vide",
+        RuleOperator.Equals => "est",
+        RuleOperator.NotEquals => "n'est pas",
+        RuleOperator.Contains => "contient",
+        RuleOperator.NotContains => "ne contient pas",
+        RuleOperator.GreaterThan => ">",
+        RuleOperator.LessThan => "<",
+        RuleOperator.GreaterThanOrEqual => ">=",
+        RuleOperator.LessThanOrEqual => "<=",
+        RuleOperator.BeginsWith => "commence par",
+        RuleOperator.EndsWith => "finit par",
+        RuleOperator.InLast => "dans les derniers",
+        RuleOperator.IsEmpty => "est vide",
+        RuleOperator.IsNotEmpty => "n'est pas vide",
         _ => op.ToString()
     };
 

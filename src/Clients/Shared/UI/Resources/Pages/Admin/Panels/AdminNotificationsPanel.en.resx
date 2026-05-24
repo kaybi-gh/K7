@@ -37,6 +37,7 @@
   <data name="RuleDeleted" xml:space="preserve"><value>Rule deleted</value></data>
   <data name="TestSuccess" xml:space="preserve"><value>Test notification sent successfully</value></data>
   <data name="TestFailed" xml:space="preserve"><value>Failed to send test notification</value></data>
+  <data name="TestFailedWithError" xml:space="preserve"><value>Webhook failed: {0}</value></data>
   <data name="ConfirmDeleteTitle" xml:space="preserve"><value>Delete rule</value></data>
   <data name="ConfirmDeleteMessage" xml:space="preserve"><value>Are you sure you want to delete the rule "{0}"?</value></data>
 </root>

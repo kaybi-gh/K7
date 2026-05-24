@@ -1,3 +1,5 @@
+using K7.Shared.Dtos.Rules;
+
 namespace K7.Shared.Dtos.Notifications;
 
 public sealed record NotificationRuleDto
@@ -6,11 +8,13 @@ public sealed record NotificationRuleDto
     public required string Name { get; init; }
     public bool IsEnabled { get; init; }
     public required string ProviderType { get; init; }
-    public required string EventTypeName { get; init; }
+    public required string PayloadFormat { get; init; }
+    public required IReadOnlyList<string> EventTypeNames { get; init; }
     public required string ProviderConfig { get; init; }
-    public string? PayloadTemplate { get; init; }
-    public string? Conditions { get; init; }
-    public string? ConditionsLogic { get; init; }
+    public string? TitleTemplate { get; init; }
+    public string? BodyTemplate { get; init; }
+    public string? RawJsonTemplate { get; init; }
+    public RuleGroupDto? RuleFilter { get; init; }
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
 }

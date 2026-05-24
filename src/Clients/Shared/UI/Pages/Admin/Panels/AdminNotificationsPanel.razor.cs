@@ -38,10 +38,15 @@ public partial class AdminNotificationsPanel
         }
     }
 
-    private string GetEventDisplayName(string eventTypeName)
+    private string GetEventDisplayNames(IReadOnlyList<string> eventTypeNames)
     {
-        var descriptor = _availableEvents.FirstOrDefault(e => e.EventTypeName == eventTypeName);
-        return descriptor?.DisplayName ?? eventTypeName;
+        var names = eventTypeNames
+            .Select(n => _availableEvents.FirstOrDefault(e => e.EventTypeName == n)?.DisplayName ?? n)
+            .Take(3);
+        var result = string.Join(", ", names);
+        if (eventTypeNames.Count > 3)
+            result += $" (+{eventTypeNames.Count - 3})";
+        return result;
     }
 
     private async Task OnToggleEnabled(NotificationRuleDto rule, bool enabled)
@@ -52,11 +57,13 @@ public partial class AdminNotificationsPanel
             {
                 Name = rule.Name,
                 ProviderType = rule.ProviderType,
-                EventTypeName = rule.EventTypeName,
+                PayloadFormat = rule.PayloadFormat,
+                EventTypeNames = rule.EventTypeNames,
                 ProviderConfig = rule.ProviderConfig,
-                PayloadTemplate = rule.PayloadTemplate,
-                Conditions = rule.Conditions,
-                ConditionsLogic = rule.ConditionsLogic,
+                TitleTemplate = rule.TitleTemplate,
+                BodyTemplate = rule.BodyTemplate,
+                RawJsonTemplate = rule.RawJsonTemplate,
+                RuleFilter = rule.RuleFilter,
                 IsEnabled = enabled
             });
             Snackbar.Add(L["RuleUpdated"], K7Severity.Success);
@@ -72,8 +79,15 @@ public partial class AdminNotificationsPanel
     {
         try
         {
-            var success = await NotificationService.TestNotificationRuleAsync(rule.Id);
-            Snackbar.Add(success ? L["TestSuccess"] : L["TestFailed"], success ? K7Severity.Success : K7Severity.Warning);
+            var result = await NotificationService.TestNotificationRuleAsync(rule.Id);
+            if (result.Success)
+            {
+                Snackbar.Add(L["TestSuccess"], K7Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(string.Format(L["TestFailedWithError"], result.Error ?? "Unknown error"), K7Severity.Error);
+            }
         }
         catch (Exception ex)
         {
@@ -96,6 +110,7 @@ public partial class AdminNotificationsPanel
         {
             Snackbar.Add(L["RuleCreated"], K7Severity.Success);
             await LoadData();
+            StateHasChanged();
         }
     }
 
@@ -115,6 +130,7 @@ public partial class AdminNotificationsPanel
         {
             Snackbar.Add(L["RuleUpdated"], K7Severity.Success);
             await LoadData();
+            StateHasChanged();
         }
     }
 
@@ -135,6 +151,7 @@ public partial class AdminNotificationsPanel
                 await NotificationService.DeleteNotificationRuleAsync(rule.Id);
                 Snackbar.Add(L["RuleDeleted"], K7Severity.Success);
                 await LoadData();
+                StateHasChanged();
             }
             catch (Exception ex)
             {

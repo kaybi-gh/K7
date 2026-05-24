@@ -226,6 +226,81 @@
         }
       }
     },
+    "/api/users/me/preferences/track-selection": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUserTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUserTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackSelectionPreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/preferences/video-player": {
       "delete": {
         "tags": [
@@ -1569,6 +1644,60 @@
         }
       }
     },
+    "/api/persons/{id}/pictures": {
+      "delete": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "DeletePersonPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "UploadPersonPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pictureType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MetadataPictureType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/persons/{id}": {
       "get": {
         "tags": [
@@ -1606,6 +1735,30 @@
           "Persons"
         ],
         "operationId": "GetPersonKnownFor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/provider-images": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "GetPersonProviderImages",
         "parameters": [
           {
             "name": "id",
@@ -1701,6 +1854,40 @@
         }
       }
     },
+    "/api/persons/{id}/pictures/import": {
+      "post": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "ImportPersonPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportMediaPictureFromUrlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/persons/{id}/refresh-metadata": {
       "post": {
         "tags": [
@@ -1718,6 +1905,40 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/metadata": {
+      "put": {
+        "tags": [
+          "Persons"
+        ],
+        "operationId": "UpdatePersonMetadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonMetadataRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -2168,6 +2389,39 @@
         }
       }
     },
+    "/api/medias/{id}/pictures/{pictureId}": {
+      "delete": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "DeleteMediaPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pictureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{id}/detect-segments": {
       "post": {
         "tags": [
@@ -2219,6 +2473,30 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/medias/{id}/provider-images": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMediaProviderImages",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -2437,6 +2715,40 @@
         }
       }
     },
+    "/api/medias/{id}/pictures/import": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "ImportMediaPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportMediaPictureFromUrlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/by-external-ids": {
       "post": {
         "tags": [
@@ -2568,6 +2880,72 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{id}/metadata": {
+      "put": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "UpdateMediaMetadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMediaMetadataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{id}/pictures": {
+      "post": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "UploadMediaPicture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pictureType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MetadataPictureType"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -2738,6 +3116,29 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/LibraryPictureDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/libraries/statistics": {
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetLibraryStatistics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryStatisticsDto"
                   }
                 }
               }
@@ -5038,6 +5439,81 @@
         }
       }
     },
+    "/api/server/preferences/track-selection": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "DeleteServerTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetServerTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateServerTrackSelectionPreferences",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackSelectionPreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/server/preferences/video-player": {
       "delete": {
         "tags": [
@@ -6257,23 +6733,6 @@
           }
         }
       },
-      "ContentRestrictionRuleRequest": {
-        "type": "object",
-        "properties": {
-          "field": {
-            "$ref": "#/components/schemas/RestrictionField"
-          },
-          "operator": {
-            "$ref": "#/components/schemas/RestrictionOperator"
-          },
-          "value": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "CreateCollectionCommand": {
         "required": [
           "title"
@@ -6307,7 +6766,7 @@
       "CreateContentRestrictionProfileRequest": {
         "required": [
           "name",
-          "rules"
+          "ruleFilter"
         ],
         "type": "object",
         "properties": {
@@ -6320,14 +6779,8 @@
               "string"
             ]
           },
-          "matchCondition": {
-            "$ref": "#/components/schemas/RestrictionMatchCondition"
-          },
-          "rules": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ContentRestrictionRuleRequest"
-            }
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
           }
         }
       },
@@ -6481,7 +6934,8 @@
         "required": [
           "name",
           "providerType",
-          "eventTypeName",
+          "payloadFormat",
+          "eventTypeNames",
           "providerConfig"
         ],
         "type": "object",
@@ -6492,28 +6946,44 @@
           "providerType": {
             "type": "string"
           },
-          "eventTypeName": {
+          "payloadFormat": {
             "type": "string"
+          },
+          "eventTypeNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "providerConfig": {
             "type": "string"
           },
-          "payloadTemplate": {
+          "titleTemplate": {
             "type": [
               "null",
               "string"
             ]
           },
-          "conditions": {
+          "bodyTemplate": {
             "type": [
               "null",
               "string"
             ]
           },
-          "conditionsLogic": {
+          "rawJsonTemplate": {
             "type": [
               "null",
               "string"
+            ]
+          },
+          "ruleFilter": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RuleGroupDto"
+              }
             ]
           },
           "isEnabled": {
@@ -6561,14 +7031,8 @@
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
           },
-          "matchCondition": {
-            "$ref": "#/components/schemas/SmartPlaylistMatchCondition"
-          },
-          "rules": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SmartPlaylistRuleRequest"
-            }
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
           },
           "limit": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -6955,6 +7419,21 @@
           }
         }
       },
+      "ExternalIdEditDto": {
+        "required": [
+          "providerName",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "providerName": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "ExternalIdItem": {
         "required": [
           "provider",
@@ -7263,6 +7742,21 @@
           }
         }
       },
+      "ImportMediaPictureFromUrlRequest": {
+        "required": [
+          "url",
+          "pictureType"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "pictureType": {
+            "$ref": "#/components/schemas/MetadataPictureType"
+          }
+        }
+      },
       "IndexedFileDto": {
         "required": [
           "id",
@@ -7567,6 +8061,39 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "LibraryStatisticsDto": {
+        "required": [
+          "libraryId",
+          "fileCount",
+          "mediaCounts"
+        ],
+        "type": "object",
+        "properties": {
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "mediaCounts": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
           }
         }
       },
@@ -7969,6 +8496,42 @@
             ]
           },
           "energy": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "loudnessLufs": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fadeInDuration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fadeOutDuration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "replayGainTrackGain": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
@@ -8468,6 +9031,42 @@
             ]
           },
           "energy": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "loudnessLufs": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fadeInDuration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fadeOutDuration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "replayGainTrackGain": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
@@ -9340,6 +9939,24 @@
               "type": "string"
             }
           },
+          "lockedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
           "userState": {
             "oneOf": [
               {
@@ -9349,6 +9966,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -9457,6 +10082,24 @@
               "type": "string"
             }
           },
+          "lockedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
           "userState": {
             "oneOf": [
               {
@@ -9466,6 +10109,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -9570,6 +10221,24 @@
               "type": "string"
             }
           },
+          "lockedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
           "userState": {
             "oneOf": [
               {
@@ -9579,6 +10248,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -9709,6 +10386,33 @@
               "format": "float"
             }
           },
+          "fadeInDuration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "fadeOutDuration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "replayGainTrackGain": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -9771,6 +10475,24 @@
               "type": "string"
             }
           },
+          "lockedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
           "userState": {
             "oneOf": [
               {
@@ -9780,6 +10502,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -9917,6 +10647,24 @@
               "type": "string"
             }
           },
+          "lockedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
           "userState": {
             "oneOf": [
               {
@@ -9926,6 +10674,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -10064,6 +10820,24 @@
               "type": "string"
             }
           },
+          "lockedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
           "userState": {
             "oneOf": [
               {
@@ -10073,6 +10847,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -10186,6 +10968,24 @@
               "type": "string"
             }
           },
+          "lockedFields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
           "userState": {
             "oneOf": [
               {
@@ -10195,6 +10995,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -10505,6 +11313,12 @@
           "genres": {
             "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/genres"
           },
+          "lockedFields": {
+            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/lockedFields"
+          },
+          "externalIds": {
+            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/externalIds"
+          },
           "userState": {
             "oneOf": [
               {
@@ -10514,6 +11328,14 @@
                 "$ref": "#/components/schemas/UserMediaStateDto"
               }
             ]
+          },
+          "totalPlayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "lastMetadataRefreshedAt": {
             "type": [
@@ -10652,6 +11474,9 @@
         "required": [
           "eventTypeName",
           "displayName",
+          "category",
+          "defaultTitleTemplate",
+          "defaultBodyTemplate",
           "parameters"
         ],
         "type": "object",
@@ -10660,6 +11485,15 @@
             "type": "string"
           },
           "displayName": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "defaultTitleTemplate": {
+            "type": "string"
+          },
+          "defaultBodyTemplate": {
             "type": "string"
           },
           "parameters": {
@@ -10694,7 +11528,8 @@
           "id",
           "name",
           "providerType",
-          "eventTypeName",
+          "payloadFormat",
+          "eventTypeNames",
           "providerConfig"
         ],
         "type": "object",
@@ -10712,28 +11547,44 @@
           "providerType": {
             "type": "string"
           },
-          "eventTypeName": {
+          "payloadFormat": {
             "type": "string"
+          },
+          "eventTypeNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "providerConfig": {
             "type": "string"
           },
-          "payloadTemplate": {
+          "titleTemplate": {
             "type": [
               "null",
               "string"
             ]
           },
-          "conditions": {
+          "bodyTemplate": {
             "type": [
               "null",
               "string"
             ]
           },
-          "conditionsLogic": {
+          "rawJsonTemplate": {
             "type": [
               "null",
               "string"
+            ]
+          },
+          "ruleFilter": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RuleGroupDto"
+              }
             ]
           },
           "created": {
@@ -10989,6 +11840,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExternalIdDto"
+            }
+          },
+          "lockedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           },
           "portraitPicture": {
@@ -11850,13 +12707,90 @@
           }
         }
       },
-      "RestrictionField": {
+      "RuleGroupDto": {
+        "type": "object",
+        "properties": {
+          "matchCondition": {
+            "$ref": "#/components/schemas/RuleMatchCondition"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleGroupItemDto"
+            }
+          }
+        }
+      },
+      "RuleGroupItemDto": {
+        "required": [
+          "$type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/RuleGroupItemDtoConditionRuleItemDto"
+          },
+          {
+            "$ref": "#/components/schemas/RuleGroupItemDtoNestedGroupItemDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "rule": "#/components/schemas/RuleGroupItemDtoConditionRuleItemDto",
+            "group": "#/components/schemas/RuleGroupItemDtoNestedGroupItemDto"
+          }
+        }
+      },
+      "RuleGroupItemDtoConditionRuleItemDto": {
+        "required": [
+          "field",
+          "operator"
+        ],
+        "properties": {
+          "$type": {
+            "enum": [
+              "rule"
+            ],
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/RuleOperator"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RuleGroupItemDtoNestedGroupItemDto": {
+        "properties": {
+          "$type": {
+            "enum": [
+              "group"
+            ],
+            "type": "string"
+          },
+          "matchCondition": {
+            "$ref": "#/components/schemas/RuleMatchCondition"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleGroupItemDto"
+            }
+          }
+        }
+      },
+      "RuleMatchCondition": {
         "type": "integer"
       },
-      "RestrictionMatchCondition": {
-        "type": "integer"
-      },
-      "RestrictionOperator": {
+      "RuleOperator": {
         "type": "integer"
       },
       "ServerFeatureFlagsDto": {
@@ -11905,14 +12839,8 @@
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
           },
-          "matchCondition": {
-            "$ref": "#/components/schemas/SmartPlaylistMatchCondition"
-          },
-          "rules": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SmartPlaylistRuleDto"
-            }
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
           },
           "limit": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -11964,51 +12892,8 @@
           }
         }
       },
-      "SmartPlaylistField": {
-        "type": "integer"
-      },
-      "SmartPlaylistMatchCondition": {
-        "type": "integer"
-      },
-      "SmartPlaylistOperator": {
-        "type": "integer"
-      },
       "SmartPlaylistOrderBy": {
         "type": "integer"
-      },
-      "SmartPlaylistRuleDto": {
-        "type": "object",
-        "properties": {
-          "field": {
-            "$ref": "#/components/schemas/SmartPlaylistField"
-          },
-          "operator": {
-            "$ref": "#/components/schemas/SmartPlaylistOperator"
-          },
-          "value": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
-      "SmartPlaylistRuleRequest": {
-        "type": "object",
-        "properties": {
-          "field": {
-            "$ref": "#/components/schemas/SmartPlaylistField"
-          },
-          "operator": {
-            "$ref": "#/components/schemas/SmartPlaylistOperator"
-          },
-          "value": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
       },
       "StatusCountDto": {
         "required": [
@@ -12154,6 +13039,9 @@
           "isForced": {
             "type": "boolean"
           },
+          "isHearingImpaired": {
+            "type": "boolean"
+          },
           "index": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -12171,6 +13059,9 @@
         "type": "integer"
       },
       "SubtitleFontSize": {
+        "type": "integer"
+      },
+      "SubtitlePreference": {
         "type": "integer"
       },
       "TaskTypeCountDto": {
@@ -12250,6 +13141,32 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "TrackSelectionPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "preferredAudioLanguage": {
+            "type": "string"
+          },
+          "fallbackAudioLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitleWhenPreferredAudio": {
+            "$ref": "#/components/schemas/SubtitlePreference"
+          },
+          "subtitleLanguageWhenPreferredAudio": {
+            "type": "string"
+          },
+          "subtitleWhenOtherAudio": {
+            "$ref": "#/components/schemas/SubtitlePreference"
+          },
+          "subtitleLanguageWhenOtherAudio": {
+            "type": "string"
           }
         }
       },
@@ -12341,7 +13258,7 @@
       "UpdateContentRestrictionProfileRequest": {
         "required": [
           "name",
-          "rules"
+          "ruleFilter"
         ],
         "type": "object",
         "properties": {
@@ -12354,14 +13271,8 @@
               "string"
             ]
           },
-          "matchCondition": {
-            "$ref": "#/components/schemas/RestrictionMatchCondition"
-          },
-          "rules": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ContentRestrictionRuleRequest"
-            }
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
           }
         }
       },
@@ -12439,11 +13350,172 @@
           }
         }
       },
+      "UpdateMediaMetadataRequest": {
+        "type": "object",
+        "properties": {
+          "lockedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "releaseDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "genres": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "tagline": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "overview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originalLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contentRating": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "budget": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "revenue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "network": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "airDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "runtime": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "biography": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "country": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "trackNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lyrics": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lyricsLrc": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdEditDto"
+            }
+          }
+        }
+      },
       "UpdateNotificationRuleRequest": {
         "required": [
           "name",
           "providerType",
-          "eventTypeName",
+          "payloadFormat",
+          "eventTypeNames",
           "providerConfig"
         ],
         "type": "object",
@@ -12454,32 +13526,110 @@
           "providerType": {
             "type": "string"
           },
-          "eventTypeName": {
+          "payloadFormat": {
             "type": "string"
+          },
+          "eventTypeNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "providerConfig": {
             "type": "string"
           },
-          "payloadTemplate": {
+          "titleTemplate": {
             "type": [
               "null",
               "string"
             ]
           },
-          "conditions": {
+          "bodyTemplate": {
             "type": [
               "null",
               "string"
             ]
           },
-          "conditionsLogic": {
+          "rawJsonTemplate": {
             "type": [
               "null",
               "string"
+            ]
+          },
+          "ruleFilter": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RuleGroupDto"
+              }
             ]
           },
           "isEnabled": {
             "type": "boolean"
+          }
+        }
+      },
+      "UpdatePersonMetadataRequest": {
+        "type": "object",
+        "properties": {
+          "lockedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gender": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PersonGender"
+              }
+            ]
+          },
+          "biography": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "birthday": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "deathday": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "birthPlace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "externalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdEditDto"
+            }
           }
         }
       },
@@ -12594,14 +13744,8 @@
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
           },
-          "matchCondition": {
-            "$ref": "#/components/schemas/SmartPlaylistMatchCondition"
-          },
-          "rules": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SmartPlaylistRuleRequest"
-            }
+          "ruleFilter": {
+            "$ref": "#/components/schemas/RuleGroupDto"
           },
           "limit": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",

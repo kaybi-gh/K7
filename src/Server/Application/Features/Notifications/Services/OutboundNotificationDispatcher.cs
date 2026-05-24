@@ -3,7 +3,6 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities.Notifications;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Interfaces;
-using K7.Server.Domain.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -38,13 +37,15 @@ public class OutboundNotificationDispatcher
     {
         var rules = await _context.NotificationRules
             .AsNoTracking()
-            .Where(r => r.IsEnabled && r.EventTypeName == eventTypeName)
+            .Where(r => r.IsEnabled)
             .ToListAsync(cancellationToken);
 
-        if (rules.Count == 0)
+        var matchingRules = rules.Where(r => r.EventTypeNames.Contains(eventTypeName)).ToList();
+
+        if (matchingRules.Count == 0)
             return;
 
-        foreach (var rule in rules)
+        foreach (var rule in matchingRules)
         {
             try
             {
@@ -62,15 +63,14 @@ public class OutboundNotificationDispatcher
         IReadOnlyDictionary<string, object?> eventData,
         CancellationToken cancellationToken)
     {
-        var conditions = DeserializeConditions(rule.Conditions);
-
-        if (!_conditionEvaluator.Evaluate(conditions, rule.ConditionsLogic, eventData))
+        if (!_conditionEvaluator.Evaluate(rule.RuleFilter, eventData))
         {
             _logger.LogDebug("Notification rule {RuleId} conditions not met, skipping", rule.Id);
             return;
         }
 
-        var payload = _payloadRenderer.Render(rule.PayloadTemplate, eventData);
+        var enrichedData = EnrichWithGlobals(eventData);
+        var payload = BuildPayload(rule, enrichedData);
         var provider = ResolveProvider(rule.ProviderType);
 
         var success = await provider.SendAsync(rule.ProviderConfig, payload, cancellationToken);
@@ -87,17 +87,21 @@ public class OutboundNotificationDispatcher
         }
     }
 
+    private string BuildPayload(NotificationRule rule, IReadOnlyDictionary<string, object?> eventData)
+    {
+        if (rule.PayloadFormat == NotificationPayloadFormat.RawJson)
+        {
+            return _payloadRenderer.Render(rule.RawJsonTemplate, eventData);
+        }
+
+        var title = _payloadRenderer.Render(rule.TitleTemplate, eventData);
+        var body = _payloadRenderer.Render(rule.BodyTemplate, eventData);
+        return JsonSerializer.Serialize(new { title, body }, JsonOptions);
+    }
+
     private INotificationProvider ResolveProvider(NotificationProviderType providerType)
     {
         return _serviceProvider.GetRequiredKeyedService<INotificationProvider>(providerType);
-    }
-
-    private static IReadOnlyList<NotificationCondition> DeserializeConditions(string? conditionsJson)
-    {
-        if (string.IsNullOrWhiteSpace(conditionsJson))
-            return [];
-
-        return JsonSerializer.Deserialize<List<NotificationCondition>>(conditionsJson, JsonOptions) ?? [];
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -105,4 +109,21 @@ public class OutboundNotificationDispatcher
         PropertyNameCaseInsensitive = true,
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
     };
+
+    private static IReadOnlyDictionary<string, object?> EnrichWithGlobals(IReadOnlyDictionary<string, object?> eventData)
+    {
+        var now = DateTime.UtcNow;
+        var enriched = new Dictionary<string, object?>(eventData, StringComparer.OrdinalIgnoreCase)
+        {
+            ["Current.Year"] = now.Year,
+            ["Current.Month"] = now.Month,
+            ["Current.Day"] = now.Day,
+            ["Current.Hour"] = now.Hour,
+            ["Current.Minute"] = now.Minute,
+            ["Current.Weekday"] = now.DayOfWeek.ToString(),
+            ["Current.Datestamp"] = now.ToString("yyyy-MM-dd"),
+            ["Current.Timestamp"] = now.ToString("o"),
+        };
+        return enriched;
+    }
 }

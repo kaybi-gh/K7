@@ -1,5 +1,6 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
@@ -60,14 +61,14 @@ public partial class AdminRestrictionProfileDialog
 
     private static string FormatOperator(RestrictionOperator op) => op switch
     {
-        RestrictionOperator.Equals => "est égal à",
-        RestrictionOperator.NotEquals => "n'est pas égal à",
+        RestrictionOperator.Equals => "est egal a",
+        RestrictionOperator.NotEquals => "n'est pas egal a",
         RestrictionOperator.Contains => "contient",
         RestrictionOperator.NotContains => "ne contient pas",
-        RestrictionOperator.GreaterThan => "supérieur à",
-        RestrictionOperator.LessThan => "inférieur à",
-        RestrictionOperator.GreaterThanOrEqual => "supérieur ou égal à",
-        RestrictionOperator.LessThanOrEqual => "inférieur ou égal à",
+        RestrictionOperator.GreaterThan => "superieur a",
+        RestrictionOperator.LessThan => "inferieur a",
+        RestrictionOperator.GreaterThanOrEqual => "superieur ou egal a",
+        RestrictionOperator.LessThanOrEqual => "inferieur ou egal a",
         RestrictionOperator.IsEmpty => "est vide",
         RestrictionOperator.IsNotEmpty => "n'est pas vide",
         _ => op.ToString()
@@ -80,12 +81,7 @@ public partial class AdminRestrictionProfileDialog
         _saving = true;
         try
         {
-            var rules = Rules.Select(r => new ContentRestrictionRuleRequest
-            {
-                Field = r.Field,
-                Operator = r.Operator,
-                Value = r.Value
-            }).ToList();
+            var ruleFilter = BuildRuleGroupDto();
 
             if (IsNew)
             {
@@ -93,10 +89,9 @@ public partial class AdminRestrictionProfileDialog
                 {
                     Name = Name,
                     Description = Description,
-                    MatchCondition = MatchCondition,
-                    Rules = rules
+                    RuleFilter = ruleFilter
                 });
-                Snackbar.Add("Profil créé.", K7Severity.Success);
+                Snackbar.Add("Profil cree.", K7Severity.Success);
             }
             else
             {
@@ -104,10 +99,9 @@ public partial class AdminRestrictionProfileDialog
                 {
                     Name = Name,
                     Description = Description,
-                    MatchCondition = MatchCondition,
-                    Rules = rules
+                    RuleFilter = ruleFilter
                 });
-                Snackbar.Add("Profil mis à jour.", K7Severity.Success);
+                Snackbar.Add("Profil mis a jour.", K7Severity.Success);
             }
             Dialog.Close(K7DialogResult.Ok(true));
         }
@@ -127,4 +121,35 @@ public partial class AdminRestrictionProfileDialog
         public RestrictionOperator Operator { get; set; }
         public string? Value { get; set; }
     }
+
+    private RuleGroupDto BuildRuleGroupDto()
+    {
+        return new RuleGroupDto
+        {
+            MatchCondition = MatchCondition == RestrictionMatchCondition.All
+                ? RuleMatchCondition.All
+                : RuleMatchCondition.Any,
+            Items = Rules.Select(r => (RuleGroupItemDto)new ConditionRuleItemDto
+            {
+                Field = r.Field.ToString(),
+                Operator = MapToRuleOperator(r.Operator),
+                Value = r.Value
+            }).ToList()
+        };
+    }
+
+    private static RuleOperator MapToRuleOperator(RestrictionOperator op) => op switch
+    {
+        RestrictionOperator.Equals => RuleOperator.Equals,
+        RestrictionOperator.NotEquals => RuleOperator.NotEquals,
+        RestrictionOperator.Contains => RuleOperator.Contains,
+        RestrictionOperator.NotContains => RuleOperator.NotContains,
+        RestrictionOperator.GreaterThan => RuleOperator.GreaterThan,
+        RestrictionOperator.LessThan => RuleOperator.LessThan,
+        RestrictionOperator.GreaterThanOrEqual => RuleOperator.GreaterThanOrEqual,
+        RestrictionOperator.LessThanOrEqual => RuleOperator.LessThanOrEqual,
+        RestrictionOperator.IsEmpty => RuleOperator.IsEmpty,
+        RestrictionOperator.IsNotEmpty => RuleOperator.IsNotEmpty,
+        _ => RuleOperator.Equals
+    };
 }

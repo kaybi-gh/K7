@@ -12,13 +12,7 @@ public static class RestrictionMappings
             Id = domain.Id,
             Name = domain.Name,
             Description = domain.Description,
-            MatchCondition = domain.MatchCondition,
-            Rules = domain.Rules.Select(r => new ContentRestrictionRuleDto
-            {
-                Field = r.Field,
-                Operator = r.Operator,
-                Value = r.Value
-            }).ToList(),
+            RuleFilter = domain.RuleFilter.ToRuleGroupDto(),
             UserCount = domain.Users.Count
         };
     }

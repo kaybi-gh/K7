@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Notifications.Queries.GetNotificationRule;
 using K7.Server.Domain.Constants;
 using K7.Shared.Dtos.Notifications;
@@ -21,11 +22,13 @@ public class GetNotificationRule : IEndpoint
                 Name = rule.Name,
                 IsEnabled = rule.IsEnabled,
                 ProviderType = rule.ProviderType.ToString(),
-                EventTypeName = rule.EventTypeName,
+                PayloadFormat = rule.PayloadFormat.ToString(),
+                EventTypeNames = rule.EventTypeNames,
                 ProviderConfig = rule.ProviderConfig,
-                PayloadTemplate = rule.PayloadTemplate,
-                Conditions = rule.Conditions,
-                ConditionsLogic = rule.ConditionsLogic,
+                TitleTemplate = rule.TitleTemplate,
+                BodyTemplate = rule.BodyTemplate,
+                RawJsonTemplate = rule.RawJsonTemplate,
+                RuleFilter = rule.RuleFilter?.ToRuleGroupDto(),
                 Created = rule.Created,
                 LastModified = rule.LastModified
             };

@@ -1,6 +1,7 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
@@ -13,8 +14,7 @@ public partial class SmartPlaylistDialog
     [Parameter] public string? InitialTitle { get; set; }
     [Parameter] public string? InitialDescription { get; set; }
     [Parameter] public MediaType InitialMediaType { get; set; } = MediaType.MusicTrack;
-    [Parameter] public SmartPlaylistMatchCondition InitialMatchCondition { get; set; } = SmartPlaylistMatchCondition.All;
-    [Parameter] public List<SmartPlaylistRuleDto>? InitialRules { get; set; }
+    [Parameter] public RuleGroupDto? InitialRuleFilter { get; set; }
     [Parameter] public int? InitialLimit { get; set; }
     [Parameter] public SmartPlaylistOrderBy InitialOrderBy { get; set; } = SmartPlaylistOrderBy.DateAdded;
     [Parameter] public bool InitialOrderDescending { get; set; } = true;
@@ -36,16 +36,22 @@ public partial class SmartPlaylistDialog
         _title = InitialTitle ?? "";
         _description = InitialDescription;
         _mediaType = InitialMediaType;
-        _matchCondition = InitialMatchCondition;
         _limit = InitialLimit;
         _orderBy = InitialOrderBy;
         _orderDescending = InitialOrderDescending;
-        _rules = InitialRules?.Select(r => new RuleViewModel
+
+        if (InitialRuleFilter is not null)
         {
-            Field = r.Field,
-            Operator = r.Operator,
-            Value = r.Value
-        }).ToList() ?? [];
+            _matchCondition = InitialRuleFilter.MatchCondition == RuleMatchCondition.All
+                ? SmartPlaylistMatchCondition.All
+                : SmartPlaylistMatchCondition.Any;
+            _rules = InitialRuleFilter.Items.OfType<ConditionRuleItemDto>().Select(r => new RuleViewModel
+            {
+                Field = Enum.TryParse<SmartPlaylistField>(r.Field, out var f) ? f : SmartPlaylistField.Title,
+                Operator = MapToLegacyOperator(r.Operator),
+                Value = r.Value
+            }).ToList();
+        }
     }
 
     private void AddRule()
@@ -76,12 +82,7 @@ public partial class SmartPlaylistDialog
         _isSubmitting = true;
         try
         {
-            var rules = _rules.Select(r => new SmartPlaylistRuleRequest
-            {
-                Field = r.Field,
-                Operator = r.Operator,
-                Value = r.Value
-            }).ToList();
+            var ruleFilter = BuildRuleGroupDto();
 
             if (_isEdit)
             {
@@ -90,8 +91,7 @@ public partial class SmartPlaylistDialog
                     Title = _title.Trim(),
                     Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
                     MediaType = _mediaType,
-                    MatchCondition = _matchCondition,
-                    Rules = rules,
+                    RuleFilter = ruleFilter,
                     Limit = _limit,
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
@@ -106,8 +106,7 @@ public partial class SmartPlaylistDialog
                     Title = _title.Trim(),
                     Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
                     MediaType = _mediaType,
-                    MatchCondition = _matchCondition,
-                    Rules = rules,
+                    RuleFilter = ruleFilter,
                     Limit = _limit,
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
@@ -260,4 +259,46 @@ public partial class SmartPlaylistDialog
         public SmartPlaylistOperator Operator { get; set; }
         public string? Value { get; set; }
     }
+
+    private RuleGroupDto BuildRuleGroupDto() => new()
+    {
+        MatchCondition = _matchCondition == SmartPlaylistMatchCondition.All
+            ? RuleMatchCondition.All : RuleMatchCondition.Any,
+        Items = _rules.Select<RuleViewModel, RuleGroupItemDto>(r => new ConditionRuleItemDto
+        {
+            Field = r.Field.ToString(),
+            Operator = MapToRuleOperator(r.Operator),
+            Value = r.Value
+        }).ToList()
+    };
+
+    private static RuleOperator MapToRuleOperator(SmartPlaylistOperator op) => op switch
+    {
+        SmartPlaylistOperator.Equals => RuleOperator.Equals,
+        SmartPlaylistOperator.NotEquals => RuleOperator.NotEquals,
+        SmartPlaylistOperator.Contains => RuleOperator.Contains,
+        SmartPlaylistOperator.GreaterThan => RuleOperator.GreaterThan,
+        SmartPlaylistOperator.LessThan => RuleOperator.LessThan,
+        SmartPlaylistOperator.GreaterThanOrEqual => RuleOperator.GreaterThanOrEqual,
+        SmartPlaylistOperator.LessThanOrEqual => RuleOperator.LessThanOrEqual,
+        SmartPlaylistOperator.InLast => RuleOperator.InLast,
+        SmartPlaylistOperator.IsEmpty => RuleOperator.IsEmpty,
+        SmartPlaylistOperator.IsNotEmpty => RuleOperator.IsNotEmpty,
+        _ => RuleOperator.Equals
+    };
+
+    private static SmartPlaylistOperator MapToLegacyOperator(RuleOperator op) => op switch
+    {
+        RuleOperator.Equals => SmartPlaylistOperator.Equals,
+        RuleOperator.NotEquals => SmartPlaylistOperator.NotEquals,
+        RuleOperator.Contains => SmartPlaylistOperator.Contains,
+        RuleOperator.GreaterThan => SmartPlaylistOperator.GreaterThan,
+        RuleOperator.LessThan => SmartPlaylistOperator.LessThan,
+        RuleOperator.GreaterThanOrEqual => SmartPlaylistOperator.GreaterThanOrEqual,
+        RuleOperator.LessThanOrEqual => SmartPlaylistOperator.LessThanOrEqual,
+        RuleOperator.InLast => SmartPlaylistOperator.InLast,
+        RuleOperator.IsEmpty => SmartPlaylistOperator.IsEmpty,
+        RuleOperator.IsNotEmpty => SmartPlaylistOperator.IsNotEmpty,
+        _ => SmartPlaylistOperator.Equals
+    };
 }

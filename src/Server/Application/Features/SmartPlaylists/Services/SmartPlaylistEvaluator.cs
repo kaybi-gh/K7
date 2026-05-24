@@ -3,7 +3,9 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Playlists;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
+using K7.Server.Domain.ValueObjects;
 
 namespace K7.Server.Application.Features.SmartPlaylists.Services;
 
@@ -16,23 +18,12 @@ public static class SmartPlaylistEvaluator
     {
         query = query.Where(m => m.Type == smartPlaylist.MediaType);
 
-        if (smartPlaylist.Rules.Count == 0)
+        var filter = smartPlaylist.RuleFilter;
+        if (filter.Items.Count == 0)
             return ApplyOrdering(query, smartPlaylist);
 
-        if (smartPlaylist.MatchCondition == SmartPlaylistMatchCondition.All)
-        {
-            foreach (var rule in smartPlaylist.Rules)
-                query = query.Where(BuildPredicate(rule, userId));
-        }
-        else
-        {
-            var predicates = smartPlaylist.Rules
-                .Select(r => BuildPredicate(r, userId))
-                .ToList();
-
-            var combined = predicates.Aggregate((a, b) => CombineOr(a, b));
-            query = query.Where(combined);
-        }
+        var predicate = BuildGroupPredicate(filter, userId);
+        query = query.Where(predicate);
 
         query = ApplyOrdering(query, smartPlaylist);
 
@@ -42,111 +33,139 @@ public static class SmartPlaylistEvaluator
         return query;
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildPredicate(SmartPlaylistRule rule, Guid userId)
+    private static Expression<Func<BaseMedia, bool>> BuildGroupPredicate(RuleGroup group, Guid userId)
+    {
+        var predicates = new List<Expression<Func<BaseMedia, bool>>>();
+
+        foreach (var item in group.Items)
+        {
+            var predicate = item switch
+            {
+                ConditionRuleItem rule => BuildRulePredicate(rule, userId),
+                NestedGroupItem nested => BuildGroupPredicate(
+                    new RuleGroup { MatchCondition = nested.MatchCondition, Items = nested.Items }, userId),
+                _ => (Expression<Func<BaseMedia, bool>>)(_ => true)
+            };
+            predicates.Add(predicate);
+        }
+
+        if (predicates.Count == 0)
+            return _ => true;
+
+        return group.MatchCondition == RuleMatchCondition.All
+            ? predicates.Aggregate(CombineAnd)
+            : predicates.Aggregate(CombineOr);
+    }
+
+    private static Expression<Func<BaseMedia, bool>> BuildRulePredicate(ConditionRuleItem rule, Guid userId)
     {
         return rule.Field switch
         {
-            SmartPlaylistField.Title => BuildStringPredicate(m => m.Title!, rule),
-            SmartPlaylistField.Genre => BuildGenrePredicate(rule),
-            SmartPlaylistField.Year => BuildYearPredicate(rule),
-            SmartPlaylistField.Rating => BuildRatingPredicate(rule, userId),
-            SmartPlaylistField.PlayCount => BuildPlayCountPredicate(rule, userId),
-            SmartPlaylistField.DateAdded => BuildDatePredicate(m => m.Created, rule),
-            SmartPlaylistField.LastPlayed => BuildLastPlayedPredicate(rule, userId),
-            SmartPlaylistField.IsCompleted => BuildIsCompletedPredicate(rule, userId),
-            SmartPlaylistField.ArtistName => BuildArtistNamePredicate(rule),
-            SmartPlaylistField.AlbumTitle => BuildAlbumTitlePredicate(rule),
-            SmartPlaylistField.TrackNumber => BuildNullableIntPredicate(m => ((MusicTrack)m).TrackNumber, rule),
-            SmartPlaylistField.DiscNumber => BuildNullableIntPredicate(m => ((MusicTrack)m).DiscNumber, rule),
-            SmartPlaylistField.Bpm => BuildNullableDoublePredicate(m => ((MusicTrack)m).AudioAnalysis!.Bpm, rule),
-            SmartPlaylistField.Duration => BuildDurationPredicate(rule),
-            SmartPlaylistField.OriginalLanguage => BuildStringPredicate(m => ((Movie)m).OriginalLanguage!, rule),
+            nameof(SmartPlaylistField.Title) => BuildStringPredicate(m => m.Title!, rule),
+            nameof(SmartPlaylistField.Genre) => BuildGenrePredicate(rule),
+            nameof(SmartPlaylistField.Year) => BuildYearPredicate(rule),
+            nameof(SmartPlaylistField.Rating) => BuildRatingPredicate(rule, userId),
+            nameof(SmartPlaylistField.PlayCount) => BuildPlayCountPredicate(rule, userId),
+            nameof(SmartPlaylistField.DateAdded) => BuildDatePredicate(m => m.Created, rule),
+            nameof(SmartPlaylistField.LastPlayed) => BuildLastPlayedPredicate(rule, userId),
+            nameof(SmartPlaylistField.IsCompleted) => BuildIsCompletedPredicate(rule, userId),
+            nameof(SmartPlaylistField.ArtistName) => BuildArtistNamePredicate(rule),
+            nameof(SmartPlaylistField.AlbumTitle) => BuildAlbumTitlePredicate(rule),
+            nameof(SmartPlaylistField.TrackNumber) => BuildNullableIntPredicate(m => ((MusicTrack)m).TrackNumber, rule),
+            nameof(SmartPlaylistField.DiscNumber) => BuildNullableIntPredicate(m => ((MusicTrack)m).DiscNumber, rule),
+            nameof(SmartPlaylistField.Bpm) => BuildNullableDoublePredicate(m => ((MusicTrack)m).AudioAnalysis!.Bpm, rule),
+            nameof(SmartPlaylistField.Duration) => BuildDurationPredicate(rule),
+            nameof(SmartPlaylistField.OriginalLanguage) => BuildStringPredicate(m => ((Movie)m).OriginalLanguage!, rule),
             _ => _ => true
         };
     }
 
     private static Expression<Func<BaseMedia, bool>> BuildStringPredicate(
-        Expression<Func<BaseMedia, string>> selector, SmartPlaylistRule rule)
+        Expression<Func<BaseMedia, string>> selector, ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => Compose(selector, s => s != null && s == value),
-            SmartPlaylistOperator.NotEquals => Compose(selector, s => s == null || s != value),
-            SmartPlaylistOperator.Contains => Compose(selector, s => s != null && EF.Functions.Like(s, $"%{value}%")),
-            SmartPlaylistOperator.IsEmpty => Compose(selector, s => s == null || s == ""),
-            SmartPlaylistOperator.IsNotEmpty => Compose(selector, s => s != null && s != ""),
+            RuleOperator.Equals => Compose(selector, s => s != null && s == value),
+            RuleOperator.NotEquals => Compose(selector, s => s == null || s != value),
+            RuleOperator.Contains => Compose(selector, s => s != null && EF.Functions.Like(s, $"%{value}%")),
+            RuleOperator.NotContains => Compose(selector, s => s == null || !EF.Functions.Like(s, $"%{value}%")),
+            RuleOperator.BeginsWith => Compose(selector, s => s != null && EF.Functions.Like(s, $"{value}%")),
+            RuleOperator.EndsWith => Compose(selector, s => s != null && EF.Functions.Like(s, $"%{value}")),
+            RuleOperator.IsEmpty => Compose(selector, s => s == null || s == ""),
+            RuleOperator.IsNotEmpty => Compose(selector, s => s != null && s != ""),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildGenrePredicate(SmartPlaylistRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildGenrePredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => m.Genres.Any(g => g == value),
-            SmartPlaylistOperator.NotEquals => m => !m.Genres.Any(g => g == value),
-            SmartPlaylistOperator.Contains => m => m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
-            SmartPlaylistOperator.IsEmpty => m => !m.Genres.Any(),
-            SmartPlaylistOperator.IsNotEmpty => m => m.Genres.Any(),
+            RuleOperator.Equals => m => m.Genres.Any(g => g == value),
+            RuleOperator.NotEquals => m => !m.Genres.Any(g => g == value),
+            RuleOperator.Contains => m => m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
+            RuleOperator.NotContains => m => !m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")),
+            RuleOperator.IsEmpty => m => !m.Genres.Any(),
+            RuleOperator.IsNotEmpty => m => m.Genres.Any(),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildYearPredicate(SmartPlaylistRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildYearPredicate(ConditionRuleItem rule)
     {
         if (!int.TryParse(rule.Value, out var year)) return _ => true;
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year == year,
-            SmartPlaylistOperator.NotEquals => m => m.ReleaseDate == null || m.ReleaseDate.Value.Year != year,
-            SmartPlaylistOperator.GreaterThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year > year,
-            SmartPlaylistOperator.LessThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year < year,
-            SmartPlaylistOperator.GreaterThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year >= year,
-            SmartPlaylistOperator.LessThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year <= year,
+            RuleOperator.Equals => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year == year,
+            RuleOperator.NotEquals => m => m.ReleaseDate == null || m.ReleaseDate.Value.Year != year,
+            RuleOperator.GreaterThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year > year,
+            RuleOperator.LessThan => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year < year,
+            RuleOperator.GreaterThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year >= year,
+            RuleOperator.LessThanOrEqual => m => m.ReleaseDate != null && m.ReleaseDate.Value.Year <= year,
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildRatingPredicate(SmartPlaylistRule rule, Guid userId)
+    private static Expression<Func<BaseMedia, bool>> BuildRatingPredicate(ConditionRuleItem rule, Guid userId)
     {
         if (!double.TryParse(rule.Value, System.Globalization.CultureInfo.InvariantCulture, out var rating))
             return _ => true;
 
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value == rating),
-            SmartPlaylistOperator.NotEquals => m => !m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value == rating),
-            SmartPlaylistOperator.GreaterThan => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value > rating),
-            SmartPlaylistOperator.LessThan => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value < rating),
-            SmartPlaylistOperator.GreaterThanOrEqual => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value >= rating),
-            SmartPlaylistOperator.LessThanOrEqual => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value <= rating),
-            SmartPlaylistOperator.IsEmpty => m => !m.Ratings.Any(r => r.Source == RatingSource.LocalUser),
-            SmartPlaylistOperator.IsNotEmpty => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser),
+            RuleOperator.Equals => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value == rating),
+            RuleOperator.NotEquals => m => !m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value == rating),
+            RuleOperator.GreaterThan => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value > rating),
+            RuleOperator.LessThan => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value < rating),
+            RuleOperator.GreaterThanOrEqual => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value >= rating),
+            RuleOperator.LessThanOrEqual => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser && r.Value <= rating),
+            RuleOperator.IsEmpty => m => !m.Ratings.Any(r => r.Source == RatingSource.LocalUser),
+            RuleOperator.IsNotEmpty => m => m.Ratings.Any(r => r.Source == RatingSource.LocalUser),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildPlayCountPredicate(SmartPlaylistRule rule, Guid userId)
+    private static Expression<Func<BaseMedia, bool>> BuildPlayCountPredicate(ConditionRuleItem rule, Guid userId)
     {
         if (!int.TryParse(rule.Value, out var count)) return _ => true;
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount == count),
-            SmartPlaylistOperator.NotEquals => m => !m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount == count),
-            SmartPlaylistOperator.GreaterThan => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount > count),
-            SmartPlaylistOperator.LessThan => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount < count) || !m.UserMediaStates.Any(s => s.UserId == userId),
-            SmartPlaylistOperator.GreaterThanOrEqual => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount >= count),
-            SmartPlaylistOperator.LessThanOrEqual => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount <= count) || !m.UserMediaStates.Any(s => s.UserId == userId),
+            RuleOperator.Equals => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount == count),
+            RuleOperator.NotEquals => m => !m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount == count),
+            RuleOperator.GreaterThan => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount > count),
+            RuleOperator.LessThan => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount < count) || !m.UserMediaStates.Any(s => s.UserId == userId),
+            RuleOperator.GreaterThanOrEqual => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount >= count),
+            RuleOperator.LessThanOrEqual => m => m.UserMediaStates.Any(s => s.UserId == userId && s.PlayCount <= count) || !m.UserMediaStates.Any(s => s.UserId == userId),
             _ => _ => true
         };
     }
 
     private static Expression<Func<BaseMedia, bool>> BuildDatePredicate(
-        Expression<Func<BaseMedia, DateTimeOffset>> selector, SmartPlaylistRule rule)
+        Expression<Func<BaseMedia, DateTimeOffset>> selector, ConditionRuleItem rule)
     {
-        if (rule.Operator == SmartPlaylistOperator.InLast && int.TryParse(rule.Value, out var days))
+        if (rule.Operator == RuleOperator.InLast && int.TryParse(rule.Value, out var days))
         {
             var threshold = DateTimeOffset.UtcNow.AddDays(-days);
             return Compose(selector, d => d >= threshold);
@@ -154,91 +173,91 @@ public static class SmartPlaylistEvaluator
         return _ => true;
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildLastPlayedPredicate(SmartPlaylistRule rule, Guid userId)
+    private static Expression<Func<BaseMedia, bool>> BuildLastPlayedPredicate(ConditionRuleItem rule, Guid userId)
     {
-        if (rule.Operator == SmartPlaylistOperator.InLast && int.TryParse(rule.Value, out var days))
+        if (rule.Operator == RuleOperator.InLast && int.TryParse(rule.Value, out var days))
         {
             var threshold = DateTime.UtcNow.AddDays(-days);
             return m => m.UserMediaStates.Any(s => s.UserId == userId && s.LastInteractedAt >= threshold);
         }
-        if (rule.Operator == SmartPlaylistOperator.IsEmpty)
+        if (rule.Operator == RuleOperator.IsEmpty)
             return m => !m.UserMediaStates.Any(s => s.UserId == userId && s.LastInteractedAt != null);
-        if (rule.Operator == SmartPlaylistOperator.IsNotEmpty)
+        if (rule.Operator == RuleOperator.IsNotEmpty)
             return m => m.UserMediaStates.Any(s => s.UserId == userId && s.LastInteractedAt != null);
         return _ => true;
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildIsCompletedPredicate(SmartPlaylistRule rule, Guid userId)
+    private static Expression<Func<BaseMedia, bool>> BuildIsCompletedPredicate(ConditionRuleItem rule, Guid userId)
     {
         var isCompleted = rule.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false;
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => isCompleted
+            RuleOperator.Equals => isCompleted
                 ? m => m.UserMediaStates.Any(s => s.UserId == userId && s.IsCompleted)
                 : m => !m.UserMediaStates.Any(s => s.UserId == userId && s.IsCompleted),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildArtistNamePredicate(SmartPlaylistRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildArtistNamePredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => ((MusicTrack)m).Artist!.Title == value || ((MusicTrack)m).Album!.Artist!.Title == value,
-            SmartPlaylistOperator.NotEquals => m => ((MusicTrack)m).Artist!.Title != value && ((MusicTrack)m).Album!.Artist!.Title != value,
-            SmartPlaylistOperator.Contains => m => EF.Functions.Like(((MusicTrack)m).Artist!.Title!, $"%{value}%") || EF.Functions.Like(((MusicTrack)m).Album!.Artist!.Title!, $"%{value}%"),
+            RuleOperator.Equals => m => ((MusicTrack)m).Artist!.Title == value || ((MusicTrack)m).Album!.Artist!.Title == value,
+            RuleOperator.NotEquals => m => ((MusicTrack)m).Artist!.Title != value && ((MusicTrack)m).Album!.Artist!.Title != value,
+            RuleOperator.Contains => m => EF.Functions.Like(((MusicTrack)m).Artist!.Title!, $"%{value}%") || EF.Functions.Like(((MusicTrack)m).Album!.Artist!.Title!, $"%{value}%"),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildAlbumTitlePredicate(SmartPlaylistRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildAlbumTitlePredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => ((MusicTrack)m).Album.Title == value,
-            SmartPlaylistOperator.NotEquals => m => ((MusicTrack)m).Album.Title != value,
-            SmartPlaylistOperator.Contains => m => EF.Functions.Like(((MusicTrack)m).Album.Title!, $"%{value}%"),
+            RuleOperator.Equals => m => ((MusicTrack)m).Album.Title == value,
+            RuleOperator.NotEquals => m => ((MusicTrack)m).Album.Title != value,
+            RuleOperator.Contains => m => EF.Functions.Like(((MusicTrack)m).Album.Title!, $"%{value}%"),
             _ => _ => true
         };
     }
 
     private static Expression<Func<BaseMedia, bool>> BuildNullableIntPredicate(
-        Expression<Func<BaseMedia, int?>> selector, SmartPlaylistRule rule)
+        Expression<Func<BaseMedia, int?>> selector, ConditionRuleItem rule)
     {
         if (!int.TryParse(rule.Value, out var val)) return _ => true;
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => Compose(selector, n => n != null && n.Value == val),
-            SmartPlaylistOperator.NotEquals => Compose(selector, n => n == null || n.Value != val),
-            SmartPlaylistOperator.GreaterThan => Compose(selector, n => n != null && n.Value > val),
-            SmartPlaylistOperator.LessThan => Compose(selector, n => n != null && n.Value < val),
-            SmartPlaylistOperator.GreaterThanOrEqual => Compose(selector, n => n != null && n.Value >= val),
-            SmartPlaylistOperator.LessThanOrEqual => Compose(selector, n => n != null && n.Value <= val),
+            RuleOperator.Equals => Compose(selector, n => n != null && n.Value == val),
+            RuleOperator.NotEquals => Compose(selector, n => n == null || n.Value != val),
+            RuleOperator.GreaterThan => Compose(selector, n => n != null && n.Value > val),
+            RuleOperator.LessThan => Compose(selector, n => n != null && n.Value < val),
+            RuleOperator.GreaterThanOrEqual => Compose(selector, n => n != null && n.Value >= val),
+            RuleOperator.LessThanOrEqual => Compose(selector, n => n != null && n.Value <= val),
             _ => _ => true
         };
     }
 
     private static Expression<Func<BaseMedia, bool>> BuildNullableDoublePredicate(
-        Expression<Func<BaseMedia, double?>> selector, SmartPlaylistRule rule)
+        Expression<Func<BaseMedia, double?>> selector, ConditionRuleItem rule)
     {
         if (!double.TryParse(rule.Value, System.Globalization.CultureInfo.InvariantCulture, out var val))
             return _ => true;
 
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => Compose(selector, n => n != null && n.Value == val),
-            SmartPlaylistOperator.NotEquals => Compose(selector, n => n == null || n.Value != val),
-            SmartPlaylistOperator.GreaterThan => Compose(selector, n => n != null && n.Value > val),
-            SmartPlaylistOperator.LessThan => Compose(selector, n => n != null && n.Value < val),
-            SmartPlaylistOperator.GreaterThanOrEqual => Compose(selector, n => n != null && n.Value >= val),
-            SmartPlaylistOperator.LessThanOrEqual => Compose(selector, n => n != null && n.Value <= val),
+            RuleOperator.Equals => Compose(selector, n => n != null && n.Value == val),
+            RuleOperator.NotEquals => Compose(selector, n => n == null || n.Value != val),
+            RuleOperator.GreaterThan => Compose(selector, n => n != null && n.Value > val),
+            RuleOperator.LessThan => Compose(selector, n => n != null && n.Value < val),
+            RuleOperator.GreaterThanOrEqual => Compose(selector, n => n != null && n.Value >= val),
+            RuleOperator.LessThanOrEqual => Compose(selector, n => n != null && n.Value <= val),
             _ => _ => true
         };
     }
 
-    private static Expression<Func<BaseMedia, bool>> BuildDurationPredicate(SmartPlaylistRule rule)
+    private static Expression<Func<BaseMedia, bool>> BuildDurationPredicate(ConditionRuleItem rule)
     {
         if (!double.TryParse(rule.Value, System.Globalization.CultureInfo.InvariantCulture, out var seconds))
             return _ => true;
@@ -246,11 +265,11 @@ public static class SmartPlaylistEvaluator
         var duration = TimeSpan.FromSeconds(seconds);
         return rule.Operator switch
         {
-            SmartPlaylistOperator.Equals => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration == duration),
-            SmartPlaylistOperator.GreaterThan => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration > duration),
-            SmartPlaylistOperator.LessThan => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration < duration),
-            SmartPlaylistOperator.GreaterThanOrEqual => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration >= duration),
-            SmartPlaylistOperator.LessThanOrEqual => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration <= duration),
+            RuleOperator.Equals => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration == duration),
+            RuleOperator.GreaterThan => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration > duration),
+            RuleOperator.LessThan => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration < duration),
+            RuleOperator.GreaterThanOrEqual => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration >= duration),
+            RuleOperator.LessThanOrEqual => m => m.IndexedFiles.Any(f => ((AudioFileMetadata)f.FileMetadata!).Duration <= duration),
             _ => _ => true
         };
     }
@@ -299,6 +318,17 @@ public static class SmartPlaylistEvaluator
         var param = selector.Parameters[0];
         var body = Expression.Invoke(predicate, selector.Body);
         return Expression.Lambda<Func<TSource, bool>>(body, param);
+    }
+
+    private static Expression<Func<T, bool>> CombineAnd<T>(
+        Expression<Func<T, bool>> left,
+        Expression<Func<T, bool>> right)
+    {
+        var param = Expression.Parameter(typeof(T));
+        var body = Expression.AndAlso(
+            Expression.Invoke(left, param),
+            Expression.Invoke(right, param));
+        return Expression.Lambda<Func<T, bool>>(body, param);
     }
 
     private static Expression<Func<T, bool>> CombineOr<T>(

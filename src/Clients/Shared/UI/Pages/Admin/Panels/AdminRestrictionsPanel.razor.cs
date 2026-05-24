@@ -2,6 +2,7 @@ using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
@@ -54,11 +55,11 @@ public partial class AdminRestrictionsPanel
             { x => x.ProfileId, profile.Id },
             { x => x.Name, profile.Name },
             { x => x.Description, profile.Description },
-            { x => x.MatchCondition, profile.MatchCondition },
-            { x => x.Rules, profile.Rules.Select(r => new AdminRestrictionProfileDialog.RuleEntry
+            { x => x.MatchCondition, profile.RuleFilter.MatchCondition == RuleMatchCondition.All ? RestrictionMatchCondition.All : RestrictionMatchCondition.Any },
+            { x => x.Rules, profile.RuleFilter.Items.OfType<ConditionRuleItemDto>().Select(r => new AdminRestrictionProfileDialog.RuleEntry
             {
-                Field = r.Field,
-                Operator = r.Operator,
+                Field = Enum.TryParse<RestrictionField>(r.Field, out var f) ? f : RestrictionField.Genre,
+                Operator = MapToRestrictionOperator(r.Operator),
                 Value = r.Value
             }).ToList() }
         };
@@ -129,35 +130,38 @@ public partial class AdminRestrictionsPanel
         }
     }
 
-    private string FormatRule(ContentRestrictionRuleDto rule)
+    private string FormatRule(ConditionRuleItemDto rule)
     {
-        var field = rule.Field switch
+        var fieldEnum = Enum.TryParse<RestrictionField>(rule.Field, out var f) ? f : (RestrictionField?)null;
+        var field = fieldEnum switch
         {
             RestrictionField.Genre => L["FieldGenre"].Value,
             RestrictionField.ContentRating => L["FieldContentRating"].Value,
             RestrictionField.ReleaseYear => L["FieldReleaseYear"].Value,
-            _ => rule.Field.ToString()
+            _ => rule.Field
         };
         var op = rule.Operator switch
         {
-            RestrictionOperator.Equals => "=",
-            RestrictionOperator.NotEquals => "?",
-            RestrictionOperator.Contains => L["OperatorContains"].Value,
-            RestrictionOperator.NotContains => L["OperatorNotContains"].Value,
-            RestrictionOperator.GreaterThan => ">",
-            RestrictionOperator.LessThan => "<",
-            RestrictionOperator.GreaterThanOrEqual => "=",
-            RestrictionOperator.LessThanOrEqual => "=",
-            RestrictionOperator.IsEmpty => L["OperatorIsEmpty"].Value,
-            RestrictionOperator.IsNotEmpty => L["OperatorIsNotEmpty"].Value,
+            RuleOperator.Equals => "=",
+            RuleOperator.NotEquals => "!=",
+            RuleOperator.Contains => L["OperatorContains"].Value,
+            RuleOperator.NotContains => L["OperatorNotContains"].Value,
+            RuleOperator.GreaterThan => ">",
+            RuleOperator.LessThan => "<",
+            RuleOperator.GreaterThanOrEqual => ">=",
+            RuleOperator.LessThanOrEqual => "<=",
+            RuleOperator.IsEmpty => L["OperatorIsEmpty"].Value,
+            RuleOperator.IsNotEmpty => L["OperatorIsNotEmpty"].Value,
             _ => rule.Operator.ToString()
         };
-        if (rule.Operator is RestrictionOperator.IsEmpty or RestrictionOperator.IsNotEmpty)
+        if (rule.Operator is RuleOperator.IsEmpty or RuleOperator.IsNotEmpty)
             return $"{field} {op}";
         return $"{field} {op} {rule.Value}";
     }
 
-    public sealed record TemplateDefinition(string Name, string Description, RestrictionMatchCondition MatchCondition, List<ContentRestrictionRuleDto> Rules);
+    public sealed record TemplateDefinition(string Name, string Description, RestrictionMatchCondition MatchCondition, List<TemplateRule> Rules);
+
+    public sealed record TemplateRule(RestrictionField Field, RestrictionOperator Operator, string? Value = null);
 
     public static class Templates
     {
@@ -166,18 +170,18 @@ public partial class AdminRestrictionsPanel
             "TemplateChildFriendlyDesc",
             RestrictionMatchCondition.Any,
             [
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.IsEmpty },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "12" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "16" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "PG-13" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "R" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-14" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-MA" },
-                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horreur" },
-                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horror" },
-                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Thriller" },
+                new(RestrictionField.ContentRating, RestrictionOperator.IsEmpty),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "12"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "16"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "18"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "PG-13"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "R"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "NC-17"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "TV-14"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "TV-MA"),
+                new(RestrictionField.Genre, RestrictionOperator.Equals, "Horreur"),
+                new(RestrictionField.Genre, RestrictionOperator.Equals, "Horror"),
+                new(RestrictionField.Genre, RestrictionOperator.Equals, "Thriller"),
             ]);
 
         public static readonly TemplateDefinition Family12 = new(
@@ -185,11 +189,11 @@ public partial class AdminRestrictionsPanel
             "TemplateFamily12Desc",
             RestrictionMatchCondition.Any,
             [
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "16" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "R" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "TV-MA" },
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "16"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "18"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "R"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "NC-17"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "TV-MA"),
             ]);
 
         public static readonly TemplateDefinition Teen16 = new(
@@ -197,8 +201,8 @@ public partial class AdminRestrictionsPanel
             "TemplateTeen16Desc",
             RestrictionMatchCondition.Any,
             [
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "18" },
-                new() { Field = RestrictionField.ContentRating, Operator = RestrictionOperator.Equals, Value = "NC-17" },
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "18"),
+                new(RestrictionField.ContentRating, RestrictionOperator.Equals, "NC-17"),
             ]);
 
         public static readonly TemplateDefinition NoHorror = new(
@@ -206,9 +210,24 @@ public partial class AdminRestrictionsPanel
             "TemplateNoHorrorDesc",
             RestrictionMatchCondition.Any,
             [
-                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horreur" },
-                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Horror" },
-                new() { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals, Value = "Thriller" },
+                new(RestrictionField.Genre, RestrictionOperator.Equals, "Horreur"),
+                new(RestrictionField.Genre, RestrictionOperator.Equals, "Horror"),
+                new(RestrictionField.Genre, RestrictionOperator.Equals, "Thriller"),
             ]);
     }
+
+    private static RestrictionOperator MapToRestrictionOperator(RuleOperator op) => op switch
+    {
+        RuleOperator.Equals => RestrictionOperator.Equals,
+        RuleOperator.NotEquals => RestrictionOperator.NotEquals,
+        RuleOperator.Contains => RestrictionOperator.Contains,
+        RuleOperator.NotContains => RestrictionOperator.NotContains,
+        RuleOperator.GreaterThan => RestrictionOperator.GreaterThan,
+        RuleOperator.LessThan => RestrictionOperator.LessThan,
+        RuleOperator.GreaterThanOrEqual => RestrictionOperator.GreaterThanOrEqual,
+        RuleOperator.LessThanOrEqual => RestrictionOperator.LessThanOrEqual,
+        RuleOperator.IsEmpty => RestrictionOperator.IsEmpty,
+        RuleOperator.IsNotEmpty => RestrictionOperator.IsNotEmpty,
+        _ => RestrictionOperator.Equals
+    };
 }

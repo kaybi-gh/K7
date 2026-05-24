@@ -18,11 +18,13 @@ public class CreateNotificationRule : IEndpoint
             {
                 Name = request.Name,
                 ProviderType = request.ProviderType,
-                EventTypeName = request.EventTypeName,
+                PayloadFormat = request.PayloadFormat,
+                EventTypeNames = request.EventTypeNames,
                 ProviderConfig = request.ProviderConfig,
-                PayloadTemplate = request.PayloadTemplate,
-                Conditions = request.Conditions,
-                ConditionsLogic = request.ConditionsLogic,
+                TitleTemplate = request.TitleTemplate,
+                BodyTemplate = request.BodyTemplate,
+                RawJsonTemplate = request.RawJsonTemplate,
+                RuleFilter = request.RuleFilter,
                 IsEnabled = request.IsEnabled
             };
 

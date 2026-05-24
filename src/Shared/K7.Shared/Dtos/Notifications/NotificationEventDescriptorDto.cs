@@ -4,6 +4,9 @@ public sealed record NotificationEventDescriptorDto
 {
     public required string EventTypeName { get; init; }
     public required string DisplayName { get; init; }
+    public required string Category { get; init; }
+    public required string DefaultTitleTemplate { get; init; }
+    public required string DefaultBodyTemplate { get; init; }
     public required IReadOnlyList<NotificationParameterInfoDto> Parameters { get; init; }
 }
 

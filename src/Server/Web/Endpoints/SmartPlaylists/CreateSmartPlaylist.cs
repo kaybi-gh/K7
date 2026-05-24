@@ -19,13 +19,7 @@ public class CreateSmartPlaylist : IEndpoint
                 Title = request.Title,
                 Description = request.Description,
                 MediaType = request.MediaType,
-                MatchCondition = request.MatchCondition,
-                Rules = request.Rules.Select(r => new SmartPlaylistRuleCommand
-                {
-                    Field = r.Field,
-                    Operator = r.Operator,
-                    Value = r.Value
-                }).ToList(),
+                RuleFilter = request.RuleFilter,
                 Limit = request.Limit,
                 OrderBy = request.OrderBy,
                 OrderDescending = request.OrderDescending

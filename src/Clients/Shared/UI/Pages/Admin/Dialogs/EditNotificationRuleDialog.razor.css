@@ -1,0 +1,5 @@
+::deep .k7-paper--selected {
+    border-color: var(--color-accent);
+    border-width: 2px;
+    background-color: var(--color-accent-subtle);
+}

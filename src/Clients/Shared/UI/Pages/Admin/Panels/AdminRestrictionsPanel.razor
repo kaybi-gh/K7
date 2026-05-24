@@ -2,6 +2,7 @@
 @layout AdminLayout
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Restrictions
+@using K7.Shared.Dtos.Rules
 @inject IStringLocalizer<AdminRestrictionsPanel> L
 @inject IStringLocalizer<SharedResource> S
 
@@ -26,12 +27,10 @@
                    OnClick="OpenCreateDialog">@L["CreateProfile"]</K7Button>
     </ToolbarContent>
     <EmptyContent>
-        <div class="surface pa-8 d-flex flex-column align-center">
-            <K7Icon Name="prohibition" Size="lg" Color="secondary" />
-            <h6 Color="secondary" class="mt-4">@L["Empty"]</h6>
-            <p class="text-sm mt-2" Color="secondary">
-                @L["EmptyDescription"]
-            </p>
+        <div class="empty-state">
+            <K7Icon Icon="@Phosphor.Prohibit" Style="font-size: 64px; opacity: 0.3;" />
+            <h6 class="empty-state__title">@L["Empty"]</h6>
+            <p class="empty-state__hint">@L["EmptyDescription"]</p>
         </div>
     </EmptyContent>
     <GridTemplate Context="profile">
@@ -53,9 +52,9 @@
             <div class="k7-card-content">
                 <div class="d-flex flex-col">
                     <span class="text-caption" Color="secondary">
-                        @L["ConditionPrefix"] @(profile.MatchCondition == RestrictionMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
+                        @L["ConditionPrefix"] @(profile.RuleFilter.MatchCondition == RuleMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
                     </span>
-                    @foreach (var rule in profile.Rules)
+                    @foreach (var rule in profile.RuleFilter.Items.OfType<ConditionRuleItemDto>())
                     {
                         <K7Chip Size="sm" Color="default">
                             @FormatRule(rule)

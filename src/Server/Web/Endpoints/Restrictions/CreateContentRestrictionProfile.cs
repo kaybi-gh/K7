@@ -21,13 +21,7 @@ public class CreateContentRestrictionProfile : IEndpoint
             {
                 Name = request.Name,
                 Description = request.Description,
-                MatchCondition = request.MatchCondition,
-                Rules = request.Rules.Select(r => new ContentRestrictionRuleCommand
-                {
-                    Field = r.Field,
-                    Operator = r.Operator,
-                    Value = r.Value
-                }).ToList()
+                RuleFilter = request.RuleFilter
             }, cancellationToken);
 
             return Results.Created($"/api/restriction-profiles/{id}", id);
