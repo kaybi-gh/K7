@@ -38,5 +38,13 @@
   <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
   <data name="DeleteSuccess" xml:space="preserve"><value>Librairie « {0} » supprimée.</value></data>
   <data name="IssueCount" xml:space="preserve"><value>{0} probleme(s)</value></data>
+  <data name="StatFiles" xml:space="preserve"><value>fichier(s)</value></data>
+  <data name="StatMovies" xml:space="preserve"><value>film(s)</value></data>
+  <data name="StatSeries" xml:space="preserve"><value>serie(s)</value></data>
+  <data name="StatSeasons" xml:space="preserve"><value>saison(s)</value></data>
+  <data name="StatEpisodes" xml:space="preserve"><value>episode(s)</value></data>
+  <data name="StatArtists" xml:space="preserve"><value>artiste(s)</value></data>
+  <data name="StatAlbums" xml:space="preserve"><value>album(s)</value></data>
+  <data name="StatTracks" xml:space="preserve"><value>piste(s)</value></data>
 </root>
 

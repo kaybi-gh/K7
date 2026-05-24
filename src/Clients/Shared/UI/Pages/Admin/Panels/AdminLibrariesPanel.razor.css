@@ -1,0 +1,78 @@
+::deep .library-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+::deep .library-card__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+::deep .library-card__title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+::deep .library-card__path {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    overflow: hidden;
+}
+
+::deep .library-card__path span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+::deep .library-card__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+::deep .library-card__stat strong {
+    color: var(--color-text-primary);
+}
+
+::deep .library-card__issues {
+    align-self: flex-start;
+    cursor: pointer;
+}
+
+::deep .library-card__actions {
+    display: flex;
+    gap: 4px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 8px;
+    margin-top: auto;
+}
+
+::deep .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 4rem 1rem;
+}
+
+::deep .empty-state__title {
+    opacity: 0.5;
+}
+
+::deep .empty-state__hint {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}

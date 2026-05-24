@@ -19,6 +19,7 @@ public partial class AdminLibrariesPanel
     private bool _isLoading = true;
     private List<LibraryDto>? _libraries;
     private Dictionary<Guid, int> _libraryIssueCountMap = [];
+    private Dictionary<Guid, LibraryStatisticsDto> _libraryStatsMap = [];
 
     private IList<LibraryDto> _libraryItems => _libraries ?? [];
 
@@ -33,7 +34,7 @@ public partial class AdminLibrariesPanel
         try
         {
             _libraries = await K7ServerService.GetLibrariesAsync();
-            await LoadIssueCounts();
+            await Task.WhenAll(LoadIssueCounts(), LoadStatistics());
         }
         catch
         {
@@ -42,6 +43,19 @@ public partial class AdminLibrariesPanel
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task LoadStatistics()
+    {
+        try
+        {
+            var stats = await K7ServerService.GetLibraryStatisticsAsync();
+            _libraryStatsMap = stats.ToDictionary(s => s.LibraryId);
+        }
+        catch
+        {
+            _libraryStatsMap = [];
         }
     }
 
@@ -66,6 +80,21 @@ public partial class AdminLibrariesPanel
     private int GetIssueCount(Guid libraryId) =>
         _libraryIssueCountMap.GetValueOrDefault(libraryId);
 
+    private LibraryStatisticsDto? GetStats(Guid libraryId) =>
+        _libraryStatsMap.GetValueOrDefault(libraryId);
+
+    private string GetMediaTypeCountLabel(MediaType type) => type switch
+    {
+        MediaType.Movie => L["StatMovies"],
+        MediaType.Serie => L["StatSeries"],
+        MediaType.SerieSeason => L["StatSeasons"],
+        MediaType.SerieEpisode => L["StatEpisodes"],
+        MediaType.MusicArtist => L["StatArtists"],
+        MediaType.MusicAlbum => L["StatAlbums"],
+        MediaType.MusicTrack => L["StatTracks"],
+        _ => type.ToString()
+    };
+
     private void NavigateToDiagnostics(Guid libraryId) =>
         NavigationManager.NavigateTo($"/admin/diagnostics?libraryId={libraryId}");
 
@@ -88,10 +117,10 @@ public partial class AdminLibrariesPanel
 
     private static string GetMediaTypeIcon(LibraryMediaType type) => type switch
     {
-        LibraryMediaType.Movie => "film-strip",
-        LibraryMediaType.Serie => "television",
-        LibraryMediaType.Music => "music-note",
-        _ => "folder"
+        LibraryMediaType.Movie => Phosphor.FilmStrip,
+        LibraryMediaType.Serie => Phosphor.Television,
+        LibraryMediaType.Music => Phosphor.MusicNote,
+        _ => Phosphor.Folder
     };
 
     private string GetMediaTypeLabel(LibraryMediaType type) => type switch
