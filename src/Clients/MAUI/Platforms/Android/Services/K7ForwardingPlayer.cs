@@ -31,6 +31,23 @@ public class K7ForwardingPlayer : ForwardingPlayer
 
     public override bool HasPreviousMediaItem => _hasPrevious();
 
+    public override PlayerCommands AvailableCommands
+    {
+        get
+        {
+            // Media3 command constants: SEEK_TO_PREVIOUS=7, SEEK_TO_PREVIOUS_MEDIA_ITEM=8,
+            // SEEK_TO_NEXT=9, SEEK_TO_NEXT_MEDIA_ITEM=10
+            var commands = base.AvailableCommands;
+            return new PlayerCommands.Builder()
+                .AddAll(commands)!
+                .Add(7)!  // COMMAND_SEEK_TO_PREVIOUS
+                .Add(8)!  // COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
+                .Add(9)!  // COMMAND_SEEK_TO_NEXT
+                .Add(10)! // COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
+                .Build()!;
+        }
+    }
+
     public override void SeekToNextMediaItem()
     {
         _onSeekToNext();

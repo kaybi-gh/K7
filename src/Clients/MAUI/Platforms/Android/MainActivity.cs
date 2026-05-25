@@ -1,8 +1,10 @@
 ﻿using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
 using AndroidX.Core.View;
+using K7.Clients.MAUI.Platforms.Android.Services;
 
 namespace K7.Clients.MAUI;
 
@@ -26,6 +28,11 @@ public class MainActivity : MauiAppCompatActivity
             }
 #pragma warning restore CA1422
         }
+
+        // Start the MediaLibraryService so audio playback and notification controls work
+        // even without an Android Auto connection. Media3 auto-promotes to foreground on playback.
+        var serviceIntent = new Intent(this, typeof(K7MediaLibraryService));
+        StartService(serviceIntent);
     }
     public override bool DispatchKeyEvent(KeyEvent? e)
     {
