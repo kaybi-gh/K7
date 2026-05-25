@@ -33,7 +33,7 @@ public static partial class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseSkiaSharp()
-            .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: true)
+            .UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: false)
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
