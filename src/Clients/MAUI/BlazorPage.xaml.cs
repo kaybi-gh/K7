@@ -16,6 +16,8 @@ public partial class BlazorPage : ContentPage
     private readonly BackButtonService _backButtonService;
     private readonly IK7ServerService _k7ServerService;
 
+    private static readonly string DownloadsBasePath = Path.Combine(FileSystem.AppDataDirectory, "downloads");
+
     public BlazorPage(IPlayerService playerService, IAudioPlayerService audioPlayerService, BackButtonService backButtonService, IK7ServerService k7ServerService)
     {
         _playerService = playerService;
@@ -23,9 +25,43 @@ public partial class BlazorPage : ContentPage
         _backButtonService = backButtonService;
         _k7ServerService = k7ServerService;
         InitializeComponent();
+        blazorWebView.WebResourceRequested += OnWebResourceRequested;
         InitializeSplashOverlay();
         InitializePlayer();
         InitializeAudioPlayer();
+    }
+
+    private void OnWebResourceRequested(object? sender, Microsoft.Maui.Controls.WebViewWebResourceRequestedEventArgs e)
+    {
+        const string localFileHost = "https://k7-local-files/";
+        var url = e.Uri?.ToString();
+        if (url is null || !url.StartsWith(localFileHost, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var relativePath = Uri.UnescapeDataString(url[localFileHost.Length..]);
+        var filePath = Path.Combine(DownloadsBasePath, relativePath);
+
+        if (!filePath.StartsWith(DownloadsBasePath, StringComparison.OrdinalIgnoreCase) || !File.Exists(filePath))
+            return;
+
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        var mimeType = extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            ".mp4" => "video/mp4",
+            ".m4a" or ".aac" => "audio/mp4",
+            ".mp3" => "audio/mpeg",
+            ".flac" => "audio/flac",
+            ".ogg" => "audio/ogg",
+            _ => "application/octet-stream"
+        };
+
+        var stream = File.OpenRead(filePath);
+        e.SetResponse(200, mimeType, (IReadOnlyDictionary<string, string>?)null, stream);
+        e.Handled = true;
     }
 
     private void InitializeSplashOverlay()
