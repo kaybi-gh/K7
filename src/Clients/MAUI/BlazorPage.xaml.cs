@@ -182,14 +182,14 @@ public partial class BlazorPage : ContentPage
 
         _playerService.SourceChanged += OnSourceChanged;
         _playerService.IsVisibleChanged += OnIsVisibleChanged;
-        _playerService.PlayRequested += () => { NativePlayer.Play(); return Task.CompletedTask; };
-        _playerService.PauseRequested += () => { NativePlayer.Pause(); return Task.CompletedTask; };
-        _playerService.MuteRequested += () => { NativePlayer.ShouldMute = true; return Task.CompletedTask; };
-        _playerService.UnmuteRequest += () => { NativePlayer.ShouldMute = false; return Task.CompletedTask; };
-        _playerService.VolumeChangeRequested += (volume) => { NativePlayer.Volume = volume; return Task.CompletedTask; };
-        _playerService.PlaybackRateChangeRequested += (rate) => { NativePlayer.Speed = rate; return Task.CompletedTask; };
-        _playerService.StopRequested += () => { NativePlayer.Stop(); return Task.CompletedTask; };
-        _playerService.SeekRequested += (position) => { NativePlayer.SeekTo(TimeSpan.FromSeconds(position)); return Task.CompletedTask; };
+        _playerService.PlayRequested += () => { MainThread.BeginInvokeOnMainThread(NativePlayer.Play); return Task.CompletedTask; };
+        _playerService.PauseRequested += () => { MainThread.BeginInvokeOnMainThread(NativePlayer.Pause); return Task.CompletedTask; };
+        _playerService.MuteRequested += () => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = true); return Task.CompletedTask; };
+        _playerService.UnmuteRequest += () => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.ShouldMute = false); return Task.CompletedTask; };
+        _playerService.VolumeChangeRequested += (volume) => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.Volume = volume); return Task.CompletedTask; };
+        _playerService.PlaybackRateChangeRequested += (rate) => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.Speed = rate); return Task.CompletedTask; };
+        _playerService.StopRequested += () => { MainThread.BeginInvokeOnMainThread(NativePlayer.Stop); return Task.CompletedTask; };
+        _playerService.SeekRequested += (position) => { MainThread.BeginInvokeOnMainThread(() => NativePlayer.SeekTo(TimeSpan.FromSeconds(position))); return Task.CompletedTask; };
         _playerService.AspectRatioModeChangeRequested += OnAspectRatioModeChanged;
         InitializePlayerPlatform();
 
