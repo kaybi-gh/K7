@@ -6,10 +6,21 @@ namespace K7.Clients.Shared.UI.Pages.MySpace;
 public partial class MySpaceDownloadQueuePage : ComponentBase, IDisposable
 {
     private List<DownloadQueueItem> _items = [];
+    private bool _progressDirty;
+    private System.Timers.Timer? _progressThrottle;
 
     protected override void OnInitialized()
     {
         RefreshItems();
+
+        _progressThrottle = new System.Timers.Timer(500) { AutoReset = false };
+        _progressThrottle.Elapsed += async (_, _) =>
+        {
+            if (!_progressDirty) return;
+            _progressDirty = false;
+            await InvokeAsync(StateHasChanged);
+        };
+
         DownloadManager.ProgressChanged += OnProgressChanged;
         DownloadManager.DownloadCompleted += OnDownloadCompleted;
     }
@@ -21,10 +32,11 @@ public partial class MySpaceDownloadQueuePage : ComponentBase, IDisposable
             .ToList();
     }
 
-    private async void OnProgressChanged(DownloadProgressInfo info)
+    private void OnProgressChanged(DownloadProgressInfo info)
     {
         RefreshItems();
-        await InvokeAsync(StateHasChanged);
+        _progressDirty = true;
+        _progressThrottle?.Start();
     }
 
     private async void OnDownloadCompleted(DownloadCompletedInfo info)
@@ -73,6 +85,7 @@ public partial class MySpaceDownloadQueuePage : ComponentBase, IDisposable
 
     public void Dispose()
     {
+        _progressThrottle?.Dispose();
         DownloadManager.ProgressChanged -= OnProgressChanged;
         DownloadManager.DownloadCompleted -= OnDownloadCompleted;
     }
