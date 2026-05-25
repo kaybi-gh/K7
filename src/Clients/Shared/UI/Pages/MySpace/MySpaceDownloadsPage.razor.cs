@@ -18,6 +18,8 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
     private string _searchQuery = string.Empty;
     private long _maxDownloadBytes;
     private long _maxCacheBytes;
+    private bool _progressDirty;
+    private System.Timers.Timer? _progressThrottle;
 
     private const long DefaultMaxDownloadBytes = 2L * 1024 * 1024 * 1024;
     private const long DefaultMaxCacheBytes = 500L * 1024 * 1024;
@@ -45,6 +47,14 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
 
         _maxCacheBytes = DeviceStorageService.Get(PreferenceKeys.MAX_CACHE_STORAGE_BYTES);
         if (_maxCacheBytes <= 0) _maxCacheBytes = DefaultMaxCacheBytes;
+
+        _progressThrottle = new System.Timers.Timer(500) { AutoReset = false };
+        _progressThrottle.Elapsed += async (_, _) =>
+        {
+            if (!_progressDirty) return;
+            _progressDirty = false;
+            await InvokeAsync(StateHasChanged);
+        };
 
         await LoadDataAsync();
         DownloadManager.ProgressChanged += OnProgressChanged;
@@ -143,7 +153,8 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
     {
         _activeCount = DownloadManager.Queue
             .Count(q => q.Status is DownloadItemStatus.Queued or DownloadItemStatus.Preparing or DownloadItemStatus.Downloading);
-        InvokeAsync(StateHasChanged);
+        _progressDirty = true;
+        _progressThrottle?.Start();
     }
 
     private async void OnDownloadCompleted(DownloadCompletedInfo info)
@@ -190,6 +201,7 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
 
     public void Dispose()
     {
+        _progressThrottle?.Dispose();
         DownloadManager.ProgressChanged -= OnProgressChanged;
         DownloadManager.DownloadCompleted -= OnDownloadCompleted;
     }
