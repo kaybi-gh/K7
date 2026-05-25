@@ -18,6 +18,7 @@ public partial class MainLayout : IDisposable
     [Inject] private IJSRuntime JS { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IConnectivityService Connectivity { get; set; } = default!;
 
     private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
@@ -43,7 +44,10 @@ public partial class MainLayout : IDisposable
 
             if (isAuth && !string.IsNullOrEmpty(userId))
             {
-                await DeviceInitializer.InitializeDeviceAsync(Services, userId);
+                if (Connectivity.IsOnline)
+                {
+                    await DeviceInitializer.InitializeDeviceAsync(Services, userId);
+                }
 
                 var canReport = await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress);
                 AudioProgressTracker.SetCanReport(canReport);
@@ -55,7 +59,11 @@ public partial class MainLayout : IDisposable
                     ? NavigationManager.ToAbsoluteUri("/")
                     : K7ServerService.HttpClient.BaseAddress ?? NavigationManager.ToAbsoluteUri("/");
                 var accessToken = K7ServerService.HttpClient.DefaultRequestHeaders.Authorization?.Parameter;
-                await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken);
+
+                if (Connectivity.IsOnline)
+                {
+                    await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken);
+                }
             }
         }
         catch (Exception ex)

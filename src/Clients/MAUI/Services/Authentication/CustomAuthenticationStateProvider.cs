@@ -268,6 +268,12 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (lastUser is null)
             return;
 
+        if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+        {
+            SignInOffline(lastUser);
+            return;
+        }
+
         try
         {
             await RestoreUserInBackgroundAsync(lastUser);
