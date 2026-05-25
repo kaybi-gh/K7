@@ -99,7 +99,8 @@ public partial class Movie
 
         PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress), indexedFileId: indexedFileId);
 
-        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id);
+        var coverUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+        await PlayerService.PlayIndexedFileAsync(indexedFileId, audioTracks ?? [], subtitleTracks, audioTrackIndex, subtitleTrackIndex, videoResolution, thumbnailsUrl, _movie.Id, _movie.Title, coverUrl);
 
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
