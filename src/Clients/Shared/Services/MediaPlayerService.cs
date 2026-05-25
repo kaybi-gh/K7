@@ -24,22 +24,22 @@ public class MediaPlayerService : IMediaPlayerService
     {
         if (ActivePlayer == ActivePlayerType.Video) return;
 
-        _audioPlayer.Stop();
-        _ = _audioPlayer.HideAsync();
-
         ActivePlayer = ActivePlayerType.Video;
         ActivePlayerChanged?.Invoke(ActivePlayerType.Video);
+
+        _audioPlayer.Stop();
+        _ = _audioPlayer.HideAsync();
     }
 
     private void OnAudioSourceChanged(PlayerSource source)
     {
         if (ActivePlayer == ActivePlayerType.Audio) return;
 
-        _videoPlayer.Stop();
-        _ = _videoPlayer.HideAsync();
-
         ActivePlayer = ActivePlayerType.Audio;
         ActivePlayerChanged?.Invoke(ActivePlayerType.Audio);
+
+        _videoPlayer.Stop();
+        _ = _videoPlayer.HideAsync();
     }
 
     public void Dispose()
