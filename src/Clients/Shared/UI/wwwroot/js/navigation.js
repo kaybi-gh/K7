@@ -979,6 +979,48 @@ K7.resetDropdown = function (root) {
     }
 };
 
+K7.positionSelectDropdown = function (button, dropdown) {
+    if (!button || !dropdown) return;
+
+    var rect = button.getBoundingClientRect();
+    var gap = 4;
+
+    // Measure dropdown height
+    dropdown.style.visibility = 'hidden';
+    dropdown.style.opacity = '0';
+    dropdown.style.display = 'block';
+    var ddRect = dropdown.getBoundingClientRect();
+    dropdown.style.display = '';
+    dropdown.style.visibility = '';
+    dropdown.style.opacity = '';
+
+    var vh = window.innerHeight;
+    var vw = window.innerWidth;
+
+    // Decide above or below
+    var spaceBelow = vh - rect.bottom - gap;
+    var spaceAbove = rect.top - gap;
+    var placeAbove = spaceBelow < ddRect.height && spaceAbove > spaceBelow;
+
+    if (placeAbove) {
+        dropdown.style.bottom = (vh - rect.top + gap) + 'px';
+        dropdown.style.top = '';
+    } else {
+        dropdown.style.top = (rect.bottom + gap) + 'px';
+        dropdown.style.bottom = '';
+    }
+
+    // Align left edge with button, match button width
+    var left = rect.left;
+    var width = rect.width;
+    if (left + width > vw - 8) {
+        left = vw - width - 8;
+    }
+    if (left < 8) left = 8;
+    dropdown.style.left = left + 'px';
+    dropdown.style.width = width + 'px';
+};
+
 K7.scrollToElement = function (id) {
     var el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
