@@ -201,6 +201,9 @@ public partial class SerieSeason
             Guid.Parse(SerieId),
             indexedFile.Id);
 
+        var episodeTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+        var coverUrl = GetEpisodeStillUrl(episode);
+
         await PlayerService.PlayIndexedFileAsync(
             indexedFile.Id,
             videoMetadata.AudioTracks ?? [],
@@ -209,7 +212,9 @@ public partial class SerieSeason
             videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
             videoMetadata.VideoResolution,
             videoMetadata.Thumbnails?.Uri?.ToString(),
-            episode.Id);
+            episode.Id,
+            episodeTitle,
+            coverUrl);
 
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
