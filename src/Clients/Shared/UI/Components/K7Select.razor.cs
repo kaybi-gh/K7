@@ -7,6 +7,7 @@ namespace K7.Clients.Shared.UI.Components;
 public partial class K7Select<TValue> : IAsyncDisposable
 {
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? SelectedContent { get; set; }
@@ -24,6 +25,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
 
     private bool _open;
     private ElementReference _root;
+    private ElementReference _button;
     private ElementReference _dropdown;
     private DotNetObjectReference<LayerCloseCallback>? _closeCallbackRef;
     private readonly List<SelectItemRegistration<TValue>> _items = [];
@@ -84,6 +86,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
         _closeCallbackRef = DotNetObjectReference.Create(new LayerCloseCallback(OnLayerClosed));
         try
         {
+            await JS.InvokeVoidAsync("K7.positionSelectDropdown", _button, _dropdown);
             await SpatialNav.PushLayerAsync(_dropdown, "popover", new SpatialNavLayerOptions
             {
                 OnClose = _closeCallbackRef
