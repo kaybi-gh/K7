@@ -26,7 +26,8 @@ namespace K7.Clients.MAUI.Platforms.Android.Services;
     ForegroundServiceType = ForegroundService.TypeMediaPlayback,
     Exported = true)]
 [IntentFilter(["androidx.media3.session.MediaLibraryService",
-    "android.media.browse.MediaBrowserService"])]
+    "android.media.browse.MediaBrowserService"],
+    Categories = ["android.intent.category.DEFAULT"])]
 public class K7MediaLibraryService : MediaLibraryService,
     MediaLibraryService.MediaLibrarySession.ICallback,
     IPlayerListener
@@ -197,6 +198,17 @@ public class K7MediaLibraryService : MediaLibraryService,
             StopPositionUpdates();
     }
 
+    public void OnPlayerError(PlaybackException? error)
+    {
+        Log.Error(Tag, $"ExoPlayer error: {error?.Message} (code={error?.ErrorCode})");
+        if (_audioPlayerService is not null)
+        {
+            _updatingFromPlayer = true;
+            _audioPlayerService.PlaybackState = PlaybackState.Idle;
+            _updatingFromPlayer = false;
+        }
+    }
+
     public void OnMediaItemTransition(MediaItem? mediaItem, int reason)
     {
         if (_isVideoMode) return;
@@ -245,8 +257,10 @@ public class K7MediaLibraryService : MediaLibraryService,
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            var uri = source.Url.Contains("://") ? source.Url : $"file://{source.Url}";
+
             var itemBuilder = new MediaItem.Builder()
-                .SetUri(source.Url)!;
+                .SetUri(uri)!;
 
             if (_pendingTrack is not null)
             {
@@ -273,7 +287,7 @@ public class K7MediaLibraryService : MediaLibraryService,
             _player.Prepare();
             _player.PlayWhenReady = true;
 
-            Log.Info(Tag, $"Playing: {_pendingTrack?.Title ?? "unknown"} - URL: {source.Url[..Math.Min(80, source.Url.Length)]}");
+            Log.Info(Tag, $"Playing: {_pendingTrack?.Title ?? "unknown"} - URI: {uri[..Math.Min(80, uri.Length)]}");
         });
     }
 
