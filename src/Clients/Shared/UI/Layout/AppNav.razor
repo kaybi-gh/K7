@@ -47,10 +47,9 @@
             <Authorized>
                 <button class="app-nav-avatar-btn focusable @(_profileMenuOpen ? "active" : "")"
                         type="button" @ref="_profileButtonRef" @onclick="async () => await ToggleProfile()">
-                        <div class="avatar avatar--sm" title="@context.User.Identity?.Name">
-                        @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
+                    <K7Avatar Size="sm" Image="@_avatarUrl" Letter="@_avatarInitial">
                         <span class="connection-badge connection-badge--@_badgeClass" title="@_badgeTitle"></span>
-                    </div>
+                    </K7Avatar>
                 </button>
             </Authorized>
             <NotAuthorized>
@@ -72,10 +71,9 @@
              data-sn-layer-close=".app-nav-backdrop">
             <div class="app-nav-popover-inner">
                 <div class="app-nav-popover-user">
-                    <div class="avatar">
-                        @(context.User.Identity?.Name?[0].ToString().ToUpperInvariant() ?? "?")
+                    <K7Avatar Image="@_avatarUrl" Letter="@_avatarInitial">
                         <span class="connection-badge connection-badge--@_badgeClass"></span>
-                    </div>
+                    </K7Avatar>
                     <div class="app-nav-popover-user-info">
                         <span class="app-nav-popover-username">@context.User.Identity?.Name</span>
                         <span class="app-nav-popover-status">@_badgeTitle</span>

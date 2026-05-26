@@ -17,8 +17,11 @@ public class GetCurrentUser : IEndpoint
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {
-            var user = await sender.Send(new GetCurrentUserQuery(), cancellationToken);
-            return Results.Ok(user.ToUserDto(includePinHash: true));
+            var result = await sender.Send(new GetCurrentUserQuery(), cancellationToken);
+            var avatarUrl = result.AvatarPictureId is not null
+                ? $"/api/metadata-pictures/{result.AvatarPictureId}"
+                : null;
+            return Results.Ok(result.User.ToUserDto(includePinHash: true, avatarUrl: avatarUrl));
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

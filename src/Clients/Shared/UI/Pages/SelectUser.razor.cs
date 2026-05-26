@@ -222,6 +222,12 @@ public partial class SelectUser
             await AddUserAsync();
     }
 
+    private static string GetInitial(LocalUser user)
+    {
+        var name = user.DisplayName ?? user.UserName;
+        return string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+    }
+
     private static string GetInitials(string name)
     {
         var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

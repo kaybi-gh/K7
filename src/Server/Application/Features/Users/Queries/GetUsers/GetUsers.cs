@@ -2,17 +2,20 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Users;
+using K7.Server.Domain.Enums;
 
 namespace K7.Server.Application.Features.Users.Queries.GetUsers;
 
+public record GetUsersResult(List<User> Users, Dictionary<Guid, Guid> AvatarPictureIds);
+
 [Authorize(Roles = Roles.Administrator)]
-public record GetUsersQuery : IRequest<List<User>>
+public record GetUsersQuery : IRequest<GetUsersResult>
 {
     public string? Role { get; init; }
     public bool? IsActive { get; init; }
 }
 
-public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, List<User>>
+public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, GetUsersResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IIdentityService _identityService;
@@ -23,7 +26,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, List<User>>
         _identityService = identityService;
     }
 
-    public async Task<List<User>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
+    public async Task<GetUsersResult> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Users
             .Include(u => u.CapabilityOverrides)
@@ -60,6 +63,12 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, List<User>>
             result.Add(user);
         }
 
-        return result;
+        var userIds = result.Select(u => u.Id).ToList();
+        var avatarMap = await _context.MetadataPictures
+            .Where(p => p.UserId != null && userIds.Contains(p.UserId.Value) && p.Type == MetadataPictureType.UserAvatar)
+            .Select(p => new { p.UserId, p.Id })
+            .ToDictionaryAsync(p => p.UserId!.Value, p => p.Id, cancellationToken);
+
+        return new GetUsersResult(result, avatarMap);
     }
 }

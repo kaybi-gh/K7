@@ -107,6 +107,71 @@
         }
       }
     },
+    "/api/users/me/password": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "ChangePassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "RemovePassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemovePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "SetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users": {
       "post": {
         "tags": [
@@ -150,6 +215,40 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetCurrentUser",
         "responses": {
           "200": {
             "description": "OK"
@@ -346,12 +445,12 @@
         }
       }
     },
-    "/api/users/me": {
+    "/api/users/me/login-methods": {
       "get": {
         "tags": [
           "Users"
         ],
-        "operationId": "GetCurrentUser",
+        "operationId": "GetLoginMethods",
         "responses": {
           "200": {
             "description": "OK"
@@ -489,6 +588,30 @@
         }
       }
     },
+    "/api/users/me/avatar": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "RemoveUserAvatar",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UploadUserAvatar",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{userId}/reset-password": {
       "post": {
         "tags": [
@@ -516,6 +639,30 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/restore": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "RestoreUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -569,6 +716,75 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ToggleUserActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/login-methods/{provider}": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UnlinkExternalLogin",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/email": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateEmail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/me/profile": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
               }
             }
           },
@@ -5787,6 +6003,12 @@
               "string"
             ]
           },
+          "userAvatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "mediaId": {
             "type": [
               "null",
@@ -6541,6 +6763,21 @@
           }
         }
       },
+      "ChangePasswordRequest": {
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
       "CharacterSearchResultDto": {
         "required": [
           "characterName"
@@ -7122,6 +7359,17 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "DeleteAccountRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12680,6 +12928,17 @@
           }
         }
       },
+      "RemovePasswordRequest": {
+        "required": [
+          "currentPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          }
+        }
+      },
       "ReorderPlaylistItemRequest": {
         "required": [
           "newOrder"
@@ -12810,6 +13069,17 @@
           },
           "musicAudioAnalysisEnabled": {
             "type": "boolean"
+          }
+        }
+      },
+      "SetPasswordRequest": {
+        "required": [
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string"
           }
         }
       },
@@ -13296,6 +13566,21 @@
           }
         }
       },
+      "UpdateEmailRequest": {
+        "required": [
+          "email",
+          "currentPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "currentPassword": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateLibraryCommand": {
         "type": "object",
         "properties": {
@@ -13707,6 +13992,17 @@
           },
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
+          }
+        }
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

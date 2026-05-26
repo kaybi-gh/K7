@@ -5,6 +5,7 @@ public sealed record ActiveStreamDto
     public required string ConnectionId { get; init; }
     public Guid? UserId { get; init; }
     public string? UserName { get; init; }
+    public string? UserAvatarUrl { get; init; }
     public Guid? MediaId { get; init; }
     public string? MediaTitle { get; init; }
     public string? MediaType { get; init; }

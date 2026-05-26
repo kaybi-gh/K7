@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
@@ -18,6 +19,8 @@ public partial class AppNav : IDisposable
     private string _activeNav = "/";
     private string _badgeClass = "offline";
     private string _badgeTitle = string.Empty;
+    private string? _avatarUrl;
+    private string _avatarInitial = "?";
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
@@ -26,6 +29,7 @@ public partial class AppNav : IDisposable
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private IStringLocalizer<AppNav> L { get; set; } = default!;
     [Inject] private K7HubClient HubClient { get; set; } = default!;
+    [Inject] private IUserAdminService UserService { get; set; } = default!;
 
     public bool IsAnyMenuOpen => _profileMenuOpen;
 
@@ -36,6 +40,25 @@ public partial class AppNav : IDisposable
         HubClient.ConnectionStateChanged += OnConnectionStateChanged;
         UpdateBadge(HubClient.State);
         UpdateActiveNav();
+        await LoadAvatarAsync();
+    }
+
+    private async Task LoadAvatarAsync()
+    {
+        try
+        {
+            var me = await UserService.GetCurrentUserAsync();
+            if (me is not null)
+            {
+                _avatarUrl = me.AvatarUrl;
+                var name = me.DisplayName ?? me.UserName;
+                _avatarInitial = string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+            }
+        }
+        catch
+        {
+            // Avatar not critical
+        }
     }
 
     private bool HandleBackButton()
@@ -164,6 +187,7 @@ public partial class AppNav : IDisposable
         try
         {
             await task;
+            await LoadAvatarAsync();
         }
         catch { }
         await InvokeAsync(StateHasChanged);
