@@ -64,6 +64,7 @@ public partial class DownloadButton : ComponentBase, IDisposable
 
         var audioTrackIndex = AudioTrackIndex;
         var subtitleTrackIndices = SubtitleTrackIndices;
+        K7.Shared.Dtos.Entities.Metadatas.Files.Tracks.SubtitleFileTrackDto[]? subtitleTracks = null;
 
         if (VideoMetadata is not null && (VideoMetadata.AudioTracks?.Count > 1 || VideoMetadata.SubtitleTracks?.Count > 0))
         {
@@ -83,6 +84,7 @@ public partial class DownloadButton : ComponentBase, IDisposable
             {
                 audioTrackIndex = optionsResult.AudioTrack?.Index;
                 subtitleTrackIndices = optionsResult.SubtitleTrack is not null ? [optionsResult.SubtitleTrack.Index] : null;
+                subtitleTracks = optionsResult.SubtitleTrack is not null ? [optionsResult.SubtitleTrack] : null;
             }
         }
 
@@ -97,6 +99,7 @@ public partial class DownloadButton : ComponentBase, IDisposable
             MediaType = MediaType,
             AudioTrackIndex = audioTrackIndex,
             SubtitleTrackIndices = subtitleTrackIndices,
+            SubtitleTracks = subtitleTracks,
             IsCacheItem = false
         });
 

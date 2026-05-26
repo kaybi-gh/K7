@@ -68,7 +68,11 @@ public static partial class MauiProgram
 
         builder.Services.AddTransient<AuthenticationDelegatingHandler>();
         builder.Services.AddHttpClient(nameof(K7ServerService))
-            .AddHttpMessageHandler<AuthenticationDelegatingHandler>();
+            .AddHttpMessageHandler<AuthenticationDelegatingHandler>()
+#if ANDROID
+            .ConfigurePrimaryHttpMessageHandler(() => new Xamarin.Android.Net.AndroidMessageHandler())
+#endif
+            ;
         builder.Services.AddSingleton<K7ServerService>(sp =>
         {
             var factory = sp.GetRequiredService<IHttpClientFactory>();
@@ -152,6 +156,13 @@ public static partial class MauiProgram
         using (var db = offlineDbFactory.CreateDbContext())
         {
             db.Database.EnsureCreated();
+
+            // Add columns introduced after initial schema
+            try
+            {
+                db.Database.ExecuteSqlRaw("ALTER TABLE DownloadedMedia ADD COLUMN LastPlaybackPosition REAL NOT NULL DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
         }
 
         // Initialize playback sync serviceRembo

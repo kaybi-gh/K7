@@ -28,6 +28,8 @@ public class NoOpOfflineMediaStore : IOfflineMediaStore
     public Task AddAsync(DownloadedMediaItem item, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RemoveAsync(Guid indexedFileId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RemoveAllCacheItemsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateLastPlaybackPositionAsync(Guid mediaId, double position, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<double> GetLastPlaybackPositionAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(0.0);
 }
 
 public class NoOpConnectivityService : IConnectivityService

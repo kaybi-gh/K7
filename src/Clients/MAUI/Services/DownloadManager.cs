@@ -205,7 +205,7 @@ public class DownloadManager : IDownloadManager
                 AlbumTitle = item.Request.AlbumTitle,
                 CoverLocalPath = coverLocalPath,
                 MediaLocalPath = localPath,
-                SubtitleLocalPaths = null,
+                SubtitleTracks = item.Request.SubtitleTracks,
                 FileSize = downloadDto.FileSize ?? new FileInfo(localPath).Length,
                 DownloadedAt = DateTimeOffset.UtcNow,
                 IsCacheItem = item.Request.IsCacheItem

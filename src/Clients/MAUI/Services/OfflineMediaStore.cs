@@ -2,6 +2,7 @@ using System.Text.Json;
 using K7.Clients.MAUI.Data;
 using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Clients.MAUI.Services;
@@ -77,8 +78,8 @@ public class OfflineMediaStore : IOfflineMediaStore
             AlbumTitle = item.AlbumTitle,
             CoverLocalPath = item.CoverLocalPath,
             MediaLocalPath = item.MediaLocalPath,
-            SubtitleLocalPathsJson = item.SubtitleLocalPaths is { Length: > 0 }
-                ? JsonSerializer.Serialize(item.SubtitleLocalPaths)
+            SubtitleLocalPathsJson = item.SubtitleTracks is { Length: > 0 }
+                ? JsonSerializer.Serialize(item.SubtitleTracks)
                 : null,
             FileSize = item.FileSize,
             DownloadedAt = item.DownloadedAt,
@@ -99,14 +100,6 @@ public class OfflineMediaStore : IOfflineMediaStore
         // Delete local files
         TryDeleteFile(entity.MediaLocalPath);
         if (entity.CoverLocalPath is not null) TryDeleteFile(entity.CoverLocalPath);
-        if (entity.SubtitleLocalPathsJson is not null)
-        {
-            var paths = JsonSerializer.Deserialize<string[]>(entity.SubtitleLocalPathsJson);
-            if (paths is not null)
-            {
-                foreach (var path in paths) TryDeleteFile(path);
-            }
-        }
 
         db.DownloadedMedia.Remove(entity);
         await db.SaveChangesAsync(cancellationToken);
@@ -154,13 +147,32 @@ public class OfflineMediaStore : IOfflineMediaStore
             AlbumTitle = entity.AlbumTitle,
             CoverLocalPath = entity.CoverLocalPath,
             MediaLocalPath = entity.MediaLocalPath,
-            SubtitleLocalPaths = entity.SubtitleLocalPathsJson is not null
-                ? JsonSerializer.Deserialize<string[]>(entity.SubtitleLocalPathsJson)
+            SubtitleTracks = entity.SubtitleLocalPathsJson is not null
+                ? JsonSerializer.Deserialize<SubtitleFileTrackDto[]>(entity.SubtitleLocalPathsJson)
                 : null,
             FileSize = entity.FileSize,
             DownloadedAt = entity.DownloadedAt,
             LastPlayedAt = entity.LastPlayedAt,
+            LastPlaybackPosition = entity.LastPlaybackPosition,
             IsCacheItem = entity.IsCacheItem
         };
+    }
+
+    public async Task UpdateLastPlaybackPositionAsync(Guid mediaId, double position, CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var entity = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.MediaId == mediaId, cancellationToken);
+        if (entity is null) return;
+
+        entity.LastPlaybackPosition = position;
+        entity.LastPlayedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<double> GetLastPlaybackPositionAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var entity = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.MediaId == mediaId, cancellationToken);
+        return entity?.LastPlaybackPosition ?? 0;
     }
 }

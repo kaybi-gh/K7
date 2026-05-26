@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using Microsoft.AspNetCore.Components;
@@ -138,8 +139,38 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
         await AudioPlayerService.PlayTracksAsync(tracks);
     }
 
+    private async Task ShuffleAllMusicAsync()
+    {
+        var allTracks = _musicGroups
+            .SelectMany(g => g.Items)
+            .Select(item => new AudioQueueItem
+            {
+                IndexedFileId = item.IndexedFileId,
+                MediaId = item.MediaId,
+                Title = item.Title,
+                Artist = item.Artist,
+                AlbumTitle = item.AlbumTitle,
+                CoverUrl = DeviceService.GetLocalFileUrl(item.CoverLocalPath),
+                LocalPath = item.MediaLocalPath
+            })
+            .OrderBy(_ => Random.Shared.Next())
+            .ToList();
+
+        if (allTracks.Count == 0)
+            return;
+
+        await AudioPlayerService.PlayTracksAsync(allTracks);
+    }
+
     private async Task PlayVideoAsync(DownloadedMediaItem item)
     {
+        PlaybackProgressTracker.StartTracking(item.MediaId, isAuthenticated: true, indexedFileId: item.IndexedFileId);
+
+        if (item.SubtitleTracks is { Length: > 0 })
+        {
+            PlayerService.SetSubtitleTracks(item.SubtitleTracks);
+        }
+
         await PlayerService.ShowAsync();
         PlayerService.Source = new PlayerSource
         {
@@ -147,6 +178,11 @@ public partial class MySpaceDownloadsPage : ComponentBase, IDisposable
             Url = item.MediaLocalPath,
             MimeType = "video/mp4"
         };
+
+        if (item.LastPlaybackPosition > 0)
+        {
+            PlayerService.Seek(item.LastPlaybackPosition);
+        }
     }
 
     private void OnProgressChanged(DownloadProgressInfo info)

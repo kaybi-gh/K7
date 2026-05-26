@@ -24,6 +24,7 @@ public record DownloadRequest
     public Server.Domain.Enums.MediaType MediaType { get; init; }
     public int? AudioTrackIndex { get; init; }
     public int[]? SubtitleTrackIndices { get; init; }
+    public K7.Shared.Dtos.Entities.Metadatas.Files.Tracks.SubtitleFileTrackDto[]? SubtitleTracks { get; init; }
     public bool IsCacheItem { get; init; }
 }
 

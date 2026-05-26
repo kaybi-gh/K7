@@ -72,6 +72,7 @@ public class DownloadedMediaEntity
     public long FileSize { get; set; }
     public DateTimeOffset DownloadedAt { get; set; }
     public DateTimeOffset? LastPlayedAt { get; set; }
+    public double LastPlaybackPosition { get; set; }
     public bool IsCacheItem { get; set; }
 }
 

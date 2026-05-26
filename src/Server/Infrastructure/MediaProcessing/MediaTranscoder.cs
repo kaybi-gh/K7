@@ -330,6 +330,7 @@ public class MediaTranscoder : IMediaTranscoder
         string inputFilePath,
         string outputFilePath,
         int audioTrackIndex,
+        int[]? subtitleTrackIndices = null,
         CancellationToken cancellationToken = default)
     {
         var outputDir = Path.GetDirectoryName(outputFilePath)!;
@@ -345,6 +346,16 @@ public class MediaTranscoder : IMediaTranscoder
             {
                 options.WithCustomArgument("-map 0:v:0");
                 options.WithCustomArgument($"-map 0:a:{audioTrackIndex}");
+
+                if (subtitleTrackIndices is { Length: > 0 })
+                {
+                    foreach (var subIndex in subtitleTrackIndices)
+                    {
+                        options.WithCustomArgument($"-map 0:s:{subIndex}");
+                    }
+                    options.WithCustomArgument("-c:s mov_text");
+                }
+
                 options.WithCustomArgument("-c:v copy");
                 options.WithCustomArgument("-c:a aac");
                 options.WithCustomArgument("-b:a 192k");

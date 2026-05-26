@@ -21,7 +21,29 @@ public class PlaybackJournal : IPlaybackJournal
         if (now - _lastRecordedAt < ThrottleInterval) return;
         _lastRecordedAt = now;
 
-        await AddEventAsync(mediaId, indexedFileId, PlaybackEventType.Progress, position, duration, cancellationToken: cancellationToken);
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        // Save position to downloaded media for resume support
+        var downloaded = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.MediaId == mediaId, cancellationToken);
+        if (downloaded is not null)
+        {
+            downloaded.LastPlaybackPosition = position;
+            downloaded.LastPlayedAt = now;
+        }
+
+        db.PendingPlaybackEvents.Add(new PendingPlaybackEventEntity
+        {
+            Id = Guid.NewGuid(),
+            MediaId = mediaId,
+            IndexedFileId = indexedFileId,
+            EventType = PlaybackEventType.Progress,
+            Position = position,
+            Duration = duration,
+            Timestamp = now,
+            IsSynced = false
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, CancellationToken cancellationToken = default)
