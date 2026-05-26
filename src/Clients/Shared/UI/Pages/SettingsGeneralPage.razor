@@ -1,17 +1,10 @@
 @page "/settings/general"
 @layout SettingsLayout
-@using System.Security.Claims
-@using K7.Clients.Shared.UI.Pages.Stats
 @inject ThemeService ThemeService
 @inject IDeviceService DeviceService
-@inject IUserAdminService K7ServerService
 @inject IK7ServerService ApiClient
-@inject ILocalUserService LocalUserService
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Settings> L
 @inject IStringLocalizer<SharedResource> S
-@inject IJSRuntime JSRuntime
 @inject IK7DialogService DialogService
 @inject IServerConnectionService ServerConnectionService
 
@@ -27,8 +20,6 @@
         }
     </K7Select>
 
-    <K7LanguageSelect Value="@_currentCulture" ValueChanged="OnCultureChanged" Label="@L["Language"]" Languages="SupportedLanguages.Interface" />
-
     @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
     {
         <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" />
@@ -40,30 +31,6 @@
 
     <span>@L["FormFactor"]: @_deviceType</span>
     <span>@L["Hdr"]: @_hdrSupport</span>
-
-    <hr class="k7-divider my-4" />
-    <h6 class="mb-2">@L["Pin"]</h6>
-    @if (_hasPin)
-    {
-        <p class="text-sm mb-2">@L["PinSet"]</p>
-        <div class="d-flex">
-            <K7Button Variant="filled" Color="primary" OnClick="ChangePin">@L["ChangePin"]</K7Button>
-            <K7Button Variant="outlined" Color="error" OnClick="RemovePin">@L["RemovePin"]</K7Button>
-        </div>
-    }
-    else
-    {
-        <p class="text-sm mb-2">@L["PinNotSet"]</p>
-        <K7Button Variant="filled" Color="primary" OnClick="SetPin">@L["SetPin"]</K7Button>
-    }
-    @if (_pinError is not null)
-    {
-        <K7Alert Severity="K7Severity.Error" Class="mt-2">@_pinError</K7Alert>
-    }
-    @if (_pinSuccess is not null)
-    {
-        <K7Alert Severity="K7Severity.Success" Class="mt-2">@_pinSuccess</K7Alert>
-    }
 
     <div class="k7-expansion-panels">
         <K7ExpansionPanel Text="@L["SupportedCodecs"]">

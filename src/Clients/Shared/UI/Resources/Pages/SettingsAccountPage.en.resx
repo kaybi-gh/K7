@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Account</value></data>
+  <data name="Avatar" xml:space="preserve"><value>Avatar</value></data>
+  <data name="UploadAvatar" xml:space="preserve"><value>Change</value></data>
+  <data name="RemoveAvatar" xml:space="preserve"><value>Remove</value></data>
+  <data name="AvatarTooLarge" xml:space="preserve"><value>Image must not exceed 2 MB.</value></data>
+  <data name="DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="ProfileSaved" xml:space="preserve"><value>Profile updated.</value></data>
+  <data name="Email" xml:space="preserve"><value>Email</value></data>
+  <data name="EmailRequired" xml:space="preserve"><value>Email is required.</value></data>
+  <data name="PasswordRequired" xml:space="preserve"><value>Password is required.</value></data>
+  <data name="EmailSaved" xml:space="preserve"><value>Email updated.</value></data>
+  <data name="Password" xml:space="preserve"><value>Password</value></data>
+  <data name="CurrentPassword" xml:space="preserve"><value>Current password</value></data>
+  <data name="NewPassword" xml:space="preserve"><value>New password</value></data>
+  <data name="ConfirmNewPassword" xml:space="preserve"><value>Confirm new password</value></data>
+  <data name="ChangePassword" xml:space="preserve"><value>Change password</value></data>
+  <data name="RemovePassword" xml:space="preserve"><value>Remove password</value></data>
+  <data name="SetPassword" xml:space="preserve"><value>Set a password</value></data>
+  <data name="NoPasswordSet" xml:space="preserve"><value>No password set. You can set one to sign in without SSO.</value></data>
+  <data name="PasswordFieldsRequired" xml:space="preserve"><value>All password fields are required.</value></data>
+  <data name="PasswordMismatch" xml:space="preserve"><value>Passwords do not match.</value></data>
+  <data name="PasswordChanged" xml:space="preserve"><value>Password changed.</value></data>
+  <data name="PasswordSet" xml:space="preserve"><value>Password set.</value></data>
+  <data name="PasswordRemoved" xml:space="preserve"><value>Password removed.</value></data>
+  <data name="ConfirmPassword" xml:space="preserve"><value>Confirm password</value></data>
+  <data name="Pin" xml:space="preserve"><value>PIN</value></data>
+  <data name="PinSet" xml:space="preserve"><value>A PIN is set on your account.</value></data>
+  <data name="ChangePin" xml:space="preserve"><value>Change PIN</value></data>
+  <data name="RemovePin" xml:space="preserve"><value>Remove PIN</value></data>
+  <data name="PinNotSet" xml:space="preserve"><value>No PIN set. A PIN protects your account access on shared devices.</value></data>
+  <data name="SetPin" xml:space="preserve"><value>Set a PIN</value></data>
+  <data name="SetPinDialogTitle" xml:space="preserve"><value>Set a PIN</value></data>
+  <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirm PIN</value></data>
+  <data name="PinMismatch" xml:space="preserve"><value>PINs do not match.</value></data>
+  <data name="NewPinDialogTitle" xml:space="preserve"><value>New PIN</value></data>
+  <data name="ConfirmNewPinDialogTitle" xml:space="preserve"><value>Confirm new PIN</value></data>
+  <data name="RemovePinDialogTitle" xml:space="preserve"><value>Remove PIN</value></data>
+  <data name="RemovePinConfirm" xml:space="preserve"><value>Are you sure you want to remove your PIN?</value></data>
+  <data name="UserUnknown" xml:space="preserve"><value>Unable to identify current user.</value></data>
+  <data name="PinSetSuccess" xml:space="preserve"><value>PIN set successfully.</value></data>
+  <data name="PinRemovedSuccess" xml:space="preserve"><value>PIN removed.</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="LoginMethods" xml:space="preserve"><value>Login methods</value></data>
+  <data name="Unlink" xml:space="preserve"><value>Unlink</value></data>
+  <data name="NoExternalLogins" xml:space="preserve"><value>No external providers linked.</value></data>
+  <data name="UnlinkLoginTitle" xml:space="preserve"><value>Unlink provider</value></data>
+  <data name="UnlinkLoginConfirm" xml:space="preserve"><value>Are you sure you want to unlink this login provider?</value></data>
+  <data name="DangerZone" xml:space="preserve"><value>Danger zone</value></data>
+  <data name="DeleteAccountWarning" xml:space="preserve"><value>Deleting your account is irreversible. All your data will be lost.</value></data>
+  <data name="DeleteAccount" xml:space="preserve"><value>Delete my account</value></data>
+  <data name="DeleteAccountTitle" xml:space="preserve"><value>Delete account</value></data>
+  <data name="DeleteAccountConfirm" xml:space="preserve"><value>Are you sure you want to delete your account? This action is irreversible.</value></data>
+</root>
