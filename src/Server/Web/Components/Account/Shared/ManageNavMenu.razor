@@ -1,26 +1,5 @@
-﻿@using K7.Server.Infrastructure.Database.Context.Identity
-@using Microsoft.AspNetCore.Identity
-
-@inject SignInManager<ApplicationUser> SignInManager
-@inject IStringLocalizer<ManageNavMenu> L
+﻿@inject IStringLocalizer<ManageNavMenu> L
 
 <nav class="manage-nav">
-    <a href="Account/Manage" class="manage-nav-link"><i class="ph ph-user"></i> @L["Profile"]</a>
-    <a href="Account/Manage/Email" class="manage-nav-link"><i class="ph ph-envelope"></i> @L["Email"]</a>
-    <a href="Account/Manage/ChangePassword" class="manage-nav-link"><i class="ph ph-lock"></i> @L["Password"]</a>
-    @if (hasExternalLogins)
-    {
-        <a href="Account/Manage/ExternalLogins" class="manage-nav-link"><i class="ph ph-link"></i> @L["ExternalLogins"]</a>
-    }
     <a href="Account/Manage/TwoFactorAuthentication" class="manage-nav-link"><i class="ph ph-lock-key"></i> @L["TwoFactor"]</a>
-    <a href="Account/Manage/PersonalData" class="manage-nav-link"><i class="ph ph-user-minus"></i> @L["PersonalData"]</a>
 </nav>
-
-@code {
-    private bool hasExternalLogins;
-
-    protected override async Task OnInitializedAsync()
-    {
-        hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
-    }
-}
