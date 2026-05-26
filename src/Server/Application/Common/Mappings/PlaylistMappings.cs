@@ -88,6 +88,10 @@ public static class PlaylistMappings
                 ? (t2.Album?.Genres?.FirstOrDefault() ?? t2.Genres?.FirstOrDefault())
                 : media?.Genres?.FirstOrDefault();
 
+            var pictures = media is MusicTrack mt2
+                ? (mt2.Pictures.Count != 0 ? mt2.Pictures : (mt2.Album?.Pictures ?? []))
+                : (media?.Pictures ?? []);
+
             return new()
             {
                 Id = domain.Id,
@@ -104,7 +108,7 @@ public static class PlaylistMappings
                 Bpm = media is MusicTrack mt ? mt.AudioAnalysis?.Bpm : null,
                 MusicalKey = media is MusicTrack mk ? mk.AudioAnalysis?.MusicalKey : null,
                 Energy = media is MusicTrack me ? me.AudioAnalysis?.Energy : null,
-                Pictures = media?.Pictures.Select(p => p.ToMetadataPictureDto()).ToList()
+                Pictures = pictures.Select(p => p.ToMetadataPictureDto()).ToList()
             };
         }
     }

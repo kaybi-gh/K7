@@ -74,7 +74,8 @@ public partial class PlaylistDetail
         CoverUrl = ApiClient.GetAbsoluteUri(
             (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
-                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+            ?? _coverUrl,
         CoverDominantColor = (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
             ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
         Duration = item.Duration ?? 0,
