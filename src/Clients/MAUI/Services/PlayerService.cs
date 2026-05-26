@@ -258,6 +258,16 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         QualityChanged?.Invoke(_selectedQuality);
     }
 
+    public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto> tracks)
+    {
+        _subtitleTracks = tracks
+            .Where(t => t.IsTextBased)
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .ToList();
+        _selectedSubtitleTrack = null;
+    }
+
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
     {
         if (_currentIndexedFileId is null)
@@ -281,11 +291,6 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
     public Task ChangeSubtitleTrackAsync(SubtitleFileTrackDto? track, CancellationToken cancellationToken = default)
     {
-        if (_currentIndexedFileId is null)
-        {
-            return Task.CompletedTask;
-        }
-
         _selectedSubtitleTrack = track;
         SubtitleTrackChanged?.Invoke(track);
 

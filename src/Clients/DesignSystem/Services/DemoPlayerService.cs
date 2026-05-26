@@ -117,6 +117,8 @@ public sealed class DemoPlayerService : IPlayerService
     public Task PlayIndexedFileAsync(Guid indexedFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, string? thumbnailsUrl = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 
+    public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto> tracks) { }
+
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 
