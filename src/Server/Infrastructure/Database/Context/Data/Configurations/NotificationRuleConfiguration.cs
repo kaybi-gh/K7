@@ -2,6 +2,7 @@ using System.Text.Json;
 using K7.Server.Domain.Entities.Notifications;
 using K7.Server.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace K7.Server.Infrastructure.Database.Context.Data.Configurations;
@@ -24,7 +25,11 @@ public class NotificationRuleConfiguration : IEntityTypeConfiguration<Notificati
                 v => JsonSerializer.Serialize(v, JsonSerializerOptions.Default),
                 v => JsonSerializer.Deserialize<List<string>>(v, JsonSerializerOptions.Default) ?? new List<string>())
             .HasColumnType("text")
-            .IsRequired();
+            .IsRequired()
+            .Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                (a, b) => a!.SequenceEqual(b!),
+                c => c.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
+                c => c.ToList()));
 
         builder.Property(r => r.ProviderConfig)
             .IsRequired();
