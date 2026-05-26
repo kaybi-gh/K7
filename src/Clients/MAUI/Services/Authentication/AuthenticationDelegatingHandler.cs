@@ -18,6 +18,15 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        // Pre-set the auth token before sending (avoids 401 race on concurrent requests)
+        if (request.Headers.Authorization is null)
+        {
+            var deviceStorage = _serviceProvider.GetRequiredService<IDeviceStorageService>();
+            var token = deviceStorage.Get(PreferenceKeys.ACCESS_TOKEN);
+            if (!string.IsNullOrEmpty(token))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
         var response = await base.SendAsync(request, cancellationToken);
 
         if (response.StatusCode is not HttpStatusCode.Unauthorized)
