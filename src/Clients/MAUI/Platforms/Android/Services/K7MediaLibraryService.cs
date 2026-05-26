@@ -14,6 +14,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
+using System.Net.Http.Headers;
 using Log = Android.Util.Log;
 using Resource = K7.Clients.MAUI.Resource;
 
@@ -51,12 +52,26 @@ public class K7MediaLibraryService : MediaLibraryService,
     private bool _updatingFromPlayer;
     private bool _isVideoMode;
     private bool _videoSessionAdded;
+    private bool _syncingFromExoPlayer;
+    private IList<MediaItem>? _resolvedQueueMediaItems;
 
     public override void OnCreate()
     {
         base.OnCreate();
         Log.Info(Tag, "K7MediaLibraryService created");
 
+        try
+        {
+            InitializeService();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(Tag, $"K7MediaLibraryService initialization failed: {ex}");
+        }
+    }
+
+    private void InitializeService()
+    {
         var services = IPlatformApplication.Current?.Services;
         if (services is null)
         {
@@ -70,6 +85,17 @@ public class K7MediaLibraryService : MediaLibraryService,
         _streamUriService = services.GetRequiredService<IStreamUriService>();
         _k7ServerService = services.GetRequiredService<IK7ServerService>();
 
+        // Ensure HttpClient BaseAddress is set (service may start before App.xaml.cs runs)
+        if (_k7ServerService.HttpClient.BaseAddress is null)
+        {
+            var serverUrl = Preferences.Get(Constants.PreferenceKeys.K7_SERVER_URL, null);
+            if (!string.IsNullOrEmpty(serverUrl))
+            {
+                _k7ServerService.HttpClient.BaseAddress = new Uri(serverUrl);
+                Log.Info(Tag, $"BaseAddress set to {serverUrl}");
+            }
+        }
+
         _httpDataSourceFactory = new DefaultHttpDataSource.Factory();
         UpdateAuthHeaders();
 
@@ -77,9 +103,17 @@ public class K7MediaLibraryService : MediaLibraryService,
         var mediaSourceFactory = new DefaultMediaSourceFactory(this as Context);
         mediaSourceFactory.SetDataSourceFactory(dataSourceFactory);
 
+        var audioAttributes = new AudioAttributes.Builder()!
+            .SetUsage((int)global::Android.Media.AudioUsageKind.Media)!
+            .SetContentType((int)global::Android.Media.AudioContentType.Music)!
+            .Build()!;
+
 #pragma warning disable CS0618 // IMediaSourceFactory marked obsolete in .NET Android bindings but is the correct Media3 API
         _player = new ExoPlayerBuilder(this)!
             .SetMediaSourceFactory(mediaSourceFactory as AndroidX.Media3.ExoPlayer.Source.IMediaSourceFactory)!
+            .SetAudioAttributes(audioAttributes, /* handleAudioFocus */ true)!
+            .SetHandleAudioBecomingNoisy(true)!
+            .SetWakeMode(AndroidX.Media3.Common.C.WakeModeLocal)!
             .Build()!;
 #pragma warning restore CS0618
 
@@ -167,18 +201,26 @@ public class K7MediaLibraryService : MediaLibraryService,
         if (_isVideoMode) return; // Video mode ignores ExoPlayer playback state for audio
         if (_audioPlayerService is null) return;
 
-        _updatingFromPlayer = true;
-        // Player state constants: Idle=1, Buffering=2, Ready=3, Ended=4
-        _audioPlayerService.PlaybackState = playbackState switch
+        try
         {
-            3 => _player?.IsPlaying == true
-                ? PlaybackState.Playing
-                : PlaybackState.Paused,
-            2 => PlaybackState.Buffering,
-            4 => PlaybackState.Ended,
-            _ => PlaybackState.Idle,
-        };
-        _updatingFromPlayer = false;
+            _updatingFromPlayer = true;
+            // Player state constants: Idle=1, Buffering=2, Ready=3, Ended=4
+            _audioPlayerService.PlaybackState = playbackState switch
+            {
+                3 => _player?.IsPlaying == true
+                    ? PlaybackState.Playing
+                    : PlaybackState.Paused,
+                2 => PlaybackState.Buffering,
+                4 => PlaybackState.Ended,
+                _ => PlaybackState.Idle,
+            };
+            _updatingFromPlayer = false;
+        }
+        catch (Exception ex)
+        {
+            _updatingFromPlayer = false;
+            Log.Error(Tag, $"OnPlaybackStateChanged failed: {ex.Message}");
+        }
     }
 
     public void OnIsPlayingChanged(bool isPlaying)
@@ -186,16 +228,24 @@ public class K7MediaLibraryService : MediaLibraryService,
         if (_isVideoMode) return; // Video mode handled by K7VideoSessionPlayer
         if (_audioPlayerService is null) return;
 
-        _updatingFromPlayer = true;
-        _audioPlayerService.PlaybackState = isPlaying
-            ? PlaybackState.Playing
-            : PlaybackState.Paused;
-        _updatingFromPlayer = false;
+        try
+        {
+            _updatingFromPlayer = true;
+            _audioPlayerService.PlaybackState = isPlaying
+                ? PlaybackState.Playing
+                : PlaybackState.Paused;
+            _updatingFromPlayer = false;
 
-        if (isPlaying)
-            StartPositionUpdates();
-        else
-            StopPositionUpdates();
+            if (isPlaying)
+                StartPositionUpdates();
+            else
+                StopPositionUpdates();
+        }
+        catch (Exception ex)
+        {
+            _updatingFromPlayer = false;
+            Log.Error(Tag, $"OnIsPlayingChanged failed: {ex.Message}");
+        }
     }
 
     public void OnPlayerError(PlaybackException? error)
@@ -220,6 +270,24 @@ public class K7MediaLibraryService : MediaLibraryService,
             _updatingFromPlayer = true;
             _audioPlayerService.Duration = duration / 1000.0;
             _updatingFromPlayer = false;
+        }
+
+        // Auto-advance (reason=1): ExoPlayer moved to next track in playlist.
+        // Sync AudioPlayerService without triggering OnSourceChanged.
+        if (reason == 1 && _resolvedQueueMediaItems is not null && _resolvedQueueMediaItems.Count > 1)
+        {
+            _ = Task.Run(async () =>
+            {
+                _syncingFromExoPlayer = true;
+                try
+                {
+                    await _audioPlayerService.NextAsync();
+                }
+                finally
+                {
+                    _syncingFromExoPlayer = false;
+                }
+            });
         }
     }
 
@@ -251,43 +319,79 @@ public class K7MediaLibraryService : MediaLibraryService,
 
     private void OnSourceChanged(PlayerSource source)
     {
+        if (_syncingFromExoPlayer) return;
         if (_player is null || string.IsNullOrEmpty(source.Url)) return;
 
         UpdateAuthHeaders();
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            var uri = source.Url.Contains("://") ? source.Url : $"file://{source.Url}";
-
-            var itemBuilder = new MediaItem.Builder()
-                .SetUri(uri)!;
-
-            if (_pendingTrack is not null)
+            try
             {
-                var metadataBuilder = new MediaMetadata.Builder()
-                    .SetTitle(_pendingTrack.Title)!
-                    .SetArtist(_pendingTrack.Artist)!
-                    .SetAlbumTitle(_pendingTrack.AlbumTitle)!
-                    .SetIsPlayable(Java.Lang.Boolean.ValueOf(true))!
-                    .SetMediaType(Java.Lang.Integer.ValueOf((int)MediaMetadata.MediaTypeMusic))!;
+                var uri = source.Url.Contains("://") ? source.Url : $"file://{source.Url}";
+                var currentIndex = _audioPlayerService?.CurrentIndex ?? 0;
 
-                if (_pendingTrack.CoverUrl is not null)
+                // Validate resolved queue is still current (not stale from previous session)
+                if (_resolvedQueueMediaItems is not null)
                 {
-                    var artworkUri = ResolveArtworkUri(_pendingTrack.CoverUrl);
-                    if (artworkUri is not null)
-                        metadataBuilder.SetArtworkUri(artworkUri);
+                    var currentTrackId = _audioPlayerService?.CurrentTrack?.MediaId.ToString();
+                    if (currentIndex < 0 || currentIndex >= _resolvedQueueMediaItems.Count
+                        || currentTrackId != _resolvedQueueMediaItems[currentIndex].MediaId)
+                    {
+                        _resolvedQueueMediaItems = null;
+                    }
                 }
 
-                itemBuilder.SetMediaId(_pendingTrack.MediaId.ToString())!
-                    .SetMediaMetadata(metadataBuilder.Build()!);
+                // If we have resolved queue items (from OnAddMediaItems), use multi-item playlist
+                if (_resolvedQueueMediaItems is not null && _resolvedQueueMediaItems.Count > 1)
+                {
+                    if (_player.MediaItemCount == _resolvedQueueMediaItems.Count)
+                    {
+                        // Queue already loaded on ExoPlayer - just seek to new track (next/prev)
+                        _player.SeekToDefaultPosition(currentIndex);
+                    }
+                    else
+                    {
+                        // First time loading this queue
+                        _player.SetMediaItems(_resolvedQueueMediaItems, currentIndex, 0L);
+                        _player.Prepare();
+                    }
+                }
+                else
+                {
+                    // Fallback: single item (Blazor UI or no resolved queue)
+                    _resolvedQueueMediaItems = null;
+                    var itemBuilder = new MediaItem.Builder()
+                        .SetUri(uri)!;
+
+                    if (_pendingTrack is not null)
+                    {
+                        var metadataBuilder = new MediaMetadata.Builder()
+                            .SetTitle(_pendingTrack.Title)!
+                            .SetArtist(_pendingTrack.Artist)!
+                            .SetAlbumTitle(_pendingTrack.AlbumTitle)!
+                            .SetIsPlayable(Java.Lang.Boolean.ValueOf(true))!
+                            .SetMediaType(Java.Lang.Integer.ValueOf((int)MediaMetadata.MediaTypeMusic))!;
+
+                        if (_pendingTrack.CoverUrl is not null)
+                            SetPlayerArtwork(metadataBuilder, _pendingTrack.CoverUrl);
+
+                        itemBuilder.SetMediaId(_pendingTrack.MediaId.ToString())!
+                            .SetMediaMetadata(metadataBuilder.Build()!);
+                    }
+
+                    _player.SetMediaItem(itemBuilder.Build()!);
+                    _player.Prepare();
+                }
+
+                _player.PlayWhenReady = true;
+
+                Log.Info(Tag, $"Playing: {_pendingTrack?.Title ?? "unknown"} - URI: {uri[..Math.Min(80, uri.Length)]}");
             }
-
-            var mediaItem = itemBuilder.Build()!;
-            _player.SetMediaItem(mediaItem);
-            _player.Prepare();
-            _player.PlayWhenReady = true;
-
-            Log.Info(Tag, $"Playing: {_pendingTrack?.Title ?? "unknown"} - URI: {uri[..Math.Min(80, uri.Length)]}");
+            catch (Exception ex)
+            {
+                Log.Error(Tag, $"Failed to set media source: {ex}");
+            }
         });
     }
 
@@ -329,34 +433,79 @@ public class K7MediaLibraryService : MediaLibraryService,
 
     private void UpdateAuthHeaders()
     {
-        var authHeader = _k7ServerService?.HttpClient.DefaultRequestHeaders.Authorization;
-        if (authHeader is not null && _httpDataSourceFactory is not null)
+        if (_httpDataSourceFactory is null) return;
+
+        // Read token directly from device storage (DelegatingHandler adds it per-request to HttpClient,
+        // but ExoPlayer's HttpDataSource needs it set explicitly)
+        var services = IPlatformApplication.Current?.Services;
+        var deviceStorage = services?.GetService<IDeviceStorageService>();
+        var token = deviceStorage?.Get(K7.Shared.PreferenceKeys.ACCESS_TOKEN);
+
+        if (!string.IsNullOrEmpty(token))
         {
             var headers = new Dictionary<string, string>
             {
-                ["Authorization"] = authHeader.ToString()
+                ["Authorization"] = $"Bearer {token}"
             };
             _httpDataSourceFactory.SetDefaultRequestProperties(headers);
+
+            if (_k7ServerService is not null)
+            {
+                _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                // Android Auto service sometimes runs without compression assemblies loaded;
+                // ask for identity encoding to avoid gzip/deflate decompression path.
+                _k7ServerService.HttpClient.DefaultRequestHeaders.AcceptEncoding.Clear();
+                _k7ServerService.HttpClient.DefaultRequestHeaders.AcceptEncoding.Add(
+                    new StringWithQualityHeaderValue("identity"));
+            }
         }
     }
 
     private const string LocalFilesPrefix = "https://k7-local-files/";
 
-    private global::Android.Net.Uri? ResolveArtworkUri(string coverUrl)
+    private void SetPlayerArtwork(MediaMetadata.Builder metadataBuilder, string coverUrl)
     {
-        if (coverUrl.StartsWith(LocalFilesPrefix, StringComparison.OrdinalIgnoreCase))
+        if (coverUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            var filePath = coverUrl["file://".Length..];
+            if (File.Exists(filePath))
+            {
+                try
+                {
+                    var bytes = File.ReadAllBytes(filePath);
+                    metadataBuilder.SetArtworkData(bytes, Java.Lang.Integer.ValueOf((int)MediaMetadata.PictureTypeFrontCover));
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(Tag, $"Failed to read artwork for player: {ex.Message}");
+                }
+            }
+        }
+        else if (coverUrl.StartsWith(LocalFilesPrefix, StringComparison.OrdinalIgnoreCase))
         {
             var relativePath = coverUrl[LocalFilesPrefix.Length..];
             var localPath = Path.Combine(FileSystem.AppDataDirectory, "downloads", relativePath);
             if (File.Exists(localPath))
-                return global::Android.Net.Uri.Parse($"file://{localPath}");
-            return null;
+            {
+                try
+                {
+                    var bytes = File.ReadAllBytes(localPath);
+                    metadataBuilder.SetArtworkData(bytes, Java.Lang.Integer.ValueOf((int)MediaMetadata.PictureTypeFrontCover));
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn(Tag, $"Failed to read artwork for player: {ex.Message}");
+                }
+            }
         }
-
-        var absoluteUri = _k7ServerService?.GetAbsoluteUri(coverUrl);
-        return absoluteUri is not null
-            ? global::Android.Net.Uri.Parse(absoluteUri.AbsoluteUri)
-            : null;
+        else
+        {
+            var absoluteUri = _k7ServerService?.GetAbsoluteUri(coverUrl);
+            if (absoluteUri is not null)
+                metadataBuilder.SetArtworkUri(global::Android.Net.Uri.Parse(absoluteUri.AbsoluteUri));
+        }
     }
 
     // --- Position tracking ---
@@ -370,22 +519,28 @@ public class K7MediaLibraryService : MediaLibraryService,
         _positionTimer = new System.Timers.Timer(500);
         _positionTimer.Elapsed += (_, _) =>
         {
-            // ExoPlayer must be accessed from the main thread
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                if (_player is null || _audioPlayerService is null) return;
+                try
+                {
+                    if (_player is null || _audioPlayerService is null) return;
 
-                var position = _player.CurrentPosition / 1000.0;
-                var duration = _player.Duration / 1000.0;
-                var buffered = _player.BufferedPosition / 1000.0;
+                    var position = _player.CurrentPosition / 1000.0;
+                    var duration = _player.Duration / 1000.0;
+                    var buffered = _player.BufferedPosition / 1000.0;
 
-                _updatingFromPlayer = true;
-                _audioPlayerService.CurrentTime = position;
-                if (duration > 0)
-                    _audioPlayerService.Duration = duration;
-                if (buffered > 0)
-                    _audioPlayerService.BufferedTime = buffered;
-                _updatingFromPlayer = false;
+                    _updatingFromPlayer = true;
+                    _audioPlayerService.CurrentTime = position;
+                    if (duration > 0)
+                        _audioPlayerService.Duration = duration;
+                    if (buffered > 0)
+                        _audioPlayerService.BufferedTime = buffered;
+                    _updatingFromPlayer = false;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(Tag, $"Position update failed: {ex.Message}");
+                }
             });
         };
         _positionTimer.Start();
@@ -430,13 +585,112 @@ public class K7MediaLibraryService : MediaLibraryService,
         {
             IReadOnlyList<MediaBrowseItem> items;
 
-            if (parentId == RootId)
-                items = await _mediaBrowseService!.GetRootItemsAsync();
-            else
-                items = await _mediaBrowseService!.GetChildrenAsync(parentId!);
+            try
+            {
+                UpdateAuthHeaders();
 
-            var mediaItems = items.Select(ToMediaItem).ToList();
+                if (parentId == RootId)
+                    items = await _mediaBrowseService!.GetRootItemsAsync();
+                else
+                    items = await _mediaBrowseService!.GetChildrenAsync(parentId!);
+
+                Log.Info(Tag, $"OnGetChildren({parentId}): returned {items.Count} items");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"Failed to load children for {parentId}: {ex}");
+                items = [];
+            }
+
+            var mediaItems = new List<MediaItem>(items.Count);
+            foreach (var browseItem in items)
+                mediaItems.Add(await ToMediaItemAsync(browseItem));
+
+            // Grant URI permissions for content:// artwork URIs to the browsing controller
+            if (browser?.PackageName is not null)
+            {
+                foreach (var mi in mediaItems)
+                {
+                    var artUri = mi.MediaMetadata?.ArtworkUri;
+                    if (artUri is not null && artUri.Scheme == "content")
+                    {
+                        try
+                        {
+                            GrantUriPermission(browser.PackageName, artUri,
+                                global::Android.Content.ActivityFlags.GrantReadUriPermission);
+                            Log.Info(Tag, $"Granted URI permission to {browser.PackageName} for {artUri}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warn(Tag, $"Failed to grant URI permission to {browser.PackageName}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Log.Warn(Tag, "Browser package is null, cannot grant URI permissions");
+            }
+
             return LibraryResult.OfItemList(mediaItems, libraryParams)!;
+        });
+    }
+
+    public IListenableFuture? OnSearch(
+        MediaLibrarySession? session,
+        MediaSession.ControllerInfo? browser,
+        string? query,
+        LibraryParams? libraryParams)
+    {
+        var future = ResolvableFuture.Create()!;
+        future.Set(LibraryResult.OfVoid());
+        // Notify that search results are available
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(query) && browser is not null)
+                {
+                    var items = await _mediaBrowseService!.SearchAsync(query);
+                    Log.Info(Tag, $"OnSearch({query}): found {items.Count} items");
+                    session?.NotifySearchResultChanged(browser, query, items.Count, libraryParams);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"Search notification failed: {ex.Message}");
+            }
+        });
+        return future;
+    }
+
+    public IListenableFuture? OnGetSearchResult(
+        MediaLibrarySession? session,
+        MediaSession.ControllerInfo? browser,
+        string? query,
+        int page,
+        int pageSize,
+        LibraryParams? libraryParams)
+    {
+        return BuildFuture(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return LibraryResult.OfItemList(new List<MediaItem>(), libraryParams)!;
+
+            try
+            {
+                var items = await _mediaBrowseService!.SearchAsync(query);
+                Log.Info(Tag, $"OnGetSearchResult({query}): returned {items.Count} items");
+                var mediaItems = new List<MediaItem>(items.Count);
+                foreach (var browseItem in items)
+                    mediaItems.Add(await ToMediaItemAsync(browseItem));
+                return LibraryResult.OfItemList(mediaItems, libraryParams)!;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"Search failed for '{query}': {ex.Message}");
+                return LibraryResult.OfItemList(new List<MediaItem>(), libraryParams)!;
+            }
         });
     }
 
@@ -445,13 +699,67 @@ public class K7MediaLibraryService : MediaLibraryService,
         MediaSession.ControllerInfo? browser,
         string? mediaId)
     {
+        var id = mediaId ?? string.Empty;
+        var (isBrowsable, isPlayable) = GetItemFlags(id);
+
         var item = new MediaItem.Builder()
-            .SetMediaId(mediaId ?? string.Empty)!
+            .SetMediaId(id)!
+            .SetMediaMetadata(new MediaMetadata.Builder()
+                .SetIsBrowsable(Java.Lang.Boolean.ValueOf(isBrowsable))!
+                .SetIsPlayable(Java.Lang.Boolean.ValueOf(isPlayable))!
+                .Build()!)!
             .Build();
 
         var future = ResolvableFuture.Create()!;
         future.Set(LibraryResult.OfItem(item, null));
         return future;
+    }
+
+    private static (bool IsBrowsable, bool IsPlayable) GetItemFlags(string mediaId)
+    {
+        if (mediaId.StartsWith("root:"))
+            return (true, false);
+
+        if (mediaId.StartsWith("home:section:", StringComparison.Ordinal)
+            || mediaId.StartsWith("home-", StringComparison.Ordinal))
+            return (true, false);
+
+        // Any other home:* IDs are non-actionable placeholders.
+        if (mediaId.StartsWith("home:", StringComparison.Ordinal))
+            return (false, false);
+
+        if (string.IsNullOrWhiteSpace(mediaId))
+            return (false, false);
+
+        if (mediaId.StartsWith("albums-letter:") || mediaId.StartsWith("artists-letter:"))
+            return (true, false);
+
+        if (mediaId.StartsWith("artist:"))
+        {
+            // "artist:guid:shuffle" = playable, "artist:guid" = browsable
+            return mediaId.EndsWith(":shuffle") ? (false, true) : (true, false);
+        }
+
+        if (mediaId.StartsWith("album:"))
+        {
+            // "album:guid" = browsable album, "album:guid:shuffle" = playable shuffle, "album:guid:trackId" = playable track
+            var afterPrefix = mediaId.AsSpan("album:".Length);
+            return afterPrefix.Contains(':') ? (false, true) : (true, true);
+        }
+
+        if (mediaId.StartsWith("playlist:"))
+        {
+            var afterPrefix = mediaId.AsSpan("playlist:".Length);
+            return afterPrefix.Contains(':') ? (false, true) : (true, true);
+        }
+
+        if (mediaId.StartsWith("download-group:"))
+        {
+            var afterPrefix = mediaId.AsSpan("download-group:".Length);
+            return afterPrefix.Contains(':') ? (false, true) : (true, true);
+        }
+
+        return (false, true);
     }
 
     public IListenableFuture? OnAddMediaItems(
@@ -461,66 +769,112 @@ public class K7MediaLibraryService : MediaLibraryService,
     {
         if (mediaItems is null || mediaItems.Count == 0)
         {
+            Log.Warn(Tag, "OnAddMediaItems: empty input");
             var empty = ResolvableFuture.Create()!;
-            empty.Set(new MediaSession.MediaItemsWithStartPosition(
-                new List<MediaItem>(), 0, 0L));
+            empty.Set(new Java.Util.ArrayList());
             return empty;
         }
 
+        Log.Info(Tag, $"OnAddMediaItems: resolving {mediaItems.Count} item(s), mediaId={mediaItems[0]?.MediaId}");
+
         return BuildFuture(async () =>
         {
-            var resolvedItems = new List<MediaItem>();
+            var resolvedItems = new Java.Util.ArrayList();
 
-            foreach (var item in mediaItems)
+            try
             {
-                var mediaId = item.MediaId;
-                if (string.IsNullOrEmpty(mediaId)) continue;
-
-                var queueItems = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
-
-                if (queueItems.Count > 0)
+                foreach (var item in mediaItems)
                 {
-                    await _audioPlayerService!.PlayTracksAsync(queueItems, 0);
+                    var mediaId = item.MediaId;
+                    if (string.IsNullOrEmpty(mediaId)) continue;
 
-                    foreach (var track in queueItems)
+                    var queueItems = await _mediaBrowseService!.GetPlayableItemsAsync(mediaId);
+                    Log.Info(Tag, $"OnAddMediaItems: GetPlayableItemsAsync({mediaId}) returned {queueItems.Count} tracks");
+
+                    if (queueItems.Count > 0)
                     {
-                        var streamUrl = await GetStreamUrl(track);
-                        if (streamUrl is null) continue;
+                        var failCount = 0;
+                        foreach (var track in queueItems)
+                        {
+                            var streamUrl = await GetStreamUrl(track);
+                            if (streamUrl is null)
+                            {
+                                failCount++;
+                                continue;
+                            }
 
-                        var resolved = new MediaItem.Builder()
-                            .SetMediaId(track.MediaId.ToString())!
-                            .SetUri(streamUrl)!
-                            .SetMediaMetadata(new MediaMetadata.Builder()
+                            var metadataBuilder = new MediaMetadata.Builder()
                                 .SetTitle(track.Title)!
                                 .SetArtist(track.Artist)!
                                 .SetAlbumTitle(track.AlbumTitle)!
                                 .SetIsPlayable(Java.Lang.Boolean.ValueOf(true))!
-                                .Build()!)!
-                            .Build()!;
+                                .SetMediaType(Java.Lang.Integer.ValueOf((int)MediaMetadata.MediaTypeMusic))!;
 
-                        resolvedItems.Add(resolved);
+                            if (track.CoverUrl is not null)
+                                SetPlayerArtwork(metadataBuilder, track.CoverUrl);
+
+                            var resolved = new MediaItem.Builder()
+                                .SetMediaId(track.MediaId.ToString())!
+                                .SetUri(streamUrl)!
+                                .SetMediaMetadata(metadataBuilder.Build()!)!
+                                .Build()!;
+
+                            resolvedItems.Add(resolved);
+                        }
+
+                        if (failCount > 0)
+                            Log.Warn(Tag, $"OnAddMediaItems: {failCount} tracks failed to get stream URL");
+
+                        // Store resolved items for queue navigation
+                        var resolvedList = new List<MediaItem>();
+                        for (var i = 0; i < resolvedItems.Size(); i++)
+                            resolvedList.Add((MediaItem)resolvedItems.Get(i)!);
+                        _resolvedQueueMediaItems = resolvedList;
+
+                        // Block OnSourceChanged - Media3 will handle setting items on the player
+                        _syncingFromExoPlayer = true;
+                        try
+                        {
+                            await MainThread.InvokeOnMainThreadAsync(() => _audioPlayerService!.PlayTracksAsync(queueItems, 0));
+                        }
+                        finally
+                        {
+                            _syncingFromExoPlayer = false;
+                        }
+
+                        Log.Info(Tag, $"OnAddMediaItems: queue ready with {resolvedItems.Size()} items for: {mediaId}");
+                    }
+                    else if (item is not null)
+                    {
+                        resolvedItems.Add(item);
                     }
                 }
-                else if (item is not null)
-                {
-                    resolvedItems.Add(item);
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(Tag, $"OnAddMediaItems: exception: {ex}");
             }
 
-            return (Java.Lang.Object)new MediaSession.MediaItemsWithStartPosition(
-                resolvedItems, 0, 0L);
+            // Ensure auth headers are set before Media3 starts playback
+            UpdateAuthHeaders();
+
+            Log.Info(Tag, $"OnAddMediaItems: returning {resolvedItems.Size()} resolved items to Media3");
+            return (Java.Lang.Object)resolvedItems;
         });
     }
 
     private async Task<string?> GetStreamUrl(AudioQueueItem track)
     {
+        if (!string.IsNullOrEmpty(track.LocalPath))
+            return track.LocalPath.Contains("://") ? track.LocalPath : $"file://{track.LocalPath}";
+
         if (_streamUriService is null) return null;
 
         var streamSession = await _streamUriService.GetOrCreateSessionAsync(track.IndexedFileId);
         return streamSession.Source?.Uri.AbsoluteUri;
     }
 
-    private static MediaItem ToMediaItem(MediaBrowseItem item)
+    private async Task<MediaItem> ToMediaItemAsync(MediaBrowseItem item)
     {
         var metadataBuilder = new MediaMetadata.Builder()
             .SetTitle(item.Title)!
@@ -531,7 +885,60 @@ public class K7MediaLibraryService : MediaLibraryService,
             metadataBuilder.SetArtist(item.Subtitle);
 
         if (item.ArtworkUrl is not null)
-            metadataBuilder.SetArtworkUri(global::Android.Net.Uri.Parse(item.ArtworkUrl));
+        {
+            if (item.ArtworkUrl.StartsWith("file://", StringComparison.Ordinal))
+            {
+                // For local files, embed bitmap data directly (Android Auto can't load content:// reliably)
+                var filePath = item.ArtworkUrl["file://".Length..];
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        var bytes = File.ReadAllBytes(filePath);
+                        metadataBuilder.SetArtworkData(bytes, Java.Lang.Integer.ValueOf((int)MediaMetadata.PictureTypeFrontCover));
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn(Tag, $"Failed to read artwork file: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Log.Warn(Tag, $"Artwork file not found: {filePath}");
+                }
+            }
+            else
+            {
+                var artworkSet = false;
+
+                // Prefer embedding bytes fetched with authenticated HttpClient; Android Auto host cannot always fetch protected URLs.
+                if (_k7ServerService is not null)
+                {
+                    try
+                    {
+                        var artworkBytes = await _k7ServerService.HttpClient.GetByteArrayAsync(item.ArtworkUrl);
+                        if (artworkBytes.Length > 0)
+                        {
+                            metadataBuilder.SetArtworkData(artworkBytes, Java.Lang.Integer.ValueOf((int)MediaMetadata.PictureTypeFrontCover));
+                            artworkSet = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn(Tag, $"Failed to download browse artwork: {ex.Message}");
+                    }
+                }
+
+                if (!artworkSet)
+                {
+                    var artworkUri = ResolveArtworkUriForBrowse(item.ArtworkUrl);
+                    if (artworkUri is not null)
+                        metadataBuilder.SetArtworkUri(artworkUri);
+                    else
+                        Log.Warn(Tag, $"Artwork resolved to null for: {item.ArtworkUrl}");
+                }
+            }
+        }
 
         if (item.IsBrowsable && !item.IsPlayable)
             metadataBuilder.SetMediaType(Java.Lang.Integer.ValueOf((int)MediaMetadata.MediaTypeFolderMixed));
@@ -540,6 +947,35 @@ public class K7MediaLibraryService : MediaLibraryService,
             .SetMediaId(item.Id)!
             .SetMediaMetadata(metadataBuilder.Build()!)!
             .Build()!;
+    }
+
+    private static global::Android.Net.Uri? ResolveArtworkUriForBrowse(string artworkUrl)
+    {
+        if (artworkUrl.StartsWith("file://", StringComparison.Ordinal))
+        {
+            var filePath = artworkUrl["file://".Length..];
+            var file = new Java.IO.File(filePath);
+            if (!file.Exists())
+            {
+                Log.Warn(Tag, $"Artwork file not found: {filePath}");
+                return null;
+            }
+
+            try
+            {
+                return AndroidX.Core.Content.FileProvider.GetUriForFile(
+                    global::Android.App.Application.Context,
+                    "com.k7.maui.fileprovider",
+                    file);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"FileProvider failed for {filePath}: {ex.Message}");
+                return null;
+            }
+        }
+
+        return global::Android.Net.Uri.Parse(artworkUrl);
     }
 
     private static IListenableFuture BuildFuture<T>(Func<Task<T>> asyncFunc)
