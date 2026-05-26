@@ -240,8 +240,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
-            var term = request.SearchText.Trim();
-            query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title, $"%{term}%"));
+            var term = request.SearchText.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title.ToLower(), $"%{term}%"));
         }
 
         return query;
