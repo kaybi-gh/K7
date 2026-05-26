@@ -36,6 +36,7 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
             options.ConfigureDbContext(sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value);
             options.UseOpenIddict();
+            options.ConfigureWarnings(w => w.Ignore(RelationalEventId.OptionalDependentWithoutIdentifyingPropertyWarning));
         });
 
         services.AddIdentityCore<ApplicationUser>(options =>
