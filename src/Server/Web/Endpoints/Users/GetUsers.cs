@@ -19,12 +19,18 @@ public class GetUsers : IEndpoint
             [FromQuery] bool? isActive,
             CancellationToken cancellationToken) =>
         {
-            var users = await sender.Send(new GetUsersQuery
+            var result = await sender.Send(new GetUsersQuery
             {
                 Role = role,
                 IsActive = isActive
             }, cancellationToken);
-            return Results.Ok(users.Select(u => u.ToUserDto()));
+            return Results.Ok(result.Users.Select(u =>
+            {
+                var avatarUrl = result.AvatarPictureIds.TryGetValue(u.Id, out var picId)
+                    ? $"/api/metadata-pictures/{picId}"
+                    : null;
+                return u.ToUserDto(avatarUrl: avatarUrl);
+            }));
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)

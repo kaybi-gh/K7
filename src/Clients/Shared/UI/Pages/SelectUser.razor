@@ -29,11 +29,12 @@
                          tabindex="0" role="button"
                          @onclick="() => SelectUserAsync(user)"
                          @onkeydown="(e) => OnUserKeyDown(e, user)">
-                        <K7Avatar Class="ma-2" Size="xl" Color="primary">
-                            @GetInitials(user.UserName)
-                        </K7Avatar>
+                        <K7Avatar Class="ma-2" Size="xl" Color="primary"
+                                  Image="@user.AvatarUrl"
+                                  Letter="@GetInitial(user)"
+                                  UserId="@user.UserId" />
                         <div class="select-user-name">
-                            <span>@user.UserName</span>
+                            <span>@(user.DisplayName ?? user.UserName)</span>
                             @if (user.PinHash is not null)
                             {
                                 <K7Icon Name="lock" Size="sm" Color="secondary" />

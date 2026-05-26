@@ -193,6 +193,7 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   flex-shrink: 0;
 }
 .k7-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.k7-avatar__letter { text-transform: uppercase; user-select: none; }
 .k7-avatar--sm { width: 28px; height: 28px; font-size: 0.75rem; }
 .k7-avatar--lg { width: 56px; height: 56px; font-size: 1.4rem; }
 .k7-avatar--xl { width: 80px; height: 80px; font-size: 2rem; }

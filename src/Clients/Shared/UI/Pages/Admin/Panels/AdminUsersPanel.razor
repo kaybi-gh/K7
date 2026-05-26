@@ -29,9 +29,14 @@ else
                  RowId="@(u => $"user-{u.Id}")" RowClass="@(u => u.Id == _highlightedUserId ? "row-highlighted" : null)">
         <K7DataColumn TItem="UserDto" Title="@L["HeaderUser"]" Hideable="false">
             <CellTemplate>
-                <div class="d-flex flex-col" style="@(!context.IsActive ? "opacity: 0.5;" : "")">
-                    <p>@(context.UserName ?? "-")</p>
-                    <span class="text-caption" style="color: var(--color-text-muted);">@(context.Email ?? "-")</span>
+                <div class="d-flex align-center gap-2" style="@(!context.IsActive ? "opacity: 0.5;" : "")">
+                    <K7Avatar Size="sm" Image="@context.AvatarUrl"
+                              Letter="@(context.UserName?[..1].ToUpperInvariant() ?? "?")"
+                              UserId="@context.Id" />
+                    <div class="d-flex flex-col">
+                        <p>@(context.UserName ?? "-")</p>
+                        <span class="text-caption" style="color: var(--color-text-muted);">@(context.Email ?? "-")</span>
+                    </div>
                 </div>
             </CellTemplate>
         </K7DataColumn>

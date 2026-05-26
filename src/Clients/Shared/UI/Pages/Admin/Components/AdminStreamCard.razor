@@ -36,7 +36,7 @@
 
         <div class="stream-card__meta">
             <div class="stream-card__meta-row">
-                <K7Avatar Size="sm">@UserInitial</K7Avatar>
+                <K7Avatar Size="sm" Image="@Stream.UserAvatarUrl" UserId="@Stream.UserId">@UserInitial</K7Avatar>
                 <a class="stream-card__link focusable" href="/admin/users#@Stream.UserId">@(Stream.UserName ?? "-")</a>
             </div>
 
