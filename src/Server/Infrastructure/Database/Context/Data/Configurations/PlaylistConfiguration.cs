@@ -1,5 +1,4 @@
 using K7.Server.Domain.Entities.Playlists;
-using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,8 +19,7 @@ public class PlaylistConfiguration : IEntityTypeConfiguration<Playlist>
 
         builder
             .Property(p => p.MediaType)
-            .IsRequired()
-            .HasDefaultValue(MediaType.MusicTrack);
+            .IsRequired();
 
         builder
             .HasOne(p => p.User)

@@ -1142,9 +1142,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("MediaType")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(3);
+                        .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
