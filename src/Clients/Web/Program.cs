@@ -18,10 +18,12 @@ builder.Services.AddAuthenticationStateDeserialization();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+builder.Services.AddTransient<UnauthorizedRedirectHandler>();
 builder.Services.AddHttpClient<K7ServerService>(httpClient =>
 {
     httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
-});
+})
+.AddHttpMessageHandler<UnauthorizedRedirectHandler>();
 
 builder.Services.AddTransient<IK7ServerService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IMediaService>(sp => sp.GetRequiredService<K7ServerService>());
