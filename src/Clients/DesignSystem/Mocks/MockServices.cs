@@ -439,6 +439,17 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new UserDto { Id = Guid.Empty, UserName = null, Role = "Admin", Created = DateTimeOffset.UtcNow, IsActive = true, IsGuest = false, HasPin = false, CapabilityOverrides = [], LibraryExclusions = [], MediaExclusions = [] });
     public Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UploadAvatarAsync(Stream stream, string fileName, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RemoveAvatarAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task SetPasswordAsync(SetPasswordRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RemovePasswordAsync(RemovePasswordRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateEmailAsync(UpdateEmailRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, ExternalLogins = [] });
+    public Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockRatingService : IRatingService
