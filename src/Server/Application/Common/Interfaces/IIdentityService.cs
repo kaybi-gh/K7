@@ -2,7 +2,7 @@
 
 namespace K7.Server.Application.Common.Interfaces;
 
-public interface IIdentityService // How to put this into domain?
+public interface IIdentityService
 {
     Task<string?> GetUserNameAsync(string userId);
 
@@ -21,4 +21,25 @@ public interface IIdentityService // How to put this into domain?
     Task SetRoleAsync(string userId, string role);
 
     Task ResetPasswordAsync(string userId, string newPassword);
+
+    Task<bool> HasPasswordAsync(string userId);
+
+    Task<bool> VerifyPasswordAsync(string userId, string password);
+
+    Task ChangePasswordAsync(string userId, string currentPassword, string newPassword);
+
+    Task SetPasswordAsync(string userId, string newPassword);
+
+    Task RemovePasswordAsync(string userId);
+
+    Task UpdateEmailAsync(string userId, string newEmail);
+
+    Task<IList<ExternalLoginInfo>> GetExternalLoginsAsync(string userId);
+
+    Task RemoveExternalLoginAsync(string userId, string provider, string providerKey);
+
+    Task AddExternalLoginAsync(string userId, string provider, string providerKey, string displayName);
 }
+
+public record ExternalLoginInfo(string LoginProvider, string ProviderKey, string? ProviderDisplayName);
+

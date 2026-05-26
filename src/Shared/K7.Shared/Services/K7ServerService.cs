@@ -19,6 +19,7 @@ using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.QueryBuilders;
 using K7.Shared.Dtos.Home;
+using K7.Shared.Extensions;
 
 namespace K7.Shared.Services;
 
@@ -613,6 +614,98 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync($"api/users/{userId}/reset-password", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/profile", request, _serializerOptions, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task UploadAvatarAsync(Stream stream, string fileName, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        var streamContent = new StreamContent(stream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(GetImageContentType(fileName));
+        content.Add(streamContent, "file", fileName);
+        var response = await HttpClient.PostAsync("api/users/me/avatar", content, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    private static string GetImageContentType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        return ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            ".svg" => "image/svg+xml",
+            _ => "application/octet-stream"
+        };
+    }
+
+    public async Task RemoveAvatarAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/avatar", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/password", request, _serializerOptions, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task SetPasswordAsync(SetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/users/me/password", request, _serializerOptions, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task RemovePasswordAsync(RemovePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        using var msg = new HttpRequestMessage(HttpMethod.Delete, "api/users/me/password")
+        {
+            Content = JsonContent.Create(request, options: _serializerOptions)
+        };
+        var response = await HttpClient.SendAsync(msg, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task UpdateEmailAsync(UpdateEmailRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/email", request, _serializerOptions, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default)
+    {
+        using var msg = new HttpRequestMessage(HttpMethod.Delete, "api/users/me")
+        {
+            Content = JsonContent.Create(request, options: _serializerOptions)
+        };
+        var response = await HttpClient.SendAsync(msg, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+    }
+
+    public async Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/admin/users/{userId}/restore", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<LoginMethodsDto>("api/users/me/login-methods", _serializerOptions, cancellationToken);
+        return result!;
+    }
+
+    public async Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/users/me/login-methods/{Uri.EscapeDataString(provider)}", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

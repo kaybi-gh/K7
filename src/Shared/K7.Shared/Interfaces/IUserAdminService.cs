@@ -29,4 +29,17 @@ public interface IUserAdminService
     Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default);
     Task MergeUsersAsync(Guid sourceUserId, Guid targetUserId, MergeStrategy? strategy = null, CancellationToken cancellationToken = default);
     Task ResetUserPasswordAsync(Guid userId, ResetUserPasswordRequest request, CancellationToken cancellationToken = default);
+
+    // Profile & Account
+    Task UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default);
+    Task UploadAvatarAsync(Stream stream, string fileName, CancellationToken cancellationToken = default);
+    Task RemoveAvatarAsync(CancellationToken cancellationToken = default);
+    Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default);
+    Task SetPasswordAsync(SetPasswordRequest request, CancellationToken cancellationToken = default);
+    Task RemovePasswordAsync(RemovePasswordRequest request, CancellationToken cancellationToken = default);
+    Task UpdateEmailAsync(UpdateEmailRequest request, CancellationToken cancellationToken = default);
+    Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default);
+    Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default);
+    Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default);
 }
