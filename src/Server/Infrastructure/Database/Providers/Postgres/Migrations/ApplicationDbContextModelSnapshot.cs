@@ -814,6 +814,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("VideoFileMetadataId")
                         .HasColumnType("uuid");
 
@@ -835,6 +838,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasIndex("PlaylistId")
                         .IsUnique();
+
+                    b.HasIndex("UserId");
 
                     b.HasIndex("VideoFileMetadataId")
                         .IsUnique();
@@ -1504,6 +1509,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("IdentityUserId")
                         .HasColumnType("text");
@@ -2947,6 +2959,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "PlaylistId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", "VideoFileMetadata")
                         .WithOne("Thumbnails")
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "VideoFileMetadataId")
@@ -2963,6 +2980,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("PersonRole");
 
                     b.Navigation("Playlist");
+
+                    b.Navigation("User");
 
                     b.Navigation("VideoFileMetadata");
                 });
