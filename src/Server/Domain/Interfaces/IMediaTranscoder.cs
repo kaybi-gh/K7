@@ -68,5 +68,6 @@ public interface IMediaTranscoder
         string inputFilePath,
         string outputFilePath,
         int audioTrackIndex,
+        int[]? subtitleTrackIndices = null,
         CancellationToken cancellationToken = default);
 }

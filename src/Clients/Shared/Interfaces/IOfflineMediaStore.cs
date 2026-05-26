@@ -1,4 +1,5 @@
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Clients.Shared.Interfaces;
 
@@ -12,6 +13,8 @@ public interface IOfflineMediaStore
     Task AddAsync(DownloadedMediaItem item, CancellationToken cancellationToken = default);
     Task RemoveAsync(Guid indexedFileId, CancellationToken cancellationToken = default);
     Task RemoveAllCacheItemsAsync(CancellationToken cancellationToken = default);
+    Task UpdateLastPlaybackPositionAsync(Guid mediaId, double position, CancellationToken cancellationToken = default);
+    Task<double> GetLastPlaybackPositionAsync(Guid mediaId, CancellationToken cancellationToken = default);
 }
 
 public record DownloadedMediaItem
@@ -25,10 +28,11 @@ public record DownloadedMediaItem
     public string? AlbumTitle { get; init; }
     public string? CoverLocalPath { get; init; }
     public required string MediaLocalPath { get; init; }
-    public string[]? SubtitleLocalPaths { get; init; }
+    public SubtitleFileTrackDto[]? SubtitleTracks { get; init; }
     public required long FileSize { get; init; }
     public required DateTimeOffset DownloadedAt { get; init; }
     public DateTimeOffset? LastPlayedAt { get; set; }
+    public double LastPlaybackPosition { get; set; }
     public required bool IsCacheItem { get; init; }
 }
 

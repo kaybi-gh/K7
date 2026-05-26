@@ -49,11 +49,16 @@ public class TranscodeDownloadCommandHandler : IRequestHandler<TranscodeDownload
         try
         {
             var audioTrackIndex = download.AudioTrackIndex ?? 0;
+            var subtitleTrackIndices = download.SubtitleTrackIndices?
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(int.Parse)
+                .ToArray();
 
             await _mediaTranscoder.RemuxWithAudioTranscodeAsync(
                 inputPath,
                 outputPath,
                 audioTrackIndex,
+                subtitleTrackIndices,
                 cancellationToken);
 
             download.OutputPath = outputPath;

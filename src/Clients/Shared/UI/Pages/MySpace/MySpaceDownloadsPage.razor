@@ -9,6 +9,7 @@
 @inject IAudioPlayerService AudioPlayerService
 @inject IMusicCacheService MusicCacheService
 @inject IDeviceStorageService DeviceStorageService
+@inject PlaybackProgressTracker PlaybackProgressTracker
 @inject NavigationManager Navigation
 
 <PageTitle>@L["PageTitle"]</PageTitle>
@@ -101,7 +102,16 @@
             {
                 @if (_activeTab == DownloadTab.All)
                 {
-                    <h6 class="mt-2 mb-3">@L["Music"]</h6>
+                    <div class="d-flex align-center justify-space-between mt-2 mb-3">
+                        <h6>@L["Music"]</h6>
+                        <K7IconButton Icon="@Phosphor.Shuffle" Size="sm" OnClick="ShuffleAllMusicAsync" AriaLabel="shuffle" />
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex align-center justify-end mb-3">
+                        <K7IconButton Icon="@Phosphor.Shuffle" Size="sm" OnClick="ShuffleAllMusicAsync" AriaLabel="shuffle" />
+                    </div>
                 }
                 <div class="downloads-table">
                     @foreach (var group in FilteredMusicGroups)
