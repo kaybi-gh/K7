@@ -117,11 +117,10 @@ public class LogInCallback : IEndpoint
 
             if (domainUser is null)
             {
-                var displayName = name ?? email ?? identityUserId;
-
                 domainUser = new User
                 {
-                    IdentityUserId = identityUserId
+                    IdentityUserId = identityUserId,
+                    DisplayName = name
                 };
 
                 applicationDbContext.Users.Add(domainUser);

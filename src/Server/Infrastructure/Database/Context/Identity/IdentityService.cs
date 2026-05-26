@@ -117,4 +117,120 @@ public class IdentityService : IIdentityService
                 $"Failed to reset password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
     }
+
+    public async Task<bool> HasPasswordAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        return await _userManager.HasPasswordAsync(user);
+    }
+
+    public async Task<bool> VerifyPasswordAsync(string userId, string password)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        return await _userManager.CheckPasswordAsync(user, password);
+    }
+
+    public async Task ChangePasswordAsync(string userId, string currentPassword, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to change password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
+
+    public async Task SetPasswordAsync(string userId, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var result = await _userManager.AddPasswordAsync(user, newPassword);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to set password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
+
+    public async Task RemovePasswordAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var result = await _userManager.RemovePasswordAsync(user);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to remove password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
+
+    public async Task UpdateEmailAsync(string userId, string newEmail)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var token = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
+        var result = await _userManager.ChangeEmailAsync(user, newEmail, token);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to update email: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+
+        // Keep username in sync with email
+        await _userManager.SetUserNameAsync(user, newEmail);
+    }
+
+    public async Task<IList<Application.Common.Interfaces.ExternalLoginInfo>> GetExternalLoginsAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var logins = await _userManager.GetLoginsAsync(user);
+
+        return logins.Select(l => new Application.Common.Interfaces.ExternalLoginInfo(
+            l.LoginProvider, l.ProviderKey, l.ProviderDisplayName)).ToList();
+    }
+
+    public async Task RemoveExternalLoginAsync(string userId, string provider, string providerKey)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var result = await _userManager.RemoveLoginAsync(user, provider, providerKey);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to remove external login: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
+
+    public async Task AddExternalLoginAsync(string userId, string provider, string providerKey, string displayName)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var login = new UserLoginInfo(provider, providerKey, displayName);
+        var result = await _userManager.AddLoginAsync(user, login);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to add external login: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
 }
