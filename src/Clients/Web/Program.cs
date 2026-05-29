@@ -69,6 +69,15 @@ builder.Services.AddSingleton<IConnectivityService, NoOpConnectivityService>();
 builder.Services.AddSingleton<IPlaybackJournal, NoOpPlaybackJournal>();
 builder.Services.AddSingleton<IMusicCacheService, NoOpMusicCacheService>();
 builder.Services.AddSingleton<IServerConnectionService, NoOpServerConnectionService>();
+builder.Services.AddSingleton<ICastService, WebCastService>();
+builder.Services.AddSingleton<ICastOrchestrationService, CastOrchestrationService>();
+builder.Services.AddSingleton<RemotePlaybackHandler>();
+builder.Services.AddSingleton<RemoteControlService>();
+builder.Services.AddSingleton<IRemoteControlService>(sp => sp.GetRequiredService<RemoteControlService>());
+builder.Services.AddSingleton<SyncPlayService>();
+builder.Services.AddSingleton<ISyncPlayService>(sp => sp.GetRequiredService<SyncPlayService>());
+builder.Services.AddSingleton<ISyncPlayMediaLoader, SyncPlayMediaLoader>();
+builder.Services.AddSingleton<SyncPlayPlaybackHandler>();
 
 builder.Services.AddSingleton<K7DialogService>();
 builder.Services.AddSingleton<IK7DialogService>(sp => sp.GetRequiredService<K7DialogService>());
@@ -93,6 +102,7 @@ CultureInfo.DefaultThreadCurrentUICulture = culture;
 
 // Eagerly resolve so it starts listening to audio player events
 wasmHost.Services.GetRequiredService<AudioPlaybackProgressTracker>();
+wasmHost.Services.GetRequiredService<RemotePlaybackHandler>();
 
 await wasmHost.RunAsync();
 

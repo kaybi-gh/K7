@@ -1,0 +1,110 @@
+@inject IRemoteControlService Remote
+@inject IStringLocalizer<SharedResource> S
+
+<div class="remote-control-panel @(Remote.IsAudio ? "remote-control-panel--audio" : "remote-control-panel--video")">
+    <div class="remote-control-panel__header">
+        <K7Icon Icon="@Phosphor.Screencast" Size="sm" />
+        <span>@string.Format(S["PlayingOn"], Remote.TargetDeviceName)</span>
+    </div>
+
+    @if (Remote.CoverUrl is not null)
+    {
+        <div class="remote-control-panel__cover">
+            <img src="@Remote.CoverUrl" alt="" />
+        </div>
+    }
+
+    <div class="remote-control-panel__info">
+        @if (!string.IsNullOrEmpty(Remote.Title))
+        {
+            <span class="remote-control-panel__title">@Remote.Title</span>
+        }
+        @if (!string.IsNullOrEmpty(Remote.Artist))
+        {
+            <span class="remote-control-panel__artist">@Remote.Artist</span>
+        }
+        @if (!string.IsNullOrEmpty(Remote.AlbumTitle))
+        {
+            <span class="remote-control-panel__album">@Remote.AlbumTitle</span>
+        }
+    </div>
+
+    <div class="remote-control-panel__seek">
+        <span class="remote-control-panel__time">@FormatTime(Remote.Position)</span>
+        <input type="range" min="0" max="@Remote.Duration" step="0.1"
+               value="@Remote.Position"
+               @onchange="OnSeekChanged"
+               class="remote-control-panel__seekbar" />
+        <span class="remote-control-panel__time">@FormatTime(Remote.Duration)</span>
+    </div>
+
+    <div class="remote-control-panel__transport">
+        @if (Remote.PlaybackState == RemotePlaybackState.Playing)
+        {
+            <K7IconButton Icon="@Phosphor.Pause" OnClick="OnPause" Size="lg" AriaLabel="Pause" />
+        }
+        else
+        {
+            <K7IconButton Icon="@Phosphor.Play" OnClick="OnPlay" Size="lg" AriaLabel="Play" />
+        }
+        <K7IconButton Icon="@Phosphor.Stop" OnClick="OnStop" AriaLabel="Stop" />
+    </div>
+
+    <div class="remote-control-panel__volume">
+        <K7Icon Icon="@(Remote.Volume < 0.01 ? Phosphor.SpeakerNone : Phosphor.SpeakerHigh)" Size="sm" />
+        <input type="range" min="0" max="1" step="0.01"
+               value="@Remote.Volume"
+               @onchange="OnVolumeChanged"
+               class="remote-control-panel__volume-slider" />
+    </div>
+
+    @if (!Remote.IsAudio && Remote.AudioTracks.Count > 1)
+    {
+        <div class="remote-control-panel__tracks">
+            <K7Menu>
+                <ActivatorContent>
+                    <K7Button Variant="text" Size="sm">
+                        <K7Icon Icon="@Phosphor.Translate" Size="sm" /> @S["AudioTrack"]
+                    </K7Button>
+                </ActivatorContent>
+                <ChildContent>
+                    @foreach (var track in Remote.AudioTracks)
+                    {
+                        <K7MenuItem OnClick="@(() => OnAudioTrackSelected(track.Index))"
+                                    Class="@(track.Index == Remote.SelectedAudioTrackIndex ? "active" : "")">
+                            @track.Label
+                        </K7MenuItem>
+                    }
+                </ChildContent>
+            </K7Menu>
+        </div>
+    }
+
+    @if (!Remote.IsAudio && Remote.SubtitleTracks.Count > 0)
+    {
+        <div class="remote-control-panel__tracks">
+            <K7Menu>
+                <ActivatorContent>
+                    <K7Button Variant="text" Size="sm">
+                        <K7Icon Icon="@Phosphor.ClosedCaptioning" Size="sm" /> @S["Subtitles"]
+                    </K7Button>
+                </ActivatorContent>
+                <ChildContent>
+                    @foreach (var track in Remote.SubtitleTracks)
+                    {
+                        <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(track.Index))"
+                                    Class="@(track.Index == Remote.SelectedSubtitleTrackIndex ? "active" : "")">
+                            @track.Label
+                        </K7MenuItem>
+                    }
+                </ChildContent>
+            </K7Menu>
+        </div>
+    }
+
+    <div class="remote-control-panel__actions">
+        <K7Button Variant="outlined" Size="sm" OnClick="OnResumeHere">
+            <K7Icon Icon="@Phosphor.ArrowBendDownLeft" Size="sm" /> @S["ResumeHere"]
+        </K7Button>
+    </div>
+</div>

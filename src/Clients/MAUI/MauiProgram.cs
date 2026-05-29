@@ -136,6 +136,14 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         builder.Services.AddSingleton<IClientErrorReporter, ClientErrorReporter>();
         builder.Services.AddSingleton<ISpatialNavService, SpatialNavService>();
+        builder.Services.AddSingleton<ICastOrchestrationService, CastOrchestrationService>();
+        builder.Services.AddSingleton<RemotePlaybackHandler>();
+        builder.Services.AddSingleton<RemoteControlService>();
+        builder.Services.AddSingleton<IRemoteControlService>(sp => sp.GetRequiredService<RemoteControlService>());
+        builder.Services.AddSingleton<SyncPlayService>();
+        builder.Services.AddSingleton<ISyncPlayService>(sp => sp.GetRequiredService<SyncPlayService>());
+        builder.Services.AddSingleton<ISyncPlayMediaLoader, SyncPlayMediaLoader>();
+        builder.Services.AddSingleton<SyncPlayPlaybackHandler>();
 
         var serverUrl = Preferences.Get(PreferenceKeys.K7_SERVER_URL, null);
         ConfigureOpenIddict(builder.Services, serverUrl);
@@ -150,6 +158,7 @@ public static partial class MauiProgram
         System.Diagnostics.Debug.WriteLine("K7 MAUI - builder.Build() completed");
 
         app.Services.GetRequiredService<AudioPlaybackProgressTracker>();
+        app.Services.GetRequiredService<RemotePlaybackHandler>();
 
         // Ensure offline DB is created
         var offlineDbFactory = app.Services.GetRequiredService<IDbContextFactory<OfflineMediaDbContext>>();

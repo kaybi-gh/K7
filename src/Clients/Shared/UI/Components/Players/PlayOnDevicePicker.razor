@@ -1,0 +1,46 @@
+@using K7.Shared.Dtos
+@using K7.Shared.Interfaces
+@inject ICastService CastService
+@inject K7HubClient HubClient
+@inject IStringLocalizer<PlayOnDevicePicker> L
+
+@if (_hasAnyDevice)
+{
+    <K7Menu Class="k7-menu--upward" @bind-Open="_isOpen">
+        <ActivatorContent>
+            <K7IconButton Icon="@Phosphor.Screencast" AriaLabel="@L["CastToDevice"]" Class="@ButtonClass" />
+        </ActivatorContent>
+        <ChildContent>
+            @if (CastService.IsAvailable)
+            {
+                <div class="cast-section-header">@L["Chromecast"]</div>
+                @if (CastService.DiscoveredDevices.Count > 0)
+                {
+                    @foreach (var device in CastService.DiscoveredDevices)
+                    {
+                        <K7MenuItem Icon="@Phosphor.Television" OnClick="@(() => OnCastDeviceSelected(device))">
+                            @device.Name
+                        </K7MenuItem>
+                    }
+                }
+                else
+                {
+                    <K7MenuItem Icon="@Phosphor.Television" OnClick="@(() => OnCastDeviceSelected(new CastDeviceInfo("default", "Chromecast")))">
+                        @L["CastToDevice"]
+                    </K7MenuItem>
+                }
+            }
+
+            @if (_remoteDevices.Count > 0)
+            {
+                <div class="cast-section-header">@L["RemoteDevices"]</div>
+                @foreach (var device in _remoteDevices)
+                {
+                    <K7MenuItem Icon="@GetDeviceIcon(device.DeviceType)" OnClick="@(() => OnRemoteDeviceSelected(device))">
+                        @device.DeviceName
+                    </K7MenuItem>
+                }
+            }
+        </ChildContent>
+    </K7Menu>
+}

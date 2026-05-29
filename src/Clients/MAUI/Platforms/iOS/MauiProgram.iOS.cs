@@ -1,5 +1,7 @@
 ﻿using K7.Clients.MAUI.Interfaces;
+using K7.Clients.MAUI.Services;
 using K7.Clients.MAUI.Platforms.iOS.Services;
+using K7.Clients.Shared.Interfaces;
 
 namespace K7.Clients.MAUI;
 public static partial class MauiProgram
@@ -10,5 +12,6 @@ public static partial class MauiProgram
         services.AddSingleton<IDeviceIdService, DeviceIdService>();
         services.AddSingleton<NativeAudioService>();
         services.AddSingleton<NowPlayingService>();
+        services.AddSingleton<ICastService, NullCastService>();
     }
 }

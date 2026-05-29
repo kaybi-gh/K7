@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using K7.Server.Domain.Entities;
 
 namespace K7.Server.Domain.Interfaces;
@@ -67,7 +68,7 @@ public class TranscodeJob
     
     public CancellationTokenSource? FfmpegCancellation { get; set; }
     public Task? FfmpegTask { get; set; }
-    public HashSet<Guid> AttachedStreamSessions { get; } = new();
+    public ConcurrentDictionary<Guid, byte> AttachedStreamSessions { get; } = new();
     public DateTime LastPingTime { get; set; } = DateTime.UtcNow;
     public int TargetSegmentIndex { get; set; }
     public int BufferSize { get; init; } = 15;

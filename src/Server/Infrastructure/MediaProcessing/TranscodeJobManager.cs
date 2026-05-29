@@ -42,7 +42,7 @@ public class TranscodeJobManager : ITranscodeJobManager
 
         if (_activeJobs.TryGetValue(jobKey, out var existingJob))
         {
-            existingJob.AttachedStreamSessions.Add(streamSessionId);
+            existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
             existingJob.LastPingTime = DateTime.UtcNow;
             _logger.LogInformation(
                 "Reusing existing transcode job {JobId} for session {SessionId}",
@@ -57,7 +57,7 @@ public class TranscodeJobManager : ITranscodeJobManager
             // Double-check after acquiring lock
             if (_activeJobs.TryGetValue(jobKey, out existingJob))
             {
-                existingJob.AttachedStreamSessions.Add(streamSessionId);
+                existingJob.AttachedStreamSessions.TryAdd(streamSessionId, 0);
                 existingJob.LastPingTime = DateTime.UtcNow;
                 return existingJob;
             }
@@ -107,7 +107,7 @@ public class TranscodeJobManager : ITranscodeJobManager
                 TargetSegmentIndex = 0
             };
 
-            job.AttachedStreamSessions.Add(streamSessionId);
+            job.AttachedStreamSessions.TryAdd(streamSessionId, 0);
             _activeJobs[jobKey] = job;
 
             _logger.LogInformation(
@@ -130,7 +130,7 @@ public class TranscodeJobManager : ITranscodeJobManager
         if (_activeJobs.TryGetValue(jobId, out var job))
         {
             job.LastPingTime = DateTime.UtcNow;
-            job.AttachedStreamSessions.Add(streamSessionId);
+            job.AttachedStreamSessions.TryAdd(streamSessionId, 0);
         }
     }
 
@@ -242,7 +242,7 @@ public class TranscodeJobManager : ITranscodeJobManager
     {
         if (_activeJobs.TryGetValue(jobId, out var job))
         {
-            job.AttachedStreamSessions.Remove(streamSessionId);
+            job.AttachedStreamSessions.TryRemove(streamSessionId, out _);
             _logger.LogInformation(
                 "Detached session {SessionId} from job {JobId}. Remaining sessions: {Count}",
                 streamSessionId,

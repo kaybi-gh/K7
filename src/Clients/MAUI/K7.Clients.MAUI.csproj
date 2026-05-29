@@ -101,6 +101,10 @@
     <PackageReference Include="OpenIddict.EntityFrameworkCore" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <PackageReference Include="Xamarin.GooglePlayServices.Cast.Framework" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Shared\K7.Clients.Shared.csproj" />
     <ProjectReference Include="..\Shared\UI\K7.Clients.Shared.UI.csproj" />
