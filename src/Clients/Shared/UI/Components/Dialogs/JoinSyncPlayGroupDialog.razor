@@ -1,0 +1,34 @@
+@inject ISyncPlayService SyncPlay
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col mt-2">
+        <K7TextField @bind-Value="_groupCode"
+                      Label="Group code"
+                      Variant="outlined"
+                      Required="true"
+                      Placeholder="Enter group ID or invite code" />
+    </div>
+    @if (_error is not null)
+    {
+        <div class="k7-dialog-error mt-2">@_error</div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary"
+               Variant="filled"
+               OnClick="JoinAsync"
+               Disabled="@(string.IsNullOrWhiteSpace(_groupCode) || _isJoining)">
+        @if (_isJoining)
+        {
+            <K7Spinner Size="sm" />
+            <span>@S["Joining"]</span>
+        }
+        else
+        {
+            <K7Icon Icon="@Phosphor.UsersThree" Size="K7IconSize.Sm" />
+            <span>@S["Join"]</span>
+        }
+    </K7Button>
+</div>

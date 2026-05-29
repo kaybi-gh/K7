@@ -1,0 +1,27 @@
+@inject ISyncPlayService SyncPlay
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col mt-2 gap-2 align-center">
+        <K7Icon Icon="@Phosphor.UsersThree" Size="K7IconSize.Lg" />
+        <span>Start a SyncPlay session with the current media?</span>
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary"
+               Variant="filled"
+               OnClick="CreateAsync"
+               Disabled="@_isCreating">
+        @if (_isCreating)
+        {
+            <K7Spinner Size="sm" />
+            <span>Creating...</span>
+        }
+        else
+        {
+            <K7Icon Icon="@Phosphor.UsersThree" Size="K7IconSize.Sm" />
+            <span>Create Group</span>
+        }
+    </K7Button>
+</div>

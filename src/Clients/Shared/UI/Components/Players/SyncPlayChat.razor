@@ -1,0 +1,38 @@
+@inject ISyncPlayService SyncPlay
+
+<div class="syncplay-chat @(Inline ? "syncplay-chat--inline" : "")">
+    <div class="syncplay-chat-messages" @ref="_messagesRef">
+        @foreach (var msg in SyncPlay.ChatMessages.TakeLast(50))
+        {
+            @if (string.IsNullOrEmpty(msg.DisplayName))
+            {
+                <div class="syncplay-chat-message syncplay-chat-message--system">
+                    <span class="syncplay-chat-text">@msg.Text</span>
+                </div>
+            }
+            else
+            {
+                <div class="syncplay-chat-message">
+                    <K7Avatar Size="sm" Letter="@(msg.DisplayName.Length > 0 ? msg.DisplayName[..1].ToUpperInvariant() : "?")" />
+                    <div class="syncplay-chat-message-content">
+                        <span class="syncplay-chat-author">@msg.DisplayName</span>
+                        <span class="syncplay-chat-text">@msg.Text</span>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+    <div class="syncplay-chat-input">
+        <input type="text"
+               class="focusable"
+               data-sn-activatable
+               @bind="_inputText"
+               @bind:event="oninput"
+               @onkeydown="OnKeyDown"
+               placeholder="Message..." />
+        <K7IconButton Icon="@Phosphor.PaperPlaneRight"
+                      Focusable="true"
+                      OnClick="SendMessage"
+                      Disabled="@string.IsNullOrWhiteSpace(_inputText)" />
+    </div>
+</div>

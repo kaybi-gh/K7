@@ -1,0 +1,50 @@
+@inject ISyncPlayService SyncPlay
+
+@if (SyncPlay.IsInGroup && SyncPlay.CurrentGroup is { } group)
+{
+    <div class="syncplay-overlay">
+        @if (!Compact)
+        {
+            <div class="syncplay-header">
+                <div class="syncplay-badge">
+                    <K7Icon Icon="@Phosphor.UsersThree" Size="K7IconSize.Sm" />
+                    <span>@group.GroupName</span>
+                    <span class="syncplay-count">@group.Participants.Count</span>
+                </div>
+                @if (group.State == SyncPlayGroupState.WaitingForReady)
+                {
+                    <span class="syncplay-waiting">Waiting for others...</span>
+                }
+            </div>
+        }
+
+        <SyncPlayChat />
+
+        <div class="syncplay-actions">
+            <button class="syncplay-users-btn focusable @(_showParticipants ? "active" : "")" @onclick="@(() => _showParticipants = !_showParticipants)">
+                <K7Icon Icon="@Phosphor.Users" Size="K7IconSize.Sm" />
+                <span class="syncplay-users-count">@group.Participants.Count</span>
+            </button>
+            <SyncPlayReactionPicker />
+            <K7IconButton Icon="@Phosphor.SignOut"
+                          OnClick="LeaveGroup" />
+        </div>
+
+        @if (_showParticipants)
+        {
+            <div class="syncplay-participants">
+                @foreach (var participant in group.Participants)
+                {
+                    <div class="syncplay-participant @(participant.IsReady ? "ready" : "")">
+                        <K7Avatar Size="sm" Letter="@(participant.DisplayName.Length > 0 ? participant.DisplayName[..1].ToUpperInvariant() : "?")" />
+                        <span>@participant.DisplayName</span>
+                        @if (!participant.IsReady && group.State == SyncPlayGroupState.WaitingForReady)
+                        {
+                            <K7Spinner Size="xs" />
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

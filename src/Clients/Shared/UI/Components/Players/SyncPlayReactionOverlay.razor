@@ -1,0 +1,12 @@
+@inject ISyncPlayService SyncPlay
+
+<div class="syncplay-reactions-overlay">
+    @foreach (var reaction in _activeReactions)
+    {
+        <div class="syncplay-reaction @(reaction.Fading ? "fading" : "")"
+             style="left: @(reaction.X)%;">
+            <span class="syncplay-reaction-emoji">@reaction.Emoji</span>
+            <span class="syncplay-reaction-name">@reaction.DisplayName</span>
+        </div>
+    }
+</div>
