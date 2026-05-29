@@ -41,6 +41,7 @@
     </script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/lottie-interop.js"]"></script>
+    <script>K7.Lottie.preload('_content/K7.Clients.Shared.UI/animations/splash.json');</script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/embla-carousel/embla-carousel.umd.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/lib/js-spatial-navigation/spatial_navigation.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/navigation.js"]"></script>
@@ -51,6 +52,8 @@
     <script src="@Assets["js/videoplayer.js"]"></script>
     <script src="@Assets["js/audioplayer.js"]"></script>
     <script src="@Assets["js/deviceUtils.js"]"></script>
+    <script src="@Assets["js/castplayer.js"]"></script>
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     <script>
         window.blazorCulture = {
             get: () => window.localStorage.getItem('BlazorCulture'),

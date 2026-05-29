@@ -505,6 +505,40 @@
         }
       }
     },
+    "/api/users/me/preferences/syncplay": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetSyncPlayPreferences",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateSyncPlayPreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncPlayPreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/language": {
       "get": {
         "tags": [
@@ -983,6 +1017,52 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/stream-sessions/{sessionId}/ephemeral-token": {
+      "post": {
+        "tags": [
+          "StreamSessions"
+        ],
+        "operationId": "GenerateEphemeralStreamToken",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "StreamSessions"
+        ],
+        "operationId": "RevokeEphemeralStreamToken",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -13333,6 +13413,14 @@
       },
       "SubtitlePreference": {
         "type": "integer"
+      },
+      "SyncPlayPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "invitationsEnabled": {
+            "type": "boolean"
+          }
+        }
       },
       "TaskTypeCountDto": {
         "required": [

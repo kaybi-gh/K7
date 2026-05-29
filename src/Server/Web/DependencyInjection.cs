@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.HttpOverrides;
 using K7.Server.Infrastructure.Database.Context.Data;
+using K7.Server.Web.Infrastructure;
+using Microsoft.AspNetCore.Authentication;
 using OpenIddict.Validation.AspNetCore;
 
 namespace K7.Server.Web;
@@ -47,6 +49,8 @@ public static class DependencyInjection
             options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
         });
         authenticationBuilder.AddIdentityCookies();
+        authenticationBuilder.AddScheme<AuthenticationSchemeOptions, EphemeralStreamTokenAuthenticationHandler>(
+            EphemeralStreamTokenDefaults.AuthenticationScheme, _ => { });
 
         services.ConfigureApplicationCookie(options =>
         {
@@ -79,6 +83,14 @@ public static class DependencyInjection
                 policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
                 policy.RequireRole(Roles.Administrator);
             });
+
+            options.AddPolicy(Policies.StreamAccess, policy =>
+            {
+                policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
+                policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.AuthenticationSchemes.Add(EphemeralStreamTokenDefaults.AuthenticationScheme);
+                policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator);
+            });
         });
 
         services.AddDatabaseDeveloperPageExceptionFilter();
@@ -89,6 +101,7 @@ public static class DependencyInjection
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();
         services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
         services.AddHostedService<AdminStreamNotifier>();
+        services.AddHostedService<EphemeralStreamTokenCleanupService>();
         services.AddScoped<K7SnackbarService>();
         services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         services.AddSignalR();

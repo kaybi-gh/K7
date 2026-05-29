@@ -57,4 +57,7 @@ public static class PreferenceKeys
     // Autoplay / Radio
     public static readonly PreferenceKey<bool> AUTOPLAY_ENABLED = new("AutoplayEnabled");
     public static readonly PreferenceKey<int> RADIO_DEVIATION_DEGREE = new("RadioDeviationDegree");
+
+    // SyncPlay
+    public static readonly PreferenceKey<bool> SYNCPLAY_ENABLED = new("SyncPlayEnabled");
 }
