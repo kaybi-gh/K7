@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Players;
@@ -13,6 +14,7 @@ public partial class VideoPlayer : IAsyncDisposable
     private bool _isInitialized;
     private bool _playPending;
     private string? _lastPlayerId;
+    private bool _syncPlaySidebarOpen;
     
     [Parameter] public string SourceUri { get; set; } = string.Empty;
     [Parameter] public string SourceMimeType { get; set; } = string.Empty;
@@ -70,6 +72,9 @@ public partial class VideoPlayer : IAsyncDisposable
     {
         PlayerService.SourceChanged += OnSourceChange;
         PlayerService.IsVisibleChanged += OnVisibilityChanged;
+        RemoteControl.SessionChanged += OnRemoteSessionChanged;
+        RemoteControl.StateChanged += OnRemoteSessionChanged;
+        SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {
@@ -89,6 +94,8 @@ public partial class VideoPlayer : IAsyncDisposable
         }
     }
 
+    private void OnRemoteSessionChanged() => InvokeAsync(StateHasChanged);
+
     private void OnVisibilityChanged()
     {
         StateHasChanged();
@@ -100,10 +107,66 @@ public partial class VideoPlayer : IAsyncDisposable
         }
     }
 
+    private async Task OnResumeHere()
+    {
+        var position = RemoteControl.Position;
+        await RemoteControl.SendStopAsync();
+
+        PlayerService.Play();
+        PlayerService.Seek(position);
+    }
+
+    private void ToggleSyncPlaySidebar()
+    {
+        _syncPlaySidebarOpen = !_syncPlaySidebarOpen;
+        StateHasChanged();
+    }
+
+    private void OnContainerKeyDown(KeyboardEventArgs e)
+    {
+        // This handler only fires for events originating in the sidebar
+        // (overlay has @onkeydown:stopPropagation so its events don't bubble here).
+        // Handle global player shortcuts so they work regardless of focus location.
+        var code = string.IsNullOrEmpty(e.Code) ? e.Key : e.Code;
+        switch (code)
+        {
+            case "Space" or " " or "MediaPlayPause" or "MediaPlay" or "MediaPause":
+                if (PlayerService.PlaybackState == PlaybackState.Playing)
+                    PlayerService.Pause();
+                else
+                    PlayerService.Play();
+                break;
+            case "KeyM" or "m" or "M":
+                if (PlayerService.IsMuted) PlayerService.Unmute();
+                else PlayerService.Mute();
+                break;
+            case "KeyF" or "f" or "F":
+                if (PlayerService.IsFullScreen) PlayerService.ExitFullScreen();
+                else PlayerService.EnterFullScreen();
+                break;
+            case "Escape" or "BrowserBack" or "GoBack":
+                ToggleSyncPlaySidebar();
+                break;
+        }
+    }
+
+    private void OnSyncPlayGroupUpdated() => InvokeAsync(() =>
+    {
+        if (!SyncPlay.IsInGroup && _syncPlaySidebarOpen)
+        {
+            _syncPlaySidebarOpen = false;
+        }
+
+        StateHasChanged();
+    });
+
     public async ValueTask DisposeAsync()
     {
         PlayerService.SourceChanged -= OnSourceChange;
         PlayerService.IsVisibleChanged -= OnVisibilityChanged;
+        RemoteControl.SessionChanged -= OnRemoteSessionChanged;
+        RemoteControl.StateChanged -= OnRemoteSessionChanged;
+        SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {
