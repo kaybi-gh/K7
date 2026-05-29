@@ -331,6 +331,15 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     }
 
     // Navigation
+    public async Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default)
+    {
+        if (index < 0 || index >= _queue.Count || index == _currentIndex) return;
+        _currentIndex = index;
+        if (_shuffle)
+            _shufflePosition = _shuffleOrder.IndexOf(index);
+        await LoadAndPlayCurrentAsync(cancellationToken);
+    }
+
     public async Task NextAsync(CancellationToken cancellationToken = default)
     {
         if (_queue.Count == 0) return;

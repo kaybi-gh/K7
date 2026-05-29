@@ -245,6 +245,8 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
         var playerSource = new PlayerSource
         {
             MediaId = mediaId,
+            StreamSessionId = session.Id,
+            IndexedFileId = indexedFileId,
             Url = _baseManifestUrl,
             MimeType = session.Source.MimeType,
             ThumbnailsUrl = thumbnailsUrl,

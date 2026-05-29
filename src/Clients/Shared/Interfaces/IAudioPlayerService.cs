@@ -65,6 +65,7 @@ public interface IAudioPlayerService
     void ClearQueue();
 
     // Navigation
+    Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default);
     Task NextAsync(CancellationToken cancellationToken = default);
     Task PreviousAsync(CancellationToken cancellationToken = default);
 
