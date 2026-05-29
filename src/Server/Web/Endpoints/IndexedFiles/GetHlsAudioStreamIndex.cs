@@ -24,7 +24,7 @@ public class GetHlsAudioStreamIndex : IEndpoint
                 streamSessionId,
                 TranscodingAudioCodec));
         })
-        .RequireAuthorization(Policies.GuestOrAbove)
+        .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)
         .WithTags(groupName);
     }

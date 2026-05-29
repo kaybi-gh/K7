@@ -155,6 +155,20 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<string?> GenerateEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/stream-sessions/{streamSessionId}/ephemeral-token", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<EphemeralTokenResponse>(_serializerOptions, cancellationToken);
+        return result?.Token;
+    }
+
+    public async Task RevokeEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/stream-sessions/{streamSessionId}/ephemeral-token", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task RateMediaAsync(Guid mediaId, int value, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/medias/{mediaId}/rating", new { Value = value }, _serializerOptions, cancellationToken);
@@ -1054,6 +1068,18 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<SyncPlayPreferencesDto> GetSyncPlayPreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<SyncPlayPreferencesDto>("api/users/me/preferences/syncplay", _serializerOptions, cancellationToken);
+        return result ?? new SyncPlayPreferencesDto();
+    }
+
+    public async Task UpdateSyncPlayPreferencesAsync(SyncPlayPreferencesDto preferences, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/users/me/preferences/syncplay", preferences, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<TrackSelectionPreferencesDto?> GetServerTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default)
     {
         var url = libraryId.HasValue
@@ -1149,4 +1175,6 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         return (await HttpClient.GetFromJsonAsync<List<NotificationEventDescriptorDto>>("api/notifications/events", _serializerOptions, cancellationToken))!;
     }
+
+    private sealed record EphemeralTokenResponse(string Token);
 }

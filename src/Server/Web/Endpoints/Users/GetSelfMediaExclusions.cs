@@ -20,7 +20,7 @@ public class GetSelfMediaExclusions : IEndpoint
             var result = await sender.Send(new GetSelfMediaExclusionsQuery { IncludeAdminExcluded = isAdmin }, cancellationToken);
             return Results.Ok(result);
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

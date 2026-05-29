@@ -22,7 +22,7 @@ public class GetHlsSubtitleStreamIndex : IEndpoint
                 subtitleTrackIndex,
                 streamSessionId));
         })
-        .RequireAuthorization(Policies.GuestOrAbove)
+        .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)
         .WithTags(groupName);
     }

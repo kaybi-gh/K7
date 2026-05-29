@@ -54,6 +54,7 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<LibraryScanIssue> ScanIssues { get; }
     DbSet<Download> Downloads { get; }
     DbSet<NotificationRule> NotificationRules { get; }
+    DbSet<EphemeralStreamToken> EphemeralStreamTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

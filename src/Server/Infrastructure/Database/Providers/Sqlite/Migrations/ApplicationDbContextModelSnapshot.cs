@@ -307,6 +307,48 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("Downloads");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.EphemeralStreamToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExpiresAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("StreamSessionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("StreamSessionId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EphemeralStreamTokens");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2777,6 +2819,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Device");
 
                     b.Navigation("IndexedFile");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.EphemeralStreamToken", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.StreamSession", "StreamSession")
+                        .WithMany()
+                        .HasForeignKey("StreamSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("StreamSession");
 
                     b.Navigation("User");
                 });

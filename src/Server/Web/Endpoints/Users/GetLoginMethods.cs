@@ -18,7 +18,7 @@ public class GetLoginMethods : IEndpoint
             var result = await sender.Send(new GetLoginMethodsQuery(), cancellationToken);
             return Results.Ok(result);
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

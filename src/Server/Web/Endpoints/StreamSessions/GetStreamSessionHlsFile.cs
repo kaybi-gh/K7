@@ -58,7 +58,7 @@ public sealed class GetStreamSessionHlsFile : IEndpoint
 
             return Results.File(stream, contentType: contentType);
         })
-        .RequireAuthorization(Policies.GuestOrAbove)
+        .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)
         .WithTags(groupName);
     }
