@@ -237,6 +237,15 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public void RemoveFromQueue(int index) { if (index >= 0 && index < _queue.Count) { _queue.RemoveAt(index); QueueChanged?.Invoke(); } }
     public void ClearQueue() { _queue.Clear(); QueueChanged?.Invoke(); }
 
+    public Task SkipToIndexAsync(int index, CancellationToken cancellationToken = default)
+    {
+        if (index < 0 || index >= _queue.Count || index == _currentIndex) return Task.CompletedTask;
+        _currentIndex = index;
+        SetCurrentTrack(_queue[_currentIndex]);
+        Play();
+        return Task.CompletedTask;
+    }
+
     public Task NextAsync(CancellationToken cancellationToken = default)
     {
         if (_queue.Count == 0) return Task.CompletedTask;
@@ -405,6 +414,8 @@ public sealed class MockStreamingService : IStreamingService
     public Task<IndexedFileStreamUri?> GetIndexedFileStreamUriAsync(GetIndexedFileStreamsUriQuery query, CancellationToken cancellationToken = default) => Task.FromResult<IndexedFileStreamUri?>(null);
     public Task<StreamingSessionDto?> CreateStreamSessionAsync(CreateStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
     public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<string?> GenerateEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+    public Task RevokeEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockDeviceApiService : IDeviceApiService
@@ -500,6 +511,8 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task<K7.Shared.Dtos.TrackSelectionPreferencesDto> GetEffectiveTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.TrackSelectionPreferencesDto());
     public Task UpdateUserTrackSelectionPreferencesAsync(K7.Shared.Dtos.TrackSelectionPreferencesDto preferences, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.SyncPlayPreferencesDto> GetSyncPlayPreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.SyncPlayPreferencesDto());
+    public Task UpdateSyncPlayPreferencesAsync(K7.Shared.Dtos.SyncPlayPreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockServerPreferencesService : IServerPreferencesService
@@ -553,4 +566,65 @@ public sealed class MockPlaybackJournal : IPlaybackJournal
     public Task RecordRatingAsync(Guid mediaId, int value, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PendingPlaybackEvent>>([]);
     public Task MarkSyncedAsync(IEnumerable<Guid> eventIds, CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public sealed class MockCastService : ICastService
+{
+    public bool IsAvailable => false;
+    public bool IsCasting => false;
+    public IReadOnlyList<CastDeviceInfo> DiscoveredDevices => [];
+#pragma warning disable CS0067
+    public event Action? StateChanged;
+    public event Action<IReadOnlyList<CastDeviceInfo>>? DevicesDiscovered;
+    public event Action<CastMediaStatus>? MediaStatusUpdated;
+#pragma warning restore CS0067
+    public Task StartDiscoveryAsync() => Task.CompletedTask;
+    public Task StopDiscoveryAsync() => Task.CompletedTask;
+    public Task CastAsync(CastMediaRequest request) => Task.CompletedTask;
+    public Task StopCastingAsync() => Task.CompletedTask;
+    public Task SendTransportCommandAsync(CastTransportCommand command) => Task.CompletedTask;
+}
+
+public sealed class MockCastOrchestrationService : ICastOrchestrationService
+{
+    public Task CastCurrentVideoAsync(CastDeviceInfo device, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task CastCurrentAudioAsync(CastDeviceInfo device, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task StopCastingAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+}
+
+public sealed class MockRemoteControlService : IRemoteControlService
+{
+    public bool IsControlling => false;
+    public bool IsAudio => false;
+    public bool IsCastSession => false;
+    public Guid? TargetDeviceId => null;
+    public string? TargetDeviceName => null;
+    public RemotePlaybackState PlaybackState => RemotePlaybackState.Stopped;
+    public double Position => 0;
+    public double Duration => 0;
+    public double Volume => 1;
+    public int? SelectedAudioTrackIndex => null;
+    public int? SelectedSubtitleTrackIndex => null;
+    public IReadOnlyList<RemoteTrackInfoDto> AudioTracks => [];
+    public IReadOnlyList<RemoteTrackInfoDto> SubtitleTracks => [];
+    public string? Title => null;
+    public string? Artist => null;
+    public string? AlbumTitle => null;
+    public string? CoverUrl => null;
+    public Guid? MediaId => null;
+    public Guid? IndexedFileId => null;
+#pragma warning disable CS0067
+    public event Action? SessionChanged;
+    public event Action? StateChanged;
+#pragma warning restore CS0067
+    public void StartSession(Guid targetDeviceId, string targetDeviceName, RemotePlaybackRequestDto request) { }
+    public void StartCastSession(string deviceName, bool isAudio, string? title, string? artist, string? albumTitle, string? coverUrl, double duration, double startPosition) { }
+    public void EndSession() { }
+    public Task SendPlayAsync() => Task.CompletedTask;
+    public Task SendPauseAsync() => Task.CompletedTask;
+    public Task SendStopAsync() => Task.CompletedTask;
+    public Task SendSeekAsync(double position) => Task.CompletedTask;
+    public Task SendVolumeAsync(double volume) => Task.CompletedTask;
+    public Task SendAudioTrackAsync(int trackIndex) => Task.CompletedTask;
+    public Task SendSubtitleTrackAsync(int trackIndex) => Task.CompletedTask;
 }

@@ -96,5 +96,6 @@
     <PackageVersion Include="Testcontainers.PostgreSql" Version="3.7.0" />
     <PackageVersion Include="TMDbLib" Version="2.3.0" />
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.6" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Cast.Framework" Version="122.0.0" />
   </ItemGroup>
 </Project>
