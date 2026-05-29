@@ -3,8 +3,16 @@
 @inject IPlayerService PlayerService
 @inject IDeviceService DeviceService
 @inject IK7ServerService K7ServerService
+@inject IRemoteControlService RemoteControl
+@inject ISyncPlayService SyncPlay
 
-@if (PlayerService.IsVisible)
+@if (RemoteControl.IsControlling && !RemoteControl.IsAudio)
+{
+    <div class="video-container">
+        <RemoteControlPanel OnResumeRequested="OnResumeHere" />
+    </div>
+}
+else if (PlayerService.IsVisible)
 {
     @* On Windows Native, the WebView2 is opaque (WinUI3 bug) so the MediaElement
        is placed in front with native controls - no Blazor overlay needed. *@
@@ -15,24 +23,40 @@
     {
         var isNative = DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Native;
         var containerClass = isNative ? "video-container native-overlay" : "video-container";
+        if (_syncPlaySidebarOpen)
+        {
+            containerClass += " syncplay-sidebar-open";
+        }
 
-        <div class="@containerClass" @ref="_videoContainer">
-            <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" />
-            @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
-            {
-            <video id="video-player" class="video-js" @ref="_player">
-                @if (!string.IsNullOrEmpty(SourceUri))
+        <div class="@containerClass" @ref="_videoContainer" @onkeydown="OnContainerKeyDown">
+            <div class="video-main">
+                <VideoPlayerControlsOverlay ThumbnailsSource="@ThumbnailsSource" OnSyncPlayToggle="ToggleSyncPlaySidebar" SyncPlaySidebarOpen="_syncPlaySidebarOpen" ContainerRef="_videoContainer" />
+                @if (SyncPlay.IsInGroup && SyncPlay.ShowReactions)
                 {
-                    <source src="@SourceUri" type="@SourceMimeType" />
+                    <SyncPlayReactionOverlay />
                 }
-                <p class="vjs-no-js">
-                    To view this video please enable JavaScript, and consider upgrading to a
-                    web browser that
-                    <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
-                </p>
-            </video>
+                @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
+                {
+                <video id="video-player" class="video-js" @ref="_player">
+                    @if (!string.IsNullOrEmpty(SourceUri))
+                    {
+                        <source src="@SourceUri" type="@SourceMimeType" />
+                    }
+                    <p class="vjs-no-js">
+                        To view this video please enable JavaScript, and consider upgrading to a
+                        web browser that
+                        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                    </p>
+                </video>
+                }
+                <NextEpisodeOverlay />
+            </div>
+            @if (_syncPlaySidebarOpen)
+            {
+                <div class="video-syncplay-sidebar">
+                    <SyncPlayOverlay />
+                </div>
             }
-            <NextEpisodeOverlay />
         </div>
     }
 }

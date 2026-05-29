@@ -1,7 +1,9 @@
 @using K7.Clients.Shared.Models
+@using K7.Clients.Shared.UI.Components.Dialogs
 @using K7.Server.Domain.Enums
 @using K7.Shared
 @using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
+@using K7.Shared.Interfaces
 @using Microsoft.JSInterop
 @using System.Timers
 @using System.Globalization
@@ -11,8 +13,13 @@
 @inject IDeviceService DeviceService
 @inject IBrightnessService BrightnessService
 @inject IVolumeService VolumeService
+@inject ICastOrchestrationService CastOrchestration
+@inject K7HubClient HubClient
 @inject K7.Clients.Shared.Interfaces.ISpatialNavService SpatialNav
 @inject IStringLocalizer<VideoPlayerControlsOverlay> L
+@inject IRemoteControlService RemoteControl
+@inject IDeviceStorageService DeviceStorage
+@inject ISyncPlayService SyncPlay
 
 <div class="video-controls-overlay @(IsOverlayVisible ? "controls-visible" : "controls-hidden")" tabindex="0" @ref="_overlayRef"
      @onmousemove="OnOverlayMouseMove" @onclick="OnOverlayTap"
@@ -163,8 +170,16 @@
                             }
                             </ChildContent>
                         </K7Menu>
+
                     </ChildContent>
-                    </K7Menu>
+                </K7Menu>
+
+                        <PlayOnDevicePicker CastDeviceSelected="OnCastDeviceSelected" RemoteDeviceSelected="OnRemoteDeviceSelected" />
+
+                        @if (SyncPlay.IsInGroup)
+                        {
+                            <K7IconButton Icon="@Phosphor.UsersThree" OnClick="@OnSyncPlayToggle" AriaLabel="SyncPlay" Color="@(SyncPlaySidebarOpen ? "active" : "")" />
+                        }
 
                     @if (_deviceType == Server.Domain.Enums.DeviceType.Desktop)
                     {
@@ -212,6 +227,9 @@
     [Parameter] public int ThumbnailsRows { get; set; } = 5;
     [Parameter] public int ThumbnailsCols { get; set; } = 5;
     [Parameter] public EventCallback<PlayerState> OnStateChange { get; set; }
+    [Parameter] public EventCallback OnSyncPlayToggle { get; set; }
+    [Parameter] public bool SyncPlaySidebarOpen { get; set; }
+    [Parameter] public ElementReference ContainerRef { get; set; }
 
     private DeviceType _deviceType;
     private bool _showOverlay = true;
@@ -255,6 +273,7 @@
     private double _viewportWidth;
     private const double SwipeThreshold = 15;
     private DotNetObjectReference<LayerCloseCallback>? _overlayCloseRef;
+    private bool _wasSidebarOpen;
 
     private enum SwipeSide { Left, Right }
 
@@ -320,6 +339,36 @@
                     OnClose = _overlayCloseRef,
                     FocusSelector = ".play-pause-btn"
                 });
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
+
+        if (SyncPlaySidebarOpen != _wasSidebarOpen)
+        {
+            _wasSidebarOpen = SyncPlaySidebarOpen;
+            try
+            {
+                if (SyncPlaySidebarOpen)
+                {
+                    // Switch to container-scoped layer so d-pad/keyboard can navigate
+                    // both overlay controls AND sidebar elements.
+                    await SpatialNav.PopLayerAsync(_overlayRef);
+                    await SpatialNav.PushLayerAsync(ContainerRef, "overlay", new SpatialNavLayerOptions
+                    {
+                        OnClose = _overlayCloseRef,
+                        FocusSelector = ".play-pause-btn"
+                    });
+                }
+                else
+                {
+                    // Restore overlay-only layer when sidebar closes
+                    await SpatialNav.PopLayerAsync(ContainerRef);
+                    await SpatialNav.PushLayerAsync(_overlayRef, "overlay", new SpatialNavLayerOptions
+                    {
+                        OnClose = _overlayCloseRef,
+                        FocusSelector = ".play-pause-btn"
+                    });
+                }
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
@@ -477,7 +526,8 @@
                 }
                 _showOverlay = false;
                 StateHasChanged();
-                await _overlayRef.FocusAsync();
+                if (!SyncPlaySidebarOpen)
+                    await _overlayRef.FocusAsync();
             }
             catch (ObjectDisposedException) { }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
@@ -502,7 +552,8 @@
         _isMenuOpen = false;
         await InvokeAsync(StateHasChanged);
         await Task.Yield();
-        await _overlayRef.FocusAsync();
+        if (!SyncPlaySidebarOpen)
+            await _overlayRef.FocusAsync();
         ResetOverlayTimeout(TimeSpan.FromSeconds(5));
     }
 
@@ -977,6 +1028,34 @@
         public bool IsFullscreen { get; set; }
     }
 
+    private async Task OnCastDeviceSelected(CastDeviceInfo device)
+    {
+        await CastOrchestration.CastCurrentVideoAsync(device);
+    }
+
+    private async Task OnRemoteDeviceSelected(ConnectedDeviceDto device)
+    {
+        var source = PlayerService.Source;
+        if (source?.IndexedFileId is null) return;
+
+        PlayerService.Pause();
+
+        var senderDeviceId = DeviceStorage.Get(PreferenceKeys.DEVICE_ID);
+        var request = new K7.Shared.Dtos.RemotePlaybackRequestDto
+        {
+            IndexedFileId = source.IndexedFileId.Value,
+            StartPosition = PlayerService.CurrentTime,
+            IsAudio = false,
+            Title = source.Title,
+            CoverUrl = source.CoverUrl,
+            Duration = PlayerService.Duration,
+            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null
+        };
+
+        await HubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
+        RemoteControl.StartSession(device.DeviceId, device.DeviceName, request);
+    }
+
     public async ValueTask DisposeAsync()
     {
         _overlayVisibleTimer?.Dispose();
@@ -987,7 +1066,13 @@
         BrightnessService.ResetBrightness();
         _dotNetRef?.Dispose();
         _overlayCloseRef?.Dispose();
-        try { await SpatialNav.PopLayerAsync(_overlayRef); }
+        try
+        {
+            if (!SyncPlaySidebarOpen)
+            {
+                await SpatialNav.PopLayerAsync(_overlayRef);
+            }
+        }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         PlayerService.IsMutedChanged -= OnIsMutedChanged;

@@ -336,6 +336,9 @@ var SpatialNav = (function () {
         var active = document.activeElement;
         if (!active || active === document.body) return;
 
+        // Text inputs: let Enter pass through so form/Blazor handlers can fire
+        if (active && isTextInput(active) && !isActivatable(active)) return;
+
         // Textareas need Enter for line breaks (only when in edit mode)
         if (active.tagName && active.tagName.toLowerCase() === 'textarea' && isEditing(active)) return;
 
@@ -539,8 +542,8 @@ var SpatialNav = (function () {
 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1) {
             var el = document.activeElement;
-            // Text inputs/textareas: only let arrows through when in edit mode
-            if (el && isTextInput(el) && isEditing(el)) {
+            // Text inputs/textareas: let arrows through when focused (editing or non-activatable)
+            if (el && isTextInput(el) && (isEditing(el) || !isActivatable(el))) {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
                 return;
             }
@@ -569,7 +572,7 @@ var SpatialNav = (function () {
 
         var active = document.activeElement;
         if (window.SpatialNavigation) {
-            if (active && isEditing(active)) {
+            if (active && (isEditing(active) || (isTextInput(active) && !isActivatable(active)))) {
                 SpatialNavigation.pause();
             } else {
                 SpatialNavigation.resume();

@@ -11,6 +11,55 @@
     justify-content: center;
 }
 
+.video-container.syncplay-sidebar-open {
+    flex-direction: row;
+}
+
+.video-main {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    isolation: isolate;
+}
+
+.video-syncplay-sidebar {
+    width: 20rem;
+    height: 100%;
+    background: var(--color-surface-container, #1e1e1e);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.video-syncplay-sidebar ::deep .syncplay-overlay {
+    position: static;
+    height: 100%;
+    padding-top: 0;
+    pointer-events: auto;
+}
+
+.video-syncplay-sidebar ::deep .syncplay-actions {
+    position: static;
+    margin: 0.5rem;
+    align-self: center;
+}
+
+.video-syncplay-sidebar ::deep .syncplay-participants {
+    position: static;
+    margin: 0.5rem;
+}
+
+.video-syncplay-sidebar ::deep .syncplay-chat {
+    position: static;
+    width: auto;
+    max-height: none;
+    flex: 1;
+}
+
 .video-container.native-overlay {
     background-color: transparent;
 }
