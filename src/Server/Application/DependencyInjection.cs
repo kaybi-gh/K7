@@ -52,6 +52,8 @@ public static class DependencyInjection
         services.AddHostedService<MetadataRefreshSchedulerService>();
         services.AddSingleton<ActiveStreamTracker>();
         services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
+        services.AddSingleton<SyncPlayCoordinator>();
+        services.AddSingleton<ISyncPlayCoordinator>(sp => sp.GetRequiredService<SyncPlayCoordinator>());
         services.AddSingleton<MediaQueryCacheInvalidator>();
         services.AddSingleton<IMediaQueryCacheInvalidator>(sp => sp.GetRequiredService<MediaQueryCacheInvalidator>());
         services.AddSingleton(sp =>
