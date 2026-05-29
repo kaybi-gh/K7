@@ -15,69 +15,91 @@
          data-sn-layer="overlay"
          data-sn-layer-close="self"
          @onclick="Close">
-        @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+        @if (!string.IsNullOrEmpty(DisplayCoverUrl))
         {
             <div class="fullscreen-player-bg"
-                 style="background-image: url('@Audio.CurrentTrack.CoverUrl')">
+                 style="background-image: url('@DisplayCoverUrl')">
             </div>
         }
 
         <div class="fullscreen-player-content" @onclick:stopPropagation="true">
+            @if (IsSyncPlayMode && SyncPlay.ShowReactions)
+            {
+                <SyncPlayReactionOverlay />
+            }
             <div class="fullscreen-player-header">
                 <K7IconButton Icon="@Phosphor.CaretDown" OnClick="Close" AriaLabel="@S["Close"]" />
-                <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
-                @if (SleepTimer.IsActive)
+                @if (IsRemoteMode)
+                {
+                    <span class="fullscreen-player-header-title remote-badge">
+                        <K7Icon Icon="@Phosphor.Screencast" Size="sm" />
+                        @string.Format(S["PlayingOn"], RemoteControl.TargetDeviceName)
+                    </span>
+                }
+                else
+                {
+                    <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
+                }
+                @if (SleepTimer.IsActive && !IsRemoteMode)
                 {
                     <span class="sleep-timer-badge"><K7Icon Icon="@Phosphor.Timer" Size="sm" /> @FormatRemaining(SleepTimer.Remaining)</span>
                 }
-                <K7IconButton Icon="@Phosphor.TextAlignLeft" OnClick="ToggleLyrics" AriaLabel="Lyrics" Color="@(_view == FullScreenView.Lyrics ? "active" : "")" />
-                <K7IconButton Icon="@Phosphor.Queue" OnClick="ToggleQueue" AriaLabel="Queue" Color="@(_view == FullScreenView.Queue ? "active" : "")" />
-                <K7Menu Open="_menuOpen" OpenChanged="v => { _menuOpen = v; _sleepTimerSubmenuOpen = false; StateHasChanged(); }">
-                    <ActivatorContent>
-                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="More" Focusable="false" />
-                    </ActivatorContent>
-                    <ChildContent>
-                        @if (_sleepTimerSubmenuOpen)
-                        {
-                            <K7MenuItem Icon="@Phosphor.CaretLeft" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = false">@S["Back"]</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(15)">15 min</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(30)">30 min</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(45)">45 min</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(60)">1h</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(90)">1h30</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Timer" OnClick="StartSleepTimerEndOfTrack">@S["EndOfTrack"]</K7MenuItem>
-                        }
-                        else
-                        {
-                            @if (SleepTimer.IsActive)
+                @if (!IsRemoteMode)
+                {
+                    <PlayOnDevicePicker CastDeviceSelected="OnCastDeviceSelected" RemoteDeviceSelected="OnRemoteDeviceSelected" />
+                    <K7IconButton Icon="@Phosphor.MicrophoneStage" OnClick="ToggleLyrics" AriaLabel="Lyrics" Color="@(_view == FullScreenView.Lyrics ? "active" : "")" />
+                    <K7IconButton Icon="@Phosphor.Queue" OnClick="ToggleQueue" AriaLabel="Queue" Color="@(_view == FullScreenView.Queue ? "active" : "")" />
+                    @if (IsSyncPlayMode)
+                    {
+                        <K7IconButton Icon="@Phosphor.UsersThree" OnClick="ToggleSyncPlayView" AriaLabel="SyncPlay" Color="@(_view == FullScreenView.SyncPlay ? "active" : "")" />
+                    }
+                    <K7Menu Open="_menuOpen" OpenChanged="v => { _menuOpen = v; _sleepTimerSubmenuOpen = false; StateHasChanged(); }">
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="More" Focusable="false" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            @if (_sleepTimerSubmenuOpen)
                             {
-                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="CancelSleepTimer">@S["CancelSleepTimer"] (@FormatRemaining(SleepTimer.Remaining))</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.CaretLeft" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = false">@S["Back"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(15)">15 min</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(30)">30 min</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(45)">45 min</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(60)">1h</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="() => StartSleepTimer(90)">1h30</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Timer" OnClick="StartSleepTimerEndOfTrack">@S["EndOfTrack"]</K7MenuItem>
                             }
                             else
                             {
-                                <K7MenuItem Icon="@Phosphor.Timer" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = true">@S["SleepTimer"]</K7MenuItem>
+                                @if (SleepTimer.IsActive)
+                                {
+                                    <K7MenuItem Icon="@Phosphor.Timer" OnClick="CancelSleepTimer">@S["CancelSleepTimer"] (@FormatRemaining(SleepTimer.Remaining))</K7MenuItem>
+                                }
+                                else
+                                {
+                                    <K7MenuItem Icon="@Phosphor.Timer" PreventClose="true" OnClick="() => _sleepTimerSubmenuOpen = true">@S["SleepTimer"]</K7MenuItem>
+                                }
+                                <K7MenuItem Icon="@Phosphor.ShareNetwork" OnClick="ShareTrack">@S["Share"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.FloppyDisk" OnClick="SaveQueueAsPlaylist">@S["SaveQueueAsPlaylist"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Plus" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
                             }
-                            <K7MenuItem Icon="@Phosphor.ShareNetwork" OnClick="ShareTrack">@S["Share"]</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.FloppyDisk" OnClick="SaveQueueAsPlaylist">@S["SaveQueueAsPlaylist"]</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Plus" OnClick="AddToPlaylist">@S["AddToPlaylist"]</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.User" OnClick="GoToArtist">@S["GoToArtist"]</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.VinylRecord" OnClick="GoToAlbum">@S["GoToAlbum"]</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Waveform" OnClick="ToggleVisualizer">@(_visualizerEnabled ? S["DisableVisualizer"] : S["Visualizer"])</K7MenuItem>
-                            <K7MenuItem Icon="@Phosphor.Info" OnClick="ShowTrackInfo">@S["TrackInfo"]</K7MenuItem>
-                        }
-                    </ChildContent>
-                </K7Menu>
+                        </ChildContent>
+                    </K7Menu>
+                }
             </div>
 
-            @if (_view == FullScreenView.Player)
+            @if (_view == FullScreenView.Player || IsRemoteMode)
             {
                 <div class="fullscreen-player-view">
-                    <div class="fullscreen-player-artwork @(_visualizerEnabled ? "visualizer-active" : "")">
+                    <div class="fullscreen-player-artwork @(_visualizerEnabled && !IsRemoteMode ? "visualizer-active" : "")">
                         <div class="artwork-canvas-wrap">
-                            @if (!string.IsNullOrEmpty(Audio.CurrentTrack.CoverUrl))
+                            @if (!string.IsNullOrEmpty(DisplayCoverUrl))
                             {
-                                <K7Image Src="@Audio.CurrentTrack.CoverUrl"
-                                          Alt="@($"{Audio.CurrentTrack.Title} - {Audio.CurrentTrack.Artist}")"
+                                <K7Image Src="@DisplayCoverUrl"
+                                          Alt="@($"{DisplayTitle} - {DisplayArtist}")"
                                           ObjectFit="cover"
                                           Class="artwork-image" />
                             }
@@ -88,7 +110,7 @@
                                              Style="font-size: 96px;" />
                                 </div>
                             }
-                            @if (_visualizerEnabled)
+                            @if (_visualizerEnabled && !IsRemoteMode)
                             {
                                 <canvas @ref="_visualizerCanvas" class="visualizer-canvas"></canvas>
                             }
@@ -97,21 +119,24 @@
 
                     <div class="fullscreen-player-details">
                         <div class="fullscreen-player-info">
-                            <span class="fullscreen-player-title">@Audio.CurrentTrack.Title</span>
-                            <span class="fullscreen-player-artist">@Audio.CurrentTrack.Artist</span>
-                            @if (!string.IsNullOrEmpty(Audio.CurrentTrack.AlbumTitle))
+                            <span class="fullscreen-player-title">@DisplayTitle</span>
+                            <span class="fullscreen-player-artist">@DisplayArtist</span>
+                            @if (!string.IsNullOrEmpty(DisplayAlbumTitle))
                             {
-                                <span class="fullscreen-player-album">@Audio.CurrentTrack.AlbumTitle@if (_trackDetails?.ReleaseDate is { } date) { <text> (@date.Year)</text> }</span>
+                                <span class="fullscreen-player-album">@DisplayAlbumTitle@if (!IsRemoteMode && _trackDetails?.ReleaseDate is { } date) { <text> (@date.Year)</text> }</span>
                             }
-                            <RatingStars
-                                MediaId="Audio.CurrentTrack.MediaId"
-                                Value="Audio.CurrentTrack.UserRating"
-                                ValueChanged="OnRatingChanged"
-                                Size="md" />
+                            @if (!IsRemoteMode)
+                            {
+                                <RatingStars
+                                    MediaId="Audio.CurrentTrack.MediaId"
+                                    Value="Audio.CurrentTrack.UserRating"
+                                    ValueChanged="OnRatingChanged"
+                                    Size="md" />
+                            }
                         </div>
 
                         <div class="fullscreen-player-seek">
-                            @if (_waveformMaskStyle is not null)
+                            @if (_waveformMaskStyle is not null && !IsRemoteMode)
                             {
                                 <div class="waveform-container focusable @(_isScrubbing ? "scrubbing" : "")" style="@_waveformMaskStyle"
                                      tabindex="0" role="slider"
@@ -147,19 +172,30 @@
                                 </div>
                             }
                             <div class="seek-times">
-                                <span>@(_isScrubbing ? FormatTime(_scrubTime) : FormatTime(Audio.CurrentTime))</span>
-                                <span>@FormatTime(Audio.Duration)</span>
+                                <span>@(_isScrubbing ? FormatTime(_scrubTime) : FormatTime(DisplayPosition))</span>
+                                <span>@FormatTime(DisplayDuration)</span>
                             </div>
                         </div>
 
                         <div class="fullscreen-player-controls">
-                            <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" Color="@(Audio.Shuffle ? "active" : "")" Disabled="@(Audio.Queue.Count <= 1)" />
-                            <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
-                            <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp" @onkeydown="OnFabKeyDown" @onkeyup="OnFabKeyUp">
-                                <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
-                            </div>
-                            <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
-                            <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" Color="@(Audio.Repeat != RepeatMode.Off ? "active" : "")" />
+                            @if (IsRemoteMode)
+                            {
+                                <K7IconButton Icon="@Phosphor.ArrowBendDownLeft" OnClick="OnResumeHere" AriaLabel="@S["ResumeHere"]" />
+                                <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")">
+                                    <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                                </div>
+                                <K7IconButton Icon="@Phosphor.Stop" OnClick="OnRemoteStop" AriaLabel="Stop" />
+                            }
+                            else
+                            {
+                                <K7IconButton Icon="@Phosphor.Shuffle" OnClick="Audio.ToggleShuffle" AriaLabel="Toggle shuffle" Color="@(Audio.Shuffle ? "active" : "")" Disabled="@(Audio.Queue.Count <= 1)" />
+                                <K7IconButton Icon="@Phosphor.SkipBack" OnClick="OnPrevious" AriaLabel="Previous" />
+                                <div class="fullscreen-fab-wrap @(IsBuffering ? "buffering" : "")" @onpointerdown="OnFabPointerDown" @onpointerup="OnFabPointerUp" @onpointerleave="OnFabPointerUp" @onkeydown="OnFabKeyDown" @onkeyup="OnFabKeyUp">
+                                    <K7FabButton Icon="@PlayPauseIcon" OnClick="TogglePlayPause" AriaLabel="Play pause" />
+                                </div>
+                                <K7IconButton Icon="@Phosphor.SkipForward" OnClick="OnNext" AriaLabel="Next" />
+                                <K7IconButton Icon="@RepeatIcon" OnClick="Audio.CycleRepeatMode" AriaLabel="Toggle repeat" Color="@(Audio.Repeat != RepeatMode.Off ? "active" : "")" />
+                            }
                         </div>
 
                         @if (_showVolumeControls)
@@ -167,7 +203,7 @@
                             <div class="fullscreen-player-volume">
                                 <K7IconButton Icon="@VolumeIcon" OnClick="ToggleMute" AriaLabel="Toggle mute" />
                                 <K7Slider TValue="double"
-                                           Value="Audio.Volume"
+                                           Value="DisplayVolume"
                                            Min="0" Max="1"
                                            Immediate="true"
                                            ValueChanged="OnVolumeChanged" Step="0.01"
@@ -425,6 +461,12 @@
                             </div>
                         }
                     </div>
+                </div>
+            }
+            else if (_view == FullScreenView.SyncPlay)
+            {
+                <div class="fullscreen-player-syncplay">
+                    <SyncPlayOverlay />
                 </div>
             }
         </div>
