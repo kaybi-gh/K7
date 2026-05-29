@@ -1,0 +1,42 @@
+.syncplay-reactions-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 100001;
+}
+
+.syncplay-reaction {
+    position: absolute;
+    bottom: 5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: float-up 3s ease-out forwards;
+}
+
+.syncplay-reaction.fading {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
+
+.syncplay-reaction-emoji {
+    font-size: 2rem;
+}
+
+.syncplay-reaction-name {
+    font-size: 0.625rem;
+    color: var(--color-on-surface-variant);
+    white-space: nowrap;
+}
+
+@keyframes float-up {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-8rem) scale(0.8);
+        opacity: 0.3;
+    }
+}

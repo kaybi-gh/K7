@@ -1,0 +1,62 @@
+@inject ISyncPlayService SyncPlay
+
+<div class="k7-dialog-content">
+    <div class="syncplay-invitation-info">
+        <K7Avatar Size="lg" Letter="@GetInitial()" />
+        <div class="syncplay-invitation-details">
+            <span class="syncplay-invitation-text">
+                <strong>@Invitation.InviterDisplayName</strong>
+                @if (!string.IsNullOrEmpty(Invitation.InviterDeviceName))
+                {
+                    <span class="syncplay-invitation-device">- @Invitation.InviterDeviceName</span>
+                }
+                invited you to join a SyncPlay session
+            </span>
+            @if (!string.IsNullOrEmpty(Invitation.CurrentMediaTitle))
+            {
+                <span class="syncplay-invitation-media">
+                    <K7Icon Icon="@Phosphor.Play" Size="K7IconSize.Xs" />
+                    @Invitation.CurrentMediaTitle
+                </span>
+            }
+            <span class="syncplay-invitation-count">
+                <K7Icon Icon="@Phosphor.Users" Size="K7IconSize.Xs" />
+                @Invitation.ParticipantCount participant(s) in session
+            </span>
+        </div>
+    </div>
+    @if (_isGuest)
+    {
+        <K7TextField @bind-Value="_guestNickname"
+                      Label="Nickname"
+                      Variant="outlined"
+                      Required="true"
+                      MaxLength="30" />
+    }
+    @if (_failed)
+    {
+        <div class="syncplay-invitation-error">
+            <K7Icon Icon="@Phosphor.WarningCircle" Size="K7IconSize.Sm" />
+            <span>Failed to join session</span>
+        </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Decline">Decline</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Accept" Disabled="@(_loading || (_isGuest && string.IsNullOrWhiteSpace(_guestNickname)))">
+        @if (_loading)
+        {
+            <K7Spinner Size="xs" />
+        }
+        else if (_failed)
+        {
+            <K7Icon Icon="@Phosphor.ArrowClockwise" Size="K7IconSize.Sm" />
+            <span>Retry</span>
+        }
+        else
+        {
+            <K7Icon Icon="@Phosphor.Check" Size="K7IconSize.Sm" />
+            <span>Join</span>
+        }
+    </K7Button>
+</div>

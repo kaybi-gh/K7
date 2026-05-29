@@ -1,0 +1,33 @@
+.syncplay-join-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 60vh;
+    padding: 2rem;
+}
+
+.syncplay-join-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    background: var(--color-surface-container);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    max-width: 20rem;
+    width: 100%;
+}
+
+.syncplay-join-card h2 {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 600;
+}
+
+.syncplay-join-card p {
+    margin: 0;
+    color: var(--color-on-surface-variant);
+    text-align: center;
+}

@@ -1,0 +1,50 @@
+@page "/syncplay/join/{Token}"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
+@inject ISyncPlayService SyncPlay
+@inject NavigationManager Navigation
+
+@if (_state == JoinState.Loading)
+{
+    <div class="syncplay-join-page">
+        <K7Spinner />
+        <span>Joining group...</span>
+    </div>
+}
+else if (_state == JoinState.GuestNickname)
+{
+    <div class="syncplay-join-page">
+        <div class="syncplay-join-card">
+            <K7Icon Icon="@Phosphor.UsersThree" Size="K7IconSize.Lg" />
+            <h2>Join SyncPlay</h2>
+            <p>Choose a nickname to join as a guest</p>
+            <K7TextField @bind-Value="_guestNickname"
+                          Label="Nickname"
+                          Variant="outlined"
+                          Required="true"
+                          MaxLength="30" />
+            <K7Button Color="primary"
+                       Variant="filled"
+                       OnClick="JoinAsGuest"
+                       Disabled="@string.IsNullOrWhiteSpace(_guestNickname)"
+                       Class="mt-3">
+                Join
+            </K7Button>
+        </div>
+    </div>
+}
+else if (_state == JoinState.Error)
+{
+    <div class="syncplay-join-page">
+        <K7Icon Icon="@Phosphor.WarningCircle" Size="K7IconSize.Lg" />
+        <span>@_error</span>
+        <K7Button Variant="tonal" OnClick="@(() => Navigation.NavigateTo("/"))">Go home</K7Button>
+    </div>
+}
+else if (_state == JoinState.Joined)
+{
+    <div class="syncplay-join-page">
+        <K7Icon Icon="@Phosphor.CheckCircle" Size="K7IconSize.Lg" />
+        <span>Joined! Redirecting...</span>
+    </div>
+}

@@ -1,0 +1,12 @@
+.syncplay-chat-dialog {
+    min-height: 20rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.syncplay-chat-dialog ::deep .syncplay-chat {
+    position: static;
+    width: 100%;
+    max-height: 20rem;
+    flex: 1;
+}

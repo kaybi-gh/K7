@@ -1,0 +1,62 @@
+.syncplay-invite-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.syncplay-invite-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.syncplay-invite-user:hover {
+    background: var(--color-surface-hover);
+}
+
+.syncplay-invite-user-info {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.syncplay-invite-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.syncplay-invite-device {
+    font-size: 0.8125rem;
+    color: var(--color-on-surface-variant);
+    white-space: nowrap;
+}
+
+.syncplay-invite-badge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-variant);
+    color: var(--color-on-surface-variant);
+}
+
+.syncplay-invite-badge.sent {
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.syncplay-invite-badge.error {
+    background: var(--color-error-container);
+    color: var(--color-on-error-container);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}

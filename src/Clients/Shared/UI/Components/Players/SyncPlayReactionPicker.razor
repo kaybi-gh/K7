@@ -1,0 +1,16 @@
+@inject ISyncPlayService SyncPlay
+
+<div class="syncplay-reaction-picker-wrapper">
+    <K7IconButton Icon="@Phosphor.Smiley" OnClick="@(() => _open = !_open)" />
+    @if (_open)
+    {
+        <div class="syncplay-reaction-picker">
+            @foreach (var emoji in _emojis)
+            {
+                <button class="syncplay-reaction-btn focusable" @onclick="@(() => SendReaction(emoji))">
+                    @emoji
+                </button>
+            }
+        </div>
+    }
+</div>

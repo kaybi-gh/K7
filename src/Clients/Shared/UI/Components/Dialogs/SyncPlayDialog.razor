@@ -1,0 +1,98 @@
+@inject ISyncPlayService SyncPlay
+@inject IK7DialogService DialogService
+@inject IStringLocalizer<AppNav> L
+@inject IK7Snackbar Snackbar
+@inject IAudioPlayerService Audio
+@inject IPlayerService PlayerService
+@inject IDeviceStorageService DeviceStorage
+@implements IDisposable
+
+@if (SyncPlay.IsInGroup)
+{
+    @switch (_view)
+    {
+        case View.Main:
+            <div class="k7-dialog-content syncplay-dialog">
+                @if (SyncPlay.CurrentGroup?.CurrentMedia is { } media)
+                {
+                    <div class="syncplay-dialog-media">
+                        @if (!string.IsNullOrEmpty(media.CoverUrl))
+                        {
+                            <img class="syncplay-dialog-cover" src="@media.CoverUrl" alt="" />
+                        }
+                        <div class="syncplay-dialog-media-info">
+                            <span class="syncplay-dialog-media-title">@media.Title</span>
+                            <span class="syncplay-dialog-media-state">@FormatState()</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="syncplay-dialog-no-media">
+                        <K7Icon Icon="@Phosphor.MusicNotes" Size="K7IconSize.Lg" />
+                        <span>@L["SyncPlayNoMedia"]</span>
+                    </div>
+                }
+                <K7Divider />
+                <SyncPlayChat Inline="true" />
+            </div>
+            break;
+
+        case View.Members:
+            <div class="k7-dialog-content syncplay-dialog">
+                <div class="syncplay-dialog-members-toolbar">
+                    <K7Button Size="sm" OnClick="InviteUsers">
+                        <K7Icon Icon="@Phosphor.UserPlus" Size="K7IconSize.Sm" />
+                        <span>@L["InviteUsers"]</span>
+                    </K7Button>
+                    <K7Button Size="sm" OnClick="CopyLink">
+                        <K7Icon Icon="@Phosphor.Link" Size="K7IconSize.Sm" />
+                        <span>@L["CopyInviteLink"]</span>
+                    </K7Button>
+                </div>
+
+                <div class="syncplay-dialog-members-list">
+                    @if (SyncPlay.CurrentGroup?.Participants is { } participants)
+                    {
+                        @foreach (var participant in participants)
+                        {
+                            <div class="syncplay-dialog-member-row">
+                                <K7Avatar Size="sm" Letter="@(participant.DisplayName.Length > 0 ? participant.DisplayName[..1].ToUpperInvariant() : "?")" />
+                                <div class="syncplay-dialog-member-info">
+                                    <span class="syncplay-dialog-member-name">
+                                        @participant.DisplayName
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(participant.DeviceName))
+                                    {
+                                        <span class="syncplay-dialog-member-device">@participant.DeviceName</span>
+                                    }
+                                </div>
+                                @if (participant.DeviceId != _currentDeviceId)
+                                {
+                                    <div class="syncplay-dialog-member-actions">
+                                        <K7IconButton Icon="@Phosphor.UserMinus" Size="sm" Color="danger"
+                                                      AriaLabel="@L["Kick"]"
+                                                      OnClick="() => Kick(participant.DeviceId)" />
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            break;
+    }
+}
+else
+{
+    <div class="k7-dialog-content syncplay-dialog syncplay-dialog--empty">
+        <div class="syncplay-dialog-empty">
+            <K7Icon Icon="@Phosphor.UsersThree" Size="K7IconSize.Lg" />
+            <span>@L["SyncPlayEmpty"]</span>
+        </div>
+        <K7Button Color="primary" Variant="filled" OnClick="CreateGroup">
+            <K7Icon Icon="@Phosphor.Plus" Size="K7IconSize.Sm" />
+            <span>@L["CreateSyncPlay"]</span>
+        </K7Button>
+    </div>
+}
