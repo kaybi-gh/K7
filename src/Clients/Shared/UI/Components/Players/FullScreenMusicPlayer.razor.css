@@ -77,6 +77,15 @@
     opacity: 0.7;
 }
 
+.fullscreen-player-header-title.remote-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 1;
+    color: var(--color-primary);
+}
+
 .fullscreen-player-artwork {
     display: flex;
     align-items: center;
@@ -628,4 +637,38 @@
     background: rgba(255, 255, 255, 0.08);
     min-width: 64px;
     justify-content: center;
+}
+
+.fullscreen-player-syncplay {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+}
+
+.fullscreen-player-syncplay ::deep .syncplay-overlay {
+    position: static;
+    height: 100%;
+    pointer-events: auto;
+}
+
+.fullscreen-player-syncplay ::deep .syncplay-chat {
+    position: static;
+    width: auto;
+    max-height: none;
+    flex: 1;
+}
+
+.fullscreen-player-syncplay ::deep .syncplay-actions {
+    position: static;
+    align-self: center;
+    margin: 0.5rem 0;
+}
+
+.fullscreen-player-syncplay ::deep .syncplay-participants {
+    position: static;
+    align-self: flex-end;
+    margin: 0.5rem;
 }

@@ -89,12 +89,9 @@ public partial class SeekBar : IAsyncDisposable
     {
         if (!IsVisible) return;
 
-        if (SeekBarWidth <= 0)
-        {
-            var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", SeekBarRef);
-            SeekBarWidth = bounds.Width;
-            SeekBarLeft = bounds.Left;
-        }
+        var bounds = await JS.InvokeAsync<BoundingRect>("K7.getBoundingRect", SeekBarRef);
+        SeekBarWidth = bounds.Width;
+        SeekBarLeft = bounds.Left;
 
         UpdateHover(e.ClientX);
 

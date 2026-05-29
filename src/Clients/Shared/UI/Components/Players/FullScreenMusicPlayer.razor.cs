@@ -2,7 +2,9 @@ using System.Globalization;
 using System.Text;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
@@ -13,16 +15,22 @@ using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using K7.Clients.Shared.UI;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Shared;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
-public enum FullScreenView { Player, Lyrics, Queue, Info }
+public enum FullScreenView { Player, Lyrics, Queue, Info, SyncPlay }
 public enum QueueTab { UpNext, Previous }
 
 public partial class FullScreenMusicPlayer : IAsyncDisposable
 {
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ICastOrchestrationService CastOrchestration { get; set; } = default!;
+    [Inject] private K7HubClient HubClient { get; set; } = default!;
+    [Inject] private IRemoteControlService RemoteControl { get; set; } = default!;
+    [Inject] private ISyncPlayService SyncPlay { get; set; } = default!;
+    [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
     private ElementReference _playerRef;
     private ElementReference _seekBarRef;
     private bool _isDragging;
@@ -51,25 +59,40 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         new(QueueTab.Previous, S["Previous"])
     ];
 
-    private double DisplayPercent => _isScrubbing && Audio.Duration > 0
-        ? (_scrubTime / Audio.Duration) * 100
+    private double DisplayPercent => _isScrubbing && DisplayDuration > 0
+        ? (_scrubTime / DisplayDuration) * 100
         : CurrentPercent;
 
-    private double CurrentPercent => Audio.Duration > 0 ? (Audio.CurrentTime / Audio.Duration) * 100 : 0;
-    private double BufferedPercent => Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
+    private double CurrentPercent => DisplayDuration > 0 ? (DisplayPosition / DisplayDuration) * 100 : 0;
+    private double BufferedPercent => !IsRemoteMode && Audio.Duration > 0 ? (Audio.BufferedTime / Audio.Duration) * 100 : 0;
 
-    private string? DominantColorStyle => Audio.CurrentTrack?.CoverDominantColor is { } color
+    private bool IsRemoteMode => RemoteControl.IsControlling && RemoteControl.IsAudio;
+    private bool IsSyncPlayMode => SyncPlay.IsInGroup;
+
+    private string? DisplayTitle => IsRemoteMode ? RemoteControl.Title : Audio.CurrentTrack?.Title;
+    private string? DisplayArtist => IsRemoteMode ? RemoteControl.Artist : Audio.CurrentTrack?.Artist;
+    private string? DisplayAlbumTitle => IsRemoteMode ? RemoteControl.AlbumTitle : Audio.CurrentTrack?.AlbumTitle;
+    private string? DisplayCoverUrl => IsRemoteMode ? RemoteControl.CoverUrl : Audio.CurrentTrack?.CoverUrl;
+    private double DisplayPosition => IsRemoteMode ? RemoteControl.Position : Audio.CurrentTime;
+    private double DisplayDuration => IsRemoteMode ? RemoteControl.Duration : Audio.Duration;
+    private double DisplayVolume => IsRemoteMode ? RemoteControl.Volume : Audio.Volume;
+
+    private string? DominantColorStyle => Audio.CurrentTrack?.CoverDominantColor is { } color && !IsRemoteMode
         ? $"--dominant-color: {color};"
         : null;
 
-    private string PlayPauseIcon => Audio.PlaybackState switch
-    {
-        PlaybackState.Playing => Phosphor.Pause,
-        PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended => Phosphor.Play,
-        _ => Phosphor.CircleNotch
-    };
+    private string PlayPauseIcon => IsRemoteMode
+        ? RemoteControl.PlaybackState == RemotePlaybackState.Playing ? Phosphor.Pause : Phosphor.Play
+        : Audio.PlaybackState switch
+        {
+            PlaybackState.Playing => Phosphor.Pause,
+            PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended => Phosphor.Play,
+            _ => Phosphor.CircleNotch
+        };
 
-    private bool IsBuffering => Audio.PlaybackState is not (PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended);
+    private bool IsBuffering => IsRemoteMode
+        ? RemoteControl.PlaybackState == RemotePlaybackState.Buffering
+        : Audio.PlaybackState is not (PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Idle or PlaybackState.Ended);
 
     private string RepeatIcon => Audio.Repeat switch
     {
@@ -81,9 +104,9 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         (t.Bpm is > 0 || !string.IsNullOrEmpty(t.MusicalKey) || t.LoudnessLufs is not null ||
          t.ReplayGainTrackGain is not null || t.Energy is not null || t.Danceability is not null || t.Valence is not null);
 
-    private string VolumeIcon => Audio.IsMuted || Audio.Volume <= 0
+    private string VolumeIcon => (IsRemoteMode ? DisplayVolume <= 0 : Audio.IsMuted || Audio.Volume <= 0)
         ? Phosphor.SpeakerX
-        : Audio.Volume < 0.5
+        : DisplayVolume < 0.5
             ? Phosphor.SpeakerLow
             : Phosphor.SpeakerHigh;
 
@@ -101,6 +124,10 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         Audio.IsMutedChanged += OnMutedStateChanged;
         Audio.IsFullScreenVisibleChanged += OnFullScreenVisibilityChanged;
         SleepTimer.TimerChanged += OnSleepTimerChanged;
+        RemoteControl.StateChanged += OnRemoteStateChanged;
+        RemoteControl.SessionChanged += OnRemoteSessionChanged;
+        SyncPlay.GroupUpdated += OnSyncPlayUpdated;
+        SyncPlay.CommandReceived += OnSyncPlayCommandReceived;
 
         var deviceType = await DeviceService.GetDeviceTypeAsync();
         _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
@@ -122,6 +149,51 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         }
     }
 
+    private async Task OnCastDeviceSelected(CastDeviceInfo device)
+    {
+        await CastOrchestration.CastCurrentAudioAsync(device);
+    }
+
+    private async Task OnRemoteDeviceSelected(ConnectedDeviceDto device)
+    {
+        var track = Audio.CurrentTrack;
+        if (track is null) return;
+
+        Audio.Pause();
+
+        var senderDeviceId = DeviceStorage.Get(PreferenceKeys.DEVICE_ID);
+        var request = new RemotePlaybackRequestDto
+        {
+            IndexedFileId = track.IndexedFileId,
+            StartPosition = Audio.CurrentTime,
+            IsAudio = true,
+            MediaId = track.MediaId,
+            Title = track.Title,
+            Artist = track.Artist,
+            AlbumTitle = track.AlbumTitle,
+            CoverUrl = track.CoverUrl,
+            Duration = track.Duration,
+            SenderDeviceId = senderDeviceId is not null ? Guid.Parse(senderDeviceId.AsSpan()) : null
+        };
+
+        await HubClient.RequestRemotePlaybackAsync(device.DeviceId, request);
+        RemoteControl.StartSession(device.DeviceId, device.DeviceName, request);
+    }
+
+    private async Task OnResumeHere()
+    {
+        var position = RemoteControl.Position;
+        await RemoteControl.SendStopAsync();
+
+        Audio.Play();
+        Audio.Seek(position);
+    }
+
+    private async Task OnRemoteStop()
+    {
+        await RemoteControl.SendStopAsync();
+    }
+
     public async ValueTask DisposeAsync()
     {
         Audio.PlaybackStateChanged -= OnStateChanged;
@@ -136,6 +208,10 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         Audio.IsMutedChanged -= OnMutedStateChanged;
         Audio.IsFullScreenVisibleChanged -= OnFullScreenVisibilityChanged;
         SleepTimer.TimerChanged -= OnSleepTimerChanged;
+        RemoteControl.StateChanged -= OnRemoteStateChanged;
+        RemoteControl.SessionChanged -= OnRemoteSessionChanged;
+        SyncPlay.GroupUpdated -= OnSyncPlayUpdated;
+        SyncPlay.CommandReceived -= OnSyncPlayCommandReceived;
 
         try { await JS.InvokeVoidAsync("K7.SeekBar.dispose", _seekBarRef); }
         catch (JSDisconnectedException) { }
@@ -161,6 +237,8 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     }
 
     private void ToggleQueue() => _view = _view == FullScreenView.Queue ? FullScreenView.Player : FullScreenView.Queue;
+
+    private void ToggleSyncPlayView() => _view = _view == FullScreenView.SyncPlay ? FullScreenView.Player : FullScreenView.SyncPlay;
 
     private async Task ToggleLyrics()
     {
@@ -296,6 +374,14 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         if (_longPressTriggered || _keyHeldDown)
             return;
 
+        if (IsRemoteMode)
+        {
+            _ = RemoteControl.PlaybackState == RemotePlaybackState.Playing
+                ? RemoteControl.SendPauseAsync()
+                : RemoteControl.SendPlayAsync();
+            return;
+        }
+
         if (Audio.PlaybackState == PlaybackState.Playing)
             Audio.Pause();
         else
@@ -361,18 +447,37 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         }
     }
 
-    private async Task OnNext() => await Audio.NextAsync();
-    private async Task OnPrevious() => await Audio.PreviousAsync();
+    private async Task OnNext()
+    {
+        await Audio.NextAsync();
+    }
+
+    private async Task OnPrevious()
+    {
+        await Audio.PreviousAsync();
+    }
 
     private void ToggleMute()
     {
+        if (IsRemoteMode)
+        {
+            _ = RemoteControl.SendVolumeAsync(DisplayVolume > 0 ? 0 : 1);
+            return;
+        }
+
         if (Audio.IsMuted)
             Audio.Unmute();
         else
             Audio.Mute();
     }
 
-    private void OnVolumeChanged(double value) => Audio.SetVolume(value);
+    private void OnVolumeChanged(double value)
+    {
+        if (IsRemoteMode)
+            _ = RemoteControl.SendVolumeAsync(value);
+        else
+            Audio.SetVolume(value);
+    }
 
     private void OnRatingChanged(int? value)
     {
@@ -383,7 +488,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private async Task PlayFromQueue(int index)
     {
         if (index == Audio.CurrentIndex) return;
-        await Audio.PlayTracksAsync(Audio.Queue, index);
+        await Audio.SkipToIndexAsync(index);
     }
 
     private async Task OnSeekPointerDown(PointerEventArgs e)
@@ -404,7 +509,12 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     {
         if (!_isDragging) return;
         if (_isScrubbing)
-            Audio.Seek(_scrubTime);
+        {
+            if (IsRemoteMode)
+                _ = RemoteControl.SendSeekAsync(_scrubTime);
+            else
+                Audio.Seek(_scrubTime);
+        }
         _isDragging = false;
         _isScrubbing = false;
         _seekBarBounds = null;
@@ -412,21 +522,21 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
     private void UpdateScrubFromPointer(MouseEventArgs e)
     {
-        if (_seekBarBounds is not { Width: > 0 } bounds || Audio.Duration <= 0) return;
+        if (_seekBarBounds is not { Width: > 0 } bounds || DisplayDuration <= 0) return;
         var percent = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
-        _scrubTime = percent * Audio.Duration;
+        _scrubTime = percent * DisplayDuration;
     }
 
     private void OnSeekKeyDown(KeyboardEventArgs e)
     {
-        if (Audio.Duration <= 0) return;
+        if (DisplayDuration <= 0) return;
 
         if (_isScrubbing)
         {
             switch (e.Code)
             {
                 case "ArrowRight":
-                    _scrubTime = Math.Min(_scrubTime + Audio.SkipForwardSeconds, Audio.Duration);
+                    _scrubTime = Math.Min(_scrubTime + Audio.SkipForwardSeconds, DisplayDuration);
                     break;
                 case "ArrowLeft":
                     _scrubTime = Math.Max(_scrubTime - Audio.SkipBackSeconds, 0);
@@ -435,13 +545,22 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             return;
         }
 
+        var skipFwd = Audio.SkipForwardSeconds;
+        var skipBack = Audio.SkipBackSeconds;
+
         switch (e.Code)
         {
             case "ArrowRight":
-                Audio.Seek(Math.Min(Audio.CurrentTime + Audio.SkipForwardSeconds, Audio.Duration));
+                if (IsRemoteMode)
+                    _ = RemoteControl.SendSeekAsync(Math.Min(DisplayPosition + skipFwd, DisplayDuration));
+                else
+                    Audio.Seek(Math.Min(Audio.CurrentTime + skipFwd, Audio.Duration));
                 break;
             case "ArrowLeft":
-                Audio.Seek(Math.Max(Audio.CurrentTime - Audio.SkipBackSeconds, 0));
+                if (IsRemoteMode)
+                    _ = RemoteControl.SendSeekAsync(Math.Max(DisplayPosition - skipBack, 0));
+                else
+                    Audio.Seek(Math.Max(Audio.CurrentTime - skipBack, 0));
                 break;
         }
     }
@@ -450,7 +569,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     public void OnEditStart()
     {
         _isScrubbing = true;
-        _scrubTime = Audio.CurrentTime;
+        _scrubTime = DisplayPosition;
         InvokeAsync(StateHasChanged);
     }
 
@@ -458,7 +577,12 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     public void OnEditCommit()
     {
         if (_isScrubbing)
-            Audio.Seek(_scrubTime);
+        {
+            if (IsRemoteMode)
+                _ = RemoteControl.SendSeekAsync(_scrubTime);
+            else
+                Audio.Seek(_scrubTime);
+        }
         _isScrubbing = false;
         InvokeAsync(StateHasChanged);
     }
@@ -494,6 +618,18 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private void OnVolumeStateChanged(double _) => InvokeAsync(StateHasChanged);
     private void OnMutedStateChanged(bool _) => InvokeAsync(StateHasChanged);
     private void OnSleepTimerChanged() => InvokeAsync(StateHasChanged);
+    private void OnRemoteStateChanged() => InvokeAsync(StateHasChanged);
+    private void OnRemoteSessionChanged() => InvokeAsync(StateHasChanged);
+    private void OnSyncPlayUpdated() => InvokeAsync(() =>
+    {
+        if (!SyncPlay.IsInGroup && _view == FullScreenView.SyncPlay)
+        {
+            _view = FullScreenView.Player;
+        }
+
+        StateHasChanged();
+    });
+    private void OnSyncPlayCommandReceived(SyncPlayCommandDto _) => InvokeAsync(StateHasChanged);
     private void OnFullScreenVisibilityChanged() => InvokeAsync(async () =>
     {
         if (Audio.IsFullScreenVisible)
