@@ -250,9 +250,13 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         var playerSource = new PlayerSource
         {
             MediaId = mediaId,
+            StreamSessionId = session.Id,
+            IndexedFileId = indexedFileId,
             Url = _baseManifestUrl,
             MimeType = session.Source.MimeType,
-            ThumbnailsUrl = thumbnailsUrl
+            ThumbnailsUrl = thumbnailsUrl,
+            Title = title,
+            CoverUrl = coverUrl
         };
 
         Source = playerSource;

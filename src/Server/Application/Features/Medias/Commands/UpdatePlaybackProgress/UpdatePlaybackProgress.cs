@@ -185,7 +185,26 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
                 deviceInfo?.DeviceType));
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException) when (session.Id == default)
+        {
+            _context.Entry(session).State = EntityState.Detached;
+
+            session = await _context.MediaPlaybackSessions
+                .FirstOrDefaultAsync(s => s.SessionId == request.SessionId, cancellationToken);
+
+            if (session is null) return;
+
+            session.PositionSeconds = request.Position;
+            session.DurationSeconds = request.Duration;
+            session.LastUpdateAt = timeNow;
+            session.State = request.State;
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         if (request.State is PlaybackState.Playing or PlaybackState.Buffering)
         {

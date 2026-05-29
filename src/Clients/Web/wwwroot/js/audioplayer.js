@@ -81,6 +81,19 @@ window.K7.scrollToElement = function (id) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
+window.K7.unlockAudio = function () {
+    // Resume AudioContext created outside a user gesture
+    if (audioState.audioContext && audioState.audioContext.state === 'suspended') {
+        audioState.audioContext.resume();
+    }
+    // Prime the audio element with a silent play+pause so future play() calls succeed
+    var el = audioState.element;
+    if (el && el.paused && !el.src) {
+        el.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+        el.play().then(function () { el.pause(); el.src = ''; }).catch(function () { el.src = ''; });
+    }
+};
+
 // MediaSession API
 window.K7.updateMediaSession = function (title, artist, album, artworkUrl) {
     if (!('mediaSession' in navigator)) return;
@@ -134,6 +147,17 @@ window.K7._onKeyDown = function (e) {
     if (!ref) return;
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+
+    // Only intercept arrow/volume keys when focus is NOT on a spatial-nav focusable element
+    // outside the audio player bar. This prevents stealing arrows from page navigation.
+    const isArrowOrVolume = e.code === 'ArrowRight' || e.code === 'ArrowLeft' || e.code === 'ArrowUp' || e.code === 'ArrowDown';
+    if (isArrowOrVolume) {
+        const active = document.activeElement;
+        // Allow if focus is on body (nothing focused) or inside the audio bottom bar
+        const inAudioBar = active && active.closest('.audio-bottom-bar, .mini-music-player, .fullscreen-music-player');
+        if (active && active !== document.body && !inAudioBar) return;
+    }
+
     let action = null;
     if (e.code === 'Space' && !e.ctrlKey && !e.metaKey && !e.altKey) action = 'PlayPause';
     else if (e.code === 'ArrowRight' && !e.ctrlKey && !e.shiftKey) action = 'SeekForward';
@@ -507,10 +531,9 @@ window.audioChangeSource = function (src, mimeType) {
     el.src = src;
     el.load();
 
-    const promise = el.play();
-    if (promise) {
-        promise.catch(e => console.warn('Audio play prevented after source change', e));
-    }
+    el.addEventListener('canplay', function () {
+        el.play().catch(() => {});
+    }, { once: true });
 };
 
 window.audioSetCrossfadeDuration = function (seconds) {
