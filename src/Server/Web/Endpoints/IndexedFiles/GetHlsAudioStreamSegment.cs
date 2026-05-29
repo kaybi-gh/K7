@@ -26,7 +26,7 @@ public class GetHlsAudioStreamSegment : IEndpoint
                         streamSessionId,
                         TranscodingAudioCodec), cancellationToken);
                 })
-            .RequireAuthorization(Policies.GuestOrAbove)
+            .RequireAuthorization(Policies.StreamAccess)
             .WithName(nameof(GetHlsAudioStreamSegment))
             .WithTags("IndexedFiles");
     }

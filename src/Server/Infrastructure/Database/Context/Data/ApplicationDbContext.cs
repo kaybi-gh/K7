@@ -71,6 +71,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<LibraryScanIssue> ScanIssues => Set<LibraryScanIssue>();
     public DbSet<Download> Downloads => Set<Download>();
     public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
+    public DbSet<EphemeralStreamToken> EphemeralStreamTokens => Set<EphemeralStreamToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

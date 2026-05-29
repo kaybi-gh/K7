@@ -24,7 +24,7 @@ public class GetHlsVideoStreamIndex : IEndpoint
                 streamSessionId,
                 TranscodingVideoCodec));
         })
-        .RequireAuthorization(Policies.GuestOrAbove)
+        .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)
         .WithTags(groupName);
     }

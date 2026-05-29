@@ -16,7 +16,7 @@ public class GetDirectStream : IEndpoint
         {
             return await sender.Send(new GetDirectStreamQuery(id));
         })
-        .RequireAuthorization(Policies.GuestOrAbove)
+        .RequireAuthorization(Policies.StreamAccess)
         .WithName(type.Name)
         .WithTags(groupName);
     }

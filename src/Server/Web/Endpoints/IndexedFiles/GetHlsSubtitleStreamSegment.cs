@@ -23,7 +23,7 @@ public class GetHlsSubtitleStreamSegment : IEndpoint
                         segmentNumber,
                         streamSessionId), cancellationToken);
                 })
-            .RequireAuthorization(Policies.GuestOrAbove)
+            .RequireAuthorization(Policies.StreamAccess)
             .WithName(nameof(GetHlsSubtitleStreamSegment))
             .WithTags("IndexedFiles");
     }

@@ -22,7 +22,7 @@ public class ToggleMediaExclusion : IEndpoint
             }, cancellationToken);
             return Results.Ok(new { Excluded = excluded });
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
