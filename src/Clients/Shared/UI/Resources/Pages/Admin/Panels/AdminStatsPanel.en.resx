@@ -43,4 +43,17 @@
   <data name="TopArtists" xml:space="preserve"><value>Top artists</value></data>
   <data name="TopAlbums" xml:space="preserve"><value>Top albums</value></data>
   <data name="TopShows" xml:space="preserve"><value>Top shows</value></data>
+  <data name="Period" xml:space="preserve"><value>Period</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Media type</value></data>
+  <data name="From" xml:space="preserve"><value>From</value></data>
+  <data name="To" xml:space="preserve"><value>To</value></data>
+  <data name="Custom" xml:space="preserve"><value>Custom</value></data>
+  <data name="PickDates" xml:space="preserve"><value>Pick dates</value></data>
+  <data name="SelectEndDate" xml:space="preserve"><value>Select end date</value></data>
+  <data name="PlaybackDetailsTitle" xml:space="preserve"><value>Playback details</value></data>
+  <data name="PlaybackDecisions" xml:space="preserve"><value>Decisions</value></data>
+  <data name="Resolutions" xml:space="preserve"><value>Resolutions</value></data>
+  <data name="AudioLanguages" xml:space="preserve"><value>Audio languages</value></data>
+  <data name="SubtitleLanguages" xml:space="preserve"><value>Subtitle languages</value></data>
+  <data name="TranscodeReasons" xml:space="preserve"><value>Transcode reasons</value></data>
 </root>

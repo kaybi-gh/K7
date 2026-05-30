@@ -1,0 +1,57 @@
+@namespace K7.Clients.Shared.UI.Components
+@implements IAsyncDisposable
+
+@if (_open)
+{
+    <div class="k7-backdrop" @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
+}
+<div class="k7-date-picker @Class" style="@Style">
+    <button type="button"
+            class="k7-date-picker-trigger focusable"
+            @onclick="Toggle"
+            @onclick:stopPropagation="true"
+            aria-haspopup="dialog"
+            aria-expanded="@_open">
+        <K7Icon Icon="@Phosphor.CalendarBlank" />
+        <span class="k7-date-picker-label">@DisplayLabel</span>
+        <K7Icon Icon="@Phosphor.CaretDown" Class="k7-date-picker-caret" />
+    </button>
+    <div class="k7-date-picker-dropdown @(_open ? "k7-date-picker-dropdown--open" : "")"
+         @ref="_dropdown"
+         @onclick:stopPropagation="true">
+        <div class="k7-date-picker-header">
+            <K7IconButton Icon="@Phosphor.CaretLeft" OnClick="PreviousMonth" AriaLabel="Previous month" />
+            <span class="k7-date-picker-month-label">@_viewDate.ToString("MMMM yyyy")</span>
+            <K7IconButton Icon="@Phosphor.CaretRight" OnClick="NextMonth" AriaLabel="Next month" />
+        </div>
+        <div class="k7-date-picker-weekdays">
+            @foreach (var day in _weekDays)
+            {
+                <span>@day</span>
+            }
+        </div>
+        <div class="k7-date-picker-grid">
+            @foreach (var date in _calendarDays)
+            {
+                var d = date;
+                var isCurrentMonth = d.Month == _viewDate.Month && d.Year == _viewDate.Year;
+                var isSelected = IsSelected(d);
+                var isInRange = IsInRange(d);
+                var isRangeStart = IsRangeStart(d);
+                var isRangeEnd = IsRangeEnd(d);
+                var isToday = d == DateOnly.FromDateTime(DateTime.Today);
+                <button type="button"
+                        class="k7-date-picker-day focusable @(!isCurrentMonth ? "k7-date-picker-day--outside" : "") @(isSelected ? "k7-date-picker-day--selected" : "") @(isInRange ? "k7-date-picker-day--in-range" : "") @(isRangeStart ? "k7-date-picker-day--range-start" : "") @(isRangeEnd ? "k7-date-picker-day--range-end" : "") @(isToday ? "k7-date-picker-day--today" : "")"
+                        @onclick="() => OnDayClick(d)">
+                    @d.Day
+                </button>
+            }
+        </div>
+        @if (_pendingStart is not null && _pendingEnd is null)
+        {
+            <div class="k7-date-picker-hint">
+                <span>@HintSelectEnd</span>
+            </div>
+        }
+    </div>
+</div>

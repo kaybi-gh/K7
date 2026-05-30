@@ -41,4 +41,14 @@
   <data name="TopShows" xml:space="preserve"><value>Top Shows</value></data>
   <data name="TopGenres" xml:space="preserve"><value>Top Genres</value></data>
   <data name="TopDevices" xml:space="preserve"><value>Top Devices</value></data>
+  <data name="Period" xml:space="preserve"><value>Period</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Media type</value></data>
+  <data name="PickDates" xml:space="preserve"><value>Pick dates</value></data>
+  <data name="SelectEndDate" xml:space="preserve"><value>Select end date</value></data>
+  <data name="PlaybackDetailsTitle" xml:space="preserve"><value>Playback Details</value></data>
+  <data name="PlaybackDecisions" xml:space="preserve"><value>Decisions</value></data>
+  <data name="Resolutions" xml:space="preserve"><value>Resolutions</value></data>
+  <data name="AudioLanguages" xml:space="preserve"><value>Audio Languages</value></data>
+  <data name="SubtitleLanguages" xml:space="preserve"><value>Subtitle Languages</value></data>
+  <data name="TranscodeReasons" xml:space="preserve"><value>Transcode Reasons</value></data>
 </root>

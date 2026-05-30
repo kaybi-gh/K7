@@ -12,6 +12,8 @@ public partial class AdminStatsPanel
     private string _selectedPeriod = "month";
     private string _selectedMediaType = "";
     private Guid? _selectedUserId;
+    private DateOnly _fromDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1));
+    private DateOnly _toDate = DateOnly.FromDateTime(DateTime.Now);
     private List<UserDto> _users = [];
 
     private List<ChartDataPoint> _playsOverTimeData = [];
@@ -19,10 +21,33 @@ public partial class AdminStatsPanel
     private List<ChartDataPoint> _dowData = [];
     private List<ChartDataPoint> _genreData = [];
     private List<ChartDataPoint> _deviceData = [];
+    private List<ChartDataPoint> _decisionData = [];
+    private List<ChartDataPoint> _resolutionData = [];
 
     private ApexChartOptions<ChartDataPoint> _areaChartOptions = CreateAreaChartOptions();
-    private ApexChartOptions<ChartDataPoint> _barChartOptions = CreateBarChartOptions();
-    private ApexChartOptions<ChartDataPoint> _donutChartOptions = CreateDonutChartOptions();
+    private ApexChartOptions<ChartDataPoint> _barChartOptionsHour = CreateBarChartOptions();
+    private ApexChartOptions<ChartDataPoint> _barChartOptionsDow = CreateBarChartOptions();
+    private ApexChartOptions<ChartDataPoint> _donutChartOptionsGenre = CreateDonutChartOptions();
+    private ApexChartOptions<ChartDataPoint> _donutChartOptionsDevice = CreateDonutChartOptions();
+    private ApexChartOptions<ChartDataPoint> _donutChartOptionsDecision = CreateDonutChartOptions();
+    private ApexChartOptions<ChartDataPoint> _donutChartOptionsResolution = CreateDonutChartOptions();
+
+    private readonly List<ButtonGroupOption<string>> _periodOptions =
+    [
+        new("week", Label: "Sem."),
+        new("month", Label: "Mois"),
+        new("year", Label: "An"),
+        new("all", Label: "Tout"),
+        new("custom", Label: "Perso.")
+    ];
+
+    private readonly List<ButtonGroupOption<string>> _mediaTypeOptions =
+    [
+        new("", Label: "Tous"),
+        new("MusicTrack", Label: "Musique"),
+        new("Movie", Label: "Films"),
+        new("SerieEpisode", Label: "Series")
+    ];
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,12 +72,20 @@ public partial class AdminStatsPanel
     private async Task OnPeriodChanged(string period)
     {
         _selectedPeriod = period ?? "month";
-        await FetchStatsAsync();
+        if (_selectedPeriod != "custom")
+            await FetchStatsAsync();
     }
 
     private async Task OnMediaTypeChanged(string mediaType)
     {
         _selectedMediaType = mediaType ?? "";
+        await FetchStatsAsync();
+    }
+
+    private async Task OnDateRangeChanged((DateOnly? From, DateOnly? To) range)
+    {
+        if (range.From is not null) _fromDate = range.From.Value;
+        if (range.To is not null) _toDate = range.To.Value;
         await FetchStatsAsync();
     }
 
@@ -64,7 +97,16 @@ public partial class AdminStatsPanel
         try
         {
             var mediaTypeParam = string.IsNullOrEmpty(_selectedMediaType) ? null : _selectedMediaType;
-            _stats = await K7ServerService.GetAdminWatchStatsAsync(mediaTypeParam, _selectedPeriod, _selectedUserId);
+            DateTime? from = null;
+            DateTime? to = null;
+
+            if (_selectedPeriod == "custom")
+            {
+                from = _fromDate.ToDateTime(TimeOnly.MinValue);
+                to = _toDate.ToDateTime(TimeOnly.MaxValue);
+            }
+
+            _stats = await K7ServerService.GetAdminWatchStatsAsync(mediaTypeParam, _selectedPeriod, _selectedUserId, from, to);
             BuildChartData();
         }
         catch
@@ -85,7 +127,7 @@ public partial class AdminStatsPanel
             .ToList();
 
         _hourData = _stats.PlaysByHourOfDay
-            .Select(p => new ChartDataPoint(p.Hour.ToString(), p.Count))
+            .Select(p => new ChartDataPoint($"{p.Hour}h", p.Count))
             .ToList();
 
         _dowData = _stats.PlaysByDayOfWeek
@@ -101,7 +143,26 @@ public partial class AdminStatsPanel
             .Take(6)
             .Select(d => new ChartDataPoint(d.Name, d.PlayCount))
             .ToList();
+
+        if (_stats.PlaybackDetails is { } pd)
+        {
+            _decisionData = pd.PlaybackDecisions
+                .Select(d => new ChartDataPoint(d.Label, d.Count))
+                .ToList();
+
+            _resolutionData = pd.TopResolutions
+                .Select(r => new ChartDataPoint(r.Label, r.Count))
+                .ToList();
+        }
+        else
+        {
+            _decisionData = [];
+            _resolutionData = [];
+        }
     }
+
+    private static bool HasNonZeroData(List<ChartDataPoint> data) =>
+        data.Count > 0 && data.Any(d => d.Value > 0);
 
     private static ApexChartOptions<ChartDataPoint> CreateAreaChartOptions() => new()
     {
@@ -132,6 +193,7 @@ public partial class AdminStatsPanel
         },
         DataLabels = new DataLabels { Enabled = false },
         Grid = new Grid { Show = false },
+        Yaxis = [new YAxis { Min = 0 }],
         Theme = new Theme { Mode = Mode.Dark }
     };
 
@@ -145,4 +207,10 @@ public partial class AdminStatsPanel
         Legend = new Legend { Position = LegendPosition.Bottom },
         Theme = new Theme { Mode = Mode.Dark }
     };
+
+    private static string FormatLanguage(string code)
+    {
+        var lang = K7.Shared.SupportedLanguages.FindByCode(code);
+        return lang?.NativeLabel ?? code.ToUpperInvariant();
+    }
 }

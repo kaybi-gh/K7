@@ -9,7 +9,7 @@ using K7.Shared.Dtos;
 namespace K7.Server.Application.Features.Stats.Queries.GetWatchStats;
 
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
-public record GetWatchStatsQuery(MediaType? MediaType = null, string Period = "month", Guid? UserId = null, bool GlobalStats = false) : IRequest<WatchStatsDto>;
+public record GetWatchStatsQuery(MediaType? MediaType = null, string Period = "month", Guid? UserId = null, bool GlobalStats = false, DateTime? From = null, DateTime? To = null) : IRequest<WatchStatsDto>;
 
 public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser currentUser)
     : IRequestHandler<GetWatchStatsQuery, WatchStatsDto>
@@ -20,27 +20,11 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
         if (targetUserId is null && !request.GlobalStats)
             return new WatchStatsDto();
 
-        var since = GetPeriodStart(request.Period);
+        var since = request.Period == "custom" ? request.From?.ToUniversalTime() : GetPeriodStart(request.Period);
+        var until = request.Period == "custom" ? request.To?.ToUniversalTime() : null;
         var mediaTypes = GetMediaTypes(request.MediaType);
 
-        var statesQuery = context.UserMediaStates
-            .Where(s => s.PlayCount > 0);
-
-        if (targetUserId is not null)
-            statesQuery = statesQuery.Where(s => s.UserId == targetUserId.Value);
-
-        var statesWithMedia = statesQuery
-            .Join(
-                context.Medias.Where(m => mediaTypes.Contains(m.Type)),
-                s => s.MediaId,
-                m => m.Id,
-                (s, m) => new { s.MediaId, s.PlayCount, Media = m });
-
-        var totalPlays = await statesWithMedia.SumAsync(s => s.PlayCount, cancellationToken);
-        var uniqueItems = await statesWithMedia.CountAsync(cancellationToken);
-
-        var sessionsQuery = context.MediaPlaybackSessions
-            .Where(s => s.CompletedAt != null);
+        var sessionsQuery = context.MediaPlaybackSessions.AsQueryable();
 
         if (targetUserId is not null)
             sessionsQuery = sessionsQuery.Where(s => s.UserId == targetUserId.Value);
@@ -57,27 +41,46 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             sessionsWithMedia = sessionsWithMedia.Where(s => s.StartedAt >= since.Value);
         }
 
+        if (until.HasValue)
+        {
+            sessionsWithMedia = sessionsWithMedia.Where(s => s.StartedAt <= until.Value);
+        }
+
+        var totalPlays = await sessionsWithMedia.Select(s => s.ReferenceId).Distinct().CountAsync(cancellationToken);
+        var uniqueItems = await sessionsWithMedia.Select(s => s.MediaId).Distinct().CountAsync(cancellationToken);
+
         var totalSeconds = await sessionsWithMedia
             .SumAsync(s => s.WatchedDurationSeconds > 0 ? s.WatchedDurationSeconds : s.DurationSeconds, cancellationToken);
 
-        var topItems = await statesWithMedia
-            .Select(s => new TopItemDto
+        var topItems = await sessionsWithMedia
+            .Join(
+                context.Medias,
+                s => s.MediaId,
+                m => m.Id,
+                (s, m) => new { s.MediaId, s.ReferenceId, m.Title })
+            .GroupBy(x => new { x.MediaId, x.Title })
+            .Select(g => new TopItemDto
             {
-                Id = s.MediaId,
-                Name = s.Media.Title ?? "Unknown",
-                PlayCount = s.PlayCount
+                Id = g.Key.MediaId,
+                Name = g.Key.Title ?? "Unknown",
+                PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
             .ToListAsync(cancellationToken);
 
-        var topGenres = await statesWithMedia
-            .SelectMany(s => s.Media.Genres, (s, genre) => new { s.PlayCount, Genre = genre })
+        var topGenres = await sessionsWithMedia
+            .Join(
+                context.Medias,
+                s => s.MediaId,
+                m => m.Id,
+                (s, m) => new { s.ReferenceId, m.Genres })
+            .SelectMany(x => x.Genres, (x, genre) => new { x.ReferenceId, Genre = genre })
             .GroupBy(x => x.Genre)
             .Select(g => new GenreStatDto
             {
                 Genre = g.Key,
-                PlayCount = g.Sum(x => x.PlayCount)
+                PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
             })
             .OrderByDescending(x => x.PlayCount)
             .Take(10)
@@ -191,6 +194,8 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             .Take(10)
             .ToListAsync(cancellationToken);
 
+        var playbackDetails = await BuildPlaybackDetailsStatsAsync(sessionsWithMedia, cancellationToken);
+
         return new WatchStatsDto
         {
             Period = request.Period,
@@ -205,7 +210,8 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             TopDevices = topDevices,
             PlaysOverTime = timeSeries,
             PlaysByDayOfWeek = byDayOfWeek,
-            PlaysByHourOfDay = byHourOfDay
+            PlaysByHourOfDay = byHourOfDay,
+            PlaybackDetails = playbackDetails
         };
     }
 
@@ -277,4 +283,88 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             })
             .ToList();
     }
+
+    private static async Task<PlaybackDetailsStatsDto?> BuildPlaybackDetailsStatsAsync(
+        IQueryable<MediaPlaybackSession> sessions, CancellationToken cancellationToken)
+    {
+        var detailsQuery = sessions
+            .Where(s => s.Details != null)
+            .Select(s => s.Details!);
+
+        var totalWithDetails = await detailsQuery.CountAsync(cancellationToken);
+        if (totalWithDetails == 0)
+            return null;
+
+        var decisions = await detailsQuery
+            .GroupBy(d => d.VideoDecision ?? "Unknown")
+            .Select(g => new LabelCountDto { Label = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToListAsync(cancellationToken);
+
+        var audioLanguages = await detailsQuery
+            .Where(d => d.AudioTrackLanguage != null)
+            .GroupBy(d => d.AudioTrackLanguage!)
+            .Select(g => new LabelCountDto { Label = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(10)
+            .ToListAsync(cancellationToken);
+
+        var subtitleLanguages = await detailsQuery
+            .Where(d => d.SubtitleTrackLanguage != null)
+            .GroupBy(d => d.SubtitleTrackLanguage!)
+            .Select(g => new LabelCountDto { Label = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(10)
+            .ToListAsync(cancellationToken);
+
+        var resolutions = await detailsQuery
+            .Where(d => d.SourceVideoWidth != null && d.SourceVideoHeight != null)
+            .GroupBy(d => d.SourceVideoHeight!.Value)
+            .Select(g => new { Height = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(10)
+            .ToListAsync(cancellationToken);
+
+        var resolutionLabels = resolutions
+            .Select(r => new LabelCountDto
+            {
+                Label = r.Height >= 2160 ? "4K" : r.Height >= 1080 ? "1080p" : r.Height >= 720 ? "720p" : $"{r.Height}p",
+                Count = r.Count
+            })
+            .GroupBy(r => r.Label)
+            .Select(g => new LabelCountDto { Label = g.Key, Count = g.Sum(x => x.Count) })
+            .OrderByDescending(x => x.Count)
+            .ToList();
+
+        var transcodeReasons = await detailsQuery
+            .Where(d => d.TranscodeReason != null && d.TranscodeReason != TranscodeReason.None)
+            .GroupBy(d => d.TranscodeReason!.Value)
+            .Select(g => new { Reason = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToListAsync(cancellationToken);
+
+        var transcodeReasonLabels = transcodeReasons
+            .Select(r => new LabelCountDto { Label = FormatTranscodeReason(r.Reason), Count = r.Count })
+            .ToList();
+
+        return new PlaybackDetailsStatsDto
+        {
+            PlaybackDecisions = decisions,
+            TopAudioLanguages = audioLanguages,
+            TopSubtitleLanguages = subtitleLanguages,
+            TopResolutions = resolutionLabels,
+            TopTranscodeReasons = transcodeReasonLabels
+        };
+    }
+
+    private static string FormatTranscodeReason(TranscodeReason reason) => reason switch
+    {
+        TranscodeReason.VideoCodecNotSupported => "Video codec",
+        TranscodeReason.AudioCodecNotSupported => "Audio codec",
+        TranscodeReason.ContainerNotSupported => "Container",
+        TranscodeReason.HlsSegmentsUnavailable => "HLS segments",
+        TranscodeReason.SubtitlesBurnIn => "Subtitles burn-in",
+        TranscodeReason.ResolutionNotSupported => "Resolution",
+        _ => reason.ToString()
+    };
 }
