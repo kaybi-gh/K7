@@ -12,12 +12,14 @@ public sealed class SyncPlayMediaLoader : ISyncPlayMediaLoader
     private readonly IMediaService _mediaService;
     private readonly IPlayerService _videoPlayer;
     private readonly IAudioPlayerService _audioPlayer;
+    private readonly PlaybackProgressTracker _progressTracker;
 
-    public SyncPlayMediaLoader(IMediaService mediaService, IPlayerService videoPlayer, IAudioPlayerService audioPlayer)
+    public SyncPlayMediaLoader(IMediaService mediaService, IPlayerService videoPlayer, IAudioPlayerService audioPlayer, PlaybackProgressTracker progressTracker)
     {
         _mediaService = mediaService;
         _videoPlayer = videoPlayer;
         _audioPlayer = audioPlayer;
+        _progressTracker = progressTracker;
     }
 
     public async Task LoadAndPlayMediaAsync(Guid mediaReferenceId, string? title, string? coverUrl)
@@ -64,6 +66,9 @@ public sealed class SyncPlayMediaLoader : ISyncPlayMediaLoader
                 mediaId: media.Id,
                 title: title ?? media.Title,
                 coverUrl: coverUrl);
+
+            var serieId = (media as SerieEpisodeDto)?.SerieId;
+            _progressTracker.StartTracking(media.Id, isAuthenticated: true, serieId: serieId, indexedFileId: indexedFile.Id);
         }
     }
 
