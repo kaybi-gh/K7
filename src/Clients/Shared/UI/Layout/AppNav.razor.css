@@ -224,7 +224,7 @@
         display: none;
     }
 
-    .app-nav-item--search .app-nav-label {
+    ::deep .app-nav-item--search .app-nav-label {
         display: none;
     }
 

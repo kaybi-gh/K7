@@ -497,4 +497,10 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     flex: 1;
     padding: var(--space-6);
     min-height: 0;
+    overflow-y: auto;
+}
+
+.page-content:has(> .full-bleed-page) {
+    overflow: hidden;
+    padding: 0;
 }
