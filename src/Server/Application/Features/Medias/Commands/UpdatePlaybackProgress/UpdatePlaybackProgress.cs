@@ -6,6 +6,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using K7.Shared.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -65,6 +66,41 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
                 DeviceId = request.DeviceId
             };
             _context.MediaPlaybackSessions.Add(session);
+
+            // Persist stream decision as PlaybackSessionDetails at session creation
+            var streamInfo = _activeStreamTracker.GetStreamInfo(request.SessionId);
+            if (streamInfo?.StreamDecision is { } sd)
+            {
+                var videoIsTranscoded = sd.SourceVideoCodec is not null
+                    && sd.StreamVideoCodec is not null
+                    && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase);
+                var audioIsTranscoded = sd.SourceAudioCodec is not null
+                    && sd.StreamAudioCodec is not null
+                    && !string.Equals(sd.SourceAudioCodec, sd.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
+                var isTransmux = sd.Mode == PlaybackMode.Transmux;
+
+                var details = new PlaybackSessionDetails
+                {
+                    MediaPlaybackSessionId = session.Id,
+                    IsTranscode = videoIsTranscoded || audioIsTranscoded,
+                    VideoDecision = videoIsTranscoded ? "Transcode" : isTransmux ? "Transmux" : "Direct",
+                    AudioDecision = audioIsTranscoded ? "Transcode" : isTransmux ? "Transmux" : "Direct",
+                    TranscodeReason = sd.Reason != TranscodeReason.None ? sd.Reason : null,
+                    Bitrate = sd.Bitrate,
+                    SourceVideoCodec = sd.SourceVideoCodec,
+                    SourceAudioCodec = sd.SourceAudioCodec,
+                    SourceVideoWidth = ParseResolutionWidth(sd.SourceResolution),
+                    SourceVideoHeight = ParseResolutionHeight(sd.SourceResolution),
+                    StreamVideoCodec = sd.StreamVideoCodec,
+                    StreamAudioCodec = sd.StreamAudioCodec,
+                    AudioTrackLanguage = sd.AudioTrackLanguage,
+                    AudioTrackTitle = sd.AudioTrackTitle,
+                    AudioChannelLayout = sd.AudioChannelLayout,
+                    SubtitleTrackLanguage = sd.SubtitleTrackLanguage,
+                    SubtitleTrackTitle = sd.SubtitleTrackTitle
+                };
+                _context.PlaybackSessionDetails.Add(details);
+            }
         }
         else
         {
@@ -206,7 +242,7 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
             await _context.SaveChangesAsync(cancellationToken);
         }
 
-        if (request.State is PlaybackState.Playing or PlaybackState.Buffering)
+        if (request.State is PlaybackState.Playing or PlaybackState.Buffering or PlaybackState.Paused)
         {
             var device = request.DeviceId.HasValue
                 ? await _context.Devices
@@ -352,5 +388,19 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         }
 
         nextState.LastInteractedAt = timeNow;
+    }
+
+    private static int? ParseResolutionWidth(string? resolution)
+    {
+        if (resolution is null) return null;
+        var parts = resolution.Split('x');
+        return parts.Length == 2 && int.TryParse(parts[0], out var w) ? w : null;
+    }
+
+    private static int? ParseResolutionHeight(string? resolution)
+    {
+        if (resolution is null) return null;
+        var parts = resolution.Split('x');
+        return parts.Length == 2 && int.TryParse(parts[1], out var h) ? h : null;
     }
 }

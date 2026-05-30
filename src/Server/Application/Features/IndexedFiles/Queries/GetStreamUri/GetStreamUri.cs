@@ -181,6 +181,10 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             ? $"{selectedVideoTrack.Width}x{selectedVideoTrack.Height}"
             : null;
 
+        var selectedSubtitle = subtitleTrackIndex.HasValue
+            ? videoFileMetadata.SubtitleTracks.FirstOrDefault(t => t.Index == subtitleTrackIndex.Value)
+            : null;
+
         // If both audio and video are directly supported (container + codec), return a direct-stream URL
         if (audioDirectSupported && videoDirectSupported)
         {
@@ -196,7 +200,12 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 StreamVideoCodec = selectedVideoTrack.Codec,
                 StreamAudioCodec = selectedAudioTrack.Codec,
                 SourceResolution = sourceResolution,
-                SelectedAudioTrackIndex = selectedAudioTrack.Index
+                SelectedAudioTrackIndex = selectedAudioTrack.Index,
+                AudioTrackLanguage = selectedAudioTrack.Language,
+                AudioTrackTitle = selectedAudioTrack.Name,
+                AudioChannelLayout = selectedAudioTrack.ChannelLayout,
+                SubtitleTrackLanguage = selectedSubtitle?.Language,
+                SubtitleTrackTitle = selectedSubtitle?.Name
             };
 
             return (new IndexedFileStreamUri
@@ -263,7 +272,12 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             StreamVideoCodec = requiresVideoTranscoding ? videoTranscodingMediaFormat?.VideoCodec : selectedVideoTrack.Codec,
             StreamAudioCodec = streamAudioCodec,
             SourceResolution = sourceResolution,
-            SelectedAudioTrackIndex = selectedAudioTrack.Index
+            SelectedAudioTrackIndex = selectedAudioTrack.Index,
+            AudioTrackLanguage = selectedAudioTrack.Language,
+            AudioTrackTitle = selectedAudioTrack.Name,
+            AudioChannelLayout = selectedAudioTrack.ChannelLayout,
+            SubtitleTrackLanguage = selectedSubtitle?.Language,
+            SubtitleTrackTitle = selectedSubtitle?.Name
         };
 
         return (new IndexedFileStreamUri

@@ -16,5 +16,10 @@ public class PlaybackSessionDetailsConfiguration : IEntityTypeConfiguration<Play
         builder.Property(e => e.SourceAudioCodec).HasMaxLength(32);
         builder.Property(e => e.StreamVideoCodec).HasMaxLength(32);
         builder.Property(e => e.StreamAudioCodec).HasMaxLength(32);
+        builder.Property(e => e.AudioTrackLanguage).HasMaxLength(16);
+        builder.Property(e => e.AudioTrackTitle).HasMaxLength(128);
+        builder.Property(e => e.AudioChannelLayout).HasMaxLength(32);
+        builder.Property(e => e.SubtitleTrackLanguage).HasMaxLength(16);
+        builder.Property(e => e.SubtitleTrackTitle).HasMaxLength(128);
     }
 }

@@ -14,4 +14,9 @@ public sealed record StreamDecisionDto
     public string? SourceResolution { get; init; }
     public int? SelectedAudioTrackIndex { get; init; }
     public int? Bitrate { get; init; }
+    public string? AudioTrackLanguage { get; init; }
+    public string? AudioTrackTitle { get; init; }
+    public string? AudioChannelLayout { get; init; }
+    public string? SubtitleTrackLanguage { get; init; }
+    public string? SubtitleTrackTitle { get; init; }
 }
