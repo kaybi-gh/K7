@@ -1,5 +1,6 @@
 ﻿using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
+using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -56,6 +57,10 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<Download> Downloads { get; }
     DbSet<NotificationRule> NotificationRules { get; }
     DbSet<EphemeralStreamToken> EphemeralStreamTokens { get; }
+    DbSet<PeerServer> PeerServers { get; }
+    DbSet<PeerShareAgreement> PeerShareAgreements { get; }
+    DbSet<PeerRequest> PeerRequests { get; }
+    DbSet<RemoteIndexedFile> RemoteIndexedFiles { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

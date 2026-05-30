@@ -110,7 +110,7 @@ public static class IndexedFileExtensions
         if (string.IsNullOrEmpty(directory)) return null;
 
         var normalizedDir = Path.GetFullPath(directory);
-        var normalizedRoot = Path.GetFullPath(library.RootPath);
+        var normalizedRoot = Path.GetFullPath(library.RootPath!);
         if (string.Equals(normalizedDir, normalizedRoot, StringComparison.OrdinalIgnoreCase))
         {
             return null;
@@ -129,7 +129,7 @@ public static class IndexedFileExtensions
 
         // Don't return the library root as the grandparent
         var normalizedGrandparent = Path.GetFullPath(grandparent);
-        var normalizedRoot = Path.GetFullPath(library.RootPath);
+        var normalizedRoot = Path.GetFullPath(library.RootPath!);
         if (string.Equals(normalizedGrandparent, normalizedRoot, StringComparison.OrdinalIgnoreCase))
         {
             return null;
@@ -263,7 +263,7 @@ public static class IndexedFileExtensions
             {
                 var gpName = Path.GetFileName(grandparent);
                 var normalizedGp = Path.GetFullPath(grandparent);
-                var normalizedRoot = Path.GetFullPath(library.RootPath);
+                var normalizedRoot = Path.GetFullPath(library.RootPath!);
                 if (!string.Equals(normalizedGp, normalizedRoot, StringComparison.OrdinalIgnoreCase)
                     && !string.IsNullOrEmpty(gpName))
                 {
@@ -276,7 +276,7 @@ public static class IndexedFileExtensions
         if (!string.IsNullOrEmpty(dirName))
         {
             var normalizedDir = Path.GetFullPath(directory);
-            var normalizedRoot = Path.GetFullPath(library.RootPath);
+            var normalizedRoot = Path.GetFullPath(library.RootPath!);
             if (!string.Equals(normalizedDir, normalizedRoot, StringComparison.OrdinalIgnoreCase))
             {
                 return dirName;

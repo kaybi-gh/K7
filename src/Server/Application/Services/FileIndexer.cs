@@ -106,7 +106,7 @@ public class FileIndexer : IFileIndexer
 
     private (List<IndexedFile> IndexedFiles, HashSet<string> SkippedFilePaths, IReadOnlyList<(string Path, string Error)> InaccessiblePaths) ScanFiles(Library library, CancellationToken cancellationToken)
     {
-        var (fileInfos, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath, cancellationToken);
+        var (fileInfos, inaccessiblePaths) = FileInfoHelper.GetAllFileInfosRecursively(library.RootPath!, cancellationToken);
         ConcurrentBag<IndexedFile> indexedFiles = [];
         ConcurrentBag<string> skippedFilePaths = [];
 

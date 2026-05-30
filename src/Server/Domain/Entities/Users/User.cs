@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using K7.Server.Domain.Entities.Devices;
+using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Restrictions;
 
@@ -14,6 +15,10 @@ public class User : BaseAuditableEntity
     public DateTimeOffset? DeletedAt { get; set; }
     public Guid? ContentRestrictionProfileId { get; set; }
     public ContentRestrictionProfile? ContentRestrictionProfile { get; set; }
+
+    public Guid? PeerServerId { get; set; }
+    public PeerServer? PeerServer { get; set; }
+
     public IList<UserRating> Ratings { get; set; } = [];
     public IList<Device> Devices { get; set; } = [];
     public IList<UserCapabilityOverride> CapabilityOverrides { get; set; } = [];
@@ -23,4 +28,6 @@ public class User : BaseAuditableEntity
     [NotMapped] public string? Email { get; set; }
     [NotMapped] public string? UserName { get; set; }
     [NotMapped] public string Role { get; set; } = "Guest";
+
+    public bool IsVirtualUser => PeerServerId is not null;
 }

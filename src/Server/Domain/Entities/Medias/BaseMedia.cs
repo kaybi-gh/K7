@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Metadatas;
+﻿using K7.Server.Domain.Entities.Federation;
+using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Entities.Users;
@@ -13,6 +14,9 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public string? OriginalTitle { get; set; }
     public DateOnly? ReleaseDate { get; set; }
 
+    public Guid? PeerServerId { get; set; }
+    public PeerServer? PeerServer { get; set; }
+
     public IList<ExternalId> ExternalIds { get; set; } = [];
     public IList<MetadataPicture> Pictures { get; set; } = [];
     public IList<BaseRating> Ratings { get; set; } = [];
@@ -25,8 +29,10 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public IList<string> LockedFields { get; set; } = [];
 
     public IList<IndexedFile> IndexedFiles { get; set; } = [];
+    public IList<RemoteIndexedFile> RemoteIndexedFiles { get; set; } = [];
     public IList<UserMediaState> UserMediaStates { get; set; } = [];
     public IList<MediaSegment> Segments { get; set; } = [];
 
     public bool IsFieldLocked(string fieldName) => LockedFields.Contains(fieldName);
+    public bool IsRemoteOrigin => PeerServerId is not null;
 }

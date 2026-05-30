@@ -2,6 +2,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
+using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -73,6 +74,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<Download> Downloads => Set<Download>();
     public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
     public DbSet<EphemeralStreamToken> EphemeralStreamTokens => Set<EphemeralStreamToken>();
+    public DbSet<PeerServer> PeerServers => Set<PeerServer>();
+    public DbSet<PeerShareAgreement> PeerShareAgreements => Set<PeerShareAgreement>();
+    public DbSet<PeerRequest> PeerRequests => Set<PeerRequest>();
+    public DbSet<RemoteIndexedFile> RemoteIndexedFiles => Set<RemoteIndexedFile>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
