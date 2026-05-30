@@ -43,11 +43,7 @@ try
     app.UseSerilogRequestLogging();
     app.MapDefaultEndpoints(); // TODO - Well placed?
 
-    if (args.Contains("--init-db"))
-    {
-        await app.InitializeDatabaseAsync();
-    }
-
+    await app.InitializeDatabaseAsync();
     await app.InitializeOidcClientsAsync();
 
     // Configure the HTTP request pipeline.
