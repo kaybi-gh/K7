@@ -26,7 +26,7 @@ public class GetPlaybackHistory : IEndpoint
                 MediaType = mediaType
             }, cancellationToken);
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

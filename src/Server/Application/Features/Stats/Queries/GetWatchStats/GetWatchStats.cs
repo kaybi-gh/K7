@@ -8,7 +8,7 @@ using K7.Shared.Dtos;
 
 namespace K7.Server.Application.Features.Stats.Queries.GetWatchStats;
 
-[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
+[Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record GetWatchStatsQuery(MediaType? MediaType = null, string Period = "month", Guid? UserId = null, bool GlobalStats = false, DateTime? From = null, DateTime? To = null) : IRequest<WatchStatsDto>;
 
 public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser currentUser)
