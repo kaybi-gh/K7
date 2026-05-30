@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Interfaces;
@@ -51,6 +52,7 @@ public class PlaybackProgressTracker : IDisposable
 
         _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged += OnCurrentTimeChanged;
+        _playerService.SourceChanged += OnSourceChanged;
     }
 
     /// <summary>
@@ -65,7 +67,7 @@ public class PlaybackProgressTracker : IDisposable
         _currentMediaId = mediaId;
         _currentSerieId = serieId;
         _currentIndexedFileId = indexedFileId;
-        _sessionId = Guid.NewGuid();
+        _sessionId = _playerService.Source?.StreamSessionId ?? Guid.NewGuid();
         _referenceId = Guid.NewGuid();
         _lastReportedPosition = 0;
         _isAuthenticated = isAuthenticated;
@@ -96,6 +98,15 @@ public class PlaybackProgressTracker : IDisposable
         }
 
         _lastKnownTime = time;
+    }
+
+    private void OnSourceChanged(PlayerSource source)
+    {
+        // Use the server's StreamSessionId so progress reports match the stream tracker
+        if (source.StreamSessionId is { } serverSessionId)
+        {
+            _sessionId = serverSessionId;
+        }
     }
 
     private void OnPlaybackStateChanged(PlaybackState state)
@@ -180,6 +191,7 @@ public class PlaybackProgressTracker : IDisposable
 
         _playerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged -= OnCurrentTimeChanged;
+        _playerService.SourceChanged -= OnSourceChanged;
         StopTimer();
         GC.SuppressFinalize(this);
     }
