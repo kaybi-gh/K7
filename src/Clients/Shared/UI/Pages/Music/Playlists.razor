@@ -19,7 +19,7 @@
         <div class="flex-1"></div>
         <K7Menu>
             <ActivatorContent>
-                <K7Button Variant="outlined" Color="primary" StartIcon="lightbulb">@L["Presets"]</K7Button>
+                <K7Button Variant="outlined" Color="primary" StartIcon="lightbulb" Disabled="@(!_canCreate)">@L["Presets"]</K7Button>
             </ActivatorContent>
             <ChildContent>
                 <K7MenuItem OnClick="() => CreatePreset(Preset.RecentlyAdded)">@L["PresetRecentlyAdded"]</K7MenuItem>
@@ -31,7 +31,7 @@
         </K7Menu>
         <K7Menu>
             <ActivatorContent>
-                <K7Button Variant="filled" Color="primary" StartIcon="plus">@L["NewMenu"]</K7Button>
+                <K7Button Variant="filled" Color="primary" StartIcon="plus" Disabled="@(!_canCreate)">@L["NewMenu"]</K7Button>
             </ActivatorContent>
             <ChildContent>
                 <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>

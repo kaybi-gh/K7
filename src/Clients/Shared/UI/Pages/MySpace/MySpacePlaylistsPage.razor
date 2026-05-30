@@ -45,7 +45,7 @@
         </K7Chip>
         <K7Menu>
             <ActivatorContent>
-                <K7Button Variant="filled" Color="primary" StartIcon="plus">@L["New"]</K7Button>
+                <K7Button Variant="filled" Color="primary" StartIcon="plus" Disabled="@(!_canCreate)">@L["New"]</K7Button>
             </ActivatorContent>
             <ChildContent>
                 <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
