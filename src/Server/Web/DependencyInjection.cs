@@ -91,6 +91,12 @@ public static class DependencyInjection
                 policy.AuthenticationSchemes.Add(EphemeralStreamTokenDefaults.AuthenticationScheme);
                 policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator);
             });
+
+            options.AddPolicy(Policies.PeerAccess, policy =>
+            {
+                policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.RequireClaim("scope", Domain.Constants.FederationScopes.Peer);
+            });
         });
 
         services.AddDatabaseDeveloperPageExceptionFilter();

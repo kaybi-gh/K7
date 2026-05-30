@@ -79,9 +79,10 @@ public static class DependencyInjection
                 options.AllowAuthorizationCodeFlow()
                        .AllowRefreshTokenFlow()
                        .AllowDeviceAuthorizationFlow()
+                       .AllowClientCredentialsFlow()
                        .RequireProofKeyForCodeExchange();
 
-                options.RegisterScopes("api", Scopes.OpenId, Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess);
+                options.RegisterScopes("api", Scopes.OpenId, Scopes.Email, Scopes.Profile, Scopes.Roles, Scopes.OfflineAccess, K7.Server.Domain.Constants.FederationScopes.Peer);
 
                 options.AddEncryptionCertificate(LoadOrCreateCertificate(
                            Path.Combine(oidcKeysPath, "encryption-certificate.pfx"),

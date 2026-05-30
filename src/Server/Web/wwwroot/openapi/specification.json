@@ -8344,7 +8344,6 @@
           "id",
           "title",
           "mediaType",
-          "rootPath",
           "metadataProviderName",
           "metadataLanguage",
           "metadataFallbackLanguage",
@@ -8363,7 +8362,10 @@
             "$ref": "#/components/schemas/LibraryMediaType"
           },
           "rootPath": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "metadataProviderName": {
             "type": "string"
@@ -8385,6 +8387,13 @@
           },
           "libraryGroupId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "peerServerId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           }
         }

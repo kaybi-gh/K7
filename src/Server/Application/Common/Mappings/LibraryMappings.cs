@@ -17,7 +17,8 @@ public static class LibraryMappings
             MetadataLanguage = domain.MetadataLanguage,
             MetadataFallbackLanguage = domain.MetadataFallbackLanguage,
             MetadataRefreshIntervalDays = domain.MetadataRefreshIntervalDays,
-            LibraryGroupId = domain.LibraryGroupId
+            LibraryGroupId = domain.LibraryGroupId,
+            PeerServerId = domain.PeerServerId
         };
     }
 }

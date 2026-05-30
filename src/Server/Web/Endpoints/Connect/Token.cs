@@ -28,6 +28,18 @@ public class Token : IEndpoint
             var request = context.GetOpenIddictServerRequest() ??
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
+            if (request.IsClientCredentialsGrantType())
+            {
+                var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType);
+                identity.SetClaim(Claims.Subject, request.ClientId);
+
+                identity.SetScopes(request.GetScopes());
+                identity.SetDestinations(static claim => [Destinations.AccessToken]);
+
+                return Results.SignIn(new ClaimsPrincipal(identity),
+                    authenticationScheme: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
             if (request.IsAuthorizationCodeGrantType() || request.IsRefreshTokenGrantType() || request.IsDeviceCodeGrantType())
             {
                 // Récupère les infos stockées dans le token (code d'autorisation ou refresh token)
