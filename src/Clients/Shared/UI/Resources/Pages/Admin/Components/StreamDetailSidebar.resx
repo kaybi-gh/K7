@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="SessionDetails" xml:space="preserve"><value>Details de la session</value></data>
+  <data name="MediaTitle" xml:space="preserve"><value>Titre</value></data>
+  <data name="Type" xml:space="preserve"><value>Type</value></data>
+  <data name="Status" xml:space="preserve"><value>Statut</value></data>
+  <data name="PlaybackInfo" xml:space="preserve"><value>Lecture</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="StoppedAt" xml:space="preserve"><value>Fin</value></data>
+  <data name="Duration" xml:space="preserve"><value>Duree</value></data>
+  <data name="Position" xml:space="preserve"><value>Position</value></data>
+  <data name="UserDevice" xml:space="preserve"><value>Utilisateur et appareil</value></data>
+  <data name="User" xml:space="preserve"><value>Utilisateur</value></data>
+  <data name="Device" xml:space="preserve"><value>Appareil</value></data>
+  <data name="Client" xml:space="preserve"><value>Client</value></data>
+  <data name="StreamDetails" xml:space="preserve"><value>Details du flux</value></data>
+  <data name="Mode" xml:space="preserve"><value>Mode</value></data>
+  <data name="VideoDecision" xml:space="preserve"><value>Decision video</value></data>
+  <data name="AudioDecision" xml:space="preserve"><value>Decision audio</value></data>
+  <data name="Video" xml:space="preserve"><value>Video</value></data>
+  <data name="Audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Sous-titres</value></data>
+  <data name="Track" xml:space="preserve"><value>Piste</value></data>
+  <data name="Codec" xml:space="preserve"><value>Codec</value></data>
+  <data name="Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="Reason" xml:space="preserve"><value>Raison</value></data>
+  <data name="Bitrate" xml:space="preserve"><value>Debit</value></data>
+  <data name="NoStreamData" xml:space="preserve"><value>Aucune donnee de flux</value></data>
+</root>
