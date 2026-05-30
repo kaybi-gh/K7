@@ -1,16 +1,18 @@
-﻿using ApexCharts;
+using ApexCharts;
 using K7.Clients.Shared.UI.Components;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Users;
 
-namespace K7.Clients.Shared.UI.Pages.Stats;
+namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class WatchStats : IDisposable
+public partial class AdminStatsPanel
 {
     private WatchStatsDto? _stats;
     private bool _loading = true;
     private string _selectedPeriod = "month";
     private string _selectedMediaType = "";
-    private Timer? _debounceTimer;
+    private Guid? _selectedUserId;
+    private List<UserDto> _users = [];
 
     private List<ChartDataPoint> _playsOverTimeData = [];
     private List<ChartDataPoint> _hourData = [];
@@ -24,23 +26,22 @@ public partial class WatchStats : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        K7HubClient.ProgressUpdated += OnProgressUpdated;
+        try
+        {
+            _users = await UserAdminService.GetUsersAsync();
+        }
+        catch
+        {
+            _users = [];
+        }
+
         await FetchStatsAsync();
     }
 
-    private void OnProgressUpdated(Guid mediaId, double progress, bool isCompleted)
+    private async Task OnUserChanged(Guid? userId)
     {
-        if (!isCompleted) return;
-
-        _debounceTimer?.Dispose();
-        _debounceTimer = new Timer(async _ =>
-        {
-            await InvokeAsync(async () =>
-            {
-                await FetchStatsAsync();
-                StateHasChanged();
-            });
-        }, null, 2000, Timeout.Infinite);
+        _selectedUserId = userId;
+        await FetchStatsAsync();
     }
 
     private async Task OnPeriodChanged(string period)
@@ -63,7 +64,7 @@ public partial class WatchStats : IDisposable
         try
         {
             var mediaTypeParam = string.IsNullOrEmpty(_selectedMediaType) ? null : _selectedMediaType;
-            _stats = await K7ServerService.GetWatchStatsAsync(mediaTypeParam, _selectedPeriod);
+            _stats = await K7ServerService.GetAdminWatchStatsAsync(mediaTypeParam, _selectedPeriod, _selectedUserId);
             BuildChartData();
         }
         catch
@@ -144,10 +145,4 @@ public partial class WatchStats : IDisposable
         Legend = new Legend { Position = LegendPosition.Bottom },
         Theme = new Theme { Mode = Mode.Dark }
     };
-
-    public void Dispose()
-    {
-        K7HubClient.ProgressUpdated -= OnProgressUpdated;
-        _debounceTimer?.Dispose();
-    }
 }

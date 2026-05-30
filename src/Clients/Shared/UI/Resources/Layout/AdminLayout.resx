@@ -34,4 +34,6 @@
   <data name="VideoPlayer" xml:space="preserve"><value>Lecteur video</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
   <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="PlaybackHistory" xml:space="preserve"><value>Historique</value></data>
+  <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
 </root>
