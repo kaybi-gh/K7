@@ -16,7 +16,7 @@ public class ReportPlaybackProgress : IEndpoint
             await sender.Send(command);
             return Results.NoContent();
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
