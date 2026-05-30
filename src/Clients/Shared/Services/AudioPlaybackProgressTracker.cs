@@ -41,6 +41,7 @@ public class AudioPlaybackProgressTracker : IDisposable
 
         _audio.CurrentTrackChanged += OnTrackChanged;
         _audio.PlaybackStateChanged += OnPlaybackStateChanged;
+        _audio.SourceChanged += OnSourceChanged;
     }
 
     public void SetCanReport(bool value) => _canReport = value;
@@ -68,6 +69,15 @@ public class AudioPlaybackProgressTracker : IDisposable
             _referenceId = Guid.NewGuid();
             _transitioning = true;
             StartTimer();
+        }
+    }
+
+    private void OnSourceChanged(PlayerSource source)
+    {
+        // Use the server's StreamSessionId so progress reports match the stream tracker
+        if (source.StreamSessionId is { } serverSessionId)
+        {
+            _sessionId = serverSessionId;
         }
     }
 
@@ -151,6 +161,7 @@ public class AudioPlaybackProgressTracker : IDisposable
 
         _audio.CurrentTrackChanged -= OnTrackChanged;
         _audio.PlaybackStateChanged -= OnPlaybackStateChanged;
+        _audio.SourceChanged -= OnSourceChanged;
 
         StopTimer();
         GC.SuppressFinalize(this);
