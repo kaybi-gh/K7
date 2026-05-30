@@ -10,27 +10,52 @@ public partial class AdminStreamCard
     [Parameter, EditorRequired]
     public ActiveStreamDto Stream { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<ActiveStreamDto> OnClick { get; set; }
+
     private bool IsMusic => Stream.MediaType is "MusicTrack" or "MusicAlbum";
 
     private string CardVariantClass => IsMusic ? "stream-card--music" : "stream-card--video";
 
     private string PlaceholderIcon => IsMusic ? Phosphor.MusicNote : Phosphor.FilmSlate;
 
-    private string ModeLabel => Stream.StreamDecision?.Mode switch
-    {
-        PlaybackMode.Direct => "Direct",
-        PlaybackMode.Transmux => "Transmux",
-        PlaybackMode.Transcode => "Transcode",
-        _ => ""
-    };
+    private bool IsVideoTranscoded => Stream.StreamDecision is { } d
+        && d.SourceVideoCodec is not null
+        && d.StreamVideoCodec is not null
+        && !string.Equals(d.SourceVideoCodec, d.StreamVideoCodec, StringComparison.OrdinalIgnoreCase);
 
-    private string ModeBadgeClass => Stream.StreamDecision?.Mode switch
+    private bool IsAudioTranscoded => Stream.StreamDecision is { } d
+        && d.SourceAudioCodec is not null
+        && d.StreamAudioCodec is not null
+        && !string.Equals(d.SourceAudioCodec, d.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
+
+    private string OverallModeLabel
     {
-        PlaybackMode.Direct => "stream-card__mode-badge--direct",
-        PlaybackMode.Transmux => "stream-card__mode-badge--transmux",
-        PlaybackMode.Transcode => "stream-card__mode-badge--transcode",
-        _ => ""
-    };
+        get
+        {
+            if (IsVideoTranscoded || IsAudioTranscoded) return "Transcode";
+            return Stream.StreamDecision?.Mode switch
+            {
+                PlaybackMode.Direct => "Direct",
+                PlaybackMode.Transmux => "Transmux",
+                _ => ""
+            };
+        }
+    }
+
+    private string OverallModeBadgeClass
+    {
+        get
+        {
+            if (IsVideoTranscoded || IsAudioTranscoded) return "stream-card__mode-badge--transcode";
+            return Stream.StreamDecision?.Mode switch
+            {
+                PlaybackMode.Direct => "stream-card__mode-badge--direct",
+                PlaybackMode.Transmux => "stream-card__mode-badge--transmux",
+                _ => ""
+            };
+        }
+    }
 
     private double ProgressPercent => Stream.Duration > 0
         ? Stream.Position / Stream.Duration * 100
@@ -48,32 +73,10 @@ public partial class AdminStreamCard
             if (string.IsNullOrEmpty(Stream.DeviceType) || Stream.DeviceType == "Unknown")
                 return name;
 
-            // Avoid redundancy when device name already contains the type
             if (name.Contains(Stream.DeviceType, StringComparison.OrdinalIgnoreCase))
                 return name;
 
             return $"{name} ({Stream.DeviceType})";
-        }
-    }
-
-    private string? MediaRoute
-    {
-        get
-        {
-            if (!Stream.MediaId.HasValue)
-                return null;
-
-            var id = Stream.MediaId.Value;
-
-            return Stream.MediaType switch
-            {
-                "Movie" => $"/movies/{id}",
-                "Serie" => $"/series/{id}",
-                "SerieEpisode" when Stream.ParentId.HasValue => $"/series/{Stream.ParentId.Value}",
-                "MusicAlbum" => $"/music/albums/{id}",
-                "MusicTrack" when Stream.ParentId.HasValue => $"/music/albums/{Stream.ParentId.Value}",
-                _ => null
-            };
         }
     }
 
@@ -83,6 +86,30 @@ public partial class AdminStreamCard
         return ts.TotalHours >= 1
             ? ts.ToString(@"h\:mm\:ss")
             : ts.ToString(@"m\:ss");
+    }
+
+    private string FormatRemainingTime()
+    {
+        var remaining = Stream.Duration - Stream.Position;
+        if (remaining <= 0) return FormatTime(Stream.Duration);
+        return $"-{FormatTime(remaining)}";
+    }
+
+    private static string FormatResolution(string resolution)
+    {
+        var parts = resolution.Split('x');
+        if (parts.Length == 2 && int.TryParse(parts[1], out var height))
+        {
+            return $"{height}p";
+        }
+        return resolution;
+    }
+
+    private static string FormatBitrate(int bitrate)
+    {
+        return bitrate >= 1000
+            ? $"{bitrate / 1000.0:0.#} Mbps"
+            : $"{bitrate} Kbps";
     }
 
     private string FormatReason(TranscodeReason reason)
@@ -103,5 +130,11 @@ public partial class AdminStreamCard
             parts.Add(L["ReasonResolution"]);
 
         return string.Join(", ", parts);
+    }
+
+    private async Task OnCardClicked()
+    {
+        if (OnClick.HasDelegate)
+            await OnClick.InvokeAsync(Stream);
     }
 }

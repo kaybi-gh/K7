@@ -1,0 +1,195 @@
+@inject IStringLocalizer<StreamDetailSidebar> L
+
+<div class="detail-sidebar-backdrop" @onclick="OnClose" @onkeydown="HandleKeyDown" tabindex="-1" @ref="_backdrop"></div>
+<aside class="detail-sidebar" @onclick:stopPropagation="true">
+    <div class="detail-sidebar__header">
+        <h6>@L["SessionDetails"]</h6>
+        <K7IconButton Icon="@Phosphor.X" OnClick="OnClose" AriaLabel="Close" Size="sm" />
+    </div>
+    <div class="detail-sidebar__body">
+        <!-- Media -->
+        <div class="detail-sidebar__group">
+            <span class="detail-sidebar__group-title">@L["MediaTitle"]</span>
+            <div class="detail-sidebar__row">
+                <span class="detail-sidebar__label">@L["MediaTitle"]</span>
+                <span class="detail-sidebar__value">@(Model.MediaTitle ?? "-")</span>
+            </div>
+            <div class="detail-sidebar__row">
+                <span class="detail-sidebar__label">@L["Type"]</span>
+                <span class="detail-sidebar__value">@(Model.MediaType ?? "-")</span>
+            </div>
+            @if (Model.Status is not null)
+            {
+                <div class="detail-sidebar__row">
+                    <span class="detail-sidebar__label">@L["Status"]</span>
+                    <span class="detail-sidebar__badge detail-sidebar__badge--@Model.StatusVariant">@Model.Status</span>
+                </div>
+            }
+        </div>
+
+        <!-- Playback -->
+        <div class="detail-sidebar__group">
+            <span class="detail-sidebar__group-title">@L["PlaybackInfo"]</span>
+            <div class="detail-sidebar__row">
+                <span class="detail-sidebar__label">@L["Date"]</span>
+                <span class="detail-sidebar__value">@Model.StartedAt.ToLocalTime().ToString("g")</span>
+            </div>
+            @if (Model.StoppedAt is not null)
+            {
+                <div class="detail-sidebar__row">
+                    <span class="detail-sidebar__label">@L["StoppedAt"]</span>
+                    <span class="detail-sidebar__value">@Model.StoppedAt.Value.ToLocalTime().ToString("g")</span>
+                </div>
+            }
+            <div class="detail-sidebar__row">
+                <span class="detail-sidebar__label">@L["Duration"]</span>
+                <span class="detail-sidebar__value">@Model.DurationDisplay</span>
+            </div>
+            @if (Model.Position is not null)
+            {
+                <div class="detail-sidebar__row">
+                    <span class="detail-sidebar__label">@L["Position"]</span>
+                    <span class="detail-sidebar__value">@Model.Position</span>
+                </div>
+            }
+        </div>
+
+        <!-- User / Device -->
+        <div class="detail-sidebar__group">
+            <span class="detail-sidebar__group-title">@L["UserDevice"]</span>
+            <div class="detail-sidebar__row">
+                <span class="detail-sidebar__label">@L["User"]</span>
+                <span class="detail-sidebar__value">@(Model.UserName ?? "-")</span>
+            </div>
+            <div class="detail-sidebar__row">
+                <span class="detail-sidebar__label">@L["Device"]</span>
+                <span class="detail-sidebar__value">@(Model.DeviceName ?? "-")</span>
+            </div>
+            @if (Model.DeviceClient is not null)
+            {
+                <div class="detail-sidebar__row">
+                    <span class="detail-sidebar__label">@L["Client"]</span>
+                    <span class="detail-sidebar__value">@Model.DeviceClient</span>
+                </div>
+            }
+        </div>
+
+        <!-- Stream details -->
+        @if (Model.HasStreamDetails)
+        {
+            <div class="detail-sidebar__group">
+                <span class="detail-sidebar__group-title">@L["StreamDetails"]</span>
+                <div class="detail-sidebar__row">
+                    <span class="detail-sidebar__label">@L["Mode"]</span>
+                    <span class="detail-sidebar__badge detail-sidebar__badge--@Model.ModeBadgeVariant">@Model.ModeLabel</span>
+                </div>
+
+                @if (Model.VideoDecision is not null)
+                {
+                    <div class="detail-sidebar__row">
+                        <span class="detail-sidebar__label">@L["VideoDecision"]</span>
+                        <span class="detail-sidebar__value">@Model.VideoDecision</span>
+                    </div>
+                }
+                @if (Model.AudioDecision is not null)
+                {
+                    <div class="detail-sidebar__row">
+                        <span class="detail-sidebar__label">@L["AudioDecision"]</span>
+                        <span class="detail-sidebar__value">@Model.AudioDecision</span>
+                    </div>
+                }
+
+                @if (Model.SourceVideoCodec is not null || Model.SourceAudioCodec is not null)
+                {
+                    <div class="detail-sidebar__sub-group">
+                        <span class="detail-sidebar__sub-title">@L["Video"]</span>
+                        @if (Model.SourceVideoCodec is not null)
+                        {
+                            <div class="detail-sidebar__row">
+                                <span class="detail-sidebar__label">@L["Codec"]</span>
+                                <span class="detail-sidebar__value">@Model.SourceVideoCodec -> @(Model.StreamVideoCodec ?? Model.SourceVideoCodec)</span>
+                            </div>
+                        }
+                        @if (Model.Resolution is not null)
+                        {
+                            <div class="detail-sidebar__row">
+                                <span class="detail-sidebar__label">@L["Resolution"]</span>
+                                <span class="detail-sidebar__value">@Model.Resolution</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="detail-sidebar__sub-group">
+                        <span class="detail-sidebar__sub-title">@L["Audio"]</span>
+                        @if (Model.AudioTrackLanguage is not null || Model.AudioTrackTitle is not null)
+                        {
+                            <div class="detail-sidebar__row">
+                                <span class="detail-sidebar__label">@L["Track"]</span>
+                                <span class="detail-sidebar__value detail-sidebar__value--track">
+                                    @{ var audioLang = K7.Shared.SupportedLanguages.FindByCode(Model.AudioTrackLanguage ?? ""); }
+                                    @if (audioLang is not null)
+                                    {
+                                        <span class="fi fi-@audioLang.CountryCode"></span>
+                                    }
+                                    @(Model.AudioTrackTitle ?? K7.Shared.SupportedLanguages.GetDisplayLabel(Model.AudioTrackLanguage ?? ""))
+                                    @if (Model.AudioChannelLayout is not null)
+                                    {
+                                        <span class="detail-sidebar__channels">@Model.AudioChannelLayout.Split('(')[0].Trim()</span>
+                                    }
+                                </span>
+                            </div>
+                        }
+                        @if (Model.SourceAudioCodec is not null)
+                        {
+                            <div class="detail-sidebar__row">
+                                <span class="detail-sidebar__label">@L["Codec"]</span>
+                                <span class="detail-sidebar__value">@Model.SourceAudioCodec -> @(Model.StreamAudioCodec ?? Model.SourceAudioCodec)</span>
+                            </div>
+                        }
+                    </div>
+
+                    @if (Model.SubtitleTrackLanguage is not null)
+                    {
+                        <div class="detail-sidebar__sub-group">
+                            <span class="detail-sidebar__sub-title">@L["Subtitle"]</span>
+                            <div class="detail-sidebar__row">
+                                <span class="detail-sidebar__label">@L["Track"]</span>
+                                <span class="detail-sidebar__value detail-sidebar__value--track">
+                                    @{ var subLang = K7.Shared.SupportedLanguages.FindByCode(Model.SubtitleTrackLanguage); }
+                                    @if (subLang is not null)
+                                    {
+                                        <span class="fi fi-@subLang.CountryCode"></span>
+                                    }
+                                    @(Model.SubtitleTrackTitle ?? K7.Shared.SupportedLanguages.GetDisplayLabel(Model.SubtitleTrackLanguage))
+                                </span>
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (Model.TranscodeReason is not null)
+                {
+                    <div class="detail-sidebar__row">
+                        <span class="detail-sidebar__label">@L["Reason"]</span>
+                        <span class="detail-sidebar__value detail-sidebar__value--wrap">@Model.TranscodeReason</span>
+                    </div>
+                }
+
+                @if (Model.Bitrate is not null)
+                {
+                    <div class="detail-sidebar__row">
+                        <span class="detail-sidebar__label">@L["Bitrate"]</span>
+                        <span class="detail-sidebar__value">@Model.Bitrate</span>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="detail-sidebar__group">
+                <span class="detail-sidebar__group-title">@L["StreamDetails"]</span>
+                <span class="detail-sidebar__label" style="opacity: 0.5;">@L["NoStreamData"]</span>
+            </div>
+        }
+    </div>
+</aside>

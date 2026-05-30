@@ -24,6 +24,8 @@
   <data name="Arrow" xml:space="preserve"><value>-></value></data>
   <data name="Paused" xml:space="preserve"><value>En pause</value></data>
   <data name="Buffering" xml:space="preserve"><value>Chargement</value></data>
+  <data name="DirectPlay" xml:space="preserve"><value>Direct</value></data>
+  <data name="Transcode" xml:space="preserve"><value>Transcode</value></data>
   <data name="ReasonVideoCodec" xml:space="preserve"><value>Codec video non supporte</value></data>
   <data name="ReasonAudioCodec" xml:space="preserve"><value>Codec audio non supporte</value></data>
   <data name="ReasonContainer" xml:space="preserve"><value>Conteneur non supporte</value></data>
