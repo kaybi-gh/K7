@@ -23,7 +23,7 @@ using K7.Shared.Extensions;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -1039,6 +1039,37 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task UpdateServerFeatureFlagsAsync(ServerFeatureFlagsDto flags, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync("api/server/preferences/feature-flags", flags, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    // IFederationService
+
+    public async Task<List<PeerServerDto>> GetPeerServersAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<PeerServerDto>>("api/federation/peers", _serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task RequestPeerAsync(string remoteUrl, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/federation/peers/request", new { remoteUrl }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task AcceptPeerAsync(Guid peerId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/accept", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RevokePeerAsync(Guid peerId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/revoke", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task SyncPeerAsync(Guid peerId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/sync", null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

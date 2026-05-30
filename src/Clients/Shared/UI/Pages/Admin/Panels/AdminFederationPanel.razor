@@ -1,0 +1,65 @@
+@page "/admin/federation"
+@layout AdminLayout
+@using K7.Shared.Dtos.Entities
+@inject IStringLocalizer<AdminFederationPanel> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="federation-panel">
+    <div class="federation-panel__header">
+        <h6>@L["Title"]</h6>
+        <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenRequestDialog">
+            @L["AddPeer"]
+        </K7Button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <K7Paper Outlined="true" Style="padding:24px;text-align:center">
+            <span>@S["Loading"]</span>
+        </K7Paper>
+    }
+    else if (_peers is null || _peers.Count == 0)
+    {
+        <K7Paper Outlined="true" Style="padding:24px;text-align:center">
+            <K7Icon Icon="@Phosphor.Globe" Size="xl" Color="secondary" />
+            <p style="margin-top:12px">@L["NoPeers"]</p>
+        </K7Paper>
+    }
+    else
+    {
+        @foreach (var peer in _peers)
+        {
+            <K7Paper Outlined="true" class="peer-card">
+                <div class="peer-card__header">
+                    <K7Icon Icon="@Phosphor.Globe" Size="lg" Color="@GetStatusColor(peer.Status)" />
+                    <div class="peer-card__info">
+                        <h6>@peer.Name</h6>
+                        <span class="peer-card__url">@peer.BaseUrl</span>
+                    </div>
+                    <K7Chip Size="sm" Color="@GetStatusColor(peer.Status)">@GetStatusLabel(peer.Status)</K7Chip>
+                </div>
+                <div class="peer-card__details">
+                    @if (peer.LastSeen is not null)
+                    {
+                        <span class="peer-card__detail">@L["LastSeen"]: @peer.LastSeen.Value.LocalDateTime.ToString("g")</span>
+                    }
+                    <span class="peer-card__detail">@L["SharedLibraries"]: @peer.ShareAgreements.Count</span>
+                </div>
+                <div class="peer-card__actions">
+                    @if (peer.Status == PeerStatus.Pending)
+                    {
+                        <K7Button Variant="filled" Color="success" Size="sm" OnClick="() => AcceptPeer(peer)">
+                            @L["Accept"]
+                        </K7Button>
+                    }
+                    <K7Button Variant="outlined" Color="default" Size="sm" OnClick="() => SyncPeer(peer)">
+                        @L["Sync"]
+                    </K7Button>
+                    <K7Button Variant="outlined" Color="danger" Size="sm" OnClick="() => RevokePeer(peer)">
+                        @L["Revoke"]
+                    </K7Button>
+                </div>
+            </K7Paper>
+        }
+    }
+</div>

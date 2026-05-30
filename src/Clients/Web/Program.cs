@@ -41,6 +41,7 @@ builder.Services.AddTransient<IDiagnosticsService>(sp => sp.GetRequiredService<K
 builder.Services.AddTransient<IUserPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<INotificationAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());
 
 builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();

@@ -96,6 +96,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IDownloadService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<INotificationAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<K7ServerManagerService>();
         builder.Services.AddSingleton<IServerConnectionService>(sp => sp.GetRequiredService<K7ServerManagerService>());
 
