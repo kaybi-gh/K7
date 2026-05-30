@@ -1,34 +1,36 @@
 @inject IServerInfoService K7ServerService
 @inject IStringLocalizer<PlaybackHistory> L
 
-<div class="d-flex align-center gap-2 pa-4" style="flex-wrap: wrap;">
-    <h5 class="mr-4">@L["PageTitle"]</h5>
-    <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("")'>@L["All"]</K7Chip>
-    <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("3")'>@L["Music"]</K7Chip>
-    <K7Chip Value="@("1")" Variant="@(_selectedMediaType == "1" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("1")'>@L["Movies"]</K7Chip>
-    <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("5")'>@L["TVShows"]</K7Chip>
-</div>
+<div class="history-page">
+    <div class="d-flex align-center gap-2 pa-4" style="flex-wrap: wrap;">
+        <h5 class="mr-4">@L["PageTitle"]</h5>
+        <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("")'>@L["All"]</K7Chip>
+        <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("3")'>@L["Music"]</K7Chip>
+        <K7Chip Value="@("1")" Variant="@(_selectedMediaType == "1" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("1")'>@L["Movies"]</K7Chip>
+        <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("5")'>@L["TVShows"]</K7Chip>
+    </div>
 
-<div class="pa-4" style="flex: 1; min-height: 0;">
-    <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef" Height="100%">
-        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Property="@(i => i.MediaTitle)" Hideable="false" />
-        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Property="@(i => i.MediaType)" />
-        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Property="@(i => i.StartedAt.ToLocalTime().ToString("g"))" />
-        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]">
-            <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" />
-        <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Status"]" Width="80px">
-            <CellTemplate>
-                @if (context.IsCompleted)
-                {
-                    <K7Icon Icon="@Phosphor.CheckCircle" Style="color: var(--color-success);" Size="sm" />
-                }
-                else
-                {
-                    <K7Icon Icon="@Phosphor.PauseCircle" Style="color: var(--color-warning);" Size="sm" />
-                }
-            </CellTemplate>
-        </K7DataColumn>
-    </K7DataTable>
+    <div class="history-table-area">
+        <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Property="@(i => i.MediaTitle)" Hideable="false" />
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Property="@(i => i.MediaType)" />
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Property="@(i => i.StartedAt.ToLocalTime().ToString("g"))" />
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]">
+                <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" />
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Status"]" Width="80px">
+                <CellTemplate>
+                    @if (context.IsCompleted)
+                    {
+                        <K7Icon Icon="@Phosphor.CheckCircle" Style="color: var(--color-success);" Size="sm" />
+                    }
+                    else
+                    {
+                        <K7Icon Icon="@Phosphor.PauseCircle" Style="color: var(--color-warning);" Size="sm" />
+                    }
+                </CellTemplate>
+            </K7DataColumn>
+        </K7DataTable>
+    </div>
 </div>
