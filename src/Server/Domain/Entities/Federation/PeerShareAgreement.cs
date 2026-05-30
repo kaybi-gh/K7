@@ -11,4 +11,5 @@ public class PeerShareAgreement : BaseAuditableEntity
     public required ShareDirection Direction { get; set; }
     public int? MaxConcurrentStreams { get; set; }
     public bool IsEnabled { get; set; } = true;
+    public bool SharePlaybackHistory { get; set; }
 }
