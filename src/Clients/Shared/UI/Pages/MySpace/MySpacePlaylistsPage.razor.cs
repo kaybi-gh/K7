@@ -11,13 +11,16 @@ public partial class MySpacePlaylistsPage
 {
     private List<LitePlaylistDto> _playlists = [];
     private bool _loading = true;
+    private bool _canCreate;
     private MediaType? _mediaTypeFilter;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
+        _canCreate = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         await LoadPlaylistsAsync();
     }
 

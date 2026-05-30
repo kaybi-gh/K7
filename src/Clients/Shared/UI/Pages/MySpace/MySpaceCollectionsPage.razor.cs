@@ -11,12 +11,15 @@ public partial class MySpaceCollectionsPage
 {
     private List<LiteCollectionDto> _collections = [];
     private bool _loading = true;
+    private bool _canCreate;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
+        _canCreate = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         await LoadCollectionsAsync();
     }
 
