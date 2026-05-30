@@ -269,6 +269,17 @@
         </div>
     </section>
 
+    <section id="k7-date-range-picker" class="ds-section">
+        <h2>K7DateRangePicker</h2>
+        <p class="ds-description">Calendar-based date range picker with popover dropdown. Click to select start date, then end date.</p>
+        <div class="ds-preview">
+            <K7DateRangePicker @bind-From="_dateFrom" @bind-To="_dateTo" Label="Pick a date range" HintSelectEnd="Select end date" />
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2)">
+            From: @(_dateFrom?.ToString("yyyy-MM-dd") ?? "none") | To: @(_dateTo?.ToString("yyyy-MM-dd") ?? "none")
+        </p>
+    </section>
+
     <section id="k7-slider" class="ds-section">
         <h2>K7Slider</h2>
         <div class="ds-preview ds-preview--column ds-preview--narrow">
@@ -586,6 +597,7 @@
     // Forms
     private string? _text1, _text2, _text4, _textAdornment, _textClearable;
     private string? _genre, _genre2;
+    private DateOnly? _dateFrom, _dateTo;
     private double _volume = 70;
     private double _brightness = 100;
     private bool _switch1 = true;

@@ -491,11 +491,13 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<ServerInfoDto?>(null);
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
     public Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default) => Task.FromResult<MusicStatsDto?>(null);
-    public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
+    public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
     public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
     public Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<List<MediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
+    public Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
+    public Task<WatchStatsDto?> GetAdminWatchStatsAsync(string? mediaType = null, string period = "month", Guid? userId = null, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
 }
 
 public sealed class MockUserPreferencesService : IUserPreferencesService
