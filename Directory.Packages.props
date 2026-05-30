@@ -8,6 +8,7 @@
     <PackageVersion Include="Ardalis.GuardClauses" Version="4.2.0" />
     <PackageVersion Include="Aspire.Hosting.Docker" Version="13.1.2-preview.1.26125.13" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.2" />
+    <PackageVersion Include="Blazor-ApexCharts" Version="6.1.0" />
     <PackageVersion Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageVersion Include="bunit" Version="2.6.2" />
     <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="9.0.0" />

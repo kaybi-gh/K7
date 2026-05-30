@@ -1,23 +1,34 @@
+@page "/admin/stats"
+@layout AdminLayout
 @inject IServerInfoService K7ServerService
-@inject K7.Clients.Shared.Services.K7HubClient K7HubClient
-@inject IStringLocalizer<WatchStats> L
-@implements IDisposable
+@inject IUserAdminService UserAdminService
+@inject IStringLocalizer<AdminStatsPanel> L
 
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["PageTitle"]</h5>
+<div class="d-flex pa-4" style="width: 100%; flex-wrap: wrap; gap: 8px;">
+    <h5 class="mr-4">@L["Title"]</h5>
+
+    <K7Select TValue="Guid?" Value="_selectedUserId" ValueChanged="OnUserChanged" Label="@L["User"]" Clearable="true"
+              ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? L["AllUsers"])"
+              Style="min-width: 200px; max-width: 300px;">
+        @foreach (var user in _users)
+        {
+            <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.DisplayName ?? user.UserName ?? user.Email)</K7SelectItem>
+        }
+    </K7Select>
+
     <div class="d-flex">
         <K7Chip Value="@("week")" Variant="@(_selectedPeriod == "week" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("week"))">@L["Week"]</K7Chip>
         <K7Chip Value="@("month")" Variant="@(_selectedPeriod == "month" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("month"))">@L["Month"]</K7Chip>
         <K7Chip Value="@("year")" Variant="@(_selectedPeriod == "year" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("year"))">@L["Year"]</K7Chip>
         <K7Chip Value="@("all")" Variant="@(_selectedPeriod == "all" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("all"))">@L["AllTime"]</K7Chip>
     </div>
-</div>
 
-<div class="d-flex px-4 mb-4">
-    <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged(""))">@L["All"]</K7Chip>
-    <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("3"))">@L["Music"]</K7Chip>
-    <K7Chip Value="@("1")" Variant="@(_selectedMediaType == "1" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("1"))">@L["Movies"]</K7Chip>
-    <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("5"))">@L["TVShows"]</K7Chip>
+    <div class="d-flex">
+        <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged(""))">@L["All"]</K7Chip>
+        <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("3"))">@L["Music"]</K7Chip>
+        <K7Chip Value="@("1")" Variant="@(_selectedMediaType == "1" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("1"))">@L["Movies"]</K7Chip>
+        <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("5"))">@L["TVShows"]</K7Chip>
+    </div>
 </div>
 
 @if (_loading)

@@ -2,7 +2,6 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
-using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -10,32 +9,43 @@ using K7.Shared.Dtos;
 namespace K7.Server.Application.Features.Stats.Queries.GetWatchStats;
 
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
-public record GetWatchStatsQuery(MediaType? MediaType = null, string Period = "month") : IRequest<WatchStatsDto>;
+public record GetWatchStatsQuery(MediaType? MediaType = null, string Period = "month", Guid? UserId = null, bool GlobalStats = false) : IRequest<WatchStatsDto>;
 
 public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser currentUser)
     : IRequestHandler<GetWatchStatsQuery, WatchStatsDto>
 {
     public async Task<WatchStatsDto> Handle(GetWatchStatsQuery request, CancellationToken cancellationToken)
     {
-        if (currentUser.Id is not { } userId)
+        var targetUserId = request.UserId ?? (request.GlobalStats ? null : currentUser.Id);
+        if (targetUserId is null && !request.GlobalStats)
             return new WatchStatsDto();
 
         var since = GetPeriodStart(request.Period);
         var mediaTypes = GetMediaTypes(request.MediaType);
 
         var statesQuery = context.UserMediaStates
-            .Where(s => s.UserId == userId && s.PlayCount > 0)
+            .Where(s => s.PlayCount > 0);
+
+        if (targetUserId is not null)
+            statesQuery = statesQuery.Where(s => s.UserId == targetUserId.Value);
+
+        var statesWithMedia = statesQuery
             .Join(
                 context.Medias.Where(m => mediaTypes.Contains(m.Type)),
                 s => s.MediaId,
                 m => m.Id,
                 (s, m) => new { s.MediaId, s.PlayCount, Media = m });
 
-        var totalPlays = await statesQuery.SumAsync(s => s.PlayCount, cancellationToken);
-        var uniqueItems = await statesQuery.CountAsync(cancellationToken);
+        var totalPlays = await statesWithMedia.SumAsync(s => s.PlayCount, cancellationToken);
+        var uniqueItems = await statesWithMedia.CountAsync(cancellationToken);
 
         var sessionsQuery = context.MediaPlaybackSessions
-            .Where(s => s.UserId == userId && s.CompletedAt != null)
+            .Where(s => s.CompletedAt != null);
+
+        if (targetUserId is not null)
+            sessionsQuery = sessionsQuery.Where(s => s.UserId == targetUserId.Value);
+
+        var sessionsWithMedia = sessionsQuery
             .Join(
                 context.Medias.Where(m => mediaTypes.Contains(m.Type)),
                 s => s.MediaId,
@@ -44,13 +54,13 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         if (since.HasValue)
         {
-            sessionsQuery = sessionsQuery.Where(s => s.StartedAt >= since.Value);
+            sessionsWithMedia = sessionsWithMedia.Where(s => s.StartedAt >= since.Value);
         }
 
-        var totalSeconds = await sessionsQuery
+        var totalSeconds = await sessionsWithMedia
             .SumAsync(s => s.WatchedDurationSeconds > 0 ? s.WatchedDurationSeconds : s.DurationSeconds, cancellationToken);
 
-        var topItems = await statesQuery
+        var topItems = await statesWithMedia
             .Select(s => new TopItemDto
             {
                 Id = s.MediaId,
@@ -61,7 +71,7 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             .Take(10)
             .ToListAsync(cancellationToken);
 
-        var topGenres = await statesQuery
+        var topGenres = await statesWithMedia
             .SelectMany(s => s.Media.Genres, (s, genre) => new { s.PlayCount, Genre = genre })
             .GroupBy(x => x.Genre)
             .Select(g => new GenreStatDto
@@ -79,8 +89,13 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         if (request.MediaType is null or MediaType.MusicTrack)
         {
-            var musicStates = context.UserMediaStates
-                .Where(s => s.UserId == userId && s.PlayCount > 0)
+            var musicStatesBase = context.UserMediaStates
+                .Where(s => s.PlayCount > 0);
+
+            if (targetUserId is not null)
+                musicStatesBase = musicStatesBase.Where(s => s.UserId == targetUserId.Value);
+
+            var musicStates = musicStatesBase
                 .Join(
                     context.Medias.Where(m => m.Type == MediaType.MusicTrack),
                     s => s.MediaId,
@@ -130,8 +145,13 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         if (request.MediaType is null or MediaType.SerieEpisode)
         {
-            topShows = await context.UserMediaStates
-                .Where(s => s.UserId == userId && s.PlayCount > 0)
+            var showStatesBase = context.UserMediaStates
+                .Where(s => s.PlayCount > 0);
+
+            if (targetUserId is not null)
+                showStatesBase = showStatesBase.Where(s => s.UserId == targetUserId.Value);
+
+            topShows = await showStatesBase
                 .Join(
                     context.Medias.OfType<SerieEpisode>(),
                     s => s.MediaId,
@@ -154,11 +174,11 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
                 .ToListAsync(cancellationToken);
         }
 
-        var timeSeries = await BuildTimeSeriesAsync(sessionsQuery, request.Period, cancellationToken);
-        var byDayOfWeek = await BuildByDayOfWeekAsync(sessionsQuery, cancellationToken);
-        var byHourOfDay = await BuildByHourOfDayAsync(sessionsQuery, cancellationToken);
+        var timeSeries = await BuildTimeSeriesAsync(sessionsWithMedia, request.Period, cancellationToken);
+        var byDayOfWeek = await BuildByDayOfWeekAsync(sessionsWithMedia, cancellationToken);
+        var byHourOfDay = await BuildByHourOfDayAsync(sessionsWithMedia, cancellationToken);
 
-        var topDevices = await sessionsQuery
+        var topDevices = await sessionsWithMedia
             .Where(s => s.DeviceId != null)
             .GroupBy(s => new { s.DeviceId, s.Device!.DeviceName })
             .Select(g => new TopItemDto

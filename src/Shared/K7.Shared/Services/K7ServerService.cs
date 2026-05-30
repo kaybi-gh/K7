@@ -570,6 +570,24 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<ActiveStreamDto>>("api/admin/streams", _serializerOptions, cancellationToken);
     }
 
+    public async Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string> { $"page={page}", $"pageSize={pageSize}" };
+        if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
+        if (userId.HasValue) queryParams.Add($"userId={userId.Value}");
+        var url = $"api/admin/stats/history?{string.Join("&", queryParams)}";
+        return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<WatchStatsDto?> GetAdminWatchStatsAsync(string? mediaType = null, string period = "month", Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string> { $"period={Uri.EscapeDataString(period)}" };
+        if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
+        if (userId.HasValue) queryParams.Add($"userId={userId.Value}");
+        var url = $"api/admin/stats?{string.Join("&", queryParams)}";
+        return await HttpClient.GetFromJsonAsync<WatchStatsDto>(url, _serializerOptions, cancellationToken);
+    }
+
     public async Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<AuthenticationInfoDto>("api/admin/authentication-info", _serializerOptions, cancellationToken);

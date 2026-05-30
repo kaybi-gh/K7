@@ -13,4 +13,6 @@ public interface IServerInfoService
     Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default);
     Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default);
     Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default);
+    Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<WatchStatsDto?> GetAdminWatchStatsAsync(string? mediaType = null, string period = "month", Guid? userId = null, CancellationToken cancellationToken = default);
 }

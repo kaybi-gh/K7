@@ -5941,6 +5941,51 @@
         }
       }
     },
+    "/api/admin/stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetAdminWatchStats",
+        "parameters": [
+          {
+            "name": "mediaType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MediaType"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "month"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchStatsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/authentication-info": {
       "get": {
         "tags": [
