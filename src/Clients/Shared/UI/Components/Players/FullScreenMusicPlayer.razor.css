@@ -438,7 +438,7 @@
     flex-shrink: 0;
 }
 
-.queue-item-cover-placeholder {
+::deep .queue-item-cover-placeholder {
     width: 40px;
     height: 40px;
     display: flex;

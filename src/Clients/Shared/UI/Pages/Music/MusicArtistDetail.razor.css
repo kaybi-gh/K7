@@ -55,7 +55,7 @@
     box-shadow: var(--media-artwork-shadow, 0 8px 24px rgba(0, 0, 0, 0.5));
 }
 
-.artist-avatar-placeholder {
+::deep .artist-avatar-placeholder {
     width: 160px;
     height: 160px;
     font-size: 48px;

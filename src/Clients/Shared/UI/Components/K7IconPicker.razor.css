@@ -39,7 +39,7 @@
     position: relative;
 }
 
-.k7-icon-picker__clear {
+::deep .k7-icon-picker__clear {
     position: absolute;
     top: -6px;
     right: -6px;

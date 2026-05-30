@@ -266,6 +266,19 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   color: var(--color-text-muted);
   transition: transform 0.15s ease;
 }
+.k7-select-clear {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.k7-select-clear:hover { color: var(--color-text-primary); background: var(--color-surface-hover); }
 .k7-select-wrap { position: relative; min-width: 0; }
 .k7-select-wrap--open .k7-select-icon { transform: rotate(180deg); }
 .k7-select-dropdown {
@@ -806,3 +819,123 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 .k7-badge--dot { width: 8px; height: 8px; min-width: 8px; padding: 0; }
 .k7-badge--error { background: var(--color-error); color: #fff; }
 .k7-badge--success { background: var(--color-success); color: #fff; }
+
+/* ── DateRangePicker ─────────────────────────────────────────────────────────── */
+.k7-date-picker {
+  position: relative;
+  display: inline-flex;
+}
+.k7-date-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  white-space: nowrap;
+  min-height: 36px;
+}
+.k7-date-picker-trigger:hover {
+  border-color: var(--color-primary);
+}
+.k7-date-picker-label { flex: 1; }
+.k7-date-picker-caret {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  transition: transform 0.15s ease;
+}
+.k7-date-picker-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  z-index: var(--z-dropdown, 1000);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 10px 25px -5px rgba(0,0,0,.4));
+  padding: var(--space-3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  width: 280px;
+}
+.k7-date-picker-dropdown--open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.k7-date-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+.k7-date-picker-month-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.k7-date-picker-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+.k7-date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+.k7-date-picker-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  border: none;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.k7-date-picker-day:hover {
+  background: var(--color-surface-hover);
+}
+.k7-date-picker-day--outside {
+  opacity: 0.3;
+}
+.k7-date-picker-day--today {
+  border: 1px solid var(--color-primary);
+}
+.k7-date-picker-day--selected {
+  background: var(--color-primary) !important;
+  color: var(--color-on-primary, #fff);
+  font-weight: 600;
+}
+.k7-date-picker-day--in-range {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border-radius: 0;
+}
+.k7-date-picker-day--range-start {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+.k7-date-picker-day--range-end {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.k7-date-picker-hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
