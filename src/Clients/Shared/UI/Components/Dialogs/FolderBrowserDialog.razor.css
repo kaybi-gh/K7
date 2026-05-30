@@ -62,7 +62,7 @@
     background-color: transparent;
 }
 
-.folder-item__chevron {
+::deep .folder-item__chevron {
     opacity: 0.4;
     margin-left: auto;
 }

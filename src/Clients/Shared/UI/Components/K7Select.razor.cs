@@ -69,6 +69,11 @@ public partial class K7Select<TValue> : IAsyncDisposable
         await CloseAsync();
     }
 
+    private async Task ClearAsync()
+    {
+        await ValueChanged.InvokeAsync(default);
+    }
+
     private async Task Toggle()
     {
         if (_open)

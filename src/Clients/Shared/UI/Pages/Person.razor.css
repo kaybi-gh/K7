@@ -102,7 +102,7 @@
     justify-content: center;
 }
 
-.person-portrait-placeholder-icon {
+::deep .person-portrait-placeholder-icon {
     font-size: 64px;
     opacity: 0.3;
 }
@@ -146,7 +146,7 @@
     -webkit-backdrop-filter: blur(8px);
 }
 
-.person-meta-icon {
+::deep .person-meta-icon {
     opacity: 0.6;
 }
 
