@@ -16,4 +16,9 @@ public class PlaybackSessionDetails : BaseEntity
     public int? SourceVideoHeight { get; set; }
     public string? StreamVideoCodec { get; set; }
     public string? StreamAudioCodec { get; set; }
+    public string? AudioTrackLanguage { get; set; }
+    public string? AudioTrackTitle { get; set; }
+    public string? AudioChannelLayout { get; set; }
+    public string? SubtitleTrackLanguage { get; set; }
+    public string? SubtitleTrackTitle { get; set; }
 }
