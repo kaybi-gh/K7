@@ -108,6 +108,18 @@ public static class DependencyInjection
         services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
         services.AddHostedService<AdminStreamNotifier>();
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
+
+        services.AddHttpClient<IPeerClient, PeerClient>()
+            .AddStandardResilienceHandler(options =>
+            {
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+                options.CircuitBreaker.MinimumThroughput = 5;
+                options.CircuitBreaker.BreakDuration = TimeSpan.FromMinutes(2);
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
+            });
+
+        services.AddScoped<IPeerApplicationManager, PeerApplicationManager>();
         services.AddScoped<K7SnackbarService>();
         services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         services.AddSignalR();
