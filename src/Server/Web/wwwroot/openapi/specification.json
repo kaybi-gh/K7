@@ -4704,6 +4704,19 @@
         }
       }
     },
+    "/api/federation/playback-history": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationPlaybackHistory",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/federation/stream/{fileId}": {
       "get": {
         "tags": [
@@ -4776,6 +4789,30 @@
         }
       }
     },
+    "/api/federation/remote-stream/{remoteFileId}": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetRemoteStream",
+        "parameters": [
+          {
+            "name": "remoteFileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/peers/request": {
       "post": {
         "tags": [
@@ -4787,6 +4824,29 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/InitiatePeeringRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/sessions": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "PostFederationSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederationSessionRequest"
               }
             }
           },
@@ -8299,6 +8359,35 @@
           },
           "value": {
             "type": "string"
+          }
+        }
+      },
+      "FederationSessionRequest": {
+        "required": [
+          "fileId",
+          "userDisplayName",
+          "state",
+          "position"
+        ],
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userDisplayName": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PlaybackState"
+          },
+          "position": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },
