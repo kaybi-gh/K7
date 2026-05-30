@@ -22,7 +22,7 @@ public class GetWatchStats : IEndpoint
         {
             return await sender.Send(new GetWatchStatsQuery(mediaType, period, From: from, To: to), cancellationToken);
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

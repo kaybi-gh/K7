@@ -7,7 +7,7 @@ using K7.Shared.Dtos;
 
 namespace K7.Server.Application.Features.Stats.Queries.GetPlaybackHistory;
 
-[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
+[Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record GetPlaybackHistoryQuery : IRequest<PlaybackHistoryPageDto>
 {
     public int Page { get; init; } = 1;
