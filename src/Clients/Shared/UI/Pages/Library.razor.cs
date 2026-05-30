@@ -26,6 +26,7 @@ public partial class Library : IDisposable
     private int _totalCount;
     private const int PageSize = 50;
     private LibraryMediaType? _libraryMediaType;
+    private IReadOnlyList<Guid>? _libraryIds;
     private List<MediaType> _availableMediaTypes = [];
     private MediaType _selectedMediaType;
     private string? _searchText;
@@ -52,13 +53,14 @@ public partial class Library : IDisposable
         _searchText = null;
         _selectedMediaType = default;
 
-        var libraryId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
+        var groupId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
 
-        if (libraryId.HasValue)
+        if (groupId.HasValue)
         {
-            var libraries = await LibraryService.GetLibrariesAsync();
-            var library = libraries.FirstOrDefault(l => l.Id == libraryId.Value);
-            _libraryMediaType = library?.MediaType;
+            var groups = await LibraryService.GetLibraryGroupsAsync();
+            var group = groups.FirstOrDefault(g => g.Id == groupId.Value);
+            _libraryMediaType = group?.MediaType;
+            _libraryIds = group?.LibraryIds;
         }
 
         _availableMediaTypes = _libraryMediaType switch
@@ -191,7 +193,7 @@ public partial class Library : IDisposable
 
     private GetMediasWithPaginationQuery BuildQuery(int pageNumber, int pageSize) => new()
     {
-        LibraryIds = Guid.TryParse(Id, out var parsed) ? [parsed] : null,
+        LibraryIds = _libraryIds?.ToArray(),
         MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
         OrderBy = [_selectedSort],
         SearchText = _searchText,

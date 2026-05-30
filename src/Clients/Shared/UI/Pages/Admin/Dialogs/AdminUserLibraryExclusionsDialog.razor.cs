@@ -11,6 +11,7 @@ public partial class AdminUserLibraryExclusionsDialog
     [Parameter] public List<Guid> ExcludedLibraryIds { get; set; } = [];
 
     private bool _loading = true;
+    private List<LibraryGroupDto> _groups = [];
     private List<LibraryDto> _libraries = [];
     private HashSet<Guid> _excludedIds = [];
 
@@ -19,14 +20,22 @@ public partial class AdminUserLibraryExclusionsDialog
         _excludedIds = new HashSet<Guid>(ExcludedLibraryIds);
         try
         {
-            _libraries = await K7ServerService.GetLibrariesAsync();
+            var groupsTask = K7ServerService.GetLibraryGroupsAsync();
+            var librariesTask = K7ServerService.GetLibrariesAsync();
+            await Task.WhenAll(groupsTask, librariesTask);
+            _groups = groupsTask.Result;
+            _libraries = librariesTask.Result;
         }
         catch
         {
+            _groups = [];
             _libraries = [];
         }
         _loading = false;
     }
+
+    private IEnumerable<LibraryDto> GetLibrariesForGroup(LibraryGroupDto group) =>
+        _libraries.Where(l => l.LibraryGroupId == group.Id);
 
     private void ToggleExclusion(Guid libraryId, bool exclude)
     {

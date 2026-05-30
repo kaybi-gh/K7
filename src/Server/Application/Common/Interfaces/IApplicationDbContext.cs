@@ -20,6 +20,7 @@ public interface IApplicationDbContext // How to put this into domain?
 {
     DbSet<IndexedFile> IndexedFiles { get; }
     DbSet<Library> Libraries { get; }
+    DbSet<LibraryGroup> LibraryGroups { get; }
     DbSet<BaseMedia> Medias { get; }
     DbSet<BaseFileMetadata> FileMetadatas { get; }
     DbSet<BaseFileTrack> FileTracks { get; }

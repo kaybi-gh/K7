@@ -308,7 +308,6 @@ public partial class EditNotificationRuleDialog
             "BackdropUrl" => "https://k7.example.com/api/metadata-pictures/f9e8d7c6-b5a4-3210-fedc-ba9876543210",
             "Library.Title" => "Films",
             "Library.MediaType" => "Movies",
-            "Library.Description" => "My movie library",
             "Library.MetadataProviderName" => "TMDB",
             "Library.MetadataLanguage" => "fr",
             "Device.Name" => "Galaxy S24",

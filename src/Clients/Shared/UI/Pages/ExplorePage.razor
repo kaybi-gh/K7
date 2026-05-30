@@ -8,21 +8,21 @@
 
 <div class="explore-page page-scrollable">
     <div class="explore-grid">
-        @foreach (var library in _libraries)
+        @foreach (var group in _libraryGroups)
         {
-            var (gs, ge, ic) = GetLibraryCardColors(library.MediaType);
-            var icon = !string.IsNullOrEmpty(library.Icon) ? library.Icon : GetLibraryIconName(library.MediaType);
-            var imageUrl = library.CoverPictureId.HasValue ? $"/api/metadata-pictures/{library.CoverPictureId}?size=Medium" : null;
-            <K7CategoryCard @key="library.Id"
-                            Title="@library.Title"
-                            Description="@(library.Description ?? "")"
+            var (gs, ge, ic) = GetLibraryCardColors(group.MediaType);
+            var icon = !string.IsNullOrEmpty(group.Icon) ? group.Icon : GetLibraryIconName(group.MediaType);
+            var imageUrl = group.CoverPictureId.HasValue ? $"/api/metadata-pictures/{group.CoverPictureId}?size=Medium" : null;
+            <K7CategoryCard @key="group.Id"
+                            Title="@group.Title"
+                            Description="@(group.Description ?? "")"
                             Icon="@icon"
                             GradientStart="@gs"
                             GradientEnd="@ge"
                             IconColor="@ic"
                             ImageUrl="@imageUrl"
-                            DominantColor="@library.CoverDominantColor"
-                            OnClick="@(() => NavigationManager.NavigateTo($"/library/{library.Id}"))" />
+                            DominantColor="@group.CoverDominantColor"
+                            OnClick="@(() => NavigationManager.NavigateTo($"/library/{group.Id}"))" />
         }
     </div>
 </div>

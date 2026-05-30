@@ -15,6 +15,5 @@ public class LibraryDeletedEventDescriptor : INotificationEventDescriptor
         new("Library.Title", "Library Name", "String"),
         new("Library.MediaType", "Media Type", "String"),
         new("Library.RootPath", "Root Path", "String"),
-        new("Library.Description", "Description", "String"),
     ];
 }

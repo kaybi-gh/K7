@@ -61,7 +61,7 @@
             </div>
         }
 
-        @* Step 2: Name, description, icon, path *@
+        @* Step 2: Name, group, path, settings *@
         @if (_activeStep == 1)
         {
             <div class="d-flex flex-col mt-2">
@@ -69,23 +69,46 @@
                               Required="true" RequiredError="@L["NameRequired"]"
                               Placeholder="@L["NamePlaceholder"]" />
 
-                <K7TextField @bind-Value="_description" Label="@L["DescriptionLabel"]" Variant="outlined"
-                             HelperText="@L["DescriptionHelper"]" />
-
-                <div class="picker-row">
-                    <span class="picker-row__label">@L["IconLabel"]</span>
-                    <div class="picker-row__value">
-                        @if (!string.IsNullOrEmpty(_icon))
-                        {
-                            <i class="@_icon picker-row__icon-preview" aria-hidden="true"></i>
-                        }
-                        else
-                        {
-                            <span class="text-sm text-secondary">@L["IconNone"]</span>
-                        }
+                @if (_compatibleGroups.Count > 0)
+                {
+                    <div class="d-flex flex-col gap-2 mb-3">
+                        <span class="text-sm text-bold">@L["GroupLabel"]</span>
+                        <div class="d-flex flex-wrap gap-2">
+                            <K7Chip Color="@(_createNewGroup ? "primary" : "default")" Size="sm"
+                                    OnClick="@(() => SelectGroup(null))" Style="cursor: pointer;">
+                                @L["GroupNewOption"]
+                            </K7Chip>
+                            @foreach (var group in _compatibleGroups)
+                            {
+                                <K7Chip Color="@(_selectedGroupId == group.Id ? "primary" : "default")" Size="sm"
+                                        OnClick="@(() => SelectGroup(group.Id))" Style="cursor: pointer;">
+                                    @group.Title
+                                </K7Chip>
+                            }
+                        </div>
                     </div>
-                    <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPickerAsync">@L["IconChange"]</K7Button>
-                </div>
+                }
+
+                @if (_createNewGroup)
+                {
+                    <K7TextField @bind-Value="_groupDescription" Label="@L["DescriptionLabel"]" Variant="outlined"
+                                 HelperText="@L["DescriptionHelper"]" />
+
+                    <div class="picker-row">
+                        <span class="picker-row__label">@L["IconLabel"]</span>
+                        <div class="picker-row__value">
+                            @if (!string.IsNullOrEmpty(_groupIcon))
+                            {
+                                <i class="@_groupIcon picker-row__icon-preview" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                <span class="text-sm text-secondary">@L["IconNone"]</span>
+                            }
+                        </div>
+                        <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPickerAsync">@L["IconChange"]</K7Button>
+                    </div>
+                }
 
                 <K7TextField @bind-Value="_rootPath" Label="@L["PathLabel"]" Variant="outlined"
                               Required="true" RequiredError="@L["PathRequired"]"

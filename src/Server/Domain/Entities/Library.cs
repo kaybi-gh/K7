@@ -10,10 +10,10 @@ public class Library : BaseAuditableEntity
     public required string MetadataFallbackLanguage { get; set; }
     public int? MetadataRefreshIntervalDays { get; set; }
     public bool? RootPathAccessible { get; set; }
-    public string? Description { get; set; }
-    public string? Icon { get; set; }
 
-    public MetadataPicture? CoverPicture { get; set; }
+    public required Guid LibraryGroupId { get; set; }
+    public LibraryGroup? LibraryGroup { get; set; }
+
     public IList<IndexedFile> IndexedFiles { get; set; } = [];
     public IList<LibraryScanIssue> ScanIssues { get; set; } = [];
 }

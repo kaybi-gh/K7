@@ -11,7 +11,7 @@ public class UploadLibraryCover : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapPost("/api/libraries/{id}/cover", async (
+        endpointRouteBuilder.MapPost("/api/library-groups/{id}/cover", async (
             HttpContext context,
             [FromServices] ISender sender,
             Guid id,
@@ -34,7 +34,7 @@ public class UploadLibraryCover : IEndpoint
 
             var pictureId = await sender.Send(new UploadLibraryCoverCommand
             {
-                LibraryId = id,
+                LibraryGroupId = id,
                 FileStream = stream,
                 FileName = fileName,
                 SourcePictureId = sourcePictureId

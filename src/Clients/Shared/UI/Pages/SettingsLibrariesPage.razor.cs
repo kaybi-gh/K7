@@ -12,6 +12,7 @@ public partial class SettingsLibrariesPage
 
     private bool _loading = true;
     private bool _saving;
+    private List<LibraryGroupDto> _groups = [];
     private List<LibraryDto> _libraries = [];
     private HashSet<Guid> _selfExcludedIds = [];
 
@@ -19,18 +20,24 @@ public partial class SettingsLibrariesPage
     {
         try
         {
+            var groupsTask = LibraryService.GetLibraryGroupsAsync();
             var librariesTask = LibraryService.GetLibrariesAsync();
             var exclusionsTask = PreferencesService.GetSelfLibraryExclusionsAsync();
-            await Task.WhenAll(librariesTask, exclusionsTask);
+            await Task.WhenAll(groupsTask, librariesTask, exclusionsTask);
+            _groups = groupsTask.Result;
             _libraries = librariesTask.Result;
             _selfExcludedIds = exclusionsTask.Result.ToHashSet();
         }
         catch
         {
+            _groups = [];
             _libraries = [];
         }
         _loading = false;
     }
+
+    private IEnumerable<LibraryDto> GetLibrariesForGroup(LibraryGroupDto group) =>
+        _libraries.Where(l => l.LibraryGroupId == group.Id);
 
     private async Task ToggleLibrary(Guid libraryId, bool exclude)
     {

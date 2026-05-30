@@ -36,13 +36,14 @@ public class GetEffectiveHomeLayoutQueryHandler(
 
     private async Task<HomeLayoutDto> BuildDynamicDefaultAsync(Guid? userId, CancellationToken cancellationToken)
     {
-        var libraries = await context.Libraries
-            .Where(l => !context.UserLibraryExclusions.Any(e =>
+        var groups = await context.LibraryGroups
+            .Include(g => g.Libraries)
+            .Where(g => g.Libraries.Any(l => !context.UserLibraryExclusions.Any(e =>
                 e.LibraryId == l.Id &&
                 e.UserId == (userId ?? Guid.Empty) &&
-                (e.IsAdminExcluded || e.IsSelfExcluded)))
-            .OrderBy(l => l.Title)
-            .Select(l => new { l.Id, l.Title })
+                (e.IsAdminExcluded || e.IsSelfExcluded))))
+            .OrderBy(g => g.Title)
+            .Select(g => new { g.Id, g.Title, LibraryIds = g.Libraries.Select(l => l.Id).ToList() })
             .ToListAsync(cancellationToken);
 
         var rows = new List<HomeRowConfigDto>
@@ -61,15 +62,15 @@ public class GetEffectiveHomeLayoutQueryHandler(
         };
 
         var order = 1;
-        foreach (var lib in libraries)
+        foreach (var group in groups)
         {
             rows.Add(new HomeRowConfigDto
             {
-                Id = lib.Id,
-                Title = lib.Title,
+                Id = group.Id,
+                Title = group.Title,
                 DisplayType = HomeRowDisplayType.Carousel,
                 ContinueWatching = false,
-                LibraryIds = [lib.Id],
+                LibraryIds = group.LibraryIds,
                 OrderBy = [MediaOrderingOption.CreatedDesc],
                 PageSize = 50,
                 IsVisible = true,

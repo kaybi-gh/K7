@@ -40,6 +40,7 @@ public class IndexedFileExtensionsTests : FileFixture
         var library = new Library()
         {
             Id = Guid.NewGuid(),
+            LibraryGroupId = Guid.NewGuid(),
             MediaType = LibraryMediaType.Movie,
             MetadataProviderName = "tmdb",
             MetadataLanguage = "fr",
@@ -81,6 +82,7 @@ public class IndexedFileExtensionsTests : FileFixture
         var library = new Library()
         {
             Id = Guid.NewGuid(),
+            LibraryGroupId = Guid.NewGuid(),
             MediaType = LibraryMediaType.Music,
             MetadataProviderName = "musicbrainz",
             MetadataLanguage = "fr",
@@ -207,6 +209,7 @@ public class IndexedFileExtensionsTests : FileFixture
         var library = new Library
         {
             Id = Guid.NewGuid(),
+            LibraryGroupId = Guid.NewGuid(),
             MediaType = LibraryMediaType.Serie,
             MetadataProviderName = "tmdb",
             MetadataLanguage = "fr",
@@ -236,6 +239,7 @@ public class IndexedFileExtensionsTests : FileFixture
         var library = new Library
         {
             Id = Guid.NewGuid(),
+            LibraryGroupId = Guid.NewGuid(),
             MediaType = LibraryMediaType.Serie,
             MetadataProviderName = "tmdb",
             MetadataLanguage = "fr",

@@ -17,10 +17,7 @@ public static class LibraryMappings
             MetadataLanguage = domain.MetadataLanguage,
             MetadataFallbackLanguage = domain.MetadataFallbackLanguage,
             MetadataRefreshIntervalDays = domain.MetadataRefreshIntervalDays,
-            Description = domain.Description,
-            Icon = domain.Icon,
-            CoverPictureId = domain.CoverPicture?.Id,
-            CoverDominantColor = domain.CoverPicture?.DominantColor
+            LibraryGroupId = domain.LibraryGroupId
         };
     }
 }

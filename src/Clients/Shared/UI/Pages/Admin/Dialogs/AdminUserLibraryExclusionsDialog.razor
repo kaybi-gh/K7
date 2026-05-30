@@ -9,14 +9,26 @@
             <p class="text-sm mb-3" Color="secondary">
                 Décochez les librairies auxquelles l'utilisateur ne doit pas avoir accès.
             </p>
-            <div class="d-flex flex-col">
-                @foreach (var library in _libraries)
+            <div class="d-flex flex-col gap-3">
+                @foreach (var group in _groups)
                 {
-                    var excluded = _excludedIds.Contains(library.Id);
-                    <div class="d-flex align-center justify-between">
-                        <p class="text-sm">@library.Title</p>
-                        <K7Switch Value="@(!excluded)" ValueChanged="@(v => ToggleExclusion(library.Id, !v))" />
-                    </div>
+                    var libs = GetLibrariesForGroup(group).ToList();
+                    @if (libs.Count > 0)
+                    {
+                        <div>
+                            <span class="text-sm text-bold">@group.Title</span>
+                            <div class="d-flex flex-col mt-1">
+                                @foreach (var library in libs)
+                                {
+                                    var excluded = _excludedIds.Contains(library.Id);
+                                    <div class="d-flex align-center justify-between">
+                                        <p class="text-sm">@library.Title</p>
+                                        <K7Switch Value="@(!excluded)" ValueChanged="@(v => ToggleExclusion(library.Id, !v))" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
                 }
             </div>
         }

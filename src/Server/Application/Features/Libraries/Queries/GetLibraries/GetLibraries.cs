@@ -13,7 +13,6 @@ public class GetLibrariesQueryHandler(IApplicationDbContext context, IUser curre
     {
         var query = context.Libraries
             .AsNoTracking()
-            .Include(l => l.CoverPicture)
             .AsQueryable();
 
         if (currentUser.Id is { } userId)

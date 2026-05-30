@@ -14,7 +14,6 @@ public class GetLibraryQueryHandler(IApplicationDbContext context, IUser current
     {
         var query = context.Libraries
             .AsNoTracking()
-            .Include(l => l.CoverPicture)
             .Where(x => x.Id == request.Id);
 
         if (currentUser.Id is { } userId)

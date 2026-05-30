@@ -1,5 +1,6 @@
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -19,8 +20,8 @@ public partial class CreateLibraryDialog
     private LibraryMediaType _selectedMediaType;
     private bool _mediaTypeSelected;
     private string _title = "";
-    private string? _description = null;
-    private string? _icon = null;
+    private string? _groupDescription = null;
+    private string? _groupIcon = null;
     private string _rootPath = "";
     private string _selectedProvider = "";
     private string _metadataLanguage = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -29,6 +30,10 @@ public partial class CreateLibraryDialog
     private bool _triggerIndexing = true;
     private bool _isSubmitting;
 
+    private List<LibraryGroupDto> _compatibleGroups = [];
+    private Guid? _selectedGroupId;
+    private bool _createNewGroup = true;
+
     private async Task SelectMediaType(LibraryMediaType mediaType)
     {
         _selectedMediaType = mediaType;
@@ -36,6 +41,17 @@ public partial class CreateLibraryDialog
 
         _availableProviders = await K7ServerService.GetMetadataProvidersAsync(mediaType);
         _selectedProvider = _availableProviders.FirstOrDefault()?.ProviderName ?? "";
+
+        var allGroups = await K7ServerService.GetLibraryGroupsAsync();
+        _compatibleGroups = allGroups.Where(g => g.MediaType == mediaType).ToList();
+        _createNewGroup = _compatibleGroups.Count == 0;
+        _selectedGroupId = null;
+    }
+
+    private void SelectGroup(Guid? groupId)
+    {
+        _selectedGroupId = groupId;
+        _createNewGroup = groupId is null;
     }
 
 
@@ -95,7 +111,7 @@ public partial class CreateLibraryDialog
     private async Task OpenIconPickerAsync()
     {
         var parameters = new K7DialogParameters<K7IconPickerDialog>();
-        parameters.Add(x => x.InitialValue, _icon);
+        parameters.Add(x => x.InitialValue, _groupIcon);
         parameters.Add(x => x.SearchPlaceholder, L["IconSearch"].Value);
         parameters.Add(x => x.CancelText, S["Cancel"].Value);
         parameters.Add(x => x.ConfirmText, S["Confirm"].Value);
@@ -103,7 +119,7 @@ public partial class CreateLibraryDialog
         var dialog = await DialogService.ShowAsync<K7IconPickerDialog>(L["IconLabel"].Value, parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false })
-            _icon = result.Data as string;
+            _groupIcon = result.Data as string;
     }
 
     private async Task BrowseFolderAsync()
@@ -144,8 +160,9 @@ public partial class CreateLibraryDialog
                 MetadataProviderName = _selectedProvider,
                 MetadataLanguage = _metadataLanguage,
                 MetadataFallbackLanguage = _metadataFallbackLanguage,
-                Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
-                Icon = _icon
+                LibraryGroupId = _selectedGroupId,
+                GroupDescription = _createNewGroup && !string.IsNullOrWhiteSpace(_groupDescription) ? _groupDescription.Trim() : null,
+                GroupIcon = _createNewGroup ? _groupIcon : null
             };
 
             await K7ServerService.CreateLibraryAsync(request);
