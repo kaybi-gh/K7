@@ -24,7 +24,7 @@ public class GetCollections : IEndpoint
                 Items = result.Items.Select(c => c.ToLiteCollectionDto())
             };
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

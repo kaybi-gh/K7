@@ -17,7 +17,7 @@ public class GetCollection : IEndpoint
             var collection = await sender.Send(new GetCollectionQuery(id), cancellationToken);
             return collection.ToCollectionDto();
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

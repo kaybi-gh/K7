@@ -30,7 +30,7 @@ public class GetPlaylistItems : IEndpoint
                 Items = result.Items.Select(i => i.ToPlaylistItemDto())
             };
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
