@@ -17,9 +17,11 @@ public class GetAdminWatchStats : IEndpoint
             [FromQuery] MediaType? mediaType = null,
             [FromQuery] string period = "month",
             [FromQuery] Guid? userId = null,
+            [FromQuery] DateTime? from = null,
+            [FromQuery] DateTime? to = null,
             CancellationToken cancellationToken = default) =>
         {
-            return await sender.Send(new GetWatchStatsQuery(mediaType, period, userId, GlobalStats: true), cancellationToken);
+            return await sender.Send(new GetWatchStatsQuery(mediaType, period, userId, GlobalStats: true, from, to), cancellationToken);
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)

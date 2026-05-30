@@ -4,239 +4,416 @@
 @inject IUserAdminService UserAdminService
 @inject IStringLocalizer<AdminStatsPanel> L
 
-<div class="d-flex pa-4" style="width: 100%; flex-wrap: wrap; gap: 8px;">
-    <h5 class="mr-4">@L["Title"]</h5>
+<div class="d-flex flex-col" style="gap: var(--space-3);">
+    <div class="d-flex align-center flex-wrap" style="gap: var(--space-3); padding: var(--space-4) var(--space-4) 0;">
+        <h5>@L["Title"]</h5>
 
-    <K7Select TValue="Guid?" Value="_selectedUserId" ValueChanged="OnUserChanged" Label="@L["User"]" Clearable="true"
-              ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? L["AllUsers"])"
-              Style="min-width: 200px; max-width: 300px;">
-        @foreach (var user in _users)
+        <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_selectedPeriod" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
+
+        @if (_selectedPeriod == "custom")
         {
-            <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.DisplayName ?? user.UserName ?? user.Email)</K7SelectItem>
-        }
-    </K7Select>
-
-    <div class="d-flex">
-        <K7Chip Value="@("week")" Variant="@(_selectedPeriod == "week" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("week"))">@L["Week"]</K7Chip>
-        <K7Chip Value="@("month")" Variant="@(_selectedPeriod == "month" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("month"))">@L["Month"]</K7Chip>
-        <K7Chip Value="@("year")" Variant="@(_selectedPeriod == "year" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("year"))">@L["Year"]</K7Chip>
-        <K7Chip Value="@("all")" Variant="@(_selectedPeriod == "all" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnPeriodChanged("all"))">@L["AllTime"]</K7Chip>
-    </div>
-
-    <div class="d-flex">
-        <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged(""))">@L["All"]</K7Chip>
-        <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("3"))">@L["Music"]</K7Chip>
-        <K7Chip Value="@("1")" Variant="@(_selectedMediaType == "1" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("1"))">@L["Movies"]</K7Chip>
-        <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick="@(() => OnMediaTypeChanged("5"))">@L["TVShows"]</K7Chip>
-    </div>
-</div>
-
-@if (_loading)
-{
-    <div class="d-flex flex-col pa-16">
-        <K7Spinner />
-    </div>
-}
-else if (_stats is null)
-{
-    <div class="d-flex flex-col pa-16">
-        <K7Icon Name="chart-bar" Style="font-size: 64px; opacity: 0.3;" />
-        <h6 Color="default" Style="opacity: 0.5;">@L["NoData"]</h6>
-    </div>
-}
-else
-{
-    <div class="pa-4">
-        <div class="grid">
-            <div>
-                <div class="surface pa-4">
-                    <div class="d-flex flex-col">
-                        <K7Icon Name="timer" Size="lg" Color="primary" />
-                        <h4 Color="primary">@_stats.TotalWatchTimeHours h</h4>
-                        <p class="text-sm" Color="secondary">@L["WatchTime"]</p>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div class="surface pa-4">
-                    <div class="d-flex flex-col">
-                        <K7Icon Name="play-circle" Size="lg" Color="primary" />
-                        <h4 Color="primary">@_stats.TotalPlays</h4>
-                        <p class="text-sm" Color="secondary">@L["TotalPlays"]</p>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div class="surface pa-4">
-                    <div class="d-flex flex-col">
-                        <K7Icon Name="music-notes" Size="lg" Color="primary" />
-                        <h4 Color="primary">@_stats.UniqueItemsPlayed</h4>
-                        <p class="text-sm" Color="secondary">@L["UniqueItems"]</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        @if (_playsOverTimeData.Count > 1)
-        {
-            <div class="surface pa-4 mb-6">
-                <h6>@L["PlaysOverTime"]</h6>
-                <ApexChart TItem="ChartDataPoint" Options="_areaChartOptions" Height="180">
-                    <ApexPointSeries TItem="ChartDataPoint"
-                                     Items="_playsOverTimeData"
-                                     SeriesType="SeriesType.Area"
-                                     XValue="@(p => p.Label)"
-                                     YValue="@(p => p.Value)" />
-                </ApexChart>
-            </div>
+            <K7DateRangePicker From="_fromDate" To="_toDate" RangeChanged="OnDateRangeChanged"
+                               Label="@L["PickDates"]" HintSelectEnd="@L["SelectEndDate"]" />
         }
 
-        <div class="grid">
-            @if (_hourData.Count > 0)
+        <K7ButtonGroup TValue="string" Options="_mediaTypeOptions" Value="_selectedMediaType" ValueChanged="OnMediaTypeChanged" AriaLabel="@L["MediaType"]" />
+
+        <K7Select TValue="Guid?" Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
+                  ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? L["AllUsers"])"
+                  Style="min-width: 180px; max-width: 260px;" FullWidth="false">
+            @foreach (var user in _users)
             {
-                <div>
-                    <div class="surface pa-4">
-                        <h6>@L["ByHourOfDay"]</h6>
-                        <ApexChart TItem="ChartDataPoint" Options="_barChartOptions" Height="200">
+                <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.DisplayName ?? user.UserName ?? user.Email)</K7SelectItem>
+            }
+        </K7Select>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-center pa-16">
+            <K7Spinner />
+        </div>
+    }
+    else if (_stats is null)
+    {
+        <div class="d-flex flex-col align-center pa-16" style="opacity: 0.5;">
+            <K7Icon Name="chart-bar" Style="font-size: 48px;" />
+            <span class="text-sm">@L["NoData"]</span>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-col" style="gap: var(--space-4); padding: 0 var(--space-4) var(--space-4);">
+            <!-- KPI Cards -->
+            <div class="stats-kpi-row">
+                <K7Paper Elevation="0" Class="stats-kpi-card">
+                    <h4>@_stats.TotalWatchTimeHours h</h4>
+                    <span class="text-caption" style="color: var(--color-text-muted);">@L["WatchTime"]</span>
+                </K7Paper>
+                <K7Paper Elevation="0" Class="stats-kpi-card">
+                    <h4>@_stats.TotalPlays</h4>
+                    <span class="text-caption" style="color: var(--color-text-muted);">@L["TotalPlays"]</span>
+                </K7Paper>
+                <K7Paper Elevation="0" Class="stats-kpi-card">
+                    <h4>@_stats.UniqueItemsPlayed</h4>
+                    <span class="text-caption" style="color: var(--color-text-muted);">@L["UniqueItems"]</span>
+                </K7Paper>
+            </div>
+
+            <!-- Timeline chart -->
+            @if (_playsOverTimeData.Count > 1)
+            {
+                <K7Paper Elevation="0" Class="stats-chart-card">
+                    <h6>@L["PlaysOverTime"]</h6>
+                    <ApexChart TItem="ChartDataPoint" Options="_areaChartOptions" Height="160">
+                        <ApexPointSeries TItem="ChartDataPoint"
+                                         Items="_playsOverTimeData"
+                                         SeriesType="SeriesType.Area"
+                                         XValue="@(p => p.Label)"
+                                         YValue="@(p => p.Value)" />
+                    </ApexChart>
+                </K7Paper>
+            }
+
+            <!-- Hour + Day of week charts side by side -->
+            <div class="stats-chart-row">
+                <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 280px;">
+                    <h6>@L["ByHourOfDay"]</h6>
+                    @if (HasNonZeroData(_hourData))
+                    {
+                        <ApexChart TItem="ChartDataPoint" Options="_barChartOptionsHour" Height="180">
                             <ApexPointSeries TItem="ChartDataPoint"
                                              Items="_hourData"
                                              SeriesType="SeriesType.Bar"
                                              XValue="@(p => p.Label)"
                                              YValue="@(p => p.Value)" />
                         </ApexChart>
-                    </div>
-                </div>
-            }
-            @if (_dowData.Count > 0)
-            {
-                <div>
-                    <div class="surface pa-4">
-                        <h6>@L["ByDayOfWeek"]</h6>
-                        <ApexChart TItem="ChartDataPoint" Options="_barChartOptions" Height="200">
+                    }
+                    else
+                    {
+                        <div class="stats-empty-state">
+                            <K7Icon Icon="@Phosphor.ChartBar" />
+                            <span>@L["NoData"]</span>
+                        </div>
+                    }
+                </K7Paper>
+                <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 280px;">
+                    <h6>@L["ByDayOfWeek"]</h6>
+                    @if (HasNonZeroData(_dowData))
+                    {
+                        <ApexChart TItem="ChartDataPoint" Options="_barChartOptionsDow" Height="180">
                             <ApexPointSeries TItem="ChartDataPoint"
                                              Items="_dowData"
                                              SeriesType="SeriesType.Bar"
                                              XValue="@(p => p.Label)"
                                              YValue="@(p => p.Value)" />
                         </ApexChart>
-                    </div>
-                </div>
-            }
-        </div>
+                    }
+                    else
+                    {
+                        <div class="stats-empty-state">
+                            <K7Icon Icon="@Phosphor.CalendarBlank" />
+                            <span>@L["NoData"]</span>
+                        </div>
+                    }
+                </K7Paper>
+            </div>
 
-        <div class="grid">
-            @if (_genreData.Count > 0)
-            {
-                <div>
-                    <div class="surface pa-4">
-                        <h6>@L["TopGenres"]</h6>
-                        <ApexChart TItem="ChartDataPoint" Options="_donutChartOptions" Height="250">
+            <!-- Genre + Device donuts side by side -->
+            <div class="stats-chart-row">
+                <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 240px;">
+                    <h6>@L["TopGenres"]</h6>
+                    @if (_genreData.Count > 0)
+                    {
+                        <ApexChart TItem="ChartDataPoint" Options="_donutChartOptionsGenre" Height="220">
                             <ApexPointSeries TItem="ChartDataPoint"
                                              Items="_genreData"
                                              SeriesType="SeriesType.Donut"
                                              XValue="@(p => p.Label)"
                                              YValue="@(p => p.Value)" />
                         </ApexChart>
-                    </div>
-                </div>
-            }
-            @if (_deviceData.Count > 0)
-            {
-                <div>
-                    <div class="surface pa-4">
-                        <h6>@L["TopDevices"]</h6>
-                        <ApexChart TItem="ChartDataPoint" Options="_donutChartOptions" Height="250">
+                    }
+                    else
+                    {
+                        <div class="stats-empty-state">
+                            <K7Icon Icon="@Phosphor.MusicNotes" />
+                            <span>@L["NoData"]</span>
+                        </div>
+                    }
+                </K7Paper>
+                <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 240px;">
+                    <h6>@L["TopDevices"]</h6>
+                    @if (_deviceData.Count > 0)
+                    {
+                        <ApexChart TItem="ChartDataPoint" Options="_donutChartOptionsDevice" Height="220">
                             <ApexPointSeries TItem="ChartDataPoint"
                                              Items="_deviceData"
                                              SeriesType="SeriesType.Donut"
                                              XValue="@(p => p.Label)"
                                              YValue="@(p => p.Value)" />
                         </ApexChart>
-                    </div>
+                    }
+                    else
+                    {
+                        <div class="stats-empty-state">
+                            <K7Icon Icon="@Phosphor.Devices" />
+                            <span>@L["NoData"]</span>
+                        </div>
+                    }
+                </K7Paper>
+            </div>
+
+            <!-- Top tables in responsive grid -->
+            <div class="stats-top-grid">
+                @if (_stats.TopItems.Count > 0)
+                {
+                    <K7Paper Elevation="0" Class="stats-chart-card">
+                        <h6>@L["TopItems"]</h6>
+                        <table class="stats-table">
+                            <tbody>
+                                @foreach (var (item, index) in _stats.TopItems.Select((a, i) => (a, i)))
+                                {
+                                    <tr>
+                                        <td class="stats-table-rank">@(index + 1)</td>
+                                        <td class="stats-table-name">@item.Name</td>
+                                        <td class="stats-table-count">@item.PlayCount</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </K7Paper>
+                }
+
+                @if (_stats.TopArtists.Count > 0)
+                {
+                    <K7Paper Elevation="0" Class="stats-chart-card">
+                        <h6>@L["TopArtists"]</h6>
+                        <table class="stats-table">
+                            <tbody>
+                                @foreach (var (artist, index) in _stats.TopArtists.Select((a, i) => (a, i)))
+                                {
+                                    <tr>
+                                        <td class="stats-table-rank">@(index + 1)</td>
+                                        <td class="stats-table-name">@artist.Name</td>
+                                        <td class="stats-table-count">@artist.PlayCount</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </K7Paper>
+                }
+
+                @if (_stats.TopAlbums.Count > 0)
+                {
+                    <K7Paper Elevation="0" Class="stats-chart-card">
+                        <h6>@L["TopAlbums"]</h6>
+                        <table class="stats-table">
+                            <tbody>
+                                @foreach (var (album, index) in _stats.TopAlbums.Select((a, i) => (a, i)))
+                                {
+                                    <tr>
+                                        <td class="stats-table-rank">@(index + 1)</td>
+                                        <td class="stats-table-name">@album.Name</td>
+                                        <td class="stats-table-count">@album.PlayCount</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </K7Paper>
+                }
+
+                @if (_stats.TopShows.Count > 0)
+                {
+                    <K7Paper Elevation="0" Class="stats-chart-card">
+                        <h6>@L["TopShows"]</h6>
+                        <table class="stats-table">
+                            <tbody>
+                                @foreach (var (show, index) in _stats.TopShows.Select((s, i) => (s, i)))
+                                {
+                                    <tr>
+                                        <td class="stats-table-rank">@(index + 1)</td>
+                                        <td class="stats-table-name">@show.Name</td>
+                                        <td class="stats-table-count">@show.PlayCount</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </K7Paper>
+                }
+            </div>
+
+            @if (_stats.PlaybackDetails is { } pd)
+            {
+                <h6 style="margin-top: var(--space-2);">@L["PlaybackDetailsTitle"]</h6>
+
+                <div class="stats-chart-row">
+                    @if (pd.PlaybackDecisions.Count > 0)
+                    {
+                        <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 200px;">
+                            <h6>@L["PlaybackDecisions"]</h6>
+                            <ApexChart TItem="ChartDataPoint" Options="_donutChartOptionsDecision" Height="200">
+                                <ApexPointSeries TItem="ChartDataPoint"
+                                                 Items="_decisionData"
+                                                 SeriesType="SeriesType.Donut"
+                                                 XValue="@(p => p.Label)"
+                                                 YValue="@(p => p.Value)" />
+                            </ApexChart>
+                        </K7Paper>
+                    }
+                    @if (pd.TopResolutions.Count > 0)
+                    {
+                        <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 200px;">
+                            <h6>@L["Resolutions"]</h6>
+                            <ApexChart TItem="ChartDataPoint" Options="_donutChartOptionsResolution" Height="200">
+                                <ApexPointSeries TItem="ChartDataPoint"
+                                                 Items="_resolutionData"
+                                                 SeriesType="SeriesType.Donut"
+                                                 XValue="@(p => p.Label)"
+                                                 YValue="@(p => p.Value)" />
+                            </ApexChart>
+                        </K7Paper>
+                    }
+                </div>
+
+                <div class="stats-top-grid">
+                    @if (pd.TopAudioLanguages.Count > 0)
+                    {
+                        <K7Paper Elevation="0" Class="stats-chart-card">
+                            <h6>@L["AudioLanguages"]</h6>
+                            <table class="stats-table">
+                                <tbody>
+                                    @foreach (var (lang, index) in pd.TopAudioLanguages.Select((a, i) => (a, i)))
+                                    {
+                                        <tr>
+                                            <td class="stats-table-rank">@(index + 1)</td>
+                                            <td class="stats-table-name">@FormatLanguage(lang.Label)</td>
+                                            <td class="stats-table-count">@lang.Count</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </K7Paper>
+                    }
+                    @if (pd.TopSubtitleLanguages.Count > 0)
+                    {
+                        <K7Paper Elevation="0" Class="stats-chart-card">
+                            <h6>@L["SubtitleLanguages"]</h6>
+                            <table class="stats-table">
+                                <tbody>
+                                    @foreach (var (lang, index) in pd.TopSubtitleLanguages.Select((a, i) => (a, i)))
+                                    {
+                                        <tr>
+                                            <td class="stats-table-rank">@(index + 1)</td>
+                                            <td class="stats-table-name">@FormatLanguage(lang.Label)</td>
+                                            <td class="stats-table-count">@lang.Count</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </K7Paper>
+                    }
+                    @if (pd.TopTranscodeReasons.Count > 0)
+                    {
+                        <K7Paper Elevation="0" Class="stats-chart-card">
+                            <h6>@L["TranscodeReasons"]</h6>
+                            <table class="stats-table">
+                                <tbody>
+                                    @foreach (var (reason, index) in pd.TopTranscodeReasons.Select((a, i) => (a, i)))
+                                    {
+                                        <tr>
+                                            <td class="stats-table-rank">@(index + 1)</td>
+                                            <td class="stats-table-name">@reason.Label</td>
+                                            <td class="stats-table-count">@reason.Count</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </K7Paper>
+                    }
                 </div>
             }
         </div>
+    }
+</div>
 
-        <div class="grid">
-            @if (_stats.TopItems.Count > 0)
-            {
-                <div>
-                    <h6>@L["TopItems"]</h6>
-                    <ul class="k7-list">
-                        @foreach (var (item, index) in _stats.TopItems.Select((a, i) => (a, i)))
-                        {
-                            <li>
-                                <div class="d-flex align-center">
-                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
-                                    <span>@item.Name</span>
-                                    <div class="flex-1"></div>
-                                    <K7Chip Size="sm" Color="primary" Variant="outlined">@item.PlayCount</K7Chip>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
+<style>
+    .stats-kpi-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: var(--space-3);
+    }
 
-            @if (_stats.TopArtists.Count > 0)
-            {
-                <div>
-                    <h6>@L["TopArtists"]</h6>
-                    <ul class="k7-list">
-                        @foreach (var (artist, index) in _stats.TopArtists.Select((a, i) => (a, i)))
-                        {
-                            <li>
-                                <div class="d-flex align-center">
-                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
-                                    <span>@artist.Name</span>
-                                    <div class="flex-1"></div>
-                                    <K7Chip Size="sm" Color="primary" Variant="outlined">@artist.PlayCount</K7Chip>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
+    .stats-kpi-card {
+        padding: var(--space-4);
+        text-align: center;
+    }
 
-            @if (_stats.TopAlbums.Count > 0)
-            {
-                <div>
-                    <h6>@L["TopAlbums"]</h6>
-                    <ul class="k7-list">
-                        @foreach (var (album, index) in _stats.TopAlbums.Select((a, i) => (a, i)))
-                        {
-                            <li>
-                                <div class="d-flex align-center">
-                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
-                                    <span>@album.Name</span>
-                                    <div class="flex-1"></div>
-                                    <K7Chip Size="sm" Color="primary" Variant="outlined">@album.PlayCount</K7Chip>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
+    .stats-chart-card {
+        padding: var(--space-4);
+    }
 
-            @if (_stats.TopShows.Count > 0)
-            {
-                <div>
-                    <h6>@L["TopShows"]</h6>
-                    <ul class="k7-list">
-                        @foreach (var (show, index) in _stats.TopShows.Select((s, i) => (s, i)))
-                        {
-                            <li>
-                                <div class="d-flex align-center">
-                                    <p class="text-sm" Color="secondary" Style="min-width: 24px;">@(index + 1).</p>
-                                    <span>@show.Name</span>
-                                    <div class="flex-1"></div>
-                                    <K7Chip Size="sm" Color="primary" Variant="outlined">@show.PlayCount</K7Chip>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
-        </div>
-    </div>
-}
+    .stats-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        min-height: 120px;
+        opacity: 0.5;
+        font-size: var(--text-sm);
+        color: var(--color-text-muted);
+    }
+
+    .stats-empty-state :deep(svg) {
+        font-size: 1.5rem;
+    }
+
+    .stats-chart-row {
+        display: flex;
+        gap: var(--space-3);
+        flex-wrap: wrap;
+    }
+
+    .stats-top-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-3);
+    }
+
+    .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: var(--space-2);
+    }
+
+    .stats-table tr:nth-child(odd) {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .stats-table td {
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--font-size-sm);
+    }
+
+    .stats-table-rank {
+        width: 28px;
+        color: var(--color-text-muted);
+        text-align: right;
+        padding-right: var(--space-2);
+    }
+
+    .stats-table-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 0;
+        width: 100%;
+    }
+
+    .stats-table-count {
+        text-align: right;
+        white-space: nowrap;
+        color: var(--color-primary);
+        font-weight: 500;
+    }
+</style>

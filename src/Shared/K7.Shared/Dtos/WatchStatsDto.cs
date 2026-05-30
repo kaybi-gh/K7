@@ -15,6 +15,22 @@ public sealed record WatchStatsDto
     public IReadOnlyList<TimeSeriesPointDto> PlaysOverTime { get; init; } = [];
     public IReadOnlyList<DayOfWeekPointDto> PlaysByDayOfWeek { get; init; } = [];
     public IReadOnlyList<HourOfDayPointDto> PlaysByHourOfDay { get; init; } = [];
+    public PlaybackDetailsStatsDto? PlaybackDetails { get; init; }
+}
+
+public sealed record PlaybackDetailsStatsDto
+{
+    public IReadOnlyList<LabelCountDto> PlaybackDecisions { get; init; } = [];
+    public IReadOnlyList<LabelCountDto> TopAudioLanguages { get; init; } = [];
+    public IReadOnlyList<LabelCountDto> TopSubtitleLanguages { get; init; } = [];
+    public IReadOnlyList<LabelCountDto> TopResolutions { get; init; } = [];
+    public IReadOnlyList<LabelCountDto> TopTranscodeReasons { get; init; } = [];
+}
+
+public sealed record LabelCountDto
+{
+    public required string Label { get; init; }
+    public int Count { get; init; }
 }
 
 public sealed record TimeSeriesPointDto

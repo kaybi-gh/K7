@@ -16,9 +16,11 @@ public class GetWatchStats : IEndpoint
             [FromServices] ISender sender,
             [FromQuery] MediaType? mediaType,
             [FromQuery] string period = "month",
+            [FromQuery] DateTime? from = null,
+            [FromQuery] DateTime? to = null,
             CancellationToken cancellationToken = default) =>
         {
-            return await sender.Send(new GetWatchStatsQuery(mediaType, period), cancellationToken);
+            return await sender.Send(new GetWatchStatsQuery(mediaType, period, From: from, To: to), cancellationToken);
         })
         .RequireAuthorization(Policies.UserOrAbove)
         .WithName(type.Name)
