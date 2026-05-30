@@ -180,10 +180,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<MusicStatsDto>("api/music/stats", _serializerOptions, cancellationToken);
     }
 
-    public async Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", CancellationToken cancellationToken = default)
+    public async Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"period={Uri.EscapeDataString(period)}" };
         if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
+        if (from is not null) queryParams.Add($"from={from.Value:O}");
+        if (to is not null) queryParams.Add($"to={to.Value:O}");
         var url = $"api/stats?{string.Join("&", queryParams)}";
         return await HttpClient.GetFromJsonAsync<WatchStatsDto>(url, _serializerOptions, cancellationToken);
     }
@@ -579,11 +581,13 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<WatchStatsDto?> GetAdminWatchStatsAsync(string? mediaType = null, string period = "month", Guid? userId = null, CancellationToken cancellationToken = default)
+    public async Task<WatchStatsDto?> GetAdminWatchStatsAsync(string? mediaType = null, string period = "month", Guid? userId = null, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"period={Uri.EscapeDataString(period)}" };
         if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
         if (userId.HasValue) queryParams.Add($"userId={userId.Value}");
+        if (from.HasValue) queryParams.Add($"from={from.Value:O}");
+        if (to.HasValue) queryParams.Add($"to={to.Value:O}");
         var url = $"api/admin/stats?{string.Join("&", queryParams)}";
         return await HttpClient.GetFromJsonAsync<WatchStatsDto>(url, _serializerOptions, cancellationToken);
     }

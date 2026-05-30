@@ -26,7 +26,8 @@ public class GetAdminPlaybackHistory : IEndpoint
                 PageSize = pageSize,
                 MediaType = mediaType,
                 UserId = userId,
-                IncludeStreamQuality = true
+                IncludeStreamQuality = true,
+                ShowAllUsers = true
             }, cancellationToken);
         })
         .RequireAuthorization(Policies.AdminOnly)
