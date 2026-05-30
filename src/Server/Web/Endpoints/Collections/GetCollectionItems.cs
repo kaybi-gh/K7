@@ -23,7 +23,7 @@ public class GetCollectionItems : IEndpoint
                 Items = result.Items.Select(i => i.ToCollectionItemDto())
             };
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

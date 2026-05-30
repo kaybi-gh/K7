@@ -18,7 +18,7 @@ public class GetPlaylist : IEndpoint
             var playlist = await sender.Send(new GetPlaylistQuery(id), cancellationToken);
             return playlist.ToPlaylistDto();
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

@@ -24,7 +24,7 @@ public class GetPlaylists : IEndpoint
                 Items = result.Items.Select(p => p.ToLitePlaylistDto())
             };
         })
-        .RequireAuthorization(Policies.UserOrAbove)
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }
