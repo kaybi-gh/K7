@@ -4610,6 +4610,215 @@
         }
       }
     },
+    "/api/admin/peers/requests/{id}/accept": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "AcceptPeerRequestEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptPeerRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peer-confirm": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "ConfirmPeeringEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPeeringCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/peers/requests": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetPeerRequestsEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/peers": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetPeersEndpoint",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/peers/request": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "InitiatePeeringEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitiatePeeringRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peer-request": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "ReceivePeerRequestEndpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceivePeerRequestCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/peers/requests/{id}/reject": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "RejectPeerRequestEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/peers/{id}": {
+      "delete": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "RevokePeerEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "UpdatePeerEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePeerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/downloads/{id}": {
       "delete": {
         "tags": [
@@ -6217,6 +6426,27 @@
   },
   "components": {
     "schemas": {
+      "AcceptPeerRequestRequest": {
+        "type": "object",
+        "properties": {
+          "sharedLibraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "maxConcurrentStreams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ActiveStreamDto": {
         "required": [
           "connectionId"
@@ -7202,6 +7432,25 @@
             "type": "string"
           },
           "password": {
+            "type": "string"
+          }
+        }
+      },
+      "ConfirmPeeringCommand": {
+        "required": [
+          "token",
+          "clientId",
+          "clientSecret"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "clientSecret": {
             "type": "string"
           }
         }
@@ -8314,6 +8563,17 @@
                 "$ref": "#/components/schemas/FileMetadataDto"
               }
             ]
+          }
+        }
+      },
+      "InitiatePeeringRequest": {
+        "required": [
+          "remoteUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "remoteUrl": {
+            "type": "string"
           }
         }
       },
@@ -13254,6 +13514,25 @@
       "RatingSource": {
         "type": "integer"
       },
+      "ReceivePeerRequestCommand": {
+        "required": [
+          "requesterUrl",
+          "requesterName",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "requesterUrl": {
+            "type": "string"
+          },
+          "requesterName": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
       "ReidentifyIndexedFileRequest": {
         "required": [
           "selectedProvider",
@@ -14339,6 +14618,27 @@
           }
         }
       },
+      "UpdatePeerRequest": {
+        "type": "object",
+        "properties": {
+          "sharedLibraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "maxConcurrentStreams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "UpdatePersonMetadataRequest": {
         "type": "object",
         "properties": {
@@ -14992,6 +15292,9 @@
     },
     {
       "name": "FileSystem"
+    },
+    {
+      "name": "Federation"
     },
     {
       "name": "Downloads"
