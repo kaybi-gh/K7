@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using K7.Server.Application.Common.Interfaces;
+using K7.Shared.Dtos.Entities;
 
 namespace K7.Server.Web.Services;
 
@@ -38,6 +40,30 @@ public class PeerClient(HttpClient httpClient) : IPeerClient
 
         var result = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken);
         return result?.AccessToken;
+    }
+
+    public async Task<IReadOnlyList<PeerLibraryDto>> GetRemoteLibrariesAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/libraries";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<PeerLibraryDto>>(cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<PeerMediaDto>> GetRemoteMediaAsync(string baseUrl, string accessToken, Guid libraryId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/libraries/{libraryId}/media";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<PeerMediaDto>>(cancellationToken) ?? [];
     }
 
     private sealed record TokenResponse(string? AccessToken);

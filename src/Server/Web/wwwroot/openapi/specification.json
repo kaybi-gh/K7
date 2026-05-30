@@ -4667,6 +4667,43 @@
         }
       }
     },
+    "/api/federation/libraries": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationLibraries",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/libraries/{libraryId}/media": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationMedia",
+        "parameters": [
+          {
+            "name": "libraryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/peers/requests": {
       "get": {
         "tags": [
@@ -4812,6 +4849,30 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/peers/{id}/sync": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "SyncPeerEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
