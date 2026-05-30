@@ -1,0 +1,26 @@
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@inject IStringLocalizer<RequestPeerDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <p>@L["Message"]</p>
+    <K7TextField @bind-Value="_remoteUrl"
+                 Label="@L["UrlLabel"]"
+                 Variant="outlined"
+                 Placeholder="https://peer-server.example.com" />
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Variant="filled" Color="primary" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(_remoteUrl)">@L["Send"]</K7Button>
+</div>
+
+@code {
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
+
+    private string _remoteUrl = string.Empty;
+
+    private void Cancel() => Dialog.Cancel();
+
+    private void Submit() => Dialog.Close(K7DialogResult.Ok(_remoteUrl));
+}

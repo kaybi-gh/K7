@@ -1,0 +1,59 @@
+.federation-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.federation-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.peer-card {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.peer-card__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.peer-card__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.peer-card__info h6 {
+    margin: 0;
+}
+
+.peer-card__url {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.peer-card__details {
+    display: flex;
+    gap: 16px;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.peer-card__detail {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.peer-card__actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
