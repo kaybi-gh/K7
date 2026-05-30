@@ -488,17 +488,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Icon")
-                        .HasColumnType("text");
-
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("LibraryGroupId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("MediaType")
                         .HasColumnType("integer");
@@ -539,7 +536,48 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LibraryGroupId");
+
                     b.ToTable("Libraries");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.LibraryGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MediaType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LibraryGroups");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.LibraryScanIssue", b =>
@@ -830,7 +868,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("LibraryId")
+                    b.Property<Guid?>("LibraryGroupId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("LocalPath")
@@ -865,7 +903,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("CollectionId")
                         .IsUnique();
 
-                    b.HasIndex("LibraryId")
+                    b.HasIndex("LibraryGroupId")
                         .IsUnique();
 
                     b.HasIndex("MediaId");
@@ -2906,6 +2944,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Media");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Library", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.LibraryGroup", "LibraryGroup")
+                        .WithMany("Libraries")
+                        .HasForeignKey("LibraryGroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("LibraryGroup");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.LibraryScanIssue", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Library", null)
@@ -3014,9 +3063,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "CollectionId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
+                    b.HasOne("K7.Server.Domain.Entities.LibraryGroup", "LibraryGroup")
                         .WithOne("CoverPicture")
-                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "LibraryId")
+                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "LibraryGroupId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -3048,7 +3097,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Navigation("Collection");
 
-                    b.Navigation("Library");
+                    b.Navigation("LibraryGroup");
 
                     b.Navigation("Media");
 
@@ -3451,11 +3500,16 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Library", b =>
                 {
-                    b.Navigation("CoverPicture");
-
                     b.Navigation("IndexedFiles");
 
                     b.Navigation("ScanIssues");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.LibraryGroup", b =>
+                {
+                    b.Navigation("CoverPicture");
+
+                    b.Navigation("Libraries");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.BaseMedia", b =>

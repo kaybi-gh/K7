@@ -15,7 +15,6 @@ public class LibraryCreatedEventDescriptor : INotificationEventDescriptor
         new("Library.Title", "Library Title", "String"),
         new("Library.MediaType", "Media Type", "String"),
         new("Library.RootPath", "Root Path", "String"),
-        new("Library.Description", "Description", "String"),
         new("Library.MetadataProviderName", "Metadata Provider", "String"),
         new("Library.MetadataLanguage", "Metadata Language", "String"),
     ];

@@ -37,6 +37,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<IndexedFile> IndexedFiles => Set<IndexedFile>();
     public DbSet<Library> Libraries => Set<Library>();
+    public DbSet<LibraryGroup> LibraryGroups => Set<LibraryGroup>();
     public DbSet<BaseMedia> Medias => Set<BaseMedia>();
     public DbSet<BaseFileMetadata> FileMetadatas => Set<BaseFileMetadata>();
     public DbSet<MetadataPicture> MetadataPictures => Set<MetadataPicture>();

@@ -14,7 +14,7 @@ namespace K7.Server.Application.Features.Libraries.Commands.UploadLibraryCover;
 [Authorize(Roles = Roles.Administrator)]
 public record UploadLibraryCoverCommand : IRequest<Guid>
 {
-    public required Guid LibraryId { get; init; }
+    public required Guid LibraryGroupId { get; init; }
 
     // Mode 1: upload a new file
     public Stream? FileStream { get; init; }
@@ -45,16 +45,16 @@ public class UploadLibraryCoverCommandHandler : IRequestHandler<UploadLibraryCov
 
     public async Task<Guid> Handle(UploadLibraryCoverCommand request, CancellationToken cancellationToken)
     {
-        var library = await _context.Libraries
-            .Include(l => l.CoverPicture)
-            .FirstOrDefaultAsync(l => l.Id == request.LibraryId, cancellationToken);
+        var libraryGroup = await _context.LibraryGroups
+            .Include(g => g.CoverPicture)
+            .FirstOrDefaultAsync(g => g.Id == request.LibraryGroupId, cancellationToken);
 
-        Guard.Against.NotFound(request.LibraryId, library);
+        Guard.Against.NotFound(request.LibraryGroupId, libraryGroup);
 
         // Remove existing cover if any
-        if (library.CoverPicture is not null)
+        if (libraryGroup.CoverPicture is not null)
         {
-            _context.MetadataPictures.Remove(library.CoverPicture);
+            _context.MetadataPictures.Remove(libraryGroup.CoverPicture);
         }
 
         string localPath;
@@ -62,7 +62,7 @@ public class UploadLibraryCoverCommandHandler : IRequestHandler<UploadLibraryCov
         if (request.FileStream is not null && request.FileName is not null)
         {
             var ext = Path.GetExtension(request.FileName);
-            var directory = Path.Combine(_pathsConfiguration.Metadatas, "libraries", $"{request.LibraryId}");
+            var directory = Path.Combine(_pathsConfiguration.Metadatas, "library-groups", $"{request.LibraryGroupId}");
             Directory.CreateDirectory(directory);
             var filePath = Path.Combine(directory, $"cover{ext}");
 
@@ -72,7 +72,7 @@ public class UploadLibraryCoverCommandHandler : IRequestHandler<UploadLibraryCov
             }
 
             localPath = _pathsConfiguration.ToRelativeMetadataPath(filePath);
-            _logger.LogInformation("Saved uploaded library cover for library {LibraryId} to {Path}", request.LibraryId, filePath);
+            _logger.LogInformation("Saved uploaded library group cover for {LibraryGroupId} to {Path}", request.LibraryGroupId, filePath);
         }
         else if (request.SourcePictureId is not null)
         {
@@ -92,7 +92,7 @@ public class UploadLibraryCoverCommandHandler : IRequestHandler<UploadLibraryCov
         {
             Id = Guid.NewGuid(),
             Type = MetadataPictureType.Cover,
-            LibraryId = request.LibraryId,
+            LibraryGroupId = request.LibraryGroupId,
             LocalPath = localPath
         };
 

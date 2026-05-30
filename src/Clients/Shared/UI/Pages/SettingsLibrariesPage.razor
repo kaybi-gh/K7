@@ -20,14 +20,26 @@
     }
     else
     {
-        <div class="d-flex flex-col gap-2">
-            @foreach (var library in _libraries)
+        <div class="d-flex flex-col gap-4">
+            @foreach (var group in _groups)
             {
-                var selfExcluded = _selfExcludedIds.Contains(library.Id);
-                <div class="d-flex align-center justify-between">
-                    <span class="text-sm">@library.Title</span>
-                    <K7Switch Value="@(!selfExcluded)" ValueChanged="@(v => ToggleLibrary(library.Id, !v))" Disabled="@_saving" />
-                </div>
+                var libs = GetLibrariesForGroup(group).ToList();
+                @if (libs.Count > 0)
+                {
+                    <div>
+                        <span class="text-sm text-bold">@group.Title</span>
+                        <div class="d-flex flex-col gap-2 mt-1">
+                            @foreach (var library in libs)
+                            {
+                                var selfExcluded = _selfExcludedIds.Contains(library.Id);
+                                <div class="d-flex align-center justify-between">
+                                    <span class="text-sm">@library.Title</span>
+                                    <K7Switch Value="@(!selfExcluded)" ValueChanged="@(v => ToggleLibrary(library.Id, !v))" Disabled="@_saving" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             }
         </div>
     }

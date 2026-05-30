@@ -12,8 +12,5 @@ public sealed record LibraryDto
     public required string MetadataLanguage { get; init; }
     public required string MetadataFallbackLanguage { get; init; }
     public int? MetadataRefreshIntervalDays { get; init; }
-    public string? Description { get; init; }
-    public string? Icon { get; init; }
-    public Guid? CoverPictureId { get; init; }
-    public string? CoverDominantColor { get; init; }
+    public required Guid LibraryGroupId { get; init; }
 }

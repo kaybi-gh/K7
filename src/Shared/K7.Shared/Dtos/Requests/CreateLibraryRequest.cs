@@ -11,6 +11,8 @@ public sealed record CreateLibraryRequest
     public required string MetadataLanguage { get; init; }
     public required string MetadataFallbackLanguage { get; init; }
     public bool TriggerFileIndexingOnCreation { get; init; } = true;
-    public string? Description { get; init; }
-    public string? Icon { get; init; }
+    public Guid? LibraryGroupId { get; init; }
+    public string? GroupTitle { get; init; }
+    public string? GroupDescription { get; init; }
+    public string? GroupIcon { get; init; }
 }

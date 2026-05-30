@@ -163,9 +163,6 @@ public partial class AdminLibrariesPanel
         {
             { x => x.LibraryId, library.Id },
             { x => x.Title, library.Title },
-            { x => x.Description, library.Description },
-            { x => x.Icon, library.Icon },
-            { x => x.CoverPictureId, library.CoverPictureId },
             { x => x.AvailableProviders, providers },
             { x => x.SelectedProvider, library.MetadataProviderName },
             { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays },

@@ -51,9 +51,9 @@ public class MetadataPictureConfiguration : IEntityTypeConfiguration<MetadataPic
             .IsRequired(false);
 
         builder
-            .HasOne(mp => mp.Library)
-            .WithOne(l => l.CoverPicture)
-            .HasForeignKey<MetadataPicture>(mp => mp.LibraryId)
+            .HasOne(mp => mp.LibraryGroup)
+            .WithOne(g => g.CoverPicture)
+            .HasForeignKey<MetadataPicture>(mp => mp.LibraryGroupId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
 

@@ -49,5 +49,7 @@
   <data name="IconSearch" xml:space="preserve"><value>Search an icon...</value></data>
   <data name="IconChange" xml:space="preserve"><value>Change</value></data>
   <data name="IconNone" xml:space="preserve"><value>None</value></data>
+  <data name="GroupLabel" xml:space="preserve"><value>Group</value></data>
+  <data name="GroupNewOption" xml:space="preserve"><value>New group</value></data>
 </root>
 

@@ -3402,6 +3402,85 @@
         }
       }
     },
+    "/api/library-groups/{id}": {
+      "delete": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "DeleteLibraryGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "UpdateLibraryGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLibraryGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/library-groups": {
+      "get": {
+        "tags": [
+          "Libraries"
+        ],
+        "operationId": "GetLibraryGroups",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryGroupDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/libraries/{id}/pictures": {
       "get": {
         "tags": [
@@ -3483,7 +3562,7 @@
         }
       }
     },
-    "/api/libraries/{id}/cover": {
+    "/api/library-groups/{id}/cover": {
       "post": {
         "tags": [
           "Libraries"
@@ -7310,13 +7389,26 @@
           "triggerFileIndexingOnCreation": {
             "type": "boolean"
           },
-          "description": {
+          "libraryGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "groupTitle": {
             "type": [
               "null",
               "string"
             ]
           },
-          "icon": {
+          "groupDescription": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "groupIcon": {
             "type": [
               "null",
               "string"
@@ -8255,7 +8347,8 @@
           "rootPath",
           "metadataProviderName",
           "metadataLanguage",
-          "metadataFallbackLanguage"
+          "metadataFallbackLanguage",
+          "libraryGroupId"
         ],
         "type": "object",
         "properties": {
@@ -8290,6 +8383,30 @@
             ],
             "format": "int32"
           },
+          "libraryGroupId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LibraryGroupDto": {
+        "required": [
+          "id",
+          "title",
+          "mediaType"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/LibraryMediaType"
+          },
           "description": {
             "type": [
               "null",
@@ -8314,6 +8431,13 @@
               "null",
               "string"
             ]
+          },
+          "libraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -13959,6 +14083,17 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateLibraryGroupRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "description": {
             "type": [

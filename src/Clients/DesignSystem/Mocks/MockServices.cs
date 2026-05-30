@@ -379,6 +379,7 @@ public sealed class MockMediaService : IMediaService
 public sealed class MockLibraryService : ILibraryService
 {
     public Task<List<LibraryDto>> GetLibrariesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryDto>());
+    public Task<List<LibraryGroupDto>> GetLibraryGroupsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryGroupDto>());
     public Task<List<LibraryStatisticsDto>> GetLibraryStatisticsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryStatisticsDto>());
     public Task<Guid> CreateLibraryAsync(CreateLibraryRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task UpdateLibraryAsync(Guid id, UpdateLibraryRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -386,9 +387,11 @@ public sealed class MockLibraryService : ILibraryService
     public Task IndexLibraryFilesAsync(Guid libraryId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<DirectoryContentDto?> GetDirectoriesAsync(string? path = null, CancellationToken cancellationToken = default) => Task.FromResult<DirectoryContentDto?>(null);
     public Task<List<MetadataProviderInfoDto>> GetMetadataProvidersAsync(LibraryMediaType? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult(new List<MetadataProviderInfoDto>());
-    public Task<Guid> UploadLibraryCoverAsync(Guid libraryId, Stream stream, string fileName, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
-    public Task<Guid> SetLibraryCoverFromPictureAsync(Guid libraryId, Guid sourcePictureId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task<Guid> UploadLibraryGroupCoverAsync(Guid libraryGroupId, Stream stream, string fileName, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task<Guid> SetLibraryGroupCoverFromPictureAsync(Guid libraryGroupId, Guid sourcePictureId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task<List<LibraryPictureDto>> GetLibraryPicturesAsync(Guid libraryId, CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryPictureDto>());
+    public Task UpdateLibraryGroupAsync(Guid id, UpdateLibraryGroupRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task DeleteLibraryGroupAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockPlaylistService : IPlaylistService

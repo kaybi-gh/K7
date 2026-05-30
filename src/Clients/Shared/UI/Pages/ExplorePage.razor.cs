@@ -6,17 +6,17 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class ExplorePage
 {
-    private List<LibraryDto> _libraries = [];
+    private List<LibraryGroupDto> _libraryGroups = [];
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _libraries = await LibraryService.GetLibrariesAsync();
+            _libraryGroups = await LibraryService.GetLibraryGroupsAsync();
         }
         catch
         {
-            _libraries = [];
+            _libraryGroups = [];
         }
     }
 

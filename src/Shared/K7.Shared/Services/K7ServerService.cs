@@ -342,6 +342,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return libraries ?? [];
     }
 
+    public async Task<List<LibraryGroupDto>> GetLibraryGroupsAsync(CancellationToken cancellationToken = default)
+    {
+        var groups = await HttpClient.GetFromJsonAsync<List<LibraryGroupDto>>("api/library-groups", _serializerOptions, cancellationToken);
+        return groups ?? [];
+    }
+
     public async Task<List<LibraryStatisticsDto>> GetLibraryStatisticsAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<List<LibraryStatisticsDto>>("api/libraries/statistics", _serializerOptions, cancellationToken) ?? [];
@@ -366,18 +372,30 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<Guid> UploadLibraryCoverAsync(Guid libraryId, Stream stream, string fileName, CancellationToken cancellationToken = default)
+    public async Task UpdateLibraryGroupAsync(Guid id, UpdateLibraryGroupRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/library-groups/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteLibraryGroupAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/library-groups/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> UploadLibraryGroupCoverAsync(Guid libraryGroupId, Stream stream, string fileName, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
         content.Add(new StreamContent(stream), "file", fileName);
-        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/cover", content, cancellationToken);
+        var response = await HttpClient.PostAsync($"api/library-groups/{libraryGroupId}/cover", content, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
 
-    public async Task<Guid> SetLibraryCoverFromPictureAsync(Guid libraryId, Guid sourcePictureId, CancellationToken cancellationToken = default)
+    public async Task<Guid> SetLibraryGroupCoverFromPictureAsync(Guid libraryGroupId, Guid sourcePictureId, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PostAsync($"api/libraries/{libraryId}/cover?sourcePictureId={sourcePictureId}", null, cancellationToken);
+        var response = await HttpClient.PostAsync($"api/library-groups/{libraryGroupId}/cover?sourcePictureId={sourcePictureId}", null, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
     }
