@@ -1,13 +1,21 @@
 ﻿@page "/settings"
 @page "/settings/{Tab}"
 @inject NavigationManager NavigationManager
+@inject IUserAdminService UserService
 
 @code {
     [Parameter] public string? Tab { get; set; }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        var target = string.IsNullOrEmpty(Tab) ? "/settings/account?sidebar=open" : $"/settings/{Tab}";
-        NavigationManager.NavigateTo(target, replace: true);
+        if (!string.IsNullOrEmpty(Tab))
+        {
+            NavigationManager.NavigateTo($"/settings/{Tab}", replace: true);
+            return;
+        }
+
+        var me = await UserService.GetCurrentUserAsync();
+        var defaultTab = me?.IsGuest == true ? "general" : "account";
+        NavigationManager.NavigateTo($"/settings/{defaultTab}?sidebar=open", replace: true);
     }
 }

@@ -125,4 +125,8 @@
   <data name="GoToArtist" xml:space="preserve"><value>Go to artist</value></data>
   <data name="GoToAlbum" xml:space="preserve"><value>Go to album</value></data>
   <data name="AddToPlaylist" xml:space="preserve"><value>Add to playlist...</value></data>
+  <data name="PlayingOn" xml:space="preserve"><value>Playing on {0}</value></data>
+  <data name="ResumeHere" xml:space="preserve"><value>Resume here</value></data>
+  <data name="AudioTrack" xml:space="preserve"><value>Audio</value></data>
+  <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
 </root>

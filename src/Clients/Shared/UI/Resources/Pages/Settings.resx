@@ -72,5 +72,6 @@
   <data name="HiddenPageTitle" xml:space="preserve"><value>Médias masqués</value></data>
   <data name="HiddenPageEmpty" xml:space="preserve"><value>Vous n'avez masqué aucun média.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Démasquer</value></data>
+  <data name="SyncPlayEnabled" xml:space="preserve"><value>Activer les invitations SyncPlay</value></data>
 </root>
 

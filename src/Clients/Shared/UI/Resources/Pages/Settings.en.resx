@@ -72,5 +72,6 @@
   <data name="HiddenPageTitle" xml:space="preserve"><value>Hidden media</value></data>
   <data name="HiddenPageEmpty" xml:space="preserve"><value>You haven't hidden any media.</value></data>
   <data name="Unhide" xml:space="preserve"><value>Unhide</value></data>
+  <data name="SyncPlayEnabled" xml:space="preserve"><value>Enable SyncPlay invitations</value></data>
 </root>
 

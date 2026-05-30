@@ -2,17 +2,32 @@ window.K7 = window.K7 || {};
 
 K7.Lottie = {
     _instances: {},
+    _cache: {},
+
+    preload: function (path) {
+        if (this._cache[path]) return;
+        fetch(path)
+            .then(function (r) { return r.json(); })
+            .then(function (data) { K7.Lottie._cache[path] = data; })
+            .catch(function () { });
+    },
 
     play: function (container, path) {
         if (!container || !window.lottie) return;
         container.innerHTML = '';
-        window.lottie.loadAnimation({
+        var cached = this._cache[path];
+        var opts = {
             container: container,
             renderer: 'svg',
             loop: true,
-            autoplay: true,
-            path: path
-        });
+            autoplay: true
+        };
+        if (cached) {
+            opts.animationData = cached;
+        } else {
+            opts.path = path;
+        }
+        window.lottie.loadAnimation(opts);
     },
 
     create: function (id, container, path) {

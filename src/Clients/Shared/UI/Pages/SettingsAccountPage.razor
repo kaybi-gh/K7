@@ -16,6 +16,8 @@
 <h4 class="mb-4">@L["PageTitle"]</h4>
 
 <div class="pa-4">
+    @if (!_isGuest)
+    {
     @* Avatar Section *@
     <section class="settings-section mb-4">
         <h6 class="mb-2">@L["Avatar"]</h6>
@@ -129,14 +131,6 @@
 
     <hr class="k7-divider my-4" />
 
-    @* Language Section *@
-    <section class="settings-section mb-4">
-        <h6 class="mb-2">@L["Language"]</h6>
-        <K7LanguageSelect Value="@_currentCulture" ValueChanged="OnCultureChanged" Label="@L["Language"]" Languages="SupportedLanguages.Interface" />
-    </section>
-
-    <hr class="k7-divider my-4" />
-
     @* Login Methods Section *@
     @if (_loginMethods is not null)
     {
@@ -180,5 +174,12 @@
         {
             <K7Alert Severity="K7Severity.Error" Class="mt-2">@_deleteError</K7Alert>
         }
+    </section>
+    } @* end !_isGuest *@
+
+    @* Language Section (available for all users including guests) *@
+    <section class="settings-section mb-4">
+        <h6 class="mb-2">@L["Language"]</h6>
+        <K7LanguageSelect Value="@_currentCulture" ValueChanged="OnCultureChanged" Label="@L["Language"]" Languages="SupportedLanguages.Interface" />
     </section>
 </div>
