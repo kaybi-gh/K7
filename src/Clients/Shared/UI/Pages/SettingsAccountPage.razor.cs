@@ -57,6 +57,8 @@ public partial class SettingsAccountPage
     // Delete
     private string? _deleteError;
 
+    private bool _isGuest;
+
     protected override async Task OnInitializedAsync()
     {
         var me = await UserService.GetCurrentUserAsync();
@@ -70,13 +72,17 @@ public partial class SettingsAccountPage
             _hasPin = me.HasPin;
             _email = me.Email;
             _newEmail = me.Email;
+            _isGuest = me.IsGuest;
         }
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         _identityUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? authState.User.FindFirst("sub")?.Value;
 
-        await LoadLoginMethodsAsync();
+        if (!_isGuest)
+        {
+            await LoadLoginMethodsAsync();
+        }
     }
 
     private async Task LoadLoginMethodsAsync()

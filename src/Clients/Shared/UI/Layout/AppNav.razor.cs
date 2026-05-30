@@ -1,6 +1,9 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -21,6 +24,8 @@ public partial class AppNav : IDisposable
     private string _badgeTitle = string.Empty;
     private string? _avatarUrl;
     private string _avatarInitial = "?";
+    private bool _chatOpen;
+    private Dictionary<Guid, string> _knownParticipants = [];
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
@@ -30,6 +35,9 @@ public partial class AppNav : IDisposable
     [Inject] private IStringLocalizer<AppNav> L { get; set; } = default!;
     [Inject] private K7HubClient HubClient { get; set; } = default!;
     [Inject] private IUserAdminService UserService { get; set; } = default!;
+    [Inject] private ISyncPlayService SyncPlay { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     public bool IsAnyMenuOpen => _profileMenuOpen;
 
@@ -38,6 +46,9 @@ public partial class AppNav : IDisposable
         NavigationManager.LocationChanged += OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
         HubClient.ConnectionStateChanged += OnConnectionStateChanged;
+        SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
+        SyncPlay.ChatMessageReceived += OnChatMessageReceived;
+        SyncPlay.ErrorReceived += OnSyncPlayErrorReceived;
         UpdateBadge(HubClient.State);
         UpdateActiveNav();
         await LoadAvatarAsync();
@@ -198,6 +209,76 @@ public partial class AppNav : IDisposable
         NavigationManager.LocationChanged -= OnLocationChanged;
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
         HubClient.ConnectionStateChanged -= OnConnectionStateChanged;
+        SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
+        SyncPlay.ChatMessageReceived -= OnChatMessageReceived;
+        SyncPlay.ErrorReceived -= OnSyncPlayErrorReceived;
         _profileCloseRef?.Dispose();
+    }
+
+    private void OnSyncPlayGroupUpdated()
+    {
+        var participants = SyncPlay.CurrentGroup?.Participants;
+        if (participants is not null)
+        {
+            var isFirstUpdate = _knownParticipants.Count == 0;
+            var myUserId = HubClient.ConnectedUserId;
+            var currentIds = participants.Select(p => p.DeviceId).ToHashSet();
+
+            if (!isFirstUpdate)
+            {
+                foreach (var (deviceId, displayName) in _knownParticipants)
+                {
+                    if (!currentIds.Contains(deviceId))
+                    {
+                        Snackbar.Add($"{displayName} left", K7Severity.Info);
+                    }
+                }
+
+                foreach (var p in participants)
+                {
+                    if (!_knownParticipants.ContainsKey(p.DeviceId) && p.UserId != myUserId)
+                    {
+                        Snackbar.Add($"{p.DisplayName} joined", K7Severity.Info);
+                    }
+                }
+            }
+
+            _knownParticipants.Clear();
+            foreach (var p in participants)
+            {
+                _knownParticipants[p.DeviceId] = p.DisplayName;
+            }
+        }
+        else
+        {
+            _knownParticipants.Clear();
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnSyncPlayErrorReceived(string errorCode)
+    {
+        if (errorCode == "kicked")
+        {
+            _knownParticipants.Clear();
+            Snackbar.Add(L["SyncPlayKicked"], K7Severity.Warning);
+        }
+    }
+
+    private void OnChatMessageReceived(SyncPlayChatMessageDto message)
+    {
+        if (_chatOpen || string.IsNullOrEmpty(message.DisplayName) || SyncPlay.IsOwnMessage(message.MessageId))
+            return;
+
+        Snackbar.Add($"{message.DisplayName}: {message.Text}", K7Severity.Info);
+    }
+
+    private async Task OpenSyncPlayDialog()
+    {
+        CloseAll();
+        _chatOpen = true;
+        await DialogService.ShowAsync<SyncPlayDialog>(L["SyncPlay"], options: new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true });
+        _chatOpen = false;
     }
 }

@@ -7,6 +7,7 @@
 @inject IStringLocalizer<SharedResource> S
 @inject IK7DialogService DialogService
 @inject IServerConnectionService ServerConnectionService
+@inject ISyncPlayService SyncPlay
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
@@ -49,4 +50,11 @@
             </ul>
         </K7ExpansionPanel>
     </div>
+
+    <AuthorizeView Roles="User,Administrator">
+        <section class="d-flex flex-col gap-3 mt-6">
+            <h6>SyncPlay</h6>
+            <K7Switch Label="@L["SyncPlayEnabled"]" @bind-Value="SyncPlay.IsEnabled" />
+        </section>
+    </AuthorizeView>
 </div>

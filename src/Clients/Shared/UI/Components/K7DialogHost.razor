@@ -15,6 +15,10 @@
             {
                 <div class="k7-dialog-header">
                     <h6 class="k7-dialog-title">@entry.Title</h6>
+                    @if (entry.HeaderActions is not null)
+                    {
+                        @entry.HeaderActions
+                    }
                     @if (entry.Options?.CloseButton != false)
                     {
                         <K7IconButton Icon="@Phosphor.X" Size="sm"

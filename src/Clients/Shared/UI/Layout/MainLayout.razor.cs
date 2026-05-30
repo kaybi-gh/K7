@@ -22,8 +22,10 @@ public partial class MainLayout : IDisposable
 
     private K7ErrorBoundary? _errorBoundary;
     private bool _showOverlay;
+    private bool _reconnectAnimationPlayed;
     private Timer? _overlayTimer;
     private DotNetObjectReference<MainLayout>? _selfRef;
+    private ElementReference _reconnectAnimationContainer;
 
     private static readonly TimeSpan OverlayDelay = TimeSpan.FromSeconds(3);
 
@@ -40,7 +42,8 @@ public partial class MainLayout : IDisposable
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var isAuth = authState.User.Identity?.IsAuthenticated == true;
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                         ?? authState.User.FindFirst("sub")?.Value;
 
             if (isAuth && !string.IsNullOrEmpty(userId))
             {
@@ -62,7 +65,11 @@ public partial class MainLayout : IDisposable
 
                 if (Connectivity.IsOnline)
                 {
-                    await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken);
+                    var deviceType = (await DeviceService.GetDeviceTypeAsync()).ToString();
+                    var request = await DeviceService.GenerateCreateDeviceRequestAsync();
+                    var deviceName = request.DeviceName;
+
+                    await K7HubClient.EnsureStartedAsync(baseUri, userId, deviceId, accessToken, deviceName, deviceType);
                 }
             }
         }
@@ -84,6 +91,17 @@ public partial class MainLayout : IDisposable
                 await SpatialNav.RegisterHomeEscapeAsync(_selfRef);
             }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
+
+        if (_showOverlay && !_reconnectAnimationPlayed)
+        {
+            _reconnectAnimationPlayed = true;
+            try
+            {
+                await JS.InvokeVoidAsync("K7.Lottie.play", _reconnectAnimationContainer,
+                    "_content/K7.Clients.Shared.UI/animations/splash.json");
+            }
+            catch (JSException) { }
         }
     }
 
@@ -121,6 +139,7 @@ public partial class MainLayout : IDisposable
             _overlayTimer?.Dispose();
             _overlayTimer = null;
             _showOverlay = false;
+            _reconnectAnimationPlayed = false;
             InvokeAsync(StateHasChanged);
         }
         else

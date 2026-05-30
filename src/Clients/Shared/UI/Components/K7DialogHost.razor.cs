@@ -97,6 +97,7 @@ internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference, IDi
     public Type Type { get; }
     public string Title { get; private set; }
     public K7DialogOptions? Options { get; }
+    public RenderFragment? HeaderActions { get; private set; }
     public Dictionary<string, object> ComponentParameters { get; }
     public ElementReference BackdropRef { get; set; }
     public DotNetObjectReference<LayerCloseCallback> CloseCallback { get; }
@@ -120,6 +121,7 @@ internal sealed class K7DialogEntry : IK7DialogInstance, IK7DialogReference, IDi
     }
 
     void IK7DialogInstance.SetTitle(string title) { Title = title; }
+    void IK7DialogInstance.SetHeaderActions(RenderFragment? actions) { HeaderActions = actions; _ = _stateChanged(); }
     void IK7DialogInstance.Close() => CloseWith(K7DialogResult.Ok());
     void IK7DialogInstance.Close(K7DialogResult result) => CloseWith(result);
     void IK7DialogInstance.Cancel() => Cancel();

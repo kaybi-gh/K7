@@ -41,4 +41,22 @@
   <data name="Connected" xml:space="preserve"><value>Connecté</value></data>
   <data name="Reconnecting" xml:space="preserve"><value>Reconnexion...</value></data>
   <data name="Disconnected" xml:space="preserve"><value>Déconnecté</value></data>
+  <data name="SyncPlay" xml:space="preserve"><value>SyncPlay</value></data>
+  <data name="CreateSyncPlay" xml:space="preserve"><value>Créer SyncPlay</value></data>
+  <data name="InviteUsers" xml:space="preserve"><value>Inviter des utilisateurs</value></data>
+  <data name="CopyInviteLink" xml:space="preserve"><value>Copier le lien d'invitation</value></data>
+  <data name="LeaveGroup" xml:space="preserve"><value>Quitter le groupe</value></data>
+  <data name="RejoinPlayback" xml:space="preserve"><value>Rejoindre la lecture</value></data>
+  <data name="SyncPlayGroupCreated" xml:space="preserve"><value>Groupe SyncPlay cree</value></data>
+  <data name="Chat" xml:space="preserve"><value>Chat</value></data>
+  <data name="SyncPlayEmpty" xml:space="preserve"><value>Aucune session SyncPlay en cours</value></data>
+  <data name="SyncPlayNoMedia" xml:space="preserve"><value>Rien en cours de lecture</value></data>
+  <data name="Members" xml:space="preserve"><value>Membres</value></data>
+  <data name="Playing" xml:space="preserve"><value>En lecture</value></data>
+  <data name="Paused" xml:space="preserve"><value>En pause</value></data>
+  <data name="Buffering" xml:space="preserve"><value>Chargement...</value></data>
+  <data name="Back" xml:space="preserve"><value>Retour</value></data>
+  <data name="Kick" xml:space="preserve"><value>Expulser</value></data>
+  <data name="PromoteLeader" xml:space="preserve"><value>Promouvoir leader</value></data>
+  <data name="SyncPlayKicked" xml:space="preserve"><value>Vous avez ete expulse du groupe</value></data>
 </root>

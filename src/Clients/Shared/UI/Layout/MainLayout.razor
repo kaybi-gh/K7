@@ -9,6 +9,7 @@
 @inject IFeatureAccessService FeatureAccess
 @inject AudioPlaybackProgressTracker AudioProgressTracker
 @inject IServiceProvider Services
+@inject K7.Clients.Shared.Services.SyncPlayPlaybackHandler SyncPlayHandler
 @inject IK7ServerService K7ServerService
 @inject IStringLocalizer<MainLayout> L
 
@@ -16,10 +17,7 @@
     @if (_showOverlay)
     {
         <div class="reconnection-overlay">
-            <svg class="loading-progress" style="width:4rem;height:4rem;margin:0">
-                <circle r="40%" cx="50%" cy="50%" />
-                <circle r="40%" cx="50%" cy="50%" />
-            </svg>
+            <div class="reconnection-animation" @ref="_reconnectAnimationContainer"></div>
             <p class="mt-4" style="font-size:var(--text-lg);font-weight:600">@L["Reconnecting"]</p>
             <p class="mt-2" style="color:var(--color-text-secondary)">@L["ReconnectingDescription"]</p>
         </div>
@@ -33,6 +31,7 @@
             <MiniMusicPlayer />
         </div>
         <FullScreenMusicPlayer />
+        <SyncPlayListener />
         <div class="page-viewport">
             <K7ErrorBoundary @ref="_errorBoundary">
                 <ChildContent>
