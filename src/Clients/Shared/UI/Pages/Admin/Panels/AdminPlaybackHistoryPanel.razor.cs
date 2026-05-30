@@ -1,4 +1,5 @@
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Pages.Admin.Components;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Users;
 
@@ -12,6 +13,15 @@ public partial class AdminPlaybackHistoryPanel
     private string _selectedMediaType = "";
     private const int PageSize = 50;
     private int _tableKey;
+    private PlaybackHistoryItemDto? _selectedItem;
+
+    private readonly List<ButtonGroupOption<string>> _mediaTypeOptions =
+    [
+        new("", Label: "Tous"),
+        new("MusicTrack", Label: "Musique"),
+        new("Movie", Label: "Films"),
+        new("SerieEpisode", Label: "Series")
+    ];
 
     protected override async Task OnInitializedAsync()
     {
@@ -25,18 +35,32 @@ public partial class AdminPlaybackHistoryPanel
         }
     }
 
-    private async Task OnUserChanged(Guid? userId)
+    private void OnUserChanged(Guid? userId)
     {
         _selectedUserId = userId;
-        _tableKey++;
-        await InvokeAsync(StateHasChanged);
+        RefreshTableAsync();
     }
 
-    private async Task OnMediaTypeChanged(string mediaType)
+    private void OnMediaTypeChanged(string mediaType)
     {
         _selectedMediaType = mediaType ?? "";
+        RefreshTableAsync();
+    }
+
+    private void OnRowClicked(PlaybackHistoryItemDto item)
+    {
+        _selectedItem = _selectedItem == item ? null : item;
+    }
+
+    private void CloseDetail()
+    {
+        _selectedItem = null;
+    }
+
+    private void RefreshTableAsync()
+    {
         _tableKey++;
-        await InvokeAsync(StateHasChanged);
+        StateHasChanged();
     }
 
     private async Task<K7DataTableResult<PlaybackHistoryItemDto>> LoadServerDataAsync(
@@ -90,5 +114,83 @@ public partial class AdminPlaybackHistoryPanel
         return ts.TotalHours >= 1
             ? $"{(int)ts.TotalHours}h {ts.Minutes:D2}m"
             : $"{ts.Minutes}m {ts.Seconds:D2}s";
+    }
+
+    private static string FormatTranscodeReason(string reason)
+    {
+        return reason
+            .Replace("VideoCodecNotSupported", "Video codec not supported")
+            .Replace("AudioCodecNotSupported", "Audio codec not supported")
+            .Replace("ContainerNotSupported", "Container not supported")
+            .Replace("HlsSegmentsUnavailable", "HLS segments unavailable")
+            .Replace("SubtitlesBurnIn", "Subtitle burn-in")
+            .Replace("ResolutionNotSupported", "Resolution not supported")
+            .Replace(", ", " | ");
+    }
+
+    private StreamDetailModel BuildDetailModel(PlaybackHistoryItemDto item)
+    {
+        var sq = item.StreamQuality;
+        var hasStream = sq is not null;
+        var isTranscode = sq?.IsTranscode == true;
+
+        string? modeLabel = null;
+        string? modeBadgeVariant = null;
+        if (hasStream)
+        {
+            if (isTranscode)
+            {
+                modeLabel = "Transcode";
+                modeBadgeVariant = "transcode";
+            }
+            else if (sq!.VideoDecision == "Direct" && sq.AudioDecision == "Direct")
+            {
+                modeLabel = "Direct";
+                modeBadgeVariant = "direct";
+            }
+            else
+            {
+                modeLabel = "Transmux";
+                modeBadgeVariant = "transmux";
+            }
+        }
+
+        return new StreamDetailModel
+        {
+            MediaTitle = item.MediaTitle,
+            MediaType = item.MediaType,
+            Status = item.IsCompleted ? L["Watched"] : L["Incomplete"],
+            StatusVariant = item.IsCompleted ? "success" : "warning",
+            StartedAt = item.StartedAt,
+            StoppedAt = item.StoppedAt,
+            DurationDisplay = FormatDuration(item.TotalWatchedSeconds),
+            UserName = item.UserName,
+            DeviceName = item.DeviceName,
+            DeviceClient = item.DeviceClient,
+            HasStreamDetails = hasStream,
+            ModeLabel = modeLabel,
+            ModeBadgeVariant = modeBadgeVariant,
+            VideoDecision = sq?.VideoDecision,
+            AudioDecision = sq?.AudioDecision,
+            SourceVideoCodec = sq?.SourceVideoCodec,
+            SourceAudioCodec = sq?.SourceAudioCodec,
+            StreamVideoCodec = sq?.StreamVideoCodec,
+            StreamAudioCodec = sq?.StreamAudioCodec,
+            Resolution = sq?.SourceResolution,
+            TranscodeReason = sq?.TranscodeReason is not null ? FormatTranscodeReason(sq.TranscodeReason) : null,
+            Bitrate = sq?.Bitrate is > 0 ? FormatBitrate(sq.Bitrate.Value) : null,
+            AudioTrackLanguage = sq?.AudioTrackLanguage,
+            AudioTrackTitle = sq?.AudioTrackTitle,
+            AudioChannelLayout = sq?.AudioChannelLayout,
+            SubtitleTrackLanguage = sq?.SubtitleTrackLanguage,
+            SubtitleTrackTitle = sq?.SubtitleTrackTitle
+        };
+    }
+
+    private static string FormatBitrate(int bitrate)
+    {
+        return bitrate >= 1000
+            ? $"{bitrate / 1000.0:0.#} Mbps"
+            : $"{bitrate} Kbps";
     }
 }

@@ -33,4 +33,26 @@
   <data name="Device" xml:space="preserve"><value>Appareil</value></data>
   <data name="Quality" xml:space="preserve"><value>Qualite</value></data>
   <data name="Status" xml:space="preserve"><value>Statut</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Type de media</value></data>
+  <data name="SessionDetails" xml:space="preserve"><value>Details de la session</value></data>
+  <data name="Watched" xml:space="preserve"><value>Vu</value></data>
+  <data name="Incomplete" xml:space="preserve"><value>Incomplet</value></data>
+  <data name="DirectPlay" xml:space="preserve"><value>Direct Play</value></data>
+  <data name="Transcode" xml:space="preserve"><value>Transcode</value></data>
+  <data name="StoppedAt" xml:space="preserve"><value>Fin</value></data>
+  <data name="Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="VideoCodec" xml:space="preserve"><value>Codec video</value></data>
+  <data name="AudioCodec" xml:space="preserve"><value>Codec audio</value></data>
+  <data name="Bitrate" xml:space="preserve"><value>Debit</value></data>
+  <data name="PlaybackInfo" xml:space="preserve"><value>Lecture</value></data>
+  <data name="Segments" xml:space="preserve"><value>Segments</value></data>
+  <data name="UserDevice" xml:space="preserve"><value>Utilisateur et appareil</value></data>
+  <data name="Client" xml:space="preserve"><value>Client</value></data>
+  <data name="StreamDetails" xml:space="preserve"><value>Details du flux</value></data>
+  <data name="VideoDecision" xml:space="preserve"><value>Decision video</value></data>
+  <data name="AudioDecision" xml:space="preserve"><value>Decision audio</value></data>
+  <data name="TranscodeReason" xml:space="preserve"><value>Raison</value></data>
+  <data name="Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Stream" xml:space="preserve"><value>Flux</value></data>
+  <data name="NoStreamData" xml:space="preserve"><value>Aucune donnee de flux disponible</value></data>
 </root>
