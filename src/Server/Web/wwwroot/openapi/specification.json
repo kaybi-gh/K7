@@ -1178,6 +1178,22 @@
               "type": "string",
               "default": "month"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         ],
         "responses": {
@@ -5970,6 +5986,22 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
           }
         ],
         "responses": {
@@ -8195,6 +8227,25 @@
       },
       "IntroSkipBehavior": {
         "type": "integer"
+      },
+      "LabelCountDto": {
+        "required": [
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "LibraryDto": {
         "required": [
@@ -12477,6 +12528,41 @@
           }
         }
       },
+      "PlaybackDetailsStatsDto": {
+        "type": "object",
+        "properties": {
+          "playbackDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelCountDto"
+            }
+          },
+          "topAudioLanguages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelCountDto"
+            }
+          },
+          "topSubtitleLanguages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelCountDto"
+            }
+          },
+          "topResolutions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelCountDto"
+            }
+          },
+          "topTranscodeReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabelCountDto"
+            }
+          }
+        }
+      },
       "PlaybackHistoryItemDto": {
         "type": "object",
         "properties": {
@@ -12495,6 +12581,12 @@
             ]
           },
           "mediaType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "libraryName": {
             "type": [
               "null",
               "string"
@@ -12534,6 +12626,12 @@
             "format": "int32"
           },
           "deviceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deviceClient": {
             "type": [
               "null",
               "string"
@@ -13366,6 +13464,36 @@
               "string"
             ],
             "format": "int32"
+          },
+          "audioTrackLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "audioTrackTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "audioChannelLayout": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitleTrackLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitleTrackTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -13376,6 +13504,54 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "videoDecision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "audioDecision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "transcodeReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceResolution": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceAudioCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamVideoCodec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "streamAudioCodec": {
+            "type": [
+              "null",
+              "string"
             ]
           },
           "resolution": {
@@ -13404,6 +13580,36 @@
               "string"
             ],
             "format": "int32"
+          },
+          "audioTrackLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "audioTrackTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "audioChannelLayout": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitleTrackLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtitleTrackTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -14511,6 +14717,16 @@
             "items": {
               "$ref": "#/components/schemas/HourOfDayPointDto"
             }
+          },
+          "playbackDetails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PlaybackDetailsStatsDto"
+              }
+            ]
           }
         }
       },
