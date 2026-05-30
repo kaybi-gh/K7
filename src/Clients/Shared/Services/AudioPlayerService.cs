@@ -593,6 +593,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
             source = new PlayerSource
             {
+                StreamSessionId = session.Id,
                 Url = session.Source.Uri.OriginalString,
                 MimeType = session.Source.MimeType
             };
