@@ -66,5 +66,18 @@ public class PeerClient(HttpClient httpClient) : IPeerClient
         return await response.Content.ReadFromJsonAsync<IReadOnlyList<PeerMediaDto>>(cancellationToken) ?? [];
     }
 
+    public async Task<Stream?> GetRemoteStreamAsync(string baseUrl, string accessToken, Guid remoteFileId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{baseUrl.TrimEnd('/')}/api/federation/stream/{remoteFileId}";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
+    }
+
     private sealed record TokenResponse(string? AccessToken);
 }

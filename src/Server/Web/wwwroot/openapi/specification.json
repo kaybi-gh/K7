@@ -4704,6 +4704,52 @@
         }
       }
     },
+    "/api/federation/stream/{fileId}": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationStream",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationStream",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/peers/requests": {
       "get": {
         "tags": [

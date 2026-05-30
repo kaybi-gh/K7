@@ -9,4 +9,5 @@ public interface IPeerClient
     Task<string?> GetAccessTokenAsync(string baseUrl, string clientId, string clientSecret, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PeerLibraryDto>> GetRemoteLibrariesAsync(string baseUrl, string accessToken, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PeerMediaDto>> GetRemoteMediaAsync(string baseUrl, string accessToken, Guid libraryId, CancellationToken cancellationToken = default);
+    Task<Stream?> GetRemoteStreamAsync(string baseUrl, string accessToken, Guid remoteFileId, CancellationToken cancellationToken = default);
 }
