@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.Medias.Commands.UpdatePlaybackProgress;
 
-[Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]
+[Authorize(Roles = $"{Roles.Guest},{Roles.User},{Roles.Administrator}")]
 public record UpdatePlaybackProgressCommand(
     Guid MediaId,
     Guid SessionId,
