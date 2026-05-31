@@ -847,6 +847,54 @@ var SpatialNav = (function () {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
             }
         }, true);
+
+        // Touch long-press on [data-longpress] containers (mobile)
+        var _touchLongPress = null;
+        document.addEventListener('touchstart', function (e) {
+            var target = e.target;
+            if (!target || !target.closest) return;
+            var container = target.closest('[data-longpress]');
+            if (!container) return;
+            _touchLongPress = {
+                container: container,
+                timer: setTimeout(function () {
+                    if (!_touchLongPress) return;
+                    _touchLongPress.triggered = true;
+                    var btn = container.querySelector('[data-longpress-target] button');
+                    if (btn) btn.click();
+                }, LONG_PRESS_MS),
+                triggered: false,
+                startX: e.touches[0].clientX,
+                startY: e.touches[0].clientY
+            };
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function (e) {
+            if (!_touchLongPress) return;
+            var dx = e.touches[0].clientX - _touchLongPress.startX;
+            var dy = e.touches[0].clientY - _touchLongPress.startY;
+            if (dx * dx + dy * dy > 100) {
+                clearTimeout(_touchLongPress.timer);
+                _touchLongPress = null;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', function (e) {
+            if (!_touchLongPress) return;
+            clearTimeout(_touchLongPress.timer);
+            var state = _touchLongPress;
+            _touchLongPress = null;
+            if (state.triggered) {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('touchcancel', function () {
+            if (_touchLongPress) {
+                clearTimeout(_touchLongPress.timer);
+                _touchLongPress = null;
+            }
+        }, { passive: true });
     }
 
     // Public API
@@ -887,6 +935,10 @@ K7.setSafeArea = function (top, bottom, left, right) {
 
 K7.positionDropdown = function (root, dropdown) {
     if (!root || !dropdown) return;
+
+    // On mobile, CSS bottom sheet handles positioning
+    if (window.innerWidth < 600) return;
+
     root.classList.remove('k7-menu--upward');
 
     var isSubmenu = !!root.closest('.k7-menu-dropdown');
