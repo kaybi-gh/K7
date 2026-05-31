@@ -15,18 +15,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                 name: "FK_StreamSessions_PeerServers_PeerServerId",
                 table: "StreamSessions");
 
-            migrationBuilder.DropColumn(
-                name: "AudioTracks",
-                table: "RemoteIndexedFiles");
-
-            migrationBuilder.DropColumn(
-                name: "SubtitleTracks",
-                table: "RemoteIndexedFiles");
-
-            migrationBuilder.DropColumn(
-                name: "VideoTracks",
-                table: "RemoteIndexedFiles");
-
             migrationBuilder.AlterColumn<Guid>(
                 name: "IndexedFileId",
                 table: "StreamSessions",
@@ -119,24 +107,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                 oldClrType: typeof(Guid),
                 oldType: "TEXT",
                 oldNullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "AudioTracks",
-                table: "RemoteIndexedFiles",
-                type: "TEXT",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "SubtitleTracks",
-                table: "RemoteIndexedFiles",
-                type: "TEXT",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "VideoTracks",
-                table: "RemoteIndexedFiles",
-                type: "TEXT",
-                nullable: true);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_StreamSessions_PeerServers_PeerServerId",
