@@ -25,44 +25,76 @@
 .about-value {
     font-family: monospace;
     font-size: 0.875rem;
+    cursor: default;
 }
 
-.about-chips {
+.about-tech-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
-.about-chip {
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    background: var(--k7-surface-variant);
-    color: var(--k7-text-primary);
-    font-size: 0.8125rem;
+::deep .about-tech-card {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.about-tech-name {
     font-weight: 500;
+    font-size: 0.875rem;
 }
 
 .about-credits-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
-.about-credit {
+::deep .about-credit-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.about-credit-logo {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 4px;
+}
+
+.about-credit-text {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    background: var(--k7-surface-variant);
+    gap: 0.125rem;
+    min-width: 0;
 }
 
-.about-credit-name {
+.about-credit-link {
     font-weight: 600;
     font-size: 0.875rem;
+    color: var(--k7-primary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.about-credit-link:hover {
+    text-decoration: underline;
 }
 
 .about-credit-desc {
     color: var(--k7-text-secondary);
     font-size: 0.8125rem;
+}
+
+.about-disclaimer {
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--k7-text-secondary);
+    font-style: italic;
 }

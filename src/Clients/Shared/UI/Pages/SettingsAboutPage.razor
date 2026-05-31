@@ -12,73 +12,108 @@
         <h5 class="about-section-title">@L["Version"]</h5>
         <div class="about-version-grid">
             <span class="about-label">@L["ServerVersion"]</span>
-            <span class="about-value">@(_serverVersion ?? "...")</span>
+            <span class="about-value" title="@_serverVersion">@ServerVersionDisplay</span>
             <span class="about-label">@L["ClientVersion"]</span>
-            <span class="about-value">@_clientVersion</span>
+            <span class="about-value" title="@_clientVersion">@ClientVersionDisplay</span>
         </div>
     </section>
 
     <section class="about-section">
         <h5 class="about-section-title">@L["BuiltWith"]</h5>
-        <div class="about-chips">
-            <span class="about-chip">.NET 10</span>
-            <span class="about-chip">Blazor</span>
-            <span class="about-chip">.NET MAUI</span>
-            <span class="about-chip">ASP.NET Core</span>
+        <div class="about-tech-grid">
+            <K7Paper Outlined="true" Class="about-tech-card">
+                <span class="about-tech-name">.NET 10</span>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-tech-card">
+                <span class="about-tech-name">Blazor</span>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-tech-card">
+                <span class="about-tech-name">.NET MAUI</span>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-tech-card">
+                <span class="about-tech-name">ASP.NET Core</span>
+            </K7Paper>
         </div>
     </section>
 
     <section class="about-section">
         <h5 class="about-section-title">@L["Credits"]</h5>
         <div class="about-credits-grid">
-            <div class="about-credit">
-                <span class="about-credit-name">FFmpeg</span>
-                <span class="about-credit-desc">@L["CreditFfmpeg"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">OpenIddict</span>
-                <span class="about-credit-desc">@L["CreditOpenIddict"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">MusicBrainz</span>
-                <span class="about-credit-desc">@L["CreditMusicBrainz"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">TMDb</span>
-                <span class="about-credit-desc">@L["CreditTmdb"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">Wikimedia Commons</span>
-                <span class="about-credit-desc">@L["CreditWikimedia"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">Chromaprint / AcoustID</span>
-                <span class="about-credit-desc">@L["CreditChromaprint"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">AudioMuse AI</span>
-                <span class="about-credit-desc">@L["CreditAudioMuse"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">MudBlazor</span>
-                <span class="about-credit-desc">@L["CreditMudBlazor"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">TagLibSharp</span>
-                <span class="about-credit-desc">@L["CreditTagLib"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">MediatR</span>
-                <span class="about-credit-desc">@L["CreditMediatR"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">Entity Framework Core</span>
-                <span class="about-credit-desc">@L["CreditEfCore"]</span>
-            </div>
-            <div class="about-credit">
-                <span class="about-credit-name">SignalR</span>
-                <span class="about-credit-desc">@L["CreditSignalR"]</span>
-            </div>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/ffmpeg.svg" alt="FFmpeg" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://ffmpeg.org" target="_blank" rel="noopener" class="about-credit-link">FFmpeg <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditFfmpeg"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/openiddict.png" alt="OpenIddict" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://github.com/openiddict/openiddict-core" target="_blank" rel="noopener" class="about-credit-link">OpenIddict <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditOpenIddict"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/musicbrainz.svg" alt="MusicBrainz" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://musicbrainz.org" target="_blank" rel="noopener" class="about-credit-link">MusicBrainz <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditMusicBrainz"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/tmdb.svg" alt="TMDb" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://www.themoviedb.org" target="_blank" rel="noopener" class="about-credit-link">TMDb <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditTmdb"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/wikimedia.svg" alt="Wikimedia Commons" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://commons.wikimedia.org" target="_blank" rel="noopener" class="about-credit-link">Wikimedia Commons <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditWikimedia"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/acoustid.svg" alt="AcoustID" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://acoustid.org/chromaprint" target="_blank" rel="noopener" class="about-credit-link">Chromaprint / AcoustID <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditChromaprint"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/audiomuse.png" alt="AudioMuse AI" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://github.com/NeptuneHub/AudioMuse-AI" target="_blank" rel="noopener" class="about-credit-link">AudioMuse AI <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditAudioMuse"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <div class="about-credit-text">
+                    <a href="https://github.com/mono/taglib-sharp" target="_blank" rel="noopener" class="about-credit-link">TagLibSharp <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditTagLib"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <img src="_content/K7.Clients.Shared.UI/images/logos/mediatr.png" alt="MediatR" class="about-credit-logo" />
+                <div class="about-credit-text">
+                    <a href="https://github.com/jbogard/MediatR" target="_blank" rel="noopener" class="about-credit-link">MediatR <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditMediatR"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <div class="about-credit-text">
+                    <a href="https://learn.microsoft.com/ef/core/" target="_blank" rel="noopener" class="about-credit-link">Entity Framework Core <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditEfCore"]</span>
+                </div>
+            </K7Paper>
+            <K7Paper Outlined="true" Class="about-credit-card">
+                <div class="about-credit-text">
+                    <a href="https://learn.microsoft.com/aspnet/signalr/" target="_blank" rel="noopener" class="about-credit-link">SignalR <K7Icon Icon="@Phosphor.ArrowSquareOut" Size="K7IconSize.Xs" /></a>
+                    <span class="about-credit-desc">@L["CreditSignalR"]</span>
+                </div>
+            </K7Paper>
         </div>
+        <p class="about-disclaimer">@L["TmdbDisclaimer"]</p>
     </section>
 </div>
