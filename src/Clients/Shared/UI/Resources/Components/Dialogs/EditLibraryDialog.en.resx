@@ -40,5 +40,8 @@
   <data name="RemoveCover" xml:space="preserve"><value>Remove</value></data>
   <data name="CoverNone" xml:space="preserve"><value>No cover</value></data>
   <data name="CoverChange" xml:space="preserve"><value>Choose</value></data>
+  <data name="MetadataLanguageLabel" xml:space="preserve"><value>Metadata language</value></data>
+  <data name="MetadataFallbackLanguageLabel" xml:space="preserve"><value>Fallback language</value></data>
+  <data name="GroupLabel" xml:space="preserve"><value>Group</value></data>
   <data name="NoPictures" xml:space="preserve"><value>No pictures available in this library</value></data>
 </root>

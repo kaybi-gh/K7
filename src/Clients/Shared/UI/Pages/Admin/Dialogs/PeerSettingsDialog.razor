@@ -1,0 +1,171 @@
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities
+@using K7.Shared.Dtos.Requests
+@using K7.Shared.Interfaces
+@inject IStringLocalizer<PeerSettingsDialog> L
+@inject IStringLocalizer<SharedResource> S
+@inject ILibraryService LibraryService
+@inject IFederationService FederationService
+
+<div class="k7-dialog-content">
+    <div class="peer-settings__field">
+        <K7TextField @bind-Value="_baseUrl"
+                     Label="@L["BaseUrlLabel"]"
+                     Variant="outlined"
+                     Placeholder="http://server:8080" />
+    </div>
+
+    <div class="peer-settings__field">
+        <K7Switch @bind-Value="_autoAdd" Label="@L["AutoAddNewLibraries"]" />
+    </div>
+
+    @if (Peer?.IsProvider == true)
+    {
+    <div class="peer-settings__section">
+        <span class="peer-settings__label">@L["SharedLibrariesLabel"]</span>
+        @if (_isLoading)
+        {
+            <span>@S["Loading"]</span>
+        }
+        else if (_libraries.Count == 0)
+        {
+            <span class="peer-settings__empty">@L["NoLibraries"]</span>
+        }
+        else
+        {
+            <div class="peer-settings__list">
+                @foreach (var library in _libraries)
+                {
+                    <label class="peer-settings__list-row">
+                        <input type="checkbox"
+                               checked="@_selectedIds.Contains(library.Id)"
+                               @onchange="() => ToggleLibrary(library.Id)" />
+                        <span>@library.Title</span>
+                    </label>
+                }
+            </div>
+        }
+    </div>
+    }
+    else if (Peer is not null)
+    {
+    <div class="peer-settings__section">
+        <span class="peer-settings__label">@L["IntegratedLibrariesLabel"]</span>
+        @if (_isLoading)
+        {
+            <span>@S["Loading"]</span>
+        }
+        else if (_inboundAgreements.Count == 0)
+        {
+            <span class="peer-settings__empty">@L["NoLibraries"]</span>
+        }
+        else
+        {
+            <div class="peer-settings__list">
+                @foreach (var agreement in _inboundAgreements)
+                {
+                    <label class="peer-settings__list-row">
+                        <input type="checkbox"
+                               checked="@_enabledInboundIds.Contains(agreement.Id)"
+                               @onchange="() => ToggleInbound(agreement.Id)" />
+                        <span>@(agreement.LibraryTitle ?? agreement.LibraryId.ToString())</span>
+                    </label>
+                }
+            </div>
+        }
+    </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Variant="filled" Color="primary" OnClick="Submit">@S["Save"]</K7Button>
+</div>
+
+@code {
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
+    [Parameter] public PeerServerDto? Peer { get; set; }
+
+    private bool _isLoading = true;
+    private string _baseUrl = string.Empty;
+    private bool _autoAdd;
+    private List<LibraryDto> _libraries = [];
+    private List<PeerShareAgreementDto> _inboundAgreements = [];
+    private HashSet<Guid> _selectedIds = [];
+    private HashSet<Guid> _enabledInboundIds = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Peer is not null)
+        {
+            _baseUrl = Peer.BaseUrl;
+            _autoAdd = Peer.AutoAddNewLibraries;
+            _selectedIds = Peer.ShareAgreements
+                .Where(a => a.Direction == ShareDirection.Outbound)
+                .Select(a => a.LibraryId)
+                .ToHashSet();
+            _enabledInboundIds = Peer.ShareAgreements
+                .Where(a => a.Direction == ShareDirection.Inbound && a.IsEnabled)
+                .Select(a => a.Id)
+                .ToHashSet();
+        }
+
+        if (Peer?.IsProvider == true)
+        {
+            try
+            {
+                _libraries = await LibraryService.GetLibrariesAsync();
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+        else if (Peer is not null)
+        {
+            try
+            {
+                _inboundAgreements = await FederationService.DiscoverPeerLibrariesAsync(Peer.Id);
+                _enabledInboundIds = _inboundAgreements
+                    .Where(a => a.IsEnabled)
+                    .Select(a => a.Id)
+                    .ToHashSet();
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+        else
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ToggleLibrary(Guid id)
+    {
+        if (!_selectedIds.Remove(id))
+            _selectedIds.Add(id);
+    }
+
+    private void ToggleInbound(Guid agreementId)
+    {
+        if (!_enabledInboundIds.Remove(agreementId))
+            _enabledInboundIds.Add(agreementId);
+    }
+
+    private void Cancel() => Dialog.Cancel();
+
+    private void Submit()
+    {
+        var result = new UpdatePeerRequest
+        {
+            BaseUrl = _baseUrl,
+            SharedLibraryIds = Peer?.IsProvider == true ? _selectedIds.ToList() : null,
+            EnabledInboundAgreementIds = Peer?.IsProvider != true ? _enabledInboundIds.ToList() : null,
+            AutoAddNewLibraries = _autoAdd
+        };
+        Dialog.Close(K7DialogResult.Ok(result));
+    }
+}

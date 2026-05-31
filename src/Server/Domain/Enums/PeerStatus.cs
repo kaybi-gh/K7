@@ -4,5 +4,6 @@ public enum PeerStatus
 {
     Pending,
     Active,
-    Revoked
+    Revoked,
+    Rejected
 }

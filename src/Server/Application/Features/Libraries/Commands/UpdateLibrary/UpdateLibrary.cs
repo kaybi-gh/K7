@@ -14,6 +14,7 @@ public record UpdateLibraryCommand : IRequest
     public string? MetadataLanguage { get; init; }
     public string? MetadataFallbackLanguage { get; init; }
     public int? MetadataRefreshIntervalDays { get; init; }
+    public Guid? LibraryGroupId { get; init; }
 }
 
 public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
@@ -36,6 +37,8 @@ public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
         entity.MetadataLanguage = request.MetadataLanguage ?? entity.MetadataLanguage;
         entity.MetadataFallbackLanguage = request.MetadataFallbackLanguage ?? entity.MetadataFallbackLanguage;
         entity.MetadataRefreshIntervalDays = request.MetadataRefreshIntervalDays;
+        if (request.LibraryGroupId.HasValue)
+            entity.LibraryGroupId = request.LibraryGroupId.Value;
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

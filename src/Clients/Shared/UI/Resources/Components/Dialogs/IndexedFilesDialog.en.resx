@@ -32,4 +32,5 @@
   <data name="SampleRate" xml:space="preserve"><value>Sample rate</value></data>
   <data name="Default" xml:space="preserve"><value>Default</value></data>
   <data name="Forced" xml:space="preserve"><value>Forced</value></data>
+  <data name="Federated" xml:space="preserve"><value>Federated</value></data>
 </root>

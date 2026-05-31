@@ -125,6 +125,138 @@
                     </div>
                 </div>
             }
+
+            @foreach (var file in Media.RemoteIndexedFiles ?? [])
+            {
+                var hasDetails = _remoteFileDetails.TryGetValue(file.Id, out var details) && details is not null;
+                var isLoading = _loadingFiles.Contains(file.Id);
+                var vMeta = details?.FileMetadata as VideoFileMetadataDto;
+
+                <div class="surface pa-4">
+                    <div class="d-flex flex-col">
+                        <div class="d-flex align-center justify-between">
+                            <p class="text-subtitle1" Style="font-weight: 600;">@file.Name</p>
+                            <K7Chip Size="sm" Color="info" Variant="filled">@L["Federated"]</K7Chip>
+                        </div>
+
+                        <div class="d-flex">
+                            <K7Chip Size="sm" Variant="outlined">@file.Extension</K7Chip>
+                            <K7Chip Size="sm" Variant="outlined">@($"{file.Size / (1024 * 1024):N0} MB")</K7Chip>
+                            @if (file.Container is not null)
+                            {
+                                <K7Chip Size="sm" Variant="outlined">@file.Container</K7Chip>
+                            }
+                            @if (file.VideoResolution is not null)
+                            {
+                                <K7Chip Size="sm" Color="primary" Variant="filled">@file.VideoResolution</K7Chip>
+                            }
+                            @if (file.Duration is not null)
+                            {
+                                <K7Chip Size="sm" Variant="outlined">@string.Format(S["DurationHoursMinutes"], (int)file.Duration.Value.TotalHours, file.Duration.Value.Minutes)</K7Chip>
+                            }
+                            @if (file.VideoBitrate is not null)
+                            {
+                                <K7Chip Size="sm" Variant="outlined">@($"{file.VideoBitrate / 1000} kbps")</K7Chip>
+                            }
+                        </div>
+
+                        @if (isLoading)
+                        {
+                            <span class="text-caption mt-2">@L["LoadingDetails"]</span>
+                        }
+                        else if (hasDetails && vMeta is not null)
+                        {
+                            @if (vMeta.VideoTracks.Count > 0)
+                            {
+                                <p class="text-sm mt-2" Style="font-weight: 600;">@L["VideoTracks"]</p>
+                                <table class="k7-table k7-table--dense">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>@L["Codec"]</th>
+                                            <th>@L["Resolution"]</th>
+                                            <th>@L["Profile"]</th>
+                                            <th>@L["PixelFormat"]</th>
+                                            <th>@L["BitDepth"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var vTrack in vMeta.VideoTracks)
+                                        {
+                                            <tr>
+                                                <td>@vTrack.Index</td>
+                                                <td>@vTrack.Codec</td>
+                                                <td>@($"{vTrack.Width}x{vTrack.Height}")</td>
+                                                <td>@vTrack.Profile @(vTrack.Level > 0 ? $"L{vTrack.Level}" : "")</td>
+                                                <td>@(vTrack.PixelFormat ?? "-")</td>
+                                                <td>@(vTrack.BitDepth?.ToString() ?? "-")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+
+                            @if (vMeta.AudioTracks.Count > 0)
+                            {
+                                <p class="text-sm mt-2" Style="font-weight: 600;">@L["AudioTracks"]</p>
+                                <table class="k7-table k7-table--dense">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>@L["Language"]</th>
+                                            <th>@L["Codec"]</th>
+                                            <th>@L["Channels"]</th>
+                                            <th>@L["SampleRate"]</th>
+                                            <th>@L["Default"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var aTrack in vMeta.AudioTracks)
+                                        {
+                                            <tr>
+                                                <td>@aTrack.Index</td>
+                                                <td>@(aTrack.Language ?? "-") @(!string.IsNullOrEmpty(aTrack.Name) ? $"({aTrack.Name})" : "")</td>
+                                                <td>@aTrack.Codec @(!string.IsNullOrEmpty(aTrack.Profile) ? $"({aTrack.Profile})" : "")</td>
+                                                <td>@aTrack.Channels @(!string.IsNullOrEmpty(aTrack.ChannelLayout) ? $"({aTrack.ChannelLayout})" : "")</td>
+                                                <td>@(aTrack.SampleRateHz.HasValue ? $"{aTrack.SampleRateHz} Hz" : "-")</td>
+                                                <td>@(aTrack.IsDefault ? S["Yes"] : "")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+
+                            @if (vMeta.SubtitleTracks.Count > 0)
+                            {
+                                <p class="text-sm mt-2" Style="font-weight: 600;">@L["SubtitleTracks"]</p>
+                                <table class="k7-table k7-table--dense">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>@L["Language"]</th>
+                                            <th>@L["Codec"]</th>
+                                            <th>@L["Forced"]</th>
+                                            <th>@L["Default"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var sTrack in vMeta.SubtitleTracks)
+                                        {
+                                            <tr>
+                                                <td>@sTrack.Index</td>
+                                                <td>@(sTrack.Language ?? "-") @(!string.IsNullOrEmpty(sTrack.Name) ? $"({sTrack.Name})" : "")</td>
+                                                <td>@sTrack.Codec</td>
+                                                <td>@(sTrack.IsForced ? S["Yes"] : "")</td>
+                                                <td>@(sTrack.IsDefault ? S["Yes"] : "")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        }
+                    </div>
+                </div>
+            }
         </div>
     </div>
     <div class="k7-dialog-actions">

@@ -69,22 +69,41 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             .Take(10)
             .ToListAsync(cancellationToken);
 
-        var topGenres = await sessionsWithMedia
+        var topGenres = new List<GenreStatDto>();
+
+        var genreSessionPairs = await sessionsWithMedia
             .Join(
                 context.Medias,
                 s => s.MediaId,
                 m => m.Id,
-                (s, m) => new { s.ReferenceId, m.Genres })
-            .SelectMany(x => x.Genres, (x, genre) => new { x.ReferenceId, Genre = genre })
-            .GroupBy(x => x.Genre)
-            .Select(g => new GenreStatDto
-            {
-                Genre = g.Key,
-                PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
-            })
-            .OrderByDescending(x => x.PlayCount)
-            .Take(10)
+                (s, m) => new { s.ReferenceId, m.Id })
+            .Distinct()
             .ToListAsync(cancellationToken);
+
+        if (genreSessionPairs.Count > 0)
+        {
+            var genreMediaIds = genreSessionPairs.Select(x => x.Id).Distinct().ToHashSet();
+
+            var mediaGenres = await context.Medias
+                .Where(m => genreMediaIds.Contains(m.Id))
+                .Select(m => new { m.Id, m.Genres })
+                .ToListAsync(cancellationToken);
+
+            var genreLookup = mediaGenres.ToDictionary(x => x.Id, x => x.Genres);
+
+            topGenres = genreSessionPairs
+                .SelectMany(x => genreLookup.GetValueOrDefault(x.Id, []),
+                    (x, genre) => new { x.ReferenceId, Genre = genre })
+                .GroupBy(x => x.Genre)
+                .Select(g => new GenreStatDto
+                {
+                    Genre = g.Key,
+                    PlayCount = g.DistinctBy(x => x.ReferenceId).Count()
+                })
+                .OrderByDescending(x => x.PlayCount)
+                .Take(10)
+                .ToList();
+        }
 
         var topArtists = new List<TopItemDto>();
         var topAlbums = new List<TopItemDto>();

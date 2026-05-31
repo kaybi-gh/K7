@@ -106,7 +106,8 @@ public class Token : IEndpoint
             return Results.BadRequest("Unsupported grant type.");
         })
         .WithName(type.Name)
-        .WithTags(groupName);
+        .WithTags(groupName)
+        .DisableAntiforgery();
     }
 
     private static IEnumerable<string> GetDestinations(Claim claim)

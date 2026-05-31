@@ -32,4 +32,6 @@
   <data name="SampleRate" xml:space="preserve"><value>Echantillonnage</value></data>
   <data name="Default" xml:space="preserve"><value>Defaut</value></data>
   <data name="Forced" xml:space="preserve"><value>Force</value></data>
+  <data name="Federated" xml:space="preserve"><value>Federe</value></data>
+  <data name="LoadingDetails" xml:space="preserve"><value>Chargement des details...</value></data>
 </root>

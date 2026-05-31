@@ -12,7 +12,7 @@ public class AcceptPeerRequestEndpoint : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapPost("/api/admin/peers/requests/{id:guid}/accept", async (
+        endpointRouteBuilder.MapPost("/api/federation/peers/requests/{id:guid}/accept", async (
             Guid id,
             [FromBody] AcceptPeerRequestRequest request,
             [FromServices] ISender sender,
@@ -22,6 +22,7 @@ public class AcceptPeerRequestEndpoint : IEndpoint
             {
                 RequestId = id,
                 SharedLibraryIds = request.SharedLibraryIds,
+                AutoShareNewLibraries = request.AutoShareNewLibraries,
                 MaxConcurrentStreams = request.MaxConcurrentStreams
             }, cancellationToken);
 

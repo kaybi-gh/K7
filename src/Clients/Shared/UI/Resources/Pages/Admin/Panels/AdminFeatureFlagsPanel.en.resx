@@ -26,4 +26,9 @@
   <data name="Transmuxing" xml:space="preserve"><value>Transmuxing</value></data>
   <data name="SeekbarThumbnails" xml:space="preserve"><value>Seekbar thumbnail generation</value></data>
   <data name="MusicAudioAnalysis" xml:space="preserve"><value>Music audio analysis</value></data>
+  <data name="Federation" xml:space="preserve"><value>Federation</value></data>
+  <data name="FederationDescription" xml:space="preserve"><value>Enables library sharing between K7 servers. Disabled by default.</value></data>
+  <data name="FederationInvitations" xml:space="preserve"><value>Invitations</value></data>
+  <data name="FederationInvitationsDescription" xml:space="preserve"><value>Allow new incoming and outgoing sharing requests.</value></data>
+  <data name="FederationDisabledWarning" xml:space="preserve"><value>Federation is disabled. All federation routes are blocked, including existing shares.</value></data>
 </root>

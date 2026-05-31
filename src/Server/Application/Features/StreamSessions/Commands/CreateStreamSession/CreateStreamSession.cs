@@ -57,7 +57,7 @@ public class CreateStreamSessionCommandHandler : IRequestHandler<CreateStreamSes
         return new StreamingSessionDto
         {
             Id = session.Id,
-            IndexedFileId = session.IndexedFileId,
+            IndexedFileId = session.IndexedFileId!.Value,
             State = session.State,
             Position = session.Position,
             PlaybackSettings = playbackSettings

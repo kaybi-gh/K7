@@ -31,7 +31,7 @@ try
     builder.Services.EnsurePathsExist();
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration);
-    builder.Services.AddMediaProcessingServices(); // TODO - Group all infrastructure DI in one method?
+    builder.Services.AddMediaProcessingServices();
     builder.Services.AddWebServices(builder.Configuration);
     builder.Services.AddEndpoints();
     builder.Services.ConfigureCors(builder.Configuration);
@@ -76,6 +76,7 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseAntiforgery();
+    app.UseMiddleware<FederationGuardMiddleware>();
 
     app.UseExceptionHandler(options => { });
     app.MapEndpoints();

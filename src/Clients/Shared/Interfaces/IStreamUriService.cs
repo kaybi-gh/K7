@@ -4,10 +4,7 @@ namespace K7.Clients.Shared.Interfaces;
 
 public interface IStreamUriService
 {
-    /// <summary>
-    /// Creates or retrieves a streaming session for the given indexed file and
-    /// returns the associated session information, including the initial source
-    /// URL (direct play or HLS session manifest).
-    /// </summary>
     Task<StreamingSessionDto> GetOrCreateSessionAsync(Guid indexedFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default);
+
+    Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(Guid remoteFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default);
 }

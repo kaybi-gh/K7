@@ -1001,6 +1001,29 @@
         }
       }
     },
+    "/api/remote-stream-sessions": {
+      "post": {
+        "tags": [
+          "StreamSessions"
+        ],
+        "operationId": "CreateRemoteStreamSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRemoteStreamSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/stream-sessions": {
       "post": {
         "tags": [
@@ -1060,6 +1083,68 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/remote-stream-sessions/{sessionId}/{path}": {
+      "get": {
+        "tags": [
+          "StreamSessions"
+        ],
+        "operationId": "GetRemoteStreamContent",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "StreamSessions"
+        ],
+        "operationId": "GetRemoteStreamContent",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -4450,6 +4535,29 @@
         }
       }
     },
+    "/api/indexed-files/notify": {
+      "post": {
+        "tags": [
+          "IndexedFiles"
+        ],
+        "operationId": "NotifyIndexedFile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexedFileNotifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/indexed-files/{id}/refresh": {
       "post": {
         "tags": [
@@ -4610,7 +4718,7 @@
         }
       }
     },
-    "/api/admin/peers/requests/{id}/accept": {
+    "/api/federation/peers/requests/{id}/accept": {
       "post": {
         "tags": [
           "Federation"
@@ -4667,6 +4775,77 @@
         }
       }
     },
+    "/api/federation/stream-sessions": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "CreateFederationStreamSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFederationStreamSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peers/{id}/discover-libraries": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "DiscoverPeerLibraries",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/indexed-files/{fileId}": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationIndexedFileDetails",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/federation/libraries": {
       "get": {
         "tags": [
@@ -4689,6 +4868,30 @@
         "parameters": [
           {
             "name": "libraryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/media/{mediaId}/metadata": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationMediaMetadata",
+        "parameters": [
+          {
+            "name": "mediaId",
             "in": "path",
             "required": true,
             "schema": {
@@ -4763,7 +4966,69 @@
         }
       }
     },
-    "/api/admin/peers/requests": {
+    "/api/federation/stream-sessions/{sessionId}/{path}": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationStreamContent",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "GetFederationStreamContent",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peers/requests": {
       "get": {
         "tags": [
           "Federation"
@@ -4776,7 +5041,7 @@
         }
       }
     },
-    "/api/admin/peers": {
+    "/api/federation/peers": {
       "get": {
         "tags": [
           "Federation"
@@ -4789,12 +5054,12 @@
         }
       }
     },
-    "/api/federation/remote-stream/{remoteFileId}": {
+    "/api/remote-indexed-files/{remoteFileId}/details": {
       "get": {
         "tags": [
           "Federation"
         ],
-        "operationId": "GetRemoteStream",
+        "operationId": "GetRemoteFileDetails",
         "parameters": [
           {
             "name": "remoteFileId",
@@ -4813,7 +5078,7 @@
         }
       }
     },
-    "/api/admin/peers/request": {
+    "/api/federation/peers/request": {
       "post": {
         "tags": [
           "Federation"
@@ -4836,6 +5101,78 @@
         }
       }
     },
+    "/api/federation/media-notify": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "NotifyMedia",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeerMediaNotifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/revoke-notify": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "NotifyRevocation",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/share-update-notify": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "NotifyShareUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareUpdateNotifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/ping": {
+      "get": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "PingPeer",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/federation/sessions": {
       "post": {
         "tags": [
@@ -4847,6 +5184,29 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/FederationSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peer-reject": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "ReceivePeerReject",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeerRejectRequest"
               }
             }
           },
@@ -4882,7 +5242,30 @@
         }
       }
     },
-    "/api/admin/peers/requests/{id}/reject": {
+    "/api/federation/provider-revoke-notify": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "ReceiveProviderRevoke",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderRevokeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peers/requests/{id}/reject": {
       "post": {
         "tags": [
           "Federation"
@@ -4906,7 +5289,7 @@
         }
       }
     },
-    "/api/admin/peers/{id}": {
+    "/api/federation/peers/{id}": {
       "delete": {
         "tags": [
           "Federation"
@@ -4962,12 +5345,36 @@
         }
       }
     },
-    "/api/admin/peers/{id}/sync": {
+    "/api/federation/peers/{id}/sync": {
       "post": {
         "tags": [
           "Federation"
         ],
         "operationId": "SyncPeerEndpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/federation/peers/{id}/test": {
+      "post": {
+        "tags": [
+          "Federation"
+        ],
+        "operationId": "TestPeerEndpoint",
         "parameters": [
           {
             "name": "id",
@@ -6603,6 +7010,9 @@
               "format": "uuid"
             }
           },
+          "autoShareNewLibraries": {
+            "type": "boolean"
+          },
           "maxConcurrentStreams": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -7773,6 +8183,31 @@
           }
         }
       },
+      "CreateFederationStreamSessionRequest": {
+        "required": [
+          "indexedFileId",
+          "deviceCapabilities"
+        ],
+        "type": "object",
+        "properties": {
+          "indexedFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceCapabilities": {
+            "$ref": "#/components/schemas/DevicePlaybackCapabilitiesDto"
+          },
+          "audioTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "CreateLibraryCommand": {
         "required": [
           "title",
@@ -7911,6 +8346,32 @@
           },
           "mediaType": {
             "$ref": "#/components/schemas/MediaType"
+          }
+        }
+      },
+      "CreateRemoteStreamSessionRequest": {
+        "required": [
+          "remoteFileId",
+          "deviceId"
+        ],
+        "type": "object",
+        "properties": {
+          "remoteFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "audioTrackIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -8762,6 +9223,24 @@
           }
         }
       },
+      "IndexedFileNotificationType": {
+        "type": "integer"
+      },
+      "IndexedFileNotifyRequest": {
+        "required": [
+          "path",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/IndexedFileNotificationType"
+          }
+        }
+      },
       "InitiatePeeringRequest": {
         "required": [
           "remoteUrl"
@@ -8851,6 +9330,12 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "peerServerBaseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10943,6 +11428,15 @@
               "$ref": "#/components/schemas/IndexedFileDto"
             }
           },
+          "remoteIndexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RemoteIndexedFileDto"
+            }
+          },
           "genres": {
             "type": [
               "null",
@@ -11086,6 +11580,15 @@
               "$ref": "#/components/schemas/IndexedFileDto"
             }
           },
+          "remoteIndexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RemoteIndexedFileDto"
+            }
+          },
           "genres": {
             "type": [
               "null",
@@ -11223,6 +11726,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "remoteIndexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RemoteIndexedFileDto"
             }
           },
           "genres": {
@@ -11479,6 +11991,15 @@
               "$ref": "#/components/schemas/IndexedFileDto"
             }
           },
+          "remoteIndexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RemoteIndexedFileDto"
+            }
+          },
           "genres": {
             "type": [
               "null",
@@ -11649,6 +12170,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "remoteIndexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RemoteIndexedFileDto"
             }
           },
           "genres": {
@@ -11824,6 +12354,15 @@
               "$ref": "#/components/schemas/IndexedFileDto"
             }
           },
+          "remoteIndexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RemoteIndexedFileDto"
+            }
+          },
           "genres": {
             "type": [
               "null",
@@ -11970,6 +12509,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/IndexedFileDto"
+            }
+          },
+          "remoteIndexedFiles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RemoteIndexedFileDto"
             }
           },
           "genres": {
@@ -12322,6 +12870,9 @@
           },
           "indexedFiles": {
             "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/indexedFiles"
+          },
+          "remoteIndexedFiles": {
+            "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/remoteIndexedFiles"
           },
           "genres": {
             "$ref": "#/components/schemas/MediaDto/anyOf/1/properties/genres"
@@ -12798,6 +13349,41 @@
           },
           "hasNextPage": {
             "type": "boolean"
+          }
+        }
+      },
+      "PeerMediaNotificationType": {
+        "type": "integer"
+      },
+      "PeerMediaNotifyRequest": {
+        "required": [
+          "libraryId",
+          "mediaId",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "libraryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PeerMediaNotificationType"
+          }
+        }
+      },
+      "PeerRejectRequest": {
+        "required": [
+          "providerUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "providerUrl": {
+            "type": "string"
           }
         }
       },
@@ -13621,6 +14207,17 @@
       "ProgressConflictMode": {
         "type": "integer"
       },
+      "ProviderRevokeRequest": {
+        "required": [
+          "providerUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "providerUrl": {
+            "type": "string"
+          }
+        }
+      },
       "RateMediaRequest": {
         "required": [
           "value"
@@ -13756,6 +14353,82 @@
           },
           "selectedExternalId": {
             "type": "string"
+          }
+        }
+      },
+      "RemoteIndexedFileDto": {
+        "required": [
+          "id",
+          "peerServerId",
+          "remoteFileId",
+          "name",
+          "extension",
+          "size",
+          "remoteMediaId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "peerServerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "remoteFileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "extension": {
+            "type": "string"
+          },
+          "size": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "remoteMediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "container": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "duration": {
+            "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "videoBitrate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "videoResolution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoResolutionIdentifier"
+              }
+            ]
           }
         }
       },
@@ -13900,6 +14573,12 @@
           },
           "musicAudioAnalysisEnabled": {
             "type": "boolean"
+          },
+          "federationEnabled": {
+            "type": "boolean"
+          },
+          "federationInvitationsEnabled": {
+            "type": "boolean"
           }
         }
       },
@@ -13911,6 +14590,21 @@
         "properties": {
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "ShareUpdateNotifyRequest": {
+        "required": [
+          "sharedLibraryIds"
+        ],
+        "type": "object",
+        "properties": {
+          "sharedLibraryIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -14567,6 +15261,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "libraryGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -14817,8 +15518,27 @@
       "UpdatePeerRequest": {
         "type": "object",
         "properties": {
+          "baseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "sharedLibraryIds": {
-            "type": "array",
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "enabledInboundAgreementIds": {
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string",
               "format": "uuid"
@@ -14832,6 +15552,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "autoAddNewLibraries": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

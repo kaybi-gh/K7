@@ -7,4 +7,6 @@ public sealed record ServerFeatureFlagsDto
     public bool TransmuxingEnabled { get; init; } = true;
     public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
     public bool MusicAudioAnalysisEnabled { get; init; } = true;
+    public bool FederationEnabled { get; init; }
+    public bool FederationInvitationsEnabled { get; init; } = true;
 }

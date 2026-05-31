@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Http.Resilience;
 using OpenIddict.Validation.AspNetCore;
 
 namespace K7.Server.Web;
@@ -28,12 +29,15 @@ public static class DependencyInjection
             .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
             .SetApplicationName("K7");
 
+        var forceHttps = configuration.GetValue<bool?>("Security:ForceHttps") ?? true;
+        var cookieSecurePolicy = forceHttps ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+
         services.AddAntiforgery(options =>
         {
             options.HeaderName = "X-XSRF-TOKEN";
-            options.Cookie.Name = "__Host-X-XSRF-TOKEN";
+            options.Cookie.Name = forceHttps ? "__Host-X-XSRF-TOKEN" : ".K7.Antiforgery";
             options.Cookie.SameSite = SameSiteMode.Strict;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SecurePolicy = cookieSecurePolicy;
         });
 
         services.Configure<ForwardedHeadersOptions>(options =>
@@ -57,7 +61,7 @@ public static class DependencyInjection
             options.LoginPath = "/welcome";
             options.LogoutPath = "/Account/Logout";
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SecurePolicy = cookieSecurePolicy;
             options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         });
 
@@ -105,19 +109,26 @@ public static class DependencyInjection
         services.AddSingleton<MediaNotificationBatcher>();
         services.AddSingleton<ILibraryNotifier, LibraryNotifier>();
         services.AddSingleton<IBackgroundTaskNotifier, BackgroundTaskNotifier>();
+        services.AddSingleton<IFederationNotifier, FederationNotifier>();
         services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
         services.AddHostedService<AdminStreamNotifier>();
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
 
         services.AddHttpClient<IPeerClient, PeerClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                AllowAutoRedirect = false,
+                UseCookies = false
+            })
             .AddStandardResilienceHandler(options =>
             {
-                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(15);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
                 options.CircuitBreaker.MinimumThroughput = 5;
                 options.CircuitBreaker.BreakDuration = TimeSpan.FromMinutes(2);
-                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
                 options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
-            });
+            })
+            .SelectPipelineByAuthority();
 
         services.AddScoped<IPeerApplicationManager, PeerApplicationManager>();
         services.AddScoped<K7SnackbarService>();

@@ -13,14 +13,15 @@ public class InitiatePeeringEndpoint : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapPost("/api/admin/peers/request", async (
+        endpointRouteBuilder.MapPost("/api/federation/peers/request", async (
             [FromBody] InitiatePeeringRequest request,
             [FromServices] ISender sender,
             [FromServices] IConfiguration configuration,
             CancellationToken cancellationToken) =>
         {
-            var serverName = configuration.GetValue<string>("Server:Name") ?? Environment.MachineName;
-            var serverUrl = configuration.GetValue<string>("Server:PublicUrl") ?? "";
+            var serverUrl = configuration.GetValue<string>("BaseUrl") ?? "";
+            var serverName = configuration.GetValue<string>("Server:Name")
+                ?? (Uri.TryCreate(serverUrl, UriKind.Absolute, out var uri) ? uri.Host : Environment.MachineName);
 
             var peerId = await sender.Send(new InitiatePeeringCommand
             {
@@ -29,7 +30,7 @@ public class InitiatePeeringEndpoint : IEndpoint
                 LocalServerUrl = serverUrl
             }, cancellationToken);
 
-            return Results.Created($"/api/admin/peers/{peerId}", new { Id = peerId });
+            return Results.Created($"/api/federation/peers/{peerId}", new { Id = peerId });
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)

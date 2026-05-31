@@ -60,6 +60,12 @@ public static class DependencyInjection
         services.AddScoped<IMusicArtistMetadataProvider, WikidataMetadataProvider>();
         services.AddScoped<IPersonCreditsProvider, TMDbPersonCreditsProvider>();
 
+        services.AddScoped<FederationMetadataProvider>();
+        services.AddKeyedScoped<IMetadataProvider<ExternalMovieMetadata>>("federation", (sp, _) => sp.GetRequiredService<FederationMetadataProvider>());
+        services.AddKeyedScoped<ISerieMetadataProvider>("federation", (sp, _) => sp.GetRequiredService<FederationMetadataProvider>());
+        services.AddKeyedScoped<IMetadataProvider<ExternalMusicAlbumMetadata>>("federation", (sp, _) => sp.GetRequiredService<FederationMetadataProvider>());
+        services.AddScoped<IMetadataProviderInfo>(sp => sp.GetRequiredService<FederationMetadataProvider>());
+
         services.AddSignalR();
         return services;
     }

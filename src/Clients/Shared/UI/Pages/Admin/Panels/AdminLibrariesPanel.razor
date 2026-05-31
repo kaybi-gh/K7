@@ -28,8 +28,16 @@
                 </div>
             </div>
             <div class="library-card__path">
-                <K7Icon Icon="@Phosphor.Folder" Size="sm" />
-                <span>@library.RootPath</span>
+                @if (library.PeerServerBaseUrl is not null)
+                {
+                    <K7Icon Icon="@Phosphor.Globe" Size="sm" />
+                    <span>@library.PeerServerBaseUrl</span>
+                }
+                else
+                {
+                    <K7Icon Icon="@Phosphor.Folder" Size="sm" />
+                    <span>@library.RootPath</span>
+                }
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;font-size:0.8125rem;color:var(--color-text-secondary)">
                 @{
@@ -59,10 +67,16 @@
                 </K7Chip>
             }
             <div style="display:flex;gap:4px;border-top:1px solid var(--color-border);padding-top:8px;margin-top:auto">
-                <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
+                @if (library.PeerServerId is null)
+                {
+                    <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="@(() => IndexLibrary(library))" AriaLabel="@L["AriaIndex"]" />
+                }
                 <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(library))" AriaLabel="@L["AriaEdit"]" />
                 <K7IconButton Icon="@Phosphor.Users" OnClick="@(() => OpenUsersDialog(library))" AriaLabel="@L["AriaUserAccess"]" />
-                <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))" AriaLabel="@L["AriaDelete"]" />
+                @if (library.PeerServerId is null)
+                {
+                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => DeleteLibrary(library))" AriaLabel="@L["AriaDelete"]" />
+                }
             </div>
         </K7Paper>
     </GridTemplate>

@@ -11,7 +11,7 @@ public class RejectPeerRequestEndpoint : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapPost("/api/admin/peers/requests/{id:guid}/reject", async (
+        endpointRouteBuilder.MapPost("/api/federation/peers/requests/{id:guid}/reject", async (
             Guid id,
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>

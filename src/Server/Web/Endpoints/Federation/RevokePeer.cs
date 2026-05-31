@@ -11,7 +11,7 @@ public class RevokePeerEndpoint : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapDelete("/api/admin/peers/{id:guid}", async (
+        endpointRouteBuilder.MapDelete("/api/federation/peers/{id:guid}", async (
             Guid id,
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>

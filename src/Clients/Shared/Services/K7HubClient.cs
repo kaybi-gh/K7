@@ -1,4 +1,5 @@
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -39,6 +40,9 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<SyncPlayInvitationDto>? SyncPlayInvitationReceived;
     public event Action<IReadOnlyList<SyncPlayOnlineUserDto>>? SyncPlayOnlineUsersReceived;
     public event Action<SyncPlayInviteLinkDto>? SyncPlayInviteLinkReceived;
+    public event Action<Guid, int>? PeerStateChanged;
+    public event Action<PeerRequestDto>? PeerRequestReceived;
+    public event Action<Guid, bool>? PeerTestResultReceived;
 
     public async Task EnsureStartedAsync(Uri baseUri, string userId, string? deviceId = null, string? accessToken = null, string? deviceName = null, string? deviceType = null)
     {
@@ -205,6 +209,21 @@ public sealed class K7HubClient : IAsyncDisposable
                 SyncPlayInviteLinkReceived?.Invoke(link);
             });
 
+            _hubConnection.On<Guid, int>("ReceivePeerStateChanged", (peerId, newStatus) =>
+            {
+                PeerStateChanged?.Invoke(peerId, newStatus);
+            });
+
+            _hubConnection.On<PeerRequestDto>("ReceivePeerRequestReceived", (request) =>
+            {
+                PeerRequestReceived?.Invoke(request);
+            });
+
+            _hubConnection.On<Guid, bool>("ReceivePeerTestResult", (peerId, reachable) =>
+            {
+                PeerTestResultReceived?.Invoke(peerId, reachable);
+            });
+
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await _hubConnection.StartAsync(cts.Token);
             _started = true;
@@ -226,6 +245,18 @@ public sealed class K7HubClient : IAsyncDisposable
     {
         if (_hubConnection?.State == HubConnectionState.Connected)
             await _hubConnection.InvokeAsync("LeaveAdminStreamsGroup");
+    }
+
+    public async Task JoinAdminFederationGroupAsync()
+    {
+        if (_hubConnection?.State == HubConnectionState.Connected)
+            await _hubConnection.InvokeAsync("JoinAdminFederationGroup");
+    }
+
+    public async Task LeaveAdminFederationGroupAsync()
+    {
+        if (_hubConnection?.State == HubConnectionState.Connected)
+            await _hubConnection.InvokeAsync("LeaveAdminFederationGroup");
     }
 
     public async Task RequestRemotePlaybackAsync(Guid targetDeviceId, RemotePlaybackRequestDto request)

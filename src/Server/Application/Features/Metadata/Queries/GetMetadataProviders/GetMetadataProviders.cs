@@ -22,6 +22,9 @@ public class GetMetadataProvidersQueryHandler : IRequestHandler<GetMetadataProvi
     {
         var providers = _providers.AsEnumerable();
 
+        // Exclude internal-only providers not selectable by users
+        providers = providers.Where(p => p.ProviderName != "federation");
+
         if (request.MediaType.HasValue)
         {
             providers = providers.Where(p => p.SupportedMediaTypes.Contains(request.MediaType.Value));

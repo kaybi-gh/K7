@@ -132,7 +132,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         // Then aggregate: group episodes by serie/season, tracks by album.
         var query = context.Medias
             .AsNoTracking()
-            .Where(x => x.IndexedFiles.Any() || x is MusicAlbum || x is Serie);
+            .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any() || x is MusicAlbum || x is Serie);
 
         query = ApplyFamilyFilter(query, request.MediaTypes);
         query = ApplyLibraryFilter(query, request.LibraryIds);
@@ -260,11 +260,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                     albumGroups[albumId].Tracks.Add(track);
                     break;
                 }
-                case Serie or SerieSeason:
-                    // Skip top-level serie/season entries -- episodes represent them
+                case Serie or SerieSeason when item.PeerServerId is null:
+                    // Skip local top-level serie/season entries -- episodes represent them
                     break;
-                case MusicAlbum:
-                    // Skip top-level album entries -- tracks represent them
+                case MusicAlbum when item.PeerServerId is null:
+                    // Skip local top-level album entries -- tracks represent them
                     break;
                 default:
                     result.Add((insertOrder++, MapTopLevelItem(item, detailed)));
@@ -492,12 +492,22 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         return query.Where(x =>
             x is MusicAlbum
-                ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId)))
+                ? x.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
+                    || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
+                        || t.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId)))
+                : x is MusicArtist
+                    ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
+                        || a.Tracks.Any(t => t.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
+                            || t.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))))
                 : x is Serie
-                    ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))))
+                    ? x.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))
+                        || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
+                            || e.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))))
                     : x is SerieSeason
-                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId)))
-                        : x.IndexedFiles != null && x.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId)));
+                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
+                            || e.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId)))
+                        : x.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
+                            || x.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId)));
     }
 
     private async Task<IQueryable<BaseMedia>> ApplyUserExclusionsAsync(
@@ -509,12 +519,22 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         query = query.Where(x =>
             x is MusicAlbum
-                ? ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
+                ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
+                    || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                        || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
+                : x is MusicArtist
+                    ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
+                        || a.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                            || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
                 : x is Serie
-                    ? ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))))
+                    ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
+                        || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                            || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
                     : x is SerieSeason
-                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                        : !x.IndexedFiles.Any(f => excludedLibraryIds.Contains(f.LibraryId)));
+                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                            || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
+                        : x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
+                            || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)));
 
         var excludedMediaIds = context.UserMediaExclusions
             .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))

@@ -5,20 +5,34 @@
             <K7TextField @bind-Value="Title" Label="@L["TitleLabel"]" Variant="outlined"
                           Required="true" RequiredError="@L["TitleRequired"]" />
 
-            <K7Select TValue="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
+            @if (AvailableGroups.Count > 0)
+            {
+                <K7Select TValue="Guid" @bind-Value="SelectedGroupId" Label="@L["GroupLabel"]" Variant="outlined">
+                    @foreach (var group in AvailableGroups)
+                    {
+                        <K7SelectItem TValue="Guid" Value="@group.Id">@group.Title</K7SelectItem>
+                    }
+                </K7Select>
+            }
+
+            <K7Select TValue="string" @bind-Value="SelectedProvider" Label="@L["ProviderLabel"]" Variant="outlined"
+                      Disabled="IsFederated">
                 @foreach (var provider in AvailableProviders)
                 {
                     <K7SelectItem TValue="string" Value="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
                 }
             </K7Select>
 
-            <K7LanguageSelect @bind-Value="MetadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined" />
+            <K7LanguageSelect @bind-Value="MetadataLanguage" Label="@L["MetadataLanguageLabel"]" Variant="outlined"
+                              Disabled="IsFederated" />
 
-            <K7LanguageSelect @bind-Value="MetadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined" />
+            <K7LanguageSelect @bind-Value="MetadataFallbackLanguage" Label="@L["MetadataFallbackLanguageLabel"]" Variant="outlined"
+                              Disabled="IsFederated" />
 
             <K7TextField TValue="int?" Type="number" @bind-Value="MetadataRefreshIntervalDays"
                              Label="@L["MetadataRefreshLabel"]" Variant="outlined"
-                             HelperText="@L["MetadataRefreshHelper"]" />
+                             HelperText="@L["MetadataRefreshHelper"]"
+                             Disabled="IsFederated" />
         </div>
     </div>
     <div class="k7-dialog-actions">

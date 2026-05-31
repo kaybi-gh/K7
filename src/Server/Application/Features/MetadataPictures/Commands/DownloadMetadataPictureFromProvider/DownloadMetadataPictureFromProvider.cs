@@ -140,6 +140,5 @@ public class DownloadMetadataPictureFromProviderCommandHandler : IRequestHandler
         {
             throw new Exception($"Unexpected error while trying to download remote metadata picture. Error: {ex.Message}.", ex);
         }
-        // TODO - Tag failed picture download for later retry?
     }
 }

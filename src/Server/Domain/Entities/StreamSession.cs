@@ -9,17 +9,22 @@ namespace K7.Server.Domain.Entities;
 
 public class StreamSession : BaseAuditableEntity
 {
-    public Guid IndexedFileId { get; set; }
-    public IndexedFile IndexedFile { get; set; } = null!;
+    public Guid? IndexedFileId { get; set; }
+    public IndexedFile? IndexedFile { get; set; }
 
-    public Guid DeviceId { get; set; }
-    public Device Device { get; set; } = null!;
+    public Guid? RemoteIndexedFileId { get; set; }
+    public RemoteIndexedFile? RemoteIndexedFile { get; set; }
+
+    public Guid? DeviceId { get; set; }
+    public Device? Device { get; set; }
 
     public Guid? UserId { get; set; }
     public User? User { get; set; }
 
     public Guid? PeerServerId { get; set; }
     public PeerServer? PeerServer { get; set; }
+
+    public Guid? RemoteSessionId { get; set; }
 
     public PlaybackState State { get; set; } = PlaybackState.Idle;
     public double Position { get; set; }

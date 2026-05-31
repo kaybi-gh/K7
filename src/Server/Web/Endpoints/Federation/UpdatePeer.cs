@@ -12,7 +12,7 @@ public class UpdatePeerEndpoint : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapPut("/api/admin/peers/{id:guid}", async (
+        endpointRouteBuilder.MapPut("/api/federation/peers/{id:guid}", async (
             Guid id,
             [FromBody] UpdatePeerRequest request,
             [FromServices] ISender sender,
@@ -21,8 +21,11 @@ public class UpdatePeerEndpoint : IEndpoint
             await sender.Send(new UpdatePeerCommand
             {
                 PeerId = id,
+                BaseUrl = request.BaseUrl,
                 SharedLibraryIds = request.SharedLibraryIds,
-                MaxConcurrentStreams = request.MaxConcurrentStreams
+                EnabledInboundAgreementIds = request.EnabledInboundAgreementIds,
+                MaxConcurrentStreams = request.MaxConcurrentStreams,
+                AutoAddNewLibraries = request.AutoAddNewLibraries
             }, cancellationToken);
 
             return Results.NoContent();

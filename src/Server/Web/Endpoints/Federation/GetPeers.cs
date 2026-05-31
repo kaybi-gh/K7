@@ -11,7 +11,7 @@ public class GetPeersEndpoint : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/admin/peers", async (
+        endpointRouteBuilder.MapGet("/api/federation/peers", async (
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>
         {

@@ -214,7 +214,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             .OrderByDescending(t => t.IsDefault)
             .ThenBy(t => t.Index)
             .ToList() ?? [];
-        _selectedSubtitleTrack = null; // TODO - Maybe not default to null
+        _selectedSubtitleTrack = null;
         _selectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
             : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
@@ -376,7 +376,6 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         AspectRatioModeChangeRequested?.Invoke(mode);
     }
 
-    // TODO - Maybe slugify on file indexing 
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
 
     /// <summary>
