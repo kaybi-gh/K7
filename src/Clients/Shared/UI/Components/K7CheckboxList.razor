@@ -1,0 +1,26 @@
+@namespace K7.Clients.Shared.UI.Components
+@typeparam TItem
+
+<div class="k7-checkbox-list @Class" role="group">
+    @foreach (var (item, index) in Items.Select((x, i) => (x, i)))
+    {
+        var isChecked = IsChecked(item);
+        <div @key="item" class="k7-checkbox-list__row focusable @(index % 2 == 1 ? "k7-checkbox-list__row--even" : "")"
+             tabindex="-1"
+             @onclick="@(() => OnToggle(item, !isChecked))"
+             @onkeydown="@(e => OnKeyDown(e, item, isChecked))"
+             @onkeydown:preventDefault="@(ShouldPreventKey)">
+            <input type="checkbox" checked="@isChecked"
+                   tabindex="-1"
+                   @onclick:stopPropagation />
+            @if (ItemTemplate is not null)
+            {
+                @ItemTemplate(item)
+            }
+            else
+            {
+                <span class="k7-checkbox-list__label">@ItemLabel(item)</span>
+            }
+        </div>
+    }
+</div>

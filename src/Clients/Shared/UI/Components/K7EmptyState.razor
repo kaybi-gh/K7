@@ -1,0 +1,22 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-empty-state @(Compact ? "k7-empty-state--compact" : "") @Class" style="@Style">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <K7Icon Icon="@Icon" Style="@(Compact ? "font-size: 1.5rem; opacity: 0.4;" : "font-size: 64px; opacity: 0.3;")" />
+    }
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <h6 class="k7-empty-state__title">@Title</h6>
+    }
+    @if (!string.IsNullOrEmpty(Subtitle))
+    {
+        <p class="k7-empty-state__subtitle">@Subtitle</p>
+    }
+    @if (ActionContent is not null)
+    {
+        <div class="k7-empty-state__action">
+            @ActionContent
+        </div>
+    }
+</div>

@@ -83,11 +83,7 @@
 
         @if (!hasAnyCarousel)
         {
-            <div class="home-empty-state">
-                <K7Icon Icon="@Phosphor.FilmSlate" Style="font-size: 64px; opacity: 0.2;" />
-                <p class="home-empty-state__title">@L["EmptyStateTitle"]</p>
-                <p class="home-empty-state__subtitle">@L["EmptyStateSubtitle"]</p>
-            </div>
+            <K7EmptyState Icon="@Phosphor.FilmSlate" Title="@L["EmptyStateTitle"]" Subtitle="@L["EmptyStateSubtitle"]" />
         }
     }
 </div>

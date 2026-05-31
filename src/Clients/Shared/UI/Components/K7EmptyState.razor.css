@@ -1,0 +1,33 @@
+.k7-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 4rem 1rem;
+}
+
+.k7-empty-state--compact {
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+}
+
+.k7-empty-state--compact .k7-empty-state__title {
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+
+.k7-empty-state__title {
+    opacity: 0.5;
+}
+
+.k7-empty-state__subtitle {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    text-align: center;
+    max-width: 360px;
+}
+
+.k7-empty-state__action {
+    margin-top: 0.5rem;
+}

@@ -143,6 +143,23 @@
         </div>
     </section>
 
+    <section id="k7-empty-state" class="ds-section">
+        <h2>K7EmptyState</h2>
+        <div class="ds-preview ds-preview--column">
+            <K7EmptyState Icon="@Phosphor.Globe" Title="No peers configured" Subtitle="Add a peer server to share and access media between your K7 instances." />
+            <K7Divider />
+            <K7EmptyState Icon="@Phosphor.Bell" Title="No notifications" Subtitle="Create a rule to receive notifications when events occur on your server.">
+                <ActionContent>
+                    <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus">Create rule</K7Button>
+                </ActionContent>
+            </K7EmptyState>
+            <K7Divider />
+            <K7EmptyState Title="Nothing here yet" />
+            <K7Divider />
+            <K7EmptyState Icon="@Phosphor.ChartBar" Title="No data" Compact="true" />
+        </div>
+    </section>
+
     <section id="k7-progress-bar" class="ds-section">
         <h2>K7ProgressBar</h2>
         <div class="ds-preview ds-preview--column">
@@ -305,6 +322,33 @@
             <K7Switch @bind-Value="_switch2" Label="Auto-play" />
             <K7Switch Value="true" Label="Always on" Disabled="true" />
             <K7Switch Value="false" Label="Always off" Disabled="true" />
+        </div>
+    </section>
+
+    <section id="k7-checkbox-list" class="ds-section">
+        <h2>K7CheckboxList</h2>
+        <p class="ds-description">Zebra-striped scrollable checkbox list for multi-selection scenarios (permissions, library access, event selection).</p>
+
+        <h3>With ItemLabel</h3>
+        <div class="ds-preview ds-preview--column ds-preview--narrow">
+            <K7CheckboxList TItem="string"
+                            Items="_checkboxListItems"
+                            IsChecked="@(item => _selectedItems.Contains(item))"
+                            CheckedChanged="@(e => ToggleCheckboxItem(e.Item, e.Checked))"
+                            ItemLabel="@(item => item)" />
+        </div>
+
+        <h3>With ItemTemplate</h3>
+        <div class="ds-preview ds-preview--column ds-preview--narrow">
+            <K7CheckboxList TItem="string"
+                            Items="_checkboxListItems"
+                            IsChecked="@(item => _selectedItems.Contains(item))"
+                            CheckedChanged="@(e => ToggleCheckboxItem(e.Item, e.Checked))">
+                <ItemTemplate>
+                    <K7Icon Icon="@Phosphor.MusicNote" Size="sm" />
+                    <span>@context</span>
+                </ItemTemplate>
+            </K7CheckboxList>
         </div>
     </section>
 
@@ -602,6 +646,19 @@
     private double _brightness = 100;
     private bool _switch1 = true;
     private bool _switch2;
+
+    // CheckboxList
+    private static readonly IReadOnlyList<string> _checkboxListItems =
+        ["Movies", "TV Shows", "Music", "Podcasts", "Audiobooks", "Live TV"];
+    private readonly HashSet<string> _selectedItems = ["Movies", "Music"];
+
+    private void ToggleCheckboxItem(string item, bool isChecked)
+    {
+        if (isChecked)
+            _selectedItems.Add(item);
+        else
+            _selectedItems.Remove(item);
+    }
 
     private readonly List<TrackRow> _tracks =
     [
