@@ -12,6 +12,7 @@ public sealed record LiteSerieEpisodeDto : LiteMediaDto
     public DateOnly? SerieReleaseDate { get; init; }
     public Guid? StillImageId { get; init; }
     public Guid? IndexedFileId { get; init; }
+    public Guid? RemoteIndexedFileId { get; init; }
     public IReadOnlyList<MetadataPictureDto>? SeriePictures { get; init; }
     public IReadOnlyList<MetadataPictureDto>? SeasonPictures { get; init; }
 }

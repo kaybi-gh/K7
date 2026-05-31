@@ -68,6 +68,11 @@ public static class GetMediasWithPaginationQueryUriBuilder
             queryParams.Add(new(nameof(query.SearchText), query.SearchText));
         }
 
+        if (query.Provenance.HasValue)
+        {
+            queryParams.Add(new(nameof(query.Provenance), query.Provenance.Value.ToString()));
+        }
+
         return QueryBuilderHelper.AddQueryParameters(Route, queryParams);
     }
 }

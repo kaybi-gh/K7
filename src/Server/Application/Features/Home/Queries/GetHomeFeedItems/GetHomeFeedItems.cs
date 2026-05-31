@@ -260,11 +260,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                     albumGroups[albumId].Tracks.Add(track);
                     break;
                 }
-                case Serie or SerieSeason when item.PeerServerId is null:
-                    // Skip local top-level serie/season entries -- episodes represent them
+                case Serie or SerieSeason:
+                    // Skip top-level serie/season entries -- episodes represent them
                     break;
-                case MusicAlbum when item.PeerServerId is null:
-                    // Skip local top-level album entries -- tracks represent them
+                case MusicAlbum:
+                    // Skip top-level album entries -- tracks represent them
                     break;
                 default:
                     result.Add((insertOrder++, MapTopLevelItem(item, detailed)));

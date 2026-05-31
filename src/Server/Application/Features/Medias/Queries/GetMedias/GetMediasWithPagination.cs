@@ -21,6 +21,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
     public string[]? Genres { get; init; }
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
+    public MediaProvenance? Provenance { get; init; }
     public string? SearchText { get; init; }
     public required int PageNumber { get; init; } = 1;
     public required int PageSize { get; init; } = 10;
@@ -62,6 +63,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             parts.Add($"mt:{string.Join(',', request.MediaTypes.Order())}");
         if (request.OrderBy is { Count: > 0 })
             parts.Add($"ob:{string.Join(',', request.OrderBy.Order())}");
+        if (request.Provenance.HasValue)
+            parts.Add($"prov:{request.Provenance.Value}");
         if (!string.IsNullOrWhiteSpace(request.SearchText))
             parts.Add($"st:{request.SearchText.Trim()}");
         parts.Add($"p:{request.PageNumber}");
@@ -198,7 +201,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
     private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)
     {
         var includeSeasons = request.MediaTypes?.Contains(MediaType.SerieSeason) == true;
+        var includeEpisodes = request.MediaTypes?.Contains(MediaType.SerieEpisode) == true;
         query = query.Where(x => x is MusicAlbum || x is MusicArtist || x is MusicTrack || x is Serie || (includeSeasons && x is SerieSeason)
+            || (includeEpisodes && x is SerieEpisode)
             || x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
 
         if (request.LibraryIds?.Length > 0)
@@ -224,8 +229,13 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                                 : x is SerieSeason
                                     ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
                                         || e.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId)))
-                                    : x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
-                                        || x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId)));
+                                    : x is SerieEpisode
+                                        ? x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
+                                            || x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))
+                                            || ((SerieEpisode)x).Serie.Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
+                                                || e.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId))))
+                                        : x.IndexedFiles.Any(f => request.LibraryIds.Contains(f.LibraryId))
+                                            || x.RemoteIndexedFiles.Any(r => request.LibraryIds.Contains(r.LibraryId)));
         }
 
         if (request.Ids?.Length > 0)
@@ -265,6 +275,16 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         {
             query = query.Where(x => x.Genres.Any(g => request.Genres.Contains(g))
                 || (x is MusicTrack && ((MusicTrack)x).Album.Genres.Any(g => request.Genres.Contains(g))));
+        }
+
+        if (request.Provenance.HasValue)
+        {
+            query = request.Provenance.Value switch
+            {
+                MediaProvenance.Local => query.Where(x => x.IndexedFiles.Any()),
+                MediaProvenance.Federation => query.Where(x => x.RemoteIndexedFiles.Any()),
+                _ => query
+            };
         }
 
         if (!string.IsNullOrWhiteSpace(request.SearchText))

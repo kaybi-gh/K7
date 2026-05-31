@@ -347,7 +347,8 @@ public static class MediaMappings
                 EpisodeNumber = episode.EpisodeNumber,
                 SeasonNumber = episode.Season?.SeasonNumber ?? 0,
                 SerieSeasonCount = episode.Serie?.Seasons?.Count ?? 1,
-                Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds,
+                Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds
+                    ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
                 Overview = episode.Overview,
                 SerieId = episode.SerieId,
                 SerieTitle = episode.Serie?.Title,
@@ -357,6 +358,7 @@ public static class MediaMappings
                     .Select(p => (Guid?)p.Id)
                     .FirstOrDefault(),
                 IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
+                RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
                 SeriePictures = episode.Serie?.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
                 SeasonPictures = episode.Season?.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
