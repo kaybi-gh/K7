@@ -34,7 +34,9 @@
 
     protected override void OnParametersSet()
     {
-        if (_registration is not null && _registration.DisplayText != _displayText)
+        if (_registration is not null &&
+            (_registration.DisplayText != _displayText ||
+             !EqualityComparer<TValue>.Default.Equals(_registration.Value, Value)))
         {
             ParentSelect?.UnregisterItem(_registration);
             _registration = new SelectItemRegistration<TValue>(Value, _displayText);

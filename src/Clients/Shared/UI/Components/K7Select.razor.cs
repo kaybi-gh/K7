@@ -51,6 +51,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
     internal void RegisterItem(SelectItemRegistration<TValue> item)
     {
         _items.Add(item);
+        StateHasChanged();
     }
 
     internal void UnregisterItem(SelectItemRegistration<TValue> item)
