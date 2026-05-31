@@ -1,0 +1,47 @@
+::deep .group-card__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+::deep .group-card__title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+::deep .group-card__cover {
+    width: 64px;
+    height: 64px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+::deep .group-card__cover-placeholder {
+    width: 64px;
+    height: 64px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.06));
+}
+
+::deep .group-card__description {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+::deep .group-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+
+::deep .group-card__actions {
+    display: flex;
+    gap: 8px;
+}

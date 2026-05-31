@@ -225,6 +225,7 @@ public class GetFederationMediaMetadata : IEndpoint
                 Overview = album.Overview,
                 Tracks = album.Tracks.Select(t => new PeerMusicTrackDto
                 {
+                    Id = t.Id,
                     Title = t.Title ?? string.Empty,
                     TrackNumber = t.TrackNumber,
                     DiscNumber = t.DiscNumber,

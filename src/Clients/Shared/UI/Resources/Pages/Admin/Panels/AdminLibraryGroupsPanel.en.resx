@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Library groups</value></data>
+  <data name="LibraryCount" xml:space="preserve"><value>{0} library(ies)</value></data>
+  <data name="Icon" xml:space="preserve"><value>Icon</value></data>
+  <data name="GroupUpdated" xml:space="preserve"><value>Group updated.</value></data>
+  <data name="GroupDeleted" xml:space="preserve"><value>Group deleted.</value></data>
+  <data name="CannotDeleteNonEmpty" xml:space="preserve"><value>Cannot delete a group that contains libraries.</value></data>
+  <data name="DeleteConfirmTitle" xml:space="preserve"><value>Delete group</value></data>
+  <data name="DeleteConfirmMessage" xml:space="preserve"><value>Delete group "{0}"? This action cannot be undone.</value></data>
+  <data name="TypeMovies" xml:space="preserve"><value>Movies</value></data>
+  <data name="TypeSeries" xml:space="preserve"><value>Series</value></data>
+  <data name="TypeMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="Edit" xml:space="preserve"><value>Edit</value></data>
+</root>

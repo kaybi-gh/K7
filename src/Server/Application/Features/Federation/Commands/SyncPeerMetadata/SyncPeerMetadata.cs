@@ -234,7 +234,7 @@ public class SyncPeerMetadataCommandHandler(
                     VideoBitrate = file.VideoBitrate,
                     VideoResolution = file.VideoResolution,
                     MediaId = localMedia.Id,
-                    RemoteMediaId = media.Id,
+                    RemoteMediaId = file.MediaId ?? media.Id,
                     LibraryId = localLibrary.Id,
                     RemoteLibraryId = remoteLibraryId
                 });
@@ -243,7 +243,7 @@ public class SyncPeerMetadataCommandHandler(
             {
                 // Re-parent file to the correct top-level entity (e.g., album instead of track)
                 existingRemoteFile.MediaId = localMedia.Id;
-                existingRemoteFile.RemoteMediaId = media.Id;
+                existingRemoteFile.RemoteMediaId = file.MediaId ?? media.Id;
             }
         }
     }

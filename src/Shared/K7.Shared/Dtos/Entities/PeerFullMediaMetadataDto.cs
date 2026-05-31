@@ -99,6 +99,7 @@ public sealed record PeerEpisodeDto
 
 public sealed record PeerMusicTrackDto
 {
+    public Guid? Id { get; init; }
     public required string Title { get; init; }
     public int? TrackNumber { get; init; }
     public int? DiscNumber { get; init; }
