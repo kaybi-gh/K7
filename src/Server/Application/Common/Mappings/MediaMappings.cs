@@ -254,7 +254,9 @@ public static class MediaMappings
                 AlbumId = track.AlbumId,
                 TrackNumber = track.TrackNumber,
                 IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
-                Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
+                RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
+                Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds
+                    ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
                 AlbumTitle = track.Album?.Title,
                 ArtistName = track.Artist?.Title ?? track.Album?.Artist?.Title,
                 ArtistId = track.ArtistId ?? track.Album?.ArtistId,
