@@ -44,7 +44,7 @@
                         {
                             var name = group.Name;
                             <div class="d-flex align-center" style="gap: var(--space-2);">
-                                <span class="text-sm" style="min-width: 140px;">@name</span>
+                                <span class="text-sm" style="min-width: 140px;">@FormatConcurrencyGroup(name)</span>
                                 <K7TextField TValue="int" Type="number" Value="GetGroupLimit(name)"
                                              ValueChanged="@(v => SetGroupLimit(name, v))"
                                              Label="@L["GroupLimit"]" Style="max-width: 100px;" />
@@ -112,7 +112,9 @@
         <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColDuration"]" Width="100px">
             <CellTemplate><span class="text-sm">@(context.Duration.HasValue ? FormatDuration(context.Duration.Value) : "-")</span></CellTemplate>
         </K7DataColumn>
-        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColGroup"]" Property="@(t => t.ConcurrencyGroup ?? "-")" />
+        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColGroup"]">
+            <CellTemplate><span class="text-sm">@FormatConcurrencyGroup(context.ConcurrencyGroup)</span></CellTemplate>
+        </K7DataColumn>
         <K7DataColumn TItem="BackgroundTaskDto" Title="" Width="90px" Hideable="false">
             <CellTemplate>
                 <div class="d-flex align-center" style="gap: var(--space-1);">

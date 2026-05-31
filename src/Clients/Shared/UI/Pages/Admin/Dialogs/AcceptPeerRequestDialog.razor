@@ -29,10 +29,9 @@
         </div>
 
         <div class="accept-dialog__option">
-            <label class="accept-dialog__toggle">
-                <input type="checkbox" @bind="_autoShareNew" />
-                <span>@L["AutoShareNewLibraries"]</span>
-            </label>
+            <K7Switch Value="_autoShareNew"
+                      ValueChanged="@(v => _autoShareNew = v)"
+                      Label="@L["AutoShareNewLibraries"]" />
         </div>
     }
 </div>

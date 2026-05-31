@@ -3,6 +3,7 @@ using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
@@ -20,6 +21,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     ];
 
     [Inject] private IBackgroundTaskService BackgroundTaskService { get; set; } = default!;
+    [Inject] private IFederationService FederationService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
@@ -34,6 +36,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private bool _sortDescending = true;
     private int _workerCount;
     private Dictionary<string, int> _concurrencyLimits = new();
+    private Dictionary<Guid, string> _peerNames = new();
     private readonly CancellationTokenSource _cts = new();
     private Timer? _debounceTimer;
     private const int PageSize = 50;
@@ -42,7 +45,7 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     protected override async Task OnInitializedAsync()
     {
         K7HubClient.BackgroundTaskUpdated += OnBackgroundTaskUpdated;
-        await Task.WhenAll(LoadSettingsAsync(initial: true), LoadSummaryAsync());
+        await Task.WhenAll(LoadSettingsAsync(initial: true), LoadSummaryAsync(), LoadPeerNamesAsync());
     }
 
     public void Dispose()
@@ -234,6 +237,31 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+    }
+
+    private string FormatConcurrencyGroup(string? group)
+    {
+        if (group is null) return "-";
+        if (group.StartsWith("federation:", StringComparison.Ordinal)
+            && Guid.TryParse(group.AsSpan("federation:".Length), out var peerId)
+            && _peerNames.TryGetValue(peerId, out var peerName))
+        {
+            return $"federation:{peerName}";
+        }
+        return group;
+    }
+
+    private async Task LoadPeerNamesAsync()
+    {
+        try
+        {
+            var peers = await FederationService.GetPeerServersAsync(_cts.Token);
+            _peerNames = peers.ToDictionary(p => p.Id, p => p.Name);
+        }
+        catch
+        {
+            // Non-critical, fall back to showing GUIDs
         }
     }
 

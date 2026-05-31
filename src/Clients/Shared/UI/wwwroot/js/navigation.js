@@ -913,6 +913,10 @@ K7.positionDropdown = function (root, dropdown) {
     dropdown.style.visibility = '';
     dropdown.style.opacity = '';
 
+    // An ancestor with transform/filter creates a containing block for position:fixed,
+    // making coordinates relative to it instead of the viewport. Detect and compensate.
+    var cbOffset = K7._getFixedContainingBlockOffset(dropdown);
+
     var vw = window.innerWidth;
     var vh = window.innerHeight;
 
@@ -924,14 +928,14 @@ K7.positionDropdown = function (root, dropdown) {
         // Horizontal: prefer left of parent, flip right if not enough space
         var leftOfParent = parentRect.left - ddRect.width - gap;
         if (leftOfParent >= 8) {
-            dropdown.style.left = leftOfParent + 'px';
+            dropdown.style.left = (leftOfParent - cbOffset.left) + 'px';
         } else {
             // Try right of parent
             var rightOfParent = parentRect.right + gap;
             if (rightOfParent + ddRect.width <= vw - 8) {
-                dropdown.style.left = rightOfParent + 'px';
+                dropdown.style.left = (rightOfParent - cbOffset.left) + 'px';
             } else {
-                dropdown.style.left = '8px';
+                dropdown.style.left = (8 - cbOffset.left) + 'px';
             }
         }
 
@@ -941,7 +945,7 @@ K7.positionDropdown = function (root, dropdown) {
             top = vh - ddRect.height - 8;
         }
         if (top < 8) top = 8;
-        dropdown.style.top = top + 'px';
+        dropdown.style.top = (top - cbOffset.top) + 'px';
         dropdown.style.maxHeight = 'min(320px, calc(100vh - 80px))';
         dropdown.style.overflowY = 'auto';
     } else {
@@ -952,9 +956,9 @@ K7.positionDropdown = function (root, dropdown) {
 
         if (placeAbove) {
             root.classList.add('k7-menu--upward');
-            dropdown.style.bottom = (vh - anchorRect.top + gap) + 'px';
+            dropdown.style.bottom = (vh - anchorRect.top + gap - cbOffset.top) + 'px';
         } else {
-            dropdown.style.top = (anchorRect.bottom + gap) + 'px';
+            dropdown.style.top = (anchorRect.bottom + gap - cbOffset.top) + 'px';
         }
 
         // Horizontal: align right edge to anchor right, shift if overflows
@@ -965,21 +969,30 @@ K7.positionDropdown = function (root, dropdown) {
         if (left + ddRect.width > vw - 8) {
             left = vw - ddRect.width - 8;
         }
-        dropdown.style.left = left + 'px';
+        dropdown.style.left = (left - cbOffset.left) + 'px';
     }
+};
+
+K7._getFixedContainingBlockOffset = function (el) {
+    var parent = el.parentElement;
+    while (parent && parent !== document.documentElement) {
+        var style = getComputedStyle(parent);
+        if (style.transform !== 'none' || style.filter !== 'none' ||
+            style.backdropFilter !== 'none' || style.willChange === 'transform') {
+            var rect = parent.getBoundingClientRect();
+            return { left: rect.left, top: rect.top };
+        }
+        parent = parent.parentElement;
+    }
+    return { left: 0, top: 0 };
 };
 
 K7.resetDropdown = function (root) {
     if (!root) return;
-    root.classList.remove('k7-menu--upward');
-    var dropdown = root.querySelector('.k7-menu-dropdown');
-    if (dropdown) {
-        dropdown.style.position = '';
-        dropdown.style.top = '';
-        dropdown.style.bottom = '';
-        dropdown.style.left = '';
-        dropdown.style.right = '';
-    }
+    root.classList.remove('k7-menu--open', 'k7-menu--upward');
+    // Keep inline position styles intact during the CSS close transition (0.15s)
+    // to prevent the dropdown from snapping to its default position before fading out.
+    // They will be overwritten by positionDropdown on next open.
 };
 
 K7.positionSelectDropdown = function (button, dropdown) {
