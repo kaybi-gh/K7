@@ -495,6 +495,7 @@ public sealed class MockDiagnosticsService : IDiagnosticsService
 
 public sealed class MockServerInfoService : IServerInfoService
 {
+    public Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AboutInfoDto?>(new AboutInfoDto { ServerVersion = "1.0.0" });
     public Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<ServerInfoDto?>(null);
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
     public Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default) => Task.FromResult<MusicStatsDto?>(null);

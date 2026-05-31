@@ -1,0 +1,84 @@
+@page "/settings/about"
+@layout SettingsLayout
+@inject IServerInfoService ServerInfoService
+@inject IStringLocalizer<SettingsAboutPage> L
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<h4 class="mb-4">@L["PageTitle"]</h4>
+
+<div class="about-page">
+    <section class="about-section">
+        <h5 class="about-section-title">@L["Version"]</h5>
+        <div class="about-version-grid">
+            <span class="about-label">@L["ServerVersion"]</span>
+            <span class="about-value">@(_serverVersion ?? "...")</span>
+            <span class="about-label">@L["ClientVersion"]</span>
+            <span class="about-value">@_clientVersion</span>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <h5 class="about-section-title">@L["BuiltWith"]</h5>
+        <div class="about-chips">
+            <span class="about-chip">.NET 10</span>
+            <span class="about-chip">Blazor</span>
+            <span class="about-chip">.NET MAUI</span>
+            <span class="about-chip">ASP.NET Core</span>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <h5 class="about-section-title">@L["Credits"]</h5>
+        <div class="about-credits-grid">
+            <div class="about-credit">
+                <span class="about-credit-name">FFmpeg</span>
+                <span class="about-credit-desc">@L["CreditFfmpeg"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">OpenIddict</span>
+                <span class="about-credit-desc">@L["CreditOpenIddict"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">MusicBrainz</span>
+                <span class="about-credit-desc">@L["CreditMusicBrainz"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">TMDb</span>
+                <span class="about-credit-desc">@L["CreditTmdb"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">Wikimedia Commons</span>
+                <span class="about-credit-desc">@L["CreditWikimedia"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">Chromaprint / AcoustID</span>
+                <span class="about-credit-desc">@L["CreditChromaprint"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">AudioMuse AI</span>
+                <span class="about-credit-desc">@L["CreditAudioMuse"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">MudBlazor</span>
+                <span class="about-credit-desc">@L["CreditMudBlazor"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">TagLibSharp</span>
+                <span class="about-credit-desc">@L["CreditTagLib"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">MediatR</span>
+                <span class="about-credit-desc">@L["CreditMediatR"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">Entity Framework Core</span>
+                <span class="about-credit-desc">@L["CreditEfCore"]</span>
+            </div>
+            <div class="about-credit">
+                <span class="about-credit-name">SignalR</span>
+                <span class="about-credit-desc">@L["CreditSignalR"]</span>
+            </div>
+        </div>
+    </section>
+</div>

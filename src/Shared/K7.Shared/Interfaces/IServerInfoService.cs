@@ -5,6 +5,7 @@ namespace K7.Shared.Interfaces;
 
 public interface IServerInfoService
 {
+    Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default);
     Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default);
     Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default);
     Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default);
