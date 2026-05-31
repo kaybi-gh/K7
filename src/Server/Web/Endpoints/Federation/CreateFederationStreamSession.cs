@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Devices;
@@ -28,6 +29,7 @@ public class CreateFederationStreamSession : IEndpoint
             [FromBody] CreateFederationStreamSessionRequest request,
             [FromServices] IApplicationDbContext context,
             [FromServices] ISender sender,
+            [FromServices] IActiveStreamTracker activeStreamTracker,
             HttpContext httpContext,
             CancellationToken cancellationToken) =>
         {
@@ -93,6 +95,8 @@ public class CreateFederationStreamSession : IEndpoint
 
             // Decide stream URI
             IndexedFileStreamUri streamUri;
+            StreamDecisionDto? streamDecision = null;
+            double duration = 0;
 
             if (indexedFile.FileMetadata is AudioFileMetadata audioMeta)
             {
@@ -106,8 +110,10 @@ public class CreateFederationStreamSession : IEndpoint
                     AudioTrackIndex = request.AudioTrackIndex
                 };
 
-                var (uri, _) = GetStreamUriQueryHandler.GetAudioFileStreamUri(virtualDevice, indexedFile, audioMeta, query);
+                var (uri, decision) = GetStreamUriQueryHandler.GetAudioFileStreamUri(virtualDevice, indexedFile, audioMeta, query);
                 streamUri = uri;
+                streamDecision = decision;
+                duration = audioMeta.Duration.TotalSeconds;
             }
             else if (indexedFile.FileMetadata is VideoFileMetadata videoMeta)
             {
@@ -143,14 +149,36 @@ public class CreateFederationStreamSession : IEndpoint
                     AudioTrackIndex = request.AudioTrackIndex
                 };
 
-                var (uri, _) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
+                var (uri, decision) = GetStreamUriQueryHandler.GetVideoFileStreamUri(
                     virtualDevice, indexedFile, videoMeta, query, hlsSegmentsAvailable, subtitleTrackIndex: null);
                 streamUri = uri;
+                streamDecision = decision;
+                duration = videoMeta.Duration.TotalSeconds;
             }
             else
             {
                 return Results.UnprocessableEntity();
             }
+
+            // Track as active stream for admin visibility
+            var media = await context.Medias
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.IndexedFiles.Any(f => f.Id == indexedFile.Id), cancellationToken);
+
+            activeStreamTracker.Upsert(session.Id, new ActiveStreamInfo
+            {
+                SessionId = session.Id,
+                IdentityUserId = clientId,
+                UserName = peer.Name,
+                MediaId = media?.Id,
+                MediaTitle = media?.Title,
+                MediaType = media?.GetType().Name,
+                DeviceName = peer.Name,
+                DeviceType = "Federation",
+                StreamDecision = streamDecision,
+                Duration = duration,
+                StartedAt = DateTime.UtcNow
+            });
 
             var result = new StreamingSessionDto
             {
