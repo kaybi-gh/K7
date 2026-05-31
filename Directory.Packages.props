@@ -13,7 +13,6 @@
     <PackageVersion Include="bunit" Version="2.6.2" />
     <PackageVersion Include="CommunityToolkit.Maui.MediaElement" Version="9.0.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
-    <PackageVersion Include="Extensions.MudBlazor.StaticInput" Version="3.2.1" />
     <PackageVersion Include="FFMpegCore" Version="5.4.0" />
     <PackageVersion Include="FluentAssertions" Version="6.12.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.1" />
@@ -61,7 +60,6 @@
     <PackageVersion Include="Microsoft.TestPlatform.TestHost" Version="17.8.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageVersion Include="Microsoft.Web.LibraryManager.Build" Version="3.0.71" />
-    <PackageVersion Include="MudBlazor" Version="9.0.0-preview.1" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.16" />
@@ -97,6 +95,8 @@
     <PackageVersion Include="Testcontainers.PostgreSql" Version="3.7.0" />
     <PackageVersion Include="TMDbLib" Version="2.3.0" />
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.6" />
-    <PackageVersion Include="Xamarin.GooglePlayServices.Cast.Framework" Version="122.0.0" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Cast" Version="122.3.1" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Cast.Framework" Version="122.3.1" />
+    <PackageVersion Include="Xamarin.GooglePlayServices.Basement" Version="118.10.0.1" />
   </ItemGroup>
 </Project>
