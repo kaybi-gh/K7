@@ -8,6 +8,7 @@ namespace K7.Clients.Shared.Models;
 public class AudioQueueItem
 {
     public required Guid IndexedFileId { get; init; }
+    public Guid? RemoteIndexedFileId { get; init; }
     public required Guid MediaId { get; init; }
     public required string Title { get; init; }
     public required string? Artist { get; init; }

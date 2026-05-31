@@ -107,12 +107,9 @@ public class GetFederationMedia : IEndpoint
             var mediaItems = new List<BaseMedia>();
             mediaItems.AddRange(directMedia);
 
-            // For albums, flatten track files to the album level
+            // For albums, flatten track files to the album level but preserve track ownership
             foreach (var album in albums)
             {
-                album.IndexedFiles = album.Tracks
-                    .SelectMany(t => t.IndexedFiles)
-                    .ToList();
                 mediaItems.Add(album);
             }
 
@@ -132,6 +129,10 @@ public class GetFederationMedia : IEndpoint
                 var backdrop = m.Pictures.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
                 var logo = m.Pictures.FirstOrDefault(p => p.Type == MetadataPictureType.Logo);
 
+                var files = m is MusicAlbum albumMedia
+                    ? albumMedia.Tracks.SelectMany(t => t.IndexedFiles.Select(f => BuildFileDto(f, t.Id))).ToList()
+                    : m.IndexedFiles.Select(f => BuildFileDto(f, null)).ToList();
+
                 return new PeerMediaDto
                 {
                     Id = m.Id,
@@ -150,57 +151,7 @@ public class GetFederationMedia : IEndpoint
                         Provider = e.ProviderName,
                         Value = e.Value
                     }).ToList(),
-                    Files = m.IndexedFiles.Select(f =>
-                    {
-                        var vMeta = f.FileMetadata as VideoFileMetadata;
-                        var aMeta = f.FileMetadata as AudioFileMetadata;
-                        return new PeerFileDto
-                        {
-                            Id = f.Id,
-                            Name = f.Name,
-                            Extension = f.Extension,
-                            Size = f.Size,
-                            Container = f.FileMetadata?.Container,
-                            Duration = vMeta?.Duration ?? aMeta?.Duration,
-                            VideoBitrate = vMeta?.VideoBitrate,
-                            VideoResolution = vMeta?.VideoResolution,
-                            AudioTracks = vMeta?.AudioTracks.Select(t => new PeerAudioTrackDto
-                            {
-                                Index = t.Index,
-                                IsDefault = t.IsDefault,
-                                Name = t.Name,
-                                Language = t.Language,
-                                Codec = t.Codec,
-                                Channels = t.Channels,
-                                ChannelLayout = t.ChannelLayout,
-                                SampleRateHz = t.SampleRateHz,
-                                Profile = t.Profile
-                            }).ToList() ?? [],
-                            VideoTracks = vMeta?.VideoTracks.Select(t => new PeerVideoTrackDto
-                            {
-                                Index = t.Index,
-                                IsDefault = t.IsDefault,
-                                Width = t.Width,
-                                Height = t.Height,
-                                Codec = t.Codec,
-                                Profile = t.Profile,
-                                Level = t.Level,
-                                PixelFormat = t.PixelFormat,
-                                BitDepth = t.BitDepth
-                            }).ToList() ?? [],
-                            SubtitleTracks = vMeta?.SubtitleTracks.Select(t => new PeerSubtitleTrackDto
-                            {
-                                Index = t.Index,
-                                IsDefault = t.IsDefault,
-                                Name = t.Name,
-                                Language = t.Language,
-                                Codec = t.Codec,
-                                IsTextBased = t.IsTextBased,
-                                IsForced = t.IsForced,
-                                IsHearingImpaired = t.IsHearingImpaired
-                            }).ToList() ?? []
-                        };
-                    }).ToList(),
+                    Files = files,
                     Genres = m.Genres.ToList()
                 };
             }).ToList();
@@ -210,5 +161,58 @@ public class GetFederationMedia : IEndpoint
         .RequireAuthorization(Policies.PeerAccess)
         .WithName(type.Name)
         .WithTags(groupName);
+    }
+
+    private static PeerFileDto BuildFileDto(Domain.Entities.Metadatas.Files.IndexedFile f, Guid? mediaId)
+    {
+        var vMeta = f.FileMetadata as VideoFileMetadata;
+        var aMeta = f.FileMetadata as AudioFileMetadata;
+        return new PeerFileDto
+        {
+            Id = f.Id,
+            MediaId = mediaId,
+            Name = f.Name,
+            Extension = f.Extension,
+            Size = f.Size,
+            Container = f.FileMetadata?.Container,
+            Duration = vMeta?.Duration ?? aMeta?.Duration,
+            VideoBitrate = vMeta?.VideoBitrate,
+            VideoResolution = vMeta?.VideoResolution,
+            AudioTracks = vMeta?.AudioTracks.Select(t => new PeerAudioTrackDto
+            {
+                Index = t.Index,
+                IsDefault = t.IsDefault,
+                Name = t.Name,
+                Language = t.Language,
+                Codec = t.Codec,
+                Channels = t.Channels,
+                ChannelLayout = t.ChannelLayout,
+                SampleRateHz = t.SampleRateHz,
+                Profile = t.Profile
+            }).ToList() ?? [],
+            VideoTracks = vMeta?.VideoTracks.Select(t => new PeerVideoTrackDto
+            {
+                Index = t.Index,
+                IsDefault = t.IsDefault,
+                Width = t.Width,
+                Height = t.Height,
+                Codec = t.Codec,
+                Profile = t.Profile,
+                Level = t.Level,
+                PixelFormat = t.PixelFormat,
+                BitDepth = t.BitDepth
+            }).ToList() ?? [],
+            SubtitleTracks = vMeta?.SubtitleTracks.Select(t => new PeerSubtitleTrackDto
+            {
+                Index = t.Index,
+                IsDefault = t.IsDefault,
+                Name = t.Name,
+                Language = t.Language,
+                Codec = t.Codec,
+                IsTextBased = t.IsTextBased,
+                IsForced = t.IsForced,
+                IsHearingImpaired = t.IsHearingImpaired
+            }).ToList() ?? []
+        };
     }
 }
