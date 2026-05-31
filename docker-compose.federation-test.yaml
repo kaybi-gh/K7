@@ -1,0 +1,38 @@
+services:
+  k7-peer-a:
+    build: .
+    ports:
+      - "5080:8080"
+    environment:
+      - Database__Provider=Sqlite
+      - Database__Name=/data/k7-a.db
+      - BaseUrl=http://k7-peer-a:8080
+      - Security__ForceHttps=false
+      - Paths__Config=/data/config-a
+      - Paths__Metadatas=/data/metadatas-a
+      - Paths__Logs=/data/logs-a
+      - Paths__Transcoding=/data/transcoding-a
+      - Authentication__Local__SignInEnabled=true
+      - Authentication__Local__RegistrationEnabled=true
+    volumes:
+      - "C:/k7/federation/data:/data:rw"
+      - "C:/k7/federation/media-a:/media:ro"
+
+  k7-peer-b:
+    build: .
+    ports:
+      - "5081:8080"
+    environment:
+      - Database__Provider=Sqlite
+      - Database__Name=/data/k7-b.db
+      - BaseUrl=http://k7-peer-b:8080
+      - Security__ForceHttps=false
+      - Paths__Config=/data/config-b
+      - Paths__Metadatas=/data/metadatas-b
+      - Paths__Logs=/data/logs-b
+      - Paths__Transcoding=/data/transcoding-b
+      - Authentication__Local__SignInEnabled=true
+      - Authentication__Local__RegistrationEnabled=true
+    volumes:
+      - "C:/k7/federation/data:/data:rw"
+      - "C:/k7/federation/media-b:/media:ro"
