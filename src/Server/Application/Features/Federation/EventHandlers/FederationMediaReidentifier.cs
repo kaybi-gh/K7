@@ -74,20 +74,10 @@ public class FederationMediaReidentifier(
             remoteFile.MediaId = media.Id;
         }
 
-        // Delete the orphaned federation media
-        var federationMedia = await context.Medias
-            .Where(m => matchingMediaIds.Contains(m.Id))
-            .ToListAsync(cancellationToken);
-
-        foreach (var fedMedia in federationMedia)
-        {
-            context.Medias.Remove(fedMedia);
-        }
-
         await context.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
-            "Reparented {FileCount} remote files and removed {MediaCount} federation media for local media {MediaId}",
-            remoteFiles.Count, federationMedia.Count, media.Id);
+            "Reparented {FileCount} remote files from {MediaCount} federation media to local media {MediaId}",
+            remoteFiles.Count, matchingMediaIds.Count, media.Id);
     }
 }
