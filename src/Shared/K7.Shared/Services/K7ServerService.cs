@@ -586,6 +586,11 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<GlobalSearchResultDto>($"api/search?q={Uri.EscapeDataString(q)}&pageSize={pageSize}", _serializerOptions, cancellationToken);
     }
 
+    public async Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<AboutInfoDto>("api/about", _serializerOptions, cancellationToken);
+    }
+
     public async Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<ServerInfoDto>("api/server-info", _serializerOptions, cancellationToken);

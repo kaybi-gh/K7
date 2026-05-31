@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>About</value></data>
+  <data name="Version" xml:space="preserve"><value>Version</value></data>
+  <data name="ServerVersion" xml:space="preserve"><value>Server</value></data>
+  <data name="ClientVersion" xml:space="preserve"><value>Client</value></data>
+  <data name="BuiltWith" xml:space="preserve"><value>Built with</value></data>
+  <data name="Credits" xml:space="preserve"><value>Credits</value></data>
+  <data name="CreditFfmpeg" xml:space="preserve"><value>Media transcoding and processing</value></data>
+  <data name="CreditOpenIddict" xml:space="preserve"><value>OpenID Connect authentication</value></data>
+  <data name="CreditMusicBrainz" xml:space="preserve"><value>Music metadata</value></data>
+  <data name="CreditTmdb" xml:space="preserve"><value>Movie and TV show metadata</value></data>
+  <data name="CreditWikimedia" xml:space="preserve"><value>Artist images</value></data>
+  <data name="CreditChromaprint" xml:space="preserve"><value>Audio fingerprinting and intro detection</value></data>
+  <data name="CreditAudioMuse" xml:space="preserve"><value>AI-powered music analysis</value></data>
+  <data name="CreditMudBlazor" xml:space="preserve"><value>UI component library</value></data>
+  <data name="CreditTagLib" xml:space="preserve"><value>Audio tag reading</value></data>
+  <data name="CreditMediatR" xml:space="preserve"><value>Mediation and CQRS</value></data>
+  <data name="CreditEfCore" xml:space="preserve"><value>Data access</value></data>
+  <data name="CreditSignalR" xml:space="preserve"><value>Real-time communication</value></data>
+</root>

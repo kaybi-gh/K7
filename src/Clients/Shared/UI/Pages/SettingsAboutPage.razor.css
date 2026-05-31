@@ -1,0 +1,68 @@
+.about-page {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.about-section-title {
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.about-version-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+}
+
+.about-label {
+    color: var(--k7-text-secondary);
+    font-size: 0.875rem;
+}
+
+.about-value {
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.about-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.about-chip {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background: var(--k7-surface-variant);
+    color: var(--k7-text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.about-credits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.about-credit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--k7-surface-variant);
+}
+
+.about-credit-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.about-credit-desc {
+    color: var(--k7-text-secondary);
+    font-size: 0.8125rem;
+}

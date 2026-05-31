@@ -7003,6 +7003,19 @@
           }
         }
       }
+    },
+    "/api/about": {
+      "get": {
+        "tags": [
+          "About"
+        ],
+        "operationId": "GetAboutInfo",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -16279,6 +16292,9 @@
     },
     {
       "name": "Admin"
+    },
+    {
+      "name": "About"
     }
   ]
 }

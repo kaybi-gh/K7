@@ -31,4 +31,5 @@
   <data name="AudioPlayer" xml:space="preserve"><value>Lecteur audio</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
   <data name="Offline" xml:space="preserve"><value>Hors-ligne</value></data>
+  <data name="About" xml:space="preserve"><value>A propos</value></data>
 </root>
