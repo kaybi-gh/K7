@@ -2981,6 +2981,13 @@
             }
           },
           {
+            "name": "Provenance",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MediaProvenance"
+            }
+          },
+          {
             "name": "SearchText",
             "in": "query",
             "schema": {
@@ -9944,6 +9951,13 @@
             ],
             "format": "uuid"
           },
+          "remoteIndexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "duration": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
@@ -10241,6 +10255,13 @@
             ],
             "format": "uuid"
           },
+          "remoteIndexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "seriePictures": {
             "type": [
               "null",
@@ -10473,6 +10494,13 @@
             "format": "int32"
           },
           "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "remoteIndexedFileId": {
             "type": [
               "null",
               "string"
@@ -11015,6 +11043,13 @@
             "format": "uuid"
           },
           "indexedFileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "remoteIndexedFileId": {
             "type": [
               "null",
               "string"
@@ -12650,6 +12685,9 @@
         }
       },
       "MediaOrderingOption": {
+        "type": "integer"
+      },
+      "MediaProvenance": {
         "type": "integer"
       },
       "MediaSegmentDto": {
