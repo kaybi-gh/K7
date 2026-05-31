@@ -79,19 +79,39 @@ public class SyncPeerMetadataCommandHandler(
             }
 
             await context.SaveChangesAsync(cancellationToken);
+        }
 
-            // Remove orphaned federated media that no longer have any RemoteIndexedFiles
-            var orphanedMedia = await context.Medias
-                .Where(m => m.PeerServerId == peer.Id
-                    && !m.RemoteIndexedFiles.Any()
-                    && m.ExternalIds.Any(e => e.ProviderName == "federation"))
+        // Remove inbound agreements for libraries no longer shared by the provider
+        var remoteLibraryTitles = remoteLibraries.Select(r => r.Title).ToHashSet();
+
+        var staleAgreements = await context.PeerShareAgreements
+            .Include(a => a.Library)
+            .Where(a => a.PeerServerId == peer.Id && a.Direction == ShareDirection.Inbound)
+            .ToListAsync(cancellationToken);
+
+        var agreementsToRemove = staleAgreements
+            .Where(a => a.Library is not null && !remoteLibraryTitles.Contains(a.Library.Title))
+            .ToList();
+
+        if (agreementsToRemove.Count > 0)
+        {
+            var removedLibraryIds = agreementsToRemove.Select(a => a.LibraryId).ToList();
+
+            // Remove remote indexed files belonging to the removed libraries
+            await context.RemoteIndexedFiles
+                .Where(r => r.PeerServerId == peer.Id && removedLibraryIds.Contains(r.LibraryId))
+                .ExecuteDeleteAsync(cancellationToken);
+
+            context.PeerShareAgreements.RemoveRange(agreementsToRemove);
+
+            // Remove the local mirror libraries themselves
+            var librariesToRemove = await context.Libraries
+                .Where(l => removedLibraryIds.Contains(l.Id) && l.PeerServerId == peer.Id)
                 .ToListAsync(cancellationToken);
 
-            if (orphanedMedia.Count > 0)
-            {
-                context.Medias.RemoveRange(orphanedMedia);
-                logger.LogInformation("Removed {Count} orphaned federated media from peer {PeerName}", orphanedMedia.Count, peer.Name);
-            }
+            context.Libraries.RemoveRange(librariesToRemove);
+
+            logger.LogInformation("Removed {Count} stale inbound agreements from peer {PeerName} (libraries no longer shared)", agreementsToRemove.Count, peer.Name);
         }
 
         peer.LastSeen = DateTimeOffset.UtcNow;
@@ -211,6 +231,23 @@ public class SyncPeerMetadataCommandHandler(
                 MaxAttempts = 3,
                 ConcurrencyGroup = $"federation:{peer.Id}"
             }, cancellationToken);
+        }
+        else
+        {
+            // Ensure federation external ID exists on matched local media
+            var federationValue = $"{peer.Id}:{media.Id}";
+            var hasFederationId = await context.ExternalIds
+                .AnyAsync(e => e.ProviderName == "federation" && e.Value == federationValue && e.MediaId == localMedia.Id, cancellationToken);
+
+            if (!hasFederationId)
+            {
+                context.ExternalIds.Add(new ExternalId
+                {
+                    ProviderName = "federation",
+                    Value = federationValue,
+                    MediaId = localMedia.Id
+                });
+            }
         }
 
         // Sync RemoteIndexedFiles

@@ -98,6 +98,40 @@ public class DiscoverPeerLibrariesCommandHandler(
             }
         }
 
+        // Remove inbound agreements for libraries no longer shared by the provider
+        var remoteLibraryTitles = remoteLibraries.Select(r => r.Title).ToHashSet();
+
+        var staleAgreements = await context.PeerShareAgreements
+            .Include(a => a.Library)
+            .Where(a => a.PeerServerId == peer.Id && a.Direction == ShareDirection.Inbound)
+            .ToListAsync(cancellationToken);
+
+        var agreementsToRemove = staleAgreements
+            .Where(a => a.Library is not null && !remoteLibraryTitles.Contains(a.Library.Title))
+            .ToList();
+
+        if (agreementsToRemove.Count > 0)
+        {
+            var removedLibraryIds = agreementsToRemove.Select(a => a.LibraryId).ToList();
+
+            // Remove remote indexed files belonging to the removed libraries
+            await context.RemoteIndexedFiles
+                .Where(r => r.PeerServerId == peer.Id && removedLibraryIds.Contains(r.LibraryId))
+                .ExecuteDeleteAsync(cancellationToken);
+
+            context.PeerShareAgreements.RemoveRange(agreementsToRemove);
+
+            // Remove the local mirror libraries themselves
+            var librariesToRemove = await context.Libraries
+                .Where(l => removedLibraryIds.Contains(l.Id) && l.PeerServerId == peer.Id)
+                .ToListAsync(cancellationToken);
+
+            context.Libraries.RemoveRange(librariesToRemove);
+            await context.SaveChangesAsync(cancellationToken);
+
+            logger.LogInformation("Removed {Count} stale inbound agreements from peer {PeerName} (libraries no longer shared)", agreementsToRemove.Count, peer.Name);
+        }
+
         return await GetInboundAgreementsAsync(peer.Id, cancellationToken);
     }
 
