@@ -4,6 +4,7 @@ namespace K7.Server.Domain.Entities.Metadatas.External;
 
 public class ExternalEpisodeMetadata : IExternalMetadata
 {
+    public Guid? RemoteId { get; init; }
     public int EpisodeNumber { get; init; }
     public int SeasonNumber { get; init; }
     public string? Title { get; init; }

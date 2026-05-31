@@ -103,6 +103,8 @@ public class FederationMetadataProvider(
                 Duration = t.Duration,
                 MusicBrainzRecordingId = t.MusicBrainzRecordingId,
                 Isrc = t.Isrc,
+                Lyrics = t.Lyrics,
+                LyricsLrc = t.LyricsLrc,
                 ArtistCredits = t.ArtistCredits.Select(a => new ExternalMusicTrackArtistCredit
                 {
                     Name = a.Name,
@@ -200,6 +202,7 @@ public class FederationMetadataProvider(
 
         return new ExternalEpisodeMetadata
         {
+            RemoteId = episode.Id,
             EpisodeNumber = episode.EpisodeNumber,
             SeasonNumber = episode.SeasonNumber,
             Title = episode.Title,
