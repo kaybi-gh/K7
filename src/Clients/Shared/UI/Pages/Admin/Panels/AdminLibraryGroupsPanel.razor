@@ -1,0 +1,57 @@
+@page "/admin/library-groups"
+@layout AdminLayout
+@using K7.Shared.Dtos.Entities
+@inject IStringLocalizer<AdminLibraryGroupsPanel> L
+@inject IStringLocalizer<SharedResource> S
+
+<BrowseView TItem="LibraryGroupDto"
+            Items="_groups"
+            Loading="_isLoading"
+            DefaultItemWidth="320"
+            DefaultSpacing="16"
+            GridItemAspectRatio="null"
+            PersistenceKey="admin-library-groups">
+    <ToolbarContent>
+        <h6>@L["Title"]</h6>
+    </ToolbarContent>
+    <GridTemplate Context="group">
+        <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
+            <div class="group-card__header">
+                @if (group.CoverPictureId.HasValue)
+                {
+                    <K7Image Src="@($"/api/metadata-pictures/{group.CoverPictureId.Value}?size=Small")" Alt="@group.Title" Width="64" Class="group-card__cover" />
+                }
+                else
+                {
+                    <div class="group-card__cover-placeholder" style="@(group.CoverDominantColor is not null ? $"background:{group.CoverDominantColor};" : "")">
+                        <K7Icon Icon="@GetMediaTypeIcon(group.MediaType)" Size="lg" />
+                    </div>
+                }
+                <div class="group-card__title">
+                    <h6>@group.Title</h6>
+                    <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(group.MediaType)</K7Chip>
+                </div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(group.Description))
+            {
+                <p class="group-card__description">@group.Description</p>
+            }
+            <div class="group-card__info">
+                <span>@string.Format(L["LibraryCount"], group.LibraryIds.Count)</span>
+                @if (!string.IsNullOrWhiteSpace(group.Icon))
+                {
+                    <span>@L["Icon"]: @group.Icon</span>
+                }
+            </div>
+            <div style="flex:1"></div>
+            <div class="group-card__actions">
+                <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.PencilSimple" OnClick="@(() => OpenEditDialog(group))">
+                    @L["Edit"]
+                </K7Button>
+                <K7Button Variant="text" Size="sm" Color="error" StartIcon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(group))">
+                    @S["Delete"]
+                </K7Button>
+            </div>
+        </K7Paper>
+    </GridTemplate>
+</BrowseView>

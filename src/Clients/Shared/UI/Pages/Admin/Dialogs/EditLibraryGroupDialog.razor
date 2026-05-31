@@ -1,0 +1,75 @@
+@using K7.Shared.Dtos.Entities
+@using Microsoft.AspNetCore.Components.Forms
+@inject IStringLocalizer<EditLibraryGroupDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-3 mt-2">
+        <K7TextField @bind-Value="_title" Label="@L["TitleLabel"]" Variant="outlined" />
+        <K7TextField @bind-Value="_description" Label="@L["DescriptionLabel"]" Variant="outlined" Lines="3" />
+
+        <div class="picker-row">
+            <span class="picker-row__label">@L["IconLabel"]</span>
+            <div class="picker-row__value">
+                @if (!string.IsNullOrEmpty(_icon))
+                {
+                    <i class="@_icon picker-row__icon-preview" aria-hidden="true"></i>
+                }
+                else
+                {
+                    <span class="text-sm text-secondary">@L["IconNone"]</span>
+                }
+            </div>
+            <K7Button Variant="outlined" Size="sm" OnClick="OpenIconPickerAsync">@L["IconChange"]</K7Button>
+        </div>
+
+        <div class="picker-row">
+            <span class="picker-row__label">@L["CoverLabel"]</span>
+            <div class="picker-row__value">
+                @if (_pendingCover?.SourcePictureId.HasValue == true)
+                {
+                    <img src="/api/metadata-pictures/@_pendingCover.SourcePictureId?size=Small" class="picker-row__cover-preview" alt="cover" />
+                }
+                else if (_pendingCover?.File is not null)
+                {
+                    <span class="text-sm text-secondary">@_pendingCover.File.Name</span>
+                }
+                else if (_currentCoverPictureId.HasValue)
+                {
+                    <img src="/api/metadata-pictures/@_currentCoverPictureId?size=Small" class="picker-row__cover-preview" alt="cover" />
+                }
+                else
+                {
+                    <span class="text-sm text-secondary">@L["CoverNone"]</span>
+                }
+            </div>
+            <K7Button Variant="outlined" Size="sm" OnClick="OpenCoverPickerAsync">@L["CoverChange"]</K7Button>
+            @if (_currentCoverPictureId.HasValue || _pendingCover is not null)
+            {
+                <K7Button Variant="text" Size="sm" OnClick="RemoveCover">@L["RemoveCover"]</K7Button>
+            }
+        </div>
+
+        <div class="mt-3">
+            <span class="picker-row__label mb-1">@L["PreviewLabel"]</span>
+            <K7CategoryCard Title="@(_title ?? "")"
+                            Description="@(_description ?? "")"
+                            Icon="@PreviewIcon"
+                            GradientStart="@_previewColors.GradientStart"
+                            GradientEnd="@_previewColors.GradientEnd"
+                            IconColor="@_previewColors.IconColor"
+                            ImageUrl="@PreviewImageUrl"
+                            DominantColor="@Group.CoverDominantColor" />
+        </div>
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit" Disabled="_isSubmitting">
+        @if (_isSubmitting)
+        {
+            <K7Spinner Size="sm" />
+        }
+        @S["Save"]
+    </K7Button>
+</div>

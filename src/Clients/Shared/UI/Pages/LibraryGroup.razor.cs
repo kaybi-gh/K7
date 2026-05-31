@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Components.Web.Virtualization;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class Library : IDisposable
+public partial class LibraryGroup : IDisposable
 {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;

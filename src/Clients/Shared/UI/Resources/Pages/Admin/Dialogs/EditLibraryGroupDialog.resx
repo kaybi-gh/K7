@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="TitleLabel" xml:space="preserve"><value>Titre</value></data>
+  <data name="DescriptionLabel" xml:space="preserve"><value>Description</value></data>
+  <data name="IconLabel" xml:space="preserve"><value>Icone</value></data>
+  <data name="IconHelper" xml:space="preserve"><value>Nom d'icone Phosphor (ex: MusicNote, FilmSlate)</value></data>
+  <data name="IconNone" xml:space="preserve"><value>Aucune</value></data>
+  <data name="IconChange" xml:space="preserve"><value>Choisir</value></data>
+  <data name="IconSearch" xml:space="preserve"><value>Rechercher une icone...</value></data>
+  <data name="CoverLabel" xml:space="preserve"><value>Image de couverture</value></data>
+  <data name="CoverNone" xml:space="preserve"><value>Aucune</value></data>
+  <data name="CoverUpload" xml:space="preserve"><value>Importer</value></data>
+  <data name="CoverChange" xml:space="preserve"><value>Choisir</value></data>
+  <data name="RemoveCover" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="PreviewLabel" xml:space="preserve"><value>Apercu</value></data>
+</root>

@@ -1,4 +1,4 @@
-@page "/library/{id}"
+@page "/library-group/{id}"
 @using K7.Clients.Shared.Enums
 @using K7.Clients.Shared.Mappings
 @using K7.Server.Domain.Enums
@@ -6,7 +6,7 @@
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
 @inject ILibraryService LibraryService
-@inject IStringLocalizer<Library> L
+@inject IStringLocalizer<LibraryGroup> L
 @inject IStringLocalizer<SharedResource> S
 
 <PageTitle>@string.Format(L["PageTitle"].Value, Id)</PageTitle>
