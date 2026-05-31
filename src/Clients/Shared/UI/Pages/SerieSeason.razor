@@ -2,6 +2,7 @@
 @using K7.Shared.Dtos.Entities.Medias
 @inject IMediaService k7ServerService
 @inject IK7ServerService apiClient
+@inject IFederationService FederationService
 @inject NavigationManager NavigationManager
 @inject IPlayerService PlayerService
 @inject PlaybackProgressTracker PlaybackProgressTracker
@@ -140,7 +141,10 @@ else if (_season is not null)
                             </ActivatorContent>
                             <ChildContent>
                                 <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                                <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
+                                @if (!_isFederated)
+                                {
+                                    <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
+                                }
                             </ChildContent>
                         </K7Menu>
                     </AuthorizeView>

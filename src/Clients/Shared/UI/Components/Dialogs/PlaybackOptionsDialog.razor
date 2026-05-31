@@ -1,6 +1,8 @@
 ﻿@using K7.Shared.Dtos.Entities.Medias
 @using K7.Shared.Dtos.Entities.Metadatas.Files
 @using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
+@using K7.Shared
+@using System.Globalization
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<PlaybackOptionsDialog> L
 @inject IStringLocalizer<SharedResource> S
@@ -19,22 +21,36 @@
 
             @if (videoMetadata != null)
             {
-                <K7Select TValue="AudioFileTrackDto" @bind-Value="SelectedAudioTrack" Label="@L["AudioTrack"]" Variant="filled">
+                <K7Select TValue="AudioFileTrackDto" @bind-Value="SelectedAudioTrack" Label="@L["AudioTrack"]" Variant="filled" ToStringFunc="@(t => GetAudioTrackLabel(t))">
                     @if (videoMetadata.AudioTracks != null)
                     {
                         @foreach (var track in videoMetadata.AudioTracks)
                         {
-                            <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec} {track.ChannelLayout}")</K7SelectItem>
+                            <K7SelectItem Value="@track">
+                                @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                @if (audioLang is not null)
+                                {
+                                    <span class="fi fi-@audioLang.CountryCode"></span>
+                                }
+                                @GetAudioTrackLabel(track)
+                            </K7SelectItem>
                         }
                     }
                 </K7Select>
 
-                <K7Select TValue="SubtitleFileTrackDto" @bind-Value="SelectedSubtitleTrack" Label="@L["SubtitleTrack"]" Variant="filled" Clearable="true">
+                <K7Select TValue="SubtitleFileTrackDto" @bind-Value="SelectedSubtitleTrack" Label="@L["SubtitleTrack"]" Variant="filled" Clearable="true" ToStringFunc="@(t => GetSubtitleTrackLabel(t))">
                     @if (videoMetadata.SubtitleTracks != null)
                     {
                         @foreach (var track in videoMetadata.SubtitleTracks)
                         {
-                            <K7SelectItem Value="@track">@($"{track.Language} - {track.Name} - {track.Codec}")</K7SelectItem>
+                            <K7SelectItem Value="@track">
+                                @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                @if (subLang is not null)
+                                {
+                                    <span class="fi fi-@subLang.CountryCode"></span>
+                                }
+                                @GetSubtitleTrackLabel(track)
+                            </K7SelectItem>
                         }
                     }
                 </K7Select>

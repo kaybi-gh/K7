@@ -22,6 +22,7 @@
   <data name="ReIdentify" xml:space="preserve"><value>Re-identify</value></data>
   <data name="VideoTrack" xml:space="preserve"><value>Video track</value></data>
   <data name="AudioTrack" xml:space="preserve"><value>Audio track</value></data>
+  <data name="TracksSelection" xml:space="preserve"><value>Tracks selection</value></data>
   <data name="Overview" xml:space="preserve"><value>Overview</value></data>
   <data name="CastingAndCrew" xml:space="preserve"><value>Casting and crew</value></data>
   <data name="IndexedVersions" xml:space="preserve"><value>Indexed versions / Files</value></data>
