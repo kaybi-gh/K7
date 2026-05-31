@@ -198,6 +198,31 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     await _context.SaveChangesAsync(cancellationToken);
                 }
 
+                // Re-parent RemoteIndexedFiles from album to individual tracks
+                if (album.Tracks.Count > 0 && metadata.Tracks is { Count: > 0 })
+                {
+                    var albumRemoteFiles = await _context.RemoteIndexedFiles
+                        .Where(r => r.MediaId == album.Id)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var trackMeta in metadata.Tracks)
+                    {
+                        if (trackMeta.RemoteId is null) continue;
+
+                        var localTrack = album.Tracks.FirstOrDefault(t =>
+                            t.TrackNumber == trackMeta.TrackNumber
+                            || string.Equals(t.Title, trackMeta.Title, StringComparison.OrdinalIgnoreCase));
+
+                        if (localTrack is null) continue;
+
+                        var remoteFile = albumRemoteFiles.FirstOrDefault(r => r.RemoteMediaId == trackMeta.RemoteId.Value);
+                        if (remoteFile is not null)
+                        {
+                            remoteFile.MediaId = localTrack.Id;
+                        }
+                    }
+                }
+
                 if (album.ArtistId is null && metadata.Artists is { Count: > 0 })
                 {
                     var primaryArtist = metadata.Artists[0];
