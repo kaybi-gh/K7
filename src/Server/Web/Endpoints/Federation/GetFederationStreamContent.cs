@@ -101,8 +101,8 @@ public class GetFederationStreamContent : IEndpoint
             {
                 var segments = path.Split('/');
                 var quality = segments[2];
-                var segmentFile = segments[4];
-                var segmentIndex = int.Parse(Path.GetFileNameWithoutExtension(segmentFile));
+                var segmentFile = Path.GetFileNameWithoutExtension(segments[4]);
+                var segmentIndex = segmentFile.Equals("init", StringComparison.OrdinalIgnoreCase) ? -1 : int.Parse(segmentFile);
                 var query = httpContext.Request.Query;
 
                 var segStreamSessId = Guid.TryParse(query["streamSessionId"], out var vSegSsId) ? vSegSsId : sessionId;
@@ -129,8 +129,8 @@ public class GetFederationStreamContent : IEndpoint
             {
                 var segments = path.Split('/');
                 var trackIndex = int.Parse(segments[2]);
-                var segmentFile = segments[4];
-                var segmentIndex = int.Parse(Path.GetFileNameWithoutExtension(segmentFile));
+                var segmentFile = Path.GetFileNameWithoutExtension(segments[4]);
+                var segmentIndex = segmentFile.Equals("init", StringComparison.OrdinalIgnoreCase) ? -1 : int.Parse(segmentFile);
                 var query = httpContext.Request.Query;
 
                 var audioSegStreamSessId = Guid.TryParse(query["streamSessionId"], out var aSegSsId) ? aSegSsId : sessionId;
