@@ -13,6 +13,7 @@ public class GetLibrariesQueryHandler(IApplicationDbContext context, IUser curre
     {
         var query = context.Libraries
             .AsNoTracking()
+            .Include(l => l.PeerServer)
             .AsQueryable();
 
         if (currentUser.Id is { } userId)

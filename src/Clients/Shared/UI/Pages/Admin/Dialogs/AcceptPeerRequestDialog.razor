@@ -1,0 +1,74 @@
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@using K7.Shared.Dtos.Entities
+@using K7.Shared.Interfaces
+@inject IStringLocalizer<AcceptPeerRequestDialog> L
+@inject IStringLocalizer<SharedResource> S
+@inject ILibraryService LibraryService
+
+<div class="k7-dialog-content">
+    <p>@L["Message"]</p>
+
+    @if (_isLoading)
+    {
+        <span>@S["Loading"]</span>
+    }
+    else
+    {
+        <div class="accept-dialog__libraries">
+            <span class="accept-dialog__label">@L["SharedLibrariesLabel"]</span>
+            <K7CheckboxList TItem="LibraryDto"
+                            Items="_libraries"
+                            IsChecked="@(l => _selectedIds.Contains(l.Id))"
+                            CheckedChanged="@(e => ToggleLibrary(e.Item.Id))"
+                            ItemLabel="@(l => l.Title)" />
+            @if (_libraries.Count == 0)
+            {
+                <span class="accept-dialog__empty">@L["NoLibraries"]</span>
+            }
+        </div>
+
+        <div class="accept-dialog__option">
+            <label class="accept-dialog__toggle">
+                <input type="checkbox" @bind="_autoShareNew" />
+                <span>@L["AutoShareNewLibraries"]</span>
+            </label>
+        </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Variant="filled" Color="primary" OnClick="Submit">@L["Accept"]</K7Button>
+</div>
+
+@code {
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
+
+    private bool _isLoading = true;
+    private bool _autoShareNew;
+    private List<LibraryDto> _libraries = [];
+    private HashSet<Guid> _selectedIds = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _libraries = await LibraryService.GetLibrariesAsync();
+            _selectedIds = _libraries.Select(l => l.Id).ToHashSet();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ToggleLibrary(Guid id)
+    {
+        if (!_selectedIds.Remove(id))
+            _selectedIds.Add(id);
+    }
+
+    private void Cancel() => Dialog.Cancel();
+
+    private void Submit() => Dialog.Close(K7DialogResult.Ok(new AcceptPeerResult(_selectedIds.ToList(), _autoShareNew)));
+}

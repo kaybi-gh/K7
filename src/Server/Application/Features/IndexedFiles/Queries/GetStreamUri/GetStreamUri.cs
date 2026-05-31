@@ -149,7 +149,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         throw new InvalidOperationException();
     }
 
-    private static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable, int? subtitleTrackIndex)
+    public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetVideoFileStreamUri(Device device, IndexedFile indexedFile, VideoFileMetadata videoFileMetadata, GetStreamUriQuery request, bool hlsSegmentsAvailable, int? subtitleTrackIndex)
     {
         AudioFileTrack selectedAudioTrack;
         if (request.AudioTrackIndex is int audioIdx)
@@ -336,7 +336,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         return supportedVideoCodecs.OfType<VideoMediaFormat>().First(); // TODO - Implement prioritizing algorithm (cost vs size vs quality)
     }
 
-    private static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetAudioFileStreamUri(Device device, IndexedFile indexedFile, AudioFileMetadata audioFileMetadata, GetStreamUriQuery request)
+    public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetAudioFileStreamUri(Device device, IndexedFile indexedFile, AudioFileMetadata audioFileMetadata, GetStreamUriQuery request)
     {
         var audioTrack = audioFileMetadata.AudioTrack
             ?? throw new InvalidOperationException($"Indexed file '{indexedFile.Id}' has no audio track metadata.");

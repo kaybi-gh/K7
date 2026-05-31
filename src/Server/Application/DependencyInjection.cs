@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddSingleton<BackgroundTasksProcessingService>();
         services.AddHostedService(sp => sp.GetRequiredService<BackgroundTasksProcessingService>());
         services.AddHostedService<MetadataRefreshSchedulerService>();
+        services.AddHostedService<PeerSyncSchedulerService>();
         services.AddSingleton<ActiveStreamTracker>();
         services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
         services.AddSingleton<SyncPlayCoordinator>();

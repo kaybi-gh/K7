@@ -15,6 +15,11 @@ public class StreamSessionConfiguration : IEntityTypeConfiguration<StreamSession
             .HasForeignKey(x => x.IndexedFileId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(x => x.RemoteIndexedFile)
+            .WithMany()
+            .HasForeignKey(x => x.RemoteIndexedFileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasOne(x => x.Device)
             .WithMany()
             .HasForeignKey(x => x.DeviceId)
@@ -24,5 +29,10 @@ public class StreamSessionConfiguration : IEntityTypeConfiguration<StreamSession
             .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(x => x.PeerServer)
+            .WithMany()
+            .HasForeignKey(x => x.PeerServerId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

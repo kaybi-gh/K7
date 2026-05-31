@@ -45,8 +45,7 @@ public static class DependencyInjection
             options.Password.RequiredLength = 6;
             options.Password.RequireNonAlphanumeric = false;
             options.Password.RequireUppercase = false;
-            options.Password.RequireLowercase = true; // TODO - In env variables?
-
+            options.Password.RequireLowercase = true;
             options.SignIn.RequireConfirmedEmail = false;
             options.User.RequireUniqueEmail = true;
         })
@@ -98,6 +97,13 @@ public static class DependencyInjection
                        .EnableUserInfoEndpointPassthrough()
                        .EnableEndUserVerificationEndpointPassthrough()
                        .EnableStatusCodePagesIntegration();
+
+                var forceHttps = configuration.GetValue<bool?>("Security:ForceHttps") ?? true;
+                if (!forceHttps)
+                {
+                    options.UseAspNetCore()
+                           .DisableTransportSecurityRequirement();
+                }
 
                 options.AddEventHandler<ExtractTokenRequestContext>(builder =>
                 {
@@ -197,6 +203,7 @@ public static class DependencyInjection
             case "sqlite":
                 options.UseSqlite(connectionString!, x => x
                     .MigrationsAssembly(DatabaseProvider.Sqlite.Assembly));
+                options.AddInterceptors(new SqliteWalInterceptor());
                 break;
 
             default:

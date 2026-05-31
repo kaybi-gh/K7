@@ -81,6 +81,29 @@ public class StreamUriService : IStreamUriService
         throw new InvalidOperationException($"Missing {nameof(PreferenceKeys.DEVICE_ID)}");
     }
 
+    public async Task<StreamingSessionDto?> GetOrCreateRemoteSessionAsync(Guid remoteFileId, int? audioTrackIndex = null, CancellationToken cancellationToken = default)
+    {
+        var storedDeviceId = _deviceStorageService.Get(PreferenceKeys.DEVICE_ID);
+
+        if (string.IsNullOrWhiteSpace(storedDeviceId))
+            throw new InvalidOperationException($"Missing {nameof(PreferenceKeys.DEVICE_ID)}");
+
+        var request = new CreateRemoteStreamSessionRequest
+        {
+            RemoteFileId = remoteFileId,
+            DeviceId = Guid.Parse(storedDeviceId),
+            AudioTrackIndex = audioTrackIndex
+        };
+
+        var session = await _streamingService.CreateRemoteStreamSessionAsync(request, cancellationToken);
+        if (session?.Source is not null)
+        {
+            session.Source.Uri = _k7ServerService.GetAbsoluteUri(session.Source.Uri.OriginalString)!;
+        }
+
+        return session;
+    }
+
     private static StreamingSessionDto CreateOfflineSession(Guid indexedFileId, string localPath)
     {
         return new StreamingSessionDto

@@ -135,7 +135,7 @@ else
                 </div>
 
                 <div class="d-flex mt-4">
-                    <K7Button Disabled="@(_movie.IndexedFiles == null || !_movie.IndexedFiles.Any())" 
+                    <K7Button Disabled="@(!HasPlayableFiles())" 
                                Variant="filled" 
                                StartIcon="@Phosphor.Play" 
                                Color="primary" 

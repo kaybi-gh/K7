@@ -160,6 +160,26 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, AdminStreamsGroup);
     }
 
+    // --- Admin federation monitoring ---
+
+    public const string AdminFederationGroup = "admin-federation";
+
+    public async Task JoinAdminFederationGroup()
+    {
+        if (!Context.User?.IsInRole("Administrator") ?? true)
+        {
+            logger.LogWarning("Non-admin user attempted to join admin-federation group. ConnectionId='{ConnectionId}'", Context.ConnectionId);
+            return;
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, AdminFederationGroup);
+    }
+
+    public async Task LeaveAdminFederationGroup()
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, AdminFederationGroup);
+    }
+
     /// <summary>
     /// Resolves the identity user ID from cookie auth or query string fallback.
     /// </summary>

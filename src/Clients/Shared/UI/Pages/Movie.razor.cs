@@ -2,9 +2,11 @@
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -17,6 +19,8 @@ public partial class Movie
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
+    [Inject] private IStreamUriService StreamUriService { get; set; } = default!;
+    [Inject] private IFederationService FederationService { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
 
@@ -25,6 +29,7 @@ public partial class Movie
     private static MediaCardViewModel? _mediaCard;
     private bool _overviewExpanded;
     private IndexedFileDto? _selectedFile;
+    private RemoteIndexedFileDto? _selectedRemoteFile;
     private AudioFileTrackDto? _selectedAudioFileTrack;
     private SubtitleFileTrackDto? _selectedSubtitleFileTrack;
     private List<MediaCardViewModel> _similarMedia = [];
@@ -49,6 +54,9 @@ public partial class Movie
             };
             
             _selectedFile = _movie.IndexedFiles?.FirstOrDefault();
+            _selectedRemoteFile = _selectedFile is null
+                ? _movie.RemoteIndexedFiles?.FirstOrDefault()
+                : null;
             if (_selectedFile?.FileMetadata is VideoFileMetadataDto vMeta)
             {
                 _selectedAudioFileTrack = vMeta.AudioTracks?.FirstOrDefault(x => x.IsDefault) ?? vMeta.AudioTracks?.FirstOrDefault();
@@ -79,7 +87,19 @@ public partial class Movie
 
     private async Task PlayAsync()
     {
-        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any() || _selectedFile == null)
+        if (_movie is null || (!HasPlayableFiles()))
+        {
+            return;
+        }
+
+        // Remote file playback (federation)
+        if (_selectedRemoteFile is not null)
+        {
+            await PlayRemoteFileAsync(_selectedRemoteFile);
+            return;
+        }
+
+        if (_selectedFile is null)
         {
             return;
         }
@@ -109,20 +129,69 @@ public partial class Movie
         }
     }
 
+    private bool HasPlayableFiles()
+    {
+        if (_movie is null) return false;
+        return (_movie.IndexedFiles is { Count: > 0 }) || (_movie.RemoteIndexedFiles is { Count: > 0 });
+    }
+
+    private async Task PlayRemoteFileAsync(RemoteIndexedFileDto remoteFile)
+    {
+        if (_movie is null) return;
+
+        PlaybackProgressTracker.StartTracking(_movie.Id, await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress));
+
+        var coverUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+
+        var session = await StreamUriService.GetOrCreateRemoteSessionAsync(remoteFile.Id);
+        if (session?.Source is null) return;
+
+        await PlayerService.ShowAsync();
+        PlayerService.Source = new PlayerSource
+        {
+            MediaId = _movie.Id,
+            Url = session.Source.Uri.AbsoluteUri,
+            MimeType = session.Source.MimeType,
+            Title = _movie.Title,
+            CoverUrl = coverUrl
+        };
+        PlayerService.Play();
+
+        if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+            && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+        {
+            PlayerService.Seek(_movie.UserState.LastPlaybackPosition);
+        }
+    }
+
     private async Task OpenPlaybackOptionsAsync()
     {
-        if (_movie?.IndexedFiles == null || !_movie.IndexedFiles.Any()) return;
+        if (_movie is null) return;
+
+        var movieForDialog = _movie;
+
+        // For remote-only movies, fetch file details from the peer
+        if (_movie.IndexedFiles is not { Count: > 0 } && _movie.RemoteIndexedFiles is { Count: > 0 })
+        {
+            var remoteFile = _selectedRemoteFile ?? _movie.RemoteIndexedFiles.First();
+            var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);
+            if (details is null) return;
+
+            movieForDialog = _movie with { IndexedFiles = [details] };
+            _selectedFile = details;
+        }
+
+        if (movieForDialog.IndexedFiles is not { Count: > 0 }) return;
 
         var parameters = new K7DialogParameters<PlaybackOptionsDialog>
         {
-            { x => x.Movie, _movie },
+            { x => x.Movie, movieForDialog },
             { x => x.InitialFileId, _selectedFile?.Id }
         };
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
         
-        // I use localizer from the dialog to avoid injecting it here just for the title
-        var title = _movie.IndexedFiles.Count > 1 ? L["IndexedVersions"] : L["AudioTrack"]; // Fallbacks until we can rely on PlaybackOptionsDialog.resx properly.
+        var title = movieForDialog.IndexedFiles!.Count > 1 ? L["IndexedVersions"] : L["AudioTrack"];
         var dialog = await DialogService.ShowAsync<PlaybackOptionsDialog>(title, parameters, options);
         var result = await dialog.Result;
 

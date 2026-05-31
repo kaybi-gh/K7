@@ -28,10 +28,21 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
 
         Guard.Against.NotFound(request.MediaId, media);
 
-        var externalId = media.ExternalIds?.FirstOrDefault();
+        var library = await FindLibraryAsync(media, cancellationToken);
+        var providerName = library?.MetadataProviderName;
+
+        // Pick the external ID matching the library's provider, fallback to first available
+        var externalId = providerName is not null
+            ? media.ExternalIds?.FirstOrDefault(e => e.ProviderName == providerName)
+              ?? media.ExternalIds?.FirstOrDefault()
+            : media.ExternalIds?.FirstOrDefault();
+
         Guard.Against.NotFound(request.MediaId, externalId, $"Media {request.MediaId} has no external ID.");
 
-        var library = await FindLibraryAsync(media, cancellationToken);
+        var concurrencyGroup = externalId.ProviderName == "federation"
+            && externalId.Value.Split(':') is [var peerId, ..]
+            ? $"federation:{peerId}"
+            : externalId.ProviderName;
 
         await sender.Send(new CreateBackgroundTaskCommand
         {
@@ -47,7 +58,7 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
             MaxAttempts = 1,
-            ConcurrencyGroup = externalId.ProviderName
+            ConcurrencyGroup = concurrencyGroup
         }, cancellationToken);
     }
 
@@ -64,10 +75,12 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
             if (albumId == Guid.Empty) return null;
 
             return await context.Libraries
-                .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == albumId), cancellationToken);
+                .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == albumId)
+                    || l.RemoteIndexedFiles.Any(r => r.MediaId == albumId), cancellationToken);
         }
 
         return await context.Libraries
-            .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == media.Id), cancellationToken);
+            .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == media.Id)
+                || l.RemoteIndexedFiles.Any(r => r.MediaId == media.Id), cancellationToken);
     }
 }

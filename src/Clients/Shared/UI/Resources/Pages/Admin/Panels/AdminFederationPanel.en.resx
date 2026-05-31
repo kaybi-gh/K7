@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Federation</value></data>
+  <data name="AddPeer" xml:space="preserve"><value>Request access</value></data>
+  <data name="AddPeerTitle" xml:space="preserve"><value>Request access</value></data>
+  <data name="NoPeers" xml:space="preserve"><value>No peers configured</value></data>
+  <data name="NoPeersHint" xml:space="preserve"><value>Request access to another K7 server to share media.</value></data>
+  <data name="LoadError" xml:space="preserve"><value>Failed to load peers</value></data>
+  <data name="RequestSent" xml:space="preserve"><value>Request sent</value></data>
+  <data name="RequestError" xml:space="preserve"><value>Failed to send request</value></data>
+  <data name="PeerAccepted" xml:space="preserve"><value>Peer accepted</value></data>
+  <data name="AcceptError" xml:space="preserve"><value>Failed to accept peer</value></data>
+  <data name="SyncStarted" xml:space="preserve"><value>Sync started</value></data>
+  <data name="SyncError" xml:space="preserve"><value>Failed to sync</value></data>
+  <data name="PeerRevoked" xml:space="preserve"><value>Peer revoked</value></data>
+  <data name="RevokeError" xml:space="preserve"><value>Failed to revoke peer</value></data>
+  <data name="RevokeTitle" xml:space="preserve"><value>Revoke peer</value></data>
+  <data name="RevokeMessage" xml:space="preserve"><value>Are you sure you want to revoke peer {0}? This action cannot be undone.</value></data>
+  <data name="RevokeConfirm" xml:space="preserve"><value>Revoke</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="LastSeen" xml:space="preserve"><value>Last seen</value></data>
+  <data name="SharedLibraries" xml:space="preserve"><value>Shared libraries</value></data>
+  <data name="Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="Sync" xml:space="preserve"><value>Sync</value></data>
+  <data name="Revoke" xml:space="preserve"><value>Revoke</value></data>
+  <data name="StatusActive" xml:space="preserve"><value>Active</value></data>
+  <data name="StatusPending" xml:space="preserve"><value>Pending</value></data>
+  <data name="StatusRevoked" xml:space="preserve"><value>Revoked</value></data>
+  <data name="StatusUnknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="IncomingRequests" xml:space="preserve"><value>Incoming requests</value></data>
+  <data name="PeersSection" xml:space="preserve"><value>Peer servers</value></data>
+  <data name="ReceivedAt" xml:space="preserve"><value>Received</value></data>
+  <data name="Reject" xml:space="preserve"><value>Reject</value></data>
+  <data name="RejectTitle" xml:space="preserve"><value>Reject request</value></data>
+  <data name="RejectMessage" xml:space="preserve"><value>Are you sure you want to reject the request from {0}?</value></data>
+  <data name="RejectConfirm" xml:space="preserve"><value>Reject</value></data>
+  <data name="PeerRejected" xml:space="preserve"><value>Request rejected</value></data>
+  <data name="RejectError" xml:space="preserve"><value>Failed to reject request</value></data>
+  <data name="Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Peer settings</value></data>
+  <data name="PeerUpdated" xml:space="preserve"><value>Peer updated</value></data>
+  <data name="UpdateError" xml:space="preserve"><value>Failed to update peer</value></data>
+  <data name="AcceptTitle" xml:space="preserve"><value>Accept request</value></data>
+  <data name="Test" xml:space="preserve"><value>Test</value></data>
+  <data name="TestSuccess" xml:space="preserve"><value>Peer reachable</value></data>
+  <data name="TestFailed" xml:space="preserve"><value>Peer unreachable</value></data>
+  <data name="FederationDisabled" xml:space="preserve"><value>Federation disabled</value></data>
+  <data name="FederationDisabledHint" xml:space="preserve"><value>Federation is disabled. Enable it in feature flags to manage peers.</value></data>
+  <data name="OutboundPeers" xml:space="preserve"><value>Outbound requests</value></data>
+  <data name="InboundPeers" xml:space="preserve"><value>Provided shares</value></data>
+  <data name="StatusRejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="DeleteTitle" xml:space="preserve"><value>Delete peer</value></data>
+  <data name="DeleteMessage" xml:space="preserve"><value>Are you sure you want to delete the peer {0}? This cannot be undone.</value></data>
+  <data name="DeleteConfirm" xml:space="preserve"><value>Delete</value></data>
+  <data name="PeerDeleted" xml:space="preserve"><value>Peer deleted</value></data>
+  <data name="DeleteError" xml:space="preserve"><value>Failed to delete peer</value></data>
+  <data name="StatusUnreachable" xml:space="preserve"><value>Unreachable</value></data>
+</root>

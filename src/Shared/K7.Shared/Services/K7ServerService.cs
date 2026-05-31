@@ -148,6 +148,18 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
     }
 
+    public async Task<StreamingSessionDto?> CreateRemoteStreamSessionAsync(CreateRemoteStreamSessionRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/remote-stream-sessions", request, _serializerOptions, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Creating remote stream session failed with status {response.StatusCode}: {content}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
+    }
+
     public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, CancellationToken cancellationToken = default)
     {
         var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId };
@@ -1049,21 +1061,48 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<List<PeerServerDto>>("api/federation/peers", _serializerOptions, cancellationToken) ?? [];
     }
 
+    public async Task<List<PeerRequestDto>> GetPeerRequestsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<List<PeerRequestDto>>("api/federation/peers/requests", _serializerOptions, cancellationToken) ?? [];
+    }
+
     public async Task RequestPeerAsync(string remoteUrl, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync("api/federation/peers/request", new { remoteUrl }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task AcceptPeerAsync(Guid peerId, CancellationToken cancellationToken = default)
+    public async Task AcceptPeerAsync(Guid requestId, IReadOnlyList<Guid> sharedLibraryIds, bool autoShareNewLibraries = false, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/accept", null, cancellationToken);
+        var response = await HttpClient.PostAsJsonAsync($"api/federation/peers/requests/{requestId}/accept", new { SharedLibraryIds = sharedLibraryIds, AutoShareNewLibraries = autoShareNewLibraries }, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RejectPeerAsync(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/federation/peers/requests/{requestId}/reject", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdatePeerAsync(Guid peerId, UpdatePeerRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/federation/peers/{peerId}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> TestPeerAsync(Guid peerId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/test", null, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return false;
+
+        var result = await response.Content.ReadFromJsonAsync<TestPeerResponse>(_serializerOptions, cancellationToken);
+        return result?.Reachable ?? false;
     }
 
     public async Task RevokePeerAsync(Guid peerId, CancellationToken cancellationToken = default)
     {
-        var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/revoke", null, cancellationToken);
+        var response = await HttpClient.DeleteAsync($"api/federation/peers/{peerId}", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -1071,6 +1110,21 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/sync", null, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<PeerShareAgreementDto>> DiscoverPeerLibrariesAsync(Guid peerId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/federation/peers/{peerId}/discover-libraries", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<PeerShareAgreementDto>>(_serializerOptions, cancellationToken) ?? [];
+    }
+
+    public async Task<IndexedFileDto?> GetRemoteFileDetailsAsync(Guid remoteFileId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.GetAsync($"api/remote-indexed-files/{remoteFileId}/details", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return null;
+        return await response.Content.ReadFromJsonAsync<IndexedFileDto>(_serializerOptions, cancellationToken);
     }
 
     public async Task<VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default)
@@ -1248,4 +1302,5 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     }
 
     private sealed record EphemeralTokenResponse(string Token);
+    private sealed record TestPeerResponse(bool Reachable);
 }

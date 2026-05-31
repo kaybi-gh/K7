@@ -11,6 +11,7 @@ public record AcceptPeerRequestCommand : IRequest
 {
     public required Guid RequestId { get; init; }
     public IReadOnlyList<Guid> SharedLibraryIds { get; init; } = [];
+    public bool AutoShareNewLibraries { get; init; }
     public int? MaxConcurrentStreams { get; init; }
 }
 
@@ -41,7 +42,8 @@ public class AcceptPeerRequestCommandHandler(
             Name = peerRequest.RequesterName,
             BaseUrl = peerRequest.RequesterUrl.TrimEnd('/'),
             Status = PeerStatus.Active,
-            InboundApplicationId = clientId
+            InboundApplicationId = clientId,
+            AutoAddNewLibraries = request.AutoShareNewLibraries
         };
 
         foreach (var libraryId in request.SharedLibraryIds)

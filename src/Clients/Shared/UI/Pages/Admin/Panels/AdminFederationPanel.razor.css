@@ -57,3 +57,17 @@
     gap: 8px;
     justify-content: flex-end;
 }
+
+.federation-panel__section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.federation-panel__section-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-secondary);
+}

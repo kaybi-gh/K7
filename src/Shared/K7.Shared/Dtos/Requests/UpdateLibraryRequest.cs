@@ -7,4 +7,5 @@ public sealed record UpdateLibraryRequest
     public string? MetadataLanguage { get; init; }
     public string? MetadataFallbackLanguage { get; init; }
     public int? MetadataRefreshIntervalDays { get; init; }
+    public Guid? LibraryGroupId { get; init; }
 }

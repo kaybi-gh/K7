@@ -14,4 +14,5 @@ public sealed record LibraryDto
     public int? MetadataRefreshIntervalDays { get; init; }
     public required Guid LibraryGroupId { get; init; }
     public Guid? PeerServerId { get; init; }
+    public string? PeerServerBaseUrl { get; init; }
 }

@@ -397,6 +397,238 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("ExternalIds");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequesterName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RequesterUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RespondedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PeerRequests");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerServer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("AutoAddNewLibraries")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BaseUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InboundApplicationId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastSeen")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool?>("LastTestSucceeded")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutboundClientId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OutboundClientSecret")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PeerServers");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerShareAgreement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MaxConcurrentStreams")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("PeerServerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("SharePlaybackHistory")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LibraryId");
+
+                    b.HasIndex("PeerServerId");
+
+                    b.ToTable("PeerShareAgreements");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.RemoteIndexedFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Container")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeSpan?>("Duration")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Extension")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PeerServerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RemoteFileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RemoteLibraryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RemoteMediaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("VideoBitrate")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("VideoResolution")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LibraryId");
+
+                    b.HasIndex("MediaId");
+
+                    b.HasIndex("PeerServerId");
+
+                    b.ToTable("RemoteIndexedFiles");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.HlsSegment", b =>
                 {
                     b.Property<Guid>("FileMetadataId")
@@ -534,8 +766,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<int?>("MetadataRefreshIntervalDays")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid?>("PeerServerId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("RootPath")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool?>("RootPathAccessible")
@@ -549,6 +783,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("LibraryGroupId");
+
+                    b.HasIndex("PeerServerId");
 
                     b.ToTable("Libraries");
                 });
@@ -762,6 +998,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("OriginalTitle")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("PeerServerId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly?>("ReleaseDate")
                         .HasColumnType("TEXT");
 
@@ -774,6 +1013,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OriginalTitle");
+
+                    b.HasIndex("PeerServerId");
 
                     b.HasIndex("ReleaseDate");
 
@@ -1116,7 +1357,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("PeerServerId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("PeerServerId");
 
                     b.ToTable("Persons");
                 });
@@ -1441,10 +1687,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("DeviceId")
+                    b.Property<Guid?>("DeviceId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("IndexedFileId")
+                    b.Property<string>("EndedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("IndexedFileId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastModified")
@@ -1454,12 +1703,21 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("PeerServerId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PlaybackSettingsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<double>("Position")
                         .HasColumnType("REAL");
+
+                    b.Property<Guid?>("RemoteIndexedFileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("RemoteSessionId")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("RootDirectory")
                         .IsRequired()
@@ -1476,6 +1734,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasIndex("DeviceId");
 
                     b.HasIndex("IndexedFileId");
+
+                    b.HasIndex("PeerServerId");
+
+                    b.HasIndex("RemoteIndexedFileId");
 
                     b.HasIndex("UserId");
 
@@ -1673,12 +1935,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("PeerServerId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PinHash")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ContentRestrictionProfileId");
+
+                    b.HasIndex("PeerServerId");
 
                     b.ToTable("Users");
                 });
@@ -2923,6 +3190,52 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("PersonRole");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerShareAgreement", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
+                        .WithMany()
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
+                        .WithMany("ShareAgreements")
+                        .HasForeignKey("PeerServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Library");
+
+                    b.Navigation("PeerServer");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.RemoteIndexedFile", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
+                        .WithMany("RemoteIndexedFiles")
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany("RemoteIndexedFiles")
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
+                        .WithMany("RemoteIndexedFiles")
+                        .HasForeignKey("PeerServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Library");
+
+                    b.Navigation("Media");
+
+                    b.Navigation("PeerServer");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.HlsSegment", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", null)
@@ -2998,7 +3311,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
+                        .WithMany("RemoteLibraries")
+                        .HasForeignKey("PeerServerId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.Navigation("LibraryGroup");
+
+                    b.Navigation("PeerServer");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.LibraryScanIssue", b =>
@@ -3034,6 +3354,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.BaseMedia", b =>
                 {
+                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
+                        .WithMany()
+                        .HasForeignKey("PeerServerId");
+
                     b.OwnsMany("K7.Server.Domain.Entities.Metadatas.TrailerInfo", "Trailers", b1 =>
                         {
                             b1.Property<Guid>("BaseMediaId");
@@ -3064,6 +3388,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("BaseMediaId");
                         });
+
+                    b.Navigation("PeerServer");
 
                     b.Navigation("Trailers");
                 });
@@ -3180,6 +3506,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("IndexedFile");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Person", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
+                        .WithMany()
+                        .HasForeignKey("PeerServerId");
+
+                    b.Navigation("PeerServer");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.PersonRoles.BasePersonRole", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -3245,14 +3580,22 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
                         .WithMany()
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("K7.Server.Domain.Entities.IndexedFile", "IndexedFile")
                         .WithMany()
                         .HasForeignKey("IndexedFileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
+                        .WithMany()
+                        .HasForeignKey("PeerServerId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("K7.Server.Domain.Entities.Federation.RemoteIndexedFile", "RemoteIndexedFile")
+                        .WithMany()
+                        .HasForeignKey("RemoteIndexedFileId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
                         .WithMany()
@@ -3262,6 +3605,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Device");
 
                     b.Navigation("IndexedFile");
+
+                    b.Navigation("PeerServer");
+
+                    b.Navigation("RemoteIndexedFile");
 
                     b.Navigation("User");
                 });
@@ -3310,7 +3657,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .HasForeignKey("ContentRestrictionProfileId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
+                        .WithMany()
+                        .HasForeignKey("PeerServerId");
+
                     b.Navigation("ContentRestrictionProfile");
+
+                    b.Navigation("PeerServer");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserCapabilityOverride", b =>
@@ -3539,6 +3892,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerServer", b =>
+                {
+                    b.Navigation("RemoteIndexedFiles");
+
+                    b.Navigation("RemoteLibraries");
+
+                    b.Navigation("ShareAgreements");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.IndexedFile", b =>
                 {
                     b.Navigation("FileMetadata");
@@ -3547,6 +3909,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Library", b =>
                 {
                     b.Navigation("IndexedFiles");
+
+                    b.Navigation("RemoteIndexedFiles");
 
                     b.Navigation("ScanIssues");
                 });
@@ -3571,6 +3935,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Ratings");
 
                     b.Navigation("Recommendations");
+
+                    b.Navigation("RemoteIndexedFiles");
 
                     b.Navigation("Segments");
 

@@ -177,6 +177,35 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 .LoadAsync(cancellationToken);
 
             album.ApplyMetadata(metadata);
+
+            // Federation: create tracks and artist from peer metadata (no local scan to do it)
+            if (request.MetadataProviderName == "federation")
+            {
+                if (album.Tracks.Count == 0 && metadata.Tracks is { Count: > 0 })
+                {
+                    foreach (var trackMeta in metadata.Tracks)
+                    {
+                        var track = new MusicTrack
+                        {
+                            AlbumId = album.Id,
+                            Title = trackMeta.Title,
+                            TrackNumber = trackMeta.TrackNumber,
+                            DiscNumber = trackMeta.DiscNumber,
+                        };
+                        _context.Medias.Add(track);
+                        album.Tracks.Add(track);
+                    }
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                if (album.ArtistId is null && metadata.Artists is { Count: > 0 })
+                {
+                    var primaryArtist = metadata.Artists[0];
+                    var artist = await FindOrCreateMusicArtistAsync(primaryArtist.Name, primaryArtist.MusicBrainzArtistId, cancellationToken);
+                    album.ArtistId = artist.Id;
+                }
+            }
+
             await EnrichArtistsAsync(album, metadata, request.Language, cancellationToken);
             await PersistTrackExternalIdsAsync(album, metadata, cancellationToken);
             await SyncTrackArtistCreditsAsync(album, metadata, cancellationToken);
@@ -336,12 +365,35 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
         }
 
+        // Federation: create seasons and episodes from peer metadata (no local scan to do it)
+        if (request.MetadataProviderName == "federation")
+        {
+            if (serie.Seasons.Count == 0 && serieMetadata.TotalSeasons > 0)
+            {
+                for (var i = 1; i <= serieMetadata.TotalSeasons; i++)
+                {
+                    serie.Seasons.Add(new SerieSeason { SerieId = serie.Id, SeasonNumber = i });
+                }
+            }
+        }
+
         // Fetch and apply season metadata
         foreach (var season in serie.Seasons)
         {
             var seasonMetadata = await metadataProvider.FetchSeasonMetadataAsync(
                 request.MetadataProviderExternalId, season.SeasonNumber, request.Language, cancellationToken);
             season.ApplyMetadata(seasonMetadata);
+
+            if (request.MetadataProviderName == "federation")
+            {
+                if (season.Episodes.Count == 0 && seasonMetadata.EpisodeCount > 0)
+                {
+                    for (var i = 1; i <= seasonMetadata.EpisodeCount; i++)
+                    {
+                        season.Episodes.Add(new SerieEpisode { SerieId = serie.Id, EpisodeNumber = i });
+                    }
+                }
+            }
         }
 
         // Fetch and apply episode metadata

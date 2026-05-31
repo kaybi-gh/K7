@@ -39,12 +39,12 @@ public class GetFederationPlaybackHistory : IEndpoint
                 return Results.Ok(Array.Empty<FederationPlaybackEntry>());
 
             var sessions = await context.StreamSessions
-                .Where(s => s.PeerServerId == peer.Id && s.EndedAt != null)
+                .Where(s => s.PeerServerId == peer.Id && s.EndedAt != null && s.IndexedFileId != null)
                 .OrderByDescending(s => s.EndedAt)
                 .Take(100)
                 .Select(s => new FederationPlaybackEntry
                 {
-                    FileId = s.IndexedFileId,
+                    FileId = s.IndexedFileId!.Value,
                     UserDisplayName = s.User != null ? s.User.DisplayName ?? "Unknown" : "Unknown",
                     Position = s.Position,
                     EndedAt = s.EndedAt!.Value

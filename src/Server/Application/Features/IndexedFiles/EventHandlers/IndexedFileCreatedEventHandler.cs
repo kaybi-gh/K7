@@ -22,7 +22,6 @@ public class IndexedFileCreatedEventHandler : INotificationHandler<IndexedFileCr
     {
         _logger.LogInformation("K7.Server Domain Event: {DomainEvent}", notification.GetType().Name);
 
-        // TODO - Create subtasks
         await _sender.Send(new CreateBackgroundTaskCommand()
         {
             Request = new CreateFileMetadatasCommand()

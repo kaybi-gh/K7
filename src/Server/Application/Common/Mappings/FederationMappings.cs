@@ -13,7 +13,10 @@ public static class FederationMappings
             Name = domain.Name,
             BaseUrl = domain.BaseUrl,
             Status = domain.Status,
+            IsProvider = domain.InboundApplicationId is not null,
+            AutoAddNewLibraries = domain.AutoAddNewLibraries,
             LastSeen = domain.LastSeen,
+            LastTestSucceeded = domain.LastTestSucceeded,
             Created = domain.Created,
             ShareAgreements = domain.ShareAgreements
                 .Select(a => a.ToPeerShareAgreementDto())

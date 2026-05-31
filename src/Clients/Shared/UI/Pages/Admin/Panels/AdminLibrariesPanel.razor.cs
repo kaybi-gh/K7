@@ -158,6 +158,8 @@ public partial class AdminLibrariesPanel
     private async Task OpenEditDialog(LibraryDto library)
     {
         var providers = await K7ServerService.GetMetadataProvidersAsync(library.MediaType);
+        var allGroups = await K7ServerService.GetLibraryGroupsAsync();
+        var compatibleGroups = allGroups.Where(g => g.MediaType == library.MediaType).ToList();
 
         var parameters = new K7DialogParameters<EditLibraryDialog>
         {
@@ -167,7 +169,10 @@ public partial class AdminLibrariesPanel
             { x => x.SelectedProvider, library.MetadataProviderName },
             { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays },
             { x => x.MetadataLanguage, library.MetadataLanguage },
-            { x => x.MetadataFallbackLanguage, library.MetadataFallbackLanguage }
+            { x => x.MetadataFallbackLanguage, library.MetadataFallbackLanguage },
+            { x => x.IsFederated, library.PeerServerId is not null },
+            { x => x.AvailableGroups, compatibleGroups },
+            { x => x.SelectedGroupId, library.LibraryGroupId }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };

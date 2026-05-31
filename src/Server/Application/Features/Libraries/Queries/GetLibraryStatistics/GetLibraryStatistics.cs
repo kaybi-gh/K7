@@ -30,38 +30,47 @@ public class GetLibraryStatisticsQueryHandler : IRequestHandler<GetLibraryStatis
             .Select(g => new { g.Key.LibraryId, g.Key.Type, Count = g.Count() })
             .ToListAsync(cancellationToken);
 
-        // Music albums (distinct albums from tracks in each library)
-        var albumCounts = await _context.Medias
-            .OfType<MusicTrack>()
-            .SelectMany(t => t.IndexedFiles.Select(f => new { f.LibraryId, t.AlbumId }))
-            .GroupBy(x => x.LibraryId)
-            .Select(g => new { LibraryId = g.Key, Count = g.Select(x => x.AlbumId).Distinct().Count() })
-            .ToListAsync(cancellationToken);
+        // Music albums (distinct albums from tracks in each library via join)
+        var albumCounts = await (
+            from f in _context.IndexedFiles
+            join t in _context.Medias.OfType<MusicTrack>() on f.MediaId equals t.Id
+            select new { f.LibraryId, t.AlbumId }
+        ).Distinct()
+         .GroupBy(x => x.LibraryId)
+         .Select(g => new { LibraryId = g.Key, Count = g.Count() })
+         .ToListAsync(cancellationToken);
 
-        // Music artists (distinct artists from albums of tracks in each library)
-        var artistCounts = await _context.Medias
-            .OfType<MusicTrack>()
-            .Where(t => t.Album.ArtistId != null)
-            .SelectMany(t => t.IndexedFiles.Select(f => new { f.LibraryId, t.Album.ArtistId }))
-            .GroupBy(x => x.LibraryId)
-            .Select(g => new { LibraryId = g.Key, Count = g.Select(x => x.ArtistId).Distinct().Count() })
-            .ToListAsync(cancellationToken);
+        // Music artists (distinct artists from albums of tracks in each library via join)
+        var artistCounts = await (
+            from f in _context.IndexedFiles
+            join t in _context.Medias.OfType<MusicTrack>() on f.MediaId equals t.Id
+            join a in _context.Medias.OfType<MusicAlbum>() on t.AlbumId equals a.Id
+            where a.ArtistId != null
+            select new { f.LibraryId, a.ArtistId }
+        ).Distinct()
+         .GroupBy(x => x.LibraryId)
+         .Select(g => new { LibraryId = g.Key, Count = g.Count() })
+         .ToListAsync(cancellationToken);
 
-        // Series (distinct series from episodes in each library)
-        var serieCounts = await _context.Medias
-            .OfType<SerieEpisode>()
-            .SelectMany(e => e.IndexedFiles.Select(f => new { f.LibraryId, e.SerieId }))
-            .GroupBy(x => x.LibraryId)
-            .Select(g => new { LibraryId = g.Key, Count = g.Select(x => x.SerieId).Distinct().Count() })
-            .ToListAsync(cancellationToken);
+        // Series (distinct series from episodes in each library via join)
+        var serieCounts = await (
+            from f in _context.IndexedFiles
+            join e in _context.Medias.OfType<SerieEpisode>() on f.MediaId equals e.Id
+            select new { f.LibraryId, e.SerieId }
+        ).Distinct()
+         .GroupBy(x => x.LibraryId)
+         .Select(g => new { LibraryId = g.Key, Count = g.Count() })
+         .ToListAsync(cancellationToken);
 
-        // Seasons (distinct seasons from episodes in each library)
-        var seasonCounts = await _context.Medias
-            .OfType<SerieEpisode>()
-            .SelectMany(e => e.IndexedFiles.Select(f => new { f.LibraryId, e.SeasonId }))
-            .GroupBy(x => x.LibraryId)
-            .Select(g => new { LibraryId = g.Key, Count = g.Select(x => x.SeasonId).Distinct().Count() })
-            .ToListAsync(cancellationToken);
+        // Seasons (distinct seasons from episodes in each library via join)
+        var seasonCounts = await (
+            from f in _context.IndexedFiles
+            join e in _context.Medias.OfType<SerieEpisode>() on f.MediaId equals e.Id
+            select new { f.LibraryId, e.SeasonId }
+        ).Distinct()
+         .GroupBy(x => x.LibraryId)
+         .Select(g => new { LibraryId = g.Key, Count = g.Count() })
+         .ToListAsync(cancellationToken);
 
         // File counts
         var fileCounts = await _context.IndexedFiles

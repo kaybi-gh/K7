@@ -24,5 +24,22 @@ else if (_flags is not null)
         <K7Switch Label="@L["Transmuxing"]" Value="_flags.TransmuxingEnabled" ValueChanged="v => UpdateFlag(f => f with { TransmuxingEnabled = v })" />
         <K7Switch Label="@L["SeekbarThumbnails"]" Value="_flags.SeekbarThumbnailGenerationEnabled" ValueChanged="v => UpdateFlag(f => f with { SeekbarThumbnailGenerationEnabled = v })" />
         <K7Switch Label="@L["MusicAudioAnalysis"]" Value="_flags.MusicAudioAnalysisEnabled" ValueChanged="v => UpdateFlag(f => f with { MusicAudioAnalysisEnabled = v })" />
+        <div class="d-flex flex-col gap-1">
+            <K7Switch Label="@L["Federation"]" Value="_flags.FederationEnabled" ValueChanged="v => UpdateFlag(f => f with { FederationEnabled = v })" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["FederationDescription"]</span>
+        </div>
+        @if (_flags.FederationEnabled)
+        {
+            <div class="d-flex flex-col gap-1" style="margin-left: 1.5rem;">
+                <K7Switch Label="@L["FederationInvitations"]" Value="_flags.FederationInvitationsEnabled" ValueChanged="v => UpdateFlag(f => f with { FederationInvitationsEnabled = v })" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["FederationInvitationsDescription"]</span>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-col gap-1" style="margin-left: 1.5rem;">
+                <span class="text-caption" style="color: var(--color-warning);">@L["FederationDisabledWarning"]</span>
+            </div>
+        }
     </div>
 }

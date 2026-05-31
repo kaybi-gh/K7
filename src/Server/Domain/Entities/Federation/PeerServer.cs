@@ -10,7 +10,9 @@ public class PeerServer : BaseAuditableEntity
     public string? OutboundClientSecret { get; set; }
     public string? InboundApplicationId { get; set; }
 
+    public bool AutoAddNewLibraries { get; set; }
     public DateTimeOffset? LastSeen { get; set; }
+    public bool? LastTestSucceeded { get; set; }
 
     public IList<PeerShareAgreement> ShareAgreements { get; set; } = [];
     public IList<Library> RemoteLibraries { get; set; } = [];

@@ -1,4 +1,5 @@
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 
@@ -17,6 +18,9 @@ public partial class EditLibraryDialog
     [Parameter] public int? MetadataRefreshIntervalDays { get; set; }
     [Parameter] public string MetadataLanguage { get; set; } = "en";
     [Parameter] public string MetadataFallbackLanguage { get; set; } = "en";
+    [Parameter] public bool IsFederated { get; set; }
+    [Parameter] public List<LibraryGroupDto> AvailableGroups { get; set; } = [];
+    [Parameter] public Guid SelectedGroupId { get; set; }
 
     private bool _isSubmitting;
 
@@ -35,7 +39,8 @@ public partial class EditLibraryDialog
                 MetadataProviderName = SelectedProvider,
                 MetadataLanguage = MetadataLanguage,
                 MetadataFallbackLanguage = MetadataFallbackLanguage,
-                MetadataRefreshIntervalDays = MetadataRefreshIntervalDays
+                MetadataRefreshIntervalDays = MetadataRefreshIntervalDays,
+                LibraryGroupId = SelectedGroupId
             };
 
             await LibraryService.UpdateLibraryAsync(LibraryId, request);

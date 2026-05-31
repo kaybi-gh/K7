@@ -1,4 +1,5 @@
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Enums;
 
 namespace K7.Server.Domain.Entities.Federation;
 
@@ -11,6 +12,11 @@ public class RemoteIndexedFile : BaseAuditableEntity
     public required string Name { get; set; }
     public required string Extension { get; set; }
     public required long Size { get; set; }
+
+    public string? Container { get; set; }
+    public TimeSpan? Duration { get; set; }
+    public long? VideoBitrate { get; set; }
+    public VideoResolutionIdentifier? VideoResolution { get; set; }
 
     public required Guid MediaId { get; set; }
     public BaseMedia? Media { get; set; }

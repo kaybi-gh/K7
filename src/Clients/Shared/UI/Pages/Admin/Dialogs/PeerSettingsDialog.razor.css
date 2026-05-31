@@ -1,0 +1,67 @@
+.peer-settings__field {
+    margin-bottom: 1rem;
+}
+
+.peer-settings__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.peer-settings__section {
+    margin-top: 1rem;
+}
+
+.peer-settings__label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.peer-settings__list {
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.peer-settings__list-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.peer-settings__list-row:nth-child(even) {
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
+}
+
+.peer-settings__list-row:hover {
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+.peer-settings__list-row input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    accent-color: var(--color-accent);
+}
+
+.peer-settings__list-row span {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.peer-settings__empty {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}

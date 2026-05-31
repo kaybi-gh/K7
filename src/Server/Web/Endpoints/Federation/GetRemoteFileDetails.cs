@@ -1,22 +1,22 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Web.Endpoints.Federation;
 
-public class GetRemoteStream : IEndpoint
+public class GetRemoteFileDetails : IEndpoint
 {
     public void Map(IEndpointRouteBuilder endpointRouteBuilder)
     {
         var type = GetType();
-        string groupName = type.Namespace!.Split('.').Last();
+        var groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/federation/remote-stream/{remoteFileId:guid}", async (
+        endpointRouteBuilder.MapGet("/api/remote-indexed-files/{remoteFileId:guid}/details", async (
             Guid remoteFileId,
             [FromServices] IApplicationDbContext context,
             [FromServices] IPeerClient peerClient,
-            HttpContext httpContext,
             CancellationToken cancellationToken) =>
         {
             var remoteFile = await context.RemoteIndexedFiles
@@ -36,21 +36,15 @@ public class GetRemoteStream : IEndpoint
             if (token is null)
                 return Results.Problem("Failed to authenticate with peer", statusCode: 502);
 
-            var stream = await peerClient.GetRemoteStreamAsync(
+            var fileDetails = await peerClient.GetRemoteFileDetailsAsync(
                 peer.BaseUrl, token, remoteFile.RemoteFileId, cancellationToken);
 
-            if (stream is null)
-                return Results.Problem("Failed to retrieve stream from peer", statusCode: 502);
+            if (fileDetails is null)
+                return Results.NotFound();
 
-            var extension = remoteFile.Extension?.TrimStart('.');
-            var mimeType = extension is not null
-                && K7.Server.Domain.Constants.Constants.ContainerMimeTypeMapping.TryGetValue(extension, out var mime)
-                    ? mime
-                    : "application/octet-stream";
-
-            return Results.Stream(stream, contentType: mimeType, enableRangeProcessing: true);
+            return Results.Ok(fileDetails);
         })
-        .RequireAuthorization()
+        .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
         .WithTags(groupName);
     }

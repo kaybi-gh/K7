@@ -11,7 +11,7 @@ public class SyncPeerEndpoint : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapPost("/api/admin/peers/{id:guid}/sync", async (
+        endpointRouteBuilder.MapPost("/api/federation/peers/{id:guid}/sync", async (
             Guid id,
             [FromServices] ISender sender,
             CancellationToken cancellationToken) =>

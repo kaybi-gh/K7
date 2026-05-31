@@ -75,6 +75,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             .Include(f => f.FileMetadata)
                 .ThenInclude(fm => fm!.HlsSegments)
             .AsNoTracking()
+            .Where(f => !_context.Libraries.Any(l => l.Id == f.LibraryId && l.PeerServerId != null))
             .AsQueryable();
 
         if (request.LibraryId.HasValue)
@@ -126,6 +127,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
     {
         var libraryMediaQuery = _context.IndexedFiles
             .Where(f => f.MediaId != null)
+            .Where(f => !_context.Libraries.Any(l => l.Id == f.LibraryId && l.PeerServerId != null))
             .AsQueryable();
 
         if (request.LibraryId.HasValue)
@@ -133,17 +135,16 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             libraryMediaQuery = libraryMediaQuery.Where(f => f.LibraryId == request.LibraryId.Value);
         }
 
-        var libraryMediaMap = await libraryMediaQuery
-            .GroupBy(f => f.MediaId!.Value)
-            .Select(g => new
-            {
-                MediaId = g.Key,
-                LibraryId = g.First().LibraryId
-            })
+        var libraryMediaPairs = await libraryMediaQuery
+            .Select(f => new { f.MediaId, f.LibraryId })
+            .Distinct()
             .ToListAsync(cancellationToken);
 
-        var mediaIds = libraryMediaMap.Select(x => x.MediaId).ToHashSet();
-        var mediaToLibrary = libraryMediaMap.ToDictionary(x => x.MediaId, x => x.LibraryId);
+        var mediaToLibrary = libraryMediaPairs
+            .DistinctBy(x => x.MediaId)
+            .ToDictionary(x => x.MediaId!.Value, x => x.LibraryId);
+
+        var mediaIds = mediaToLibrary.Keys.ToHashSet();
 
         var libraryInfo = await _context.Libraries
             .Where(l => mediaToLibrary.Values.Distinct().Contains(l.Id))
@@ -158,7 +159,6 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 m.Title,
                 m.Type,
                 m.LastMetadataRefreshedAt,
-                PictureTypes = m.Pictures.Select(p => p.Type).Distinct().ToList(),
                 HasExternalIds = m.ExternalIds.Any(),
                 GenreCount = m.Genres.Count,
                 HasIndexedFiles = m.IndexedFiles.Any(),
@@ -167,14 +167,24 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             })
             .ToListAsync(cancellationToken);
 
+        var pictureTypes = await _context.MetadataPictures
+            .Where(p => p.MediaId != null && mediaIds.Contains(p.MediaId.Value))
+            .Select(p => new { Id = p.MediaId!.Value, p.Type })
+            .ToListAsync(cancellationToken);
+
+        var picturesByMedia = pictureTypes
+            .GroupBy(p => p.Id)
+            .ToDictionary(g => g.Key, g => g.Select(p => p.Type).Distinct().ToList());
+
         return medias.Select(m =>
         {
             var libraryId = mediaToLibrary.GetValueOrDefault(m.Id);
             var libInfo = libraryInfo.GetValueOrDefault(libraryId);
             var threshold = libInfo?.MetadataRefreshIntervalDays;
 
+            var mediaPictureTypes = picturesByMedia.GetValueOrDefault(m.Id, []);
             var expectedPictures = GetExpectedPictureTypes(m.Type);
-            var missingPictures = expectedPictures.Except(m.PictureTypes).ToList();
+            var missingPictures = expectedPictures.Except(mediaPictureTypes).ToList();
 
             var issues = new List<DiagnosticIssue>();
             if (missingPictures.Count > 0) issues.Add(DiagnosticIssue.MissingPictures);
@@ -256,12 +266,16 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
 
         // Find the library via the artist's albums
         var artistIds = artists.Select(a => a.Id).ToHashSet();
-        var artistToLibrary = await _context.Medias.OfType<MusicAlbum>()
-            .Where(album => album.ArtistId != null && artistIds.Contains(album.ArtistId.Value))
-            .SelectMany(album => album.IndexedFiles.Select(f => new { ArtistId = album.ArtistId!.Value, f.LibraryId }))
-            .GroupBy(x => x.ArtistId)
-            .Select(g => new { ArtistId = g.Key, LibraryId = g.First().LibraryId })
-            .ToDictionaryAsync(x => x.ArtistId, x => x.LibraryId, cancellationToken);
+        var artistLibraryPairs = await (
+            from album in _context.Medias.OfType<MusicAlbum>()
+            where album.ArtistId != null && artistIds.Contains(album.ArtistId.Value)
+            join f in _context.IndexedFiles on album.Id equals f.MediaId
+            select new { ArtistId = album.ArtistId!.Value, f.LibraryId }
+        ).Distinct().ToListAsync(cancellationToken);
+
+        var artistToLibrary = artistLibraryPairs
+            .DistinctBy(x => x.ArtistId)
+            .ToDictionary(x => x.ArtistId, x => x.LibraryId);
 
         if (request.LibraryId.HasValue)
         {
@@ -306,6 +320,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
     {
         var query = _context.ScanIssues
             .AsNoTracking()
+            .Where(s => !_context.Libraries.Any(l => l.Id == s.LibraryId && l.PeerServerId != null))
             .AsQueryable();
 
         if (request.LibraryId.HasValue)

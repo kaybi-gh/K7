@@ -15,6 +15,7 @@ public class GetPeerRequestsQueryHandler(IApplicationDbContext context)
     public async Task<IReadOnlyList<PeerRequestDto>> Handle(GetPeerRequestsQuery request, CancellationToken cancellationToken)
     {
         var requests = await context.PeerRequests
+            .Where(r => r.Status == Domain.Enums.PeerRequestStatus.Pending)
             .OrderByDescending(r => r.Created)
             .ToListAsync(cancellationToken);
 

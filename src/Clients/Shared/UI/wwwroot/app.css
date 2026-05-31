@@ -341,6 +341,7 @@ body.native-player-active .video-container {
     background: var(--color-bg);
     opacity: 0.92;
     pointer-events: all;
+    text-align: center;
 }
 
 .reconnection-animation {

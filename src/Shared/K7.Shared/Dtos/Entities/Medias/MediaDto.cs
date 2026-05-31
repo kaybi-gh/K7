@@ -20,6 +20,7 @@ public abstract record MediaDto
     public IReadOnlyList<LitePersonRoleDto>? PersonRoles { get; init; }
     public IReadOnlyList<RatingDto>? Ratings { get; init; }
     public IReadOnlyList<IndexedFileDto>? IndexedFiles { get; init; }
+    public IReadOnlyList<RemoteIndexedFileDto>? RemoteIndexedFiles { get; init; }
     public IReadOnlyList<string>? Genres { get; init; }
     public IReadOnlyList<string>? LockedFields { get; init; }
     public IReadOnlyList<ExternalIdDto>? ExternalIds { get; init; }
