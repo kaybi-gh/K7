@@ -49,9 +49,10 @@ public partial class AdminUserMediaExclusionsDialog
         _loading = false;
     }
 
-    private void RemoveExclusion(ExcludedMediaItem media)
+    private void ToggleMedia(ExcludedMediaItem media, bool keepExcluded)
     {
-        _excludedMedias.Remove(media);
+        if (!keepExcluded)
+            _excludedMedias.Remove(media);
     }
 
     private void Cancel() => Dialog.Cancel();

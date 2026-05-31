@@ -6,41 +6,29 @@
         }
         else if (_excludedMedias.Count == 0)
         {
-            <p class="text-sm" Color="secondary">Aucun média masqué pour cet utilisateur.</p>
+            <p class="exclusions__empty">Aucun media masque pour cet utilisateur.</p>
         }
         else
         {
-            <p class="text-sm mb-3"  Color="secondary" >
-                @_excludedMedias.Count média(s) masqué(s). Cliquez sur la croix pour rétablir l'accès.
+            <p class="exclusions__hint">
+                @_excludedMedias.Count media(s) masque(s). Decochez pour retablir l'acces.
             </p>
-            <ul class="k7-list">
-                @foreach (var media in _excludedMedias)
-                {
-                    <li>
-                        
-                            <div class="d-flex align-center justify-between">
-                                <div class="d-flex align-center">
-                                    @if (!string.IsNullOrEmpty(media.PosterUrl))
-                                    {
-                                        <K7Avatar Size="md">
-                                            <K7Image Src="@media.PosterUrl" Alt="@media.Title" loading="lazy" />
-                                        </K7Avatar>
-                                    }
-                                    else
-                                    {
-                                        <K7Avatar Size="md">
-                                            <K7Icon Name="film-strip" />
-                                        </K7Avatar>
-                                    }
-                                    <p class="text-sm">@(media.Title ?? media.Id.ToString())</p>
-                                </div>
-                                <K7IconButton Icon="@Phosphor.X" Size="sm" Color="error"
-                                               OnClick="@(() => RemoveExclusion(media))" />
-                            </div>
-                        
-                    </li>
-                }
-            </ul>
+            <K7CheckboxList TItem="ExcludedMediaItem"
+                            Items="_excludedMedias"
+                            IsChecked="@(_ => true)"
+                            CheckedChanged="@(e => ToggleMedia(e.Item, e.Checked))">
+                <ItemTemplate Context="media">
+                    @if (!string.IsNullOrEmpty(media.PosterUrl))
+                    {
+                        <K7Avatar Size="sm" Image="@media.PosterUrl" />
+                    }
+                    else
+                    {
+                        <K7Avatar Size="sm" Letter="M" />
+                    }
+                    <span class="exclusions__name">@(media.Title ?? media.Id.ToString())</span>
+                </ItemTemplate>
+            </K7CheckboxList>
         }
     </div>
     <div class="k7-dialog-actions">

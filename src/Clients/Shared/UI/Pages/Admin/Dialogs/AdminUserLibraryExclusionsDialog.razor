@@ -1,3 +1,4 @@
+@using K7.Shared.Dtos.Entities
 
 <div class="k7-dialog-content">
         @if (_loading)
@@ -6,31 +7,22 @@
         }
         else
         {
-            <p class="text-sm mb-3" Color="secondary">
-                Décochez les librairies auxquelles l'utilisateur ne doit pas avoir accès.
+            <p class="exclusions__hint">
+                Decochez les librairies auxquelles l'utilisateur ne doit pas avoir acces.
             </p>
-            <div class="d-flex flex-col gap-3">
-                @foreach (var group in _groups)
+            @foreach (var group in _groups)
+            {
+                var libs = GetLibrariesForGroup(group).ToList();
+                @if (libs.Count > 0)
                 {
-                    var libs = GetLibrariesForGroup(group).ToList();
-                    @if (libs.Count > 0)
-                    {
-                        <div>
-                            <span class="text-sm text-bold">@group.Title</span>
-                            <div class="d-flex flex-col mt-1">
-                                @foreach (var library in libs)
-                                {
-                                    var excluded = _excludedIds.Contains(library.Id);
-                                    <div class="d-flex align-center justify-between">
-                                        <p class="text-sm">@library.Title</p>
-                                        <K7Switch Value="@(!excluded)" ValueChanged="@(v => ToggleExclusion(library.Id, !v))" />
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
+                    <span class="exclusions__group-title">@group.Title</span>
+                    <K7CheckboxList TItem="LibraryDto"
+                                    Items="libs"
+                                    IsChecked="@(lib => !_excludedIds.Contains(lib.Id))"
+                                    CheckedChanged="@(e => ToggleExclusion(e.Item.Id, !e.Checked))"
+                                    ItemLabel="@(lib => lib.Title)" />
                 }
-            </div>
+            }
         }
     </div>
     <div class="k7-dialog-actions">

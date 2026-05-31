@@ -1,27 +1,21 @@
+@using K7.Server.Domain.Enums
 
 <div class="k7-dialog-content">
-        <p class="text-sm mb-3" Color="secondary">
-            Rôle actuel : <strong>@GetRoleLabel(Role)</strong>. Les cases cochées par défaut sont héritées du rôle.
+        <p class="exclusions__hint">
+            Role actuel : <strong>@GetRoleLabel(Role)</strong>. Les cases cochees par defaut sont heritees du role.
         </p>
-        <div class="d-flex flex-col">
-            @foreach (var capability in Enum.GetValues<Capability>())
-            {
-                var defaultEnabled = _defaultCaps.Contains(capability);
-                var hasOverride = Overrides.ContainsKey(capability);
-                var effectiveValue = hasOverride ? Overrides[capability] : defaultEnabled;
-
-                <div class="d-flex align-center justify-between">
-                    <p class="text-sm">@GetCapabilityLabel(capability)</p>
-                    <div class="d-flex align-center">
-                        @if (hasOverride)
-                        {
-                            <K7IconButton Icon="@Phosphor.XCircle" OnClick="@(() => RemoveOverride(capability))" AriaLabel="remove override" />
-                        }
-                        <K7Switch Value="@effectiveValue" ValueChanged="@(v => SetOverride(capability, v, defaultEnabled))" />
-                    </div>
-                </div>
-            }
-        </div>
+        <K7CheckboxList TItem="Capability"
+                        Items="Enum.GetValues<Capability>()"
+                        IsChecked="@(cap => Overrides.TryGetValue(cap, out var v) ? v : _defaultCaps.Contains(cap))"
+                        CheckedChanged="@(e => SetOverride(e.Item, e.Checked, _defaultCaps.Contains(e.Item)))">
+            <ItemTemplate Context="cap">
+                <span class="exclusions__name">@GetCapabilityLabel(cap)</span>
+                @if (Overrides.ContainsKey(cap))
+                {
+                    <K7IconButton Icon="@Phosphor.XCircle" OnClick="@(() => RemoveOverride(cap))" AriaLabel="remove override" />
+                }
+            </ItemTemplate>
+        </K7CheckboxList>
     </div>
     <div class="k7-dialog-actions">
         <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>

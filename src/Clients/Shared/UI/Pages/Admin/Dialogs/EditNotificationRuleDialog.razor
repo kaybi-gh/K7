@@ -49,14 +49,11 @@
     {
         <h6>@L["SelectEvents"]</h6>
         <p class="text-sm mb-3" style="color: var(--color-text-muted);">@L["SelectEventsHelper"]</p>
-        <div class="d-flex flex-col gap-2">
-            @foreach (var evt in EventsForSelectedCategory)
-            {
-                <K7Switch Value="@IsEventSelected(evt.EventTypeName)"
-                           ValueChanged="@(v => OnEventToggled(evt.EventTypeName, v))"
-                           Label="@evt.DisplayName" />
-            }
-        </div>
+        <K7CheckboxList TItem="NotificationEventDescriptorDto"
+                        Items="EventsForSelectedCategory"
+                        IsChecked="@(evt => IsEventSelected(evt.EventTypeName))"
+                        CheckedChanged="@(e => OnEventToggled(e.Item.EventTypeName, e.Checked))"
+                        ItemLabel="@(evt => evt.DisplayName)" />
     }
 
     @* Step 2: Message templates *@

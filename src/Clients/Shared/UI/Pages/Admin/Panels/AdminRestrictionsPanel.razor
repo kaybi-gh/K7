@@ -34,38 +34,37 @@
         </div>
     </EmptyContent>
     <GridTemplate Context="profile">
-        <div class="k7-card" style="height:100%;">
-            <div class="k7-card-header">
-                <div class="k7-card-header-content">
+        <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
+            <div class="restriction-card__header">
+                <K7Icon Icon="@Phosphor.Prohibit" Size="lg" Color="primary" />
+                <div class="restriction-card__title">
                     <h6>@profile.Name</h6>
                     @if (!string.IsNullOrEmpty(profile.Description))
                     {
-                        <p class="text-sm" Color="secondary">@profile.Description</p>
+                        <span class="restriction-card__description">@profile.Description</span>
                     }
                 </div>
-                <div class="k7-card-header-actions">
-                    <K7IconButton Icon="@Phosphor.Eye" OnClick="@(() => PreviewRestrictedMedias(profile))" AriaLabel="preview" />
-                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(profile))" AriaLabel="edit" />
-                    <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(profile))" AriaLabel="delete" />
-                </div>
             </div>
-            <div class="k7-card-content">
-                <div class="d-flex flex-col">
-                    <span class="text-caption" Color="secondary">
-                        @L["ConditionPrefix"] @(profile.RuleFilter.MatchCondition == RuleMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
-                    </span>
-                    @foreach (var rule in profile.RuleFilter.Items.OfType<ConditionRuleItemDto>())
-                    {
-                        <K7Chip Size="sm" Color="default">
-                            @FormatRule(rule)
-                        </K7Chip>
-                    }
-                    <span class="text-caption mt-2">
-                        <K7Icon Name="users" Size="sm" Class="mr-1" />
-                        @string.Format(L["AttachedUsers"], profile.UserCount)
-                    </span>
-                </div>
+            <div class="restriction-card__rules">
+                <span class="restriction-card__condition">
+                    @L["ConditionPrefix"] @(profile.RuleFilter.MatchCondition == RuleMatchCondition.Any ? L["MatchAny"] : L["MatchAll"])
+                </span>
+                @foreach (var rule in profile.RuleFilter.Items.OfType<ConditionRuleItemDto>())
+                {
+                    <K7Chip Size="sm" Color="default">
+                        @FormatRule(rule)
+                    </K7Chip>
+                }
             </div>
-        </div>
+            <span class="restriction-card__users">
+                <K7Icon Name="users" Size="sm" />
+                @string.Format(L["AttachedUsers"], profile.UserCount)
+            </span>
+            <div class="restriction-card__actions">
+                <K7IconButton Icon="@Phosphor.Eye" OnClick="@(() => PreviewRestrictedMedias(profile))" AriaLabel="preview" />
+                <K7IconButton Icon="@Phosphor.Pencil" OnClick="@(() => OpenEditDialog(profile))" AriaLabel="edit" />
+                <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(profile))" AriaLabel="delete" />
+            </div>
+        </K7Paper>
     </GridTemplate>
 </BrowseView>

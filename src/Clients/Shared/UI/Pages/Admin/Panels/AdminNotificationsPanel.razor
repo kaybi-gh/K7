@@ -18,11 +18,7 @@
 }
 else if (_rules.Count == 0)
 {
-    <div class="empty-state">
-        <K7Icon Icon="@Phosphor.Bell" Style="font-size: 64px; opacity: 0.3;" />
-        <h6 class="empty-state__title">@L["Empty"]</h6>
-        <p class="empty-state__hint">@L["EmptyHint"]</p>
-    </div>
+    <K7EmptyState Icon="@Phosphor.Bell" Title="@L["Empty"]" Subtitle="@L["EmptyHint"]" />
 }
 else
 {

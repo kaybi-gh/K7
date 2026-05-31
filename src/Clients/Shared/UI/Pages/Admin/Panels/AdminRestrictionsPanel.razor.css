@@ -1,3 +1,49 @@
+::deep .restriction-card__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+::deep .restriction-card__title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+::deep .restriction-card__description {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+::deep .restriction-card__rules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+::deep .restriction-card__condition {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    width: 100%;
+}
+
+::deep .restriction-card__users {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+::deep .restriction-card__actions {
+    display: flex;
+    gap: 4px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 8px;
+    margin-top: auto;
+}
+
 .empty-state {
     display: flex;
     flex-direction: column;
