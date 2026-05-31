@@ -400,23 +400,40 @@ public partial class VideoPlayer : IAsyncDisposable
     }
 
     [JSInvokable]
-    public void OnDurationChanged(double duration) => PlayerService.Duration = duration;
-
-    [JSInvokable]
-    public void OnTimeUpdated(double time) => PlayerService.CurrentTime = time;
-
-    [JSInvokable]
-    public void OnBufferedUpdated(double time) => PlayerService.BufferedTime = time;
-
-    [JSInvokable]
-    public void OnVolumeChanged(double volume, bool muted)
+    public void OnDurationChanged(double? duration)
     {
-        PlayerService.Volume = volume;
+        if (duration.HasValue)
+            PlayerService.Duration = duration.Value;
+    }
+
+    [JSInvokable]
+    public void OnTimeUpdated(double? time)
+    {
+        if (time.HasValue)
+            PlayerService.CurrentTime = time.Value;
+    }
+
+    [JSInvokable]
+    public void OnBufferedUpdated(double? time)
+    {
+        if (time.HasValue)
+            PlayerService.BufferedTime = time.Value;
+    }
+
+    [JSInvokable]
+    public void OnVolumeChanged(double? volume, bool muted)
+    {
+        if (volume.HasValue)
+            PlayerService.Volume = volume.Value;
         PlayerService.IsMuted = muted;
     }
 
     [JSInvokable]
-    public void OnPlaybackRateChanged(double rate) => PlayerService.PlaybackRate = rate;
+    public void OnPlaybackRateChanged(double? rate)
+    {
+        if (rate.HasValue)
+            PlayerService.PlaybackRate = rate.Value;
+    }
 
     [JSInvokable]
     public void OnFullscreenChanged(bool isFullscreen) => PlayerService.IsFullScreen = isFullscreen;
