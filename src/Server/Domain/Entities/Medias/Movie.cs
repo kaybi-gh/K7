@@ -61,8 +61,10 @@ public class Movie() : BaseMedia(MediaType.Movie)
 
         if (!IsFieldLocked(nameof(ExternalIds)) && metadata.ExternalIds?.Count > 0)
         {
+            var federationIds = ExternalIds.Where(e => e.ProviderName == "federation").ToList();
             ExternalIds.Clear();
             foreach (var ex in metadata.ExternalIds) ExternalIds.Add(ex);
+            foreach (var fed in federationIds) ExternalIds.Add(fed);
         }
 
         if (!IsFieldLocked(nameof(Pictures)) && metadata.Pictures?.Count > 0)
