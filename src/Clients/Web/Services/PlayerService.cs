@@ -265,6 +265,57 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         QualityChanged?.Invoke(_selectedQuality);
     }
 
+    public async Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, CancellationToken cancellationToken = default)
+    {
+        _currentIndexedFileId = null;
+        _audioTracks = audioTracks.ToList();
+        _subtitleTracks = subtitleTracks
+            ?.Where(t => t.IsTextBased)
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Index)
+            .ToList() ?? [];
+        _selectedSubtitleTrack = subtitleTrackIndex is int subIdx
+            ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
+            : null;
+        _selectedAudioTrack = audioTrackIndex is int idx
+            ? _audioTracks.FirstOrDefault(t => t.Index == idx)
+            : _audioTracks.FirstOrDefault(t => t.IsDefault) ?? _audioTracks.FirstOrDefault();
+
+        _availableQualities = videoResolution is not null
+            ? VideoQualityOption.BuildOptionsForResolution(videoResolution.Value).ToList()
+            : [];
+        _selectedQuality = _availableQualities.FirstOrDefault(q => q.IsOriginal)
+            ?? _availableQualities.FirstOrDefault();
+
+        Source = new PlayerSource();
+
+        await ShowAsync();
+        Play();
+
+        var session = await streamUriService.GetOrCreateRemoteSessionAsync(remoteFileId, audioTrackIndex, cancellationToken);
+
+        if (session?.Source is null)
+        {
+            return;
+        }
+
+        _baseManifestUrl = session.Source.Uri.OriginalString;
+
+        Source = new PlayerSource
+        {
+            MediaId = mediaId,
+            StreamSessionId = session.Id,
+            Url = _baseManifestUrl,
+            MimeType = session.Source.MimeType,
+            Title = title,
+            CoverUrl = coverUrl
+        };
+
+        AudioTrackChanged?.Invoke(_selectedAudioTrack);
+        SubtitleTrackChanged?.Invoke(_selectedSubtitleTrack);
+        QualityChanged?.Invoke(_selectedQuality);
+    }
+
     public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto> tracks)
     {
         _subtitleTracks = tracks

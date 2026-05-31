@@ -19,7 +19,6 @@ public partial class Movie
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
-    [Inject] private IStreamUriService StreamUriService { get; set; } = default!;
     [Inject] private IFederationService FederationService { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
@@ -143,19 +142,19 @@ public partial class Movie
 
         var coverUrl = apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Poster)?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
 
-        var session = await StreamUriService.GetOrCreateRemoteSessionAsync(remoteFile.Id);
-        if (session?.Source is null) return;
+        var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);
+        var videoMetadata = details?.FileMetadata as VideoFileMetadataDto;
 
-        await PlayerService.ShowAsync();
-        PlayerService.Source = new PlayerSource
-        {
-            MediaId = _movie.Id,
-            Url = session.Source.Uri.AbsoluteUri,
-            MimeType = session.Source.MimeType,
-            Title = _movie.Title,
-            CoverUrl = coverUrl
-        };
-        PlayerService.Play();
+        await PlayerService.PlayRemoteIndexedFileAsync(
+            remoteFile.Id,
+            videoMetadata?.AudioTracks ?? [],
+            videoMetadata?.SubtitleTracks,
+            _selectedAudioFileTrack?.Index ?? videoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            _selectedSubtitleFileTrack?.Index ?? videoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            videoMetadata?.VideoResolution,
+            _movie.Id,
+            _movie.Title,
+            coverUrl);
 
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && _movie.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
@@ -191,7 +190,7 @@ public partial class Movie
 
         var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
         
-        var title = movieForDialog.IndexedFiles!.Count > 1 ? L["IndexedVersions"] : L["AudioTrack"];
+        var title = movieForDialog.IndexedFiles!.Count > 1 ? L["IndexedVersions"] : L["TracksSelection"];
         var dialog = await DialogService.ShowAsync<PlaybackOptionsDialog>(title, parameters, options);
         var result = await dialog.Result;
 

@@ -3,6 +3,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Dtos;
 
 namespace K7.Clients.Shared.Services;
 
@@ -484,8 +485,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         var nextTrack = _queue[nextIndex.Value];
 
-        var session = await streamUriService.GetOrCreateSessionAsync(nextTrack.IndexedFileId, cancellationToken: cancellationToken);
-        if (session.Source is null) return;
+        var session = await GetSessionForTrackAsync(nextTrack, cancellationToken);
+        if (session?.Source is null) return;
 
         var source = new PlayerSource
         {
@@ -525,8 +526,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
         else
         {
-            var session = await streamUriService.GetOrCreateSessionAsync(nextTrack.IndexedFileId, cancellationToken: cancellationToken);
-            if (session.Source is null) return;
+            var session = await GetSessionForTrackAsync(nextTrack, cancellationToken);
+            if (session?.Source is null) return;
             source = new PlayerSource { Url = session.Source.Uri.OriginalString, MimeType = session.Source.MimeType };
         }
 
@@ -554,6 +555,14 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     }
 
     // Private helpers
+    private async Task<StreamingSessionDto?> GetSessionForTrackAsync(AudioQueueItem track, CancellationToken cancellationToken)
+    {
+        if (track.RemoteIndexedFileId is { } remoteFileId)
+            return await streamUriService.GetOrCreateRemoteSessionAsync(remoteFileId, cancellationToken: cancellationToken);
+
+        return await streamUriService.GetOrCreateSessionAsync(track.IndexedFileId, cancellationToken: cancellationToken);
+    }
+
     private async Task LoadAndPlayCurrentAsync(CancellationToken cancellationToken)
     {
         var track = CurrentTrack;
@@ -586,9 +595,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         }
         else
         {
-            var session = await streamUriService.GetOrCreateSessionAsync(track.IndexedFileId, cancellationToken: cancellationToken);
+            var session = await GetSessionForTrackAsync(track, cancellationToken);
 
-            if (session.Source is null)
+            if (session?.Source is null)
                 throw new InvalidOperationException("Streaming session did not return a source URI.");
 
             source = new PlayerSource

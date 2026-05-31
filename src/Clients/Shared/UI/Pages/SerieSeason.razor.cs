@@ -35,6 +35,7 @@ public partial class SerieSeason
     private string? _focusedStillUrl;
     private string? _previousStillUrl;
     private Carousel? _tvCarousel;
+    private bool _isFederated;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -80,6 +81,9 @@ public partial class SerieSeason
             _episodes = (seasonDto.Episodes ?? [])
                 .OrderBy(e => e.EpisodeNumber)
                 .ToList();
+
+            _isFederated = _episodes.Count > 0
+                && _episodes.All(e => e.IndexedFileId is null && e.RemoteIndexedFileId is not null);
 
             _pageTitle = SeasonNumber == 0
                 ? $"{serie.Title} - {L["Specials"]}"
@@ -190,31 +194,65 @@ public partial class SerieSeason
         var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id);
         if (episodeMedia is not SerieEpisodeDto episodeDto) return;
 
+        // Try local file first, then remote
         var indexedFile = episodeDto.IndexedFiles?.FirstOrDefault();
-        if (indexedFile is null) return;
+        if (indexedFile is not null)
+        {
+            var videoMetadata = indexedFile.FileMetadata as VideoFileMetadataDto;
+            if (videoMetadata is null) return;
 
-        var videoMetadata = indexedFile.FileMetadata as VideoFileMetadataDto;
-        if (videoMetadata is null) return;
+            PlaybackProgressTracker.StartTracking(episode.Id,
+                await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
+                Guid.Parse(SerieId),
+                indexedFile.Id);
+
+            var episodeTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+            var coverUrl = GetEpisodeStillUrl(episode);
+
+            await PlayerService.PlayIndexedFileAsync(
+                indexedFile.Id,
+                videoMetadata.AudioTracks ?? [],
+                videoMetadata.SubtitleTracks,
+                videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+                videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+                videoMetadata.VideoResolution,
+                videoMetadata.Thumbnails?.Uri?.ToString(),
+                episode.Id,
+                episodeTitle,
+                coverUrl);
+
+            if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
+                && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })
+            {
+                PlayerService.Seek(episode.UserState.LastPlaybackPosition);
+            }
+            return;
+        }
+
+        // Federated episode - use remote file
+        var remoteFile = episodeDto.RemoteIndexedFiles?.FirstOrDefault();
+        if (remoteFile is null) return;
 
         PlaybackProgressTracker.StartTracking(episode.Id,
             await FeatureAccess.HasCapabilityAsync(Capability.CanReportPlaybackProgress),
-            Guid.Parse(SerieId),
-            indexedFile.Id);
+            Guid.Parse(SerieId));
 
-        var episodeTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
-        var coverUrl = GetEpisodeStillUrl(episode);
+        var epTitle = episode.Title ?? $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
+        var cover = GetEpisodeStillUrl(episode);
 
-        await PlayerService.PlayIndexedFileAsync(
-            indexedFile.Id,
-            videoMetadata.AudioTracks ?? [],
-            videoMetadata.SubtitleTracks,
-            videoMetadata.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            videoMetadata.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
-            videoMetadata.VideoResolution,
-            videoMetadata.Thumbnails?.Uri?.ToString(),
+        var details = await FederationService.GetRemoteFileDetailsAsync(remoteFile.Id);
+        var remoteVideoMetadata = details?.FileMetadata as VideoFileMetadataDto;
+
+        await PlayerService.PlayRemoteIndexedFileAsync(
+            remoteFile.Id,
+            remoteVideoMetadata?.AudioTracks ?? [],
+            remoteVideoMetadata?.SubtitleTracks,
+            remoteVideoMetadata?.AudioTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            remoteVideoMetadata?.SubtitleTracks?.FirstOrDefault(t => t.IsDefault)?.Index,
+            remoteVideoMetadata?.VideoResolution,
             episode.Id,
-            episodeTitle,
-            coverUrl);
+            epTitle,
+            cover);
 
         if (await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback)
             && episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false })

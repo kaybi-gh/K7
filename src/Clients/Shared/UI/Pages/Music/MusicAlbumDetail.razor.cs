@@ -65,6 +65,7 @@ public partial class MusicAlbumDetail
                     {
                         Id = t.Id,
                         IndexedFileId = t.IndexedFileId,
+                        RemoteIndexedFileId = t.RemoteIndexedFileId,
                         Title = t.Title ?? S["Untitled"],
                         TrackNumber = t.TrackNumber,
                         ArtistName = artistName,
@@ -127,7 +128,7 @@ public partial class MusicAlbumDetail
     private List<AudioQueueItem> BuildQueueItems()
     {
         return _tracks
-            .Where(t => t.IndexedFileId.HasValue)
+            .Where(t => t.IndexedFileId.HasValue || t.RemoteIndexedFileId.HasValue)
             .Select(BuildQueueItem)
             .ToList();
     }
@@ -137,6 +138,7 @@ public partial class MusicAlbumDetail
         return new AudioQueueItem
         {
             IndexedFileId = t.IndexedFileId ?? Guid.Empty,
+            RemoteIndexedFileId = t.RemoteIndexedFileId,
             MediaId = t.Id,
             Title = t.Title,
             Artist = t.ArtistName,
@@ -236,6 +238,7 @@ public partial class MusicAlbumDetail
     {
         public Guid Id { get; init; }
         public Guid? IndexedFileId { get; init; }
+        public Guid? RemoteIndexedFileId { get; init; }
         public required string Title { get; init; }
         public int? TrackNumber { get; init; }
         public string? ArtistName { get; init; }
