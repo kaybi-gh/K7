@@ -96,6 +96,7 @@ public class FederationMetadataProvider(
             Pictures = BuildPictures(dto.Pictures, baseUrl),
             Tracks = dto.Tracks.Select(t => new ExternalMusicTrackMetadata
             {
+                RemoteId = t.Id,
                 Title = t.Title,
                 TrackNumber = t.TrackNumber,
                 DiscNumber = t.DiscNumber,

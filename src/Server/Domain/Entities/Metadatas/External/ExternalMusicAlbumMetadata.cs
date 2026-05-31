@@ -17,6 +17,7 @@ public class ExternalMusicAlbumMetadata : IExternalMetadata
 
 public class ExternalMusicTrackMetadata
 {
+    public Guid? RemoteId { get; init; }
     public required string Title { get; init; }
     public int? TrackNumber { get; init; }
     public int? DiscNumber { get; init; }
