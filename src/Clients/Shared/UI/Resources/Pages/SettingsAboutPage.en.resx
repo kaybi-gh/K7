@@ -32,9 +32,9 @@
   <data name="CreditWikimedia" xml:space="preserve"><value>Artist images</value></data>
   <data name="CreditChromaprint" xml:space="preserve"><value>Audio fingerprinting and intro detection</value></data>
   <data name="CreditAudioMuse" xml:space="preserve"><value>AI-powered music analysis</value></data>
-  <data name="CreditMudBlazor" xml:space="preserve"><value>UI component library</value></data>
   <data name="CreditTagLib" xml:space="preserve"><value>Audio tag reading</value></data>
   <data name="CreditMediatR" xml:space="preserve"><value>Mediation and CQRS</value></data>
   <data name="CreditEfCore" xml:space="preserve"><value>Data access</value></data>
   <data name="CreditSignalR" xml:space="preserve"><value>Real-time communication</value></data>
+  <data name="TmdbDisclaimer" xml:space="preserve"><value>This product uses the TMDB API but is not endorsed or certified by TMDB.</value></data>
 </root>
