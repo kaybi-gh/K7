@@ -113,13 +113,9 @@ public class GetFederationMedia : IEndpoint
                 mediaItems.Add(album);
             }
 
-            // For series, flatten episode files to the serie level
+            // For series, add as-is; files are mapped from episodes in the DTO mapping below
             foreach (var serie in series)
             {
-                serie.IndexedFiles = serie.Seasons
-                    .SelectMany(s => s.Episodes)
-                    .SelectMany(e => e.IndexedFiles)
-                    .ToList();
                 mediaItems.Add(serie);
             }
 
@@ -131,7 +127,9 @@ public class GetFederationMedia : IEndpoint
 
                 var files = m is MusicAlbum albumMedia
                     ? albumMedia.Tracks.SelectMany(t => t.IndexedFiles.Select(f => BuildFileDto(f, t.Id))).ToList()
-                    : m.IndexedFiles.Select(f => BuildFileDto(f, null)).ToList();
+                    : m is Serie serieMedia
+                        ? serieMedia.Seasons.SelectMany(s => s.Episodes).SelectMany(e => e.IndexedFiles.Select(f => BuildFileDto(f, e.Id))).ToList()
+                        : m.IndexedFiles.Select(f => BuildFileDto(f, null)).ToList();
 
                 return new PeerMediaDto
                 {
@@ -163,7 +161,7 @@ public class GetFederationMedia : IEndpoint
         .WithTags(groupName);
     }
 
-    private static PeerFileDto BuildFileDto(Domain.Entities.Metadatas.Files.IndexedFile f, Guid? mediaId)
+    private static PeerFileDto BuildFileDto(Domain.Entities.IndexedFile f, Guid? mediaId)
     {
         var vMeta = f.FileMetadata as VideoFileMetadata;
         var aMeta = f.FileMetadata as AudioFileMetadata;

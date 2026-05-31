@@ -422,6 +422,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         }
 
         // Fetch and apply episode metadata
+        var episodeRemoteIds = new Dictionary<(int Season, int Episode), Guid>();
         foreach (var season in serie.Seasons)
         {
             foreach (var episode in season.Episodes)
@@ -431,6 +432,9 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     request.Language, cancellationToken);
 
                 episode.ApplyMetadata(episodeMetadata);
+
+                if (episodeMetadata.RemoteId is not null)
+                    episodeRemoteIds[(season.SeasonNumber, episode.EpisodeNumber)] = episodeMetadata.RemoteId.Value;
 
                 if (!string.IsNullOrEmpty(episodeMetadata.StillImageUrl) && !episode.IsFieldLocked(nameof(SerieEpisode.Pictures)))
                 {
@@ -443,6 +447,32 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
 
                     episode.Pictures.Clear();
                     episode.Pictures.Add(stillPicture);
+                }
+            }
+        }
+
+        // Re-parent RemoteIndexedFiles from serie to individual episodes
+        if (request.MetadataProviderName == "federation" && episodeRemoteIds.Count > 0)
+        {
+            // Persist episodes first so FK references are valid
+            await _context.SaveChangesAsync(cancellationToken);
+
+            var serieRemoteFiles = await _context.RemoteIndexedFiles
+                .Where(r => r.MediaId == serie.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var season in serie.Seasons)
+            {
+                foreach (var episode in season.Episodes)
+                {
+                    if (!episodeRemoteIds.TryGetValue((season.SeasonNumber, episode.EpisodeNumber), out var remoteId))
+                        continue;
+
+                    var remoteFile = serieRemoteFiles.FirstOrDefault(r => r.RemoteMediaId == remoteId);
+                    if (remoteFile is not null)
+                    {
+                        remoteFile.MediaId = episode.Id;
+                    }
                 }
             }
         }
@@ -485,6 +515,20 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     ProviderName = "isrc",
                     Value = metadataTrack.Isrc
                 });
+            }
+
+            if (!track.IsFieldLocked(nameof(MusicTrack.Lyrics))
+                && string.IsNullOrEmpty(track.Lyrics)
+                && !string.IsNullOrEmpty(metadataTrack.Lyrics))
+            {
+                track.Lyrics = metadataTrack.Lyrics;
+            }
+
+            if (!track.IsFieldLocked(nameof(MusicTrack.LyricsLrc))
+                && string.IsNullOrEmpty(track.LyricsLrc)
+                && !string.IsNullOrEmpty(metadataTrack.LyricsLrc))
+            {
+                track.LyricsLrc = metadataTrack.LyricsLrc;
             }
         }
     }

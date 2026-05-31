@@ -205,6 +205,7 @@ public class GetFederationMediaMetadata : IEndpoint
                     }).ToList(),
                     Episodes = s.Episodes.Select(e => new PeerEpisodeDto
                     {
+                        Id = e.Id,
                         EpisodeNumber = e.EpisodeNumber,
                         SeasonNumber = s.SeasonNumber,
                         Title = e.Title,
@@ -232,6 +233,8 @@ public class GetFederationMediaMetadata : IEndpoint
                     Duration = t.IndexedFiles.FirstOrDefault()?.FileMetadata is AudioFileMetadata af ? af.Duration : null,
                     MusicBrainzRecordingId = t.ExternalIds.FirstOrDefault(e => e.ProviderName == "musicbrainz")?.Value,
                     Isrc = t.ExternalIds.FirstOrDefault(e => e.ProviderName == "isrc")?.Value,
+                    Lyrics = t.Lyrics,
+                    LyricsLrc = t.LyricsLrc,
                     ArtistCredits = t.ArtistCredits.Select(c => new PeerMusicTrackArtistCreditDto
                     {
                         Name = c.MusicArtist.Title ?? string.Empty,
