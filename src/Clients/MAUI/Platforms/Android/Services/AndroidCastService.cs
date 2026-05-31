@@ -3,10 +3,10 @@ using Android.Content;
 using K7.Clients.Shared.Interfaces;
 using Microsoft.Extensions.Logging;
 using AndroidX.MediaRouter.Media;
-using Com.Google.Android.Gms.Cast;
-using Com.Google.Android.Gms.Cast.Framework;
-using Com.Google.Android.Gms.Cast.Framework.Media;
-using Com.Google.Android.Gms.Common.Api;
+using Android.Gms.Cast;
+using Android.Gms.Cast.Framework;
+using Android.Gms.Cast.Framework.Media;
+using Android.Gms.Common.Images;
 
 namespace K7.Clients.MAUI.Platforms.Android.Services;
 
@@ -47,11 +47,13 @@ internal sealed class AndroidCastService : ICastService, IDisposable
         try
         {
             var context = Platform.CurrentActivity ?? Platform.AppContext;
-            var castOptions = new CastOptions.Builder(CastMediaControlIntent.DefaultMediaReceiverApplicationId)
-                .Build();
-
-            CastContext.SetSharedInstance(context, castOptions);
             _castContext = CastContext.GetSharedInstance(context);
+
+            var modifier = new CastOptions.Modifier.Builder()
+                .SetReceiverApplicationId(CastMediaControlIntent.DefaultMediaReceiverApplicationId)
+                .Build();
+            _castContext.ApplyOptionsModifier(modifier);
+
             _sessionManager = _castContext.SessionManager;
 
             _sessionListener = new CastSessionManagerListener(this);
@@ -113,7 +115,7 @@ internal sealed class AndroidCastService : ICastService, IDisposable
         }
         if (!string.IsNullOrEmpty(request.ThumbnailUrl))
         {
-            metadata.AddImage(new Com.Google.Android.Gms.Common.Images.WebImage(global::Android.Net.Uri.Parse(request.ThumbnailUrl)!));
+            metadata.AddImage(new WebImage(global::Android.Net.Uri.Parse(request.ThumbnailUrl)!));
         }
 
         var mediaInfoBuilder = new MediaInfo.Builder(request.StreamUrl)
@@ -216,15 +218,15 @@ internal sealed class AndroidCastService : ICastService, IDisposable
 
     private sealed class CastSessionManagerListener(AndroidCastService service) : Java.Lang.Object, ISessionManagerListener
     {
-        public void OnSessionEnded(Session p0, int p1) => service.OnSessionEnded();
-        public void OnSessionEnding(Session p0) { }
-        public void OnSessionResumeFailed(Session p0, int p1) { }
-        public void OnSessionResumed(Session p0, bool p1) => service.OnSessionStarted();
-        public void OnSessionResuming(Session p0, string p1) { }
-        public void OnSessionStartFailed(Session p0, int p1) { }
-        public void OnSessionStarted(Session p0, string p1) => service.OnSessionStarted();
-        public void OnSessionStarting(Session p0) { }
-        public void OnSessionSuspended(Session p0, int p1) { }
+        public void OnSessionEnded(Java.Lang.Object p0, int p1) => service.OnSessionEnded();
+        public void OnSessionEnding(Java.Lang.Object p0) { }
+        public void OnSessionResumeFailed(Java.Lang.Object p0, int p1) { }
+        public void OnSessionResumed(Java.Lang.Object p0, bool p1) => service.OnSessionStarted();
+        public void OnSessionResuming(Java.Lang.Object p0, string p1) { }
+        public void OnSessionStartFailed(Java.Lang.Object p0, int p1) { }
+        public void OnSessionStarted(Java.Lang.Object p0, string p1) => service.OnSessionStarted();
+        public void OnSessionStarting(Java.Lang.Object p0) { }
+        public void OnSessionSuspended(Java.Lang.Object p0, int p1) { }
     }
 
     private sealed class CastMediaRouterCallback(AndroidCastService service) : MediaRouter.Callback
