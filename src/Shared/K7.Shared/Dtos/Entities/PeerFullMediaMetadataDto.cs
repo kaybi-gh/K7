@@ -87,6 +87,7 @@ public sealed record PeerSeasonDto
 
 public sealed record PeerEpisodeDto
 {
+    public Guid? Id { get; init; }
     public int EpisodeNumber { get; init; }
     public int SeasonNumber { get; init; }
     public string? Title { get; init; }
@@ -106,6 +107,8 @@ public sealed record PeerMusicTrackDto
     public TimeSpan? Duration { get; init; }
     public string? MusicBrainzRecordingId { get; init; }
     public string? Isrc { get; init; }
+    public string? Lyrics { get; init; }
+    public string? LyricsLrc { get; init; }
     public IReadOnlyList<PeerMusicTrackArtistCreditDto> ArtistCredits { get; init; } = [];
 }
 

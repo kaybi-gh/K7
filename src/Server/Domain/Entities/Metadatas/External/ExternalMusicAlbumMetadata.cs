@@ -24,6 +24,8 @@ public class ExternalMusicTrackMetadata
     public TimeSpan? Duration { get; init; }
     public string? MusicBrainzRecordingId { get; init; }
     public string? Isrc { get; init; }
+    public string? Lyrics { get; init; }
+    public string? LyricsLrc { get; init; }
     public IList<ExternalMusicTrackArtistCredit> ArtistCredits { get; init; } = [];
 }
 
