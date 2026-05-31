@@ -1,0 +1,64 @@
+.library-users__hint {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.library-users__list {
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.library-users__row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.library-users__row:nth-child(even) {
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
+}
+
+.library-users__row:hover {
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+.library-users__row input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    accent-color: var(--color-accent);
+}
+
+.library-users__info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.library-users__name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.library-users__role {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.library-users__empty {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}

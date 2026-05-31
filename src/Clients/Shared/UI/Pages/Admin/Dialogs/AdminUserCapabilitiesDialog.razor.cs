@@ -59,6 +59,7 @@ public partial class AdminUserCapabilitiesDialog
         Capability.CanManageLibraries => "Gérer les librairies",
         Capability.CanManageUsers => "Gérer les utilisateurs",
         Capability.CanReportPlaybackProgress => "Reporter la progression",
+        Capability.CanTranscode => "Transcoder les medias",
         _ => cap.ToString()
     };
 }

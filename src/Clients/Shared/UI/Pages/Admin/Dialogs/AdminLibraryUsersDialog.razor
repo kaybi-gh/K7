@@ -1,3 +1,4 @@
+@using K7.Shared.Dtos.Users
 
 <div class="k7-dialog-content">
         @if (_loading)
@@ -6,32 +7,31 @@
         }
         else if (_users.Count == 0)
         {
-            <p class="text-sm" Color="secondary">Aucun utilisateur.</p>
+            <p class="library-users__empty">Aucun utilisateur.</p>
         }
         else
         {
-            <p class="text-sm mb-3" Color="secondary">
-                Activez ou désactivez l'accès à cette librairie pour chaque utilisateur.
+            <p class="library-users__hint">
+                Activez ou desactivez l'acces a cette librairie pour chaque utilisateur.
             </p>
-            <div class="d-flex flex-col">
-                @foreach (var user in _users)
-                {
-                    var hasAccess = !_excludedUserIds.Contains(user.Id);
-                    <div class="d-flex align-center justify-between">
-                        <div class="d-flex flex-col">
-                            <div class="d-flex align-center gap-1">
-                                <p class="text-sm">@(user.UserName ?? user.Email ?? "-")</p>
-                                @if (IsSelfExcluded(user))
-                                {
-                                    <K7Chip Size="sm" Color="secondary" Variant="outlined">auto</K7Chip>
-                                }
-                            </div>
-                            <span class="text-caption" Color="secondary">@user.Role</span>
-                        </div>
-                        <K7Switch Value="@hasAccess" ValueChanged="@(v => ToggleAccess(user.Id, v))" />
+            <K7CheckboxList TItem="UserDto"
+                            Items="_users"
+                            IsChecked="@(u => !_excludedUserIds.Contains(u.Id))"
+                            CheckedChanged="@(e => ToggleAccess(e.Item.Id, e.Checked))">
+                <ItemTemplate Context="user">
+                    <K7Avatar Size="sm" Image="@user.AvatarUrl" Letter="@GetInitial(user)" />
+                    <div class="library-users__info">
+                        <span class="library-users__name">
+                            @(user.UserName ?? user.Email ?? "-")
+                            @if (IsSelfExcluded(user))
+                            {
+                                <K7Chip Size="sm" Color="secondary" Variant="outlined">auto</K7Chip>
+                            }
+                        </span>
+                        <span class="library-users__role">@user.Role</span>
                     </div>
-                }
-            </div>
+                </ItemTemplate>
+            </K7CheckboxList>
         }
     </div>
     <div class="k7-dialog-actions">

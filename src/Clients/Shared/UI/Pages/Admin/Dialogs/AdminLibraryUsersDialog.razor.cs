@@ -21,6 +21,12 @@ public partial class AdminLibraryUsersDialog
     protected bool IsSelfExcluded(UserDto user) =>
         user.LibraryExclusions.Any(e => e.LibraryId == LibraryId && e.IsSelfExcluded);
 
+    private static string GetInitial(UserDto user)
+    {
+        var name = user.UserName ?? user.Email;
+        return name is { Length: > 0 } ? name[..1].ToUpperInvariant() : "?";
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
