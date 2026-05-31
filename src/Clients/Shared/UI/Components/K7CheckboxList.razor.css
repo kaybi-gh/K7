@@ -1,0 +1,45 @@
+.k7-checkbox-list {
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.k7-checkbox-list__row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.k7-checkbox-list__row--even {
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
+}
+
+.k7-checkbox-list__row:hover {
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+.k7-checkbox-list__row:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+    background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+.k7-checkbox-list__row input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    accent-color: var(--color-accent);
+    pointer-events: none;
+}
+
+.k7-checkbox-list__label {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -79,10 +79,7 @@ else
                 }
                 else
                 {
-                    <div class="stats-empty-state">
-                        <K7Icon Icon="@Phosphor.ChartBar" />
-                        <span>@L["NoData"]</span>
-                    </div>
+                    <K7EmptyState Icon="@Phosphor.ChartBar" Title="@L["NoData"]" Compact="true" />
                 }
             </K7Paper>
             <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 280px;">
@@ -99,10 +96,7 @@ else
                 }
                 else
                 {
-                    <div class="stats-empty-state">
-                        <K7Icon Icon="@Phosphor.CalendarBlank" />
-                        <span>@L["NoData"]</span>
-                    </div>
+                    <K7EmptyState Icon="@Phosphor.CalendarBlank" Title="@L["NoData"]" Compact="true" />
                 }
             </K7Paper>
         </div>
@@ -123,10 +117,7 @@ else
                 }
                 else
                 {
-                    <div class="stats-empty-state">
-                        <K7Icon Icon="@Phosphor.MusicNotes" />
-                        <span>@L["NoData"]</span>
-                    </div>
+                    <K7EmptyState Icon="@Phosphor.MusicNotes" Title="@L["NoData"]" Compact="true" />
                 }
             </K7Paper>
             <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 240px;">
@@ -143,10 +134,7 @@ else
                 }
                 else
                 {
-                    <div class="stats-empty-state">
-                        <K7Icon Icon="@Phosphor.Devices" />
-                        <span>@L["NoData"]</span>
-                    </div>
+                    <K7EmptyState Icon="@Phosphor.Devices" Title="@L["NoData"]" Compact="true" />
                 }
             </K7Paper>
         </div>
@@ -337,22 +325,6 @@ else
 
     .stats-chart-card {
         padding: var(--space-4);
-    }
-
-    .stats-empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-2);
-        min-height: 120px;
-        opacity: 0.5;
-        font-size: var(--text-sm);
-        color: var(--color-text-muted);
-    }
-
-    .stats-empty-state :deep(svg) {
-        font-size: 1.5rem;
     }
 
     .stats-chart-row {
