@@ -44,20 +44,20 @@
                         <ValidationMessage For="@(() => Input.Password)" class="auth-validation" />
                     </div>
 
-                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <label class="auth-toggle">
-                            <InputCheckbox @bind-Value="Input.RememberMe" />
-                            <span>@L["RememberMe"]</span>
-                        </label>
-                        <a href="Account/ForgotPassword" class="auth-link focusable">@L["ForgotPassword"]</a>
-                    </div>
+                    <label class="auth-toggle">
+                        <InputCheckbox @bind-Value="Input.RememberMe" />
+                        <span>@L["RememberMe"]</span>
+                    </label>
 
                     <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["SignIn"]</button>
                 </div>
             </EditForm>
 
-            <p class="auth-or">@L["OrContinueWith"]</p>
-            <ExternalLoginPicker />
+            @if (_externalLogins.Length > 0)
+            {
+                <p class="auth-or">@L["OrContinueWith"]</p>
+                <ExternalLoginPicker />
+            }
         }
         else
         {
@@ -65,17 +65,13 @@
         }
         <hr class="auth-divider" style="margin-top:1rem;" />
     </div>
-    @if (AuthConfig.Value.Local.SignInEnabled)
+    @if (AuthConfig.Value.Local.SignInEnabled && AuthConfig.Value.Local.RegistrationEnabled)
     {
         <div class="auth-card-footer">
-            @if (AuthConfig.Value.Local.RegistrationEnabled)
-            {
-                <span class="auth-caption">
-                    @L["NoAccount"]
-                    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable">@L["SignUp"]</a>
-                </span>
-            }
-            <a href="Account/ResendEmailConfirmation" class="auth-link focusable">@L["ResendEmailConfirmation"]</a>
+            <span class="auth-caption">
+                @L["NoAccount"]
+                <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable">@L["SignUp"]</a>
+            </span>
         </div>
     }
 </div>
@@ -100,6 +96,7 @@
 
 @code {
     private string? errorMessage;
+    private AuthenticationScheme[] _externalLogins = [];
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -125,6 +122,7 @@
             return;
         }
 
+        _externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
         Input ??= new();
     }
 
