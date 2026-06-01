@@ -37,7 +37,7 @@
             <p class="text-sm" Color="secondary">@L["Loading"]</p>
         </div>
     }
-    else if (_result is null || (_result.MediaResults.Count == 0 && _result.PersonResults.Count == 0 && _result.CharacterResults.Count == 0))
+    else if (_result is null || (_movieResults.Count == 0 && _serieResults.Count == 0 && _musicResults.Count == 0 && _result.PersonResults.Count == 0 && _result.CharacterResults.Count == 0))
     {
         <div class="search-page__empty">
             <K7Icon Icon="@Phosphor.SmileyMeh" Style="font-size: 64px; opacity: 0.2;" />
@@ -46,64 +46,103 @@
     }
     else
     {
-        @if (_result.MediaResults.Count > 0)
+        @if (_movieResults.Count > 0)
         {
-            <section class="search-section">
-                <h6 class="search-section__title">@L["Medias"]</h6>
-                <div class="search-media-row">
-                    @foreach (var media in _result.MediaResults)
+            <Carousel Title="@L["Movies"]" ShowLoopBack="false">
+                @foreach (var media in _movieResults)
+                {
+                    var card = media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                    @if (card is not null)
                     {
-                        var card = media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
-                        @if (card is not null)
-                        {
-                            <div class="search-media-item">
-                                <MediaCard Model="card"
-                                            Variant="@GetVariant(card)"
-                                            Href="@GetMediaHref(media)"
-                                            FooterVisible="true"
-                                            OverlayEnabled="true" />
-                            </div>
-                        }
+                        <CarouselItem>
+                            <MediaCard Model="card"
+                                        Variant="@GetVariant(card)"
+                                        Href="@GetMediaHref(media)"
+                                        FooterVisible="true"
+                                        OverlayEnabled="true" />
+                        </CarouselItem>
                     }
-                </div>
-            </section>
+                }
+            </Carousel>
+        }
+
+        @if (_serieResults.Count > 0)
+        {
+            <Carousel Title="@L["Series"]" ShowLoopBack="false">
+                @foreach (var media in _serieResults)
+                {
+                    var card = media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                    @if (card is not null)
+                    {
+                        <CarouselItem>
+                            <MediaCard Model="card"
+                                        Variant="@GetVariant(card)"
+                                        Href="@GetMediaHref(media)"
+                                        FooterVisible="true"
+                                        OverlayEnabled="true" />
+                        </CarouselItem>
+                    }
+                }
+            </Carousel>
+        }
+
+        @if (_musicResults.Count > 0)
+        {
+            <Carousel Title="@L["Music"]" ShowLoopBack="false">
+                @foreach (var media in _musicResults)
+                {
+                    var card = media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                    @if (card is not null)
+                    {
+                        <CarouselItem>
+                            <MediaCard Model="card"
+                                        Variant="@GetVariant(card)"
+                                        Href="@GetMediaHref(media)"
+                                        FooterVisible="true"
+                                        OverlayEnabled="true" />
+                        </CarouselItem>
+                    }
+                }
+            </Carousel>
         }
 
         @if (_result.PersonResults.Count > 0)
         {
-            <section class="search-section">
-                <h6 class="search-section__title">@L["Persons"]</h6>
-                <div class="search-person-row">
-                    @foreach (var person in _result.PersonResults)
-                    {
+            <Carousel Title="@L["Persons"]" ShowLoopBack="false">
+                @foreach (var person in _result.PersonResults)
+                {
+                    <CarouselItem>
                         <a href="/persons/@person.Id" class="search-person-card focusable">
                             <K7Avatar Image="@GetPersonPictureUrl(person)"
                                        Alt="@person.Name"
                                        Size="lg" />
-                            <span class="search-person-card__name">@person.Name</span>
+                            <div class="search-person-card__footer">
+                                <span class="search-person-card__name">@person.Name</span>
+                            </div>
                         </a>
-                    }
-                </div>
-            </section>
+                    </CarouselItem>
+                }
+            </Carousel>
         }
 
         @if (_result.CharacterResults.Count > 0)
         {
-            <section class="search-section">
-                <h6 class="search-section__title">@L["Characters"]</h6>
-                <div class="search-person-row">
-                    @foreach (var character in _result.CharacterResults)
-                    {
+            <Carousel Title="@L["Characters"]" ShowLoopBack="false">
+                @foreach (var character in _result.CharacterResults)
+                {
+                    <CarouselItem>
                         <a href="/persons/@character.PersonId" class="search-person-card focusable">
                             <K7Avatar Image="@GetCharacterPictureUrl(character)"
                                        Alt="@character.PersonName"
                                        Size="lg" />
-                            <span class="search-person-card__name">@character.CharacterName</span>
-                            <span class="search-person-card__sub">@character.MediaTitle</span>
+                            <div class="search-person-card__footer">
+                                <span class="search-person-card__name">@character.CharacterName</span>
+                                <span class="search-person-card__sub">@character.MediaTitle</span>
+                            </div>
                         </a>
-                    }
-                </div>
-            </section>
+                    </CarouselItem>
+                }
+            </Carousel>
         }
     }
 </div>
