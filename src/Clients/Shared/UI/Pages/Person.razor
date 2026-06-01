@@ -36,6 +36,7 @@ else if (_person is not null)
         }
 
         <div class="person-main">
+            <K7BackButton />
             <div class="person-hero">
                 <div class="person-hero-content">
                     <div class="person-portrait">
@@ -52,7 +53,20 @@ else if (_person is not null)
                     </div>
 
                     <div class="person-info">
-                        <h3 class="person-name">@_person.Name</h3>
+                        <div class="person-name-row">
+                            <h3 class="person-name">@_person.Name</h3>
+                            <K7Menu>
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="more-actions" Size="sm" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    <AuthorizeView Roles="Administrator">
+                                        <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                    </AuthorizeView>
+                                </ChildContent>
+                            </K7Menu>
+                        </div>
 
                         <div class="person-meta">
                             @if (_person.Birthday.HasValue)
@@ -89,19 +103,6 @@ else if (_person is not null)
                             </div>
                         }
 
-                        <div class="person-actions">
-                            <K7Menu>
-                                <ActivatorContent>
-                                    <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
-                                </ActivatorContent>
-                                <ChildContent>
-                                    <AuthorizeView Roles="Administrator">
-                                        <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                                        <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                                    </AuthorizeView>
-                                </ChildContent>
-                            </K7Menu>
-                        </div>
                     </div>
                 </div>
             </div>
