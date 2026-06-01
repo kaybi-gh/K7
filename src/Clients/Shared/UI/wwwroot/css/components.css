@@ -558,8 +558,8 @@ html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-tra
 .k7-toast--info    i.ph             { color: #4da8cf; }
 .k7-toast--success .k7-toast-accent { background: #4db288; }
 .k7-toast--success i.ph             { color: #4db288; }
-.k7-toast--warning .k7-toast-accent { background: #e5a00d; }
-.k7-toast--warning i.ph             { color: #e5a00d; }
+.k7-toast--warning .k7-toast-accent { background: #e5a644; }
+.k7-toast--warning i.ph             { color: #e5a644; }
 .k7-toast--error   .k7-toast-accent { background: #e5404f; }
 .k7-toast--error   i.ph             { color: #e5404f; }
 .k7-toast-msg { flex: 1; padding: var(--space-3) 0; }
