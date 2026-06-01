@@ -732,8 +732,7 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
   .k7-backdrop { background: rgba(0, 0, 0, 0.5); }
   .k7-menu-dropdown {
     position: fixed;
-    inset: auto 0 0 0;
-    top: auto;
+    inset: auto 0 calc(var(--nav-height) + var(--k7-safe-bottom)) 0;
     width: 100%;
     max-width: 100%;
     min-width: unset;
@@ -741,12 +740,13 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
     overflow-y: auto;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     border: none;
-    padding: var(--space-2) 0 calc(var(--space-4) + var(--k7-safe-bottom));
-    transform: translateY(100%);
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, visibility 0.2s ease;
+    padding: var(--space-2) 0 var(--space-4);
+    opacity: 0;
+    transform: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
   }
   .k7-menu--open > .k7-menu-dropdown {
-    transform: translateY(0);
+    opacity: 1;
   }
   .k7-menu-dropdown::before {
     content: '';
