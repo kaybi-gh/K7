@@ -97,3 +97,23 @@
     text-overflow: ellipsis;
     max-width: 100%;
 }
+
+@media (max-width: 599.98px) {
+    .search-page {
+        padding: 12px;
+    }
+
+    .search-page__input {
+        max-width: 100%;
+    }
+
+    .search-media-item {
+        flex: 0 0 120px;
+        width: 120px;
+    }
+
+    .search-person-card {
+        flex: 0 0 76px;
+        width: 76px;
+    }
+}

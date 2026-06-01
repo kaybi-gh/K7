@@ -114,3 +114,33 @@
     font-size: 1.5rem;
     color: #ffffff;
 }
+
+@media (max-width: 599.98px) {
+    .k7-category-card {
+        min-width: 280px;
+    }
+
+    .k7-category-card:hover,
+    .k7-category-card:focus-visible {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .k7-category-card:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .k7-category-card:active {
+        transform: none;
+    }
+
+    .k7-category-card__title {
+        font-size: var(--text-2xl);
+        white-space: normal;
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}

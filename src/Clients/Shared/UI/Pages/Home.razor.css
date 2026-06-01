@@ -34,6 +34,9 @@
 @media (max-width: 599.98px) {
     .home-page {
         margin-top: calc(-1 * var(--k7-safe-top));
+        --carousel-margin-start: 16px;
+        gap: 16px;
+        padding-top: var(--space-3);
     }
 }
 
