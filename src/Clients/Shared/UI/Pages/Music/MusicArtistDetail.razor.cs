@@ -67,6 +67,7 @@ public partial class MusicArtistDetail
 
             _tracks = allTracks
                 .OrderBy(t => t.TrackNumber)
+                .Take(10)
                 .Select(track =>
                 {
                     var guestNames = (track.ArtistCredits ?? [])

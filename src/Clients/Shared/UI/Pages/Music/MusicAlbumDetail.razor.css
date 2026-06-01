@@ -206,12 +206,14 @@
 
     .album-actions {
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     ::deep .album-detail-cover,
     .album-detail-cover-placeholder {
-        width: 180px;
-        height: 180px;
+        width: 160px;
+        height: 160px;
     }
 
     .album-tracklist {
@@ -219,6 +221,10 @@
     }
 
     .col-rating {
+        display: none;
+    }
+
+    ::deep thead {
         display: none;
     }
 }
