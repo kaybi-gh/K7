@@ -2,95 +2,43 @@
 @using K7.Shared.Dtos.Entities.Medias
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="episode-item focusable @(IsExpanded ? "episode-item--expanded" : "")" tabindex="0" role="button" @onclick="OnToggleExpand" @onkeydown="OnKeyDown">
-    <div class="episode-item-main">
-        <div class="episode-still-container">
-            @if (!string.IsNullOrEmpty(StillUrl))
-            {
-                <K7Image Src="@StillUrl"
-                          Alt="@Episode.Title"
-                          Class="rounded-lg"
-                          Style="width: 160px; height: 90px;"
-                          ObjectFit="cover"
-                          loading="lazy" />
-            }
-            else
-            {
-                <div class="episode-still-placeholder">
-                    <K7Icon Icon="@Phosphor.Circle" Style="font-size: 24px; opacity: 0.3;" />
-                </div>
-            }
-            @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
-            {
+<a class="episode-card focusable" href="@Href">
+    <div class="episode-card-still">
+        @if (!string.IsNullOrEmpty(StillUrl))
+        {
+            <K7Image Src="@StillUrl"
+                      Alt="@Episode.Title"
+                      Class="rounded-lg"
+                      Style="width: 100%; height: 100%;"
+                      ObjectFit="cover"
+                      loading="lazy" />
+        }
+        else
+        {
+            <div class="episode-card-still-placeholder">
+                <K7Icon Icon="@Phosphor.Circle" Style="font-size: 24px; opacity: 0.3;" />
+            </div>
+        }
+        @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
+        {
+            <div class="episode-card-progress">
                 <K7ProgressBar Value="@Episode.UserState.ProgressPercentage" />
-            }
-        </div>
-
-        <div class="episode-info">
-            <div class="d-flex align-center">
-                <p class="text-sm" Color="secondary">@Episode.EpisodeNumber</p>
-                <p class="text-subtitle2">@(Episode.Title ?? S["Untitled"])</p>
-                @if (Episode.UserState?.IsCompleted == true)
-                {
-                    <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
-                }
             </div>
-            <div class="d-flex">
-                @if (Episode.Duration.HasValue)
-                {
-                    <span class="text-caption" Color="secondary">@FormatDuration(Episode.Duration.Value)</span>
-                }
+        }
+        @if (Episode.UserState?.IsCompleted == true)
+        {
+            <div class="episode-card-watched">
+                <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
             </div>
-        </div>
-
-        <button type="button" class="k7-icon-btn episode-expand-btn">
-            <K7Icon Name="@(IsExpanded ? "caret-up" : "caret-down")" Size="sm" />
-        </button>
+        }
     </div>
 
-    @if (IsExpanded)
-    {
-        <div class="episode-detail">
-            @if (_fullEpisode?.Overview is not null)
-            {
-                <p class="text-sm mb-2" Color="secondary">@_fullEpisode.Overview</p>
-            }
-            @if (_fullEpisode?.AirDate is not null)
-            {
-                <span class="text-caption" Color="secondary">@string.Format(S["AirDate"], _fullEpisode.AirDate.Value.ToString("d"))</span>
-            }
-            <div class="d-flex align-center mt-3">
-                <K7Button Variant="filled"
-                           Color="primary"
-                           StartIcon="@Phosphor.Play"
-                           OnClick="HandlePlay"
-                           Size="sm">
-                    @(Episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Resume"] : S["Play"])
-                </K7Button>
-                @if (Episode.IndexedFileId.HasValue)
-                {
-                    <DownloadButton IndexedFileId="Episode.IndexedFileId.Value"
-                                    MediaId="Episode.Id"
-                                    Title="@(Episode.Title ?? $"E{Episode.EpisodeNumber}")"
-                                    MediaType="MediaType.SerieEpisode"
-                                    CoverUrl="@StillUrl"
-                                    VideoMetadata="@GetVideoMetadata()" />
-                }
-                @if (_fullEpisode?.IndexedFiles is { Count: > 0 })
-                {
-                    <K7Menu>
-                        <ActivatorContent>
-                            <button type="button" class="k7-icon-btn k7-icon-btn--sm focusable" aria-label="Menu"><i class="ph ph-dots-three"></i></button>
-                        </ActivatorContent>
-                        <ChildContent>
-                            <AuthorizeView Roles="Administrator">
-                                <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@S["EditMetadata"]</K7MenuItem>
-                            </AuthorizeView>
-                            <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesDialogAsync">@S["IndexedVersions"]</K7MenuItem>
-                        </ChildContent>
-                    </K7Menu>
-                }
-            </div>
-        </div>
-    }
-</div>
+    <div class="episode-card-info">
+        <span class="episode-card-number">E@(Episode.EpisodeNumber)</span>
+        <p class="episode-card-title">@(Episode.Title ?? S["Untitled"])</p>
+        @if (Episode.Duration.HasValue)
+        {
+            <span class="episode-card-duration">@FormatDuration(Episode.Duration.Value)</span>
+        }
+    </div>
+</a>

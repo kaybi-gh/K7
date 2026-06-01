@@ -1,76 +1,96 @@
-﻿.episode-item {
-    border-radius: 8px;
-    background: var(--color-surface);
+﻿.episode-card {
+    display: flex;
+    gap: 12px;
+    padding: 8px;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: inherit;
     cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out);
 }
 
-.episode-item:hover,
-.episode-item:focus-visible {
-    background: var(--color-bg-gray);
+.episode-card:hover,
+.episode-card:focus-visible {
+    background: var(--color-surface-hover);
 }
 
-.episode-item:focus-visible {
+.episode-card:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
 }
 
-.episode-item--expanded {
-    background: var(--color-bg-gray);
-}
-
-.episode-item-main {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 8px 12px;
-}
-
-.episode-still-container {
+.episode-card-still {
     position: relative;
     flex-shrink: 0;
     width: 160px;
     height: 90px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--color-bg-gray);
 }
 
-.episode-still-placeholder {
-    width: 160px;
-    height: 90px;
-    border-radius: 6px;
-    background: var(--color-bg);
+.episode-card-still-placeholder {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.episode-progress {
+.episode-card-progress {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    border-radius: 0 0 6px 6px;
 }
 
-.episode-info {
-    flex: 1;
+.episode-card-watched {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+}
+
+.episode-card-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
     min-width: 0;
+    flex: 1;
 }
 
-.episode-expand-btn {
-    flex-shrink: 0;
+.episode-card-number {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-weight: 500;
 }
 
-.episode-detail {
-    padding: 0 12px 12px 188px;
+.episode-card-title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-@media (max-width: 600px) {
-    .episode-still,
-    .episode-still-placeholder {
+.episode-card-duration {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 599.98px) {
+    .episode-card-still {
         width: 120px;
         height: 68px;
     }
 
-    .episode-detail {
-        padding: 0 12px 12px;
+    .episode-card-title {
+        white-space: normal;
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 }

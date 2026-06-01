@@ -1,0 +1,127 @@
+@page "/series/{SerieId}/seasons/{SeasonNumber:int}/episodes/{EpisodeNumber:int}"
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.Metadatas.Files
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IMediaService k7ServerService
+@inject IK7ServerService apiClient
+@inject IPlayerService PlayerService
+@inject PlaybackProgressTracker PlaybackProgressTracker
+@inject IFeatureAccessService FeatureAccess
+@inject IK7DialogService DialogService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<EpisodePage> L
+@inject IStringLocalizer<SharedResource> S
+
+<PageTitle>@_pageTitle</PageTitle>
+
+@if (_loading)
+{
+    <div class="episode-page page-scrollable">
+        <div class="d-flex flex-col pa-8">
+            <K7Spinner />
+        </div>
+    </div>
+}
+else if (_episode is not null)
+{
+    <div class="episode-page page-scrollable" style="@DominantColorStyle">
+        <K7BackButton Class="episode-back-btn" />
+
+        <div class="episode-hero">
+            @if (_stillUrl is not null)
+            {
+                <K7Image Src="@_stillUrl" Alt="@_episode.Title" Class="episode-hero-img" ObjectFit="cover" />
+            }
+            <div class="episode-hero-gradient" />
+        </div>
+
+        <div class="episode-content">
+            <div class="episode-meta">
+                <a class="episode-serie-link" href="@($"/series/{SerieId}")">@_episode.SerieTitle</a>
+                <span class="episode-meta-separator">-</span>
+                <span class="episode-meta-text">@string.Format(L["SeasonEpisode"], _episode.SeasonNumber, _episode.EpisodeNumber)</span>
+            </div>
+
+            <h2 class="episode-title">@(_episode.Title ?? S["Untitled"])</h2>
+
+            <div class="episode-details">
+                @if (_episode.AirDate is not null)
+                {
+                    <span class="episode-detail-item">@_episode.AirDate.Value.ToString("d MMMM yyyy")</span>
+                }
+                @if (_episode.Runtime is > 0)
+                {
+                    <span class="episode-detail-item">@FormatDuration(_episode.Runtime.Value)</span>
+                }
+            </div>
+
+            <div class="episode-actions">
+                <K7Button Variant="filled"
+                           Color="primary"
+                           StartIcon="@Phosphor.Play"
+                           OnClick="PlayAsync"
+                           Size="lg">
+                    @(_episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Resume"] : S["Play"])
+                </K7Button>
+
+                @if (_episode.UserState is { ProgressPercentage: > 0 and < 100 })
+                {
+                    <K7ProgressBar Value="@_episode.UserState.ProgressPercentage" Style="max-width: 200px;" />
+                }
+
+                @if (_indexedFile is not null)
+                {
+                    <DownloadButton IndexedFileId="_indexedFile.Id"
+                                    MediaId="_episode.Id"
+                                    Title="@(_episode.Title ?? $"E{_episode.EpisodeNumber}")"
+                                    MediaType="MediaType.SerieEpisode"
+                                    CoverUrl="@_stillUrl"
+                                    VideoMetadata="@(_indexedFile.FileMetadata as VideoFileMetadataDto)" />
+                }
+
+                <AuthorizeView Roles="Administrator">
+                    <K7Menu>
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@S["MoreActions"]" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataAsync">@S["EditMetadata"]</K7MenuItem>
+                            @if (_episode.IndexedFiles is { Count: > 0 })
+                            {
+                                <K7MenuItem Icon="file-zip" OnClick="OpenIndexedFilesAsync">@S["IndexedVersions"]</K7MenuItem>
+                            }
+                        </ChildContent>
+                    </K7Menu>
+                </AuthorizeView>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_episode.Overview))
+            {
+                <p class="episode-overview">@_episode.Overview</p>
+            }
+
+            @if (_previousEpisode is not null || _nextEpisode is not null)
+            {
+                <div class="episode-nav">
+                    @if (_previousEpisode is not null)
+                    {
+                        <K7Button Variant="text"
+                                   StartIcon="@Phosphor.CaretLeft"
+                                   Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{_previousEpisode.EpisodeNumber}")">
+                            @L["Previous"]
+                        </K7Button>
+                    }
+                    @if (_nextEpisode is not null)
+                    {
+                        <K7Button Variant="text"
+                                   EndIcon="@Phosphor.CaretRight"
+                                   Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{_nextEpisode.EpisodeNumber}")">
+                            @L["Next"]
+                        </K7Button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
