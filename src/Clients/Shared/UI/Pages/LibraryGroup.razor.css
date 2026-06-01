@@ -9,3 +9,9 @@
     align-items: center;
     gap: 1px;
 }
+
+@media (max-width: 599.98px) {
+    ::deep .browse-view-toolbar .k7-field {
+        display: none;
+    }
+}

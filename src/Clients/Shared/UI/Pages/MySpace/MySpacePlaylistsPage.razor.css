@@ -1,0 +1,17 @@
+@media (max-width: 599.98px) {
+    ::deep .browse-view-toolbar-start > h5 {
+        display: none;
+    }
+
+    ::deep .browse-view-toolbar-start > .flex-1 {
+        display: none;
+    }
+
+    ::deep .browse-view-toolbar-start {
+        gap: 6px;
+    }
+
+    ::deep .browse-view-toolbar-end {
+        display: none;
+    }
+}
