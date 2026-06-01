@@ -13,13 +13,13 @@
     <div class="history-table-area">
         <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef">
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Property="@(i => i.MediaTitle)" Hideable="false" />
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Property="@(i => i.MediaType)" />
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Property="@(i => i.MediaType)" VisibleOnMobile="false" />
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Property="@(i => i.StartedAt.ToLocalTime().ToString("g"))" />
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]">
                 <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
             </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" />
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Status"]" Width="80px">
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" VisibleOnMobile="false" />
+            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Status"]" Width="80px" VisibleOnMobile="false">
                 <CellTemplate>
                     @if (context.IsCompleted)
                     {
