@@ -17,6 +17,7 @@ public partial class Serie
     private SerieDto? _serie;
     private string? _posterUrl;
     private string? _backdropUrl;
+    private string? _dominantColor;
     private string? _logoUrl;
     private List<LiteSerieSeasonDto> _seasons = [];
     private List<MediaCardViewModel> _similarMedia = [];
@@ -38,6 +39,8 @@ public partial class Serie
             _backdropUrl = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?
                     .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+
+            _dominantColor = serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop)?.DominantColor;
 
             _logoUrl = apiClient.GetAbsoluteUri(
                 serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Logo)?

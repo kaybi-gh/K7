@@ -47,9 +47,10 @@
 
 @media (max-width: 600px) {
     .serie-main {
-        height: 60vh;
+        height: auto;
+        min-height: 70vh;
         flex-shrink: 0;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .serie-hero {
@@ -57,10 +58,36 @@
         height: 100%;
     }
 
-    .serie-hero ::deep .serie-actions,
-    .serie-hero ::deep .serie-actions-primary,
-    .serie-hero ::deep .serie-meta {
+    .serie-page {
+        --serie-dominant-color: var(--color-bg);
+        background: linear-gradient(to bottom, transparent 30%, var(--serie-dominant-color) 60%);
+    }
+
+    .background-image {
+        mask-image: linear-gradient(to bottom, black 0%, transparent 60%);
+        -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 60%);
+    }
+
+    .serie-meta {
+        flex-wrap: wrap;
+    }
+
+    .serie-actions {
+        flex-direction: column;
+        align-items: stretch;
         width: 100%;
+    }
+
+    .serie-actions-primary {
+        width: 100%;
+    }
+
+    .serie-actions-primary ::deep .k7-btn {
+        width: 100%;
+    }
+
+    ::deep .carousel-wrapper {
+        --carousel-margin-start: 16px;
     }
 }
 

@@ -21,13 +21,14 @@
 }
 else if (_serie is not null)
 {
-    <div class="serie-page">
+    <div class="serie-page" style="@(_dominantColor is not null ? $"--serie-dominant-color: {_dominantColor};" : "")">
         @if (_backdropUrl is not null)
         {
             <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
         }
 
         <div class="serie-main">
+            <K7BackButton />
             <div class="serie-hero">
                 <div class="d-flex flex-col pa-10" style="height: 100%; justify-content: flex-end; gap: 8px;">
                 @if (_logoUrl is not null)
