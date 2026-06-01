@@ -7,7 +7,7 @@
     <!-- Dark background -->
     <path
         android:pathData="M0,0h320v180H0z"
-        android:fillColor="#1a1a1a" />
+        android:fillColor="#131821" />
     <!-- K7 full logo (centered) -->
     <group
         android:translateX="96"
@@ -34,9 +34,9 @@
         <!-- 7 accent symbol -->
         <path
             android:pathData="M90.501,0 L98.001,10 L125.501,10 L126.991,8 C129.465,4.703 127.123,0 123.001,0 Z"
-            android:fillColor="#E5A00D" />
+            android:fillColor="#CC7A3E" />
         <path
             android:pathData="M124.751,11 L112.251,11 L105.501,20 L111.761,28.32 Z"
-            android:fillColor="#E5A00D" />
+            android:fillColor="#CC7A3E" />
     </group>
 </vector>
