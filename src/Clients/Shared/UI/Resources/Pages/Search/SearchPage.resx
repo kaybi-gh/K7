@@ -28,4 +28,7 @@
   <data name="TypeHint" xml:space="preserve"><value>Rechercher un titre, une personne ou un personnage...</value></data>
   <data name="EnterQuery" xml:space="preserve"><value>Tapez au moins 2 caractères pour rechercher</value></data>
   <data name="Loading" xml:space="preserve"><value>Recherche en cours...</value></data>
+  <data name="Movies" xml:space="preserve"><value>Films</value></data>
+  <data name="Series" xml:space="preserve"><value>Series</value></data>
+  <data name="Music" xml:space="preserve"><value>Musique</value></data>
 </root>

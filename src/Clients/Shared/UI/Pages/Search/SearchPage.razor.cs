@@ -14,6 +14,9 @@ public partial class SearchPage
     private string? _query;
     private bool _loading;
     private GlobalSearchResultDto? _result;
+    private List<LiteMediaDto> _movieResults = [];
+    private List<LiteMediaDto> _serieResults = [];
+    private List<LiteMediaDto> _musicResults = [];
 
     [Inject] private ISearchService SearchService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
@@ -44,10 +47,14 @@ public partial class SearchPage
         try
         {
             _result = await SearchService.GlobalSearchAsync(query);
+            GroupMediaResults();
         }
         catch
         {
             _result = null;
+            _movieResults = [];
+            _serieResults = [];
+            _musicResults = [];
         }
         finally
         {
@@ -56,12 +63,30 @@ public partial class SearchPage
         }
     }
 
+    private void GroupMediaResults()
+    {
+        if (_result is null)
+        {
+            _movieResults = [];
+            _serieResults = [];
+            _musicResults = [];
+            return;
+        }
+
+        _movieResults = _result.MediaResults.Where(m => m is LiteMovieDto).ToList();
+        _serieResults = _result.MediaResults.Where(m => m is LiteSerieDto or LiteSerieSeasonDto or LiteSerieEpisodeDto).ToList();
+        _musicResults = _result.MediaResults.Where(m => m is LiteMusicArtistDto or LiteMusicAlbumDto or LiteMusicTrackDto).ToList();
+    }
+
     private string GetMediaHref(LiteMediaDto media) => media switch
     {
         LiteMovieDto => $"/movies/{media.Id}",
         LiteSerieDto => $"/series/{media.Id}",
+        LiteSerieSeasonDto season => $"/series/{season.SerieId}/seasons/{season.SeasonNumber}",
+        LiteSerieEpisodeDto episode => $"/series/{episode.SerieId}/seasons/{episode.SeasonNumber}/episodes/{episode.EpisodeNumber}",
         LiteMusicAlbumDto => $"/music/albums/{media.Id}",
         LiteMusicArtistDto => $"/music/artists/{media.Id}",
+        LiteMusicTrackDto track => $"/music/albums/{track.AlbumId}",
         _ => "#"
     };
 
