@@ -210,4 +210,16 @@
     .media-card--backdrop .media-card-subtitle {
         max-width: 60vw;
     }
+
+    .media-card-overlay,
+    .media-card-menu {
+        display: none !important;
+    }
+
+    .media-card-container:hover .media-card-overlay,
+    .media-card-link:focus-visible .media-card-overlay,
+    .media-card-container:hover .media-card-menu,
+    .media-card-container:focus-within .media-card-menu {
+        display: none !important;
+    }
 }

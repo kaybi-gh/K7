@@ -13,3 +13,13 @@
     overflow: hidden;
     padding: 0 var(--space-4) var(--space-4);
 }
+
+@media (max-width: 599.98px) {
+    .history-page > .d-flex > h5 {
+        display: none;
+    }
+
+    .history-table-area {
+        padding: 0 var(--space-2) var(--space-2);
+    }
+}
