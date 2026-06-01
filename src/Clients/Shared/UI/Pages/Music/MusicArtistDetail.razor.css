@@ -195,6 +195,13 @@
 
     .artist-actions {
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .artist-actions ::deep .k7-btn--lg {
+        font-size: var(--text-sm);
+        padding: 8px 16px;
     }
 
     ::deep .artist-portrait {
@@ -207,8 +214,14 @@
         height: 120px;
     }
 
+    .artist-albums-section,
+    .artist-members-section {
+        margin-top: var(--space-6);
+    }
+
     .artist-tracks-section {
         padding: 0 16px 24px;
+        margin-top: var(--space-6);
     }
 
     .col-album {

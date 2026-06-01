@@ -57,7 +57,9 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
-    flex-shrink: 0;
+    flex: 1;
+    min-height: 0;
+    justify-content: flex-start;
 }
 
 .fullscreen-player-header {
@@ -184,7 +186,7 @@
 
 .waveform-container {
     position: relative;
-    height: 48px;
+    height: 32px;
     cursor: pointer;
     touch-action: none;
     border-radius: var(--radius-sm);
@@ -301,8 +303,13 @@
     justify-content: space-between;
     font-size: 0.75rem;
     opacity: 0.6;
-    padding-top: 6px;
+    padding-top: 0;
+    margin-top: -2px;
     font-variant-numeric: tabular-nums;
+    position: relative;
+    top: -26px;
+    pointer-events: none;
+    padding-inline: 4px;
 }
 
 .fullscreen-player-controls {
@@ -504,7 +511,7 @@
     }
 
     ::deep .artwork-image {
-        max-width: 280px;
+        max-width: 100%;
     }
 
     .artwork-placeholder {
