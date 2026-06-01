@@ -79,12 +79,6 @@
                         <span class="app-nav-popover-status">@_badgeTitle</span>
                     </div>
                 </div>
-                <hr class="k7-menu-divider" />
-                <NavLink class="k7-menu-item focusable" href="/settings" @onclick="CloseAll">
-                    <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
-                    <span class="k7-menu-item-text">@L["Settings"]</span>
-                </NavLink>
-                <hr class="k7-menu-divider" />
                 <button class="k7-menu-item focusable" type="button" @onclick="OpenSyncPlayDialog">
                     <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.UsersThree" /></span>
                     <span class="k7-menu-item-text">SyncPlay</span>
@@ -93,7 +87,10 @@
                         <span class="k7-menu-item-badge"></span>
                     }
                 </button>
-                <hr class="k7-menu-divider" />
+                <NavLink class="k7-menu-item focusable" href="/settings" @onclick="CloseAll">
+                    <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
+                    <span class="k7-menu-item-text">@L["Settings"]</span>
+                </NavLink>
                 <AuthorizeView Roles="Administrator" Context="adminCtx">
                     <NavLink class="k7-menu-item focusable" href="/admin" @onclick="CloseAll">
                         <span class="k7-menu-item-icon"><K7Icon Icon="@Phosphor.ShieldCheck" /></span>
