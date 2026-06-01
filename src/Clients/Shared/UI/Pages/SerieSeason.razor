@@ -155,22 +155,17 @@ else if (_season is not null)
                     <p class="text-sm mt-2" Color="secondary" Style="max-width: 700px;">@_season.Overview</p>
                 }
 
-                <div class="d-flex mt-2">
-                    @if (_previousSeasonNumber is not null)
+                <div class="season-nav">
+                    @if (_allSeasonNumbers.Count > 1)
                     {
-                        <K7Button Variant="text"
-                                  StartIcon="@Phosphor.CaretLeft"
-                                   OnClick="GoToPreviousSeason">
-                            @L["PreviousSeason"]
-                        </K7Button>
-                    }
-                    @if (_nextSeasonNumber is not null)
-                    {
-                        <K7Button Variant="text"
-                                   EndIcon="@Phosphor.CaretRight"
-                                   OnClick="GoToNextSeason">
-                            @L["NextSeason"]
-                        </K7Button>
+                        <K7Select TValue="int" Value="SeasonNumber" ValueChanged="GoToSeason" Label="@L["SeasonNumber_Label"]" Dense="true">
+                            @foreach (var sn in _allSeasonNumbers)
+                            {
+                                <K7SelectItem TValue="int" Value="sn">
+                                    @(sn == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], sn))
+                                </K7SelectItem>
+                            }
+                        </K7Select>
                     }
                 </div>
             </div>
@@ -183,9 +178,7 @@ else if (_season is not null)
                     <EpisodeListItem @key="episode.Id"
                                      Episode="episode"
                                      StillUrl="@GetEpisodeStillUrl(episode)"
-                                     IsExpanded="@(_expandedEpisodeId == episode.Id)"
-                                     OnToggleExpand="() => ToggleExpand(episode.Id)"
-                                     OnPlay="() => PlayEpisodeAsync(episode)" />
+                                     Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")" />
                 </div>
             }
         </div>

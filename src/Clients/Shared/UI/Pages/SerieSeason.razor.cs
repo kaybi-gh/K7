@@ -26,7 +26,7 @@ public partial class SerieSeason
     private List<LiteSerieEpisodeDto> _episodes = [];
     private int? _previousSeasonNumber;
     private int? _nextSeasonNumber;
-    private Guid? _expandedEpisodeId;
+    private List<int> _allSeasonNumbers = [];
     private string _pageTitle = "";
     private bool _loading = true;
     private string? _focusEpisodeFragment;
@@ -40,7 +40,6 @@ public partial class SerieSeason
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
-        _expandedEpisodeId = null;
         _focusEpisodeFragment = null;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
@@ -72,6 +71,7 @@ public partial class SerieSeason
 
         _previousSeasonNumber = currentIndex > 0 ? seasonSummary[currentIndex - 1].SeasonNumber : null;
         _nextSeasonNumber = currentIndex < seasonSummary.Count - 1 ? seasonSummary[currentIndex + 1].SeasonNumber : null;
+        _allSeasonNumbers = seasonSummary.Select(s => s.SeasonNumber).ToList();
 
         var seasonMedia = await k7ServerService.GetMediaAsync(seasonSummary[currentIndex].Id);
         if (seasonMedia is SerieSeasonDto seasonDto)
@@ -184,11 +184,6 @@ public partial class SerieSeason
         }
     }
 
-    private void ToggleExpand(Guid episodeId)
-    {
-        _expandedEpisodeId = _expandedEpisodeId == episodeId ? null : episodeId;
-    }
-
     private async Task PlayEpisodeAsync(LiteSerieEpisodeDto episode)
     {
         var episodeMedia = await k7ServerService.GetMediaAsync(episode.Id);
@@ -271,6 +266,12 @@ public partial class SerieSeason
     {
         if (_nextSeasonNumber is not null)
             NavigationManager.NavigateTo($"/series/{SerieId}/seasons/{_nextSeasonNumber}");
+    }
+
+    private void GoToSeason(int seasonNumber)
+    {
+        if (seasonNumber != SeasonNumber)
+            NavigationManager.NavigateTo($"/series/{SerieId}/seasons/{seasonNumber}");
     }
 
     private async Task DetectIntrosOutrosAsync()

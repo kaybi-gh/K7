@@ -68,6 +68,11 @@
     gap: 8px;
 }
 
+.season-nav {
+    margin-top: var(--space-2);
+    max-width: 200px;
+}
+
 @media (max-width: 600px) {
     .season-header {
         text-align: center;

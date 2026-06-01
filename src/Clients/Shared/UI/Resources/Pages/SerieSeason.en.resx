@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="SeasonNumber" xml:space="preserve"><value>Season {0}</value></data>
+  <data name="SeasonNumber_Label" xml:space="preserve"><value>Season</value></data>
   <data name="Specials" xml:space="preserve"><value>Specials</value></data>
   <data name="PreviousSeason" xml:space="preserve"><value>Previous season</value></data>
   <data name="NextSeason" xml:space="preserve"><value>Next season</value></data>
