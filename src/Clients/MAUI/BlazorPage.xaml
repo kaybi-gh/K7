@@ -38,7 +38,7 @@
 
         <!-- Splash overlay - covers BlazorWebView until Blazor is ready -->
         <Grid x:Name="SplashOverlay" ZIndex="3"
-              BackgroundColor="#212121"
+              BackgroundColor="#131821"
               HorizontalOptions="Fill"
               VerticalOptions="Fill"
               InputTransparent="False">

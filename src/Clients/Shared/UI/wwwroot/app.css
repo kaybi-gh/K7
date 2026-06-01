@@ -14,7 +14,6 @@
 /* 3. Themes */
 @import url('./css/themes/default-dark.css');
 @import url('./css/themes/default-light.css');
-@import url('./css/themes/amoled.css');
 
 /* 4. Phosphor Icons */
 @import url('./dist/phosphor-icons/src/regular/style.css');
