@@ -638,3 +638,119 @@ public sealed class MockRemoteControlService : IRemoteControlService
     public Task SendAudioTrackAsync(int trackIndex) => Task.CompletedTask;
     public Task SendSubtitleTrackAsync(int trackIndex) => Task.CompletedTask;
 }
+
+public sealed class MockSyncPlayService : ISyncPlayService
+{
+    public bool IsInGroup { get; set; } = false;
+    public bool IsEnabled { get; set; } = true;
+    public bool ShowChat { get; set; } = true;
+    public bool ShowReactions { get; set; } = true;
+
+    public SyncPlayGroupDto? CurrentGroup { get; set; } = null;
+    public IReadOnlyList<SyncPlayChatMessageDto> ChatMessages { get; set; } = new List<SyncPlayChatMessageDto>();
+    public IReadOnlyList<SyncPlayOnlineUserDto> OnlineUsers { get; set; } = new List<SyncPlayOnlineUserDto>();
+
+    public event Action? GroupUpdated;
+    public event Action<SyncPlayCommandDto>? CommandReceived;
+    public event Action<long, double>? PlayAtReceived;
+    public event Action<double>? SeekCorrectionReceived;
+    public event Action<SyncPlayChatMessageDto>? ChatMessageReceived;
+    public event Action<SyncPlayReactionDto>? ReactionReceived;
+    public event Action<string>? ErrorReceived;
+    public event Action<SyncPlayInvitationDto>? InvitationReceived;
+    public event Action? OnlineUsersUpdated;
+    public event Action<SyncPlayInviteLinkDto>? InviteLinkReceived;
+    public event Action? RejoinRequested;
+
+    public Task CreateGroupAsync(Guid? mediaReferenceId = null, string? mediaTitle = null, double mediaDuration = 0, string? mediaCoverUrl = null, double initialPosition = 0, bool isPlaying = false)
+    {
+        IsInGroup = true;
+        GroupUpdated?.Invoke();
+        return Task.CompletedTask;
+    }
+
+    public Task JoinGroupAsync(Guid groupId, string? guestToken = null, string? guestDisplayName = null)
+    {
+        IsInGroup = true;
+        GroupUpdated?.Invoke();
+        return Task.CompletedTask;
+    }
+
+    public Task JoinViaInviteTokenAsync(string token, string? guestDisplayName = null)
+    {
+        IsInGroup = true;
+        GroupUpdated?.Invoke();
+        return Task.CompletedTask;
+    }
+
+    public Task LeaveGroupAsync()
+    {
+        IsInGroup = false;
+        CurrentGroup = null;
+        GroupUpdated?.Invoke();
+        return Task.CompletedTask;
+    }
+
+    public Task AddToQueueAsync(Guid mediaReferenceId, string title, double duration, string? coverUrl) => Task.CompletedTask;
+    public Task BulkAddToQueueAsync(IReadOnlyList<SyncPlayQueueItemDto> items) => Task.CompletedTask;
+    public Task RemoveFromQueueAsync(Guid queueItemId) => Task.CompletedTask;
+    public Task SetCurrentMediaAsync(Guid mediaReferenceId, string title, double duration, string? coverUrl) => Task.CompletedTask;
+
+    public Task IssueCommandAsync(SyncPlayCommandType commandType, double? value = null) => Task.CompletedTask;
+    public Task ReportPositionAsync(double position) => Task.CompletedTask;
+    public Task ReportReadyAsync() => Task.CompletedTask;
+
+    public Task SendChatAsync(string text) => Task.CompletedTask;
+    public Task SendReactionAsync(string emoji) => Task.CompletedTask;
+
+    public Task GenerateGuestTokenAsync() => Task.CompletedTask;
+    public Task GetInviteLinkAsync() => Task.CompletedTask;
+    public Task InviteUserAsync(string targetUserId) => Task.CompletedTask;
+    public Task KickAsync(Guid targetDeviceId) => Task.CompletedTask;
+    public Task RefreshOnlineUsersAsync() => Task.CompletedTask;
+
+    public void RequestRejoin()
+    {
+        RejoinRequested?.Invoke();
+    }
+
+    public bool IsOwnMessage(Guid messageId)
+    {
+        return false;
+    }
+
+    public void TriggerGroupUpdated() => GroupUpdated?.Invoke();
+    public void TriggerCommandReceived(SyncPlayCommandDto cmd) => CommandReceived?.Invoke(cmd);
+    public void TriggerPlayAtReceived(long timestamp, double pos) => PlayAtReceived?.Invoke(timestamp, pos);
+    public void TriggerSeekCorrectionReceived(double pos) => SeekCorrectionReceived?.Invoke(pos);
+    public void TriggerChatMessageReceived(SyncPlayChatMessageDto msg) => ChatMessageReceived?.Invoke(msg);
+    public void TriggerReactionReceived(SyncPlayReactionDto reaction) => ReactionReceived?.Invoke(reaction);
+    public void TriggerErrorReceived(string err) => ErrorReceived?.Invoke(err);
+    public void TriggerInvitationReceived(SyncPlayInvitationDto invite) => InvitationReceived?.Invoke(invite);
+    public void TriggerOnlineUsersUpdated() => OnlineUsersUpdated?.Invoke();
+    public void TriggerInviteLinkReceived(SyncPlayInviteLinkDto link) => InviteLinkReceived?.Invoke(link);
+}
+
+public sealed class MockSleepTimerService : ISleepTimerService
+{
+    public bool IsActive => false;
+
+    public SleepTimerMode Mode => SleepTimerMode.Off;
+
+    public TimeSpan Remaining => TimeSpan.Zero;
+
+    public event Action? TimerChanged;
+    public event Action? TimerExpired;
+
+    public void Cancel()
+    {
+        return;
+    }
+
+    public void Start(SleepTimerMode mode, TimeSpan? duration = null)
+    {
+        TimerChanged?.Clone();
+        TimerExpired?.Clone();
+        return;
+    }
+}
