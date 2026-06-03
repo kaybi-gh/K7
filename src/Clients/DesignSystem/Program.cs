@@ -43,6 +43,9 @@ builder.Services.AddSingleton<IVolumeService, MockVolumeService>();
 builder.Services.AddSingleton<IBrightnessService, MockBrightnessService>();
 builder.Services.AddSingleton<IStreamUriService, MockStreamUriService>();
 builder.Services.AddSingleton<ILocalUserService, MockLocalUserService>();
+builder.Services.AddSingleton<ISyncPlayService, MockSyncPlayService>();
+builder.Services.AddSingleton<ISleepTimerService, MockSleepTimerService>();
+builder.Services.AddSingleton<K7HubClient>();
 
 // Server API mock services
 builder.Services.AddSingleton<IK7ServerService, MockK7ServerService>();
