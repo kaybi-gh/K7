@@ -4,11 +4,11 @@
     color-scheme: dark;
 
     /* Surface colors */
-    --color-bg:            #131821;
+    --color-bg:            #131313;
     --color-surface:       #1A2030;
     --color-surface-2:     #222A38;
     --color-surface-hover: rgba(255,255,255,.06);
-    --color-drawer:        #0C1018;
+    --color-drawer:        #1a1a1a;
     --color-bg-gray:       #101620;
 
     /* Accent */
