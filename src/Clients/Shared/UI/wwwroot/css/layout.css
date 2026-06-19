@@ -53,6 +53,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     padding-top: calc(var(--nav-height) + var(--k7-safe-top));
     padding-left: var(--k7-safe-left);
     padding-right: var(--k7-safe-right);
+    background-image: radial-gradient(circle at 0% 0%, rgba(214, 155, 83, 0.08) 0%, transparent 50%);
 }
 
 .page-viewport {
