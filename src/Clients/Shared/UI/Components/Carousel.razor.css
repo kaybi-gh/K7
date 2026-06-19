@@ -5,7 +5,7 @@
 .carousel-container {
     display: flex;
     align-items: flex-start;
-    gap: var(--carousel-gap, 16px);
+    gap: var(--carousel-gap, 40px);
     padding-inline-start: var(--carousel-margin-start, 16px);
     padding-inline-end: var(--carousel-margin-end, 16px);
 }
@@ -52,6 +52,10 @@
 
     ::deep .carousel-item > .media-card.media-card--backdrop {
         width: 60vw !important;
+    }
+
+    .carousel-container {
+        gap: var(--carousel-gap, 15px);
     }
 }
 
