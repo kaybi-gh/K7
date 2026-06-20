@@ -33,6 +33,16 @@
                              Label="@L["MetadataRefreshLabel"]" Variant="outlined"
                              HelperText="@L["MetadataRefreshHelper"]"
                              Disabled="IsFederated" />
+
+            @if (!IsFederated)
+            {
+                <LibraryProcessingSettingsSection MediaType="MediaType"
+                    @bind-IntroDetectionEnabled="IntroDetectionEnabled"
+                    @bind-SeekbarThumbnailGenerationEnabled="SeekbarThumbnailGenerationEnabled"
+                    @bind-MusicAudioAnalysisEnabled="MusicAudioAnalysisEnabled"
+                    @bind-TranscodingEnabled="TranscodingEnabled"
+                    @bind-TransmuxingEnabled="TransmuxingEnabled" />
+            }
         </div>
     </div>
     <div class="k7-dialog-actions">

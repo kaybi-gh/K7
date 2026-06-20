@@ -25,7 +25,7 @@
   <data name="ProviderRequired" xml:space="preserve"><value>Le fournisseur de métadonnées est requis</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
-  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Rafraichissement automatique (jours)</value></data>
+  <data name="MetadataRefreshLabel" xml:space="preserve"><value>Rafraîchissement automatique (jours)</value></data>
   <data name="MetadataRefreshHelper" xml:space="preserve"><value>0 ou vide = desactivé</value></data>
   <data name="DescriptionLabel" xml:space="preserve"><value>Description courte</value></data>
   <data name="DescriptionHelper" xml:space="preserve"><value>Facultatif - affiché sur la card de la librairie</value></data>
@@ -40,7 +40,7 @@
   <data name="RemoveCover" xml:space="preserve"><value>Supprimer</value></data>
   <data name="CoverNone" xml:space="preserve"><value>Aucune couverture</value></data>
   <data name="CoverChange" xml:space="preserve"><value>Choisir</value></data>
-  <data name="MetadataLanguageLabel" xml:space="preserve"><value>Langue des metadonnees</value></data>
+  <data name="MetadataLanguageLabel" xml:space="preserve"><value>Langue des métadonnées</value></data>
   <data name="MetadataFallbackLanguageLabel" xml:space="preserve"><value>Langue de secours</value></data>
   <data name="GroupLabel" xml:space="preserve"><value>Groupe</value></data>
   <data name="NoPictures" xml:space="preserve"><value>Aucune image disponible dans cette librairie</value></data>

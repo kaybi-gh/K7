@@ -29,6 +29,11 @@ public partial class CreateLibraryDialog
     private List<MetadataProviderInfoDto> _availableProviders = [];
     private bool _triggerIndexing = true;
     private bool _isSubmitting;
+    private bool _introDetectionEnabled = true;
+    private bool _seekbarThumbnailGenerationEnabled = true;
+    private bool _musicAudioAnalysisEnabled = true;
+    private bool _transcodingEnabled = true;
+    private bool _transmuxingEnabled = true;
 
     private List<LibraryGroupDto> _compatibleGroups = [];
     private Guid? _selectedGroupId;
@@ -162,7 +167,12 @@ public partial class CreateLibraryDialog
                 MetadataFallbackLanguage = _metadataFallbackLanguage,
                 LibraryGroupId = _selectedGroupId,
                 GroupDescription = _createNewGroup && !string.IsNullOrWhiteSpace(_groupDescription) ? _groupDescription.Trim() : null,
-                GroupIcon = _createNewGroup ? _groupIcon : null
+                GroupIcon = _createNewGroup ? _groupIcon : null,
+                IntroDetectionEnabled = _introDetectionEnabled,
+                SeekbarThumbnailGenerationEnabled = _seekbarThumbnailGenerationEnabled,
+                MusicAudioAnalysisEnabled = _musicAudioAnalysisEnabled,
+                TranscodingEnabled = _transcodingEnabled,
+                TransmuxingEnabled = _transmuxingEnabled
             };
 
             await K7ServerService.CreateLibraryAsync(request);

@@ -1,3 +1,4 @@
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
@@ -13,6 +14,7 @@ public partial class EditLibraryDialog
 
     [Parameter] public Guid LibraryId { get; set; }
     [Parameter] public string Title { get; set; } = "";
+    [Parameter] public LibraryMediaType MediaType { get; set; }
     [Parameter] public List<MetadataProviderInfoDto> AvailableProviders { get; set; } = [];
     [Parameter] public string? SelectedProvider { get; set; }
     [Parameter] public int? MetadataRefreshIntervalDays { get; set; }
@@ -21,6 +23,11 @@ public partial class EditLibraryDialog
     [Parameter] public bool IsFederated { get; set; }
     [Parameter] public List<LibraryGroupDto> AvailableGroups { get; set; } = [];
     [Parameter] public Guid SelectedGroupId { get; set; }
+    [Parameter] public bool IntroDetectionEnabled { get; set; } = true;
+    [Parameter] public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
+    [Parameter] public bool MusicAudioAnalysisEnabled { get; set; } = true;
+    [Parameter] public bool TranscodingEnabled { get; set; } = true;
+    [Parameter] public bool TransmuxingEnabled { get; set; } = true;
 
     private bool _isSubmitting;
 
@@ -40,7 +47,12 @@ public partial class EditLibraryDialog
                 MetadataLanguage = MetadataLanguage,
                 MetadataFallbackLanguage = MetadataFallbackLanguage,
                 MetadataRefreshIntervalDays = MetadataRefreshIntervalDays,
-                LibraryGroupId = SelectedGroupId
+                LibraryGroupId = SelectedGroupId,
+                IntroDetectionEnabled = IntroDetectionEnabled,
+                SeekbarThumbnailGenerationEnabled = SeekbarThumbnailGenerationEnabled,
+                MusicAudioAnalysisEnabled = MusicAudioAnalysisEnabled,
+                TranscodingEnabled = TranscodingEnabled,
+                TransmuxingEnabled = TransmuxingEnabled
             };
 
             await LibraryService.UpdateLibraryAsync(LibraryId, request);
