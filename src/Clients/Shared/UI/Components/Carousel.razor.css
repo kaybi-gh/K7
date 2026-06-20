@@ -16,6 +16,11 @@
     padding-inline-start: var(--carousel-margin-start, 16px);
 }
 
+.carousel-header ::deep .carousel-skeleton-title {
+    height: 1.125rem;
+    border-radius: var(--radius-sm);
+}
+
 .carousel-wrapper {
     min-width: 0;
     max-width: 100vw;
@@ -41,7 +46,7 @@
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599.98px) {
     ::deep .carousel-item > .media-card.media-card--poster {
         width: 30vw !important;
     }
@@ -119,7 +124,7 @@
     overflow: hidden;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599.98px) {
     .carousel-loop-back {
         width: 30vw;
     }

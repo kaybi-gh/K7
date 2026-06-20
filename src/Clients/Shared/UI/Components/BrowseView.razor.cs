@@ -21,6 +21,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public RenderFragment<TItem>? TableRowTemplate { get; set; }
     [Parameter] public RenderFragment? TableContent { get; set; }
     [Parameter] public RenderFragment? ToolbarContent { get; set; }
+    [Parameter] public RenderFragment? ToolbarSecondaryContent { get; set; }
     [Parameter] public RenderFragment? LoadingContent { get; set; }
     [Parameter] public RenderFragment? EmptyContent { get; set; }
     [Parameter] public RenderFragment? GridPlaceholder { get; set; }
@@ -31,6 +32,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public EventCallback<string> OnJumpRequested { get; set; }
 
     [Parameter] public string PersistenceKey { get; set; } = "default";
+    [Parameter] public string Class { get; set; } = "";
     [Parameter] public BrowseViewMode DefaultMode { get; set; } = BrowseViewMode.Grid;
     [Parameter] public int DefaultItemWidth { get; set; } = 160;
     [Parameter] public int DefaultSpacing { get; set; } = 6;
@@ -48,9 +50,9 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private BrowseViewMode _currentMode;
     private List<BrowseViewMode> _availableModes = [];
     private List<ButtonGroupOption<BrowseViewMode>> _modeOptions = [];
-    private bool _settingsOpen;
     private bool _hasColumnPicker;
     private bool _initialized;
+    private bool _isMobileViewport;
     private int _itemWidth;
     private int _spacing;
     private bool _loadingMore;
@@ -73,13 +75,16 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             _module = await JSRuntime.InvokeAsync<IJSObjectReference>(
                 "import", "./_content/K7.Clients.Shared.UI/js/browseView.js");
 
+            _dotnetRef ??= DotNetObjectReference.Create(this);
+
             var saved = await _module.InvokeAsync<BrowseViewSettings?>("getSettings", PersistenceKey);
             if (saved is not null)
             {
                 _currentMode = saved.Mode;
-                _itemWidth = saved.ItemWidth;
-                _spacing = saved.Spacing;
             }
+
+            _isMobileViewport = await _module.InvokeAsync<bool>("observeViewport", _dotnetRef);
+            ApplyMobileModeRestrictions();
 
             _initialized = true;
             StateHasChanged();
@@ -94,14 +99,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     protected override void OnParametersSet()
     {
-        _availableModes = BuildAvailableModes();
-        _modeOptions = BuildModeOptions();
+        ApplyMobileModeRestrictions();
         _hasColumnPicker = OnColumnPickerRequested.HasDelegate;
-
-        if (!_availableModes.Contains(_currentMode) && _availableModes.Count > 0)
-        {
-            _currentMode = _availableModes[0];
-        }
 
         if (Items is not null)
         {
@@ -117,18 +116,6 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     {
         if (mode == _currentMode) return;
         _currentMode = mode;
-        await SaveSettingsAsync();
-    }
-
-    private async Task OnItemWidthChanged(int value)
-    {
-        _itemWidth = value;
-        await SaveSettingsAsync();
-    }
-
-    private async Task OnSpacingChanged(int value)
-    {
-        _spacing = value;
         await SaveSettingsAsync();
     }
 
@@ -179,6 +166,16 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     }
 
     [JSInvokable]
+    public Task OnViewportChanged(bool isMobile)
+    {
+        if (_isMobileViewport == isMobile) return Task.CompletedTask;
+
+        _isMobileViewport = isMobile;
+        ApplyMobileModeRestrictions();
+        return InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
     public async Task OnSentinelVisible()
     {
         if (_loadingMore || OnLoadMore is null || !HasMore) return;
@@ -211,19 +208,39 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         if (_module is null) return;
         var settings = new BrowseViewSettings
         {
-            Mode = _currentMode,
-            ItemWidth = _itemWidth,
-            Spacing = _spacing
+            Mode = _currentMode
         };
         await _module.InvokeVoidAsync("saveSettings", PersistenceKey, settings);
+    }
+
+    private void ApplyMobileModeRestrictions()
+    {
+        _availableModes = BuildAvailableModes();
+        _modeOptions = BuildModeOptions();
+
+        if (_isMobileViewport && _currentMode is BrowseViewMode.Table)
+        {
+            _currentMode = _availableModes.Contains(BrowseViewMode.Grid)
+                ? BrowseViewMode.Grid
+                : _availableModes.Count > 0 ? _availableModes[0] : DefaultMode;
+            _ = SaveSettingsAsync();
+        }
+        else if (!_availableModes.Contains(_currentMode) && _availableModes.Count > 0)
+        {
+            _currentMode = _availableModes[0];
+        }
     }
 
     private List<BrowseViewMode> BuildAvailableModes()
     {
         var modes = new List<BrowseViewMode>();
         if (GridTemplate is not null) modes.Add(BrowseViewMode.Grid);
-        if (TableContent is not null || (TableHeaderContent is not null && TableRowTemplate is not null))
+        if (!_isMobileViewport
+            && (TableContent is not null || (TableHeaderContent is not null && TableRowTemplate is not null)))
+        {
             modes.Add(BrowseViewMode.Table);
+        }
+
         if (ListTemplate is not null) modes.Add(BrowseViewMode.List);
         return modes;
     }
@@ -250,6 +267,11 @@ public partial class BrowseView<TItem> : IAsyncDisposable
         {
             try
             {
+                if (_dotnetRef is not null)
+                {
+                    await _module.InvokeVoidAsync("disposeViewport", _dotnetRef);
+                }
+
                 await _module.InvokeVoidAsync("disposeSentinel");
                 await _module.DisposeAsync();
             }
@@ -263,7 +285,5 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private sealed class BrowseViewSettings
     {
         public BrowseViewMode Mode { get; set; }
-        public int ItemWidth { get; set; }
-        public int Spacing { get; set; }
     }
 }
