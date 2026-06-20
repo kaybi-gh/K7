@@ -32,5 +32,5 @@
   <data name="CoverChange" xml:space="preserve"><value>Choisir</value></data>
   <data name="RemoveCover" xml:space="preserve"><value>Supprimer</value></data>
   <data name="ColorLabel" xml:space="preserve"><value>Couleur de la carte</value></data>
-  <data name="PreviewLabel" xml:space="preserve"><value>Apercu</value></data>
+  <data name="PreviewLabel" xml:space="preserve"><value>Aperçu</value></data>
 </root>

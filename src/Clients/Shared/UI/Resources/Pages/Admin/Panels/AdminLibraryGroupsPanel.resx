@@ -19,13 +19,13 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>Groupes de bibliotheques</value></data>
-  <data name="NoLibraries" xml:space="preserve"><value>Aucune bibliotheque</value></data>
+  <data name="Title" xml:space="preserve"><value>Groupes de bibliothèques</value></data>
+  <data name="NoLibraries" xml:space="preserve"><value>Aucune bibliothèque</value></data>
   <data name="GroupUpdated" xml:space="preserve"><value>Groupe mis a jour.</value></data>
   <data name="GroupDeleted" xml:space="preserve"><value>Groupe supprime.</value></data>
-  <data name="CannotDeleteNonEmpty" xml:space="preserve"><value>Impossible de supprimer un groupe contenant des bibliotheques.</value></data>
+  <data name="CannotDeleteNonEmpty" xml:space="preserve"><value>Impossible de supprimer un groupe contenant des bibliothèques.</value></data>
   <data name="DeleteConfirmTitle" xml:space="preserve"><value>Supprimer le groupe</value></data>
-  <data name="DeleteConfirmMessage" xml:space="preserve"><value>Supprimer le groupe "{0}" ? Cette action est irreversible.</value></data>
+  <data name="DeleteConfirmMessage" xml:space="preserve"><value>Supprimer le groupe "{0}" ? Cette action est irréversible.</value></data>
   <data name="TypeMovies" xml:space="preserve"><value>Films</value></data>
   <data name="TypeSeries" xml:space="preserve"><value>Series</value></data>
   <data name="TypeMusic" xml:space="preserve"><value>Musique</value></data>
