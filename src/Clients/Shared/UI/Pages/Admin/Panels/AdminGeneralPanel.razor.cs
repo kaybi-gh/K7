@@ -1,3 +1,5 @@
+using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services.Resources;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
 
@@ -8,6 +10,7 @@ public partial class AdminGeneralPanel
     [Inject] private IServerInfoService ServerInfoService { get; set; } = default!;
 
     private string _defaultLanguage = "en";
+    private ThemeDefinition _defaultTheme = Themes.DefaultDark;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -18,6 +21,7 @@ public partial class AdminGeneralPanel
             if (serverInfo is not null)
             {
                 _defaultLanguage = serverInfo.DefaultLanguage;
+                _defaultTheme = Themes.FromCssDataAttribute(serverInfo.DefaultTheme) ?? Themes.DefaultDark;
             }
         }
         finally
@@ -30,5 +34,11 @@ public partial class AdminGeneralPanel
     {
         _defaultLanguage = language;
         await ServerInfoService.UpdateDefaultLanguageAsync(language);
+    }
+
+    private async Task OnDefaultThemeChanged(ThemeDefinition theme)
+    {
+        _defaultTheme = theme;
+        await ServerInfoService.UpdateDefaultThemeAsync(theme.CssDataAttribute);
     }
 }

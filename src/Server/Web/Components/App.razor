@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+@using K7.Server.Application.Common.Interfaces
+@using K7.Server.Domain.Settings
 <html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
@@ -27,6 +29,7 @@
     }
     <Routes @rendermode="PageRenderMode" />
 
+    <script>window.__K7_DEFAULT_THEME__ = "@_defaultTheme";</script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/js/theme.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/lottie/build/player/lottie_light.min.js"]"></script>
     <script>
@@ -69,8 +72,18 @@
 </html>
 
 @code {
+    [Inject]
+    private IServerSettingsService ServerSettings { get; set; } = default!;
+
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
+
+    private string _defaultTheme = "default-dark";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _defaultTheme = await ServerSettings.GetAsync(ServerSettingKeys.DefaultTheme) ?? "default-dark";
+    }
 
     private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/login")
         || HttpContext.Request.Path.StartsWithSegments("/Account")
