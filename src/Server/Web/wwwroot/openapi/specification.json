@@ -9413,6 +9413,12 @@
               "string"
             ]
           },
+          "cardColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "coverPictureId": {
             "type": [
               "null",
@@ -15362,6 +15368,12 @@
             ]
           },
           "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cardColor": {
             "type": [
               "null",
               "string"

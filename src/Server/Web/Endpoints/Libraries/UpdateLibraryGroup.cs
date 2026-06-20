@@ -23,7 +23,8 @@ public class UpdateLibraryGroup : IEndpoint
                 Id = id,
                 Title = request.Title,
                 Description = request.Description,
-                Icon = request.Icon
+                Icon = request.Icon,
+                CardColor = request.CardColor
             }, cancellationToken);
 
             return Results.NoContent();

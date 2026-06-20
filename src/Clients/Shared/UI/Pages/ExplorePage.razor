@@ -1,4 +1,5 @@
 @page "/explore"
+@using K7.Clients.Shared.Helpers
 @using K7.Server.Domain.Enums
 @inject ILibraryService LibraryService
 @inject IStringLocalizer<ExplorePage> L
@@ -10,7 +11,7 @@
     <div class="explore-grid">
         @foreach (var group in _libraryGroups)
         {
-            var (gs, ge, ic) = GetLibraryCardColors(group.MediaType);
+            var (gs, ge, ic) = LibraryGroupCardColors.GetRgbaColors(group);
             var icon = !string.IsNullOrEmpty(group.Icon) ? group.Icon : GetLibraryIconName(group.MediaType);
             var imageUrl = group.CoverPictureId.HasValue ? $"/api/metadata-pictures/{group.CoverPictureId}?size=Medium" : null;
             <K7CategoryCard @key="group.Id"

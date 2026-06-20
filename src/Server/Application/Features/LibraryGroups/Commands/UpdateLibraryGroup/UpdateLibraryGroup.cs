@@ -11,6 +11,7 @@ public record UpdateLibraryGroupCommand : IRequest
     public string? Title { get; init; }
     public string? Description { get; init; }
     public string? Icon { get; init; }
+    public string? CardColor { get; init; }
 }
 
 public class UpdateLibraryGroupCommandHandler(IApplicationDbContext context) : IRequestHandler<UpdateLibraryGroupCommand>
@@ -25,6 +26,7 @@ public class UpdateLibraryGroupCommandHandler(IApplicationDbContext context) : I
         if (request.Title is not null) entity.Title = request.Title;
         if (request.Description is not null) entity.Description = request.Description;
         if (request.Icon is not null) entity.Icon = request.Icon;
+        if (request.CardColor is not null) entity.CardColor = string.IsNullOrEmpty(request.CardColor) ? null : request.CardColor;
 
         await context.SaveChangesAsync(cancellationToken);
     }

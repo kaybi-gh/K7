@@ -50,16 +50,20 @@
             }
         </div>
 
+        <K7ColorPicker Label="@L["ColorLabel"]" Value="@_cardColor" ValueChanged="OnCardColorChangedAsync" />
+
         <div class="mt-3">
             <span class="picker-row__label mb-1">@L["PreviewLabel"]</span>
-            <K7CategoryCard Title="@(_title ?? "")"
-                            Description="@(_description ?? "")"
-                            Icon="@PreviewIcon"
-                            GradientStart="@_previewColors.GradientStart"
-                            GradientEnd="@_previewColors.GradientEnd"
-                            IconColor="@_previewColors.IconColor"
-                            ImageUrl="@PreviewImageUrl"
-                            DominantColor="@Group.CoverDominantColor" />
+            <div class="library-group-card-preview">
+                <K7CategoryCard Title="@(_title ?? "")"
+                                Description="@(_description ?? "")"
+                                Icon="@PreviewIcon"
+                                GradientStart="@_previewColors.GradientStart"
+                                GradientEnd="@_previewColors.GradientEnd"
+                                IconColor="@_previewColors.IconColor"
+                                ImageUrl="@PreviewImageUrl"
+                                DominantColor="@PreviewDominantColor" />
+            </div>
         </div>
     </div>
 </div>

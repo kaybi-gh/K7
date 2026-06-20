@@ -795,6 +795,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CardColor")
+                        .HasMaxLength(7)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Created")
                         .IsRequired()
                         .HasColumnType("TEXT");
