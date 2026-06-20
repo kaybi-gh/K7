@@ -5,7 +5,6 @@ using K7.Shared;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -16,10 +15,8 @@ public partial class Welcome : IDisposable
     [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
     [Inject] private IDeviceService DeviceService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
-    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
-    private K7.Clients.Shared.UI.Components.K7Button? _signInButton;
     private bool _loading;
     private bool _guestEnabled;
     private bool _isTv;
@@ -65,14 +62,6 @@ public partial class Welcome : IDisposable
         {
             if (!_guestEnabled)
                 Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Warning);
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && _signInButton is not null)
-        {
-            await JSRuntime.InvokeVoidAsync("eval", "document.querySelector('.k7-btn')?.focus()");
         }
     }
 
