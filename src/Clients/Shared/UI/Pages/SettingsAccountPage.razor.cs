@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Claims;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components.Dialogs;
@@ -47,9 +46,6 @@ public partial class SettingsAccountPage
     private string? _pinError;
     private string? _pinSuccess;
 
-    // Language
-    private string _currentCulture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-
     // Login Methods
     private LoginMethodsDto? _loginMethods;
     private string? _loginMethodsError;
@@ -79,10 +75,13 @@ public partial class SettingsAccountPage
         _identityUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                           ?? authState.User.FindFirst("sub")?.Value;
 
-        if (!_isGuest)
+        if (_isGuest)
         {
-            await LoadLoginMethodsAsync();
+            NavigationManager.NavigateTo("/settings/general", replace: true);
+            return;
         }
+
+        await LoadLoginMethodsAsync();
     }
 
     private async Task LoadLoginMethodsAsync()
@@ -366,22 +365,6 @@ public partial class SettingsAccountPage
     {
         _pinError = null;
         _pinSuccess = null;
-    }
-
-    // Language
-    private async Task OnCultureChanged(string culture)
-    {
-        try
-        {
-            await UserService.UpdateUserLanguageAsync(culture);
-        }
-        catch
-        {
-            // Best effort
-        }
-
-        await JSRuntime.InvokeVoidAsync("blazorCulture.set", culture);
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 
     // Login Methods

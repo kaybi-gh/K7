@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Settings</value></data>
+  <data name="GeneralPageTitle" xml:space="preserve"><value>Interface</value></data>
   <data name="DarkMode" xml:space="preserve"><value>Dark mode</value></data>
   <data name="Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="Language" xml:space="preserve"><value>Language</value></data>
