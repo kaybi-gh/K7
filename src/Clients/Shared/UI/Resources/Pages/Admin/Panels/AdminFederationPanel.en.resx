@@ -64,6 +64,11 @@
   <data name="TestSuccess" xml:space="preserve"><value>Peer reachable</value></data>
   <data name="TestFailed" xml:space="preserve"><value>Peer unreachable</value></data>
   <data name="FederationDisabled" xml:space="preserve"><value>Federation disabled</value></data>
+  <data name="FederationToggle" xml:space="preserve"><value>Federation</value></data>
+  <data name="FederationToggleDescription" xml:space="preserve"><value>Enables library sharing between K7 servers. Disabled by default.</value></data>
+  <data name="InvitationsToggle" xml:space="preserve"><value>Invitations</value></data>
+  <data name="InvitationsToggleDescription" xml:space="preserve"><value>Allows new incoming and outgoing share requests.</value></data>
+  <data name="FederationDisabledWarning" xml:space="preserve"><value>Federation is disabled. All federation routes are blocked, including existing shares.</value></data>
   <data name="FederationDisabledHint" xml:space="preserve"><value>Federation is disabled. Enable it in feature flags to manage peers.</value></data>
   <data name="OutboundPeers" xml:space="preserve"><value>Outbound requests</value></data>
   <data name="InboundPeers" xml:space="preserve"><value>Provided shares</value></data>

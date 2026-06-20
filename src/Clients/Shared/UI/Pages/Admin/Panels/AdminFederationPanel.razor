@@ -6,25 +6,40 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="federation-panel">
+    <div class="federation-panel__header">
+        <h6>@L["Title"]</h6>
+        @if (_federationEnabled)
+        {
+            <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenRequestDialog" Disabled="!_invitationsEnabled">
+                @L["AddPeer"]
+            </K7Button>
+        }
+    </div>
+
+    <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
+        <div class="d-flex flex-col gap-3">
+            <K7Switch Label="@L["FederationToggle"]" Value="_federationEnabled" ValueChanged="OnFederationEnabledChanged" />
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["FederationToggleDescription"]</span>
+
+            @if (_federationEnabled)
+            {
+                <K7Switch Label="@L["InvitationsToggle"]" Value="_invitationsEnabled" ValueChanged="OnInvitationsEnabledChanged" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["InvitationsToggleDescription"]</span>
+            }
+            else
+            {
+                <span class="text-caption" style="color: var(--color-warning);">@L["FederationDisabledWarning"]</span>
+            }
+        </div>
+    </K7Paper>
+
     @if (!_federationEnabled)
     {
-        <div class="federation-panel__header">
-            <h6>@L["Title"]</h6>
-        </div>
         <K7Paper Outlined="true" Style="padding:24px;text-align:center">
             <K7EmptyState Icon="@Phosphor.Globe" Title="@L["FederationDisabled"]" Subtitle="@L["FederationDisabledHint"]" />
         </K7Paper>
     }
-    else
-    {
-    <div class="federation-panel__header">
-        <h6>@L["Title"]</h6>
-        <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenRequestDialog" Disabled="!_invitationsEnabled">
-            @L["AddPeer"]
-        </K7Button>
-    </div>
-
-    @if (_isLoading)
+    else if (_isLoading)
     {
         <K7Paper Outlined="true" Style="padding:24px;text-align:center">
             <span>@S["Loading"]</span>
@@ -178,6 +193,5 @@
         {
             <K7EmptyState Icon="@Phosphor.Globe" Title="@L["NoPeers"]" Subtitle="@L["NoPeersHint"]" />
         }
-    }
     }
 </div>

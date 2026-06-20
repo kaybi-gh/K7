@@ -4,6 +4,7 @@ using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Extensions;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
@@ -64,6 +65,58 @@ public partial class AdminFederationPanel : IDisposable
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task OnFederationEnabledChanged(bool enabled)
+    {
+        _federationEnabled = enabled;
+        await UpdateFlagsAsync();
+
+        if (_federationEnabled)
+        {
+            await LoadData();
+            try
+            {
+                await HubClient.JoinAdminFederationGroupAsync();
+                HubClient.PeerStateChanged += OnPeerStateChanged;
+                HubClient.PeerRequestReceived += OnPeerRequestReceived;
+                HubClient.PeerTestResultReceived += OnPeerTestResultReceived;
+            }
+            catch
+            {
+            }
+        }
+        else
+        {
+            _peers = null;
+            _requests = null;
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnInvitationsEnabledChanged(bool enabled)
+    {
+        _invitationsEnabled = enabled;
+        await UpdateFlagsAsync();
+    }
+
+    private async Task UpdateFlagsAsync()
+    {
+        try
+        {
+            await ServerPreferencesService.UpdateServerFeatureFlagsAsync(new ServerFeatureFlagsDto
+            {
+                FederationEnabled = _federationEnabled,
+                FederationInvitationsEnabled = _invitationsEnabled
+            });
+        }
+        catch
+        {
+            Snackbar.Add(L["LoadError"], K7Severity.Error);
+            var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync();
+            _federationEnabled = flags.FederationEnabled;
+            _invitationsEnabled = flags.FederationInvitationsEnabled;
         }
     }
 
