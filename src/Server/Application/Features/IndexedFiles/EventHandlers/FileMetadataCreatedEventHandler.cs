@@ -1,4 +1,3 @@
-using System.Text.Json;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
@@ -8,40 +7,29 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
-using K7.Server.Domain.Settings;
-using K7.Shared.Dtos;
 using Microsoft.Extensions.Logging;
 
 namespace K7.Server.Application.Features.IndexedFiles.EventHandlers;
 
-public class FileMetadataCreatedEventHandler : INotificationHandler<FileMetadataCreatedEvent>
+public class FileMetadataCreatedEventHandler(
+    ILogger<FileMetadataCreatedEventHandler> logger,
+    ISender sender,
+    IApplicationDbContext context) : INotificationHandler<FileMetadataCreatedEvent>
 {
-    private readonly ILogger<FileMetadataCreatedEventHandler> _logger;
-    private readonly ISender _sender;
-    private readonly IServerSettingsService _serverSettingsService;
-    private readonly IApplicationDbContext _context;
-
-    public FileMetadataCreatedEventHandler(
-        ILogger<FileMetadataCreatedEventHandler> logger,
-        ISender sender,
-        IServerSettingsService serverSettingsService,
-        IApplicationDbContext context)
-    {
-        _logger = logger;
-        _sender = sender;
-        _serverSettingsService = serverSettingsService;
-        _context = context;
-    }
-
     public async Task Handle(FileMetadataCreatedEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("K7.Server Domain Event: {DomainEvent}", notification.GetType().Name);
+        logger.LogInformation("K7.Server Domain Event: {DomainEvent}", notification.GetType().Name);
 
-        var flags = await GetFeatureFlagsAsync(cancellationToken);
+        var library = await context.Libraries
+            .AsNoTracking()
+            .FirstOrDefaultAsync(l => l.Id == notification.IndexedFile.LibraryId, cancellationToken);
 
-        if (flags.TransmuxingEnabled)
+        if (library is null)
+            return;
+
+        if (library.TransmuxingEnabled)
         {
-            await _sender.Send(new CreateBackgroundTaskCommand()
+            await sender.Send(new CreateBackgroundTaskCommand()
             {
                 Request = new ComputeHlsSegmentsCommand()
                 {
@@ -56,9 +44,9 @@ public class FileMetadataCreatedEventHandler : INotificationHandler<FileMetadata
             }, cancellationToken);
         }
 
-        if (notification.FileType == FileType.Video && flags.SeekbarThumbnailGenerationEnabled)
+        if (notification.FileType == FileType.Video && library.SeekbarThumbnailGenerationEnabled)
         {
-            await _sender.Send(new CreateBackgroundTaskCommand()
+            await sender.Send(new CreateBackgroundTaskCommand()
             {
                 Request = new GenerateThumbnailsCommand()
                 {
@@ -72,7 +60,7 @@ public class FileMetadataCreatedEventHandler : INotificationHandler<FileMetadata
             }, cancellationToken);
         }
 
-        if (notification.FileType == FileType.Video && flags.IntroDetectionEnabled)
+        if (notification.FileType == FileType.Video && library.IntroDetectionEnabled)
         {
             await TriggerIntroDetectionIfEligibleAsync(notification.IndexedFile, cancellationToken);
         }
@@ -82,33 +70,33 @@ public class FileMetadataCreatedEventHandler : INotificationHandler<FileMetadata
     {
         if (indexedFile.MediaId is null)
         {
-            _logger.LogDebug("Intro detection skipped: file {FileId} has no MediaId", indexedFile.Id);
+            logger.LogDebug("Intro detection skipped: file {FileId} has no MediaId", indexedFile.Id);
             return;
         }
 
-        var episode = await _context.Medias
+        var episode = await context.Medias
             .OfType<SerieEpisode>()
             .FirstOrDefaultAsync(e => e.Id == indexedFile.MediaId, cancellationToken);
 
         if (episode is null)
         {
-            _logger.LogDebug("Intro detection skipped: media {MediaId} is not a SerieEpisode", indexedFile.MediaId);
+            logger.LogDebug("Intro detection skipped: media {MediaId} is not a SerieEpisode", indexedFile.MediaId);
             return;
         }
 
-        var episodeCount = await _context.Medias
+        var episodeCount = await context.Medias
             .OfType<SerieEpisode>()
             .CountAsync(e => e.SeasonId == episode.SeasonId, cancellationToken);
 
         if (episodeCount < 2)
         {
-            _logger.LogDebug("Intro detection skipped: season {SeasonId} has only {Count} episode(s)", episode.SeasonId, episodeCount);
+            logger.LogDebug("Intro detection skipped: season {SeasonId} has only {Count} episode(s)", episode.SeasonId, episodeCount);
             return;
         }
 
-        _logger.LogInformation("Queuing intro detection for season {SeasonId} ({EpisodeCount} episodes)", episode.SeasonId, episodeCount);
+        logger.LogInformation("Queuing intro detection for season {SeasonId} ({EpisodeCount} episodes)", episode.SeasonId, episodeCount);
 
-        await _sender.Send(new CreateBackgroundTaskCommand
+        await sender.Send(new CreateBackgroundTaskCommand
         {
             Request = new DetectMediaSegmentsCommand { SeasonId = episode.SeasonId },
             Priority = BackgroundTaskPriority.Low,
@@ -117,14 +105,5 @@ public class FileMetadataCreatedEventHandler : INotificationHandler<FileMetadata
             MaxAttempts = 2,
             ConcurrencyGroup = "ffmpeg"
         }, cancellationToken);
-    }
-
-    private async Task<ServerFeatureFlagsDto> GetFeatureFlagsAsync(CancellationToken cancellationToken)
-    {
-        var json = await _serverSettingsService.GetAsync(ServerSettingKeys.FeatureFlags, cancellationToken);
-        if (json is not null)
-            return JsonSerializer.Deserialize<ServerFeatureFlagsDto>(json) ?? new ServerFeatureFlagsDto();
-
-        return new ServerFeatureFlagsDto();
     }
 }

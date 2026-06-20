@@ -23,6 +23,11 @@ public record CreateLibraryCommand : IRequest<Guid>
     public string? GroupTitle { get; init; }
     public string? GroupDescription { get; init; }
     public string? GroupIcon { get; init; }
+    public bool IntroDetectionEnabled { get; init; } = true;
+    public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
+    public bool MusicAudioAnalysisEnabled { get; init; } = true;
+    public bool TranscodingEnabled { get; init; } = true;
+    public bool TransmuxingEnabled { get; init; } = true;
 }
 
 public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand, Guid>
@@ -70,7 +75,12 @@ public class CreateLibraryCommandHandler : IRequestHandler<CreateLibraryCommand,
             MetadataProviderName = request.MetadataProviderName,
             MetadataLanguage = request.MetadataLanguage,
             MetadataFallbackLanguage = request.MetadataFallbackLanguage,
-            LibraryGroupId = libraryGroupId
+            LibraryGroupId = libraryGroupId,
+            IntroDetectionEnabled = request.IntroDetectionEnabled,
+            SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled,
+            MusicAudioAnalysisEnabled = request.MusicAudioAnalysisEnabled,
+            TranscodingEnabled = request.TranscodingEnabled,
+            TransmuxingEnabled = request.TransmuxingEnabled
         };
 
         entity.AddDomainEvent(new LibraryCreatedEvent(entity));

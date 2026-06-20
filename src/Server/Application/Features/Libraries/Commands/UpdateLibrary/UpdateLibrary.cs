@@ -15,6 +15,11 @@ public record UpdateLibraryCommand : IRequest
     public string? MetadataFallbackLanguage { get; init; }
     public int? MetadataRefreshIntervalDays { get; init; }
     public Guid? LibraryGroupId { get; init; }
+    public bool? IntroDetectionEnabled { get; init; }
+    public bool? SeekbarThumbnailGenerationEnabled { get; init; }
+    public bool? MusicAudioAnalysisEnabled { get; init; }
+    public bool? TranscodingEnabled { get; init; }
+    public bool? TransmuxingEnabled { get; init; }
 }
 
 public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
@@ -39,6 +44,16 @@ public class UpdateLibraryCommandHandler : IRequestHandler<UpdateLibraryCommand>
         entity.MetadataRefreshIntervalDays = request.MetadataRefreshIntervalDays;
         if (request.LibraryGroupId.HasValue)
             entity.LibraryGroupId = request.LibraryGroupId.Value;
+        if (request.IntroDetectionEnabled.HasValue)
+            entity.IntroDetectionEnabled = request.IntroDetectionEnabled.Value;
+        if (request.SeekbarThumbnailGenerationEnabled.HasValue)
+            entity.SeekbarThumbnailGenerationEnabled = request.SeekbarThumbnailGenerationEnabled.Value;
+        if (request.MusicAudioAnalysisEnabled.HasValue)
+            entity.MusicAudioAnalysisEnabled = request.MusicAudioAnalysisEnabled.Value;
+        if (request.TranscodingEnabled.HasValue)
+            entity.TranscodingEnabled = request.TranscodingEnabled.Value;
+        if (request.TransmuxingEnabled.HasValue)
+            entity.TransmuxingEnabled = request.TransmuxingEnabled.Value;
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
