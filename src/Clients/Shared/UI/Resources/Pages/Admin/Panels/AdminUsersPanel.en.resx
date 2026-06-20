@@ -22,6 +22,7 @@
   <data name="Title" xml:space="preserve"><value>Users</value></data>
   <data name="Empty" xml:space="preserve"><value>No users</value></data>
   <data name="HeaderUser" xml:space="preserve"><value>User</value></data>
+  <data name="ThisUser" xml:space="preserve"><value>You</value></data>
   <data name="HeaderRole" xml:space="preserve"><value>Role</value></data>
   <data name="HeaderActive" xml:space="preserve"><value>Active</value></data>
   <data name="HeaderCreatedAt" xml:space="preserve"><value>Created at</value></data>
@@ -32,6 +33,7 @@
   <data name="AriaLibraries" xml:space="preserve"><value>Libraries</value></data>
   <data name="AriaHiddenMedia" xml:space="preserve"><value>Hidden media</value></data>
   <data name="AriaRestrictionProfile" xml:space="preserve"><value>Restriction profile</value></data>
+  <data name="AriaPlaybackHistory" xml:space="preserve"><value>Playback history</value></data>
   <data name="AriaDelete" xml:space="preserve"><value>Delete</value></data>
   <data name="RoleUpdated" xml:space="preserve"><value>{0}'s role updated.</value></data>
   <data name="UserActivated" xml:space="preserve"><value>{0} activated.</value></data>

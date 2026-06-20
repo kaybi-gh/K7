@@ -17,8 +17,36 @@
     color: var(--color-text-muted);
 }
 
+.user-identity-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.user-identity-title p {
+    margin: 0;
+}
+
+::deep .current-user {
+    border-color: var(--color-accent);
+    border-width: 2px;
+}
+
+::deep tr.current-user td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
 .user-inactive {
     opacity: 0.5;
+}
+
+.users-desktop ::deep .connection-badge,
+.users-mobile ::deep .connection-badge {
+    width: 8px;
+    height: 8px;
+    border-width: 1.5px;
+    border-color: var(--color-surface);
 }
 
 .user-card-header {
