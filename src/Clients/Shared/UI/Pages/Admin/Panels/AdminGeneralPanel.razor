@@ -1,5 +1,7 @@
 ﻿@page "/admin/general"
 @layout AdminLayout
+@using K7.Clients.Shared.Models
+@using K7.Clients.Shared.Services.Resources
 @inject IStringLocalizer<AdminGeneralPanel> L
 
 @if (_isLoading)
@@ -8,10 +10,24 @@
 }
 else
 {
-    <div class="d-flex flex-col pa-4">
+    <div class="d-flex flex-col pa-4 gap-4">
         <div>
             <K7LanguageSelect Value="@_defaultLanguage" ValueChanged="OnDefaultLanguageChanged" Label="@L["DefaultLanguage"]" Languages="SupportedLanguages.Interface" />
             <span class="text-caption mt-1" Color="secondary">@L["DefaultLanguageHelp"]</span>
+        </div>
+
+        <div>
+            <K7Select TValue="ThemeDefinition"
+                      Label="@L["DefaultTheme"]"
+                      Value="_defaultTheme"
+                      ValueChanged="OnDefaultThemeChanged"
+                      ToStringFunc="@(t => t?.Name)">
+                @foreach (var theme in Themes.Collection)
+                {
+                    <K7SelectItem Value="@theme">@theme.Name</K7SelectItem>
+                }
+            </K7Select>
+            <span class="text-caption mt-1" Color="secondary">@L["DefaultThemeHelp"]</span>
         </div>
     </div>
 }

@@ -35,11 +35,13 @@ public class GetServerInfo : IEndpoint
             }
 
             var defaultLanguage = await serverSettings.GetAsync(ServerSettingKeys.DefaultLanguage, cancellationToken) ?? "en";
+            var defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme, cancellationToken) ?? "default-dark";
 
             return Results.Ok(new ServerInfoDto
             {
                 GuestEnabled = guestEnabled,
-                DefaultLanguage = defaultLanguage
+                DefaultLanguage = defaultLanguage,
+                DefaultTheme = defaultTheme
             });
         })
         .AllowAnonymous()

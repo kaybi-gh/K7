@@ -13,4 +13,9 @@ public static class Themes
         DefaultDark,
         DefaultLight,
     }.ToFrozenSet();
+
+    public static ThemeDefinition? FromCssDataAttribute(string? cssDataAttribute) =>
+        string.IsNullOrEmpty(cssDataAttribute)
+            ? null
+            : Collection.FirstOrDefault(t => t.CssDataAttribute == cssDataAttribute);
 }

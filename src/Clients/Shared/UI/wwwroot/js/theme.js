@@ -3,7 +3,9 @@
  * Reads the saved theme from localStorage and applies it to <html>.
  */
 (function () {
-    var theme = localStorage.getItem('k7-theme') || 'default-dark';
+    var theme = localStorage.getItem('k7-theme')
+        || window.__K7_DEFAULT_THEME__
+        || 'default-dark';
     document.documentElement.setAttribute('data-theme', theme);
 
     var customCss = localStorage.getItem('k7-custom-css');
@@ -23,6 +25,10 @@ window.K7.dismissPreload = function () {
     el.style.opacity = '0';
     el.style.pointerEvents = 'none';
     setTimeout(function () { el.remove(); }, 400);
+};
+
+window.K7.getSavedTheme = function () {
+    return localStorage.getItem('k7-theme');
 };
 
 window.K7.applyTheme = function (dataAttribute) {

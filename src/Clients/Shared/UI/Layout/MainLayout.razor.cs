@@ -3,6 +3,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -32,6 +33,15 @@ public partial class MainLayout : IDisposable
     protected override async Task OnInitializedAsync()
     {
         ThemeService.ThemeOnChange += OnThemeChanged;
+
+        try
+        {
+            await ThemeBootstrap.InitializeAsync(ThemeService, JS, ServerInfoService);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainLayout] Theme bootstrap failed: {ex.Message}");
+        }
 
         if (DeviceService.GetClientType() == ClientType.Web)
         {
