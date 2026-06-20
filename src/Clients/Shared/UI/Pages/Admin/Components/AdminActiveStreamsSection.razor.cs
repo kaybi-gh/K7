@@ -1,13 +1,14 @@
 using K7.Clients.Shared.Services;
-using K7.Clients.Shared.UI.Pages.Admin.Components;
+using K7.Clients.Shared.UI.Pages.Admin.Panels;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Enums;
+using K7.Shared.Interfaces;
 
-namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
+namespace K7.Clients.Shared.UI.Pages.Admin.Components;
 
-public partial class AdminActiveStreamsPanel : IDisposable
+public partial class AdminActiveStreamsSection : IDisposable
 {
     private IReadOnlyList<ActiveStreamDto>? _streams;
     private ActiveStreamDto? _selectedStream;
@@ -25,7 +26,6 @@ public partial class AdminActiveStreamsPanel : IDisposable
         }
         catch
         {
-            // Fallback: if hub not connected yet, we still have initial fetch
         }
     }
 
@@ -36,7 +36,6 @@ public partial class AdminActiveStreamsPanel : IDisposable
             _streams = streams;
             _loading = false;
 
-            // Update selected stream with fresh data
             if (_selectedStream is not null)
             {
                 _selectedStream = streams.FirstOrDefault(s => s.ConnectionId == _selectedStream.ConnectionId);

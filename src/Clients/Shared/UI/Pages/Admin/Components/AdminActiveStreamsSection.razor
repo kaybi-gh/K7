@@ -1,0 +1,45 @@
+@inject IStringLocalizer<AdminActiveStreamsPanel> L
+@inject IServerInfoService K7ServerService
+@inject K7HubClient HubClient
+@implements IDisposable
+
+<div id="streams" class="streams-page">
+    <div class="streams-header">
+        <h6>@L["Title"]</h6>
+        @if (_streams is not null)
+        {
+            <span class="streams-count">@string.Format(L["StreamCount"], _streams.Count)</span>
+        }
+        <K7IconButton Icon="@Phosphor.ArrowClockwise" OnClick="FetchStreamsAsync" AriaLabel="@L["Refresh"]" />
+    </div>
+
+    @if (_loading)
+    {
+        <div class="streams-empty">
+            <K7Spinner />
+        </div>
+    }
+    else if (_streams is null || _streams.Count == 0)
+    {
+        <div class="streams-empty">
+            <K7Icon Icon="@Phosphor.Broadcast" Style="font-size: 64px; opacity: 0.3;" />
+            <h6 style="opacity: 0.5;">@L["NoActiveStreams"]</h6>
+        </div>
+    }
+    else
+    {
+        <div class="streams-layout">
+            <div class="streams-grid">
+                @foreach (var stream in _streams)
+                {
+                    <AdminStreamCard Stream="stream" OnClick="OnStreamSelected" />
+                }
+            </div>
+        </div>
+
+        @if (_selectedStream is not null)
+        {
+            <StreamDetailSidebar Model="BuildDetailModel(_selectedStream)" OnClose="CloseDetail" />
+        }
+    }
+</div>

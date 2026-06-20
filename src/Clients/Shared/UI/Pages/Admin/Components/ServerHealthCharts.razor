@@ -1,0 +1,92 @@
+@inject IStringLocalizer<AdminDashboardPanel> L
+
+<section class="dashboard-health">
+    <h6>@L["ServerHealthTitle"]</h6>
+    <div class="dashboard-health__charts">
+        <K7Paper Outlined="true" Class="dashboard-health__chart">
+            <div class="dashboard-health__chart-header">
+                <span class="text-overline">@L["CpuUsage"]</span>
+                @if (Latest is not null)
+                {
+                    <span class="dashboard-health__current">@Latest.CpuPercent.ToString("0.#")%</span>
+                }
+            </div>
+            @if (_cpuData.Count > 0)
+            {
+                <ApexChart TItem="ChartDataPoint" Options="_cpuChartOptions" Height="160">
+                    <ApexPointSeries TItem="ChartDataPoint"
+                                     Items="_cpuData"
+                                     Name="@L["CpuUsage"]"
+                                     SeriesType="SeriesType.Area"
+                                     XValue="@(e => e.Label)"
+                                     YValue="@(e => e.Value)" />
+                </ApexChart>
+            }
+            else
+            {
+                <div class="dashboard-health__empty">@L["NoMetricsYet"]</div>
+            }
+        </K7Paper>
+        <K7Paper Outlined="true" Class="dashboard-health__chart">
+            <div class="dashboard-health__chart-header">
+                <span class="text-overline">@L["MemoryUsage"]</span>
+                @if (Latest is not null)
+                {
+                    <span class="dashboard-health__current">@FormatMemoryPercent(Latest)%</span>
+                }
+            </div>
+            @if (_memoryData.Count > 0)
+            {
+                <ApexChart TItem="ChartDataPoint" Options="_memoryChartOptions" Height="160">
+                    <ApexPointSeries TItem="ChartDataPoint"
+                                     Items="_memoryData"
+                                     Name="@L["MemoryUsage"]"
+                                     SeriesType="SeriesType.Area"
+                                     XValue="@(e => e.Label)"
+                                     YValue="@(e => e.Value)" />
+                </ApexChart>
+            }
+            else
+            {
+                <div class="dashboard-health__empty">@L["NoMetricsYet"]</div>
+            }
+        </K7Paper>
+        <K7Paper Outlined="true" Class="dashboard-health__chart">
+            <div class="dashboard-health__chart-header">
+                <span class="text-overline">@L["NetworkThroughput"]</span>
+                @if (Latest is not null)
+                {
+                    <span class="dashboard-health__current">@Latest.NetworkMbps.ToString("0.##") Mbps</span>
+                }
+            </div>
+            @if (_networkData.Count > 0)
+            {
+                <ApexChart TItem="ChartDataPoint" Options="_networkChartOptions" Height="160">
+                    <ApexPointSeries TItem="ChartDataPoint"
+                                     Items="_networkData"
+                                     Name="@L["NetworkThroughput"]"
+                                     SeriesType="SeriesType.Area"
+                                     XValue="@(e => e.Label)"
+                                     YValue="@(e => e.Value)" />
+                </ApexChart>
+            }
+            else
+            {
+                <div class="dashboard-health__empty">@L["NoMetricsYet"]</div>
+            }
+        </K7Paper>
+    </div>
+    @if (Latest is not null && (Latest.GcHeapMb > 0 || Latest.ThreadCount > 0))
+    {
+        <div class="dashboard-health__secondary">
+            @if (Latest.GcHeapMb > 0)
+            {
+                <span class="text-caption">@string.Format(L["GcHeap"], Latest.GcHeapMb.ToString("0.#"))</span>
+            }
+            @if (Latest.ThreadCount > 0)
+            {
+                <span class="text-caption">@string.Format(L["ThreadCount"], Latest.ThreadCount)</span>
+            }
+        </div>
+    }
+</section>

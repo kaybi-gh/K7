@@ -1,0 +1,38 @@
+@inject IStringLocalizer<AdminDashboardPanel> L
+
+<section class="dashboard-disk">
+    <h6>@L["DiskSpaceTitle"]</h6>
+    @if (Volumes.Count == 0)
+    {
+        <div class="dashboard-disk__empty">@L["NoDiskVolumesYet"]</div>
+    }
+    else
+    {
+        <div class="dashboard-disk__volumes">
+            @foreach (var volume in Volumes)
+            {
+                var usedPercent = volume.TotalGb > 0
+                    ? volume.UsedGb / volume.TotalGb * 100
+                    : 0;
+                var levelClass = volume.FreePercent <= 10
+                    ? "dashboard-disk-volume--critical"
+                    : volume.FreePercent <= 20
+                        ? "dashboard-disk-volume--warning"
+                        : "";
+
+                <K7Paper Outlined="true" Class="@($"dashboard-disk-volume {levelClass}")">
+                    <div class="dashboard-disk-volume__header">
+                        <span class="dashboard-disk-volume__label">@volume.Label</span>
+                        <span class="dashboard-disk-volume__stats">
+                            @string.Format(L["DiskVolumeUsage"], volume.UsedGb.ToString("0.#"), volume.TotalGb.ToString("0.#"))
+                        </span>
+                    </div>
+                    <K7ProgressBar Value="@usedPercent" Class="dashboard-disk-volume__bar" />
+                    <span class="text-caption dashboard-disk-volume__free">
+                        @string.Format(L["DiskVolumeFree"], (volume.TotalGb - volume.UsedGb).ToString("0.#"), volume.FreePercent.ToString("0.#"))
+                    </span>
+                </K7Paper>
+            }
+        </div>
+    }
+</section>
