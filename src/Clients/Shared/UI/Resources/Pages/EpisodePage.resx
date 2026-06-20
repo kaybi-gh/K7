@@ -20,7 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="SeasonEpisode" xml:space="preserve"><value>S{0} E{1}</value></data>
-  <data name="Previous" xml:space="preserve"><value>Precedent</value></data>
+  <data name="Previous" xml:space="preserve"><value>Précédent</value></data>
   <data name="Next" xml:space="preserve"><value>Suivant</value></data>
   <data name="CastingAndCrew" xml:space="preserve"><value>Casting et equipe</value></data>
   <data name="MoreEpisodes" xml:space="preserve"><value>Autres &#233;pisodes</value></data>

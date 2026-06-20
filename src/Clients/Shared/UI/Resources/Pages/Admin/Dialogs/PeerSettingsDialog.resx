@@ -20,8 +20,8 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="BaseUrlLabel" xml:space="preserve"><value>URL du serveur pair</value></data>
-  <data name="AutoAddNewLibraries" xml:space="preserve"><value>Ajouter automatiquement les nouvelles bibliotheques partagees</value></data>
-  <data name="SharedLibrariesLabel" xml:space="preserve"><value>Bibliotheques partagees avec ce pair</value></data>
-  <data name="NoLibraries" xml:space="preserve"><value>Aucune bibliotheque disponible</value></data>
-  <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Bibliotheques a integrer localement</value></data>
+  <data name="AutoAddNewLibraries" xml:space="preserve"><value>Ajouter automatiquement les nouvelles bibliothèques partagées</value></data>
+  <data name="SharedLibrariesLabel" xml:space="preserve"><value>Bibliothèques partagées avec ce pair</value></data>
+  <data name="NoLibraries" xml:space="preserve"><value>Aucune bibliothèque disponible</value></data>
+  <data name="IntegratedLibrariesLabel" xml:space="preserve"><value>Bibliothèques a intégrer localement</value></data>
 </root>

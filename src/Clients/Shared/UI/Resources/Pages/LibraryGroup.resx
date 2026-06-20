@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -38,6 +38,6 @@
   <data name="Rating" xml:space="preserve"><value>Note</value></data>
   <data name="PlayCount" xml:space="preserve"><value>Lectures</value></data>
   <data name="DateAdded" xml:space="preserve"><value>Date d'ajout</value></data>
-  <data name="MediaTypeFilter" xml:space="preserve"><value>Type de media</value></data>
+  <data name="MediaTypeFilter" xml:space="preserve"><value>Type de média</value></data>
 </root>
 

@@ -20,7 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="NextEpisode" xml:space="preserve"><value>Episode suivant</value></data>
-  <data name="AutoPlayIn" xml:space="preserve"><value>Lecture de l'episode suivant dans {0} s</value></data>
+  <data name="AutoPlayIn" xml:space="preserve"><value>Lecture de l'épisode suivant dans {0} s</value></data>
   <data name="PlayNow" xml:space="preserve"><value>Lire maintenant</value></data>
   <data name="Dismiss" xml:space="preserve"><value>Fermer</value></data>
   <data name="Replay" xml:space="preserve"><value>Regarder a nouveau</value></data>

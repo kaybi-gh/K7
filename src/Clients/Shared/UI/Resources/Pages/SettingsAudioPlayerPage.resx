@@ -24,22 +24,22 @@
   <data name="EnableLoudness" xml:space="preserve"><value>Activer la normalisation du volume</value></data>
   <data name="TargetLoudness" xml:space="preserve"><value>Volume cible (LUFS)</value></data>
   <data name="PreAmp" xml:space="preserve"><value>Pre-ampli (dB)</value></data>
-  <data name="EnableLimiter" xml:space="preserve"><value>Activer le limiteur (empeche la saturation)</value></data>
-  <data name="Equalizer" xml:space="preserve"><value>Egaliseur</value></data>
-  <data name="EnableEqualizer" xml:space="preserve"><value>Activer l'egaliseur</value></data>
+  <data name="EnableLimiter" xml:space="preserve"><value>Activer le limiteur (empêche la saturation)</value></data>
+  <data name="Equalizer" xml:space="preserve"><value>�?galiseur</value></data>
+  <data name="EnableEqualizer" xml:space="preserve"><value>Activer l'égaliseur</value></data>
   <data name="Preset" xml:space="preserve"><value>Preset</value></data>
   <data name="PresetFlat" xml:space="preserve"><value>Plat</value></data>
   <data name="PresetBassBoost" xml:space="preserve"><value>Boost des basses</value></data>
   <data name="PresetTrebleBoost" xml:space="preserve"><value>Boost des aigus</value></data>
   <data name="PresetVocal" xml:space="preserve"><value>Vocal</value></data>
   <data name="PresetRock" xml:space="preserve"><value>Rock</value></data>
-  <data name="PresetElectronic" xml:space="preserve"><value>Electronique</value></data>
+  <data name="PresetElectronic" xml:space="preserve"><value>�?lectronique</value></data>
   <data name="PresetCustom" xml:space="preserve"><value>Personnalise</value></data>
   <data name="Crossfade" xml:space="preserve"><value>Fondu enchaine</value></data>
-  <data name="CrossfadeDuration" xml:space="preserve"><value>Duree</value></data>
-  <data name="CrossfadeDisabled" xml:space="preserve"><value>Desactive</value></data>
+  <data name="CrossfadeDuration" xml:space="preserve"><value>Durée</value></data>
+  <data name="CrossfadeDisabled" xml:space="preserve"><value>Désactivé</value></data>
   <data name="AdaptiveCrossfade" xml:space="preserve"><value>Fondu adaptatif (utilise le BPM, la tonalite, l'energie)</value></data>
-  <data name="AdaptiveCrossfadeHint" xml:space="preserve"><value>La duree du fondu sera calculee automatiquement en fonction de l'analyse des morceaux.</value></data>
+  <data name="AdaptiveCrossfadeHint" xml:space="preserve"><value>La durée du fondu sera calculée automatiquement en fonction de l'analyse des morceaux.</value></data>
   <data name="CrossfadeAdaptiveAuto" xml:space="preserve"><value>Automatique (adaptatif)</value></data>
   <data name="Autoplay" xml:space="preserve"><value>Lecture automatique</value></data>
   <data name="AutoplayDescription" xml:space="preserve"><value>Lire des morceaux similaires a la fin de la file d'attente</value></data>
@@ -50,16 +50,16 @@
   <data name="OneHour" xml:space="preserve"><value>1 heure</value></data>
   <data name="EndOfTrack" xml:space="preserve"><value>Fin du morceau</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
-  <data name="Saved" xml:space="preserve"><value>Parametres enregistres</value></data>
-  <data name="ResetToDefault" xml:space="preserve"><value>Reinitialiser par defaut</value></data>
-  <data name="StreamingQuality" xml:space="preserve"><value>Qualite de streaming</value></data>
-  <data name="QualityWifi" xml:space="preserve"><value>Qualite Wi-Fi</value></data>
-  <data name="QualityMobile" xml:space="preserve"><value>Qualite mobile</value></data>
+  <data name="Saved" xml:space="preserve"><value>Paramètres enregistrés</value></data>
+  <data name="ResetToDefault" xml:space="preserve"><value>Réinitialiser par défaut</value></data>
+  <data name="StreamingQuality" xml:space="preserve"><value>Qualité de streaming</value></data>
+  <data name="QualityWifi" xml:space="preserve"><value>Qualité Wi-Fi</value></data>
+  <data name="QualityMobile" xml:space="preserve"><value>Qualité mobile</value></data>
   <data name="Original" xml:space="preserve"><value>Originale (sans transcodage)</value></data>
   <data name="DownmixToStereo" xml:space="preserve"><value>Reduire en stereo</value></data>
   <data name="PlayerBehavior" xml:space="preserve"><value>Comportement du lecteur</value></data>
-  <data name="ShowFullscreenOnPlay" xml:space="preserve"><value>Afficher en plein ecran a la lecture</value></data>
-  <data name="KeepScreenOn" xml:space="preserve"><value>Garder l'ecran allume</value></data>
+  <data name="ShowFullscreenOnPlay" xml:space="preserve"><value>Afficher en plein écran a la lecture</value></data>
+  <data name="KeepScreenOn" xml:space="preserve"><value>Garder l'écran allume</value></data>
   <data name="SkipBackDuration" xml:space="preserve"><value>Retour rapide</value></data>
   <data name="SkipForwardDuration" xml:space="preserve"><value>Avance rapide</value></data>
 </root>

@@ -58,5 +58,5 @@
   <data name="Back" xml:space="preserve"><value>Retour</value></data>
   <data name="Kick" xml:space="preserve"><value>Expulser</value></data>
   <data name="PromoteLeader" xml:space="preserve"><value>Promouvoir leader</value></data>
-  <data name="SyncPlayKicked" xml:space="preserve"><value>Vous avez ete expulse du groupe</value></data>
+  <data name="SyncPlayKicked" xml:space="preserve"><value>Vous avez été expulsé du groupe</value></data>
 </root>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -28,9 +28,9 @@
   <data name="AlbumColumn" xml:space="preserve"><value>Album</value></data>
   <data name="Biography" xml:space="preserve"><value>Biographie</value></data>
   <data name="MembersSection" xml:space="preserve"><value>Membres</value></data>
-  <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
-  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance en tache de fond.</value></data>
-  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
+  <data name="RefreshMetadata" xml:space="preserve"><value>Rafraîchir les métadonnées</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraîchissement des métadonnées lancé en tâche de fond.</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
   <data name="MoreActions" xml:space="preserve"><value>Plus d'actions</value></data>
   <data name="TopTracks" xml:space="preserve"><value>Top morceaux</value></data>
 </root>

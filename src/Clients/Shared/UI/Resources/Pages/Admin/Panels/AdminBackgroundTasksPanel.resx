@@ -53,20 +53,20 @@
   <data name="DeleteTitle" xml:space="preserve"><value>Supprimer la tâche</value></data>
   <data name="DeleteMessage" xml:space="preserve"><value>Supprimer la tâche « {0} » ?</value></data>
   <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="TaskDeleted" xml:space="preserve"><value>Tache supprimee.</value></data>
-  <data name="TaskTypesTitle" xml:space="preserve"><value>Types de taches</value></data>
+  <data name="TaskDeleted" xml:space="preserve"><value>Tâche supprimée.</value></data>
+  <data name="TaskTypesTitle" xml:space="preserve"><value>Types de tâches</value></data>
   <data name="TaskType_AnalyzeMusicTrackAudioCommand" xml:space="preserve"><value>Analyse audio</value></data>
   <data name="TaskType_ComputeHlsSegmentsCommand" xml:space="preserve"><value>Calcul des segments HLS</value></data>
-  <data name="TaskType_CreateFileMetadatasCommand" xml:space="preserve"><value>Extraction des metadonnees</value></data>
-  <data name="TaskType_CreateMediaCommand" xml:space="preserve"><value>Creation de media</value></data>
+  <data name="TaskType_CreateFileMetadatasCommand" xml:space="preserve"><value>Extraction des métadonnées</value></data>
+  <data name="TaskType_CreateMediaCommand" xml:space="preserve"><value>Création de média</value></data>
   <data name="TaskType_DeleteIndexedFileCommand" xml:space="preserve"><value>Suppression de fichier</value></data>
-  <data name="TaskType_DownloadMetadataPictureFromProviderCommand" xml:space="preserve"><value>Telechargement d'image</value></data>
-  <data name="TaskType_GenerateMetadataPictureVariantsCommand" xml:space="preserve"><value>Generation de miniatures</value></data>
-  <data name="TaskType_GenerateThumbnailsCommand" xml:space="preserve"><value>Generation de vignettes video</value></data>
-  <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Indexation de bibliotheque</value></data>
-  <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Rafraichissement des metadonnees</value></data>
-  <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Detection d'intros/outros</value></data>
-  <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Rafraichissement des metadonnees d'artiste</value></data>
+  <data name="TaskType_DownloadMetadataPictureFromProviderCommand" xml:space="preserve"><value>Téléchargement d'image</value></data>
+  <data name="TaskType_GenerateMetadataPictureVariantsCommand" xml:space="preserve"><value>Génération de miniatures</value></data>
+  <data name="TaskType_GenerateThumbnailsCommand" xml:space="preserve"><value>Génération de vignettes vidéo</value></data>
+  <data name="TaskType_IndexLibraryFilesCommand" xml:space="preserve"><value>Indexation de bibliothèque</value></data>
+  <data name="TaskType_RefreshMediaMetadatasCommand" xml:space="preserve"><value>Rafraîchissement des métadonnées</value></data>
+  <data name="TaskType_DetectMediaSegmentsCommand" xml:space="preserve"><value>Détection d'intros/outros</value></data>
+  <data name="TaskType_RefreshPersonMetadataCommand" xml:space="preserve"><value>Rafraîchissement des métadonnées d'artiste</value></data>
   <data name="FilterByType" xml:space="preserve"><value>Filtrer par type</value></data>
   <data name="AllTypes" xml:space="preserve"><value>Tous les types</value></data>
   <data name="TimeJustNow" xml:space="preserve"><value>A l'instant</value></data>
@@ -74,14 +74,14 @@
   <data name="TimeHoursAgo" xml:space="preserve"><value>Il y a {0}h</value></data>
   <data name="TimeDaysAgo" xml:space="preserve"><value>Il y a {0}j</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
-  <data name="CancelTitle" xml:space="preserve"><value>Annuler la tache</value></data>
-  <data name="CancelMessage" xml:space="preserve"><value>Annuler la tache '{0}' ?</value></data>
-  <data name="CancelConfirm" xml:space="preserve"><value>Annuler la tache</value></data>
-  <data name="TaskCancelled" xml:space="preserve"><value>Tache annulee.</value></data>
-  <data name="FilterTaskType" xml:space="preserve"><value>Type de tache</value></data>
+  <data name="CancelTitle" xml:space="preserve"><value>Annuler la tâche</value></data>
+  <data name="CancelMessage" xml:space="preserve"><value>Annuler la tâche '{0}' ?</value></data>
+  <data name="CancelConfirm" xml:space="preserve"><value>Annuler la tâche</value></data>
+  <data name="TaskCancelled" xml:space="preserve"><value>Tâche annulee.</value></data>
+  <data name="FilterTaskType" xml:space="preserve"><value>Type de tâche</value></data>
   <data name="SortBy" xml:space="preserve"><value>Trier par</value></data>
   <data name="SortDate" xml:space="preserve"><value>Date</value></data>
-  <data name="SortDuration" xml:space="preserve"><value>Duree</value></data>
+  <data name="SortDuration" xml:space="preserve"><value>Durée</value></data>
   <data name="SortName" xml:space="preserve"><value>Nom</value></data>
   <data name="ToggleSortDirection" xml:space="preserve"><value>Inverser le tri</value></data>
 </root>

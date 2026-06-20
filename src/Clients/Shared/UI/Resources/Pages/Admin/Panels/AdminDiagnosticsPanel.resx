@@ -20,27 +20,27 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Diagnostics</value></data>
-  <data name="Refresh" xml:space="preserve"><value>Rafraichir</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Rafraîchir</value></data>
   <data name="AllIssues" xml:space="preserve"><value>Total</value></data>
   <data name="SeverityErrors" xml:space="preserve"><value>Erreurs</value></data>
   <data name="SeverityWarnings" xml:space="preserve"><value>Avertissements</value></data>
   <data name="SeverityInfo" xml:space="preserve"><value>Info</value></data>
-  <data name="NoData" xml:space="preserve"><value>Aucune donnee disponible.</value></data>
+  <data name="NoData" xml:space="preserve"><value>Aucune donnée disponible.</value></data>
   <data name="MediaSection" xml:space="preserve"><value>Medias</value></data>
   <data name="TotalMedia" xml:space="preserve"><value>Total</value></data>
   <data name="MissingPictures" xml:space="preserve"><value>Images manquantes</value></data>
-  <data name="MissingMetadata" xml:space="preserve"><value>Metadonnees manquantes</value></data>
+  <data name="MissingMetadata" xml:space="preserve"><value>Métadonnées manquantes</value></data>
   <data name="MissingFiles" xml:space="preserve"><value>Fichiers manquants</value></data>
-  <data name="StaleMetadata" xml:space="preserve"><value>Metadonnees obsoletes</value></data>
+  <data name="StaleMetadata" xml:space="preserve"><value>Métadonnées obsolètes</value></data>
   <data name="IndexedFilesSection" xml:space="preserve"><value>Fichiers source</value></data>
   <data name="TotalFiles" xml:space="preserve"><value>Total</value></data>
   <data name="OrphanFiles" xml:space="preserve"><value>Fichiers orphelins</value></data>
   <data name="UnidentifiedFiles" xml:space="preserve"><value>Fichiers non identifies</value></data>
-  <data name="MissingFileMetadata" xml:space="preserve"><value>Metadonnees fichier manquantes</value></data>
+  <data name="MissingFileMetadata" xml:space="preserve"><value>Métadonnées fichier manquantes</value></data>
   <data name="MissingHlsSegments" xml:space="preserve"><value>Segments HLS manquants</value></data>
   <data name="MissingAudioAnalysis" xml:space="preserve"><value>Analyse audio manquante</value></data>
   <data name="MissingMembers" xml:space="preserve"><value>Membres manquants</value></data>
-  <data name="BackgroundTasksSection" xml:space="preserve"><value>Taches de fond</value></data>
+  <data name="BackgroundTasksSection" xml:space="preserve"><value>Tâches de fond</value></data>
   <data name="PendingTasks" xml:space="preserve"><value>En attente</value></data>
   <data name="FailedTasks" xml:space="preserve"><value>Echouees</value></data>
   <data name="ItemsTitle" xml:space="preserve"><value>Details</value></data>
@@ -50,29 +50,29 @@
   <data name="FilterIssue" xml:space="preserve"><value>Probleme</value></data>
   <data name="EntityTypeMedia" xml:space="preserve"><value>Media</value></data>
   <data name="EntityTypeIndexedFile" xml:space="preserve"><value>Fichier source</value></data>
-  <data name="NoItems" xml:space="preserve"><value>Aucun element.</value></data>
+  <data name="NoItems" xml:space="preserve"><value>Aucun élément.</value></data>
   <data name="ColName" xml:space="preserve"><value>Nom</value></data>
   <data name="ColLibrary" xml:space="preserve"><value>Librairie</value></data>
   <data name="ColType" xml:space="preserve"><value>Type</value></data>
   <data name="ColIssues" xml:space="preserve"><value>Problemes</value></data>
   <data name="ColSeverity" xml:space="preserve"><value>Severite</value></data>
   <data name="ColActions" xml:space="preserve"><value>Actions</value></data>
-  <data name="AriaRefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
-  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance en tache de fond.</value></data>
-  <data name="GoToMedia" xml:space="preserve"><value>Voir le media</value></data>
-  <data name="ExtractMetadata" xml:space="preserve"><value>Extraire les metadonnees du fichier</value></data>
+  <data name="AriaRefreshMetadata" xml:space="preserve"><value>Rafraîchir les métadonnées</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraîchissement des métadonnées lancé en tâche de fond.</value></data>
+  <data name="GoToMedia" xml:space="preserve"><value>Voir le média</value></data>
+  <data name="ExtractMetadata" xml:space="preserve"><value>Extraire les métadonnées du fichier</value></data>
   <data name="ComputeHls" xml:space="preserve"><value>Calculer les segments HLS</value></data>
   <data name="FixSelected" xml:space="preserve"><value>Corriger ({0})</value></data>
-  <data name="FixQueued" xml:space="preserve"><value>Correction lancee en tache de fond.</value></data>
-  <data name="BulkFixQueued" xml:space="preserve"><value>{0} correction(s) lancee(s) en tache de fond.</value></data>
+  <data name="FixQueued" xml:space="preserve"><value>Correction lancée en tâche de fond.</value></data>
+  <data name="BulkFixQueued" xml:space="preserve"><value>{0} correction(s) lancée(s) en tâche de fond.</value></data>
   <data name="DetailMissingPictures" xml:space="preserve"><value>Manquant : {0}</value></data>
   <data name="DetailStaleRefreshed" xml:space="preserve"><value>Dernier rafraichissement : {0} (seuil : {1} jours)</value></data>
   <data name="DetailNeverRefreshed" xml:space="preserve"><value>Jamais rafraichi</value></data>
   <data name="AcrossLibraries" xml:space="preserve"><value>{0} librairies</value></data>
   <data name="ErrorsDescription" xml:space="preserve"><value>Intervention requise</value></data>
-  <data name="WarningsDescription" xml:space="preserve"><value>Rafraichissement possible</value></data>
+  <data name="WarningsDescription" xml:space="preserve"><value>Rafraîchissement possible</value></data>
   <data name="InfoDescription" xml:space="preserve"><value>Non critique</value></data>
-  <data name="ActionRefresh" xml:space="preserve"><value>Rafraichir</value></data>
+  <data name="ActionRefresh" xml:space="preserve"><value>Rafraîchir</value></data>
   <data name="ActionExtract" xml:space="preserve"><value>Extraire</value></data>
   <data name="ActionHls" xml:space="preserve"><value>HLS</value></data>
   <data name="InaccessiblePath" xml:space="preserve"><value>Chemin inaccessible</value></data>
