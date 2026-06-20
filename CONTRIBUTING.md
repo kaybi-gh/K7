@@ -21,6 +21,14 @@ For the full breakdown, see [`docs/SolutionArchitecture.md`](docs/SolutionArchit
 
 ## Developer setup
 
+Clone with submodules to enable [.NET agent skills](https://github.com/dotnet/skills) in Cursor:
+
+```bash
+git clone --recurse-submodules <repo-url>
+# or after a regular clone:
+git submodule update --init --recursive .github/dotnet-skills
+```
+
 K7.Server.Web targets Linux at runtime (Essentia is a precompiled static binary downloaded from [essentia.upf.edu](https://essentia.upf.edu/extractors/)).
 
 ### DevContainer (recommended on Windows)

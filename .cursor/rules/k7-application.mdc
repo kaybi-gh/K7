@@ -1,0 +1,14 @@
+---
+description: K7 Application layer CQRS and validation conventions
+globs: src/Server/Application/**
+alwaysApply: false
+---
+
+# Application Layer
+
+- Request record + handler in **same file**; constructor injection with `private readonly` fields
+- Queries: always `AsNoTracking()`
+- FluentValidation in `{Name}CommandValidator.cs`; pipeline throws `ValidationException`
+- Throw `NotFoundException`, `ForbiddenAccessException` - no error codes or `Result<T>`
+- Use `IApplicationDbContext` for DB; `ISender` for cross-feature dispatch
+- Domain events: raise in entity, handle in `Features/{Feature}/EventHandlers/`

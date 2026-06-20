@@ -1,0 +1,13 @@
+---
+description: K7 Domain layer conventions
+globs: src/Server/Domain/**
+alwaysApply: false
+---
+
+# Domain Layer
+
+Zero dependencies on other projects. Entities inherit `BaseEntity`. Events inherit `BaseEvent`, raised via `AddDomainEvent()`.
+
+Structure: `Common/`, `Constants/`, `Entities/`, `Enums/`, `Events/`, `Exceptions/`, `Interfaces/`, `ValueObjects/`.
+
+Define repository/service interfaces here; Infrastructure implements them.

@@ -1,0 +1,17 @@
+---
+description: K7 Blazor UI component and styling conventions
+globs: src/Clients/**
+alwaysApply: false
+---
+
+# Blazor UI
+
+Triad: `.razor` + `.razor.cs` (partial class) + optional `.razor.css`.
+
+- Pages -> `Clients/Shared/Pages/`
+- Components -> `Clients/Shared/Components/` or `Clients/Shared/UI/Components/`
+- Services -> `Clients/Shared/Services/`; MAUI-only -> `Clients/MAUI/`
+
+Use K7 component library - no third-party UI in pages. Theme via CSS variables (`ThemeService`), never hardcoded colors. Scoped CSS preferred, no inline styles.
+
+**Mandatory localization**: every user-facing string via `IStringLocalizer` + `.resx` - no hardcoded text.

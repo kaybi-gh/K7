@@ -1,0 +1,27 @@
+---
+description: K7 project architecture, code style, CQRS, and git conventions
+alwaysApply: true
+---
+
+# K7 Core
+
+Self-hosted media server. .NET 10, C# 14, Clean Architecture: Domain -> Application -> Infrastructure -> Web.
+
+## Code Style
+
+- `var` everywhere, file-scoped namespaces, `_camelCase` private fields
+- Element order: fields -> constructors -> delegates -> events -> properties -> methods
+- Forward `CancellationToken` as last param (`= default` on public methods)
+- Structured logging: `_logger.LogX("msg {P}", p)` - never `$""`
+- Plain ASCII punctuation only in code/comments/docs
+- Prefer `is null` / `field` keyword (C# 14)
+
+## CQRS
+
+`Features/{Feature}/Commands|Queries/{Name}/{Name}.cs` - request + handler same file.
+Validators: `{Name}CommandValidator.cs`. Events: `EventHandlers/`.
+Throw typed exceptions (no `Result<T>`). DTO mapping via extension methods in `Application/Common/Mappings/`.
+
+## Git
+
+Conventional Commits: `type(scope): description`, lowercase, no trailing period.

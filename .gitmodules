@@ -1,0 +1,3 @@
+[submodule ".github/dotnet-skills"]
+	path = .github/dotnet-skills
+	url = https://github.com/dotnet/skills.git
