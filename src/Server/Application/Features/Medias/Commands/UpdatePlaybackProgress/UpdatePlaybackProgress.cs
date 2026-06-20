@@ -23,7 +23,7 @@ public record UpdatePlaybackProgressCommand(
     PlaybackState State,
     Guid? DeviceId = null) : IRequest;
 
-public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, IMediaAccessGuard accessGuard, IActiveStreamTracker activeStreamTracker, IIdentityService identityService, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
+public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, IMediaAccessGuard accessGuard, IActiveStreamTracker activeStreamTracker, IIdentityService identityService, IMediaQueryCacheInvalidator cacheInvalidator, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly IApplicationDbContext _context = context;
     private readonly IUser _currentUser = currentUserService;
@@ -31,6 +31,7 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
     private readonly IMediaAccessGuard _accessGuard = accessGuard;
     private readonly IActiveStreamTracker _activeStreamTracker = activeStreamTracker;
     private readonly IIdentityService _identityService = identityService;
+    private readonly IMediaQueryCacheInvalidator _cacheInvalidator = cacheInvalidator;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
@@ -321,6 +322,8 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         {
             _activeStreamTracker.Remove(request.SessionId);
         }
+
+        _cacheInvalidator.InvalidateAll();
 
         var identityUserId = _currentUser.IdentityId;
         _logger.LogDebug("Playback progress updated: identityUserId='{IdentityUserId}', mediaId={MediaId}, progress={Progress:F1}%", identityUserId, request.MediaId, state.ProgressPercentage);

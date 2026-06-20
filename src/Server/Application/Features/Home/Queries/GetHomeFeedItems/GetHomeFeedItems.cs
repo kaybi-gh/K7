@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Restrictions.Services;
@@ -540,7 +541,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
             .Select(e => e.MediaId);
 
-        query = query.Where(x => !excludedMediaIds.Contains(x.Id));
+        query = query.WhereNotUserExcluded(excludedMediaIds);
 
         var restrictionProfile = await context.ContentRestrictionProfiles
             .AsNoTracking()
