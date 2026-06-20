@@ -22,4 +22,10 @@
   <data name="SeasonEpisode" xml:space="preserve"><value>S{0} E{1}</value></data>
   <data name="Previous" xml:space="preserve"><value>Precedent</value></data>
   <data name="Next" xml:space="preserve"><value>Suivant</value></data>
+  <data name="CastingAndCrew" xml:space="preserve"><value>Casting et equipe</value></data>
+  <data name="MoreEpisodes" xml:space="preserve"><value>Autres &#233;pisodes</value></data>
+  <data name="BackToSerie" xml:space="preserve"><value>Retour &#224; la s&#233;rie</value></data>
+  <data name="BackToSeason" xml:space="preserve"><value>Retour &#224; la saison</value></data>
+  <data name="MoreActions" xml:space="preserve"><value>Plus d'actions</value></data>
+  <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
 </root>

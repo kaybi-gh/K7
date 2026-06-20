@@ -20,6 +20,7 @@ public partial class EpisodePage
     private bool _loading = true;
     private LiteSerieEpisodeDto? _previousEpisode;
     private LiteSerieEpisodeDto? _nextEpisode;
+    private List<LiteSerieEpisodeDto> _moreEpisodes = [];
 
     private string DominantColorStyle => _dominantColor is not null
         ? $"--episode-dominant-color: {_dominantColor};"
@@ -83,6 +84,7 @@ public partial class EpisodePage
         var episodeIndex = episodes.FindIndex(e => e.EpisodeNumber == EpisodeNumber);
         _previousEpisode = episodeIndex > 0 ? episodes[episodeIndex - 1] : null;
         _nextEpisode = episodeIndex < episodes.Count - 1 ? episodes[episodeIndex + 1] : null;
+        _moreEpisodes = episodes.Where(e => e.EpisodeNumber != EpisodeNumber).ToList();
 
         _loading = false;
     }
@@ -150,11 +152,51 @@ public partial class EpisodePage
         await DialogService.ShowAsync<IndexedFilesDialog>(S["IndexedVersions"], parameters, options);
     }
 
-    private static string FormatDuration(int totalSeconds)
+    private void NavigateToSerie() => NavigationManager.NavigateTo($"/series/{SerieId}");
+
+    private void NavigateToSeason() => NavigationManager.NavigateTo($"/series/{SerieId}/seasons/{SeasonNumber}");
+
+    private Task OpenOverviewDialogAsync()
     {
-        var ts = TimeSpan.FromSeconds(totalSeconds);
-        return ts.TotalHours >= 1
-            ? $"{(int)ts.TotalHours}h{ts.Minutes:00}"
-            : $"{ts.Minutes}min";
+        if (_episode is null || string.IsNullOrWhiteSpace(_episode.Overview))
+            return Task.CompletedTask;
+
+        var parameters = new K7DialogParameters<OverviewDialog>
+        {
+            { "ContentText", _episode.Overview },
+        };
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true };
+        return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
+    }
+
+    private static string FormatDuration(int totalMinutes)
+    {
+        if (totalMinutes >= 60)
+        {
+            var hours = totalMinutes / 60;
+            var mins = totalMinutes % 60;
+            return mins > 0 ? $"{hours}h{mins:00}" : $"{hours}h";
+        }
+
+        return $"{totalMinutes}min";
+    }
+
+    private int GetDisplayRuntime()
+    {
+        if (_episode?.Runtime is > 0)
+            return _episode.Runtime.Value;
+
+        if (_indexedFile?.FileMetadata is VideoFileMetadataDto video && video.Duration.TotalMinutes > 0)
+            return (int)Math.Round(video.Duration.TotalMinutes);
+
+        return 0;
+    }
+
+    private string? GetEpisodeStillUrl(LiteSerieEpisodeDto episode)
+    {
+        if (episode.StillImageId is null) return null;
+        return apiClient.GetAbsoluteUri(
+            episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
     }
 }

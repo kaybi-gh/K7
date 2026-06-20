@@ -40,8 +40,8 @@ else if (_serie is not null)
                     <h2>@_serie.Title?.ToUpper()</h2>
                 }
 
-                <div class="d-flex serie-meta" style="gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <div class="d-flex align-center" style="gap: 4px;">
+                <div class="serie-meta">
+                    <div class="serie-ratings">
                         @if (_serie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
                         {
                             <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
@@ -52,16 +52,16 @@ else if (_serie is not null)
                         }
                     </div>
 
-                    <div class="d-flex" style="gap: 4px;">
-                        @foreach (var genre in _serie.Genres ?? [])
+                    <div class="serie-genres">
+                        @foreach (var genre in (_serie.Genres ?? []).Take(2))
                         {
                             <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
                         }
                     </div>
                     @if (_serie.Studios?.Count > 0)
                     {
-                        <span class="text-caption" Style="opacity: 0.4;">|</span>
-                        <div class="d-flex" style="gap: 4px;">
+                        <span class="text-caption serie-meta-separator">|</span>
+                        <div class="serie-studios">
                             @foreach (var studio in _serie.Studios.Take(3))
                             {
                                 var s = studio;
@@ -108,19 +108,19 @@ else if (_serie is not null)
                                    OnClick="WatchAsync">@S["Play"]</K7Button>
                     </div>
 
-                    <div class="d-flex">
+                    <div class="serie-actions-secondary">
                         @if (_serie.Trailers?.Count > 0)
                         {
                             <K7IconButton Icon="@Phosphor.FilmSlate" OnClick="OpenTrailerAsync" AriaLabel="trailer" />
                         }
 
-                            <AuthorizeView Roles="User,Administrator">
-                                <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-watched" />
+                        <AuthorizeView Roles="User,Administrator">
+                            <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-watched" />
                         </AuthorizeView>
 
                         <K7Menu>
                             <ActivatorContent>
-                                <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
+                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="more-actions" />
                             </ActivatorContent>
                             <ChildContent>
                                 <AuthorizeView Roles="Administrator">
@@ -133,6 +133,14 @@ else if (_serie is not null)
                     </div>
                 </div>
             </div>
+        </div>
+
+        @if ((_serie.PersonRoles?.Count ?? 0) > 0 || _seasons.Count > 0)
+        {
+            <div class="serie-scroll-hint">
+                <K7Icon Icon="@Phosphor.CaretDown" />
+            </div>
+        }
         </div>
 
         @if (_seasons.Count > 0)
@@ -157,14 +165,6 @@ else if (_serie is not null)
                 }
             </Carousel>
         }
-
-        @if ((_serie.PersonRoles?.Count ?? 0) > 0)
-        {
-            <div class="serie-scroll-hint">
-                <K7Icon Icon="@Phosphor.CaretDown" />
-            </div>
-        }
-        </div>
 
         @if ((_serie.PersonRoles?.Count ?? 0) > 0)
         {
