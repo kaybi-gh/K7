@@ -1,0 +1,107 @@
+.history-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.history-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-4);
+}
+
+.history-user-select {
+    min-width: 180px;
+    max-width: 260px;
+}
+
+.history-layout {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.history-table-area {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 var(--space-4) var(--space-4);
+}
+
+.history-date-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    font-size: var(--text-sm);
+}
+
+.history-date-cell .text-muted {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.history-title-cell {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.history-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.history-badge--success {
+    background: color-mix(in srgb, var(--color-success) 20%, transparent);
+    color: var(--color-success);
+}
+
+.history-badge--warning {
+    background: color-mix(in srgb, var(--color-warning) 20%, transparent);
+    color: var(--color-warning);
+}
+
+.history-badge--direct {
+    background: color-mix(in srgb, var(--color-success) 20%, transparent);
+    color: var(--color-success);
+}
+
+.history-badge--transcode {
+    background: color-mix(in srgb, var(--color-error) 20%, transparent);
+    color: var(--color-error);
+}
+
+@media (max-width: 599.98px) {
+    .history-toolbar {
+        padding: var(--space-3);
+        gap: var(--space-2);
+    }
+
+    .history-user-select {
+        width: 100%;
+        max-width: none;
+    }
+
+    .history-table-area {
+        padding: 0 0 var(--space-2);
+    }
+}

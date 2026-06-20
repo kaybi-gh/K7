@@ -1,31 +1,34 @@
 @using K7.Shared.Dtos.Entities
+@inject IStringLocalizer<AdminUserLibraryExclusionsDialog> L
 
-<div class="k7-dialog-content">
-        @if (_loading)
-        {
-            <K7ProgressBar Indeterminate="true" />
-        }
-        else
-        {
-            <p class="exclusions__hint">
-                Decochez les librairies auxquelles l'utilisateur ne doit pas avoir acces.
-            </p>
+<div class="k7-dialog-content exclusions">
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else
+    {
+        <p class="exclusions__hint">@L["Hint"]</p>
+        <div class="exclusions__groups">
             @foreach (var group in _groups)
             {
                 var libs = GetLibrariesForGroup(group).ToList();
                 @if (libs.Count > 0)
                 {
-                    <span class="exclusions__group-title">@group.Title</span>
-                    <K7CheckboxList TItem="LibraryDto"
-                                    Items="libs"
-                                    IsChecked="@(lib => !_excludedIds.Contains(lib.Id))"
-                                    CheckedChanged="@(e => ToggleExclusion(e.Item.Id, !e.Checked))"
-                                    ItemLabel="@(lib => lib.Title)" />
+                    <K7Paper Outlined="true" Class="exclusions__group">
+                        <span class="exclusions__group-title">@group.Title</span>
+                        <K7CheckboxList TItem="LibraryDto"
+                                        Items="libs"
+                                        IsChecked="@(lib => !_excludedIds.Contains(lib.Id))"
+                                        CheckedChanged="@(e => ToggleExclusion(e.Item.Id, !e.Checked))"
+                                        ItemLabel="@(lib => lib.Title)" />
+                    </K7Paper>
                 }
             }
-        }
-    </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">Annuler</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit">Enregistrer</K7Button>
-    </div>
+        </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="Submit">@L["Save"]</K7Button>
+</div>

@@ -5,12 +5,12 @@
 @inject IStringLocalizer<AdminPlaybackHistoryPanel> L
 
 <div class="history-page full-bleed-page">
-    <div class="d-flex align-center flex-wrap" style="gap: var(--space-3); padding: var(--space-4);">
+    <div class="history-toolbar">
         <h5>@L["Title"]</h5>
 
         <K7Select TValue="Guid?" Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
                   ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id) is { } u ? (u.DisplayName ?? u.UserName ?? u.Email ?? L["AllUsers"]) : L["AllUsers"])"
-                  Style="min-width: 180px; max-width: 260px;" FullWidth="false">
+                  Class="history-user-select" FullWidth="false">
             @foreach (var user in _users)
             {
                 <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.DisplayName ?? user.UserName ?? user.Email)</K7SelectItem>
@@ -21,157 +21,69 @@
     </div>
 
     <div class="history-layout">
-    <div class="history-table-area">
-        <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync"
-                     @ref="_tableRef" OnRowClick="OnRowClicked">
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Width="140px">
-                <CellTemplate>
-                    <div class="history-date-cell">
-                        <span>@context.StartedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
-                        <span class="text-muted">@context.StartedAt.ToLocalTime().ToString("HH:mm")</span>
-                    </div>
-                </CellTemplate>
-            </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["User"]" Width="100px">
-                <CellTemplate>
-                    <div class="d-flex align-center" style="gap: var(--space-2);">
-                        <K7Avatar Size="sm">@((context.UserName ?? "?")[..1].ToUpperInvariant())</K7Avatar>
-                        <span class="text-sm">@(context.UserName ?? "-")</span>
-                    </div>
-                </CellTemplate>
-            </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["MediaTitle"]" Hideable="false">
-                <CellTemplate>
-                    <div class="history-title-cell">
-                        <span class="history-title">@context.MediaTitle</span>
-                        <span class="history-badge history-badge--@(context.IsCompleted ? "success" : "warning")">
-                            @(context.IsCompleted ? L["Watched"] : L["Incomplete"])
-                        </span>
-                    </div>
-                </CellTemplate>
-            </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Width="110px">
-                <CellTemplate>
-                    <span class="text-sm">@(context.MediaType ?? "-")</span>
-                </CellTemplate>
-            </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Library"]" Width="130px">
-                <CellTemplate>
-                    <span class="text-sm">@(context.LibraryName ?? "-")</span>
-                </CellTemplate>
-            </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" Width="140px" />
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Quality"]" Width="120px">
-                <CellTemplate>
-                    @if (context.StreamQuality is { } sq)
-                    {
-                        <span class="history-badge history-badge--@(sq.IsTranscode == true ? "transcode" : "direct")">
-                            @(sq.IsTranscode == true ? L["Transcode"] : L["Direct"])
-                        </span>
-                    }
-                    else
-                    {
-                        <span class="text-muted">-</span>
-                    }
-                </CellTemplate>
-            </K7DataColumn>
-            <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]" Width="90px">
-                <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
-            </K7DataColumn>
-        </K7DataTable>
+        <div class="history-table-area">
+            <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync"
+                         @ref="_tableRef" OnRowClick="OnRowClicked">
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Date"]" Width="140px">
+                    <CellTemplate>
+                        <div class="history-date-cell">
+                            <span>@context.StartedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                            <span class="text-muted">@context.StartedAt.ToLocalTime().ToString("HH:mm")</span>
+                        </div>
+                    </CellTemplate>
+                </K7DataColumn>
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["User"]" Width="100px" VisibleOnMobile="false">
+                    <CellTemplate>
+                        <div class="d-flex align-center" style="gap: var(--space-2);">
+                            <K7Avatar Size="sm">@((context.UserName ?? "?")[..1].ToUpperInvariant())</K7Avatar>
+                            <span class="text-sm">@(context.UserName ?? "-")</span>
+                        </div>
+                    </CellTemplate>
+                </K7DataColumn>
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["MediaTitle"]" Hideable="false">
+                    <CellTemplate>
+                        <div class="history-title-cell">
+                            <span class="history-title">@context.MediaTitle</span>
+                            <span class="history-badge history-badge--@(context.IsCompleted ? "success" : "warning")">
+                                @(context.IsCompleted ? L["Watched"] : L["Incomplete"])
+                            </span>
+                        </div>
+                    </CellTemplate>
+                </K7DataColumn>
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Type"]" Width="110px" VisibleOnMobile="false">
+                    <CellTemplate>
+                        <span class="text-sm">@(context.MediaType ?? "-")</span>
+                    </CellTemplate>
+                </K7DataColumn>
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Library"]" Width="130px" VisibleOnMobile="false">
+                    <CellTemplate>
+                        <span class="text-sm">@(context.LibraryName ?? "-")</span>
+                    </CellTemplate>
+                </K7DataColumn>
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Device"]" Property="@(i => i.DeviceName ?? "-")" Width="140px" VisibleOnMobile="false" />
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Quality"]" Width="120px" VisibleOnMobile="false">
+                    <CellTemplate>
+                        @if (context.StreamQuality is { } sq)
+                        {
+                            <span class="history-badge history-badge--@(sq.IsTranscode == true ? "transcode" : "direct")">
+                                @(sq.IsTranscode == true ? L["Transcode"] : L["Direct"])
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </CellTemplate>
+                </K7DataColumn>
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]" Width="90px">
+                    <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
+                </K7DataColumn>
+            </K7DataTable>
+        </div>
     </div>
-</div>
 
     @if (_selectedItem is not null)
     {
         <StreamDetailSidebar Model="BuildDetailModel(_selectedItem)" OnClose="CloseDetail" />
     }
 </div>
-
-<style>
-    .history-page {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        overflow: hidden;
-    }
-
-    .history-layout {
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .history-table-area {
-        flex: 1;
-        min-width: 0;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        padding: 0 var(--space-4) var(--space-4);
-    }
-
-    .history-date-cell {
-        display: flex;
-        flex-direction: column;
-        line-height: 1.3;
-        font-size: var(--text-sm);
-    }
-
-    .history-date-cell .text-muted {
-        font-size: 0.7rem;
-        color: var(--color-text-muted);
-    }
-
-    .history-title-cell {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-    }
-
-    .history-title {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .history-badge {
-        display: inline-flex;
-        padding: 2px 8px;
-        border-radius: var(--radius-sm);
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-
-    .history-badge--success {
-        background: color-mix(in srgb, var(--color-success) 20%, transparent);
-        color: var(--color-success);
-    }
-
-    .history-badge--warning {
-        background: color-mix(in srgb, var(--color-warning) 20%, transparent);
-        color: var(--color-warning);
-    }
-
-    .history-badge--direct {
-        background: color-mix(in srgb, var(--color-success) 20%, transparent);
-        color: var(--color-success);
-    }
-
-    .history-badge--transcode {
-        background: color-mix(in srgb, var(--color-error) 20%, transparent);
-        color: var(--color-error);
-    }
-
-    @@media (max-width: 599.98px) {
-        .history-layout {
-            padding: 0 var(--space-3) var(--space-3);
-        }
-    }
-</style>
-

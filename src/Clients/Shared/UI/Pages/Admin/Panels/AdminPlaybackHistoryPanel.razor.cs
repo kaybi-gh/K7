@@ -15,16 +15,18 @@ public partial class AdminPlaybackHistoryPanel
     private int _tableKey;
     private PlaybackHistoryItemDto? _selectedItem;
 
-    private readonly List<ButtonGroupOption<string>> _mediaTypeOptions =
-    [
-        new("", Label: "Tous"),
-        new("MusicTrack", Label: "Musique"),
-        new("Movie", Label: "Films"),
-        new("SerieEpisode", Label: "Series")
-    ];
+    private List<ButtonGroupOption<string>> _mediaTypeOptions = [];
 
     protected override async Task OnInitializedAsync()
     {
+        _mediaTypeOptions =
+        [
+            new("", Label: L["All"]),
+            new("MusicTrack", Label: L["Music"]),
+            new("Movie", Label: L["Movies"]),
+            new("SerieEpisode", Label: L["TVShows"])
+        ];
+
         try
         {
             _users = await UserAdminService.GetUsersAsync();

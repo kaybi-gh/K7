@@ -94,12 +94,56 @@ public partial class AdminDevicesPanel
 
     private static string GetDeviceIcon(DeviceType deviceType) => deviceType switch
     {
-        DeviceType.Desktop => "desktop",
-        DeviceType.Phone => "device-mobile",
-        DeviceType.Tablet => "device-tablet",
-        DeviceType.TV => "television",
-        DeviceType.Watch => "watch",
-        _ => "devices"
+        DeviceType.Desktop => Phosphor.Desktop,
+        DeviceType.Phone => Phosphor.DeviceMobile,
+        DeviceType.Tablet => Phosphor.DeviceTablet,
+        DeviceType.TV => Phosphor.Television,
+        DeviceType.Watch => Phosphor.Watch,
+        _ => Phosphor.Devices,
+    };
+
+    private static string GetClientTypeIcon(ClientType clientType) => clientType switch
+    {
+        ClientType.Native => K7Brand.Symbol,
+        ClientType.Web => Phosphor.Globe,
+        _ => Phosphor.AppWindow,
+    };
+
+    private static string GetBrowserIcon(Browser browser) => browser switch
+    {
+        Browser.Chrome => Phosphor.GoogleChromeLogo,
+        Browser.Firefox => Phosphor.Browsers,
+        Browser.Edge => Phosphor.Browsers,
+        Browser.Safari => Phosphor.AppleLogo,
+        Browser.Opera => Phosphor.Browsers,
+        _ => Phosphor.Browser,
+    };
+
+    private string GetDeviceTypeLabel(DeviceType deviceType) => deviceType switch
+    {
+        DeviceType.Desktop => L["DeviceTypeDesktop"],
+        DeviceType.Phone => L["DeviceTypePhone"],
+        DeviceType.Tablet => L["DeviceTypeTablet"],
+        DeviceType.TV => L["DeviceTypeTv"],
+        DeviceType.Watch => L["DeviceTypeWatch"],
+        _ => L["UnknownDevice"]
+    };
+
+    private string GetClientTypeLabel(ClientType clientType) => clientType switch
+    {
+        ClientType.Native => L["ClientTypeNative"],
+        ClientType.Web => L["ClientTypeWeb"],
+        _ => L["UnknownDevice"]
+    };
+
+    private static string GetBrowserLabel(Browser browser) => browser switch
+    {
+        Browser.Chrome => "Chrome",
+        Browser.Firefox => "Firefox",
+        Browser.Edge => "Edge",
+        Browser.Safari => "Safari",
+        Browser.Opera => "Opera",
+        _ => "Browser"
     };
 
     private static string GetDeviceClass(bool isCurrent, bool isFocused)

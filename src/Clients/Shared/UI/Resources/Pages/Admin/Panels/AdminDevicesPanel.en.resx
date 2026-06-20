@@ -30,4 +30,11 @@
   <data name="DeleteDeviceConfirmation" xml:space="preserve"><value>Are you sure you want to delete this device?</value></data>
   <data name="Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="DeviceTypeDesktop" xml:space="preserve"><value>Desktop</value></data>
+  <data name="DeviceTypePhone" xml:space="preserve"><value>Phone</value></data>
+  <data name="DeviceTypeTablet" xml:space="preserve"><value>Tablet</value></data>
+  <data name="DeviceTypeTv" xml:space="preserve"><value>TV</value></data>
+  <data name="DeviceTypeWatch" xml:space="preserve"><value>Watch</value></data>
+  <data name="ClientTypeNative" xml:space="preserve"><value>Native app</value></data>
+  <data name="ClientTypeWeb" xml:space="preserve"><value>Browser</value></data>
 </root>

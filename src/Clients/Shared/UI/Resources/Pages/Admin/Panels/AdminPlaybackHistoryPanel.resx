@@ -38,6 +38,8 @@
   <data name="Watched" xml:space="preserve"><value>Vu</value></data>
   <data name="Incomplete" xml:space="preserve"><value>Incomplet</value></data>
   <data name="DirectPlay" xml:space="preserve"><value>Direct Play</value></data>
+  <data name="Direct" xml:space="preserve"><value>Direct</value></data>
+  <data name="Library" xml:space="preserve"><value>Bibliotheque</value></data>
   <data name="Transcode" xml:space="preserve"><value>Transcode</value></data>
   <data name="StoppedAt" xml:space="preserve"><value>Fin</value></data>
   <data name="Resolution" xml:space="preserve"><value>Resolution</value></data>
