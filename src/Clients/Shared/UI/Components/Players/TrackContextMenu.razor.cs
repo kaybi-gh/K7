@@ -12,6 +12,9 @@ public partial class TrackContextMenu
     [Parameter, EditorRequired]
     public required AudioQueueItem Track { get; set; }
 
+    [Parameter]
+    public int? UserRating { get; set; }
+
     private bool _canCreatePlaylist;
 
     protected override async Task OnInitializedAsync()

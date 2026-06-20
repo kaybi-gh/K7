@@ -10,11 +10,14 @@
 @inject IStringLocalizer<SharedResource> S
 
 <span @onclick:stopPropagation="true">
-    <K7Menu>
+    <K7Menu Title="@L["ActionsTitle"]">
         <ActivatorContent>
-            <button type="button" class="k7-icon-btn k7-icon-btn--sm focusable" aria-label="Menu"><i class="ph ph-dots-three-vertical"></i></button>
+            <button type="button" class="k7-icon-btn k7-icon-btn--sm focusable" aria-label="@L["Menu"]"><i class="ph ph-dots-three-vertical"></i></button>
         </ActivatorContent>
         <ChildContent>
+        <div class="track-context-rating" @onclick:stopPropagation="true">
+            <RatingStars MediaId="Track.MediaId" Value="UserRating" Size="sm" />
+        </div>
         <K7MenuItem Icon="play-circle" OnClick="PlayNext">@L["PlayNext"]</K7MenuItem>
         <K7MenuItem Icon="queue" OnClick="AddToQueue">@L["AddToQueue"]</K7MenuItem>
         @if (_canCreatePlaylist)

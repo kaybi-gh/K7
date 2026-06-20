@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -24,12 +24,13 @@
   <data name="AddToPlaylist" xml:space="preserve"><value>Ajouter à une playlist</value></data>
   <data name="RadioArtist" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="RadioGenre" xml:space="preserve"><value>Radio {0}</value></data>
-  <data name="PlayNextSnackbar" xml:space="preserve"><value>« {0} » joué ensuite</value></data>
+  <data name="PlayNextSnackbar" xml:space="preserve"><value>« {0} » joue ensuite</value></data>
   <data name="AddedToQueueSnackbar" xml:space="preserve"><value>« {0} » ajouté à la queue</value></data>
   <data name="AddToPlaylistTitle" xml:space="preserve"><value>Ajouter à une playlist</value></data>
   <data name="RadioArtistSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="RadioGenreSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
-  <data name="DownloadOffline" xml:space="preserve"><value>Telecharger hors-ligne</value></data>
-  <data name="DownloadQueued" xml:space="preserve"><value>'{0}' en file d'attente</value></data>
+  <data name="DownloadOffline" xml:space="preserve"><value>Télécharger hors-ligne</value></data>
+  <data name="DownloadQueued" xml:space="preserve"><value>« {0} » en file d'attente</value></data>
+  <data name="Menu" xml:space="preserve"><value>Actions sur la piste</value></data>
+  <data name="ActionsTitle" xml:space="preserve"><value>Plus d'actions</value></data>
 </root>
-

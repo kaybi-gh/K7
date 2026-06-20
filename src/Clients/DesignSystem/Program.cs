@@ -69,8 +69,10 @@ builder.Services.AddSingleton<IPlaybackJournal, MockPlaybackJournal>();
 builder.Services.AddSingleton<ICastService, MockCastService>();
 builder.Services.AddSingleton<ICastOrchestrationService, MockCastOrchestrationService>();
 builder.Services.AddSingleton<IRemoteControlService, MockRemoteControlService>();
+builder.Services.AddSingleton<IDownloadManager, MockDownloadManager>();
 
 // Concrete services whose dependencies are satisfied by the mocks above
+builder.Services.AddSingleton<MediaCacheStore>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
 builder.Services.AddHttpClient();
 

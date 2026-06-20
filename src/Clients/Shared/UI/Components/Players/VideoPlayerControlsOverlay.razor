@@ -16,7 +16,6 @@
 @inject ICastOrchestrationService CastOrchestration
 @inject K7HubClient HubClient
 @inject K7.Clients.Shared.Interfaces.ISpatialNavService SpatialNav
-@inject IStringLocalizer<VideoPlayerControlsOverlay> L
 @inject IRemoteControlService RemoteControl
 @inject IDeviceStorageService DeviceStorage
 @inject ISyncPlayService SyncPlay
@@ -67,112 +66,7 @@
             </div>
 
             <div style="display:flex; align-items:center; flex-shrink:0;">
-                <K7Menu Class="k7-menu--upward"
-                @bind-Open="_isMenuOpen">
-                    <ActivatorContent>
-                        <K7IconButton Icon="@Phosphor.Gear" AriaLabel="Settings" />
-                    </ActivatorContent>
-                    <ChildContent>
-                        @if (PlayerService.AudioTracks.Count > 1)
-                        {
-                        <K7Menu>
-                            <ActivatorContent>
-                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.SpeakerHigh">@L["Audio"]</K7Button>
-                            </ActivatorContent>
-                            <ChildContent>
-                            @foreach (var track in PlayerService.AudioTracks)
-                            {
-                                <K7MenuItem OnClick="@(() => OnAudioTrackSelected(track))"
-                                             Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
-                                    @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
-                                    @if (audioLang is not null)
-                                    {
-                                        <span class="fi fi-@audioLang.CountryCode"></span>
-                                    }
-                                    @GetAudioTrackLabel(track)
-                                </K7MenuItem>
-                            }
-                            </ChildContent>
-                        </K7Menu>
-                        }
-
-                        @if (PlayerService.SubtitleTracks.Count > 0)
-                        {
-                        <K7Menu>
-                            <ActivatorContent>
-                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.Subtitles">@L["Subtitles"]</K7Button>
-                            </ActivatorContent>
-                            <ChildContent>
-                            <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
-                                         Icon="@(PlayerService.SelectedSubtitleTrack is null ? "check-circle" : null)">
-                                @L["SubtitlesOff"]
-                            </K7MenuItem>
-                            @foreach (var track in PlayerService.SubtitleTracks)
-                            {
-                                <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
-                                             Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? "check-circle" : null)">
-                                    @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
-                                    @if (subLang is not null)
-                                    {
-                                        <span class="fi fi-@subLang.CountryCode"></span>
-                                    }
-                                    @GetSubtitleTrackLabel(track)
-                                </K7MenuItem>
-                            }
-                            </ChildContent>
-                        </K7Menu>
-                        }
-
-                        @if (PlayerService.AvailableQualities.Count > 1)
-                        {
-                        <K7Menu>
-                            <ActivatorContent>
-                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.SlidersHorizontal">@L["Quality"]</K7Button>
-                            </ActivatorContent>
-                            <ChildContent>
-                            @foreach (var quality in PlayerService.AvailableQualities)
-                            {
-                                <K7MenuItem OnClick="@(() => OnQualitySelected(quality))"
-                                             Icon="@(PlayerService.SelectedQuality == quality ? "check-circle" : null)">
-                                    @quality.Label
-                                </K7MenuItem>
-                            }
-                            </ChildContent>
-                        </K7Menu>
-                        }
-
-                        <K7Menu>
-                            <ActivatorContent>
-                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.Gauge">@L["Speed"]</K7Button>
-                            </ActivatorContent>
-                            <ChildContent>
-                            @foreach (var speed in _playbackSpeedOptions)
-                            {
-                                <K7MenuItem OnClick="@(() => OnSpeedSelected(speed))"
-                                             Icon="@(IsCurrentSpeed(speed) ? "check-circle" : null)">
-                                    @(speed == 1.0 ? L["SpeedNormal"] : $"{speed}x")
-                                </K7MenuItem>
-                            }
-                            </ChildContent>
-                        </K7Menu>
-
-                        <K7Menu>
-                            <ActivatorContent>
-                                <K7Button Variant="text" Class="k7-menu-item" StartIcon="@Phosphor.FrameCorners">@L["AspectRatio"]</K7Button>
-                            </ActivatorContent>
-                            <ChildContent>
-                            @foreach (var mode in _aspectRatioOptions)
-                            {
-                                <K7MenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
-                                             Icon="@(PlayerService.AspectRatio == mode ? "check-circle" : null)">
-                                    @GetAspectRatioLabel(mode)
-                                </K7MenuItem>
-                            }
-                            </ChildContent>
-                        </K7Menu>
-
-                    </ChildContent>
-                </K7Menu>
+                <PlaybackSettingsMenu @ref="_playbackSettingsMenu" @bind-Open="_isMenuOpen" />
 
                         <PlayOnDevicePicker CastDeviceSelected="OnCastDeviceSelected" RemoteDeviceSelected="OnRemoteDeviceSelected" />
 
@@ -234,6 +128,7 @@
     private DeviceType _deviceType;
     private bool _showOverlay = true;
     private bool _isMenuOpen = false;
+    private PlaybackSettingsMenu? _playbackSettingsMenu;
     private bool _isMouseOverControlsBar = false;
 
     private bool IsOverlayVisible => _showOverlay || _isMenuOpen || _isMouseOverVolumeSlider;
@@ -276,9 +171,6 @@
     private bool _wasSidebarOpen;
 
     private enum SwipeSide { Left, Right }
-
-    private static readonly double[] _playbackSpeedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
-    private static readonly AspectRatioMode[] _aspectRatioOptions = [AspectRatioMode.Fit, AspectRatioMode.Fill, AspectRatioMode.Stretch];
 
     private void OnPlaybackStateChanged(PlaybackState state) => InvokeAsync(StateHasChanged);
     private void OnIsMutedChanged(bool isMuted) => InvokeAsync(StateHasChanged);
@@ -389,8 +281,12 @@
                 ResetOverlayTimeout();
                 return;
             case "Escape" or "BrowserBack" or "GoBack":
-                // Menu/submenu escape is handled by JS (navigation.js capture handler).
-                if (_isMenuOpen) return;
+                if (_isMenuOpen && _playbackSettingsMenu?.TryHandleBack() == true)
+                {
+                    StateHasChanged();
+                    return;
+                }
+
                 if (_showOverlay)
                 {
                     HideOverlay();
@@ -579,15 +475,12 @@
     {
         InvokeAsync(async () =>
         {
-            if (_isMenuOpen)
+            if (_isMenuOpen && _playbackSettingsMenu?.TryHandleBack() == true)
             {
-                try
-                {
-                    await JSRuntime.InvokeVoidAsync("SpatialNav.handleBack");
-                }
-                catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+                StateHasChanged();
                 return;
             }
+
             if (_showOverlay)
             {
                 HideOverlay();
@@ -844,106 +737,6 @@
             }
         }
         catch (TaskCanceledException) { }
-    }
-
-    private void OnSpeedSelected(double speed) => PlayerService.SetPlaybackRate(speed);
-    private bool IsCurrentSpeed(double speed) => Math.Abs(PlayerService.PlaybackRate - speed) < 0.01;
-
-    private void OnAspectRatioSelected(AspectRatioMode mode) => PlayerService.SetAspectRatioMode(mode);
-
-    private string GetAspectRatioLabel(AspectRatioMode mode) => mode switch
-    {
-        AspectRatioMode.Fit => L["AspectRatioFit"],
-        AspectRatioMode.Fill => L["AspectRatioFillCrop"],
-        AspectRatioMode.Stretch => L["AspectRatioStretch"],
-        _ => mode.ToString()
-    };
-
-    private string GetAudioTrackLabel(AudioFileTrackDto track)
-    {
-        var language = GetTranslatedLanguageName(track.Language ?? "und");
-        var channels = track.ChannelLayout?.Split('(')[0].Trim();
-        var details = !string.IsNullOrEmpty(channels)
-            ? $"{track.Codec} {channels}"
-            : track.Codec;
-
-        // Show the title tag only if it's a short meaningful label (e.g. "VFF", "Commentary")
-        // and doesn't just repeat codec/channel info or the language code
-        if (!string.IsNullOrEmpty(track.Name)
-            && !string.Equals(track.Name, track.Language, StringComparison.OrdinalIgnoreCase)
-            && !IsLanguageCode(track.Name)
-            && !track.Name.Contains(track.Codec ?? "", StringComparison.OrdinalIgnoreCase))
-        {
-            return $"{language} - {track.Name} ({details})";
-        }
-
-        return $"{language} ({details})";
-    }
-
-    private string GetSubtitleTrackLabel(SubtitleFileTrackDto track)
-    {
-        var language = GetTranslatedLanguageName(track.Language ?? "und");
-        var type = track.IsHearingImpaired
-            ? L["SubtitleTypeHearingImpaired"]
-            : track.IsForced
-                ? L["SubtitleTypeForced"]
-                : L["SubtitleTypeFull"];
-        return $"{language} - {type} ({track.Codec})";
-    }
-
-    private static string GetTranslatedLanguageName(string code)
-    {
-        if (string.IsNullOrEmpty(code) || code == "und")
-            return code;
-
-        try
-        {
-            var culture = CultureInfo.GetCultureInfo(code);
-            if (!string.IsNullOrEmpty(culture.DisplayName) && culture.DisplayName != code)
-                return char.ToUpper(culture.DisplayName[0]) + culture.DisplayName[1..];
-        }
-        catch
-        {
-            // CultureInfo doesn't recognize this code
-        }
-
-        return SupportedLanguages.GetDisplayLabel(code);
-    }
-
-    private static bool IsLanguageCode(string value)
-    {
-        return value.Length is 2 or 3
-            && value.All(c => c is >= 'a' and <= 'z');
-    }
-
-    private async Task OnAudioTrackSelected(AudioFileTrackDto track)
-    {
-        if (PlayerService.SelectedAudioTrack?.Index == track.Index)
-        {
-            return;
-        }
-
-        await PlayerService.ChangeAudioTrackAsync(track);
-    }
-
-    private async Task OnSubtitleTrackSelected(SubtitleFileTrackDto? track)
-    {
-        if (PlayerService.SelectedSubtitleTrack?.Index == track?.Index)
-        {
-            return;
-        }
-
-        await PlayerService.ChangeSubtitleTrackAsync(track);
-    }
-
-    private async Task OnQualitySelected(VideoQualityOption quality)
-    {
-        if (PlayerService.SelectedQuality == quality)
-        {
-            return;
-        }
-
-        await PlayerService.ChangeQualityAsync(quality);
     }
 
     private void TogglePlayPause()

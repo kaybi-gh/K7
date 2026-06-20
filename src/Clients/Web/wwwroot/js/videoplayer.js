@@ -141,7 +141,6 @@ window.pause = function (id) {
 
 window.stop = function (id) {
     players[id]?.pause();
-    players[id]?.currentTime(0);
 }
 
 window.changeSource = function (id, src, type, subtitleSlug) {

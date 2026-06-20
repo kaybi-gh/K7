@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -22,7 +22,6 @@
   <data name="Audio" xml:space="preserve"><value>Audio</value></data>
   <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
   <data name="SubtitlesOff" xml:space="preserve"><value>Off</value></data>
-  <data name="ForcedSuffix" xml:space="preserve"><value> (Forced)</value></data>
   <data name="SubtitleTypeFull" xml:space="preserve"><value>Full</value></data>
   <data name="SubtitleTypeForced" xml:space="preserve"><value>Forced</value></data>
   <data name="SubtitleTypeHearingImpaired" xml:space="preserve"><value>SDH</value></data>
@@ -33,5 +32,5 @@
   <data name="AspectRatioFit" xml:space="preserve"><value>Fit</value></data>
   <data name="AspectRatioFillCrop" xml:space="preserve"><value>Fill (crop)</value></data>
   <data name="AspectRatioStretch" xml:space="preserve"><value>Stretch</value></data>
+  <data name="PlaybackSettings" xml:space="preserve"><value>Playback settings</value></data>
 </root>
-

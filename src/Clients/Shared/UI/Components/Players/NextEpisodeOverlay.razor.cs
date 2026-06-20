@@ -1,9 +1,12 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
@@ -21,8 +24,9 @@ public partial class NextEpisodeOverlay : IDisposable
     [Inject] private IDeviceStorageService DeviceStorage { get; set; } = default!;
     [Inject] private PlaybackProgressTracker PlaybackProgressTracker { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
 
-    private const int AutoPlayCountdown = 15;
+    private const int AutoPlayCountdownSeconds = 15;
 
     private LiteSerieEpisodeDto? _nextEpisode;
     private string? _stillUrl;
@@ -30,14 +34,59 @@ public partial class NextEpisodeOverlay : IDisposable
     private string? _currentStillUrl;
     private bool _visible;
     private int _countdownSeconds;
+    private int _countdownDurationSeconds;
+    private bool _countdownActive;
+    private bool _countdownPaused;
     private Timer? _countdownTimer;
     private bool _disposed;
+    private bool _layerActive;
+    private ElementReference _overlayRef;
+    private DotNetObjectReference<LayerCloseCallback>? _closeCallbackRef;
     private string _behavior = "AutoPlay";
+
+    private bool ShowAutoplayProgress => DemoCountdown > 0 || (_countdownActive && _behavior == "AutoPlay");
+
+    private int CountdownDurationSeconds => DemoCountdown > 0 ? DemoCountdown : _countdownDurationSeconds;
+
+    private int DisplayCountdownSeconds => DemoCountdown > 0 ? DemoCountdown : _countdownSeconds;
+
+    private double AutoplayProgressPercent => CountdownDurationSeconds > 0
+        ? (double)DisplayCountdownSeconds / CountdownDurationSeconds * 100
+        : 0;
 
     protected override void OnInitialized()
     {
         _behavior = DeviceStorage.Get(PreferenceKeys.NEXT_EPISODE_BEHAVIOR, "AutoPlay") ?? "AutoPlay";
         PlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var overlayRendered = DemoEpisode is not null || DemoCurrentEpisode is not null || _visible;
+        if (overlayRendered)
+        {
+            _closeCallbackRef ??= DotNetObjectReference.Create(new LayerCloseCallback(() => _ = InvokeAsync(Dismiss)));
+            try
+            {
+                await SpatialNav.PushLayerAsync(_overlayRef, "overlay", new SpatialNavLayerOptions
+                {
+                    OnClose = _closeCallbackRef,
+                    FocusSelector = ".k7-btn"
+                });
+                if (!_layerActive)
+                {
+                    _layerActive = true;
+                    await SpatialNav.RefreshAsync();
+                }
+            }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException)
+            {
+            }
+        }
+        else if (_layerActive)
+        {
+            await PopLayerAsync();
+        }
     }
 
     private async void OnPlaybackStateChanged(PlaybackState state)
@@ -63,7 +112,6 @@ public partial class NextEpisodeOverlay : IDisposable
         var episodeId = PlaybackProgressTracker.CurrentMediaId;
         if (serieId is null || episodeId is null) return;
 
-        // Fetch current episode info for the left card
         try
         {
             var currentMedia = await MediaService.GetMediaAsync(episodeId.Value);
@@ -103,16 +151,42 @@ public partial class NextEpisodeOverlay : IDisposable
 
         if (_behavior == "AutoPlay")
         {
-            _countdownSeconds = AutoPlayCountdown;
-            _countdownTimer = new Timer(OnCountdownTick, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            StartAutoplayCountdown(AutoPlayCountdownSeconds);
         }
 
         await InvokeAsync(StateHasChanged);
     }
 
+    private void StartAutoplayCountdown(int seconds)
+    {
+        _countdownDurationSeconds = seconds;
+        _countdownSeconds = seconds;
+        _countdownActive = true;
+        _countdownPaused = false;
+        _countdownTimer?.Dispose();
+        _countdownTimer = new Timer(OnCountdownTick, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void OnOverlayActivity()
+    {
+        PauseCountdown();
+    }
+
+    private void PauseCountdown()
+    {
+        if (_countdownPaused || !_countdownActive)
+            return;
+
+        _countdownPaused = true;
+        _countdownTimer?.Dispose();
+        _countdownTimer = null;
+        InvokeAsync(StateHasChanged);
+    }
+
     private async void OnCountdownTick(object? state)
     {
-        if (_disposed) return;
+        if (_disposed || _countdownPaused)
+            return;
 
         _countdownSeconds--;
 
@@ -120,6 +194,7 @@ public partial class NextEpisodeOverlay : IDisposable
         {
             _countdownTimer?.Dispose();
             _countdownTimer = null;
+            _countdownActive = false;
             await InvokeAsync(async () => await PlayNextAsync());
             return;
         }
@@ -129,15 +204,19 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private Task ReplayAsync()
     {
+        PauseCountdown();
         Reset();
         PlayerService.Seek(0);
         PlayerService.Play();
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
     private async Task PlayNextAsync()
     {
         if (_nextEpisode is null) return;
+
+        PauseCountdown();
 
         var nextEpisodeId = _nextEpisode.Id;
         var serieId = PlaybackProgressTracker.CurrentSerieId;
@@ -175,6 +254,7 @@ public partial class NextEpisodeOverlay : IDisposable
 
     private async Task Dismiss()
     {
+        PauseCountdown();
         Reset();
         PlayerService.Stop();
         await PlayerService.HideAsync();
@@ -190,6 +270,26 @@ public partial class NextEpisodeOverlay : IDisposable
         _countdownTimer?.Dispose();
         _countdownTimer = null;
         _countdownSeconds = 0;
+        _countdownDurationSeconds = 0;
+        _countdownActive = false;
+        _countdownPaused = false;
+    }
+
+    private async Task PopLayerAsync()
+    {
+        if (!_layerActive)
+            return;
+
+        _layerActive = false;
+        _closeCallbackRef?.Dispose();
+        _closeCallbackRef = null;
+        try
+        {
+            await SpatialNav.PopLayerAsync(_overlayRef);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+        }
     }
 
     public void Dispose()
@@ -199,5 +299,10 @@ public partial class NextEpisodeOverlay : IDisposable
 
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         _countdownTimer?.Dispose();
+        _closeCallbackRef?.Dispose();
+        if (_layerActive)
+        {
+            _ = PopLayerAsync();
+        }
     }
 }
