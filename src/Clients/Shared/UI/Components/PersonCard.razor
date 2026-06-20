@@ -1,0 +1,22 @@
+<a class="personrole-item" href="@Href">
+    <div class="d-flex flex-col">
+        <K7Avatar Class="focusable">
+            @if (ImageUrl is not null)
+            {
+                <K7Image Src="@ImageUrl" Alt="@Alt" Fluid="true" ObjectFit="cover" loading="lazy" />
+            }
+            else
+            {
+                <K7Image Src="_content/K7.Clients.Shared.UI/images/person-placeholder.png" Alt="@Alt" Fluid="true" ObjectFit="cover" loading="lazy" />
+            }
+        </K7Avatar>
+
+        <div class="person-footer">
+            <div class="person-title"><span class="person-title-inner">@Title</span></div>
+            @if (!string.IsNullOrEmpty(Subtitle))
+            {
+                <div class="person-subtitle"><span class="person-subtitle-inner">@Subtitle</span></div>
+            }
+        </div>
+    </div>
+</a>
