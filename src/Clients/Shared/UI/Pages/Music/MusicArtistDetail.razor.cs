@@ -4,6 +4,7 @@ using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.PersonRoles;
+using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -25,6 +26,7 @@ public partial class MusicArtistDetail
     private MusicArtistDto? _artist;
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
+    private List<TrackViewModel> _topTracks = [];
     private List<TrackViewModel> _tracks = [];
     private List<LitePersonRoleDto> _members = [];
     private bool _loading = true;
@@ -59,39 +61,25 @@ public partial class MusicArtistDetail
                 })
                 .ToList();
 
-            var allTracks = albums
-                .SelectMany(a => a.Tracks ?? [])
-                .Where(t => t.IndexedFileId.HasValue)
-                .DistinctBy(t => t.Id)
+            var topTracks = await k7ServerService.GetArtistTopTracksAsync(Guid.Parse(Id));
+            _topTracks = AssignRanks(MapTracks(topTracks));
+
+            var allTracksResult = await k7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+            {
+                MediaTypes = [MediaType.MusicTrack],
+                ArtistIds = [Guid.Parse(Id)],
+                OrderBy = [MediaOrderingOption.TitleAsc],
+                PageNumber = 1,
+                PageSize = 500
+            });
+
+            _tracks = (allTracksResult?.Items ?? [])
+                .OfType<LiteMusicTrackDto>()
+                .Select(MapTrack)
                 .ToList();
 
-            _tracks = allTracks
-                .OrderBy(t => t.TrackNumber)
-                .Take(10)
-                .Select(track =>
-                {
-                    var guestNames = (track.ArtistCredits ?? [])
-                        .Where(c => c.IsGuest)
-                        .Select(c => c.ArtistName)
-                        .ToList();
-
-                    return new TrackViewModel
-                    {
-                        Id = track.Id,
-                        IndexedFileId = track.IndexedFileId,
-                        Title = track.Title ?? S["Untitled"],
-                        TrackNumber = track.TrackNumber,
-                        AlbumTitle = albums.FirstOrDefault(a => a.Tracks?.Any(t => t.Id == track.Id) == true)?.Title,
-                        FeaturedArtists = guestNames.Count > 0 ? string.Join(", ", guestNames) : null,
-                        CoverUrl = apiClient.GetAbsoluteUri(
-                            (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                                ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
-                                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
-                        Duration = track.Duration ?? 0,
-                        IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
-                    };
-                })
-                .ToList();
+            if (_topTracks.Count == 0 && _tracks.Count > 0)
+                _topTracks = AssignRanks(_tracks.Take(10));
 
             _members = (artist.PersonRoles ?? [])
                 .OfType<LiteMusicArtistRoleDto>()
@@ -103,6 +91,26 @@ public partial class MusicArtistDetail
 
         _loading = false;
     }
+
+    private List<TrackViewModel> MapTracks(IEnumerable<LiteMusicTrackDto> tracks) =>
+        tracks.Select(MapTrack).ToList();
+
+    private static List<TrackViewModel> AssignRanks(IEnumerable<TrackViewModel> tracks) =>
+        tracks.Select((track, index) => track with { Rank = index + 1 }).ToList();
+
+    private TrackViewModel MapTrack(LiteMusicTrackDto track) => new()
+    {
+        Id = track.Id,
+        IndexedFileId = track.IndexedFileId,
+        Title = track.Title ?? S["Untitled"],
+        AlbumTitle = track.AlbumTitle,
+        CoverUrl = apiClient.GetAbsoluteUri(
+            (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
+                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
+        Duration = track.Duration ?? 0,
+        IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
+    };
 
     private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<TrackViewModel> args)
     {
@@ -230,9 +238,8 @@ public partial class MusicArtistDetail
         public Guid Id { get; init; }
         public Guid? IndexedFileId { get; init; }
         public required string Title { get; init; }
-        public int? TrackNumber { get; init; }
+        public int? Rank { get; init; }
         public string? AlbumTitle { get; init; }
-        public string? FeaturedArtists { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
         public bool IsPlaying { get; init; }

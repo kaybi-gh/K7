@@ -376,6 +376,7 @@ public sealed class MockMediaService : IMediaService
     public Task<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>> GetMediaSegmentsAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<K7.Shared.Dtos.Entities.Medias.MediaSegmentDto>>([]);
     public Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(new List<LiteMediaDto>());
+    public Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LiteMusicTrackDto>>([]);
     public Task<List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default) => Task.FromResult(new List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>());
 }
 
@@ -753,4 +754,19 @@ public sealed class MockSleepTimerService : ISleepTimerService
         TimerExpired?.Clone();
         return;
     }
+}
+
+public sealed class MockDownloadManager : IDownloadManager
+{
+#pragma warning disable CS0067
+    public event Action<DownloadProgressInfo>? ProgressChanged;
+    public event Action<DownloadCompletedInfo>? DownloadCompleted;
+    public event Action<DownloadFailedInfo>? DownloadFailed;
+#pragma warning restore CS0067
+
+    public IReadOnlyList<DownloadQueueItem> Queue => [];
+
+    public Task EnqueueAsync(DownloadRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task CancelAsync(Guid downloadId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task CancelAllAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

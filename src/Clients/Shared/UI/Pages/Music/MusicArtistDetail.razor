@@ -35,8 +35,9 @@
                 </div>
 
                 <div class="artist-hero-info">
-                    <p class="text-overline artist-type-label">@L["ArtistType"]</p>
-                    <h2 class="artist-name">@_artist.Title</h2>
+                    <div class="artist-title-row">
+                        <h2 class="artist-name">@_artist.Title</h2>
+                    </div>
 
                     @if (!string.IsNullOrEmpty(_artist.Biography))
                     {
@@ -46,7 +47,7 @@
                     }
 
                     <div class="artist-actions">
-                        @if (_tracks.Count > 0)
+                        @if (_tracks.Count > 0 || _albums.Count > 0)
                         {
                             <K7Button Variant="filled"
                                        Color="primary"
@@ -61,11 +62,14 @@
                                        OnClick="ShuffleAll">
                                 @S["Shuffle"]
                             </K7Button>
-                            <DownloadAllButton Items="GetDownloadRequests()" />
+                            @if (_tracks.Count > 0)
+                            {
+                                <DownloadAllButton Items="GetDownloadRequests()" />
+                            }
                         }
-                        <K7Menu>
+                        <K7Menu Title="@L["MoreActions"]">
                             <ActivatorContent>
-                                <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
+                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
                             </ActivatorContent>
                             <ChildContent>
                                 <AuthorizeView Roles="Administrator">
@@ -77,6 +81,41 @@
                     </div>
                 </div>
             </div>
+
+            @if (_topTracks.Count > 0)
+            {
+                <div class="artist-top-tracks-section">
+                    <h6 class="section-title">@L["TopTracks"]</h6>
+                    <K7Table Items="_topTracks"
+                              TItem="TrackViewModel"
+                              OnRowClick="@(args => OnTrackClick(args))"
+                              RowClass="cursor-pointer">
+                        <HeaderContent>
+                            <th class="col-track-number">#</th>
+                            <th>@S["Title"]</th>
+                            <th class="col-duration">@S["Duration"]</th>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <td>
+                                @if (context.IsPlaying)
+                                {
+                                    <K7Icon Name="equalizer" Size="sm" Color="primary" />
+                                }
+                                else
+                                {
+                                    <span class="track-number">@context.Rank</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="@(context.IsPlaying ? "track-playing" : "")">@context.Title</span>
+                            </td>
+                            <td class="col-duration">
+                                <span class="track-duration">@FormatTime(context.Duration)</span>
+                            </td>
+                        </RowTemplate>
+                    </K7Table>
+                </div>
+            }
 
             @if (_albums.Count > 0)
             {
@@ -106,58 +145,7 @@
                 </div>
             }
 
-            @if (_tracks.Count > 0)
-            {
-                <div class="artist-scroll-hint">
-                    <K7Icon Icon="@Phosphor.CaretDown" />
-                </div>
-            }
         </div>
-
-        @if (_tracks.Count > 0)
-        {
-            <div class="artist-section artist-tracks-section">
-                <h6 class="section-title">@L["TracksSection"]</h6>
-                <K7Table Items="_tracks"
-                          TItem="TrackViewModel"
-                          OnRowClick="@(args => OnTrackClick(args))"
-                          RowClass="cursor-pointer">
-                    <HeaderContent>
-                        <th class="col-track-number">#</th>
-                        <th>@S["Title"]</th>
-                        <th class="col-album">@L["AlbumColumn"]</th>
-                        <th class="col-duration">@S["Duration"]</th>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <td>
-                            @if (context.IsPlaying)
-                            {
-                                <K7Icon Name="equalizer" Size="sm" Color="primary" />
-                            }
-                            else
-                            {
-                                <span class="track-number">@context.TrackNumber</span>
-                            }
-                        </td>
-                        <td>
-                            <div class="track-title-cell">
-                                <span class="@(context.IsPlaying ? "track-playing" : "")">@context.Title</span>
-                                @if (!string.IsNullOrEmpty(context.FeaturedArtists))
-                                {
-                                    <span class="text-caption track-artist">feat. @context.FeaturedArtists</span>
-                                }
-                            </div>
-                        </td>
-                        <td>
-                            <span class="track-album">@context.AlbumTitle</span>
-                        </td>
-                        <td class="col-duration">
-                            <span class="track-duration">@FormatTime(context.Duration)</span>
-                        </td>
-                    </RowTemplate>
-                </K7Table>
-            </div>
-        }
     </div>
 }
 else if (_loading)

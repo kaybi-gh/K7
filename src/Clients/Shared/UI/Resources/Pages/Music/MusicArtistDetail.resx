@@ -31,5 +31,7 @@
   <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance en tache de fond.</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
+  <data name="MoreActions" xml:space="preserve"><value>Plus d'actions</value></data>
+  <data name="TopTracks" xml:space="preserve"><value>Top morceaux</value></data>
 </root>
 

@@ -1041,6 +1041,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return result ?? [];
     }
 
+    public async Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<LiteMusicTrackDto>>($"api/medias/{artistId}/top-tracks", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
     public async Task<List<PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<List<PersonKnownForItemDto>>($"api/persons/{personId}/known-for", _serializerOptions, cancellationToken);
