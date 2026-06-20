@@ -8,6 +8,9 @@ public class DeviceStorageService(ISyncLocalStorageService localStorageService) 
 {
     public T? Get<T>(PreferenceKey<T> key, T? defaultValue = default)
     {
+        if (!localStorageService.ContainKey(key.Name))
+            return defaultValue;
+
         return localStorageService.GetItem<T>(key.Name);
     }
 
