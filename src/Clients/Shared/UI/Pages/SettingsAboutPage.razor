@@ -1,7 +1,7 @@
 @page "/settings/about"
 @layout SettingsLayout
-@inject IServerInfoService ServerInfoService
 @inject IStringLocalizer<SettingsAboutPage> L
+@inject IStringLocalizer<Settings> Lg
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
@@ -15,6 +15,33 @@
             <span class="about-value" title="@_serverVersion">@ServerVersionDisplay</span>
             <span class="about-label">@L["ClientVersion"]</span>
             <span class="about-value" title="@_clientVersion">@ClientVersionDisplay</span>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <h5 class="about-section-title">@L["DeviceInfo"]</h5>
+        <div class="about-version-grid">
+            <span class="about-label">@Lg["FormFactor"]</span>
+            <span class="about-value">@_deviceType</span>
+            <span class="about-label">@Lg["Hdr"]</span>
+            <span class="about-value">@_hdrSupport</span>
+        </div>
+        <div class="k7-expansion-panels mt-3">
+            <K7ExpansionPanel Text="@Lg["SupportedCodecs"]">
+                <ul>
+                    @if (_supportedMediaFormats is not null)
+                    {
+                        @foreach (var format in _supportedMediaFormats)
+                        {
+                            <li>@format.Id</li>
+                        }
+                    }
+                    else
+                    {
+                        <li>@L["LoadingCodecs"]</li>
+                    }
+                </ul>
+            </K7ExpansionPanel>
         </div>
     </section>
 

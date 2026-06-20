@@ -37,4 +37,6 @@
   <data name="CreditEfCore" xml:space="preserve"><value>Data access</value></data>
   <data name="CreditSignalR" xml:space="preserve"><value>Real-time communication</value></data>
   <data name="TmdbDisclaimer" xml:space="preserve"><value>This product uses the TMDB API but is not endorsed or certified by TMDB.</value></data>
+  <data name="DeviceInfo" xml:space="preserve"><value>Device</value></data>
+  <data name="LoadingCodecs" xml:space="preserve"><value>Loading...</value></data>
 </root>

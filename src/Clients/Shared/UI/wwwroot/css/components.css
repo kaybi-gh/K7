@@ -79,6 +79,8 @@
   flex-shrink: 0;
 }
 .k7-icon-btn:hover { background: var(--color-surface-hover); }
+.k7-icon-btn:disabled,
+.k7-icon-btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 .k7-icon-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .k7-icon-btn--sm { width: 32px; height: 32px; font-size: 1rem; }
 .k7-icon-btn--lg { width: 48px; height: 48px; font-size: 1.5rem; }
