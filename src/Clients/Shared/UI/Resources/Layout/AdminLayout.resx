@@ -20,9 +20,16 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Administration</value></data>
+  <data name="Dashboard" xml:space="preserve"><value>Tableau de bord</value></data>
+  <data name="GroupContent" xml:space="preserve"><value>Contenu</value></data>
+  <data name="GroupAccess" xml:space="preserve"><value>Accès</value></data>
+  <data name="GroupExperience" xml:space="preserve"><value>Expérience</value></data>
+  <data name="GroupActivity" xml:space="preserve"><value>Activité</value></data>
+  <data name="GroupSystem" xml:space="preserve"><value>Santé</value></data>
+  <data name="GroupFeatures" xml:space="preserve"><value>Avancé</value></data>
   <data name="General" xml:space="preserve"><value>Général</value></data>
-  <data name="Libraries" xml:space="preserve"><value>Bibliotheques</value></data>
-  <data name="LibraryGroups" xml:space="preserve"><value>Groupes de bibliotheques</value></data>
+  <data name="Libraries" xml:space="preserve"><value>Bibliothèques</value></data>
+  <data name="LibraryGroups" xml:space="preserve"><value>Groupes de bibliothèques</value></data>
   <data name="Users" xml:space="preserve"><value>Utilisateurs</value></data>
   <data name="Devices" xml:space="preserve"><value>Appareils</value></data>
   <data name="Restrictions" xml:space="preserve"><value>Restrictions</value></data>
@@ -31,9 +38,11 @@
   <data name="Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="ActiveStreams" xml:space="preserve"><value>Flux actifs</value></data>
   <data name="HomeLayout" xml:space="preserve"><value>Accueil</value></data>
-  <data name="FeatureFlags" xml:space="preserve"><value>Fonctionnalites</value></data>
-  <data name="VideoPlayer" xml:space="preserve"><value>Lecteur video</value></data>
+  <data name="FeatureFlags" xml:space="preserve"><value>Fonctionnalités</value></data>
+  <data name="VideoPlayer" xml:space="preserve"><value>Lecteur vidéo</value></data>
+  <data name="VideoPlayback" xml:space="preserve"><value>Lecture vidéo</value></data>
   <data name="TrackSelection" xml:space="preserve"><value>Audio et sous-titres</value></data>
+  <data name="Federation" xml:space="preserve"><value>Fédération</value></data>
   <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
   <data name="PlaybackHistory" xml:space="preserve"><value>Historique</value></data>
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
