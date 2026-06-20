@@ -20,6 +20,10 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>Video player</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Video playback</value></data>
+  <data name="SeekbarSection" xml:space="preserve"><value>Seek bar</value></data>
+  <data name="IntroSkipSection" xml:space="preserve"><value>Intro and outro</value></data>
+  <data name="SubtitleSection" xml:space="preserve"><value>Subtitles</value></data>
   <data name="SubtitleFontFamily" xml:space="preserve"><value>Subtitle font</value></data>
   <data name="FontDefault" xml:space="preserve"><value>Default</value></data>
   <data name="SubtitleFontSize" xml:space="preserve"><value>Subtitle font size</value></data>

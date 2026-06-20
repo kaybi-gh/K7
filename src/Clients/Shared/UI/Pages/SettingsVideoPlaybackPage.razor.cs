@@ -6,11 +6,14 @@ using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SettingsTrackSelectionPage
+public partial class SettingsVideoPlaybackPage
 {
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
+    [Inject] private IUserPreferencesService UserPreferencesService { get; set; } = default!;
+    [Inject] private ILibraryService LibraryService { get; set; } = default!;
 
+    private VideoPlayerSettingsDto? _settings;
     private TrackSelectionPreferencesDto? _preferences;
     private List<LibraryDto> _libraries = [];
     private Guid? _selectedLibraryId;
@@ -21,10 +24,12 @@ public partial class SettingsTrackSelectionPage
         try
         {
             _libraries = await LibraryService.GetLibrariesAsync();
+            _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync();
         }
         catch
         {
+            _settings = new VideoPlayerSettingsDto();
             _preferences = new TrackSelectionPreferencesDto();
         }
 
@@ -45,7 +50,21 @@ public partial class SettingsTrackSelectionPage
         }
     }
 
-    private async Task SaveAsync()
+    private async Task SaveVideoSettingsAsync()
+    {
+        if (_settings is null)
+            return;
+
+        await UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings);
+    }
+
+    private async Task ResetVideoSettingsAsync()
+    {
+        await UserPreferencesService.ResetUserVideoPlayerSettingsAsync();
+        _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
+    }
+
+    private async Task SaveTrackPreferencesAsync()
     {
         if (_preferences is null)
             return;
@@ -53,7 +72,7 @@ public partial class SettingsTrackSelectionPage
         try
         {
             await UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId);
-            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
+            Snackbar.Add(Lt["SaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
         {
@@ -61,13 +80,13 @@ public partial class SettingsTrackSelectionPage
         }
     }
 
-    private async Task ResetAsync()
+    private async Task ResetTrackPreferencesAsync()
     {
         try
         {
             await UserPreferencesService.ResetUserTrackSelectionPreferencesAsync(_selectedLibraryId);
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync(_selectedLibraryId);
-            Snackbar.Add(L["ResetSuccess"], K7Severity.Success);
+            Snackbar.Add(Lt["ResetSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
         {
