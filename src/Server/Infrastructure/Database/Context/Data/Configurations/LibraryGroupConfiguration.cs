@@ -22,6 +22,10 @@ public class LibraryGroupConfiguration : IEntityTypeConfiguration<LibraryGroup>
             .HasMaxLength(1000);
 
         builder
+            .Property(g => g.CardColor)
+            .HasMaxLength(7);
+
+        builder
             .HasMany(g => g.Libraries)
             .WithOne(l => l.LibraryGroup)
             .HasForeignKey(l => l.LibraryGroupId)

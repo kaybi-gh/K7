@@ -14,6 +14,7 @@ public static class LibraryGroupMappings
             MediaType = domain.MediaType,
             Description = domain.Description,
             Icon = domain.Icon,
+            CardColor = domain.CardColor,
             CoverPictureId = domain.CoverPicture?.Id,
             CoverDominantColor = domain.CoverPicture?.DominantColor,
             LibraryIds = domain.Libraries.Select(l => l.Id).ToList()

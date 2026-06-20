@@ -1,10 +1,10 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 
@@ -21,6 +21,7 @@ public partial class EditLibraryGroupDialog
     private string? _title;
     private string? _description;
     private string? _icon;
+    private string _cardColor = "#781e1e";
     private CoverPickerResult? _pendingCover;
     private Guid? _currentCoverPictureId;
     private bool _removeCover;
@@ -45,13 +46,24 @@ public partial class EditLibraryGroupDialog
         }
     }
 
+    private string? PreviewDominantColor =>
+        PreviewImageUrl is not null && !_removeCover ? Group.CoverDominantColor : null;
+
     protected override void OnInitialized()
     {
         _title = Group.Title;
         _description = Group.Description;
         _icon = Group.Icon;
         _currentCoverPictureId = Group.CoverPictureId;
-        _previewColors = GetCardColors(Group.MediaType);
+        _cardColor = Group.CardColor ?? LibraryGroupCardColors.GetDefaultHex(Group.MediaType);
+        _previewColors = LibraryGroupCardColors.GetRgbaColors(Group.MediaType, Group.CardColor);
+    }
+
+    private async Task OnCardColorChangedAsync(string value)
+    {
+        _cardColor = value;
+        _previewColors = LibraryGroupCardColors.ToRgba(value);
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task OpenIconPickerAsync()
@@ -105,11 +117,17 @@ public partial class EditLibraryGroupDialog
         _isSubmitting = true;
         try
         {
+            var defaultColor = LibraryGroupCardColors.GetDefaultHex(Group.MediaType);
+            var cardColor = string.Equals(_cardColor, defaultColor, StringComparison.OrdinalIgnoreCase)
+                ? null
+                : _cardColor;
+
             await LibraryService.UpdateLibraryGroupAsync(Group.Id, new UpdateLibraryGroupRequest
             {
                 Title = _title,
                 Description = _description,
-                Icon = _icon
+                Icon = _icon,
+                CardColor = cardColor ?? string.Empty
             });
 
             if (_pendingCover?.SourcePictureId.HasValue == true)
@@ -140,13 +158,5 @@ public partial class EditLibraryGroupDialog
         LibraryMediaType.Serie => "television",
         LibraryMediaType.Music => "music-notes",
         _ => "folder"
-    };
-
-    private static (string GradientStart, string GradientEnd, string IconColor) GetCardColors(LibraryMediaType mediaType) => mediaType switch
-    {
-        LibraryMediaType.Movie => ("rgba(120,30,30,0.85)", "rgba(20,10,10,0.9)", "rgba(180,40,40,0.6)"),
-        LibraryMediaType.Serie => ("rgba(20,60,120,0.85)", "rgba(10,15,40,0.9)", "rgba(30,80,160,0.6)"),
-        LibraryMediaType.Music => ("rgba(80,20,100,0.85)", "rgba(15,10,30,0.9)", "rgba(110,30,140,0.6)"),
-        _ => ("rgba(30,60,40,0.85)", "rgba(10,20,15,0.9)", "rgba(40,80,55,0.6)")
     };
 }

@@ -29,4 +29,8 @@
   <data name="CoverLabel" xml:space="preserve"><value>Cover image</value></data>
   <data name="CoverNone" xml:space="preserve"><value>None</value></data>
   <data name="CoverUpload" xml:space="preserve"><value>Upload</value></data>
+  <data name="CoverChange" xml:space="preserve"><value>Choose</value></data>
+  <data name="RemoveCover" xml:space="preserve"><value>Remove</value></data>
+  <data name="ColorLabel" xml:space="preserve"><value>Card color</value></data>
+  <data name="PreviewLabel" xml:space="preserve"><value>Preview</value></data>
 </root>

@@ -15,6 +15,7 @@ public partial class AdminLibraryGroupsPanel
 
     private bool _isLoading = true;
     private List<LibraryGroupDto>? _groups;
+    private List<LibraryDto> _libraries = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -24,7 +25,11 @@ public partial class AdminLibraryGroupsPanel
     private async Task LoadGroups()
     {
         _isLoading = true;
-        _groups = await LibraryService.GetLibraryGroupsAsync();
+        var groupsTask = LibraryService.GetLibraryGroupsAsync();
+        var librariesTask = LibraryService.GetLibrariesAsync();
+        await Task.WhenAll(groupsTask, librariesTask);
+        _groups = await groupsTask;
+        _libraries = await librariesTask;
         _isLoading = false;
     }
 
@@ -82,6 +87,16 @@ public partial class AdminLibraryGroupsPanel
         LibraryMediaType.Music => Phosphor.MusicNote,
         _ => Phosphor.Folder
     };
+
+    private static string GetGroupIcon(LibraryGroupDto group) =>
+        string.IsNullOrWhiteSpace(group.Icon) ? GetMediaTypeIcon(group.MediaType) : group.Icon;
+
+    private List<string> GetLibraryTitles(LibraryGroupDto group) =>
+        _libraries
+            .Where(l => group.LibraryIds.Contains(l.Id))
+            .Select(l => l.Title)
+            .OrderBy(t => t, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
 
     private string GetMediaTypeLabel(LibraryMediaType type) => type switch
     {

@@ -17,16 +17,9 @@
     <GridTemplate Context="group">
         <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
             <div class="group-card__header">
-                @if (group.CoverPictureId.HasValue)
-                {
-                    <K7Image Src="@($"/api/metadata-pictures/{group.CoverPictureId.Value}?size=Small")" Alt="@group.Title" Width="64" Class="group-card__cover" />
-                }
-                else
-                {
-                    <div class="group-card__cover-placeholder" style="@(group.CoverDominantColor is not null ? $"background:{group.CoverDominantColor};" : "")">
-                        <K7Icon Icon="@GetMediaTypeIcon(group.MediaType)" Size="lg" />
-                    </div>
-                }
+                <div class="group-card__cover-placeholder">
+                    <K7Icon Icon="@GetGroupIcon(group)" Size="lg" />
+                </div>
                 <div class="group-card__title">
                     <h6>@group.Title</h6>
                     <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(group.MediaType)</K7Chip>
@@ -37,10 +30,16 @@
                 <p class="group-card__description">@group.Description</p>
             }
             <div class="group-card__info">
-                <span>@string.Format(L["LibraryCount"], group.LibraryIds.Count)</span>
-                @if (!string.IsNullOrWhiteSpace(group.Icon))
+                @{
+                    var libraryTitles = GetLibraryTitles(group);
+                }
+                @foreach (var libraryTitle in libraryTitles)
                 {
-                    <span>@L["Icon"]: @group.Icon</span>
+                    <span>@libraryTitle</span>
+                }
+                @if (libraryTitles.Count == 0)
+                {
+                    <span>@L["NoLibraries"]</span>
                 }
             </div>
             <div style="flex:1"></div>

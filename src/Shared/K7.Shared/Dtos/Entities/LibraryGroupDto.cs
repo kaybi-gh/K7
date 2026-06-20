@@ -9,6 +9,7 @@ public sealed record LibraryGroupDto
     public required LibraryMediaType MediaType { get; init; }
     public string? Description { get; init; }
     public string? Icon { get; init; }
+    public string? CardColor { get; init; }
     public Guid? CoverPictureId { get; init; }
     public string? CoverDominantColor { get; init; }
     public IReadOnlyList<Guid> LibraryIds { get; init; } = [];
