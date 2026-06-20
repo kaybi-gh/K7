@@ -34,13 +34,13 @@
                    value="@Value"
                    @oninput="OnInput"
                    @onchange="OnChange" />
-            @if (!string.IsNullOrEmpty(AdornmentIcon))
+            @if (!string.IsNullOrEmpty(AdornmentIcon) && !(Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString())))
             {
                 <K7IconButton Icon="@AdornmentIcon" Class="k7-input-adornment" OnClick="OnAdornmentClick" />
             }
             @if (Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString()))
             {
-                <K7IconButton Icon="@Phosphor.X" Class="k7-input-adornment" OnClick="ClearAsync" AriaLabel="clear" />
+                <K7IconButton Icon="@Phosphor.X" Class="k7-input-adornment k7-input-clear" OnClick="ClearAsync" AriaLabel="clear" />
             }
         </div>
     }

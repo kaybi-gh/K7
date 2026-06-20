@@ -12,5 +12,6 @@ public partial class K7Image
     [Parameter] public string Class { get; set; } = "";
     [Parameter] public string Style { get; set; } = "";
     [Parameter] public string Loading { get; set; } = "lazy";
+    [Parameter] public bool Fluid { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
 }

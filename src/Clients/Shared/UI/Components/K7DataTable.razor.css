@@ -128,8 +128,21 @@
 }
 
 @media (max-width: 599.98px) {
-    [data-mobile-hide="True"] {
-        display: none;
+    .k7-data-table-el th[data-mobile-hide="True"],
+    .k7-data-table-el th[data-mobile-hide="true"],
+    .k7-data-table-el td[data-mobile-hide="True"],
+    .k7-data-table-el td[data-mobile-hide="true"] {
+        display: none !important;
+    }
+
+    .k7-data-table-scroll {
+        overflow-x: auto;
+        padding: 0;
+    }
+
+    .k7-data-table-el th,
+    .k7-data-table-el td {
+        padding: var(--space-2);
     }
 }
 

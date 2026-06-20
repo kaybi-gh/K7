@@ -9,7 +9,7 @@
     }
     @if (_open)
     {
-        <div class="k7-backdrop" @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
+        <div class="k7-backdrop" @ref="_backdrop" @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
     }
     <div class="k7-select-wrap @(_open ? "k7-select-wrap--open" : "")" @ref="_root">
         <button type="button"
@@ -40,7 +40,7 @@
             }
             <K7Icon Icon="@Phosphor.CaretDown" Class="k7-select-icon"></K7Icon>
         </button>
-        <div class="k7-select-dropdown" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true"
+        <div class="k7-select-dropdown @(_open ? "k7-select-dropdown--open" : "")" role="listbox" @ref="_dropdown" @onclick:stopPropagation="true"
              data-sn-layer="@(_open ? "popover" : null)">
             <CascadingValue Value="this" IsFixed="true">
                 @ChildContent

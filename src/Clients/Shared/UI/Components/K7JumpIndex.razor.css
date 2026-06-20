@@ -41,6 +41,18 @@
     border-radius: var(--radius-xs);
 }
 
+@media (min-width: 600px) {
+    .k7-jump-index {
+        right: var(--space-4);
+    }
+}
+
+@media (max-width: 599.98px) {
+    .k7-jump-index {
+        right: var(--space-2);
+    }
+}
+
 .k7-jump-index--active .k7-jump-index-item--active {
     background: var(--color-accent);
     color: var(--color-on-accent);

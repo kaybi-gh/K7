@@ -27,6 +27,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
     private ElementReference _root;
     private ElementReference _button;
     private ElementReference _dropdown;
+    private ElementReference _backdrop;
     private DotNetObjectReference<LayerCloseCallback>? _closeCallbackRef;
     private readonly List<SelectItemRegistration<TValue>> _items = [];
 
@@ -92,6 +93,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
         _closeCallbackRef = DotNetObjectReference.Create(new LayerCloseCallback(OnLayerClosed));
         try
         {
+            await JS.InvokeVoidAsync("K7.attachSelectPortal", _root, _dropdown, _backdrop);
             await JS.InvokeVoidAsync("K7.positionSelectDropdown", _button, _dropdown);
             await SpatialNav.PushLayerAsync(_dropdown, "popover", new SpatialNavLayerOptions
             {
@@ -109,6 +111,7 @@ public partial class K7Select<TValue> : IAsyncDisposable
         _open = false;
         try
         {
+            await JS.InvokeVoidAsync("K7.detachSelectPortal", _root, _dropdown, _backdrop);
             await SpatialNav.PopLayerAsync(_dropdown);
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
@@ -121,6 +124,14 @@ public partial class K7Select<TValue> : IAsyncDisposable
     {
         if (!_open) return;
         _open = false;
+        try
+        {
+            await JS.InvokeVoidAsync("K7.detachSelectPortal", _root, _dropdown, _backdrop);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+        }
+
         StateHasChanged();
     }
 
@@ -128,7 +139,11 @@ public partial class K7Select<TValue> : IAsyncDisposable
     {
         if (_open)
         {
-            try { await SpatialNav.PopLayerAsync(_dropdown); }
+            try
+            {
+                await JS.InvokeVoidAsync("K7.detachSelectPortal", _root, _dropdown, _backdrop);
+                await SpatialNav.PopLayerAsync(_dropdown);
+            }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
         _closeCallbackRef?.Dispose();
