@@ -2,12 +2,9 @@
 @inject IStringLocalizer<PlaybackHistory> L
 
 <div class="history-page">
-    <div class="d-flex align-center gap-2 pa-4" style="flex-wrap: wrap;">
-        <h5 class="mr-4">@L["PageTitle"]</h5>
-        <K7Chip Value="@("")" Variant="@(_selectedMediaType == "" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("")'>@L["All"]</K7Chip>
-        <K7Chip Value="@("3")" Variant="@(_selectedMediaType == "3" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("3")'>@L["Music"]</K7Chip>
-        <K7Chip Value="@("1")" Variant="@(_selectedMediaType == "1" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("1")'>@L["Movies"]</K7Chip>
-        <K7Chip Value="@("5")" Variant="@(_selectedMediaType == "5" ? "filled" : "outlined")" Color="primary" OnClick='() => OnMediaTypeChanged("5")'>@L["TVShows"]</K7Chip>
+    <div class="history-toolbar">
+        <h5 class="history-title-heading">@L["PageTitle"]</h5>
+        <K7ButtonGroup TValue="string" Options="_mediaTypeOptions" Value="_selectedMediaType" ValueChanged="OnMediaTypeChanged" AriaLabel="@L["PageTitle"]" />
     </div>
 
     <div class="history-table-area">

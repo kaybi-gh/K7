@@ -1,3 +1,4 @@
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Playlists;
@@ -13,6 +14,7 @@ public partial class MySpacePlaylistsPage
     private bool _loading = true;
     private bool _canCreate;
     private MediaType? _mediaTypeFilter;
+    private List<ButtonGroupOption<MediaType?>> _mediaTypeOptions = [];
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -20,6 +22,14 @@ public partial class MySpacePlaylistsPage
 
     protected override async Task OnInitializedAsync()
     {
+        _mediaTypeOptions =
+        [
+            new(null, Label: L["All"]),
+            new(MediaType.MusicTrack, Label: L["Music"]),
+            new(MediaType.Movie, Label: L["FilterMovies"]),
+            new(MediaType.SerieEpisode, Label: L["TVShows"])
+        ];
+
         _canCreate = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         await LoadPlaylistsAsync();
     }

@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.Services;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Components;
 
@@ -9,6 +10,7 @@ public partial class SettingsHiddenPage
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<MediaCardViewModel> _items = [];
@@ -36,6 +38,7 @@ public partial class SettingsHiddenPage
         {
             await UserAdminService.ToggleMediaExclusionAsync(Guid.Parse(item.Id));
             _items.Remove(item);
+            CacheStore.InvalidateHomeFeed();
             Snackbar.Add(string.Format(S["Unhidden"], item.Title), K7Severity.Success);
         }
         catch (Exception ex)

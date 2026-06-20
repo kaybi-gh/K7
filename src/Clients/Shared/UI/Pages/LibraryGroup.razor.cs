@@ -28,12 +28,11 @@ public partial class LibraryGroup : IDisposable
     private LibraryMediaType? _libraryMediaType;
     private IReadOnlyList<Guid>? _libraryIds;
     private List<MediaType> _availableMediaTypes = [];
+    private List<ButtonGroupOption<MediaType>> _mediaTypeOptions = [];
     private MediaType _selectedMediaType;
-    private string? _searchText;
     private MediaOrderingOption _selectedSort = MediaOrderingOption.TitleAsc;
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
-    private Timer? _searchDebounce;
 
     private static readonly List<MediaOrderingOption> SortOptions =
     [
@@ -50,7 +49,6 @@ public partial class LibraryGroup : IDisposable
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
-        _searchText = null;
         _selectedMediaType = default;
 
         var groupId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
@@ -77,6 +75,10 @@ public partial class LibraryGroup : IDisposable
             LibraryMediaType.Music => MediaType.MusicArtist,
             _ => _availableMediaTypes.Count > 0 ? _availableMediaTypes[0] : default
         };
+
+        _mediaTypeOptions = _availableMediaTypes
+            .Select(mt => new ButtonGroupOption<MediaType>(mt, Label: GetMediaTypeLabel(mt)))
+            .ToList();
 
         _selectedSort = MediaOrderingOption.TitleAsc;
         _activeSortKey = "title";
@@ -156,7 +158,6 @@ public partial class LibraryGroup : IDisposable
                     LibraryIds = Guid.TryParse(Id, out var parsed) ? [parsed] : null,
                     MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
                     OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
-                    SearchText = _searchText,
                     PageNumber = page,
                     PageSize = PageSize
                 };
@@ -196,7 +197,6 @@ public partial class LibraryGroup : IDisposable
         LibraryIds = _libraryIds?.ToArray(),
         MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
         OrderBy = [_selectedSort],
-        SearchText = _searchText,
         PageNumber = pageNumber,
         PageSize = pageSize
     };
@@ -206,22 +206,7 @@ public partial class LibraryGroup : IDisposable
         if (value == default || value == _selectedMediaType) return;
 
         _selectedMediaType = value;
-        _searchText = null;
         await RefreshAllAsync();
-    }
-
-    private void OnSearchTextChanged(string? value)
-    {
-        _searchDebounce?.Dispose();
-        _searchDebounce = new Timer(async _ =>
-        {
-            await InvokeAsync(async () =>
-            {
-                _searchText = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-                await RefreshAllAsync();
-                StateHasChanged();
-            });
-        }, null, 300, Timeout.Infinite);
     }
 
     private async Task OnSortChanged(MediaOrderingOption value)
@@ -444,6 +429,5 @@ public partial class LibraryGroup : IDisposable
     public void Dispose()
     {
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
-        _searchDebounce?.Dispose();
     }
 }

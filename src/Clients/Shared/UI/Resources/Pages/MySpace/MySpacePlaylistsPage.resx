@@ -21,6 +21,9 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Mes playlists</value></data>
   <data name="All" xml:space="preserve"><value>Toutes</value></data>
+  <data name="Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="FilterMovies" xml:space="preserve"><value>Films</value></data>
+  <data name="TVShows" xml:space="preserve"><value>S&#233;ries</value></data>
   <data name="New" xml:space="preserve"><value>Nouvelle playlist</value></data>
   <data name="SmartPlaylist" xml:space="preserve"><value>Smart Playlist</value></data>
   <data name="None" xml:space="preserve"><value>Aucune playlist</value></data>

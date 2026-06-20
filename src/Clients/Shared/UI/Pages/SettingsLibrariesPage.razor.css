@@ -1,0 +1,48 @@
+.settings-libraries {
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.settings-libraries__description {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.settings-libraries__empty {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.settings-libraries__groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+::deep .settings-libraries__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+}
+
+.settings-libraries__group-title {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+::deep .settings-libraries__group .k7-checkbox-list {
+    max-height: none;
+}
+
+@media (max-width: 599.98px) {
+    .settings-libraries {
+        padding: 0;
+    }
+}

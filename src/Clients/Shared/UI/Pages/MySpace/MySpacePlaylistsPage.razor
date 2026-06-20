@@ -19,30 +19,7 @@
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
         <div class="flex-1"></div>
-        <K7Chip Value="@((MediaType?)null)"
-                 Variant="@(_mediaTypeFilter == null ? "filled" : "outlined")"
-                 Color="primary"
-                 OnClick="@(() => SetMediaTypeFilter(null))">
-            @L["All"]
-        </K7Chip>
-        <K7Chip Value="@MediaType.MusicTrack"
-                 Variant="@(_mediaTypeFilter == MediaType.MusicTrack ? "filled" : "outlined")"
-                 Color="primary"
-                 OnClick="@(() => SetMediaTypeFilter(MediaType.MusicTrack))">
-            <K7Icon Icon="@Phosphor.MusicNote" />
-        </K7Chip>
-        <K7Chip Value="@MediaType.Movie"
-                 Variant="@(_mediaTypeFilter == MediaType.Movie ? "filled" : "outlined")"
-                 Color="primary"
-                 OnClick="@(() => SetMediaTypeFilter(MediaType.Movie))">
-            <K7Icon Icon="@Phosphor.FilmStrip" />
-        </K7Chip>
-        <K7Chip Value="@MediaType.SerieEpisode"
-                 Variant="@(_mediaTypeFilter == MediaType.SerieEpisode ? "filled" : "outlined")"
-                 Color="primary"
-                 OnClick="@(() => SetMediaTypeFilter(MediaType.SerieEpisode))">
-            <K7Icon Icon="@Phosphor.Television" />
-        </K7Chip>
+        <K7ButtonGroup TValue="MediaType?" Options="_mediaTypeOptions" Value="_mediaTypeFilter" ValueChanged="SetMediaTypeFilter" AriaLabel="@L["PageTitle"]" />
         <K7Menu>
             <ActivatorContent>
                 <K7Button Variant="filled" Color="primary" StartIcon="plus" Disabled="@(!_canCreate)">@L["New"]</K7Button>
@@ -61,39 +38,37 @@
         </div>
     </EmptyContent>
     <GridTemplate Context="playlist">
-        <div class="k7-card k7-card--outlined playlist-card" tabindex="0"
-             @onclick="() => GoToPlaylist(playlist)"
-             @onkeydown="(e) => OnPlaylistKeyDown(e, playlist)"
-             Style="cursor: pointer;">
-            <div class="k7-card-content">
-                <div class="d-flex flex-col">
-                    @if (playlist.CoverPicture is not null)
-                    {
-                        <K7Image Src="@GetCoverUrl(playlist)"
-                                  Width="120"
-                                  ObjectFit="cover"
-                                  Class="rounded"
-                                  loading="lazy" />
-                    }
-                    else
-                    {
-                        <div class="playlist-cover-placeholder">
-                            <K7Icon Name="@(playlist.IsSmartPlaylist ? "sparkle" : "queue")"
-                                     Style="font-size: 48px; opacity: 0.3;" />
-                        </div>
-                    }
-                    <div class="d-flex align-center">
-                        <p class="text-subtitle1 playlist-title text-center">@playlist.Title</p>
-                        @if (playlist.IsSmartPlaylist)
-                        {
-                            <K7Icon Name="sparkle" Size="sm" Color="secondary" />
-                        }
+        <K7Paper Outlined="true" Class="playlist-card" tabindex="0" role="button"
+                 @onclick="() => GoToPlaylist(playlist)"
+                 @onkeydown="(e) => OnPlaylistKeyDown(e, playlist)"
+                 Style="cursor: pointer;">
+            <div class="d-flex flex-col">
+                @if (playlist.CoverPicture is not null)
+                {
+                    <K7Image Src="@GetCoverUrl(playlist)"
+                              Width="120"
+                              ObjectFit="cover"
+                              Class="rounded"
+                              loading="lazy" />
+                }
+                else
+                {
+                    <div class="playlist-cover-placeholder">
+                        <K7Icon Name="@(playlist.IsSmartPlaylist ? "sparkle" : "queue")"
+                                 Style="font-size: 48px; opacity: 0.3;" />
                     </div>
-                    <span class="text-caption" Color="secondary">
-                        @playlist.ItemCount @GetItemLabel(playlist.MediaType)
-                    </span>
+                }
+                <div class="d-flex align-center">
+                    <p class="text-subtitle1 playlist-title text-center">@playlist.Title</p>
+                    @if (playlist.IsSmartPlaylist)
+                    {
+                        <K7Icon Name="sparkle" Size="sm" Color="secondary" />
+                    }
                 </div>
+                <span class="text-caption" Color="secondary">
+                    @playlist.ItemCount @GetItemLabel(playlist.MediaType)
+                </span>
             </div>
-        </div>
+        </K7Paper>
     </GridTemplate>
 </BrowseView>
