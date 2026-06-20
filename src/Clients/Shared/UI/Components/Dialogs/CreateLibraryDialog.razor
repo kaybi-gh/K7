@@ -132,6 +132,13 @@
                     <K7Switch @bind-Value="_triggerIndexing" />
                     <label class="text-sm ml-2">@L["AutoIndex"]</label>
                 </div>
+
+                <LibraryProcessingSettingsSection MediaType="_selectedMediaType"
+                    @bind-IntroDetectionEnabled="_introDetectionEnabled"
+                    @bind-SeekbarThumbnailGenerationEnabled="_seekbarThumbnailGenerationEnabled"
+                    @bind-MusicAudioAnalysisEnabled="_musicAudioAnalysisEnabled"
+                    @bind-TranscodingEnabled="_transcodingEnabled"
+                    @bind-TransmuxingEnabled="_transmuxingEnabled" />
             </div>
         }
 

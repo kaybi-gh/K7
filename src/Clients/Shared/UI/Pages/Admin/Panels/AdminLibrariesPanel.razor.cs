@@ -165,6 +165,7 @@ public partial class AdminLibrariesPanel
         {
             { x => x.LibraryId, library.Id },
             { x => x.Title, library.Title },
+            { x => x.MediaType, library.MediaType },
             { x => x.AvailableProviders, providers },
             { x => x.SelectedProvider, library.MetadataProviderName },
             { x => x.MetadataRefreshIntervalDays, library.MetadataRefreshIntervalDays },
@@ -172,7 +173,12 @@ public partial class AdminLibrariesPanel
             { x => x.MetadataFallbackLanguage, library.MetadataFallbackLanguage },
             { x => x.IsFederated, library.PeerServerId is not null },
             { x => x.AvailableGroups, compatibleGroups },
-            { x => x.SelectedGroupId, library.LibraryGroupId }
+            { x => x.SelectedGroupId, library.LibraryGroupId },
+            { x => x.IntroDetectionEnabled, library.IntroDetectionEnabled },
+            { x => x.SeekbarThumbnailGenerationEnabled, library.SeekbarThumbnailGenerationEnabled },
+            { x => x.MusicAudioAnalysisEnabled, library.MusicAudioAnalysisEnabled },
+            { x => x.TranscodingEnabled, library.TranscodingEnabled },
+            { x => x.TransmuxingEnabled, library.TransmuxingEnabled }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
