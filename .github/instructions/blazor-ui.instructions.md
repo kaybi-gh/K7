@@ -76,4 +76,19 @@ When building new reusable components, wrap K7 primitives:
 - **Mandatory Translations**: Every new label, text, or user-facing string in a component or page MUST be localized.
 - Do not hardcode any text strings in the .razor or .cs files.
 - Use the IStringLocalizer service (or equivalent localization mechanism used in K7) to retrieve translated strings from .resx resources.
-- When creating a new component or page, ensure its associated resource files (e.g., en, default) are updated with the new required keys.
+- When creating a new component or page, ensure its associated resource files are updated: `MyComponent.resx` (French default) and `MyComponent.en.resx` (English).
+
+### French default locale (`.resx`)
+
+- Files without the `.en` suffix are the **French** UI strings (project default culture).
+- Use **proper French spelling and diacritics** in `<value>` text: accents, cedilla, apostrophes (`Préférences`, `Bibliothèque`, `Échec`, `À propos`, etc.).
+- The ASCII-only punctuation rule in C# does **not** apply to localized French strings in `.resx`.
+- Keep **resource keys** ASCII and stable (`name="Federation"`, not `name="Fédération"`).
+- Do not strip accents to "simplify" French copy; English lives in `.en.resx`.
+- Preserve placeholders (`{0}`, `{{variable}}`) and technical tokens (`PIN`, `Wi-Fi`, URL paths like `/media/movies`) unchanged.
+- Distinguish verb *avoir* (`a`) from preposition *à*, and noun forms (`partages`) from adjectives (`partagés`).
+
+### Bulk accent maintenance
+
+- Prefer `scripts/fix-french-resx-accents.py` (UTF-8 safe) or edit `.resx` directly.
+- On Windows PowerShell, if strings show mojibake (`TÃ©lÃ©chargement`), run `scripts/fix-resx-mojibake.ps1` after bulk replacements.
