@@ -1,0 +1,60 @@
+.dashboard-disk {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.dashboard-disk h6 {
+    margin: 0;
+}
+
+.dashboard-disk__empty {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    padding: var(--space-2) 0;
+}
+
+.dashboard-disk__volumes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-3);
+}
+
+.dashboard-disk-volume {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+}
+
+.dashboard-disk-volume__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.dashboard-disk-volume__label {
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.dashboard-disk-volume__stats {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+}
+
+.dashboard-disk-volume__bar {
+    height: 6px;
+}
+
+.dashboard-disk-volume--warning .k7-progress-bar {
+    background: var(--color-warning);
+}
+
+.dashboard-disk-volume--critical .k7-progress-bar {
+    background: var(--color-error);
+}
+
+.dashboard-disk-volume__free {
+    color: var(--color-text-muted);
+}

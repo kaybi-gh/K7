@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Title" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="ActiveStreamsKpi" xml:space="preserve"><value>Active streams</value></data>
+  <data name="OnlineUsersKpi" xml:space="preserve"><value>Online users</value></data>
+  <data name="DiskSpaceTitle" xml:space="preserve"><value>Disk space</value></data>
+  <data name="DiskVolumeUsage" xml:space="preserve"><value>{0} GB used / {1} GB</value></data>
+  <data name="DiskVolumeFree" xml:space="preserve"><value>{0} GB free ({1}%)</value></data>
+  <data name="NoDiskVolumesYet" xml:space="preserve"><value>No volumes detected</value></data>
+  <data name="DiagnosticErrorsKpi" xml:space="preserve"><value>Diagnostic errors</value></data>
+  <data name="BackgroundTasksKpi" xml:space="preserve"><value>Active tasks</value></data>
+  <data name="ViewStreams" xml:space="preserve"><value>View streams</value></data>
+  <data name="ViewDiagnostics" xml:space="preserve"><value>View diagnostics</value></data>
+  <data name="ViewTasks" xml:space="preserve"><value>View tasks</value></data>
+  <data name="ServerHealthTitle" xml:space="preserve"><value>Server health</value></data>
+  <data name="CpuUsage" xml:space="preserve"><value>CPU (%)</value></data>
+  <data name="MemoryUsage" xml:space="preserve"><value>RAM (%)</value></data>
+  <data name="NetworkThroughput" xml:space="preserve"><value>Network (Mbps)</value></data>
+  <data name="NoMetricsYet" xml:space="preserve"><value>Waiting for metrics...</value></data>
+  <data name="QuickLinksTitle" xml:space="preserve"><value>Quick links</value></data>
+  <data name="QuickLinkDiagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="QuickLinkTasks" xml:space="preserve"><value>Background tasks</value></data>
+  <data name="QuickLinkStats" xml:space="preserve"><value>Statistics</value></data>
+  <data name="GcHeap" xml:space="preserve"><value>GC heap: {0} MB</value></data>
+  <data name="ThreadCount" xml:space="preserve"><value>Threads: {0}</value></data>
+</root>

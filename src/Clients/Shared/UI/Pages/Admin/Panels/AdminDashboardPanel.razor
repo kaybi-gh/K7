@@ -1,0 +1,43 @@
+@page "/admin/dashboard"
+@layout AdminLayout
+@inject IStringLocalizer<AdminDashboardPanel> L
+@implements IDisposable
+
+<div class="admin-dashboard">
+    <div class="dashboard-header">
+        <h5>@L["Title"]</h5>
+    </div>
+
+    <div class="dashboard-kpis">
+        <div class="dashboard-kpi">
+            <K7Paper Outlined="true" Class="dashboard-kpi__inner dashboard-kpi__inner--static">
+                <span class="text-overline">@L["ActiveStreamsKpi"]</span>
+                <h3 class="dashboard-kpi__value">@_activeStreamCount</h3>
+            </K7Paper>
+        </div>
+        <NavLink href="/admin/users" class="dashboard-kpi dashboard-kpi--link focusable">
+            <K7Paper Outlined="true" Class="dashboard-kpi__inner">
+                <span class="text-overline">@L["OnlineUsersKpi"]</span>
+                <h3 class="dashboard-kpi__value">@OnlineUsersCount</h3>
+            </K7Paper>
+        </NavLink>
+        <NavLink href="/admin/diagnostics" class="dashboard-kpi dashboard-kpi--link focusable">
+            <K7Paper Outlined="true" Class="dashboard-kpi__inner">
+                <span class="text-overline">@L["DiagnosticErrorsKpi"]</span>
+                <h3 class="dashboard-kpi__value dashboard-kpi__value--error">@_errorCount</h3>
+            </K7Paper>
+        </NavLink>
+        <NavLink href="/admin/background-tasks" class="dashboard-kpi dashboard-kpi--link focusable">
+            <K7Paper Outlined="true" Class="dashboard-kpi__inner">
+                <span class="text-overline">@L["BackgroundTasksKpi"]</span>
+                <h3 class="dashboard-kpi__value">@_runningTaskCount</h3>
+            </K7Paper>
+        </NavLink>
+    </div>
+
+    <AdminActiveStreamsSection />
+
+    <ServerHealthCharts Snapshots="_metricSnapshots" />
+
+    <DashboardDiskVolumesSection Volumes="DiskVolumes" />
+</div>

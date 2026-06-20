@@ -2,11 +2,17 @@ using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Pages.Admin.Components;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Users;
+using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminPlaybackHistoryPanel
 {
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "userId")]
+    public Guid? QueryUserId { get; set; }
+
     private K7DataTable<PlaybackHistoryItemDto>? _tableRef;
     private List<UserDto> _users = [];
     private Guid? _selectedUserId;
@@ -35,12 +41,49 @@ public partial class AdminPlaybackHistoryPanel
         {
             _users = [];
         }
+
+        ApplyQueryUserFilter();
     }
 
-    private void OnUserChanged(Guid? userId)
+    protected override void OnParametersSet()
     {
-        _selectedUserId = userId;
-        RefreshTableAsync();
+        if (_users.Count > 0)
+            ApplyQueryUserFilter();
+    }
+
+    private void ApplyQueryUserFilter()
+    {
+        var targetUserId = QueryUserId;
+        if (targetUserId.HasValue && _users.Count > 0 && _users.All(u => u.Id != targetUserId.Value))
+            targetUserId = null;
+
+        if (_selectedUserId == targetUserId)
+            return;
+
+        _selectedUserId = targetUserId;
+        _tableKey++;
+    }
+
+    private void OnUserChanged(Guid? userId) =>
+        SyncUserQueryParam(userId);
+
+    private void SyncUserQueryParam(Guid? userId)
+    {
+        var path = NavigationManager.ToAbsoluteUri(NavigationManager.Uri).GetLeftPart(UriPartial.Path);
+
+        if (userId is null)
+        {
+            if (!QueryUserId.HasValue)
+                return;
+
+            NavigationManager.NavigateTo(path, replace: true);
+            return;
+        }
+
+        if (QueryUserId == userId)
+            return;
+
+        NavigationManager.NavigateTo($"{path}?userId={userId}", replace: true);
     }
 
     private void OnMediaTypeChanged(string mediaType)
