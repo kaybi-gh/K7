@@ -3,6 +3,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    container-type: inline-size;
 }
 
 .background-image {
@@ -58,6 +59,18 @@
 .album-detail-title {
     font-weight: 800;
     letter-spacing: -0.5px;
+    min-width: 0;
+}
+
+.album-title-row {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.album-title-year {
+    font-weight: 600;
+    opacity: 0.7;
 }
 
 .album-artists {
@@ -93,6 +106,15 @@
     opacity: 0.7;
 }
 
+.album-tracklist-meta {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0 12px;
+    font-size: 0.875rem;
+    opacity: 0.7;
+}
+
 .album-genres {
     display: flex;
     gap: 4px;
@@ -103,6 +125,17 @@
     display: flex;
     gap: 8px;
     margin-top: 16px;
+}
+
+.album-actions-primary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.album-actions-secondary {
+    display: contents;
 }
 
 .album-tracklist {
@@ -183,20 +216,53 @@
     line-height: 1.6;
 }
 
-@media (max-width: 600px) {
+@container (max-width: 480px) {
+    .col-rating {
+        display: none;
+    }
+}
+
+@media (max-width: 599.98px) {
     .album-header {
         flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding: 24px 16px 16px;
-        gap: 16px;
+        align-items: stretch;
+        text-align: left;
+        padding: 16px 16px 12px;
+        gap: 12px;
     }
 
-    .album-artists {
+    .album-header-cover {
+        align-self: center;
+    }
+
+    .album-title-row {
         justify-content: center;
     }
 
+    .album-detail-title {
+        width: 100%;
+        font-size: var(--text-2xl);
+        text-align: center;
+        line-height: 1.25;
+    }
+
+    .album-type-label {
+        display: none;
+    }
+
+    .album-title-year {
+        display: inline;
+    }
+
     .album-meta {
+        display: none;
+    }
+
+    .album-tracklist-meta {
+        display: flex;
+    }
+
+    .album-artists {
         justify-content: center;
     }
 
@@ -205,26 +271,43 @@
     }
 
     .album-actions {
-        justify-content: center;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
         gap: 8px;
+    }
+
+    .album-actions-primary,
+    .album-actions-secondary {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .album-actions-primary ::deep .k7-btn--lg {
+        font-size: var(--text-sm);
+        padding: 8px 16px;
     }
 
     ::deep .album-detail-cover,
     .album-detail-cover-placeholder {
-        width: 160px;
-        height: 160px;
+        width: 120px;
+        height: 120px;
     }
 
     .album-tracklist {
         padding: 0 16px 24px;
     }
 
-    .col-rating {
+    ::deep thead {
         display: none;
     }
+}
 
-    ::deep thead {
+@media (min-width: 600px) {
+    .album-title-year {
         display: none;
     }
 }
