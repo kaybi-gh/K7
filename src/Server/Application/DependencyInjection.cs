@@ -53,6 +53,12 @@ public static class DependencyInjection
         services.AddHostedService<PeerSyncSchedulerService>();
         services.AddSingleton<ActiveStreamTracker>();
         services.AddSingleton<IActiveStreamTracker>(sp => sp.GetRequiredService<ActiveStreamTracker>());
+        services.AddSingleton<HubPresenceTracker>();
+        services.AddSingleton<IHubPresenceTracker>(sp => sp.GetRequiredService<HubPresenceTracker>());
+        services.AddSingleton<ServerDiskMetricsProvider>();
+        services.AddSingleton<IServerDiskMetricsProvider>(sp => sp.GetRequiredService<ServerDiskMetricsProvider>());
+        services.AddSingleton<ServerMetricsCollector>();
+        services.AddSingleton<IServerMetricsCollector>(sp => sp.GetRequiredService<ServerMetricsCollector>());
         services.AddSingleton<SyncPlayCoordinator>();
         services.AddSingleton<ISyncPlayCoordinator>(sp => sp.GetRequiredService<SyncPlayCoordinator>());
         services.AddSingleton<MediaQueryCacheInvalidator>();

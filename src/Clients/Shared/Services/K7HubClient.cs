@@ -26,6 +26,8 @@ public sealed class K7HubClient : IAsyncDisposable
     public event Action<Guid, int, int, int>? LibraryScanCompleted;
     public event Action? BackgroundTaskUpdated;
     public event Action<IReadOnlyList<ActiveStreamDto>>? ActiveStreamsUpdated;
+    public event Action<ServerMetricsSnapshotDto>? ServerMetricsUpdated;
+    public event Action<OnlineUsersPresenceDto>? OnlineUsersPresenceUpdated;
     public event Action<RemotePlaybackRequestDto>? RemotePlaybackRequested;
     public event Action<RemoteTransportCommandDto>? RemoteTransportCommandReceived;
     public event Action<IReadOnlyList<ConnectedDeviceDto>>? ConnectedDevicesUpdated;
@@ -137,6 +139,16 @@ public sealed class K7HubClient : IAsyncDisposable
             _hubConnection.On<IReadOnlyList<ActiveStreamDto>>("ReceiveActiveStreamsUpdated", (streams) =>
             {
                 ActiveStreamsUpdated?.Invoke(streams);
+            });
+
+            _hubConnection.On<ServerMetricsSnapshotDto>("ReceiveServerMetricsUpdated", (snapshot) =>
+            {
+                ServerMetricsUpdated?.Invoke(snapshot);
+            });
+
+            _hubConnection.On<OnlineUsersPresenceDto>("ReceiveOnlineUsersPresenceUpdated", (presence) =>
+            {
+                OnlineUsersPresenceUpdated?.Invoke(presence);
             });
 
             _hubConnection.On<RemotePlaybackRequestDto>("ReceiveRemotePlaybackRequest", (request) =>

@@ -7005,6 +7005,26 @@
         }
       }
     },
+    "/api/admin/metrics": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetServerMetrics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerMetricsHistoryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/settings/default-language": {
       "put": {
         "tags": [
@@ -7016,6 +7036,29 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateDefaultLanguageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/settings/default-theme": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateDefaultTheme",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDefaultThemeRequest"
               }
             }
           },
@@ -8308,6 +8351,21 @@
               "null",
               "string"
             ]
+          },
+          "introDetectionEnabled": {
+            "type": "boolean"
+          },
+          "seekbarThumbnailGenerationEnabled": {
+            "type": "boolean"
+          },
+          "musicAudioAnalysisEnabled": {
+            "type": "boolean"
+          },
+          "transcodingEnabled": {
+            "type": "boolean"
+          },
+          "transmuxingEnabled": {
+            "type": "boolean"
           }
         }
       },
@@ -9380,6 +9438,21 @@
               "null",
               "string"
             ]
+          },
+          "introDetectionEnabled": {
+            "type": "boolean"
+          },
+          "seekbarThumbnailGenerationEnabled": {
+            "type": "boolean"
+          },
+          "musicAudioAnalysisEnabled": {
+            "type": "boolean"
+          },
+          "transcodingEnabled": {
+            "type": "boolean"
+          },
+          "transmuxingEnabled": {
+            "type": "boolean"
           }
         }
       },
@@ -14637,29 +14710,160 @@
       "RuleOperator": {
         "type": "integer"
       },
+      "ServerDiskVolumeDto": {
+        "required": [
+          "label",
+          "usedGb",
+          "totalGb",
+          "freePercent"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "usedGb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "totalGb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "freePercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "ServerFeatureFlagsDto": {
         "type": "object",
         "properties": {
-          "introDetectionEnabled": {
-            "type": "boolean"
-          },
-          "transcodingEnabled": {
-            "type": "boolean"
-          },
-          "transmuxingEnabled": {
-            "type": "boolean"
-          },
-          "seekbarThumbnailGenerationEnabled": {
-            "type": "boolean"
-          },
-          "musicAudioAnalysisEnabled": {
-            "type": "boolean"
-          },
           "federationEnabled": {
             "type": "boolean"
           },
           "federationInvitationsEnabled": {
             "type": "boolean"
+          }
+        }
+      },
+      "ServerMetricsHistoryDto": {
+        "required": [
+          "snapshots"
+        ],
+        "type": "object",
+        "properties": {
+          "snapshots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServerMetricsSnapshotDto"
+            }
+          }
+        }
+      },
+      "ServerMetricsSnapshotDto": {
+        "required": [
+          "timestamp",
+          "cpuPercent",
+          "memoryUsedMb",
+          "memoryTotalMb",
+          "networkMbps"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cpuPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "memoryUsedMb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "memoryTotalMb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "networkMbps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "gcHeapMb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "threadCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "uptimeSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "onlineUsersCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "connectedDevicesCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "diskVolumes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServerDiskVolumeDto"
+            }
           }
         }
       },
@@ -15279,6 +15483,17 @@
           }
         }
       },
+      "UpdateDefaultThemeRequest": {
+        "required": [
+          "theme"
+        ],
+        "type": "object",
+        "properties": {
+          "theme": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateDeviceCommand": {
         "type": "object",
         "properties": {
@@ -15349,6 +15564,36 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "introDetectionEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "seekbarThumbnailGenerationEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "musicAudioAnalysisEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "transcodingEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "transmuxingEnabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

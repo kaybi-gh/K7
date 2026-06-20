@@ -112,6 +112,8 @@ public static class DependencyInjection
         services.AddSingleton<IFederationNotifier, FederationNotifier>();
         services.AddSingleton<IClientErrorReporter, ServerSideErrorReporter>();
         services.AddHostedService<AdminStreamNotifier>();
+        services.AddHostedService<ServerMetricsWarmupService>();
+        services.AddHostedService<AdminMetricsNotifier>();
         services.AddHostedService<EphemeralStreamTokenCleanupService>();
 
         services.AddHttpClient<IPeerClient, PeerClient>()
