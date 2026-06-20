@@ -18,6 +18,7 @@ public class PlaybackProgressTracker : IDisposable
     private readonly IDeviceStorageService _deviceStorage;
     private readonly IConnectivityService _connectivity;
     private readonly IPlaybackJournal _journal;
+    private readonly MediaCacheStore _cacheStore;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid? _currentSerieId;
@@ -42,13 +43,15 @@ public class PlaybackProgressTracker : IDisposable
         IStreamingService serverService,
         IDeviceStorageService deviceStorage,
         IConnectivityService connectivity,
-        IPlaybackJournal journal)
+        IPlaybackJournal journal,
+        MediaCacheStore cacheStore)
     {
         _playerService = playerService;
         _serverService = serverService;
         _deviceStorage = deviceStorage;
         _connectivity = connectivity;
         _journal = journal;
+        _cacheStore = cacheStore;
 
         _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged += OnCurrentTimeChanged;
@@ -86,6 +89,7 @@ public class PlaybackProgressTracker : IDisposable
         if (mediaId is not null)
         {
             await ReportProgressAsync(mediaId.Value);
+            _cacheStore.InvalidateHomeFeed();
         }
     }
 
@@ -173,6 +177,11 @@ public class PlaybackProgressTracker : IDisposable
                 duration,
                 (int)_lastState,
                 deviceId);
+
+            if (_lastState is PlaybackState.Idle or PlaybackState.Ended)
+            {
+                _cacheStore.InvalidateHomeFeed();
+            }
         }
         catch (Exception ex)
         {
