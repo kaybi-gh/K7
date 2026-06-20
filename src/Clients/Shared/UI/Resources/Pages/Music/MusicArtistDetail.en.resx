@@ -31,5 +31,6 @@
   <data name="RefreshMetadata" xml:space="preserve"><value>Refresh metadata</value></data>
   <data name="RefreshMetadataSent" xml:space="preserve"><value>Metadata refresh started in background.</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Edit metadata</value></data>
+  <data name="MoreActions" xml:space="preserve"><value>More actions</value></data>
 </root>
 
