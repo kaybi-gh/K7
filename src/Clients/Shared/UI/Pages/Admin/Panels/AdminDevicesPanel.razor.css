@@ -1,4 +1,8 @@
-﻿::deep .current-device {
+﻿.admin-devices-browse ::deep .k7-virtual-list {
+    padding: 0 var(--space-4) var(--space-4);
+}
+
+::deep .current-device {
     border-color: var(--color-accent);
     border-width: 2px;
 }
@@ -10,4 +14,107 @@
 @keyframes highlight-fade {
     0% { background-color: color-mix(in srgb, var(--color-accent) 25%, transparent); }
     100% { background-color: transparent; }
+}
+
+.device-list-item {
+    padding-bottom: var(--space-3);
+    box-sizing: border-box;
+}
+
+.device-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.device-card-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.device-card-main {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    flex: 1;
+    min-width: 0;
+}
+
+.device-card-icons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.device-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.device-card-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.device-card-os {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.device-card-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.device-card-lastseen {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.device-card-users {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+@media (max-width: 599.98px) {
+    .admin-devices-browse ::deep .k7-virtual-list {
+        padding: var(--space-3);
+    }
+
+    .device-card-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+    }
+
+    .device-card-main {
+        width: 100%;
+    }
+
+    .device-card-meta {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .device-card-lastseen {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .device-card-os {
+        white-space: normal;
+        word-break: break-word;
+    }
 }

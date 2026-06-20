@@ -1,3 +1,63 @@
+.users-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.users-desktop {
+    display: block;
+}
+
+.users-mobile {
+    display: none;
+}
+
+.user-email {
+    color: var(--color-text-muted);
+}
+
+.user-inactive {
+    opacity: 0.5;
+}
+
+.user-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.user-card-info {
+    min-width: 0;
+}
+
+.user-card-info p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.user-card-active {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.user-card-role {
+    flex: 1;
+    min-width: 0;
+}
+
 ::deep .row-highlighted {
     animation: highlight-fade 3s ease-out;
 }
@@ -5,4 +65,26 @@
 @keyframes highlight-fade {
     0% { background-color: color-mix(in srgb, var(--color-accent) 25%, transparent); }
     100% { background-color: transparent; }
+}
+
+@media (max-width: 599.98px) {
+    .users-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3);
+    }
+
+    .users-header ::deep .k7-btn {
+        width: 100%;
+    }
+
+    .users-desktop {
+        display: none;
+    }
+
+    .users-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+    }
 }

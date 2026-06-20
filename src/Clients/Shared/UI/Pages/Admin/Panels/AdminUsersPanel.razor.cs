@@ -305,4 +305,12 @@ public partial class AdminUsersPanel
             Snackbar.Add(string.Format(L["PasswordReset"], user.UserName), K7Severity.Success);
         }
     }
+
+    private string GetUserCardClass(UserDto user)
+    {
+        var classes = new List<string>();
+        if (user.Id == _highlightedUserId)
+            classes.Add("row-highlighted");
+        return string.Join(' ', classes);
+    }
 }

@@ -4,7 +4,7 @@
 @inject IStringLocalizer<AdminUsersPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="d-flex align-center justify-between mb-4">
+<div class="users-header">
     <h6>@L["Title"]</h6>
     <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.UserPlus"
                OnClick="OpenCreateUserDialog" aria-label="@L["AriaCreateUser"]">
@@ -25,62 +25,123 @@ else if (_users.Count == 0)
 }
 else
 {
-    <K7DataTable TItem="UserDto" Items="_users" RowHeight="60" Height="60vh"
-                 RowId="@(u => $"user-{u.Id}")" RowClass="@(u => u.Id == _highlightedUserId ? "row-highlighted" : null)">
-        <K7DataColumn TItem="UserDto" Title="@L["HeaderUser"]" Hideable="false">
-            <CellTemplate>
-                <div class="d-flex align-center gap-2" style="@(!context.IsActive ? "opacity: 0.5;" : "")">
-                    <K7Avatar Size="sm" Image="@context.AvatarUrl"
-                              Letter="@(context.UserName?[..1].ToUpperInvariant() ?? "?")"
-                              UserId="@context.Id" />
-                    <div class="d-flex flex-col">
-                        <p>@(context.UserName ?? "-")</p>
-                        <span class="text-caption" style="color: var(--color-text-muted);">@(context.Email ?? "-")</span>
+    <div class="users-desktop">
+        <K7DataTable TItem="UserDto" Items="_users" RowHeight="60" Height="60vh"
+                     RowId="@(u => $"user-{u.Id}")" RowClass="@(u => u.Id == _highlightedUserId ? "row-highlighted" : null)">
+            <K7DataColumn TItem="UserDto" Title="@L["HeaderUser"]" Hideable="false">
+                <CellTemplate>
+                    <div class="d-flex align-center gap-2 @(!context.IsActive ? "user-inactive" : "")">
+                        <K7Avatar Size="sm" Image="@context.AvatarUrl"
+                                  Letter="@(context.UserName?[..1].ToUpperInvariant() ?? "?")"
+                                  UserId="@context.Id" />
+                        <div class="d-flex flex-col">
+                            <p>@(context.UserName ?? "-")</p>
+                            <span class="text-caption user-email">@(context.Email ?? "-")</span>
+                        </div>
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="UserDto" Title="@L["HeaderRole"]" Hideable="false">
+                <CellTemplate>
+                    @if (context.IsGuest)
+                    {
+                        <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
+                    }
+                    else
+                    {
+                        <K7Select TValue="string" Value="@context.Role" ValueChanged="@(role => OnRoleChanged(context, role))"
+                                   Variant="outlined">
+                            <K7SelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</K7SelectItem>
+                            <K7SelectItem Value="@Roles.User">@L["RoleUser"]</K7SelectItem>
+                        </K7Select>
+                    }
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="UserDto" Title="@L["HeaderActive"]" Hideable="false" Width="80px">
+                <CellTemplate>
+                    <K7Switch Value="@context.IsActive"
+                               ValueChanged="@(v => OnToggleActive(context, v))" />
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="UserDto" Title="@L["HeaderCreatedAt"]" Property="@(u => u.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm"))" />
+            <K7DataColumn TItem="UserDto" Title="@L["HeaderActions"]" Width="100px" Hideable="false">
+                <CellTemplate>
+                    <div class="d-flex">
+                        @if (!context.IsGuest)
+                        {
+                            <K7IconButton Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(context))" AriaLabel="@L["AriaCapabilities"]" />
+                        }
+                        <K7IconButton Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(context))" AriaLabel="@L["AriaLibraries"]" />
+                        <K7IconButton Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(context))" AriaLabel="@L["AriaHiddenMedia"]" />
+                        <K7IconButton Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(context))" AriaLabel="@L["AriaRestrictionProfile"]" />
+                        @if (!context.IsGuest && context.Id != _currentUserId)
+                        {
+                            <K7IconButton Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(context))" AriaLabel="@L["AriaResetPassword"]" />
+                            <K7IconButton Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(context))" AriaLabel="@L["AriaMerge"]" />
+                            <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(context))" AriaLabel="@L["AriaDelete"]" />
+                        }
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+        </K7DataTable>
+    </div>
+
+    <div class="users-mobile">
+        @foreach (var user in _users)
+        {
+            <K7Paper Outlined="true" id="@($"user-{user.Id}")" Class="@GetUserCardClass(user)">
+                <div class="user-card-header">
+                    <div class="d-flex align-center gap-2 user-card-identity @(!user.IsActive ? "user-inactive" : "")">
+                        <K7Avatar Size="sm" Image="@user.AvatarUrl"
+                                  Letter="@(user.UserName?[..1].ToUpperInvariant() ?? "?")"
+                                  UserId="@user.Id" />
+                        <div class="d-flex flex-col user-card-info">
+                            <p>@(user.UserName ?? "-")</p>
+                            <span class="text-caption user-email">@(user.Email ?? "-")</span>
+                        </div>
+                    </div>
+                    <K7Menu Title="@L["HeaderActions"]">
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["HeaderActions"]" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            @if (!user.IsGuest)
+                            {
+                                <K7MenuItem Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(user))">@L["AriaCapabilities"]</K7MenuItem>
+                            }
+                            <K7MenuItem Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(user))">@L["AriaLibraries"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(user))">@L["AriaHiddenMedia"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(user))">@L["AriaRestrictionProfile"]</K7MenuItem>
+                            @if (!user.IsGuest && user.Id != _currentUserId)
+                            {
+                                <K7MenuItem Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(user))">@L["AriaResetPassword"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(user))">@L["AriaMerge"]</K7MenuItem>
+                                <K7MenuItem Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(user))">@L["AriaDelete"]</K7MenuItem>
+                            }
+                        </ChildContent>
+                    </K7Menu>
+                </div>
+                <div class="user-card-footer">
+                    <div class="user-card-role">
+                        @if (user.IsGuest)
+                        {
+                            <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
+                        }
+                        else
+                        {
+                            <K7Select TValue="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
+                                       Variant="outlined">
+                                <K7SelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</K7SelectItem>
+                                <K7SelectItem Value="@Roles.User">@L["RoleUser"]</K7SelectItem>
+                            </K7Select>
+                        }
+                    </div>
+                    <div class="user-card-active">
+                        <span class="text-caption" Color="secondary">@L["HeaderActive"]</span>
+                        <K7Switch Value="@user.IsActive" ValueChanged="@(v => OnToggleActive(user, v))" />
                     </div>
                 </div>
-            </CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="UserDto" Title="@L["HeaderRole"]" Hideable="false">
-            <CellTemplate>
-                @if (context.IsGuest)
-                {
-                    <K7Chip Size="sm" Color="default">@S["Guest"]</K7Chip>
-                }
-                else
-                {
-                    <K7Select TValue="string" Value="@context.Role" ValueChanged="@(role => OnRoleChanged(context, role))"
-                               Variant="outlined">
-                        <K7SelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</K7SelectItem>
-                        <K7SelectItem Value="@Roles.User">@L["RoleUser"]</K7SelectItem>
-                    </K7Select>
-                }
-            </CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="UserDto" Title="@L["HeaderActive"]" Hideable="false" Width="80px">
-            <CellTemplate>
-                <K7Switch Value="@context.IsActive"
-                           ValueChanged="@(v => OnToggleActive(context, v))" />
-            </CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="UserDto" Title="@L["HeaderCreatedAt"]" Property="@(u => u.Created.LocalDateTime.ToString("dd/MM/yyyy HH:mm"))" />
-        <K7DataColumn TItem="UserDto" Title="@L["HeaderActions"]" Width="100px" Hideable="false">
-            <CellTemplate>
-                <div class="d-flex">
-                    @if (!context.IsGuest)
-                    {
-                        <K7IconButton Icon="@Phosphor.Sliders" OnClick="@(() => OpenCapabilitiesDialog(context))" AriaLabel="@L["AriaCapabilities"]" />
-                    }
-                    <K7IconButton Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(context))" AriaLabel="@L["AriaLibraries"]" />
-                    <K7IconButton Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(context))" AriaLabel="@L["AriaHiddenMedia"]" />
-                    <K7IconButton Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(context))" AriaLabel="@L["AriaRestrictionProfile"]" />
-                    @if (!context.IsGuest && context.Id != _currentUserId)
-                    {
-                        <K7IconButton Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(context))" AriaLabel="@L["AriaResetPassword"]" />
-                        <K7IconButton Icon="@Phosphor.GitMerge" OnClick="@(() => OpenMergeUserDialog(context))" AriaLabel="@L["AriaMerge"]" />
-                        <K7IconButton Icon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(context))" AriaLabel="@L["AriaDelete"]" />
-                    }
-                </div>
-            </CellTemplate>
-        </K7DataColumn>
-    </K7DataTable>
+            </K7Paper>
+        }
+    </div>
 }
