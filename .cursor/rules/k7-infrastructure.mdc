@@ -1,0 +1,14 @@
+---
+description: K7 Infrastructure layer EF Core and DI conventions
+globs: src/Server/Infrastructure/**
+alwaysApply: false
+---
+
+# Infrastructure Layer
+
+- EF config: `IEntityTypeConfiguration<T>` in `Database/Context/Data/Configurations/`
+- Never configure entities directly in `OnModelCreating`
+- DI: `DependencyInjection.cs` with `Add*Services()`; lambda-based resolution
+- **Never** call `BuildServiceProvider()` during registration
+- Domain events dispatched by `DispatchDomainEventsInterceptor` - no manual dispatch
+- Migrations per provider: Postgres or Sqlite project + `-- --Database:Provider <Provider>`
