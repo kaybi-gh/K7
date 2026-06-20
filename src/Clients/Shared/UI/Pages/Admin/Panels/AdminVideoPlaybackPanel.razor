@@ -1,0 +1,165 @@
+@page "/admin/video-playback"
+@layout AdminLayout
+@using K7.Shared
+@using K7.Shared.Enums
+@inject IStringLocalizer<AdminVideoPlayerSettingsPanel> L
+@inject IStringLocalizer<AdminTrackSelectionPanel> Lt
+
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["PageTitle"]</h5>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
+}
+else
+{
+    <div class="pa-4 d-flex flex-col gap-6">
+        <K7Alert Severity="K7Severity.Info" Variant="outlined" NoIcon="true">
+            @L["DefaultsInfo"]
+        </K7Alert>
+
+        <section id="tracks" class="d-flex flex-col gap-4">
+            <h6>@Lt["SectionTitle"]</h6>
+
+            <K7Select Label="@Lt["Scope"]"
+                      TValue="Guid?"
+                      Value="_selectedLibraryId"
+                      ValueChanged="OnLibraryScopeChanged">
+                <K7SelectItem TValue="Guid?" Value="@((Guid?)null)" Text="@Lt["ScopeGlobal"]">@Lt["ScopeGlobal"]</K7SelectItem>
+                @foreach (var lib in _libraries)
+                {
+                    <K7SelectItem TValue="Guid?" Value="@lib.Id" Text="@lib.Title">@lib.Title</K7SelectItem>
+                }
+            </K7Select>
+
+            @if (_preferences is not null)
+            {
+                <K7LanguageSelect Label="@Lt["PreferredAudioLanguage"]"
+                                  @bind-Value="_preferences.PreferredAudioLanguage" />
+
+                <K7LanguageSelect Label="@Lt["FallbackAudioLanguage"]"
+                                  @bind-Value="_preferences.FallbackAudioLanguage" />
+
+                <K7Select Label="@Lt["SubtitleWhenPreferredAudio"]"
+                          @bind-Value="_preferences.SubtitleWhenPreferredAudio"
+                          TValue="SubtitlePreference">
+                    <K7SelectItem Value="SubtitlePreference.Off" Text="@Lt["SubOff"]">@Lt["SubOff"]</K7SelectItem>
+                    <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@Lt["SubForcedOnly"]">@Lt["SubForcedOnly"]</K7SelectItem>
+                    <K7SelectItem Value="SubtitlePreference.Full" Text="@Lt["SubFull"]">@Lt["SubFull"]</K7SelectItem>
+                    <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@Lt["SubHearingImpaired"]">@Lt["SubHearingImpaired"]</K7SelectItem>
+                </K7Select>
+
+                @if (_preferences.SubtitleWhenPreferredAudio != SubtitlePreference.Off)
+                {
+                    <K7LanguageSelect Label="@Lt["SubtitleLanguageWhenPreferredAudio"]"
+                                      @bind-Value="_preferences.SubtitleLanguageWhenPreferredAudio" />
+                }
+
+                <K7Select Label="@Lt["SubtitleWhenOtherAudio"]"
+                          @bind-Value="_preferences.SubtitleWhenOtherAudio"
+                          TValue="SubtitlePreference">
+                    <K7SelectItem Value="SubtitlePreference.Off" Text="@Lt["SubOff"]">@Lt["SubOff"]</K7SelectItem>
+                    <K7SelectItem Value="SubtitlePreference.ForcedOnly" Text="@Lt["SubForcedOnly"]">@Lt["SubForcedOnly"]</K7SelectItem>
+                    <K7SelectItem Value="SubtitlePreference.Full" Text="@Lt["SubFull"]">@Lt["SubFull"]</K7SelectItem>
+                    <K7SelectItem Value="SubtitlePreference.HearingImpaired" Text="@Lt["SubHearingImpaired"]">@Lt["SubHearingImpaired"]</K7SelectItem>
+                </K7Select>
+
+                @if (_preferences.SubtitleWhenOtherAudio != SubtitlePreference.Off)
+                {
+                    <K7LanguageSelect Label="@Lt["SubtitleLanguageWhenOtherAudio"]"
+                                      @bind-Value="_preferences.SubtitleLanguageWhenOtherAudio" />
+                }
+
+                <div class="d-flex gap-2">
+                    <K7Button Color="primary" OnClick="SaveTrackPreferencesAsync">@Lt["Save"]</K7Button>
+                    <K7Button OnClick="ResetTrackPreferencesAsync">@Lt["Reset"]</K7Button>
+                </div>
+            }
+        </section>
+
+        @if (_settings is not null)
+        {
+            <section class="d-flex flex-col gap-4">
+                <h6>@L["SeekbarSection"]</h6>
+
+                <K7Switch Label="@L["ShowSeekbarThumbnails"]" @bind-Value="_settings.ShowSeekbarThumbnails" />
+                <span class="text-caption video-playback-hint">@L["ShowSeekbarThumbnailsHintLibrary"]</span>
+            </section>
+
+            <section class="d-flex flex-col gap-4">
+                <h6>@L["IntroSkipSection"]</h6>
+
+                <K7Select Label="@L["IntroSkipBehavior"]" @bind-Value="_settings.IntroSkipBehavior" TValue="IntroSkipBehavior">
+                    <K7SelectItem Value="IntroSkipBehavior.ShowButton" Text="@L["ShowButton"]">@L["ShowButton"]</K7SelectItem>
+                    <K7SelectItem Value="IntroSkipBehavior.AutoSkip" Text="@L["AutoSkip"]">@L["AutoSkip"]</K7SelectItem>
+                    <K7SelectItem Value="IntroSkipBehavior.Disabled" Text="@L["Disabled"]">@L["Disabled"]</K7SelectItem>
+                </K7Select>
+
+                <K7Select Label="@L["OutroSkipBehavior"]" @bind-Value="_settings.OutroSkipBehavior" TValue="IntroSkipBehavior">
+                    <K7SelectItem Value="IntroSkipBehavior.ShowButton" Text="@L["ShowButton"]">@L["ShowButton"]</K7SelectItem>
+                    <K7SelectItem Value="IntroSkipBehavior.AutoSkip" Text="@L["AutoSkip"]">@L["AutoSkip"]</K7SelectItem>
+                    <K7SelectItem Value="IntroSkipBehavior.Disabled" Text="@L["Disabled"]">@L["Disabled"]</K7SelectItem>
+                </K7Select>
+            </section>
+
+            <section class="d-flex flex-col gap-4">
+                <h6>@L["SubtitleSection"]</h6>
+
+                <K7Select Label="@L["SubtitleFontFamily"]" @bind-Value="_settings.SubtitleFontFamily" TValue="SubtitleFontFamily">
+                        <K7SelectItem Value="SubtitleFontFamily.Default" Text="@L["FontDefault"]">@L["FontDefault"]</K7SelectItem>
+                        <K7SelectItem Value="SubtitleFontFamily.Manrope" Text="Manrope">Manrope</K7SelectItem>
+                        <K7SelectItem Value="SubtitleFontFamily.Epilogue" Text="Epilogue">Epilogue</K7SelectItem>
+                        <K7SelectItem Value="SubtitleFontFamily.SansSerif" Text="Sans-serif">Sans-serif</K7SelectItem>
+                        <K7SelectItem Value="SubtitleFontFamily.Serif" Text="Serif">Serif</K7SelectItem>
+                        <K7SelectItem Value="SubtitleFontFamily.Monospace" Text="Monospace">Monospace</K7SelectItem>
+                    </K7Select>
+
+                    <K7Select Label="@L["SubtitleFontSize"]" @bind-Value="_settings.SubtitleFontSize" TValue="SubtitleFontSize">
+                        <K7SelectItem Value="SubtitleFontSize.Small" Text="@L["Small"]">@L["Small"]</K7SelectItem>
+                        <K7SelectItem Value="SubtitleFontSize.Medium" Text="@L["Medium"]">@L["Medium"]</K7SelectItem>
+                        <K7SelectItem Value="SubtitleFontSize.Large" Text="@L["Large"]">@L["Large"]</K7SelectItem>
+                    </K7Select>
+
+                    <K7ColorPicker Label="@L["SubtitleFontColor"]" @bind-Value="_settings.SubtitleFontColor" />
+
+                    <div class="d-flex flex-col gap-1">
+                        <span class="field-label">@L["SubtitleBackgroundOpacity"]</span>
+                        <K7Slider TValue="double" Min="0" Max="1" Step="0.1"
+                                  Value="_settings.SubtitleBackgroundOpacity"
+                                  ValueChanged="v => { _settings.SubtitleBackgroundOpacity = v; }" />
+                    </div>
+
+                    <K7Switch Label="@L["SubtitleShadow"]" @bind-Value="_settings.SubtitleShadowEnabled" />
+
+                    @if (_settings.SubtitleShadowEnabled)
+                    {
+                        <K7ColorPicker Label="@L["SubtitleShadowColor"]" @bind-Value="_settings.SubtitleShadowColor" />
+
+                        <div class="d-flex flex-col gap-1">
+                            <span class="field-label">@L["SubtitleShadowBlur"]</span>
+                            <K7Slider TValue="double" Min="0" Max="10" Step="0.5"
+                                      Value="_settings.SubtitleShadowBlur"
+                                      ValueChanged="v => { _settings.SubtitleShadowBlur = v; }" />
+                        </div>
+                    }
+
+                    <SubtitlePreview Family="_settings.SubtitleFontFamily"
+                                     Size="_settings.SubtitleFontSize"
+                                     FontColor="@_settings.SubtitleFontColor"
+                                     BackgroundOpacity="_settings.SubtitleBackgroundOpacity"
+                                     ShadowEnabled="_settings.SubtitleShadowEnabled"
+                                     ShadowColor="@_settings.SubtitleShadowColor"
+                                     ShadowBlur="_settings.SubtitleShadowBlur" />
+            </section>
+
+            <div class="d-flex gap-2">
+                <K7Button Color="primary" OnClick="SaveVideoSettingsAsync">@L["Save"]</K7Button>
+                <K7Button OnClick="ResetVideoSettingsAsync">@L["Reset"]</K7Button>
+            </div>
+        }
+    </div>
+}

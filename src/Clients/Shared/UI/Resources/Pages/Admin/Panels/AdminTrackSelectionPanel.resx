@@ -19,22 +19,23 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>Audio et sous-titres (defaut serveur)</value></data>
-  <data name="Description" xml:space="preserve"><value>Preferences par defaut pour tous les utilisateurs. Chaque utilisateur peut les surcharger dans ses parametres.</value></data>
-  <data name="PreferredAudioLanguage" xml:space="preserve"><value>Langue audio preferee</value></data>
+  <data name="Title" xml:space="preserve"><value>Audio et sous-titres (défaut serveur)</value></data>
+  <data name="SectionTitle" xml:space="preserve"><value>Pistes par défaut</value></data>
+  <data name="Description" xml:space="preserve"><value>Préférences par défaut pour tous les utilisateurs. Chaque utilisateur peut les surcharger dans ses paramètres.</value></data>
+  <data name="PreferredAudioLanguage" xml:space="preserve"><value>Langue audio préférée</value></data>
   <data name="FallbackAudioLanguage" xml:space="preserve"><value>Langue audio de secours</value></data>
-  <data name="SubtitleWhenPreferredAudio" xml:space="preserve"><value>Sous-titres quand audio preferee</value></data>
-  <data name="SubtitleLanguageWhenPreferredAudio" xml:space="preserve"><value>Langue des sous-titres (audio preferee)</value></data>
+  <data name="SubtitleWhenPreferredAudio" xml:space="preserve"><value>Sous-titres quand audio préférée</value></data>
+  <data name="SubtitleLanguageWhenPreferredAudio" xml:space="preserve"><value>Langue des sous-titres (audio préférée)</value></data>
   <data name="SubtitleWhenOtherAudio" xml:space="preserve"><value>Sous-titres quand autre audio</value></data>
   <data name="SubtitleLanguageWhenOtherAudio" xml:space="preserve"><value>Langue des sous-titres (autre audio)</value></data>
-  <data name="SubOff" xml:space="preserve"><value>Desactives</value></data>
+  <data name="SubOff" xml:space="preserve"><value>Désactivés</value></data>
   <data name="SubForcedOnly" xml:space="preserve"><value>Forces uniquement</value></data>
   <data name="SubFull" xml:space="preserve"><value>Complets</value></data>
   <data name="SubHearingImpaired" xml:space="preserve"><value>SDH (sourds et malentendants)</value></data>
-  <data name="Scope" xml:space="preserve"><value>Portee</value></data>
-  <data name="ScopeGlobal" xml:space="preserve"><value>Global (toutes les librairies)</value></data>
+  <data name="Scope" xml:space="preserve"><value>Portée</value></data>
+  <data name="ScopeGlobal" xml:space="preserve"><value>Global (toutes les bibliothèques)</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
-  <data name="Reset" xml:space="preserve"><value>Reinitialiser</value></data>
-  <data name="SaveSuccess" xml:space="preserve"><value>Preferences serveur enregistrees</value></data>
-  <data name="ResetSuccess" xml:space="preserve"><value>Preferences serveur reinitialisees</value></data>
+  <data name="Reset" xml:space="preserve"><value>Réinitialiser</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Préférences serveur enregistrées</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Préférences serveur réinitialisées</value></data>
 </root>

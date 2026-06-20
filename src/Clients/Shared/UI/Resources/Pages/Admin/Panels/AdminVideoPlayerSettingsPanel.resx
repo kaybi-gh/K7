@@ -19,17 +19,23 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>Lecteur video</value></data>
+  <data name="Title" xml:space="preserve"><value>Lecteur vidéo</value></data>
+  <data name="PageTitle" xml:space="preserve"><value>Lecture vidéo</value></data>
+  <data name="DefaultsInfo" xml:space="preserve"><value>Ces paramètres définissent les valeurs par défaut du serveur. Chaque utilisateur peut les surcharger dans ses paramètres.</value></data>
+  <data name="SeekbarSection" xml:space="preserve"><value>Barre de progression</value></data>
+  <data name="IntroSkipSection" xml:space="preserve"><value>Intro et outro</value></data>
+  <data name="SubtitleSection" xml:space="preserve"><value>Sous-titres</value></data>
   <data name="SubtitleFontFamily" xml:space="preserve"><value>Police des sous-titres</value></data>
-  <data name="FontDefault" xml:space="preserve"><value>Par defaut</value></data>
+  <data name="FontDefault" xml:space="preserve"><value>Par défaut</value></data>
   <data name="SubtitleFontSize" xml:space="preserve"><value>Taille des sous-titres</value></data>
   <data name="SubtitleFontColor" xml:space="preserve"><value>Couleur des sous-titres</value></data>
-  <data name="SubtitleBackgroundOpacity" xml:space="preserve"><value>Opacite de l'arriere-plan des sous-titres</value></data>
+  <data name="SubtitleBackgroundOpacity" xml:space="preserve"><value>Opacité de l'arrière-plan des sous-titres</value></data>
   <data name="SubtitleShadow" xml:space="preserve"><value>Ombre des sous-titres</value></data>
   <data name="SubtitleShadowColor" xml:space="preserve"><value>Couleur de l'ombre</value></data>
   <data name="SubtitleShadowBlur" xml:space="preserve"><value>Flou de l'ombre</value></data>
   <data name="ShowSeekbarThumbnails" xml:space="preserve"><value>Afficher les miniatures au survol de la barre de lecture</value></data>
-  <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>Cette option n'a aucun effet si la generation des miniatures est desactivee sur le serveur.</value></data>
+  <data name="ShowSeekbarThumbnailsHint" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée sur le serveur.</value></data>
+  <data name="ShowSeekbarThumbnailsHintLibrary" xml:space="preserve"><value>Cette option n'a aucun effet si la génération des miniatures est désactivée pour la bibliothèque concernée.</value></data>
   <data name="IntroSkipBehavior" xml:space="preserve"><value>Comportement lors d'une intro</value></data>
   <data name="OutroSkipBehavior" xml:space="preserve"><value>Comportement lors d'un outro</value></data>
   <data name="Small" xml:space="preserve"><value>Petit</value></data>
@@ -37,7 +43,7 @@
   <data name="Large" xml:space="preserve"><value>Grand</value></data>
   <data name="ShowButton" xml:space="preserve"><value>Afficher le bouton</value></data>
   <data name="AutoSkip" xml:space="preserve"><value>Passer automatiquement</value></data>
-  <data name="Disabled" xml:space="preserve"><value>Desactive</value></data>
+  <data name="Disabled" xml:space="preserve"><value>Désactivé</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
-  <data name="Reset" xml:space="preserve"><value>Reinitialiser</value></data>
+  <data name="Reset" xml:space="preserve"><value>Réinitialiser</value></data>
 </root>
