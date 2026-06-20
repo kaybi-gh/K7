@@ -8,7 +8,10 @@ public record ToggleMediaExclusionCommand : IRequest<bool>
     public required Guid MediaId { get; init; }
 }
 
-public class ToggleMediaExclusionCommandHandler(IApplicationDbContext context, IUser currentUser)
+public class ToggleMediaExclusionCommandHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<ToggleMediaExclusionCommand, bool>
 {
     public async Task<bool> Handle(ToggleMediaExclusionCommand request, CancellationToken cancellationToken)
@@ -36,6 +39,7 @@ public class ToggleMediaExclusionCommandHandler(IApplicationDbContext context, I
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateAll();
         return existing is null || existing.IsSelfExcluded;
     }
 }

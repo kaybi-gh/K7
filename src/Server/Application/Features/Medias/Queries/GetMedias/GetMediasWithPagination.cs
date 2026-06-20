@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
@@ -117,7 +118,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
                 .Select(e => e.MediaId);
 
-            filterQuery = filterQuery.Where(x => !excludedMediaIds.Contains(x.Id));
+            filterQuery = filterQuery.WhereNotUserExcluded(excludedMediaIds);
 
             var restrictionProfile = await context.ContentRestrictionProfiles
                 .AsNoTracking()

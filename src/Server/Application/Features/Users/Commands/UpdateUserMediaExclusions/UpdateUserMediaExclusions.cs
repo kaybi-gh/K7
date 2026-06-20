@@ -12,7 +12,9 @@ public record UpdateUserMediaExclusionsCommand : IRequest
     public required IReadOnlyList<Guid> ExcludedMediaIds { get; init; }
 }
 
-public class UpdateUserMediaExclusionsCommandHandler(IApplicationDbContext context)
+public class UpdateUserMediaExclusionsCommandHandler(
+    IApplicationDbContext context,
+    IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<UpdateUserMediaExclusionsCommand>
 {
     public async Task Handle(UpdateUserMediaExclusionsCommand request, CancellationToken cancellationToken)
@@ -55,5 +57,6 @@ public class UpdateUserMediaExclusionsCommandHandler(IApplicationDbContext conte
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateAll();
     }
 }

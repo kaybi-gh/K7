@@ -12,7 +12,9 @@ public record UpdateUserLibraryExclusionsCommand : IRequest
     public required IReadOnlyList<Guid> ExcludedLibraryIds { get; init; }
 }
 
-public class UpdateUserLibraryExclusionsCommandHandler(IApplicationDbContext context)
+public class UpdateUserLibraryExclusionsCommandHandler(
+    IApplicationDbContext context,
+    IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<UpdateUserLibraryExclusionsCommand>
 {
     public async Task Handle(UpdateUserLibraryExclusionsCommand request, CancellationToken cancellationToken)
@@ -55,5 +57,6 @@ public class UpdateUserLibraryExclusionsCommandHandler(IApplicationDbContext con
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateAll();
     }
 }

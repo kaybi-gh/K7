@@ -8,7 +8,10 @@ public record UpdateSelfLibraryExclusionsCommand : IRequest
     public required IReadOnlyList<Guid> ExcludedLibraryIds { get; init; }
 }
 
-public class UpdateSelfLibraryExclusionsCommandHandler(IApplicationDbContext context, IUser currentUser)
+public class UpdateSelfLibraryExclusionsCommandHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    IMediaQueryCacheInvalidator cacheInvalidator)
     : IRequestHandler<UpdateSelfLibraryExclusionsCommand>
 {
     public async Task Handle(UpdateSelfLibraryExclusionsCommand request, CancellationToken cancellationToken)
@@ -48,5 +51,6 @@ public class UpdateSelfLibraryExclusionsCommandHandler(IApplicationDbContext con
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        cacheInvalidator.InvalidateAll();
     }
 }
