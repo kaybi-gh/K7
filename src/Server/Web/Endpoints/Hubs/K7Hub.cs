@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
@@ -21,10 +20,13 @@ namespace K7.Server.Web.Endpoints.Hubs;
 /// The identity is resolved from the auth cookie when available, with a fallback to a query string
 /// parameter for environments where cookies are not transmitted (e.g. Blazor WASM WebSocket connections).
 /// </summary>
-public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator syncPlay, IUserSettingsService userSettingsService) : Hub<IK7HubClient>
+public class K7Hub(
+    ISender sender,
+    ILogger<K7Hub> logger,
+    ISyncPlayCoordinator syncPlay,
+    IUserSettingsService userSettingsService,
+    IHubPresenceTracker presenceTracker) : Hub<IK7HubClient>
 {
-    private static readonly ConcurrentDictionary<Guid, DeviceConnection> _connectedDevices = new();
-
     public override async Task OnConnectedAsync()
     {
         var identityUserId = ResolveIdentityUserId();
@@ -52,18 +54,17 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
 
             var syncPlayEnabled = !bool.TryParse(httpContext.Request.Query["syncPlayEnabled"], out var spEnabled) || spEnabled;
 
-            _connectedDevices[deviceId] = new DeviceConnection(
+            presenceTracker.RegisterDevice(deviceId, new HubDeviceConnection(
                 Context.ConnectionId,
                 identityUserId,
                 userDisplayName,
                 deviceName,
                 deviceType,
-                syncPlayEnabled);
+                syncPlayEnabled));
 
             await BroadcastConnectedDevices(identityUserId);
+            await BroadcastOnlineUsersPresenceToAdminsAsync();
         }
-
-        // If a streaming session was requested, set up the session group as well
         if (Guid.TryParse(httpContext?.Request.Query["indexedFileId"], out Guid indexedFileId))
         {
             double position = 0;
@@ -97,18 +98,15 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         }
 
         // Remove device from connection tracker
-        var disconnectedDevice = _connectedDevices.FirstOrDefault(kvp => kvp.Value.ConnectionId == Context.ConnectionId);
-        if (disconnectedDevice.Value is not null)
+        if (presenceTracker.TryRemoveByConnectionId(Context.ConnectionId, out var deviceId, out var disconnectedConnection)
+            && disconnectedConnection is not null)
         {
-            _connectedDevices.TryRemove(disconnectedDevice.Key, out _);
-
             if (!string.IsNullOrEmpty(identityUserId))
             {
                 await BroadcastConnectedDevices(identityUserId);
             }
 
-            // Handle SyncPlay group cleanup
-            var result = syncPlay.DisconnectDevice(disconnectedDevice.Key);
+            var result = syncPlay.DisconnectDevice(deviceId);
             if (result.GroupId != Guid.Empty && !result.GroupDestroyed)
             {
                 var group = syncPlay.GetGroup(result.GroupId);
@@ -117,6 +115,8 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
                     await Clients.Group(SyncPlayGroupName(result.GroupId)).ReceiveSyncPlayGroupUpdated(ToGroupDto(group, null));
                 }
             }
+
+            await BroadcastOnlineUsersPresenceToAdminsAsync();
         }
 
         await base.OnDisconnectedAsync(exception);
@@ -153,6 +153,7 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, AdminStreamsGroup);
+        await Clients.Caller.ReceiveOnlineUsersPresenceUpdated(BuildOnlineUsersPresenceDto());
     }
 
     public async Task LeaveAdminStreamsGroup()
@@ -203,7 +204,7 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         var identityUserId = ResolveIdentityUserId();
         if (string.IsNullOrEmpty(identityUserId)) return;
 
-        if (!_connectedDevices.TryGetValue(targetDeviceId, out var target))
+        if (!presenceTracker.TryGetDevice(targetDeviceId, out var target))
         {
             logger.LogWarning("Remote playback requested for offline device {DeviceId}", targetDeviceId);
             return;
@@ -223,7 +224,7 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         var identityUserId = ResolveIdentityUserId();
         if (string.IsNullOrEmpty(identityUserId)) return;
 
-        if (!_connectedDevices.TryGetValue(targetDeviceId, out var target))
+        if (!presenceTracker.TryGetDevice(targetDeviceId, out var target))
         {
             return;
         }
@@ -241,7 +242,7 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         var identityUserId = ResolveIdentityUserId();
         if (string.IsNullOrEmpty(identityUserId)) return;
 
-        if (!_connectedDevices.TryGetValue(controllerDeviceId, out var controller))
+        if (!presenceTracker.TryGetDevice(controllerDeviceId, out var controller))
         {
             return;
         }
@@ -259,8 +260,7 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         var identityUserId = ResolveIdentityUserId();
         if (string.IsNullOrEmpty(identityUserId)) return Task.CompletedTask;
 
-        var devices = _connectedDevices
-            .Where(kvp => kvp.Value.IdentityUserId == identityUserId)
+        var devices = presenceTracker.GetDevicesForUser(identityUserId)
             .Select(kvp => new ConnectedDeviceDto
             {
                 DeviceId = kvp.Key,
@@ -274,8 +274,7 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
 
     private async Task BroadcastConnectedDevices(string identityUserId)
     {
-        var devices = _connectedDevices
-            .Where(kvp => kvp.Value.IdentityUserId == identityUserId)
+        var devices = presenceTracker.GetDevicesForUser(identityUserId)
             .Select(kvp => new ConnectedDeviceDto
             {
                 DeviceId = kvp.Key,
@@ -286,6 +285,12 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
 
         await Clients.Group(identityUserId).ReceiveConnectedDevicesUpdated(devices);
     }
+
+    private Task BroadcastOnlineUsersPresenceToAdminsAsync() =>
+        Clients.Group(AdminStreamsGroup).ReceiveOnlineUsersPresenceUpdated(BuildOnlineUsersPresenceDto());
+
+    private OnlineUsersPresenceDto BuildOnlineUsersPresenceDto() =>
+        new() { IdentityUserIds = presenceTracker.GetOnlineIdentityUserIds() };
 
     // --- SyncPlay (watch party) ---
 
@@ -617,7 +622,7 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
             return;
         }
 
-        if (_connectedDevices.TryGetValue(targetDeviceId, out var targetConnection))
+        if (presenceTracker.TryGetDevice(targetDeviceId, out var targetConnection))
         {
             await Clients.Client(targetConnection.ConnectionId).ReceiveSyncPlayError("kicked");
             await Groups.RemoveFromGroupAsync(targetConnection.ConnectionId, SyncPlayGroupName(groupId));
@@ -723,13 +728,16 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         var identityUserId = ResolveIdentityUserId();
         if (string.IsNullOrEmpty(identityUserId)) return;
 
-        var onlineUsers = _connectedDevices.Values
+        var onlineUsers = presenceTracker.GetAllDevices()
+            .Select(kvp => kvp.Value)
             .Where(d => d.IdentityUserId != identityUserId && d.SyncPlayEnabled)
             .Select(d => d.IdentityUserId)
             .Distinct()
             .Select(uid =>
             {
-                var device = _connectedDevices.Values.First(d => d.IdentityUserId == uid);
+                var device = presenceTracker.GetAllDevices()
+                    .Select(kvp => kvp.Value)
+                    .First(d => d.IdentityUserId == uid);
                 return new SyncPlayOnlineUserDto
                 {
                     UserId = uid,
@@ -749,9 +757,9 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
         if (device is null) return;
 
         var deviceId = device.Value.DeviceId;
-        if (_connectedDevices.TryGetValue(deviceId, out var existing))
+        if (presenceTracker.TryGetDevice(deviceId, out var existing))
         {
-            _connectedDevices[deviceId] = existing with { SyncPlayEnabled = enabled };
+            presenceTracker.UpdateDevice(deviceId, existing with { SyncPlayEnabled = enabled });
         }
     }
 
@@ -816,11 +824,11 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
 
     private (Guid DeviceId, string DeviceName, string DeviceType, string UserDisplayName)? ResolveCallerDevice()
     {
-        var entry = _connectedDevices.FirstOrDefault(kvp => kvp.Value.ConnectionId == Context.ConnectionId);
-        if (entry.Value is null)
+        var entry = presenceTracker.FindByConnectionId(Context.ConnectionId);
+        if (entry is null)
             return null;
 
-        return (entry.Key, entry.Value.DeviceName, entry.Value.DeviceType, entry.Value.UserDisplayName);
+        return (entry.Value.DeviceId, entry.Value.Connection.DeviceName, entry.Value.Connection.DeviceType, entry.Value.Connection.UserDisplayName);
     }
 
     private string ResolveGroupDisplayName(Guid groupId, Guid deviceId, string fallback)
@@ -862,6 +870,4 @@ public class K7Hub(ISender sender, ILogger<K7Hub> logger, ISyncPlayCoordinator s
             GuestToken = requestingUserId == group.CreatorUserId ? group.GuestToken : null
         };
     }
-
-    private sealed record DeviceConnection(string ConnectionId, string IdentityUserId, string UserDisplayName, string DeviceName, string DeviceType, bool SyncPlayEnabled = true);
 }

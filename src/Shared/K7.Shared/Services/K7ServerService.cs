@@ -602,9 +602,20 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/settings/default-theme", new { Theme = theme }, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default)
     {
         return await HttpClient.GetFromJsonAsync<List<ActiveStreamDto>>("api/admin/streams", _serializerOptions, cancellationToken);
+    }
+
+    public async Task<ServerMetricsHistoryDto?> GetServerMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        return await HttpClient.GetFromJsonAsync<ServerMetricsHistoryDto>("api/admin/metrics", _serializerOptions, cancellationToken);
     }
 
     public async Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, CancellationToken cancellationToken = default)

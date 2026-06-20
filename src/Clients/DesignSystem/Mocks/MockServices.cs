@@ -504,7 +504,46 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
     public Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<List<MediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
+    public Task<ServerMetricsHistoryDto?> GetServerMetricsAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var snapshots = Enumerable.Range(0, 12)
+            .Select(i => new ServerMetricsSnapshotDto
+            {
+                Timestamp = now.AddSeconds(-55 + i * 5),
+                CpuPercent = 8 + i * 1.5,
+                MemoryUsedMb = 420 + i * 4,
+                MemoryTotalMb = 8192,
+                NetworkMbps = i * 0.15,
+                GcHeapMb = 180 + i,
+                ThreadCount = 42 + i % 3,
+                UptimeSeconds = 3600 + i * 5,
+                OnlineUsersCount = 2 + i % 3,
+                ConnectedDevicesCount = 3 + i % 4,
+                DiskVolumes =
+                [
+                    new ServerDiskVolumeDto
+                    {
+                        Label = "Data (C:)",
+                        UsedGb = 420 + i,
+                        TotalGb = 1024,
+                        FreePercent = 58.9 - i * 0.2
+                    },
+                    new ServerDiskVolumeDto
+                    {
+                        Label = "Media (D:)",
+                        UsedGb = 1800,
+                        TotalGb = 2000,
+                        FreePercent = 10
+                    }
+                ]
+            })
+            .ToList();
+
+        return Task.FromResult<ServerMetricsHistoryDto?>(new ServerMetricsHistoryDto { Snapshots = snapshots });
+    }
     public Task<PlaybackHistoryPageDto?> GetAdminPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, Guid? userId = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
     public Task<WatchStatsDto?> GetAdminWatchStatsAsync(string? mediaType = null, string period = "month", Guid? userId = null, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
 }
