@@ -15,4 +15,9 @@ public sealed record LibraryDto
     public required Guid LibraryGroupId { get; init; }
     public Guid? PeerServerId { get; init; }
     public string? PeerServerBaseUrl { get; init; }
+    public bool IntroDetectionEnabled { get; init; } = true;
+    public bool SeekbarThumbnailGenerationEnabled { get; init; } = true;
+    public bool MusicAudioAnalysisEnabled { get; init; } = true;
+    public bool TranscodingEnabled { get; init; } = true;
+    public bool TransmuxingEnabled { get; init; } = true;
 }

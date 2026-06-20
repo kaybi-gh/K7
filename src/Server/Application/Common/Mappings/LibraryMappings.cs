@@ -19,7 +19,12 @@ public static class LibraryMappings
             MetadataRefreshIntervalDays = domain.MetadataRefreshIntervalDays,
             LibraryGroupId = domain.LibraryGroupId,
             PeerServerId = domain.PeerServerId,
-            PeerServerBaseUrl = domain.PeerServer?.BaseUrl
+            PeerServerBaseUrl = domain.PeerServer?.BaseUrl,
+            IntroDetectionEnabled = domain.IntroDetectionEnabled,
+            SeekbarThumbnailGenerationEnabled = domain.SeekbarThumbnailGenerationEnabled,
+            MusicAudioAnalysisEnabled = domain.MusicAudioAnalysisEnabled,
+            TranscodingEnabled = domain.TranscodingEnabled,
+            TransmuxingEnabled = domain.TransmuxingEnabled
         };
     }
 }

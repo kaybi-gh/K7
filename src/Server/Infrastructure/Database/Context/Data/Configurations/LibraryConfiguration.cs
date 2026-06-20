@@ -30,6 +30,12 @@ public class LibraryConfiguration : IEntityTypeConfiguration<Library>
             .IsRequired()
             .HasDefaultValue("en");
 
+        builder.Property(t => t.IntroDetectionEnabled).HasDefaultValue(true);
+        builder.Property(t => t.SeekbarThumbnailGenerationEnabled).HasDefaultValue(true);
+        builder.Property(t => t.MusicAudioAnalysisEnabled).HasDefaultValue(true);
+        builder.Property(t => t.TranscodingEnabled).HasDefaultValue(true);
+        builder.Property(t => t.TransmuxingEnabled).HasDefaultValue(true);
+
         builder
             .HasMany(l => l.IndexedFiles)
             .WithOne()

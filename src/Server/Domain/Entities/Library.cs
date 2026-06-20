@@ -13,6 +13,12 @@ public class Library : BaseAuditableEntity
     public int? MetadataRefreshIntervalDays { get; set; }
     public bool? RootPathAccessible { get; set; }
 
+    public bool IntroDetectionEnabled { get; set; } = true;
+    public bool SeekbarThumbnailGenerationEnabled { get; set; } = true;
+    public bool MusicAudioAnalysisEnabled { get; set; } = true;
+    public bool TranscodingEnabled { get; set; } = true;
+    public bool TransmuxingEnabled { get; set; } = true;
+
     public required Guid LibraryGroupId { get; set; }
     public LibraryGroup? LibraryGroup { get; set; }
 
