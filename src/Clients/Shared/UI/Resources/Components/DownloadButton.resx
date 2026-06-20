@@ -24,5 +24,5 @@
   <data name="DownloadOffline" xml:space="preserve"><value>Download for offline</value></data>
   <data name="DownloadQueued" xml:space="preserve"><value>'{0}' queued for download</value></data>
   <data name="DownloadRemoved" xml:space="preserve"><value>'{0}' removed from downloads</value></data>
-  <data name="DownloadOptions" xml:space="preserve"><value>Options de telechargement</value></data>
+  <data name="DownloadOptions" xml:space="preserve"><value>Options de téléchargement</value></data>
 </root>

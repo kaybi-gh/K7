@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -24,8 +24,8 @@
   <data name="More" xml:space="preserve"><value>Plus</value></data>
   <data name="Less" xml:space="preserve"><value>Moins</value></data>
   <data name="YearsOld" xml:space="preserve"><value>ans</value></data>
-  <data name="RefreshMetadata" xml:space="preserve"><value>Rafraichir les metadonnees</value></data>
-  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraichissement des metadonnees lance</value></data>
+  <data name="RefreshMetadata" xml:space="preserve"><value>Rafraîchir les métadonnées</value></data>
+  <data name="RefreshMetadataSent" xml:space="preserve"><value>Rafraîchissement des métadonnées lance</value></data>
   <data name="KnownFor" xml:space="preserve"><value>Connu(e) pour</value></data>
-  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
 </root>

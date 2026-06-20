@@ -19,7 +19,7 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Message" xml:space="preserve"><value>Voulez-vous vraiment supprimer la regle "{0}" ? Cette action est irreversible.</value></data>
+  <data name="Message" xml:space="preserve"><value>Voulez-vous vraiment supprimer la règle "{0}" ? Cette action est irréversible.</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
   <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
 </root>

@@ -20,6 +20,6 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="UrlLabel" xml:space="preserve"><value>URL du serveur distant</value></data>
-  <data name="Message" xml:space="preserve"><value>Entrez l'URL du serveur K7 avec lequel vous souhaitez etablir une connexion de federation.</value></data>
+  <data name="Message" xml:space="preserve"><value>Entrez l'URL du serveur K7 avec lequel vous souhaitez établir une connexion de fédération.</value></data>
   <data name="Send" xml:space="preserve"><value>Envoyer</value></data>
 </root>

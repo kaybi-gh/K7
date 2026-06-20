@@ -30,7 +30,7 @@
   <data name="Music" xml:space="preserve"><value>Musique</value></data>
   <data name="Movies" xml:space="preserve"><value>Films</value></data>
   <data name="TVShows" xml:space="preserve"><value>Series</value></data>
-  <data name="NoData" xml:space="preserve"><value>Aucune donnee</value></data>
+  <data name="NoData" xml:space="preserve"><value>Aucune donnée</value></data>
   <data name="WatchTime" xml:space="preserve"><value>Temps de visionnage</value></data>
   <data name="TotalPlays" xml:space="preserve"><value>Lectures totales</value></data>
   <data name="UniqueItems" xml:space="preserve"><value>Elements uniques</value></data>
@@ -39,20 +39,20 @@
   <data name="ByDayOfWeek" xml:space="preserve"><value>Par jour</value></data>
   <data name="TopGenres" xml:space="preserve"><value>Top genres</value></data>
   <data name="TopDevices" xml:space="preserve"><value>Top appareils</value></data>
-  <data name="TopItems" xml:space="preserve"><value>Top medias</value></data>
+  <data name="TopItems" xml:space="preserve"><value>Top médias</value></data>
   <data name="TopArtists" xml:space="preserve"><value>Top artistes</value></data>
   <data name="TopAlbums" xml:space="preserve"><value>Top albums</value></data>
   <data name="TopShows" xml:space="preserve"><value>Top series</value></data>
   <data name="Period" xml:space="preserve"><value>Periode</value></data>
-  <data name="MediaType" xml:space="preserve"><value>Type de media</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>
   <data name="From" xml:space="preserve"><value>Du</value></data>
   <data name="To" xml:space="preserve"><value>Au</value></data>
   <data name="Custom" xml:space="preserve"><value>Personnalise</value></data>
   <data name="PickDates" xml:space="preserve"><value>Choisir les dates</value></data>
   <data name="SelectEndDate" xml:space="preserve"><value>Choisir la date de fin</value></data>
-  <data name="PlaybackDetailsTitle" xml:space="preserve"><value>Details de lecture</value></data>
+  <data name="PlaybackDetailsTitle" xml:space="preserve"><value>Détails de lecture</value></data>
   <data name="PlaybackDecisions" xml:space="preserve"><value>Decisions</value></data>
-  <data name="Resolutions" xml:space="preserve"><value>Resolutions</value></data>
+  <data name="Resolutions" xml:space="preserve"><value>Résolutions</value></data>
   <data name="AudioLanguages" xml:space="preserve"><value>Langues audio</value></data>
   <data name="SubtitleLanguages" xml:space="preserve"><value>Langues sous-titres</value></data>
   <data name="TranscodeReasons" xml:space="preserve"><value>Raisons du transcodage</value></data>

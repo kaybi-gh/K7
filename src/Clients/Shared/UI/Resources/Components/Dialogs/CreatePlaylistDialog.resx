@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -22,7 +22,7 @@
   <data name="NameLabel" xml:space="preserve"><value>Nom de la playlist</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Le nom est requis</value></data>
   <data name="DescriptionOptional" xml:space="preserve"><value>Description (optionnelle)</value></data>
-  <data name="MediaType" xml:space="preserve"><value>Type de media</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>
   <data name="Creating" xml:space="preserve"><value>Création...</value></data>
   <data name="Created" xml:space="preserve"><value>Playlist créée</value></data>
   <data name="Error" xml:space="preserve"><value>Erreur lors de la création</value></data>

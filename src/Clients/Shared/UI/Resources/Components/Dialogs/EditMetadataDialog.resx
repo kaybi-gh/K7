@@ -35,32 +35,32 @@
   <data name="Status" xml:space="preserve"><value>Statut</value></data>
   <data name="Network" xml:space="preserve"><value>Chaine</value></data>
   <data name="AirDate" xml:space="preserve"><value>Date de diffusion</value></data>
-  <data name="Runtime" xml:space="preserve"><value>Duree (min)</value></data>
+  <data name="Runtime" xml:space="preserve"><value>Durée (min)</value></data>
   <data name="Biography" xml:space="preserve"><value>Biographie</value></data>
   <data name="Country" xml:space="preserve"><value>Pays</value></data>
   <data name="Birthday" xml:space="preserve"><value>Date de naissance</value></data>
   <data name="Deathday" xml:space="preserve"><value>Date de deces</value></data>
   <data name="BirthPlace" xml:space="preserve"><value>Lieu de naissance</value></data>
-  <data name="TrackNumber" xml:space="preserve"><value>Numero de piste</value></data>
-  <data name="DiscNumber" xml:space="preserve"><value>Numero de disque</value></data>
+  <data name="TrackNumber" xml:space="preserve"><value>Numéro de piste</value></data>
+  <data name="DiscNumber" xml:space="preserve"><value>Numéro de disque</value></data>
   <data name="Lyrics" xml:space="preserve"><value>Paroles</value></data>
-  <data name="Pictures" xml:space="preserve"><value>Images (verrouiller empeche l'ecrasement au rafraichissement)</value></data>
-  <data name="LockField" xml:space="preserve"><value>Verrouiller le champ (empecher le rafraichissement de l'ecraser)</value></data>
-  <data name="UnlockField" xml:space="preserve"><value>Deverrouiller le champ (autoriser la mise a jour au rafraichissement)</value></data>
+  <data name="Pictures" xml:space="preserve"><value>Images (verrouiller empêche l'écrasement au rafraichissement)</value></data>
+  <data name="LockField" xml:space="preserve"><value>Verrouiller le champ (empêcher le rafraichissement de l'écraser)</value></data>
+  <data name="UnlockField" xml:space="preserve"><value>Déverrouiller le champ (autoriser la mise a jour au rafraichissement)</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
-  <data name="DialogTitle" xml:space="preserve"><value>Modifier les metadonnees</value></data>
+  <data name="DialogTitle" xml:space="preserve"><value>Modifier les métadonnées</value></data>
   <data name="PictureType" xml:space="preserve"><value>Type d'image</value></data>
   <data name="UploadPicture" xml:space="preserve"><value>Choisir une image...</value></data>
   <data name="Upload" xml:space="preserve"><value>Envoyer</value></data>
   <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="PictureUploaded" xml:space="preserve"><value>Image envoyee avec succes</value></data>
-  <data name="PictureDeleted" xml:space="preserve"><value>Image supprimee avec succes</value></data>
+  <data name="PictureUploaded" xml:space="preserve"><value>Image envoyée avec succès</value></data>
+  <data name="PictureDeleted" xml:space="preserve"><value>Image supprimée avec succès</value></data>
   <data name="BrowseProviderImages" xml:space="preserve"><value>Parcourir les images du fournisseur</value></data>
-  <data name="ImportSelected" xml:space="preserve"><value>Importer la selection</value></data>
-  <data name="TabMetadata" xml:space="preserve"><value>Metadonnees</value></data>
+  <data name="ImportSelected" xml:space="preserve"><value>Importer la sélection</value></data>
+  <data name="TabMetadata" xml:space="preserve"><value>Métadonnées</value></data>
   <data name="TabImages" xml:space="preserve"><value>Images</value></data>
-  <data name="ProviderImportSuccess" xml:space="preserve"><value>Image importee avec succes</value></data>
+  <data name="ProviderImportSuccess" xml:space="preserve"><value>Image importée avec succès</value></data>
   <data name="ExternalIds" xml:space="preserve"><value>Identifiants externes</value></data>
   <data name="Provider" xml:space="preserve"><value>Fournisseur</value></data>
   <data name="Value" xml:space="preserve"><value>Valeur</value></data>

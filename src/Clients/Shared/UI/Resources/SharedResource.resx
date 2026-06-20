@@ -91,36 +91,36 @@
   <data name="NoResults" xml:space="preserve"><value>Aucun resultat</value></data>
   <data name="JumpIndex" xml:space="preserve"><value>Index de navigation</value></data>
   <data name="ViewMode" xml:space="preserve"><value>Mode d'affichage</value></data>
-  <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
+  <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
   <data name="SleepTimer" xml:space="preserve"><value>Minuterie</value></data>
   <data name="EndOfTrack" xml:space="preserve"><value>Fin du morceau</value></data>
   <data name="CancelSleepTimer" xml:space="preserve"><value>Annuler la minuterie</value></data>
   <data name="Share" xml:space="preserve"><value>Partager</value></data>
   <data name="Shared" xml:space="preserve"><value>Partage</value></data>
-  <data name="CopiedToClipboard" xml:space="preserve"><value>Copie dans le presse-papiers</value></data>
+  <data name="CopiedToClipboard" xml:space="preserve"><value>Copié dans le presse-papiers</value></data>
   <data name="SaveQueueAsPlaylist" xml:space="preserve"><value>Enregistrer la file en playlist</value></data>
-  <data name="QueueSavedAsPlaylist" xml:space="preserve"><value>File enregistree en playlist</value></data>
+  <data name="QueueSavedAsPlaylist" xml:space="preserve"><value>File enregistrée en playlist</value></data>
   <data name="Visualizer" xml:space="preserve"><value>Activer le visualiseur</value></data>
-  <data name="DisableVisualizer" xml:space="preserve"><value>Desactiver le visualiseur</value></data>
+  <data name="DisableVisualizer" xml:space="preserve"><value>Désactiver le visualiseur</value></data>
   <data name="TrackInfo" xml:space="preserve"><value>Infos du morceau</value></data>
-  <data name="AudioDetails" xml:space="preserve"><value>Details audio</value></data>
+  <data name="AudioDetails" xml:space="preserve"><value>Détails audio</value></data>
   <data name="Codec" xml:space="preserve"><value>Codec</value></data>
   <data name="Container" xml:space="preserve"><value>Conteneur</value></data>
-  <data name="SampleRate" xml:space="preserve"><value>Frequence d'echantillonnage</value></data>
+  <data name="SampleRate" xml:space="preserve"><value>Fréquence d'échantillonnage</value></data>
   <data name="Channels" xml:space="preserve"><value>Canaux</value></data>
   <data name="FileSize" xml:space="preserve"><value>Taille du fichier</value></data>
-  <data name="Bitrate" xml:space="preserve"><value>Debit</value></data>
-  <data name="TrackProperties" xml:space="preserve"><value>Proprietes du morceau</value></data>
-  <data name="Key" xml:space="preserve"><value>Tonalite</value></data>
+  <data name="Bitrate" xml:space="preserve"><value>Débit</value></data>
+  <data name="TrackProperties" xml:space="preserve"><value>Propriétés du morceau</value></data>
+  <data name="Key" xml:space="preserve"><value>Tonalité</value></data>
   <data name="Loudness" xml:space="preserve"><value>Volume</value></data>
-  <data name="Energy" xml:space="preserve"><value>Energie</value></data>
-  <data name="Danceability" xml:space="preserve"><value>Dansabilite</value></data>
+  <data name="Energy" xml:space="preserve"><value>Énergie</value></data>
+  <data name="Danceability" xml:space="preserve"><value>Dansabilité</value></data>
   <data name="Valence" xml:space="preserve"><value>Valence</value></data>
-  <data name="ListeningStats" xml:space="preserve"><value>Statistiques d'ecoute</value></data>
-  <data name="PlayCount" xml:space="preserve"><value>Nombre d'ecoutes</value></data>
-  <data name="TotalPlayCount" xml:space="preserve"><value>Ecoutes totales</value></data>
-  <data name="LastPlayed" xml:space="preserve"><value>Derniere ecoute</value></data>
-  <data name="UpNext" xml:space="preserve"><value>A suivre</value></data>
+  <data name="ListeningStats" xml:space="preserve"><value>Statistiques d'écoute</value></data>
+  <data name="PlayCount" xml:space="preserve"><value>Nombre d'écoutes</value></data>
+  <data name="TotalPlayCount" xml:space="preserve"><value>Écoutes totales</value></data>
+  <data name="LastPlayed" xml:space="preserve"><value>Dernière écoute</value></data>
+  <data name="UpNext" xml:space="preserve"><value>À suivre</value></data>
   <data name="NoPreviousTracks" xml:space="preserve"><value>Aucun morceau precedent</value></data>
   <data name="NoUpcomingTracks" xml:space="preserve"><value>Aucun morceau a suivre</value></data>
   <data name="Back" xml:space="preserve"><value>Retour</value></data>

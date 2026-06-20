@@ -37,7 +37,7 @@
   <data name="ChangePassword" xml:space="preserve"><value>Changer le mot de passe</value></data>
   <data name="RemovePassword" xml:space="preserve"><value>Retirer le mot de passe</value></data>
   <data name="SetPassword" xml:space="preserve"><value>Definir un mot de passe</value></data>
-  <data name="NoPasswordSet" xml:space="preserve"><value>Aucun mot de passe defini. Vous pouvez en definir un pour vous connecter sans SSO.</value></data>
+  <data name="NoPasswordSet" xml:space="preserve"><value>Aucun mot de passe défini. Vous pouvez en définir un pour vous connecter sans SSO.</value></data>
   <data name="PasswordFieldsRequired" xml:space="preserve"><value>Tous les champs mot de passe sont requis.</value></data>
   <data name="PasswordMismatch" xml:space="preserve"><value>Les mots de passe ne correspondent pas.</value></data>
   <data name="PasswordChanged" xml:space="preserve"><value>Mot de passe modifie.</value></data>
@@ -45,10 +45,10 @@
   <data name="PasswordRemoved" xml:space="preserve"><value>Mot de passe retire.</value></data>
   <data name="ConfirmPassword" xml:space="preserve"><value>Confirmer le mot de passe</value></data>
   <data name="Pin" xml:space="preserve"><value>PIN</value></data>
-  <data name="PinSet" xml:space="preserve"><value>Un PIN est defini sur votre compte.</value></data>
+  <data name="PinSet" xml:space="preserve"><value>Un PIN est défini sur votre compte.</value></data>
   <data name="ChangePin" xml:space="preserve"><value>Changer le PIN</value></data>
   <data name="RemovePin" xml:space="preserve"><value>Retirer le PIN</value></data>
-  <data name="PinNotSet" xml:space="preserve"><value>Aucun PIN defini. Un PIN protege l'acces a votre compte sur les appareils partages.</value></data>
+  <data name="PinNotSet" xml:space="preserve"><value>Aucun PIN défini. Un PIN protège l'accès à votre compte sur les appareils partagés.</value></data>
   <data name="SetPin" xml:space="preserve"><value>Definir un PIN</value></data>
   <data name="SetPinDialogTitle" xml:space="preserve"><value>Definir un PIN</value></data>
   <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirmer le PIN</value></data>
@@ -56,19 +56,19 @@
   <data name="NewPinDialogTitle" xml:space="preserve"><value>Nouveau PIN</value></data>
   <data name="ConfirmNewPinDialogTitle" xml:space="preserve"><value>Confirmer le nouveau PIN</value></data>
   <data name="RemovePinDialogTitle" xml:space="preserve"><value>Retirer le PIN</value></data>
-  <data name="RemovePinConfirm" xml:space="preserve"><value>Etes-vous sur de vouloir retirer votre PIN ?</value></data>
+  <data name="RemovePinConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir retirer votre PIN ?</value></data>
   <data name="UserUnknown" xml:space="preserve"><value>Impossible d'identifier l'utilisateur actuel.</value></data>
-  <data name="PinSetSuccess" xml:space="preserve"><value>PIN defini avec succes.</value></data>
+  <data name="PinSetSuccess" xml:space="preserve"><value>PIN défini avec succès.</value></data>
   <data name="PinRemovedSuccess" xml:space="preserve"><value>PIN retire.</value></data>
   <data name="Language" xml:space="preserve"><value>Langue</value></data>
-  <data name="LoginMethods" xml:space="preserve"><value>Methodes de connexion</value></data>
+  <data name="LoginMethods" xml:space="preserve"><value>Méthodes de connexion</value></data>
   <data name="Unlink" xml:space="preserve"><value>Dissocier</value></data>
   <data name="NoExternalLogins" xml:space="preserve"><value>Aucun fournisseur externe lie.</value></data>
   <data name="UnlinkLoginTitle" xml:space="preserve"><value>Dissocier le fournisseur</value></data>
-  <data name="UnlinkLoginConfirm" xml:space="preserve"><value>Etes-vous sur de vouloir dissocier ce fournisseur de connexion ?</value></data>
+  <data name="UnlinkLoginConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir dissocier ce fournisseur de connexion ?</value></data>
   <data name="DangerZone" xml:space="preserve"><value>Zone de danger</value></data>
-  <data name="DeleteAccountWarning" xml:space="preserve"><value>La suppression de votre compte est irreversible. Toutes vos donnees seront perdues.</value></data>
+  <data name="DeleteAccountWarning" xml:space="preserve"><value>La suppression de votre compte est irréversible. Toutes vos données seront perdues.</value></data>
   <data name="DeleteAccount" xml:space="preserve"><value>Supprimer mon compte</value></data>
   <data name="DeleteAccountTitle" xml:space="preserve"><value>Supprimer le compte</value></data>
-  <data name="DeleteAccountConfirm" xml:space="preserve"><value>Etes-vous sur de vouloir supprimer votre compte ? Cette action est irreversible.</value></data>
+  <data name="DeleteAccountConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.</value></data>
 </root>

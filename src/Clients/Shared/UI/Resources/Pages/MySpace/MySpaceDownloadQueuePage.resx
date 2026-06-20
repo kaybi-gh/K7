@@ -20,10 +20,12 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>File d'attente</value></data>
-  <data name="ActiveDownloads" xml:space="preserve"><value>Telechargements actifs</value></data>
-  <data name="EmptyQueue" xml:space="preserve"><value>Aucun telechargement actif</value></data>
+  <data name="Title" xml:space="preserve"><value>Titre</value></data>
+  <data name="Progress" xml:space="preserve"><value>Progression</value></data>
+  <data name="ActiveDownloads" xml:space="preserve"><value>Téléchargements actifs</value></data>
+  <data name="EmptyQueue" xml:space="preserve"><value>Aucun téléchargement actif</value></data>
   <data name="CancelAll" xml:space="preserve"><value>Tout annuler</value></data>
   <data name="StatusQueued" xml:space="preserve"><value>En attente</value></data>
-  <data name="StatusPreparing" xml:space="preserve"><value>Preparation...</value></data>
-  <data name="StatusDownloading" xml:space="preserve"><value>Telechargement</value></data>
+  <data name="StatusPreparing" xml:space="preserve"><value>Préparation...</value></data>
+  <data name="StatusDownloading" xml:space="preserve"><value>Téléchargement</value></data>
 </root>

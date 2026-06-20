@@ -42,12 +42,12 @@
   <data name="TopGenres" xml:space="preserve"><value>Top Genres</value></data>
   <data name="TopDevices" xml:space="preserve"><value>Top Appareils</value></data>
   <data name="Period" xml:space="preserve"><value>Periode</value></data>
-  <data name="MediaType" xml:space="preserve"><value>Type de media</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>
   <data name="PickDates" xml:space="preserve"><value>Choisir les dates</value></data>
   <data name="SelectEndDate" xml:space="preserve"><value>Choisir la date de fin</value></data>
-  <data name="PlaybackDetailsTitle" xml:space="preserve"><value>Details de lecture</value></data>
+  <data name="PlaybackDetailsTitle" xml:space="preserve"><value>Détails de lecture</value></data>
   <data name="PlaybackDecisions" xml:space="preserve"><value>Decisions</value></data>
-  <data name="Resolutions" xml:space="preserve"><value>Resolutions</value></data>
+  <data name="Resolutions" xml:space="preserve"><value>Résolutions</value></data>
   <data name="AudioLanguages" xml:space="preserve"><value>Langues audio</value></data>
   <data name="SubtitleLanguages" xml:space="preserve"><value>Langues sous-titres</value></data>
   <data name="TranscodeReasons" xml:space="preserve"><value>Raisons du transcodage</value></data>
