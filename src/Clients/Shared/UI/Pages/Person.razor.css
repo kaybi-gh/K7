@@ -49,6 +49,7 @@
     height: 100%;
     overflow: hidden;
     flex-shrink: 0;
+    z-index: 2;
 }
 
 /* Content below hero (carousels) */
@@ -194,12 +195,13 @@
 
 .person-scroll-hint {
     position: absolute;
-    bottom: var(--space-2);
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
     opacity: 0.4;
     animation: person-bounce-hint 2s ease-in-out infinite;
+    pointer-events: none;
 }
 
 @keyframes person-bounce-hint {
@@ -238,10 +240,16 @@
 }
 
 /* ============================================================
-   Responsive: Mobile (max-width: 600px)
+   Responsive: Mobile (max-width: 599.98px)
    ============================================================ */
 
-@media (max-width: 600px) {
+@media (max-width: 599.98px) {
+    .person-main {
+        min-height: 85vh;
+        height: auto;
+        overflow: visible;
+    }
+
     .person-hero {
         padding: var(--space-10) var(--space-4) var(--space-6);
         justify-content: flex-end;
@@ -262,6 +270,19 @@
     .person-info {
         text-align: center;
         padding-bottom: 0;
+        width: 100%;
+    }
+
+    .person-name-row {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-1);
+        max-width: 100%;
+    }
+
+    .person-name {
+        text-align: left;
     }
 
     .person-meta {

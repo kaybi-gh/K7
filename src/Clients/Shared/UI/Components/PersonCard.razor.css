@@ -1,7 +1,14 @@
-﻿.personrole-item {
+.personrole-item {
     display: flex;
     padding: 4px;
     width: 150px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.personrole-item ::deep .k7-avatar {
+    width: 150px;
+    height: 150px;
 }
 
 .personrole-item:focus-visible {
@@ -46,6 +53,11 @@
     animation: person-title-scroll 3s linear 0.5s infinite alternate;
 }
 
+.personrole-item:hover .person-title,
+.personrole-item:focus-within .person-title {
+    overflow: visible;
+}
+
 .person-subtitle {
     width: 100%;
     height: 1lh;
@@ -72,13 +84,44 @@
     animation: person-title-scroll 3s linear 0.5s infinite alternate;
 }
 
+.personrole-item:hover .person-subtitle,
+.personrole-item:focus-within .person-subtitle {
+    overflow: visible;
+}
+
 @keyframes person-title-scroll {
     from { transform: translateX(0); }
     to   { transform: translateX(min(0px, calc(100cqw - 100%))); }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599.98px) {
     .personrole-item {
         width: 120px;
+    }
+
+    .personrole-item ::deep .k7-avatar {
+        width: 120px;
+        height: 120px;
+    }
+
+    .personrole-item:hover .person-title-inner,
+    .personrole-item:focus-within .person-title-inner,
+    .personrole-item:hover .person-subtitle-inner,
+    .personrole-item:focus-within .person-subtitle-inner {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        animation: none;
+        transform: none;
+    }
+
+    .personrole-item:hover ::deep .k7-avatar,
+    .personrole-item:focus-within ::deep .k7-avatar {
+        outline-color: transparent;
+    }
+
+    .personrole-item:focus-visible ::deep .k7-avatar {
+        outline-color: var(--color-accent);
     }
 }

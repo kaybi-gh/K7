@@ -1,7 +1,3 @@
-@using K7.Shared.Dtos.Entities.PersonRoles
-@using K7.Shared.Interfaces
-@inject IK7ServerService k7ServerService
-
 @if (Skeleton)
 {
     <div class="d-flex flex-col">
@@ -17,38 +13,9 @@
 }
 else
 {
-    <a class="personrole-item" href="@("/persons/" + LitePersonRoleDto.Person!.Id)">
-        <div class="d-flex flex-col">
-            <K7Avatar Class="focusable" Style="height:150px; width:150px;">
-                @if (LitePersonRoleDto.PortraitPicture is not null)
-                {
-                    <K7Image Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="cover" loading="lazy" />
-                }
-                else if (LitePersonRoleDto.Person?.PortraitPicture is not null)
-                {
-                    <K7Image Src="@k7ServerService.GetAbsoluteUri(LitePersonRoleDto.Person.PortraitPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="cover" loading="lazy" />
-                }
-                else
-                {
-                    <K7Image Src="_content/K7.Clients.Shared.UI/images/person-placeholder.png" Alt="@LitePersonRoleDto.Person!.Name" Fluid="true" ObjectFit="cover" loading="lazy" />
-                }
-            </K7Avatar>
-
-            <div class="person-footer">
-                <div class="person-title"><span class="person-title-inner">@LitePersonRoleDto.Person.Name</span></div>
-                @if (LitePersonRoleDto is LiteCrewMemberDto liteCrewMemberDto)
-                {
-                    <div class="person-subtitle"><span class="person-subtitle-inner">@liteCrewMemberDto.Department / @liteCrewMemberDto.Job</span></div>
-                }
-                else if (LitePersonRoleDto is LiteActorDto liteActorDto)
-                {
-                    <div class="person-subtitle"><span class="person-subtitle-inner">@liteActorDto.CharacterName</span></div>
-                }
-                else if (LitePersonRoleDto is LiteMusicArtistRoleDto liteMusicArtistRoleDto && !string.IsNullOrEmpty(liteMusicArtistRoleDto.Role))
-                {
-                    <div class="person-subtitle"><span class="person-subtitle-inner">@liteMusicArtistRoleDto.Role</span></div>
-                }
-            </div>
-        </div>
-    </a>
+    <PersonCard Href="@($"/persons/{LitePersonRoleDto.Person!.Id}")"
+                Title="@LitePersonRoleDto.Person.Name"
+                Subtitle="@GetSubtitle()"
+                ImageUrl="@GetImageUrl()"
+                Alt="@LitePersonRoleDto.Person.Name" />
 }
