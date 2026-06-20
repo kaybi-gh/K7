@@ -1,4 +1,5 @@
 .media-card {
+    position: relative;
     width: 100%;
     min-width: 0;
     container-type: inline-size;
@@ -47,29 +48,29 @@
     outline: none !important;
 }
 
-.media-card-container:hover .media-card-progress-bar,
+.media-card:hover .media-card-progress-bar,
+.media-card:focus-within .media-card-progress-bar,
 .media-card-link:focus-visible .media-card-progress-bar {
     display: none;
 }
 
-.media-card-container:hover .media-card-overlay,
+.media-card:hover .media-card-overlay,
+.media-card:focus-within .media-card-overlay,
 .media-card-link:focus-visible .media-card-overlay {
     display: flex;
-}
-
-.media-card-container:hover .media-card-watched,
-.media-card-link:focus-visible .media-card-watched {
-    display: flex;
-    background-color: var(--color-overlay);
 }
 
 .media-card-watched {
     position: absolute;
     top: 0;
     right: 0;
-    background-color: var(--color-overlay);
+    z-index: 2;
     display: flex;
-    border-radius: 0 0 0 5px;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    background-color: color-mix(in srgb, var(--color-overlay) 85%, var(--color-success) 15%);
+    border-radius: 0 0 0 var(--radius-sm);
 }
 
 .media-card-group-count {
@@ -114,10 +115,22 @@
     display: none;
 }
 
-.media-card-container:hover .media-card-menu,
-.media-card-container:focus-within .media-card-menu,
+.media-card:hover .media-card-menu,
+.media-card:focus-within .media-card-menu,
 .media-card-menu--open {
     display: block;
+}
+
+@media (min-width: 600px) {
+    .media-card--play-only .media-card-menu:not(.media-card-menu--open) {
+        display: none !important;
+    }
+}
+
+.media-card--menu-open,
+.media-card--menu-open .media-card-footer {
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .media-card-placeholder {
@@ -133,6 +146,24 @@
     width: 100%;
 }
 
+.media-card-footer-skeleton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding-top: var(--space-2);
+}
+
+.media-card-footer-skeleton ::deep .media-card-skeleton-title {
+    height: 0.7rem;
+    border-radius: var(--radius-sm);
+}
+
+.media-card-footer-skeleton ::deep .media-card-skeleton-subtitle {
+    height: 0.6rem;
+    border-radius: var(--radius-sm);
+}
+
 ::deep .media-card-title {
     width: 100%;
     text-align: center;
@@ -146,11 +177,18 @@
 ::deep .media-card-subtitle {
     width: 100%;
     text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     overflow: hidden;
     font-size: var(--text-xs);
     color: var(--color-text-muted);
+}
+
+.media-card-subtitle-inner {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    will-change: transform;
 }
 
 .media-card-title-inner {
@@ -162,8 +200,17 @@
     will-change: transform;
 }
 
+.media-card:hover .media-card-title,
+.media-card:focus-within .media-card-title,
+.media-card:hover .media-card-subtitle,
+.media-card:focus-within .media-card-subtitle {
+    overflow: visible;
+}
+
 .media-card:hover .media-card-title-inner,
-.media-card:focus-within .media-card-title-inner {
+.media-card:focus-within .media-card-title-inner,
+.media-card:hover .media-card-subtitle-inner,
+.media-card:focus-within .media-card-subtitle-inner {
     display: inline-block;
     width: auto;
     overflow: visible;
@@ -175,33 +222,36 @@
     to   { transform: translateX(min(0px, calc(100cqw - 100%))); }
 }
 
-@media (max-width: 600px) {
-    .media-card--poster .media-card-container {
-        width: 30vw;
-        aspect-ratio: 2 / 3;
+@media (max-width: 599.98px) {
+    .media-card--poster,
+    .media-card--cover {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        min-width: 0;
     }
 
-    .media-card--poster .media-card-footer {
-        max-width: 30vw;
+    .media-card--poster .media-card-container,
+    .media-card--cover .media-card-container {
+        width: 100%;
+    }
+
+    .media-card--poster .media-card-footer,
+    .media-card--cover .media-card-footer {
+        width: 100%;
     }
 
     .media-card--poster .media-card-title,
     .media-card--poster .media-card-subtitle {
-        max-width: 30vw;
-    }
-
-    .media-card--cover .media-card-container {
-        width: 30vw;
-        aspect-ratio: 1 / 1;
-    }
-
-    .media-card--cover .media-card-footer {
-        max-width: 30vw;
+        width: 100%;
+        max-width: none;
     }
 
     .media-card--cover .media-card-title,
     .media-card--cover .media-card-subtitle {
-        max-width: 30vw;
+        width: 100%;
+        max-width: none;
     }
 
     .media-card--backdrop .media-card-container {
@@ -210,23 +260,61 @@
     }
 
     .media-card--backdrop .media-card-footer {
-        max-width: 60vw;
+        width: 100%;
     }
 
     .media-card--backdrop .media-card-title,
     .media-card--backdrop .media-card-subtitle {
-        max-width: 60vw;
+        width: 100%;
+        max-width: none;
     }
 
-    .media-card-overlay,
+    ::deep .media-card-subtitle {
+        white-space: normal;
+    }
+
+    ::deep .media-card-subtitle-inner {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: unset;
+    }
+
+    .media-card:hover .media-card-title-inner,
+    .media-card:focus-within .media-card-title-inner,
+    .media-card:hover .media-card-subtitle-inner,
+    .media-card:focus-within .media-card-subtitle-inner {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        animation: none;
+        transform: none;
+    }
+
+    .media-card-overlay {
+        display: none !important;
+    }
+
+    .media-card:hover .media-card-overlay,
+    .media-card:focus-within .media-card-overlay,
+    .media-card-link:focus-visible .media-card-overlay {
+        display: none !important;
+    }
+
+    /* Visually hidden but kept in DOM so K7Menu can portal backdrop/dropdown to body. */
     .media-card-menu {
-        display: none !important;
-    }
-
-    .media-card-container:hover .media-card-overlay,
-    .media-card-link:focus-visible .media-card-overlay,
-    .media-card-container:hover .media-card-menu,
-    .media-card-container:focus-within .media-card-menu {
-        display: none !important;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+        pointer-events: none;
     }
 }

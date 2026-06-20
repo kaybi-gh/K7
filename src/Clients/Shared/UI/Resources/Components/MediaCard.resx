@@ -21,5 +21,6 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="HideForMe" xml:space="preserve"><value>Masquer pour moi</value></data>
   <data name="HideForUser" xml:space="preserve"><value>Masquer pour un utilisateur</value></data>
+  <data name="Play" xml:space="preserve"><value>Lecture</value></data>
 </root>
 

@@ -49,6 +49,7 @@ public partial class Home : IDisposable
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
+        CacheStore.HomeFeedInvalidated += OnHomeFeedInvalidated;
 
         HomeLayoutDto layout;
         try
@@ -102,14 +103,14 @@ public partial class Home : IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender || !_isTv)
+            return;
+
+        try
         {
-            try
-            {
-                await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
-            }
-            catch (InvalidOperationException) { }
+            await SpatialNav.FocusFirstAsync("[data-carousel-item] a, [data-carousel-item] button");
         }
+        catch (InvalidOperationException) { }
     }
 
     private void OnProgressUpdated(Guid mediaId, double progressPercentage, bool isCompleted)
@@ -131,14 +132,38 @@ public partial class Home : IDisposable
 
         if (changed)
         {
-            InvokeAsync(StateHasChanged);
+            _ = InvokeAsync(StateHasChanged);
+            return;
         }
+
+        if (!_rows.Any(r => r.Config.ContinueWatching))
+            return;
+
+        CacheStore.InvalidateByPrefix("home-feed");
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshContinueWatchingRowsAsync();
+            StateHasChanged();
+        });
     }
 
     public void Dispose()
     {
         K7HubClient.ProgressUpdated -= OnProgressUpdated;
         K7HubClient.MediaBatchAdded -= OnMediaBatchAdded;
+        CacheStore.HomeFeedInvalidated -= OnHomeFeedInvalidated;
+    }
+
+    private void OnHomeFeedInvalidated()
+    {
+        if (isLoading || _isOffline)
+            return;
+
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshAllRowsAsync();
+            StateHasChanged();
+        });
     }
 
     private void OnMediaBatchAdded(List<MediaBatchItem> items)
@@ -150,6 +175,64 @@ public partial class Home : IDisposable
             await RefreshNonContinueWatchingRowsAsync();
             StateHasChanged();
         });
+    }
+
+    private async Task RefreshContinueWatchingRowsAsync()
+    {
+        var tasks = _rows
+            .Where(r => r.Config.ContinueWatching)
+            .Select(async r =>
+            {
+                var query = new GetHomeFeedQuery
+                {
+                    ContinueWatching = true,
+                    LibraryIds = r.Config.LibraryIds?.ToArray(),
+                    MediaTypes = r.Config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
+                    OrderBy = r.Config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
+                    Detailed = _isTv,
+                    PageNumber = 1,
+                    PageSize = r.Config.PageSize
+                };
+
+                var items = await FetchRowAsync(query);
+                if (items is not null)
+                {
+                    var cacheKey = MediaCacheStore.BuildKey("home-feed", r.Config.Title, r.Config.ContinueWatching.ToString());
+                    CacheStore.Set(cacheKey, items);
+                    r.Items.Clear();
+                    r.Items.AddRange(items);
+                }
+            });
+
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task RefreshAllRowsAsync()
+    {
+        var tasks = _rows.Select(async r =>
+        {
+            var query = new GetHomeFeedQuery
+            {
+                ContinueWatching = r.Config.ContinueWatching ? true : null,
+                LibraryIds = r.Config.LibraryIds?.ToArray(),
+                MediaTypes = r.Config.MediaTypes is { Count: > 0 } mt ? mt.ToHashSet() : null,
+                OrderBy = r.Config.OrderBy is { Count: > 0 } ob ? ob.ToHashSet() : null,
+                Detailed = _isTv,
+                PageNumber = 1,
+                PageSize = r.Config.PageSize
+            };
+
+            var items = await FetchRowAsync(query);
+            if (items is not null)
+            {
+                var cacheKey = MediaCacheStore.BuildKey("home-feed", r.Config.Title, r.Config.ContinueWatching.ToString());
+                CacheStore.Set(cacheKey, items);
+                r.Items.Clear();
+                r.Items.AddRange(items);
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
 
     private async Task RefreshNonContinueWatchingRowsAsync()
@@ -243,8 +326,12 @@ public partial class Home : IDisposable
         }
     }
 
-    private string GetHref(MediaCardViewModel item) =>
-        item.NavigationTarget ?? item.Kind switch
+    private string GetHref(MediaCardViewModel item)
+    {
+        if (!_isTv && item.Kind == MediaCardKind.Episode && TryGetEpisodePageHref(item, out var episodeHref))
+            return episodeHref;
+
+        return item.NavigationTarget ?? item.Kind switch
         {
             MediaCardKind.Cover => $"/music/albums/{item.ParentId ?? item.Id}",
             MediaCardKind.Serie => $"/series/{item.Id}",
@@ -252,6 +339,30 @@ public partial class Home : IDisposable
             MediaCardKind.Episode => $"/series/{item.ParentId ?? item.Id}/seasons/{item.SeasonNumber}#ep-{item.EpisodeNumber}",
             _ => $"/movies/{item.Id}"
         };
+    }
+
+    private static bool TryGetEpisodePageHref(MediaCardViewModel item, out string href)
+    {
+        href = "";
+
+        if (item.SeasonNumber is int season && item.EpisodeNumber is int episode)
+        {
+            var serieId = item.ParentId ?? item.Id;
+            href = $"/series/{serieId}/seasons/{season}/episodes/{episode}";
+            return true;
+        }
+
+        if (item.NavigationTarget is not { } nav)
+            return false;
+
+        const string anchor = "#ep-";
+        var anchorIndex = nav.IndexOf(anchor, StringComparison.Ordinal);
+        if (anchorIndex <= 0 || !int.TryParse(nav.AsSpan(anchorIndex + anchor.Length), out var episodeNumber))
+            return false;
+
+        href = $"{nav[..anchorIndex]}/episodes/{episodeNumber}";
+        return true;
+    }
 
     private MediaCardVariant GetVariant(MediaCardViewModel item) => item.Kind switch
     {
@@ -272,6 +383,10 @@ public partial class Home : IDisposable
                 foreach (var (_, items) in _rows)
                     items.RemoveAll(x => x.Id == model.Id || x.ParentId == model.Id);
             }
+
+            CacheStore.InvalidateByPrefix("home-feed");
+            await RefreshAllRowsAsync();
+            StateHasChanged();
         }
         catch (Exception ex)
         {

@@ -118,7 +118,7 @@ public static class LiteMediaMappings
             Id = item.Id.ToString(),
             Kind = kind,
             Title = item.Title,
-            AdditionalInformations = item.AdditionalInfo,
+            AdditionalInformations = item.AdditionalInfo ?? item.ReleaseDate?.Year.ToString(),
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
             Watched = item.Watched,

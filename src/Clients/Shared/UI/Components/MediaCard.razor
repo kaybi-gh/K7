@@ -9,10 +9,10 @@
 
         @if (FooterVisible)
         {
-            <div class="media-card-footer">
-                <div class="d-flex flex-col">
-                    <K7Skeleton Shape="text" Width="80%" />
-                    <K7Skeleton Shape="text" Width="50%" />
+            <div class="media-card-footer mt-1">
+                <div class="media-card-footer-skeleton">
+                    <K7Skeleton Shape="text" Width="78%" Class="media-card-skeleton-title" />
+                    <K7Skeleton Shape="text" Width="44%" Class="media-card-skeleton-subtitle" />
                 </div>
             </div>
         }
@@ -20,14 +20,24 @@
 }
 else
 {
-    <div class="media-card @VariantClass" @onfocusin="OnFocused">
-        <div class="media-card-container" data-longpress="@(ExcludeMenuEnabled ? "true" : null)">
+    <div class="media-card @VariantClass @GetRootClass()" @onfocusin="OnFocused">
+        <div class="media-card-container"
+             data-longpress="@(LongPressEnabled ? "true" : null)"
+             @ontouchstart="OnTouchStart"
+             @ontouchmove="OnTouchMove"
+             @ontouchend="OnTouchEnd"
+             @ontouchcancel="OnTouchCancel"
+             @oncontextmenu="OnContextMenu"
+             @oncontextmenu:preventDefault="@LongPressEnabled">
             @if (!string.IsNullOrEmpty(Href))
             {
-            <a class="media-card-link focusable" href="@Href">
+            <a class="media-card-link focusable"
+               href="@Href"
+               @onclick="OnLinkClick"
+               @onclick:preventDefault="@_preventNextClick">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
-                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Fluid="true" ObjectFit="cover" loading="lazy" />
+                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Fluid="true" ObjectFit="cover" loading="lazy" />
                 }
                 else
                 {
@@ -39,7 +49,7 @@ else
                 @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
                     <div class="media-card-watched">
-                        <K7Icon Size="sm" class="ma-1" Color="success" Icon="@Phosphor.CheckCircle" />
+                        <K7Icon Size="md" Color="success" Icon="@Phosphor.Fill.CheckCircle" />
                     </div>
                 }
 
@@ -70,7 +80,7 @@ else
             <div class="media-card-link">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
-                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Style="height: 100%;" Fluid="true" ObjectFit="cover" loading="lazy" />
+                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Fluid="true" ObjectFit="cover" loading="lazy" />
                 }
                 else
                 {
@@ -81,31 +91,39 @@ else
             </div>
             }
 
-            @if (ExcludeMenuEnabled)
-            {
-                <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target>
-                    <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged">
-                        <ActivatorContent>
-                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
-                        </ActivatorContent>
-                        <ChildContent>
+        </div>
+
+        @if (LongPressEnabled)
+        {
+            <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target>
+                <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged" Title="@Model.Title">
+                    <ActivatorContent>
+                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
+                    </ActivatorContent>
+                    <ChildContent>
+                        @if (OverlayEnabled && !string.IsNullOrEmpty(Href))
+                        {
+                            <K7MenuItem Icon="play" OnClick="OnPlay">@L["Play"]</K7MenuItem>
+                        }
+                        @if (ExcludeMenuEnabled)
+                        {
                             <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
                             @if (IsAdmin)
                             {
                                 <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
                             }
-                        </ChildContent>
-                    </K7Menu>
-                </div>
-            }
-        </div>
+                        }
+                    </ChildContent>
+                </K7Menu>
+            </div>
+        }
 
         @if (FooterVisible)
         {
             <div class="media-card-footer mt-1">
                 <div class="d-flex flex-col">
                     <span class="media-card-title"><span class="media-card-title-inner">@Model.Title</span></span>
-                    <span class="media-card-subtitle">@Model.AdditionalInformations</span>
+                    <span class="media-card-subtitle"><span class="media-card-subtitle-inner">@Model.AdditionalInformations</span></span>
                 </div>
             </div>
         }

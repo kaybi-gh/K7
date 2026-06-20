@@ -7,6 +7,8 @@ public sealed class MediaCacheStore
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly int _maxEntries;
 
+    public event Action? HomeFeedInvalidated;
+
     public MediaCacheStore(int maxEntries = 64)
     {
         _maxEntries = maxEntries;
@@ -38,6 +40,12 @@ public sealed class MediaCacheStore
                 _cache.TryRemove(key, out _);
             }
         }
+    }
+
+    public void InvalidateHomeFeed()
+    {
+        InvalidateByPrefix("home-feed");
+        HomeFeedInvalidated?.Invoke();
     }
 
     public void InvalidateAll()
