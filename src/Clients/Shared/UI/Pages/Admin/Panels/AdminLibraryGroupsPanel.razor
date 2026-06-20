@@ -15,41 +15,37 @@
         <h6>@L["Title"]</h6>
     </ToolbarContent>
     <GridTemplate Context="group">
-        <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
-            <div class="group-card__header">
-                <div class="group-card__cover-placeholder">
-                    <K7Icon Icon="@GetGroupIcon(group)" Size="lg" />
+        <K7Paper Outlined="true">
+            <div class="group-card">
+                <div class="group-card__header d-flex align-center gap-2">
+                    <K7Icon Icon="@GetGroupIcon(group)" Size="sm" Class="group-card__icon" />
+                    <span class="group-card__name">@group.Title</span>
+                    <K7Chip Size="sm" Color="default" Class="group-card__type">@GetMediaTypeLabel(group.MediaType)</K7Chip>
                 </div>
-                <div class="group-card__title">
-                    <h6>@group.Title</h6>
-                    <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(group.MediaType)</K7Chip>
-                </div>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(group.Description))
-            {
-                <p class="group-card__description">@group.Description</p>
-            }
-            <div class="group-card__info">
                 @{
                     var libraryTitles = GetLibraryTitles(group);
                 }
-                @foreach (var libraryTitle in libraryTitles)
+                @if (libraryTitles.Count > 0)
                 {
-                    <span>@libraryTitle</span>
+                    <ul class="group-card__libraries">
+                        @foreach (var libraryTitle in libraryTitles)
+                        {
+                            <li>@libraryTitle</li>
+                        }
+                    </ul>
                 }
-                @if (libraryTitles.Count == 0)
+                else
                 {
-                    <span>@L["NoLibraries"]</span>
+                    <p class="group-card__libraries-empty">@L["NoLibraries"]</p>
                 }
-            </div>
-            <div style="flex:1"></div>
-            <div class="group-card__actions">
-                <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.PencilSimple" OnClick="@(() => OpenEditDialog(group))">
-                    @L["Edit"]
-                </K7Button>
-                <K7Button Variant="text" Size="sm" Color="error" StartIcon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(group))">
-                    @S["Delete"]
-                </K7Button>
+                <div class="group-card__actions d-flex gap-2">
+                    <K7Button Variant="text" Size="sm" StartIcon="@Phosphor.PencilSimple" OnClick="@(() => OpenEditDialog(group))">
+                        @L["Edit"]
+                    </K7Button>
+                    <K7Button Variant="text" Size="sm" Color="error" StartIcon="@Phosphor.Trash" OnClick="@(() => ConfirmDelete(group))">
+                        @S["Delete"]
+                    </K7Button>
+                </div>
             </div>
         </K7Paper>
     </GridTemplate>

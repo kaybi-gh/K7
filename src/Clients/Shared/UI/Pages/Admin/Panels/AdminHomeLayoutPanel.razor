@@ -22,11 +22,12 @@ else
         </div>
 
         <div class="d-flex flex-col gap-2">
-            @foreach (var row in _rows)
+            @for (var i = 0; i < _rows.Count; i++)
             {
-                var isFirst = _rows.IndexOf(row) == 0;
-                var isLast = _rows.IndexOf(row) == _rows.Count - 1;
-                <div class="surface pa-3 d-flex align-center justify-between gap-3">
+                var row = _rows[i];
+                var isFirst = i == 0;
+                var isLast = i == _rows.Count - 1;
+                <K7Paper Outlined="true" Elevation="0" Class="pa-3 d-flex align-center justify-between gap-3">
                     <div class="d-flex align-center gap-2">
                         <div class="d-flex flex-col gap-1">
                             <K7IconButton Icon="@Phosphor.ArrowUp" Disabled="@isFirst"
@@ -43,7 +44,7 @@ else
                         <K7IconButton Icon="@Phosphor.Trash" OnClick="() => DeleteRow(row)"
                                 AriaLabel="@L["DeleteRow"]" />
                     </div>
-                </div>
+                </K7Paper>
             }
         </div>
 
