@@ -21,6 +21,9 @@ public partial class MusicAlbumDetail
     [Inject]
     private IK7Snackbar Snackbar { get; set; } = default!;
 
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
     private MusicAlbumDto? _album;
     private string? _coverUrl;
     private string? _coverDominantColor;
@@ -131,6 +134,12 @@ public partial class MusicAlbumDetail
             .Where(t => t.IndexedFileId.HasValue || t.RemoteIndexedFileId.HasValue)
             .Select(BuildQueueItem)
             .ToList();
+    }
+
+    private void NavigateToPrimaryArtist()
+    {
+        if (_artists.Count > 0)
+            NavigationManager.NavigateTo($"/music/artists/{_artists[0].Id}");
     }
 
     private AudioQueueItem BuildQueueItem(TrackViewModel t)

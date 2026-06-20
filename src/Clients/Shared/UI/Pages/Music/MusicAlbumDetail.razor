@@ -37,7 +37,15 @@
 
             <div class="album-header-info">
                 <p class="text-overline album-type-label">@L["AlbumType"]</p>
-                <h3 class="album-detail-title">@_album.Title</h3>
+                <div class="album-title-row">
+                    <h3 class="album-detail-title">
+                        @_album.Title
+                        @if (_album.ReleaseDate.HasValue)
+                        {
+                            <span class="album-title-year"> (@_album.ReleaseDate.Value.Year)</span>
+                        }
+                    </h3>
+                </div>
 
                 <div class="album-artists">
                     @foreach (var artist in _artists)
@@ -76,44 +84,59 @@
                 }
 
                 <div class="album-actions">
-                    <K7Button Variant="filled"
-                               Color="primary"
-                               StartIcon="@Phosphor.Play"
-                               Size="lg"
-                               OnClick="PlayAll">
-                        @S["PlayAll"]
-                    </K7Button>
-                    <K7Button Variant="outlined"
-                               Color="primary"
-                               StartIcon="@Phosphor.Shuffle"
-                               OnClick="ShuffleAll">
-                        @S["Shuffle"]
-                    </K7Button>
-                    <DownloadAllButton Items="GetDownloadRequests()" />
-                    @if (_artists.Count > 0)
-                    {
-                        <K7Button Variant="text"
-                                   StartIcon="@Phosphor.User"
-                                   Href="@($"/music/artists/{_artists[0].Id}")">
-                            @L["GoToArtist"]
+                    <div class="album-actions-primary">
+                        <K7Button Variant="filled"
+                                   Color="primary"
+                                   StartIcon="@Phosphor.Play"
+                                   Size="lg"
+                                   OnClick="PlayAll">
+                            @S["PlayAll"]
                         </K7Button>
-                    }
-                    <K7Menu>
-                        <ActivatorContent>
-                            <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
-                        </ActivatorContent>
-                        <ChildContent>
-                            <AuthorizeView Roles="Administrator">
-                                <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
-                                <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                            </AuthorizeView>
-                        </ChildContent>
-                    </K7Menu>
+                        <K7Button Variant="outlined"
+                                   Color="primary"
+                                   StartIcon="@Phosphor.Shuffle"
+                                   OnClick="ShuffleAll">
+                            @S["Shuffle"]
+                        </K7Button>
+                        <DownloadAllButton Items="GetDownloadRequests()" />
+                        <K7Menu Title="@L["MoreActions"]">
+                            <ActivatorContent>
+                                <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="@L["MoreActions"]" />
+                            </ActivatorContent>
+                            <ChildContent>
+                                @if (_artists.Count > 0)
+                                {
+                                    <K7MenuItem Icon="user" OnClick="NavigateToPrimaryArtist">@L["GoToArtist"]</K7MenuItem>
+                                }
+                                <AuthorizeView Roles="Administrator">
+                                    <K7MenuItem Icon="arrow-clockwise" OnClick="RefreshMetadataAsync">@L["RefreshMetadata"]</K7MenuItem>
+                                    <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                </AuthorizeView>
+                            </ChildContent>
+                        </K7Menu>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="album-tracklist">
+            @if (_trackCount > 0 || _totalDuration > 0)
+            {
+                <div class="album-tracklist-meta">
+                    @if (_trackCount > 0)
+                    {
+                        <span>@string.Format(L["TrackCount"], _trackCount)</span>
+                    }
+                    @if (_trackCount > 0 && _totalDuration > 0)
+                    {
+                        <span>&bull;</span>
+                    }
+                    @if (_totalDuration > 0)
+                    {
+                        <span>@FormatTotalDuration(_totalDuration)</span>
+                    }
+                </div>
+            }
             @foreach (var discGroup in _tracksByDisc)
             {
                 @if (_tracksByDisc.Count > 1)
@@ -175,11 +198,11 @@
                         <td class="col-duration">
                             <span class="track-duration">@FormatTime(context.Duration)</span>
                         </td>
-                        <td>
+                        <td class="col-rating">
                             <RatingStars MediaId="context.Id" Value="context.UserRating" Size="sm" />
                         </td>
                         <td>
-                            <TrackContextMenu Track="BuildQueueItem(context)" />
+                            <TrackContextMenu Track="BuildQueueItem(context)" UserRating="context.UserRating" />
                         </td>
                     </RowTemplate>
                 </K7Table>
