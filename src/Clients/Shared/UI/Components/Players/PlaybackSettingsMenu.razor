@@ -1,0 +1,124 @@
+@using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks
+@using K7.Shared
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<PlaybackSettingsMenu> L
+@inject IStringLocalizer<SharedResource> S
+@inject IPlayerService PlayerService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="playback-settings-menu @(_open ? "playback-settings-menu--open" : "") @(_activeSection != SettingsSection.None ? "playback-settings-menu--detail" : "") @Class"
+     @onclick:stopPropagation="true">
+    @if (_open)
+    {
+        <div class="playback-settings-backdrop" @onclick="CloseAsync" @ontouchstart="CloseAsync"></div>
+    }
+
+    <div class="playback-settings-activator">
+        <K7IconButton Icon="@Phosphor.Gear" AriaLabel="@L["PlaybackSettings"]" OnClick="ToggleAsync" />
+    </div>
+
+    @if (_open)
+    {
+        <div class="playback-settings-stack" @ref="_stackRef" @onclick:stopPropagation="true">
+            <div class="playback-settings-panel playback-settings-panel--root">
+                <div class="playback-settings-header">
+                    <span class="playback-settings-title">@L["PlaybackSettings"]</span>
+                    <button type="button" class="playback-settings-close focusable" aria-label="@S["Close"]" @onclick="CloseAsync">
+                        <K7Icon Icon="@Phosphor.X" Size="sm" />
+                    </button>
+                </div>
+                <nav class="playback-settings-nav" aria-label="@L["PlaybackSettings"]">
+                    @foreach (var section in VisibleSections)
+                    {
+                        <button type="button"
+                                class="playback-settings-nav-item focusable @(section == _activeSection ? "playback-settings-nav-item--active" : "")"
+                                @onclick="() => SelectSection(section)">
+                            <K7Icon Icon="@GetSectionIcon(section)" Size="sm" />
+                            <span class="playback-settings-nav-label">@GetSectionTitle(section)</span>
+                            <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="playback-settings-nav-chevron" />
+                        </button>
+                    }
+                </nav>
+            </div>
+
+            @if (_activeSection != SettingsSection.None)
+            {
+                <div class="playback-settings-panel playback-settings-panel--detail"
+                     @ref="_detailRef"
+                     style="--section-index: @GetSectionIndex(_activeSection)">
+                    <div class="playback-settings-header">
+                        <button type="button" class="playback-settings-back focusable playback-settings-back--mobile" aria-label="@S["Back"]" @onclick="BackToRoot">
+                            <K7Icon Icon="@Phosphor.CaretLeft" Size="sm" />
+                        </button>
+                        <span class="playback-settings-title">@GetSectionTitle(_activeSection)</span>
+                    </div>
+                    <div class="playback-settings-body">
+                        @switch (_activeSection)
+                        {
+                            case SettingsSection.Audio:
+                                @foreach (var track in PlayerService.AudioTracks)
+                                {
+                                    <K7MenuItem OnClick="@(() => OnAudioTrackSelected(track))"
+                                                Icon="@(PlayerService.SelectedAudioTrack?.Index == track.Index ? "check-circle" : null)">
+                                        @{ var audioLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                        @if (audioLang is not null)
+                                        {
+                                            <span class="fi fi-@audioLang.CountryCode"></span>
+                                        }
+                                        @GetAudioTrackLabel(track)
+                                    </K7MenuItem>
+                                }
+                                break;
+                            case SettingsSection.Subtitles:
+                                <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(null))"
+                                            Icon="@(PlayerService.SelectedSubtitleTrack is null ? "check-circle" : null)">
+                                    @L["SubtitlesOff"]
+                                </K7MenuItem>
+                                @foreach (var track in PlayerService.SubtitleTracks)
+                                {
+                                    <K7MenuItem OnClick="@(() => OnSubtitleTrackSelected(track))"
+                                                Icon="@(PlayerService.SelectedSubtitleTrack?.Index == track.Index ? "check-circle" : null)">
+                                        @{ var subLang = SupportedLanguages.FindByCode(track.Language ?? ""); }
+                                        @if (subLang is not null)
+                                        {
+                                            <span class="fi fi-@subLang.CountryCode"></span>
+                                        }
+                                        @GetSubtitleTrackLabel(track)
+                                    </K7MenuItem>
+                                }
+                                break;
+                            case SettingsSection.Quality:
+                                @foreach (var quality in PlayerService.AvailableQualities)
+                                {
+                                    <K7MenuItem OnClick="@(() => OnQualitySelected(quality))"
+                                                Icon="@(PlayerService.SelectedQuality == quality ? "check-circle" : null)">
+                                        @quality.Label
+                                    </K7MenuItem>
+                                }
+                                break;
+                            case SettingsSection.Speed:
+                                @foreach (var speed in _playbackSpeedOptions)
+                                {
+                                    <K7MenuItem OnClick="@(() => OnSpeedSelected(speed))"
+                                                Icon="@(IsCurrentSpeed(speed) ? "check-circle" : null)">
+                                        @(speed == 1.0 ? L["SpeedNormal"] : $"{speed}x")
+                                    </K7MenuItem>
+                                }
+                                break;
+                            case SettingsSection.AspectRatio:
+                                @foreach (var mode in _aspectRatioOptions)
+                                {
+                                    <K7MenuItem OnClick="@(() => OnAspectRatioSelected(mode))"
+                                                Icon="@(PlayerService.AspectRatio == mode ? "check-circle" : null)">
+                                        @GetAspectRatioLabel(mode)
+                                    </K7MenuItem>
+                                }
+                                break;
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

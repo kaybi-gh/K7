@@ -397,6 +397,11 @@ internal class PlayerService(IStreamUriService streamUriService, IDeviceStorageS
 
     public Task HideAsync()
     {
+        if (PlaybackState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering)
+        {
+            PlaybackState = PlaybackState.Idle;
+        }
+
         IsVisible = false;
         IsVisibleChanged?.Invoke();
         return Task.CompletedTask;

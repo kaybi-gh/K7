@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -31,5 +31,6 @@
   <data name="RadioGenreSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="DownloadOffline" xml:space="preserve"><value>Download offline</value></data>
   <data name="DownloadQueued" xml:space="preserve"><value>'{0}' queued for download</value></data>
+  <data name="Menu" xml:space="preserve"><value>Track actions</value></data>
+  <data name="ActionsTitle" xml:space="preserve"><value>More actions</value></data>
 </root>
-
