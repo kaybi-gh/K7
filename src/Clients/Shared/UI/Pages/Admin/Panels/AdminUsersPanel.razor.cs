@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -5,31 +6,99 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Users;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class AdminUsersPanel
+public partial class AdminUsersPanel : IDisposable
 {
     [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private K7HubClient HubClient { get; set; } = default!;
 
     private bool _isLoading = true;
     private List<UserDto> _users = [];
     private Guid? _currentUserId;
     private Guid? _highlightedUserId;
     private bool _shouldScrollToHighlighted;
+    private HashSet<string> _onlineIdentityUserIds = new(StringComparer.Ordinal);
 
     protected override async Task OnInitializedAsync()
     {
+        HubClient.OnlineUsersPresenceUpdated += OnOnlineUsersPresenceUpdated;
+        HubClient.ConnectionStateChanged += OnHubConnectionStateChanged;
+
         await LoadData();
         ParseFragment();
+        await JoinPresenceGroupAsync();
     }
+
+    public void Dispose()
+    {
+        HubClient.OnlineUsersPresenceUpdated -= OnOnlineUsersPresenceUpdated;
+        HubClient.ConnectionStateChanged -= OnHubConnectionStateChanged;
+    }
+
+    private async Task JoinPresenceGroupAsync()
+    {
+        try
+        {
+            await HubClient.JoinAdminStreamsGroupAsync();
+        }
+        catch
+        {
+        }
+    }
+
+    private void OnHubConnectionStateChanged(HubConnectionState state)
+    {
+        if (state == HubConnectionState.Connected)
+            _ = JoinPresenceGroupAsync();
+    }
+
+    private void OnOnlineUsersPresenceUpdated(OnlineUsersPresenceDto presence)
+    {
+        _onlineIdentityUserIds = presence.IdentityUserIds.ToHashSet(StringComparer.Ordinal);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private bool IsUserOnline(UserDto user) =>
+        !string.IsNullOrEmpty(user.IdentityUserId) && _onlineIdentityUserIds.Contains(user.IdentityUserId);
+
+    private string GetPresenceBadgeClass(UserDto user) =>
+        IsUserOnline(user) ? "connected" : "offline";
+
+    private string GetPresenceTitle(UserDto user) =>
+        IsUserOnline(user) ? L["UserOnline"] : L["UserOffline"];
+
+    private bool IsCurrentUser(UserDto user) =>
+        _currentUserId is not null && user.Id == _currentUserId;
+
+    private string? GetUserRowClass(UserDto user) => GetUserHighlightClass(user);
+
+    private string GetUserCardClass(UserDto user) => GetUserHighlightClass(user) ?? string.Empty;
+
+    private string? GetUserHighlightClass(UserDto user)
+    {
+        var isCurrent = IsCurrentUser(user);
+        var isHighlighted = user.Id == _highlightedUserId;
+        return (isCurrent, isHighlighted) switch
+        {
+            (true, true) => "current-user row-highlighted",
+            (true, false) => "current-user",
+            (false, true) => "row-highlighted",
+            _ => null
+        };
+    }
+
+    private void NavigateToPlaybackHistory(UserDto user) =>
+        NavigationManager.NavigateTo($"/admin/playback-history?userId={user.Id}");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -304,13 +373,5 @@ public partial class AdminUsersPanel
         {
             Snackbar.Add(string.Format(L["PasswordReset"], user.UserName), K7Severity.Success);
         }
-    }
-
-    private string GetUserCardClass(UserDto user)
-    {
-        var classes = new List<string>();
-        if (user.Id == _highlightedUserId)
-            classes.Add("row-highlighted");
-        return string.Join(' ', classes);
     }
 }

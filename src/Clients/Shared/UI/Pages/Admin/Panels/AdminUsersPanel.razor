@@ -3,6 +3,7 @@
 @using K7.Shared.Dtos.Users
 @inject IStringLocalizer<AdminUsersPanel> L
 @inject IStringLocalizer<SharedResource> S
+@implements IDisposable
 
 <div class="users-header">
     <h6>@L["Title"]</h6>
@@ -27,15 +28,25 @@ else
 {
     <div class="users-desktop">
         <K7DataTable TItem="UserDto" Items="_users" RowHeight="60" Height="60vh"
-                     RowId="@(u => $"user-{u.Id}")" RowClass="@(u => u.Id == _highlightedUserId ? "row-highlighted" : null)">
+                     RowId="@(u => $"user-{u.Id}")" RowClass="@(u => GetUserRowClass(u))">
             <K7DataColumn TItem="UserDto" Title="@L["HeaderUser"]" Hideable="false">
                 <CellTemplate>
                     <div class="d-flex align-center gap-2 @(!context.IsActive ? "user-inactive" : "")">
                         <K7Avatar Size="sm" Image="@context.AvatarUrl"
                                   Letter="@(context.UserName?[..1].ToUpperInvariant() ?? "?")"
-                                  UserId="@context.Id" />
-                        <div class="d-flex flex-col">
-                            <p>@(context.UserName ?? "-")</p>
+                                  UserId="@context.Id">
+                            <span class="connection-badge connection-badge--@GetPresenceBadgeClass(context)"
+                                  title="@GetPresenceTitle(context)"
+                                  aria-label="@GetPresenceTitle(context)"></span>
+                        </K7Avatar>
+                        <div class="d-flex flex-col user-identity">
+                            <div class="user-identity-title">
+                                <p>@(context.UserName ?? "-")</p>
+                                @if (IsCurrentUser(context))
+                                {
+                                    <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisUser"]</K7Chip>
+                                }
+                            </div>
                             <span class="text-caption user-email">@(context.Email ?? "-")</span>
                         </div>
                     </div>
@@ -74,6 +85,7 @@ else
                         <K7IconButton Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(context))" AriaLabel="@L["AriaLibraries"]" />
                         <K7IconButton Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(context))" AriaLabel="@L["AriaHiddenMedia"]" />
                         <K7IconButton Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(context))" AriaLabel="@L["AriaRestrictionProfile"]" />
+                        <K7IconButton Icon="@Phosphor.ClockCounterClockwise" OnClick="@(() => NavigateToPlaybackHistory(context))" AriaLabel="@L["AriaPlaybackHistory"]" />
                         @if (!context.IsGuest && context.Id != _currentUserId)
                         {
                             <K7IconButton Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(context))" AriaLabel="@L["AriaResetPassword"]" />
@@ -94,9 +106,19 @@ else
                     <div class="d-flex align-center gap-2 user-card-identity @(!user.IsActive ? "user-inactive" : "")">
                         <K7Avatar Size="sm" Image="@user.AvatarUrl"
                                   Letter="@(user.UserName?[..1].ToUpperInvariant() ?? "?")"
-                                  UserId="@user.Id" />
+                                  UserId="@user.Id">
+                            <span class="connection-badge connection-badge--@GetPresenceBadgeClass(user)"
+                                  title="@GetPresenceTitle(user)"
+                                  aria-label="@GetPresenceTitle(user)"></span>
+                        </K7Avatar>
                         <div class="d-flex flex-col user-card-info">
-                            <p>@(user.UserName ?? "-")</p>
+                            <div class="user-identity-title">
+                                <p>@(user.UserName ?? "-")</p>
+                                @if (IsCurrentUser(user))
+                                {
+                                    <K7Chip Size="sm" Variant="filled" Color="primary">@L["ThisUser"]</K7Chip>
+                                }
+                            </div>
                             <span class="text-caption user-email">@(user.Email ?? "-")</span>
                         </div>
                     </div>
@@ -112,6 +134,7 @@ else
                             <K7MenuItem Icon="@Phosphor.VideoCamera" OnClick="@(() => OpenLibraryExclusionsDialog(user))">@L["AriaLibraries"]</K7MenuItem>
                             <K7MenuItem Icon="@Phosphor.EyeSlash" OnClick="@(() => OpenMediaExclusionsDialog(user))">@L["AriaHiddenMedia"]</K7MenuItem>
                             <K7MenuItem Icon="@Phosphor.Shield" OnClick="@(() => OpenRestrictionProfileDialog(user))">@L["AriaRestrictionProfile"]</K7MenuItem>
+                            <K7MenuItem Icon="@Phosphor.ClockCounterClockwise" OnClick="@(() => NavigateToPlaybackHistory(user))">@L["AriaPlaybackHistory"]</K7MenuItem>
                             @if (!user.IsGuest && user.Id != _currentUserId)
                             {
                                 <K7MenuItem Icon="@Phosphor.Key" OnClick="@(() => OpenResetPasswordDialog(user))">@L["AriaResetPassword"]</K7MenuItem>
