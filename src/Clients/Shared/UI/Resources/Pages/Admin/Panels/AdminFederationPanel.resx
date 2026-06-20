@@ -19,26 +19,26 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="Title" xml:space="preserve"><value>Federation</value></data>
+  <data name="Title" xml:space="preserve"><value>Fédération</value></data>
   <data name="AddPeer" xml:space="preserve"><value>Demander un partage</value></data>
-  <data name="AddPeerTitle" xml:space="preserve"><value>Demander un acces</value></data>
-  <data name="NoPeers" xml:space="preserve"><value>Aucun pair configure</value></data>
-  <data name="NoPeersHint" xml:space="preserve"><value>Demandez l'acces a un autre serveur K7 pour partager des medias.</value></data>
+  <data name="AddPeerTitle" xml:space="preserve"><value>Demander un accès</value></data>
+  <data name="NoPeers" xml:space="preserve"><value>Aucun pair configuré</value></data>
+  <data name="NoPeersHint" xml:space="preserve"><value>Demandez l'accès à un autre serveur K7 pour partager des medias.</value></data>
   <data name="LoadError" xml:space="preserve"><value>Erreur lors du chargement des pairs</value></data>
-  <data name="RequestSent" xml:space="preserve"><value>Demande envoyee</value></data>
+  <data name="RequestSent" xml:space="preserve"><value>Demande envoyée</value></data>
   <data name="RequestError" xml:space="preserve"><value>Erreur lors de l'envoi de la demande</value></data>
   <data name="PeerAccepted" xml:space="preserve"><value>Pair accepte</value></data>
   <data name="AcceptError" xml:space="preserve"><value>Erreur lors de l'acceptation</value></data>
-  <data name="SyncStarted" xml:space="preserve"><value>Synchronisation lancee</value></data>
+  <data name="SyncStarted" xml:space="preserve"><value>Synchronisation lancée</value></data>
   <data name="SyncError" xml:space="preserve"><value>Erreur lors de la synchronisation</value></data>
   <data name="PeerRevoked" xml:space="preserve"><value>Pair revoque</value></data>
-  <data name="RevokeError" xml:space="preserve"><value>Erreur lors de la revocation</value></data>
+  <data name="RevokeError" xml:space="preserve"><value>Erreur lors de la révocation</value></data>
   <data name="RevokeTitle" xml:space="preserve"><value>Revoquer le pair</value></data>
-  <data name="RevokeMessage" xml:space="preserve"><value>Voulez-vous vraiment revoquer le pair {0} ? Cette action est irreversible.</value></data>
+  <data name="RevokeMessage" xml:space="preserve"><value>Voulez-vous vraiment révoquer le pair {0} ? Cette action est irréversible.</value></data>
   <data name="RevokeConfirm" xml:space="preserve"><value>Revoquer</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
-  <data name="LastSeen" xml:space="preserve"><value>Derniere connexion</value></data>
-  <data name="SharedLibraries" xml:space="preserve"><value>Bibliotheques partagees</value></data>
+  <data name="LastSeen" xml:space="preserve"><value>Dernière connexion</value></data>
+  <data name="SharedLibraries" xml:space="preserve"><value>Bibliothèques partagées</value></data>
   <data name="Accept" xml:space="preserve"><value>Accepter</value></data>
   <data name="Sync" xml:space="preserve"><value>Synchroniser</value></data>
   <data name="Revoke" xml:space="preserve"><value>Revoquer</value></data>
@@ -55,22 +55,27 @@
   <data name="RejectConfirm" xml:space="preserve"><value>Refuser</value></data>
   <data name="PeerRejected" xml:space="preserve"><value>Demande refusee</value></data>
   <data name="RejectError" xml:space="preserve"><value>Erreur lors du refus</value></data>
-  <data name="Settings" xml:space="preserve"><value>Parametres</value></data>
-  <data name="SettingsTitle" xml:space="preserve"><value>Parametres du pair</value></data>
+  <data name="Settings" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Paramètres du pair</value></data>
   <data name="PeerUpdated" xml:space="preserve"><value>Pair mis a jour</value></data>
   <data name="UpdateError" xml:space="preserve"><value>Erreur lors de la mise a jour</value></data>
   <data name="AcceptTitle" xml:space="preserve"><value>Accepter la demande</value></data>
   <data name="Test" xml:space="preserve"><value>Test</value></data>
   <data name="TestSuccess" xml:space="preserve"><value>Pair joignable</value></data>
   <data name="TestFailed" xml:space="preserve"><value>Pair injoignable</value></data>
-  <data name="FederationDisabled" xml:space="preserve"><value>Federation desactivee</value></data>
-  <data name="FederationDisabledHint" xml:space="preserve"><value>La federation est desactivee. Activez-la dans les fonctionnalites pour gerer les pairs.</value></data>
+  <data name="FederationDisabled" xml:space="preserve"><value>Fédération désactivée</value></data>
+  <data name="FederationToggle" xml:space="preserve"><value>Fédération</value></data>
+  <data name="FederationToggleDescription" xml:space="preserve"><value>Permet le partage de bibliothèques entre serveurs K7. Désactivé par défaut.</value></data>
+  <data name="InvitationsToggle" xml:space="preserve"><value>Invitations</value></data>
+  <data name="InvitationsToggleDescription" xml:space="preserve"><value>Autorise les nouvelles demandes de partage entrantes et sortantes.</value></data>
+  <data name="FederationDisabledWarning" xml:space="preserve"><value>La fédération est désactivée. Toutes les routes de fédération sont bloquées, y compris les partages existants.</value></data>
+  <data name="FederationDisabledHint" xml:space="preserve"><value>La fédération est désactivée. Activez-la dans les fonctionnalites pour gérer les pairs.</value></data>
   <data name="OutboundPeers" xml:space="preserve"><value>Demandes sortantes</value></data>
   <data name="InboundPeers" xml:space="preserve"><value>Partages fournis</value></data>
   <data name="StatusRejected" xml:space="preserve"><value>Refuse</value></data>
   <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
   <data name="DeleteTitle" xml:space="preserve"><value>Supprimer le pair</value></data>
-  <data name="DeleteMessage" xml:space="preserve"><value>Etes-vous sur de vouloir supprimer le pair {0} ? Cette action est irreversible.</value></data>
+  <data name="DeleteMessage" xml:space="preserve"><value>Êtes-vous sûr de vouloir supprimer le pair {0} ? Cette action est irréversible.</value></data>
   <data name="DeleteConfirm" xml:space="preserve"><value>Supprimer</value></data>
   <data name="PeerDeleted" xml:space="preserve"><value>Pair supprime</value></data>
   <data name="DeleteError" xml:space="preserve"><value>Erreur lors de la suppression</value></data>
