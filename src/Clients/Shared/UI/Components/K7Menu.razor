@@ -1,16 +1,29 @@
+@inject IStringLocalizer<SharedResource> S
+
 @namespace K7.Clients.Shared.UI.Components
 @implements IAsyncDisposable
 
 @if (_open)
 {
-    <div class="k7-backdrop" @onclick="Close" @onclick:stopPropagation="true"></div>
+    <div class="k7-backdrop" @ref="_backdrop" @onclick="Close" @ontouchstart="Close" @onclick:stopPropagation="true"></div>
 }
 <div class="k7-menu @(_open ? "k7-menu--open" : "") @Class" @ref="_root">
-    <div class="k7-menu-activator" @onclick="Toggle" @onclick:stopPropagation="true">
-        @ActivatorContent
+    <div class="k7-menu-activator" @onclick:stopPropagation="true">
+        <div class="k7-menu-activator-inner" @onclick="Toggle">
+            @ActivatorContent
+        </div>
     </div>
-    <div class="k7-menu-dropdown" role="menu" @ref="_dropdown" @onclick:stopPropagation="true"
+    <div class="k7-menu-dropdown @(_open ? "k7-menu-dropdown--open" : "")" role="menu" @ref="_dropdown" @onclick:stopPropagation="true"
          data-sn-layer="@(_open ? "popover" : null)">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <div class="k7-menu-header">
+                <span class="k7-menu-header-title">@Title</span>
+                <button type="button" class="k7-menu-close focusable" aria-label="@S["Close"]" @onclick="Close">
+                    <K7Icon Icon="@Phosphor.X" Size="sm" />
+                </button>
+            </div>
+        }
         <CascadingValue Value="this" IsFixed="true">
             @ChildContent
         </CascadingValue>

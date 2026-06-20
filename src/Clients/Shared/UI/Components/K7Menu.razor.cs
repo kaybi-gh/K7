@@ -12,28 +12,23 @@ public partial class K7Menu : IAsyncDisposable
     [Parameter, EditorRequired] public RenderFragment ActivatorContent { get; set; } = default!;
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string? Title { get; set; }
     [Parameter] public bool Open { get; set; }
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
 
     private bool _open;
+    private bool _layerPushed;
     private ElementReference _root;
     private ElementReference _dropdown;
+    private ElementReference _backdrop;
     private DotNetObjectReference<LayerCloseCallback>? _closeCallbackRef;
 
     internal async void Close()
     {
         if (!_open) return;
+        await CloseMenuInternalAsync();
         _open = false;
         await OpenChanged.InvokeAsync(false);
-        try
-        {
-            await JS.InvokeVoidAsync("K7.resetDropdown", _root);
-            await SpatialNav.PopLayerAsync(_dropdown);
-        }
-        catch (Exception ex) when (ex is JSException or InvalidOperationException)
-        {
-            // Element already removed
-        }
         StateHasChanged();
     }
 
@@ -43,48 +38,105 @@ public partial class K7Menu : IAsyncDisposable
         await OpenChanged.InvokeAsync(_open);
 
         if (_open)
+            await OpenMenuInternalAsync();
+        else
+            await CloseMenuInternalAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!OpenChanged.HasDelegate)
         {
-            StateHasChanged();
-            await Task.Yield();
-            _closeCallbackRef?.Dispose();
-            _closeCallbackRef = DotNetObjectReference.Create(new LayerCloseCallback(Close));
-            try
+            if (_open == Open)
+                return;
+
+            _open = Open;
+
+            if (Open)
+                await OpenMenuInternalAsync();
+            else
+                await CloseMenuInternalAsync();
+
+            return;
+        }
+
+        if (_open == Open)
+            return;
+
+        _open = Open;
+
+        if (Open)
+            await OpenMenuInternalAsync();
+        else
+            await CloseMenuInternalAsync();
+    }
+
+    private async Task OpenMenuInternalAsync()
+    {
+        _closeCallbackRef?.Dispose();
+        _closeCallbackRef = DotNetObjectReference.Create(new LayerCloseCallback(Close));
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await SpatialNav.AttachLayerCallbackAsync(_dropdown, _closeCallbackRef);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_open)
+        {
+            _layerPushed = false;
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("K7.attachMobileMenu", _root, _dropdown, _backdrop);
+            await JS.InvokeVoidAsync("K7.positionDropdown", _root, _dropdown);
+
+            if (!_layerPushed)
             {
-                await JS.InvokeVoidAsync("K7.positionDropdown", _root, _dropdown);
+                _layerPushed = true;
                 await SpatialNav.PushLayerAsync(_dropdown, "popover", new SpatialNavLayerOptions
                 {
                     OnClose = _closeCallbackRef
                 });
             }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException)
-            {
-                // Element not yet rendered
-            }
         }
-        else
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
-            try
-            {
-                await SpatialNav.PopLayerAsync(_dropdown);
-            }
-            catch (Exception ex) when (ex is JSException or InvalidOperationException)
-            {
-                // Element already removed
-            }
+            // Element not yet rendered
         }
     }
 
-    protected override void OnParametersSet()
+    private async Task CloseMenuInternalAsync()
     {
-        if (OpenChanged.HasDelegate)
-            _open = Open;
+        _layerPushed = false;
+        try
+        {
+            await JS.InvokeVoidAsync("K7.resetDropdown", _root);
+            await JS.InvokeVoidAsync("K7.detachMobileMenu", _root, _dropdown, _backdrop);
+            await SpatialNav.PopLayerAsync(_dropdown);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
+        {
+            // Element already removed
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         if (_open)
         {
-            try { await SpatialNav.PopLayerAsync(_dropdown); }
+            try
+            {
+                await JS.InvokeVoidAsync("K7.detachMobileMenu", _root, _dropdown, _backdrop);
+                await SpatialNav.PopLayerAsync(_dropdown);
+            }
             catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
         }
         _closeCallbackRef?.Dispose();

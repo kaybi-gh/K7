@@ -115,15 +115,13 @@ var SpatialNav = (function () {
         var attempts = 5;
         function tryFocus() {
             var container = layer.el;
+            if (!container || !container.isConnected) return;
             var target = null;
             if (layer.focusSelector) {
                 target = container.querySelector(layer.focusSelector);
             }
             if (!target) {
-                var items = Array.from(container.querySelectorAll(FOCUSABLE));
-                items = items.filter(function (el) {
-                    return el.offsetParent !== null && window.getComputedStyle(el).visibility !== 'hidden';
-                });
+                var items = getFocusables(container);
                 target = items.length > 0 ? items[0] : null;
             }
             if (target) {
@@ -167,6 +165,7 @@ var SpatialNav = (function () {
             _refreshTimer = null;
             if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
             lockActivatableInputs();
+            ensurePageFocus();
         }, 100);
     }
 
@@ -363,7 +362,8 @@ var SpatialNav = (function () {
                 timer: setTimeout(function () {
                     if (!_longPressState) return;
                     _longPressState.triggered = true;
-                    var target = longPressContainer.querySelector('[data-longpress-target] button');
+                    var target = longPressContainer.querySelector('[data-longpress-target] .k7-menu-activator')
+                        || longPressContainer.querySelector('[data-longpress-target] button');
                     if (target) target.click();
                 }, LONG_PRESS_MS)
             };
@@ -434,35 +434,68 @@ var SpatialNav = (function () {
             return;
         }
 
+        var playbackDetail = document.querySelector('.playback-settings-menu--open.playback-settings-menu--detail');
+        if (playbackDetail) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var activeNav = playbackDetail.querySelector('.playback-settings-nav-item--active');
+            if (activeNav) activeNav.click();
+            return;
+        }
+
+        var playbackOpen = document.querySelector('.playback-settings-menu--open:not(.playback-settings-menu--detail)');
+        if (playbackOpen) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var closeBtn = playbackOpen.querySelector('.playback-settings-close');
+            if (closeBtn) closeBtn.click();
+            return;
+        }
+
         var layer = peekLayer();
         if (layer && layer.type !== 'page') {
             e.preventDefault();
             e.stopImmediatePropagation();
+
+            var isSubmenuLayer = layer.el && (
+                layer.el.getAttribute('data-sn-submenu') === 'true' ||
+                (layer.el.closest && !!layer.el.closest('.k7-menu--submenu'))
+            );
+
             if (layer.onClose) {
                 if (layer.type !== 'overlay') popLayer(layer.el);
                 invokeCallback(layer.onClose, 'OnLayerClosed');
-            } else {
+                return;
+            }
+
+            if (isSubmenuLayer) {
                 popLayer(layer.el);
-                // Auto-detected layer: trigger close via backdrop click or custom event
-                var closeSelector = layer.el.getAttribute('data-sn-layer-close');
-                var closeTarget = null;
-                if (closeSelector === 'self') {
-                    closeTarget = layer.el;
-                } else if (closeSelector) {
-                    closeTarget = document.querySelector(closeSelector);
+                var submenuRoot = layer.el.closest('.k7-menu--submenu');
+                if (submenuRoot) {
+                    var activator = submenuRoot.querySelector('.k7-menu-activator');
+                    if (activator) activator.click();
                 }
-                if (!closeTarget) {
-                    // Walk up to find nearest .k7-backdrop (K7Menu, K7Select)
-                    var parent = layer.el.parentElement;
-                    while (parent && parent !== document.body) {
-                        closeTarget = parent.querySelector(':scope > .k7-backdrop');
-                        if (closeTarget) break;
-                        parent = parent.parentElement;
-                    }
+                return;
+            }
+
+            popLayer(layer.el);
+            var closeTarget = null;
+            var closeSelector = layer.el.getAttribute('data-sn-layer-close');
+            if (closeSelector === 'self') {
+                closeTarget = layer.el;
+            } else if (closeSelector) {
+                closeTarget = document.querySelector(closeSelector);
+            }
+            if (!closeTarget) {
+                var parent = layer.el.parentElement;
+                while (parent && parent !== document.body) {
+                    closeTarget = parent.querySelector(':scope > .k7-backdrop');
+                    if (closeTarget) break;
+                    parent = parent.parentElement;
                 }
-                if (closeTarget) {
-                    closeTarget.click();
-                }
+            }
+            if (closeTarget) {
+                closeTarget.click();
             }
             return;
         }
@@ -507,8 +540,8 @@ var SpatialNav = (function () {
             if (window.location.href !== previousUrl || checkCount > 10) {
                 clearInterval(checker);
                 setTimeout(function () {
-                    if (!document.activeElement || document.activeElement === document.body) {
-                        focusFirstInPage();
+                    if (shouldRefocusPage(document.activeElement)) {
+                        ensurePageFocus();
                     }
                 }, 100);
             }
@@ -542,6 +575,22 @@ var SpatialNav = (function () {
 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) !== -1) {
             var el = document.activeElement;
+            // Next-episode overlay: keep focus and navigation inside the overlay
+            var nepOverlay = document.querySelector('.nep-overlay');
+            if (nepOverlay && nepOverlay.isConnected) {
+                var nepLayer = peekLayer();
+                if (!nepLayer || nepLayer.el !== nepOverlay) {
+                    pushLayer(nepOverlay, 'overlay', { focusSelector: '.k7-btn' });
+                }
+                if (!nepOverlay.contains(el)) {
+                    var nepItems = getFocusables(nepOverlay);
+                    if (nepItems.length > 0) {
+                        nepItems[0].focus({ preventScroll: true });
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            }
             // Text inputs/textareas: let arrows through when focused (editing or non-activatable)
             if (el && isTextInput(el) && (isEditing(el) || !isActivatable(el))) {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
@@ -661,23 +710,56 @@ var SpatialNav = (function () {
 
     // Focus First
 
+    function queryFocusSelector(selector) {
+        if (!selector) return null;
+        var main = document.querySelector('.app-main');
+        var el = main ? main.querySelector(selector) : null;
+        if (!el) el = document.querySelector(selector);
+        return el;
+    }
+
+    function focusTargetElement(el) {
+        if (!el || !el.isConnected) return false;
+        if (el.matches(FOCUSABLE)) {
+            el.focus({ preventScroll: true });
+            return true;
+        }
+        var focusable = el.querySelector(FOCUSABLE);
+        if (focusable) {
+            focusable.focus({ preventScroll: true });
+            return true;
+        }
+        if (el.matches('input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])')) {
+            el.focus({ preventScroll: true });
+            return true;
+        }
+        return false;
+    }
+
+    function getPageFocusTarget() {
+        var markers = document.querySelectorAll('[data-initial-focus]');
+        for (var i = 0; i < markers.length; i++) {
+            var marker = markers[i];
+            var selector = marker.getAttribute('data-initial-focus');
+            if (selector) {
+                var target = queryFocusSelector(selector);
+                if (target) return target;
+                continue;
+            }
+            return marker;
+        }
+        return null;
+    }
+
     function focusFirst(selector) {
         setTimeout(function () {
-            var el = null;
-            if (selector) {
-                var main = document.querySelector('.app-main');
-                if (main) el = main.querySelector(selector);
-                if (!el) el = document.querySelector(selector);
-            }
-            if (el) {
-                var focusable = el.matches(FOCUSABLE) ? el : el.querySelector(FOCUSABLE);
-                if (focusable) { focusable.focus({ preventScroll: true }); return; }
-            }
+            var el = selector ? queryFocusSelector(selector) : null;
+            if (el && focusTargetElement(el)) return;
             focusFirstInPage();
         }, 100);
     }
 
-    function focusFirstInPage() {
+    function focusFirstFocusableInPage() {
         var layer = peekLayer();
         if (layer) {
             var items = getFocusables(layer.el);
@@ -692,17 +774,40 @@ var SpatialNav = (function () {
         if (all.length > 0) all[0].focus({ preventScroll: true });
     }
 
+    function focusFirstInPage() {
+        var pageTarget = getPageFocusTarget();
+        if (pageTarget && focusTargetElement(pageTarget)) return;
+        focusFirstFocusableInPage();
+    }
+
+    function shouldRefocusPage(el) {
+        if (!el || el === document.body || el === document.documentElement) return true;
+        if (/^H[1-6]$/.test(el.tagName)) return true;
+        if (el.hasAttribute('tabindex') && el.getAttribute('tabindex') === '-1' && !el.matches(FOCUSABLE)) return true;
+        return false;
+    }
+
+    function ensurePageFocus() {
+        if (_layers.length > 0) return;
+        if (!shouldRefocusPage(document.activeElement)) return;
+
+        var pageTarget = getPageFocusTarget();
+        if (pageTarget) {
+            focusTargetElement(pageTarget);
+            return;
+        }
+
+        if (document.documentElement.classList.contains('platform-tv')) {
+            focusFirstFocusableInPage();
+        }
+    }
+
     function focusElement(el) {
         if (el) el.focus({ preventScroll: true });
     }
 
     function onPageNavigated() {
-        if (_layers.length > 0) return;
-        setTimeout(function () {
-            if (!document.activeElement || document.activeElement === document.body) {
-                focusFirstInPage();
-            }
-        }, 150);
+        setTimeout(ensurePageFocus, 150);
     }
 
     // Home Escape
@@ -831,13 +936,14 @@ var SpatialNav = (function () {
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['disabled', 'tabindex', 'hidden', 'data-sn-layer', 'data-sn-section']
+                attributeFilter: ['disabled', 'tabindex', 'hidden', 'data-initial-focus', 'data-sn-layer', 'data-sn-section']
             });
         }
 
         document.addEventListener('keydown', handleKeyDown, true);
         document.addEventListener('keyup', handleKeyUp, true);
         document.addEventListener('enhancedload', onPageNavigated);
+        setTimeout(ensurePageFocus, 200);
 
         // Mouse click on activatable text inputs immediately enters edit mode
         document.addEventListener('mousedown', function (e) {
@@ -860,8 +966,13 @@ var SpatialNav = (function () {
                 timer: setTimeout(function () {
                     if (!_touchLongPress) return;
                     _touchLongPress.triggered = true;
-                    var btn = container.querySelector('[data-longpress-target] button');
-                    if (btn) btn.click();
+                    var activator = container.querySelector('[data-longpress-target] .k7-menu-activator');
+                    if (activator) {
+                        activator.click();
+                    } else {
+                        var btn = container.querySelector('[data-longpress-target] button');
+                        if (btn) btn.click();
+                    }
                 }, LONG_PRESS_MS),
                 triggered: false,
                 startX: e.touches[0].clientX,
@@ -939,14 +1050,14 @@ K7.positionDropdown = function (root, dropdown) {
     // On mobile, CSS bottom sheet handles positioning
     if (window.innerWidth < 600) return;
 
-    root.classList.remove('k7-menu--upward');
-
     var isSubmenu = !!root.closest('.k7-menu-dropdown');
     // .k7-menu-activator uses display:contents so has no box - use its first child or root
     var activatorEl = root.querySelector('.k7-menu-activator');
     var anchor = (activatorEl && activatorEl.firstElementChild) || root;
     var anchorRect = anchor.getBoundingClientRect();
     var gap = 4;
+    var inVideoPlayer = root.closest('.video-controls-overlay');
+    if (inVideoPlayer && isSubmenu) gap = 8;
 
     // Use fixed positioning to escape stacking contexts
     dropdown.style.position = 'fixed';
@@ -955,6 +1066,9 @@ K7.positionDropdown = function (root, dropdown) {
     dropdown.style.left = '';
     dropdown.style.right = '';
     dropdown.style.maxHeight = '';
+    dropdown.style.width = '';
+    dropdown.style.minWidth = '';
+    dropdown.style.overflowY = '';
 
     // Measure dropdown size
     dropdown.style.visibility = 'hidden';
@@ -965,24 +1079,23 @@ K7.positionDropdown = function (root, dropdown) {
     dropdown.style.visibility = '';
     dropdown.style.opacity = '';
 
-    // An ancestor with transform/filter creates a containing block for position:fixed,
-    // making coordinates relative to it instead of the viewport. Detect and compensate.
-    var cbOffset = K7._getFixedContainingBlockOffset(dropdown);
+    var isPortaled = dropdown.classList.contains('k7-menu-portal');
+    var cbOffset = isPortaled ? { left: 0, top: 0 } : K7._getFixedContainingBlockOffset(dropdown);
 
     var vw = window.innerWidth;
     var vh = window.innerHeight;
 
     if (isSubmenu) {
-        // Submenu: open to the left of the parent menu item
-        var parentDropdown = root.closest('.k7-menu-dropdown');
+        var parentDropdown = root.parentElement && root.parentElement.closest
+            ? root.parentElement.closest('.k7-menu-dropdown')
+            : root.closest('.k7-menu-dropdown');
+        if (!parentDropdown) return;
         var parentRect = parentDropdown.getBoundingClientRect();
 
-        // Horizontal: prefer left of parent, flip right if not enough space
         var leftOfParent = parentRect.left - ddRect.width - gap;
-        if (leftOfParent >= 8) {
-            dropdown.style.left = (leftOfParent - cbOffset.left) + 'px';
+        if (inVideoPlayer || leftOfParent >= 8) {
+            dropdown.style.left = (Math.max(8, leftOfParent) - cbOffset.left) + 'px';
         } else {
-            // Try right of parent
             var rightOfParent = parentRect.right + gap;
             if (rightOfParent + ddRect.width <= vw - 8) {
                 dropdown.style.left = (rightOfParent - cbOffset.left) + 'px';
@@ -991,7 +1104,6 @@ K7.positionDropdown = function (root, dropdown) {
             }
         }
 
-        // Vertical: align top with anchor, shift if overflows
         var top = anchorRect.top;
         if (top + ddRect.height > vh - 8) {
             top = vh - ddRect.height - 8;
@@ -1000,7 +1112,12 @@ K7.positionDropdown = function (root, dropdown) {
         dropdown.style.top = (top - cbOffset.top) + 'px';
         dropdown.style.maxHeight = 'min(320px, calc(100vh - 80px))';
         dropdown.style.overflowY = 'auto';
+        dropdown.style.minWidth = Math.max(parentRect.width, 180) + 'px';
+        dropdown.style.transform = 'none';
+        dropdown.style.zIndex = '100014';
     } else {
+        root.classList.remove('k7-menu--upward');
+
         // Root menu: open below/above the activator
         var spaceBelow = vh - anchorRect.bottom - gap;
         var spaceAbove = anchorRect.top - gap;
@@ -1047,16 +1164,166 @@ K7.resetDropdown = function (root) {
     // They will be overwritten by positionDropdown on next open.
 };
 
+K7._teleportMenuElement = function (el, root) {
+    if (!el) return;
+    if (!el._k7MenuAnchor) {
+        el._k7MenuAnchor = document.createComment('k7-menu-portal');
+        root.appendChild(el._k7MenuAnchor);
+    }
+    if (el.parentElement !== document.body) {
+        document.body.appendChild(el);
+    }
+    el.classList.add('k7-menu-portal');
+};
+
+K7._restoreMenuElement = function (el, root) {
+    if (!el || !el._k7MenuAnchor) return;
+    if (el._k7MenuAnchor.parentNode === root) {
+        root.insertBefore(el, el._k7MenuAnchor);
+    }
+    el.classList.remove('k7-menu-portal', 'k7-menu-dropdown--teleported');
+};
+
+K7._hasFixedContainingBlockAncestor = function (el) {
+    var parent = el.parentElement;
+    while (parent && parent !== document.body) {
+        var style = getComputedStyle(parent);
+        if (style.transform !== 'none' || style.filter !== 'none' ||
+            style.backdropFilter !== 'none' || style.willChange === 'transform') {
+            return true;
+        }
+        if (style.overflow === 'hidden' || style.overflowX === 'hidden' || style.overflowY === 'hidden') {
+            if (parent.classList.contains('carousel-viewport') || parent.closest('.carousel-viewport')) {
+                return true;
+            }
+        }
+        parent = parent.parentElement;
+    }
+    return false;
+};
+
+K7._needsMenuPortal = function (root) {
+    if (!root) return false;
+    if (root.closest('.fullscreen-player')) {
+        return false;
+    }
+    if (window.innerWidth < 600) {
+        return true;
+    }
+    return K7._hasFixedContainingBlockAncestor(root);
+};
+
+K7.attachMobileMenu = function (root, dropdown, backdrop) {
+    if (!root || !dropdown) return;
+
+    if (!K7._needsMenuPortal(root)) {
+        if (dropdown.classList.contains('k7-menu-portal')) {
+            K7._restoreMenuElement(dropdown, root);
+            K7._restoreMenuElement(backdrop, root);
+        }
+        dropdown.classList.remove('k7-menu-dropdown--video-player');
+        if (backdrop) backdrop.classList.remove('k7-backdrop--video-player');
+        if (dropdown) dropdown.classList.remove('k7-menu-dropdown--teleported');
+        return;
+    }
+
+    K7._teleportMenuElement(dropdown, root);
+    if (backdrop) K7._teleportMenuElement(backdrop, root);
+    if (window.innerWidth < 600) {
+        dropdown.classList.add('k7-menu-dropdown--teleported');
+    } else {
+        dropdown.classList.remove('k7-menu-dropdown--teleported');
+    }
+    if (root.closest('.video-controls-overlay')) {
+        dropdown.classList.add('k7-menu-dropdown--video-player');
+        if (backdrop) backdrop.classList.add('k7-backdrop--video-player');
+    }
+};
+
+K7.positionPlaybackSettingsDetail = function (stack, detail) {
+    if (!stack || !detail || window.innerWidth < 600) return;
+
+    detail.style.top = '';
+    detail.style.maxHeight = '';
+    detail.style.overflowY = '';
+
+    var pad = 8;
+    var vh = window.innerHeight;
+    var stackRect = stack.getBoundingClientRect();
+    var detailRect = detail.getBoundingClientRect();
+
+    var top = detailRect.top;
+    var height = detailRect.height;
+    var maxAvailable = vh - pad * 2;
+
+    if (height > maxAvailable) {
+        detail.style.maxHeight = maxAvailable + 'px';
+        detail.style.overflowY = 'auto';
+        height = maxAvailable;
+    }
+
+    var bottom = top + height;
+    if (bottom > vh - pad) {
+        top = Math.max(pad, vh - pad - height);
+    }
+
+    if (top < pad) {
+        top = pad;
+        detail.style.maxHeight = maxAvailable + 'px';
+        detail.style.overflowY = 'auto';
+    }
+
+    detail.style.top = Math.round(top - stackRect.top) + 'px';
+};
+
+K7.detachMobileMenu = function (root, dropdown, backdrop) {
+    if (!root) return;
+    K7._restoreMenuElement(dropdown, root);
+    K7._restoreMenuElement(backdrop, root);
+    if (dropdown) {
+        dropdown.classList.remove('k7-menu-dropdown--video-player', 'k7-menu-dropdown--teleported');
+    }
+    if (backdrop) backdrop.classList.remove('k7-backdrop--video-player');
+};
+
+K7.attachSelectPortal = function (root, dropdown, backdrop) {
+    if (!root || !dropdown) return;
+    K7._teleportMenuElement(dropdown, root);
+    if (backdrop) K7._teleportMenuElement(backdrop, root);
+    dropdown.classList.add('k7-select-dropdown--teleported');
+};
+
+K7.detachSelectPortal = function (root, dropdown, backdrop) {
+    if (!root) return;
+    K7._restoreMenuElement(dropdown, root);
+    if (backdrop) K7._restoreMenuElement(backdrop, root);
+    if (dropdown) dropdown.classList.remove('k7-select-dropdown--teleported');
+};
+
 K7.positionSelectDropdown = function (button, dropdown) {
     if (!button || !dropdown) return;
 
+    // On mobile, CSS bottom sheet handles positioning after teleport.
+    if (window.innerWidth < 600) return;
+
     var rect = button.getBoundingClientRect();
     var gap = 4;
+    var cbOffset = K7._getFixedContainingBlockOffset(dropdown);
 
-    // Measure dropdown height
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = '';
+    dropdown.style.bottom = '';
+    dropdown.style.left = '';
+    dropdown.style.right = '';
+    dropdown.style.maxHeight = 'min(280px, calc(100vh - 80px))';
+    dropdown.style.overflowY = 'auto';
+
     dropdown.style.visibility = 'hidden';
     dropdown.style.opacity = '0';
     dropdown.style.display = 'block';
+    dropdown.style.width = 'max-content';
+    dropdown.style.minWidth = rect.width + 'px';
+    dropdown.style.maxWidth = (window.innerWidth - 16) + 'px';
     var ddRect = dropdown.getBoundingClientRect();
     dropdown.style.display = '';
     dropdown.style.visibility = '';
@@ -1065,28 +1332,27 @@ K7.positionSelectDropdown = function (button, dropdown) {
     var vh = window.innerHeight;
     var vw = window.innerWidth;
 
-    // Decide above or below
     var spaceBelow = vh - rect.bottom - gap;
     var spaceAbove = rect.top - gap;
     var placeAbove = spaceBelow < ddRect.height && spaceAbove > spaceBelow;
 
     if (placeAbove) {
-        dropdown.style.bottom = (vh - rect.top + gap) + 'px';
+        dropdown.style.bottom = (vh - rect.top + gap - cbOffset.top) + 'px';
         dropdown.style.top = '';
     } else {
-        dropdown.style.top = (rect.bottom + gap) + 'px';
+        dropdown.style.top = (rect.bottom + gap - cbOffset.top) + 'px';
         dropdown.style.bottom = '';
     }
 
-    // Align left edge with button, match button width
+    var width = Math.min(Math.max(rect.width, ddRect.width), vw - 16);
     var left = rect.left;
-    var width = rect.width;
     if (left + width > vw - 8) {
         left = vw - width - 8;
     }
     if (left < 8) left = 8;
-    dropdown.style.left = left + 'px';
+    dropdown.style.left = (left - cbOffset.left) + 'px';
     dropdown.style.width = width + 'px';
+    dropdown.style.minWidth = rect.width + 'px';
 };
 
 K7.scrollToElement = function (id) {

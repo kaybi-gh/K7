@@ -29,12 +29,17 @@ public class K7MenuTests
         using var ctx = new BunitContext();
         var spatialNav = Substitute.For<ISpatialNavService>();
         ctx.Services.AddSingleton(spatialNav);
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
 
         var cut = ctx.Render<K7Menu>(p => p.Add(m => m.ActivatorContent, "Test"));
 
         // Act
         var button = cut.Find(".k7-menu-activator");
-        await cut.InvokeAsync(() => button.Click());
+        await cut.InvokeAsync(async () =>
+        {
+            button.Click();
+            await cut.WaitForStateAsync(() => cut.Find(".k7-menu--open") is not null);
+        });
 
         // Assert
         await spatialNav.Received(1).PushLayerAsync(
@@ -44,12 +49,30 @@ public class K7MenuTests
     }
 
     [Test]
+    public async Task Render_ShouldShowHeader_WhenTitleIsSet()
+    {
+        // Arrange
+        using var ctx = new BunitContext();
+        ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
+
+        // Act
+        var cut = ctx.Render<K7Menu>(p => p
+            .Add(m => m.ActivatorContent, "Open")
+            .Add(m => m.Title, "Actions on Movie")
+            .Add(m => m.Open, true));
+
+        // Assert
+        cut.Find(".k7-menu-header").TextContent.Should().Be("Actions on Movie");
+    }
+
+    [Test]
     public async Task Toggle_ShouldCallPopLayer_WhenClosed()
     {
         // Arrange
         using var ctx = new BunitContext();
         var spatialNav = Substitute.For<ISpatialNavService>();
         ctx.Services.AddSingleton(spatialNav);
+        ctx.JSInterop.Mode = JSRuntimeMode.Loose;
 
         var cut = ctx.Render<K7Menu>(p => p.Add(m => m.ActivatorContent, "Test"));
 
