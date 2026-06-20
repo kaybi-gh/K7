@@ -38,5 +38,6 @@
   <data name="Rating" xml:space="preserve"><value>Note</value></data>
   <data name="PlayCount" xml:space="preserve"><value>Lectures</value></data>
   <data name="DateAdded" xml:space="preserve"><value>Date d'ajout</value></data>
+  <data name="MediaTypeFilter" xml:space="preserve"><value>Type de media</value></data>
 </root>
 

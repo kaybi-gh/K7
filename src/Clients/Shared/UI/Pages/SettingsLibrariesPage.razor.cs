@@ -41,6 +41,9 @@ public partial class SettingsLibrariesPage
 
     private async Task ToggleLibrary(Guid libraryId, bool exclude)
     {
+        if (_saving)
+            return;
+
         if (exclude)
             _selfExcludedIds.Add(libraryId);
         else

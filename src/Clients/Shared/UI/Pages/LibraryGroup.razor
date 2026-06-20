@@ -17,29 +17,31 @@
             @ref="_browseView"
             PersistenceKey="@($"library-{Id}")"
             DefaultItemWidth="160"
-            DefaultSpacing="6"
+            DefaultSpacing="24"
+            Class="library-group-browse"
             GridItemAspectRatio="GridAspectRatio"
             JumpIndexLabels="JumpLabels"
             OnJumpRequested="OnJumpRequested"
             OnColumnPickerRequested="OnColumnPickerRequested">
     <ToolbarContent>
-        <span>@string.Format(L["ItemCount"], _totalCount)</span>
         @if (_availableMediaTypes.Count > 1)
         {
-            @foreach (var mt in _availableMediaTypes)
-            {
-                var mediaType = mt;
-                <K7Chip Value="@mt" Variant="@(_selectedMediaType.Equals(mt) ? "filled" : "outlined")" Color="primary" Text="@GetMediaTypeLabel(mt)" OnClick="() => OnMediaTypeFilterChanged(mediaType)" />
-            }
+            <K7ButtonGroup TValue="MediaType"
+                           Options="_mediaTypeOptions"
+                           Value="_selectedMediaType"
+                           ValueChanged="OnMediaTypeFilterChanged"
+                           AriaLabel="@L["MediaTypeFilter"]" />
         }
-        <K7TextField TValue="string" Placeholder="@S["Search"]" Value="@_searchText" ValueChanged="OnSearchTextChanged" Style="max-width: 220px;" />
-        <K7Select TValue="MediaOrderingOption" Value="_selectedSort" ValueChanged="OnSortChanged">
+        <K7Select TValue="MediaOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
             @foreach (var opt in SortOptions)
             {
                 <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
     </ToolbarContent>
+    <ToolbarSecondaryContent>
+        <span class="library-toolbar-count">@string.Format(L["ItemCount"], _totalCount)</span>
+    </ToolbarSecondaryContent>
     <GridTemplate Context="item">
         @{
             var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));

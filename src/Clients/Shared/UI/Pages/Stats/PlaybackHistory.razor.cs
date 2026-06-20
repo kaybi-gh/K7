@@ -10,6 +10,18 @@ public partial class PlaybackHistory
     private string _selectedMediaType = "";
     private const int PageSize = 50;
     private int _tableKey;
+    private List<ButtonGroupOption<string>> _mediaTypeOptions = [];
+
+    protected override void OnInitialized()
+    {
+        _mediaTypeOptions =
+        [
+            new("", Label: L["All"]),
+            new("3", Label: L["Music"]),
+            new("1", Label: L["Movies"]),
+            new("5", Label: L["TVShows"])
+        ];
+    }
 
     private async Task OnMediaTypeChanged(string mediaType)
     {
