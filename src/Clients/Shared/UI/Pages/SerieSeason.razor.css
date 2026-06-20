@@ -1,5 +1,7 @@
 .season-page {
     position: relative;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -16,41 +18,49 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
     mask-size: 100% 100%;
     mask-repeat: no-repeat;
+}
+
+.season-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
 }
 
 .season-header {
     position: relative;
     display: flex;
-    gap: 24px;
-    padding: 40px 24px 24px;
-    align-items: flex-end;
-}
-.season-header-poster {
-    flex-shrink: 0;
-    width: 160px;
+    flex-direction: column;
+    padding: var(--space-4) var(--space-6) var(--space-6);
+    gap: var(--space-4);
 }
 
-.season-poster {
-    width: 100%;
-    aspect-ratio: 2 / 3;
-    box-shadow: var(--media-artwork-shadow, 0 8px 24px rgba(0, 0, 0, 0.5));
+.season-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-width: 800px;
 }
 
-.season-poster-placeholder {
-    width: 160px;
-    height: 240px;
-    border-radius: 8px;
-    background: var(--color-surface);
+::deep .season-logo {
+    max-width: 60vw;
+    max-height: 120px;
+    object-position: left center;
+}
+
+.season-title-row {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
 }
 
 .season-title {
+    margin: 0;
     font-weight: 700;
 }
 
@@ -58,24 +68,72 @@
     font-weight: 800;
     letter-spacing: -1px;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    margin: 0;
+}
+
+.season-overview {
+    margin: 0;
+    opacity: 0.85;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 1.05rem;
+    color: var(--color-text-secondary);
+    max-width: 700px;
 }
 
 .season-episodes {
     position: relative;
-    padding: 0 24px 32px;
+    padding: 0 var(--space-6) var(--space-8);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+}
+
+.season-episodes ::deep .episode-card-info {
+    text-shadow: #000 0 0 5px;
+}
+
+.season-episodes > div:not(:last-child) ::deep .episode-card {
+    position: relative;
+}
+
+.season-episodes > div:not(:last-child) ::deep .episode-card::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60vw;
+    height: 1px;
+    background: color-mix(in srgb, var(--color-border) 35%, transparent);
 }
 
 .season-nav {
-    margin-top: var(--space-2);
-    max-width: 200px;
+    max-width: 100%;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599.98px) {
     .season-header {
-        text-align: center;
+        padding: var(--space-3) var(--space-4) var(--space-4);
+    }
+
+    .season-episodes {
+        padding: 0 var(--space-4) var(--space-6);
+    }
+
+    ::deep .season-logo {
+        max-width: 80vw;
+    }
+
+    .background-image {
+        mask-image: linear-gradient(to bottom, black 0%, black 25%, transparent 60%);
+        -webkit-mask-image: linear-gradient(to bottom, black 0%, black 25%, transparent 60%);
+    }
+
+    .season-title-row {
+        align-items: center;
     }
 }
 
@@ -167,7 +225,6 @@
     height: 200px;
     justify-content: flex-end;
 }
-}
 
 .tv-episode-overview {
     color: var(--color-text-secondary);
@@ -190,7 +247,7 @@
     cursor: pointer;
     border-radius: var(--radius-md);
     padding: 8px;
-    margin: -8px;
+    margin-inline: -8px;
     transition: background-color 0.2s ease;
 }
 

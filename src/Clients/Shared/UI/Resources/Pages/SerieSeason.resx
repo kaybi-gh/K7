@@ -31,4 +31,5 @@
   <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
   <data name="DetectIntrosOutros" xml:space="preserve"><value>Detecter les intros/outros</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Modifier les metadonnees</value></data>
+  <data name="ChooseSeason" xml:space="preserve"><value>Choisir une saison</value></data>
 </root>

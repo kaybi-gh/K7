@@ -163,6 +163,20 @@ public partial class SerieSeason
         StateHasChanged();
     }
 
+    private Task OpenSeasonOverviewDialogAsync()
+    {
+        if (_season is null || string.IsNullOrWhiteSpace(_season.Overview))
+            return Task.CompletedTask;
+
+        var options = new K7DialogOptions { CloseOnEscapeKey = true, MaxWidth = K7DialogMaxWidth.Small, FullWidth = true };
+        var parameters = new K7DialogParameters
+        {
+            { "ContentText", _season.Overview },
+            { "ButtonText", S["Cancel"].Value }
+        };
+        return DialogService.ShowAsync<OverviewDialog>(L["Overview"], parameters, options);
+    }
+
     private Task OpenSynopsisDialogAsync()
     {
         if (_focusedEpisode is null || string.IsNullOrWhiteSpace(_focusedEpisode.Overview)) return Task.CompletedTask;
@@ -273,6 +287,8 @@ public partial class SerieSeason
         if (seasonNumber != SeasonNumber)
             NavigationManager.NavigateTo($"/series/{SerieId}/seasons/{seasonNumber}");
     }
+
+    private void NavigateToSerie() => NavigationManager.NavigateTo($"/series/{SerieId}");
 
     private async Task DetectIntrosOutrosAsync()
     {

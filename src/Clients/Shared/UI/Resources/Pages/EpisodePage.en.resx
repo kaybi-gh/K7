@@ -22,4 +22,7 @@
   <data name="SeasonEpisode" xml:space="preserve"><value>S{0} E{1}</value></data>
   <data name="Previous" xml:space="preserve"><value>Previous</value></data>
   <data name="Next" xml:space="preserve"><value>Next</value></data>
+  <data name="CastingAndCrew" xml:space="preserve"><value>Cast and crew</value></data>
+  <data name="MoreEpisodes" xml:space="preserve"><value>More episodes</value></data>
+  <data name="Overview" xml:space="preserve"><value>Overview</value></data>
 </root>

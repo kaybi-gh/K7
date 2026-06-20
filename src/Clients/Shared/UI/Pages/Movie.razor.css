@@ -64,12 +64,13 @@
     width: 100vw;
     height: 100vh;
     z-index: 0;
+    pointer-events: none;
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
     background-image: var(--background-picture);
-    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 75%);
     mask-size: 100% 100%;
     mask-repeat: no-repeat;
 }
@@ -138,6 +139,7 @@
     flex-direction: column;
     height: 100%;
     flex-shrink: 0;
+    z-index: 2;
 }
 
 .movie-page {
@@ -146,6 +148,21 @@
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+.movie-page-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    background: var(--color-bg);
+    padding-bottom: var(--space-6);
+}
+
+.movie-page-content ::deep .carousel-wrapper {
+    position: relative;
+    flex-shrink: 0;
 }
 
 .movie-scroll-hint {
@@ -159,34 +176,42 @@
 }
 
 @keyframes bounce-hint {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(6px); }
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
 }
 
 .movie-meta {
     display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.movie-meta-chips {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: var(--space-1);
+    width: 100%;
 }
 
-.movie-genres {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
+.movie-meta-chips ::deep .k7-chip {
+    flex-shrink: 0;
 }
 
-.movie-studios {
+.movie-meta-details {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
 }
 
 .movie-actions {
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     margin-top: var(--space-4);
-    flex-wrap: wrap;
 }
 
 .movie-actions-play {
@@ -202,6 +227,18 @@
     gap: 4px;
 }
 
+@media (min-width: 600px) {
+    .background-image {
+        mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    }
+}
+
+:global(html.platform-tv) .background-image {
+    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+}
+
 @media (max-width: 599.98px) {
     .hero-page-stack {
         width: 100vw;
@@ -209,35 +246,46 @@
         min-height: 85vh;
     }
 
-    .background-image {
-        mask-image: linear-gradient(to bottom, black 0%, transparent 60%);
-        -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 60%);
-    }
-
-    .movie-page {
-        --movie-dominant-color: var(--color-bg);
-        background: linear-gradient(to bottom, transparent 40%, var(--movie-dominant-color) 70%);
-    }
-
     .movie-meta {
-        flex-wrap: wrap;
-    }
-
-    .movie-studios {
-        display: none;
-    }
-
-    .movie-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .movie-actions-play {
+        align-items: center;
+        text-align: center;
         width: 100%;
     }
 
-    .movie-actions-secondary {
+    .movie-meta-chips {
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: nowrap;
         justify-content: center;
+        gap: 6px;
+    }
+
+    .movie-meta-chips ::deep .k7-chip {
+        flex-shrink: 0;
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .movie-meta-details {
+        justify-content: center;
+    }
+
+    .movie-actions {
+        justify-content: center;
+    }
+
+    .movie-actions-play {
+        width: auto;
+        padding: 10px 14px;
+        font-size: 0;
+    }
+
+    .movie-actions-play ::deep .k7-icon {
+        font-size: 1.25rem;
+    }
+
+    .movie-actions-secondary {
+        flex: 0 0 auto;
+        justify-content: flex-start;
     }
 
     ::deep .carousel-wrapper {

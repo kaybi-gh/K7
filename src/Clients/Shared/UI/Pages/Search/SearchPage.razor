@@ -13,8 +13,6 @@
 <div class="search-page page-scrollable">
     <div class="search-page__header">
         <K7TextField @bind-Value="_query"
-                      Adornment="start"
-                      AdornmentIcon="@Phosphor.MagnifyingGlass"
                       Placeholder="@L["TypeHint"]"
                       Variant="outlined"
                       Clearable="true"
@@ -112,14 +110,10 @@
                 @foreach (var person in _result.PersonResults)
                 {
                     <CarouselItem>
-                        <a href="/persons/@person.Id" class="search-person-card focusable">
-                            <K7Avatar Image="@GetPersonPictureUrl(person)"
-                                       Alt="@person.Name"
-                                       Size="lg" />
-                            <div class="search-person-card__footer">
-                                <span class="search-person-card__name">@person.Name</span>
-                            </div>
-                        </a>
+                        <PersonCard Href="@($"/persons/{person.Id}")"
+                                    Title="@person.Name"
+                                    ImageUrl="@GetPersonPictureUrl(person)"
+                                    Alt="@person.Name" />
                     </CarouselItem>
                 }
             </Carousel>
@@ -131,15 +125,11 @@
                 @foreach (var character in _result.CharacterResults)
                 {
                     <CarouselItem>
-                        <a href="/persons/@character.PersonId" class="search-person-card focusable">
-                            <K7Avatar Image="@GetCharacterPictureUrl(character)"
-                                       Alt="@character.PersonName"
-                                       Size="lg" />
-                            <div class="search-person-card__footer">
-                                <span class="search-person-card__name">@character.CharacterName</span>
-                                <span class="search-person-card__sub">@character.MediaTitle</span>
-                            </div>
-                        </a>
+                        <PersonCard Href="@($"/persons/{character.PersonId}")"
+                                    Title="@character.CharacterName"
+                                    Subtitle="@character.MediaTitle"
+                                    ImageUrl="@GetCharacterPictureUrl(character)"
+                                    Alt="@character.PersonName" />
                     </CarouselItem>
                 }
             </Carousel>

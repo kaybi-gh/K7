@@ -71,8 +71,7 @@ else
     {
         var backdropPicture = _movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop);
         var backdropUrl = apiClient.GetAbsoluteUri(apiClient.GetAbsoluteUri(backdropPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri;
-        var dominantColor = backdropPicture?.DominantColor;
-        <div class="movie-page" style="@(dominantColor is not null ? $"--movie-dominant-color: {dominantColor};" : "")">
+        <div class="movie-page">
         <div class="background-image" style="--background-picture: url(@backdropUrl)" />
         <div class="movie-main">
         <K7BackButton />
@@ -87,29 +86,22 @@ else
                     <h2 Style="font-weight: 800; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">@_movie.Title?.ToUpper()</h2>  
                 }
                 <div class="movie-meta">
-                    @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
-                    {
-                        <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
-                    }
-                    <div class="movie-genres">
-                        @foreach (var genre in _movie.Genres ?? [])
+                    <div class="movie-meta-chips">
+                        @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)
+                        {
+                            <K7Chip Size="sm" Icon="star" Color="primary" Variant="filled" Style="font-weight: 700;">@externalRating.ToString("N1")</K7Chip>
+                        }
+                        @foreach (var genre in (_movie.Genres ?? []).Take(2))
                         {
                             <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
                         }
+                        @foreach (var studio in (_movie.Studios ?? []).Take(1))
+                        {
+                            var s = studio;
+                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
+                        }
                     </div>
-                    @if (_movie.Studios?.Count > 0)
-                    {
-                        <span class="text-caption" Style="opacity: 0.4;">|</span>
-                        <div class="movie-studios">
-                            @foreach (var studio in _movie.Studios.Take(3))
-                            {
-                                var s = studio;
-                                <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
-                            }
-                        </div>
-                    }
-                    <span class="text-caption" Style="opacity: 0.4;">|</span>
-                    <div class="d-flex">
+                    <div class="movie-meta-details">
                         @if (_movie.ReleaseDate.HasValue)
                         {
                             <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@_movie.ReleaseDate.Value.Year</p>
@@ -196,6 +188,7 @@ else
         }
         </div>
 
+        <div class="movie-page-content">
         @if ((_movie.PersonRoles?.Count ?? 0) > 0)
         {
             <Carousel Title="@L["CastingAndCrew"]">
@@ -210,7 +203,6 @@ else
 
         @if (_similarMedia.Count > 0)
         {
-            <div style="margin-top: var(--space-6);">
             <Carousel Title="@L["SimilarMedia"]">
                 @foreach (var media in _similarMedia)
                 {
@@ -222,8 +214,8 @@ else
                     </CarouselItem>
                 }
             </Carousel>
-            </div>
         }
+        </div>
         </div>
     }
 }

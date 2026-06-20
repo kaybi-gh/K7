@@ -110,62 +110,71 @@ else if (_season is not null)
             <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
         }
 
-        <div class="season-header">
-            <div class="season-header-info">
-                @if (_logoUrl is not null)
-                {
-                    <K7Image Style="max-width: 60vw; max-height: 120px;" ObjectFit="scale-down" Src="@_logoUrl" Alt="@_season.SerieTitle" />
-                }
-                else
-                {
-                    <h3>@_season.SerieTitle?.ToUpper()</h3>
-                }
-                <K7Button Variant="text"
-                           StartIcon="@Phosphor.CaretLeft"
-                           Color="primary"
-                           Href="@($"/series/{SerieId}")"
-                           Class="px-0">
-                    @L["BackToSerie"]
-                </K7Button>
-                <div class="d-flex align-center gap-2">
-                    <h4>
-                        @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
-                    </h4>
+        <div class="season-main">
+            <K7BackButton />
 
-                    <DownloadAllButton Items="GetDownloadRequests()" Size="sm" />
-
-                    <AuthorizeView Roles="Administrator">
-                        <K7Menu>
-                            <ActivatorContent>
-                                <K7IconButton Icon="@Phosphor.DotsThree" AriaLabel="more-actions" />
-                            </ActivatorContent>
-                            <ChildContent>
-                                <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
-                                @if (!_isFederated)
-                                {
-                                    <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
-                                }
-                            </ChildContent>
-                        </K7Menu>
-                    </AuthorizeView>
-                </div>
-
-                @if (!string.IsNullOrEmpty(_season.Overview))
-                {
-                    <p class="text-sm mt-2" Color="secondary" Style="max-width: 700px;">@_season.Overview</p>
-                }
-
-                <div class="season-nav">
-                    @if (_allSeasonNumbers.Count > 1)
+            <div class="season-header">
+                <div class="season-header-info">
+                    @if (_logoUrl is not null)
                     {
-                        <K7Select TValue="int" Value="SeasonNumber" ValueChanged="GoToSeason" Label="@L["SeasonNumber_Label"]" Dense="true">
-                            @foreach (var sn in _allSeasonNumbers)
-                            {
-                                <K7SelectItem TValue="int" Value="sn">
-                                    @(sn == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], sn))
-                                </K7SelectItem>
-                            }
-                        </K7Select>
+                        <K7Image Class="season-logo" ObjectFit="scale-down" Src="@_logoUrl" Alt="@_season.SerieTitle" />
+                    }
+                    else
+                    {
+                        <h3 class="season-serie-title">@_season.SerieTitle?.ToUpper()</h3>
+                    }
+
+                    <div class="season-title-row">
+                        <h4 class="season-title">
+                            @(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))
+                        </h4>
+
+                        @if (_allSeasonNumbers.Count > 1)
+                        {
+                            <K7Menu Title="@L["ChooseSeason"]">
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.CaretDown" AriaLabel="@L["ChooseSeason"]" Size="sm" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    @foreach (var sn in _allSeasonNumbers)
+                                    {
+                                        var seasonNum = sn;
+                                        <K7MenuItem Icon="@(seasonNum == SeasonNumber ? "check" : "")"
+                                                    OnClick="() => GoToSeason(seasonNum)">
+                                            @(seasonNum == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], seasonNum))
+                                        </K7MenuItem>
+                                    }
+                                </ChildContent>
+                            </K7Menu>
+                        }
+
+                        <DownloadAllButton Items="GetDownloadRequests()" Size="sm" />
+
+                        <AuthorizeView Roles="Administrator">
+                            <K7Menu>
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.DotsThreeVertical" AriaLabel="more-actions" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    <K7MenuItem Icon="television" OnClick="NavigateToSerie">@L["BackToSerie"]</K7MenuItem>
+                                    <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataDialogAsync">@L["EditMetadata"]</K7MenuItem>
+                                    @if (!_isFederated)
+                                    {
+                                        <K7MenuItem Icon="waveform" OnClick="DetectIntrosOutrosAsync">@L["DetectIntrosOutros"]</K7MenuItem>
+                                    }
+                                </ChildContent>
+                            </K7Menu>
+                        </AuthorizeView>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_season.Overview))
+                    {
+                        <p class="season-overview overview-clickable focusable"
+                           tabindex="0"
+                           role="button"
+                           @onclick="OpenSeasonOverviewDialogAsync">
+                            @_season.Overview
+                        </p>
                     }
                 </div>
             </div>
@@ -178,7 +187,8 @@ else if (_season is not null)
                     <EpisodeListItem @key="episode.Id"
                                      Episode="episode"
                                      StillUrl="@GetEpisodeStillUrl(episode)"
-                                     Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")" />
+                                     Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")"
+                                     OnPlay="PlayEpisodeAsync" />
                 </div>
             }
         </div>
