@@ -2,7 +2,7 @@
 @typeparam TItem
 @inject IStringLocalizer<SharedResource> S
 
-<div class="browse-view">
+<div class="browse-view @Class">
     <div class="browse-view-toolbar">
         <div class="browse-view-toolbar-start">
             @ToolbarContent
@@ -12,10 +12,6 @@
             {
                 <K7IconButton OnClick="OnColumnPickerClicked" AriaLabel="@S["ToggleColumns"]" Icon="@Phosphor.Columns" />
             }
-            @if (_currentMode is BrowseViewMode.Grid)
-            {
-                <K7IconButton OnClick="() => _settingsOpen = !_settingsOpen" AriaLabel="settings" Icon="@Phosphor.SlidersHorizontal" />
-            }
             @if (_availableModes.Count > 1)
             {
                 <K7ButtonGroup TValue="BrowseViewMode"
@@ -24,18 +20,12 @@
                                ValueChanged="SetViewModeAsync"
                                AriaLabel="@S["ViewMode"]" />
             }
+            @if (ToolbarSecondaryContent is not null)
+            {
+                @ToolbarSecondaryContent
+            }
         </div>
     </div>
-
-    @if (_settingsOpen && _currentMode is BrowseViewMode.Grid)
-    {
-        <div class="browse-view-settings">
-            <label class="browse-view-settings-label">@S["ItemSize"]: @_itemWidth px</label>
-            <K7Slider TValue="int" Value="_itemWidth" ValueChanged="OnItemWidthChanged" Step="10" Class="mx-4" />
-            <label class="browse-view-settings-label">@S["Spacing"]: @_spacing px</label>
-            <K7Slider TValue="int" Value="_spacing" ValueChanged="OnSpacingChanged" Step="2" Class="mx-4" />
-        </div>
-    }
 
     @if (Loading || !_initialized)
     {

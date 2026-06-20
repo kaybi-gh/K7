@@ -9,3 +9,21 @@
     display: grid;
     gap: var(--grid-gap);
 }
+
+@media (max-width: 599.98px) {
+    .k7-virtual-grid {
+        padding: 0 var(--space-3) var(--space-3);
+    }
+
+    .k7-virtual-grid-row--compact {
+        align-content: start;
+        column-gap: var(--space-3);
+        padding-bottom: var(--space-2);
+        box-sizing: border-box;
+    }
+
+    .k7-virtual-grid-row--compact > ::deep(*) {
+        min-width: 0;
+        max-width: 100%;
+    }
+}

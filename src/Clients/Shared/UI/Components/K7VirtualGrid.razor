@@ -1,7 +1,7 @@
 @typeparam TItem
 
 <div class="k7-virtual-grid"
-     style="--item-width: @(ItemWidth)px; --grid-gap: @(Spacing)px; --row-height: @(_estimatedRowHeight)px;"
+     style="--item-width: @(ItemWidth)px; --grid-gap: @(EffectiveSpacing)px; --row-height: @(_estimatedRowHeight)px;"
      @ref="_gridRef">
     @if (Items is not null)
     {
@@ -13,8 +13,8 @@
         {
             <Virtualize Items="_rows" Context="row" ItemSize="_estimatedRowHeight"
                         OverscanCount="OverscanCount" @ref="_virtualizeRef">
-                <div class="k7-virtual-grid-row"
-                     style="grid-template-columns: repeat(@(CalculateColumnCount()), 1fr); height: @(_estimatedRowHeight)px;">
+                <div class="k7-virtual-grid-row @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
+                     style="@GetRowGridStyle()">
                     @foreach (var item in row)
                     {
                         @if (ItemTemplate is not null)
@@ -33,8 +33,8 @@
             <Virtualize ItemsProvider="ProvideRowsAsync" Context="row" ItemSize="_estimatedRowHeight"
                         OverscanCount="OverscanCount" @ref="_virtualizeRef">
                 <ItemContent>
-                    <div class="k7-virtual-grid-row"
-                         style="grid-template-columns: repeat(@(CalculateColumnCount()), 1fr); height: @(_estimatedRowHeight)px;">
+                    <div class="k7-virtual-grid-row @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
+                         style="@GetRowGridStyle()">
                         @foreach (var item in row)
                         {
                             @if (ItemTemplate is not null)
@@ -45,8 +45,8 @@
                     </div>
                 </ItemContent>
                 <Placeholder>
-                    <div class="k7-virtual-grid-row"
-                         style="grid-template-columns: repeat(@(CalculateColumnCount()), 1fr); height: @(_estimatedRowHeight)px;">
+                    <div class="k7-virtual-grid-row @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
+                         style="@GetRowGridStyle()">
                         @for (var i = 0; i < CalculateColumnCount(); i++)
                         {
                             @if (Placeholder is not null)
@@ -60,8 +60,8 @@
         }
         else if (Placeholder is not null)
         {
-            <div class="k7-virtual-grid-row"
-                 style="grid-template-columns: repeat(auto-fill, minmax(@(ItemWidth)px, 1fr)); height: @(_estimatedRowHeight)px;">
+            <div class="k7-virtual-grid-row @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
+                 style="@GetRowGridStyle()">
                 @for (var i = 0; i < 12; i++)
                 {
                     @Placeholder

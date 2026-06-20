@@ -74,23 +74,35 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
         if (width == _containerWidth) return;
 
         var isFirstMeasure = _containerWidth == 0;
+        var previousRowHeight = _estimatedRowHeight;
+        var wasCompact = IsCompactGrid;
         _containerWidth = width;
         UpdateEstimatedRowHeight();
 
         var newCols = CalculateColumnCount();
-        if (newCols == _lastColumnCount && !isFirstMeasure) return;
+        var colsChanged = newCols != _lastColumnCount || isFirstMeasure;
+        var rowHeightChanged = Math.Abs(_estimatedRowHeight - previousRowHeight) >= 1f;
+        var compactChanged = wasCompact != IsCompactGrid;
 
-        if (Items is not null)
+        if (colsChanged)
         {
-            RebuildRows();
+            if (Items is not null)
+            {
+                RebuildRows();
+            }
+
+            _lastColumnCount = newCols;
         }
 
-        if (_virtualizeRef is not null)
+        if (_virtualizeRef is not null && (colsChanged || rowHeightChanged || compactChanged || isFirstMeasure))
         {
             await _virtualizeRef.RefreshDataAsync();
         }
 
-        StateHasChanged();
+        if (colsChanged || rowHeightChanged || compactChanged || isFirstMeasure)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     public async Task RefreshAsync()
@@ -170,17 +182,44 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     private int CalculateColumnCount()
     {
         if (_containerWidth <= 0) return 4;
-        var cols = (_containerWidth + Spacing) / (ItemWidth + Spacing);
+        var spacing = GetEffectiveSpacing();
+        var cols = (_containerWidth + spacing) / (ItemWidth + spacing);
         return Math.Max(cols, 1);
     }
+
+    private const int CompactSpacing = 12;
+    private const int DesktopMinSpacing = 24;
+
+    private int EffectiveSpacing => GetEffectiveSpacing();
+
+    private int GetEffectiveSpacing() =>
+        IsCompactGrid ? CompactSpacing : Math.Max(Spacing, DesktopMinSpacing);
 
     private void UpdateEstimatedRowHeight()
     {
         var cols = CalculateColumnCount();
+        var spacing = GetEffectiveSpacing();
         var actualItemWidth = _containerWidth > 0
-            ? (_containerWidth - (cols - 1) * Spacing) / cols
+            ? (_containerWidth - (cols - 1) * spacing) / cols
             : ItemWidth;
-        _estimatedRowHeight = (float)Math.Floor(actualItemWidth * AspectRatio) + FooterHeight + Spacing;
+
+        if (IsCompactGrid)
+        {
+            const int compactRowGap = 8;
+            var compactFooterHeight = Math.Max(FooterHeight, 56);
+            _estimatedRowHeight = MathF.Floor(actualItemWidth * AspectRatio) + compactFooterHeight + compactRowGap;
+            return;
+        }
+
+        _estimatedRowHeight = (float)Math.Floor(actualItemWidth * AspectRatio) + FooterHeight + spacing;
+    }
+
+    private bool IsCompactGrid => _containerWidth > 0 && _containerWidth < 600;
+
+    private string GetRowGridStyle()
+    {
+        var cols = CalculateColumnCount();
+        return $"grid-template-columns: repeat({cols}, minmax(0, 1fr)); height: {_estimatedRowHeight}px;";
     }
 
     private bool HasContent() =>

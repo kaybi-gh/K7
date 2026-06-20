@@ -2,6 +2,34 @@ let _observers = new Map();
 let _sentinelObserver = null;
 let _sentinelPending = false;
 let _gridKeyHandlers = new Map();
+let _viewportObservers = new Map();
+
+export function isMobileViewport() {
+    return window.innerWidth < 600;
+}
+
+export function observeViewport(dotnetRef) {
+    if (_viewportObservers.has(dotnetRef)) {
+        return isMobileViewport();
+    }
+
+    const handler = () => {
+        dotnetRef.invokeMethodAsync("OnViewportChanged", isMobileViewport());
+    };
+
+    window.addEventListener("resize", handler);
+    _viewportObservers.set(dotnetRef, handler);
+
+    return isMobileViewport();
+}
+
+export function disposeViewport(dotnetRef) {
+    const handler = _viewportObservers.get(dotnetRef);
+    if (handler) {
+        window.removeEventListener("resize", handler);
+        _viewportObservers.delete(dotnetRef);
+    }
+}
 
 export function getSettings(key) {
     try {
