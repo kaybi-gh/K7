@@ -1,22 +1,25 @@
 ﻿.episode-card {
     display: flex;
-    gap: 12px;
-    padding: 8px;
-    border-radius: var(--radius-md);
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+}
+
+.episode-card-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex: 1;
+    min-width: 0;
     text-decoration: none;
     color: inherit;
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out);
 }
 
-.episode-card:hover,
-.episode-card:focus-visible {
-    background: var(--color-surface-hover);
-}
-
-.episode-card:focus-visible {
+.episode-card-link:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
+    border-radius: var(--radius-md);
 }
 
 .episode-card-still {
@@ -53,10 +56,22 @@
 .episode-card-info {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 2px;
+    gap: var(--space-1);
     min-width: 0;
     flex: 1;
+    padding-block: var(--space-1);
+}
+
+.episode-card-menu {
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.episode-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
 .episode-card-number {
@@ -65,14 +80,10 @@
     font-weight: 500;
 }
 
-.episode-card-title {
-    margin: 0;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--color-text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.episode-card-meta-separator {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    opacity: 0.5;
 }
 
 .episode-card-duration {
@@ -80,15 +91,37 @@
     color: var(--color-text-muted);
 }
 
+.episode-card-title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.episode-card-date {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.episode-card-synopsis {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 @media (max-width: 599.98px) {
     .episode-card-still {
         width: 120px;
-        height: 68px;
+        height: 76px;
     }
 
     .episode-card-title {
-        white-space: normal;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 1;
         display: -webkit-box;
         -webkit-box-orient: vertical;
         overflow: hidden;

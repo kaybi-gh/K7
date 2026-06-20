@@ -2,43 +2,77 @@
 @using K7.Shared.Dtos.Entities.Medias
 @using Microsoft.AspNetCore.Components.Authorization
 
-<a class="episode-card focusable" href="@Href">
-    <div class="episode-card-still">
-        @if (!string.IsNullOrEmpty(StillUrl))
-        {
-            <K7Image Src="@StillUrl"
-                      Alt="@Episode.Title"
-                      Class="rounded-lg"
-                      Style="width: 100%; height: 100%;"
-                      ObjectFit="cover"
-                      loading="lazy" />
-        }
-        else
-        {
-            <div class="episode-card-still-placeholder">
-                <K7Icon Icon="@Phosphor.Circle" Style="font-size: 24px; opacity: 0.3;" />
-            </div>
-        }
-        @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
-        {
-            <div class="episode-card-progress">
-                <K7ProgressBar Value="@Episode.UserState.ProgressPercentage" />
-            </div>
-        }
-        @if (Episode.UserState?.IsCompleted == true)
-        {
-            <div class="episode-card-watched">
-                <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
-            </div>
-        }
-    </div>
+<div class="episode-card">
+    <a class="episode-card-link focusable" href="@Href">
+        <div class="episode-card-still">
+            @if (!string.IsNullOrEmpty(StillUrl))
+            {
+                <K7Image Src="@StillUrl"
+                          Alt="@Episode.Title"
+                          Class="rounded-lg"
+                          Style="width: 100%; height: 100%;"
+                          ObjectFit="cover"
+                          loading="lazy" />
+            }
+            else
+            {
+                <div class="episode-card-still-placeholder">
+                    <K7Icon Icon="@Phosphor.Circle" Style="font-size: 24px; opacity: 0.3;" />
+                </div>
+            }
+            @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
+            {
+                <div class="episode-card-progress">
+                    <K7ProgressBar Value="@Episode.UserState.ProgressPercentage" />
+                </div>
+            }
+            @if (Episode.UserState?.IsCompleted == true)
+            {
+                <div class="episode-card-watched">
+                    <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
+                </div>
+            }
+        </div>
 
-    <div class="episode-card-info">
-        <span class="episode-card-number">E@(Episode.EpisodeNumber)</span>
-        <p class="episode-card-title">@(Episode.Title ?? S["Untitled"])</p>
-        @if (Episode.Duration.HasValue)
-        {
-            <span class="episode-card-duration">@FormatDuration(Episode.Duration.Value)</span>
-        }
+        <div class="episode-card-info">
+            <div class="episode-card-meta">
+                <span class="episode-card-number">E@(Episode.EpisodeNumber)</span>
+                @if (Episode.Duration.HasValue)
+                {
+                    <span class="episode-card-meta-separator">&bull;</span>
+                    <span class="episode-card-duration">@FormatDuration(Episode.Duration.Value)</span>
+                }
+            </div>
+            <p class="episode-card-title">@(Episode.Title ?? S["Untitled"])</p>
+            @if (Episode.ReleaseDate.HasValue)
+            {
+                <span class="episode-card-date">@Episode.ReleaseDate.Value.ToString("d MMMM yyyy")</span>
+            }
+            @if (!string.IsNullOrEmpty(Episode.Overview))
+            {
+                <p class="episode-card-synopsis">@Episode.Overview</p>
+            }
+        </div>
+    </a>
+
+    <div class="episode-card-menu" @onclick:stopPropagation="true">
+        <K7Menu Title="@(Episode.Title ?? S["Untitled"])">
+            <ActivatorContent>
+                <K7IconButton Icon="@Phosphor.DotsThreeVertical"
+                               Size="sm"
+                               AriaLabel="more-actions"
+                               @onclick:preventDefault="true" />
+            </ActivatorContent>
+            <ChildContent>
+                <K7MenuItem Icon="play" OnClick="PlayAsync">@S["Play"]</K7MenuItem>
+                @if (Episode.IndexedFileId.HasValue && Href is not null)
+                {
+                    <K7MenuItem Icon="download-simple" OnClick="NavigateToDetailAsync">@L["Download"]</K7MenuItem>
+                }
+                <AuthorizeView Roles="User,Administrator">
+                    <K7MenuItem Icon="check-circle">@L["MarkAsWatched"]</K7MenuItem>
+                </AuthorizeView>
+            </ChildContent>
+        </K7Menu>
     </div>
-</a>
+</div>
