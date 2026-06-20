@@ -16,7 +16,7 @@ public class K7SwitchTests
 
         // Assert
         var label = cut.Find("label");
-        label.HasAttribute("data-sn-activatable").Should().BeTrue();
+        label.HasAttribute("data-sn-focus-target").Should().BeTrue();
     }
 
     [Test]

@@ -505,3 +505,9 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     overflow: hidden;
     padding: 0;
 }
+
+@media (max-width: 599.98px) {
+    .page-content {
+        padding: var(--space-3);
+    }
+}

@@ -1,14 +1,24 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<img class="k7-img @(ObjectFit == "cover" ? "k7-img--cover" : ObjectFit == "contain" ? "k7-img--contain" : ObjectFit == "scale-down" ? "k7-img--scale-down" : "") @Class"
+<img class="@CssClass"
      src="@Src"
      alt="@Alt"
-     @attributes="SizeAttributes"
      loading="@Loading"
-     @attributes="AdditionalAttributes" /> @* TODO - Fix*@
+     @attributes="MergedAttributes" />
 
 @code {
-    private Dictionary<string, object?> SizeAttributes
+    private string CssClass =>
+        $"k7-img {ObjectFitClass} {(Fluid ? "k7-img--fluid" : "")} {Class}".Trim();
+
+    private string ObjectFitClass => ObjectFit switch
+    {
+        "cover" => "k7-img--cover",
+        "contain" => "k7-img--contain",
+        "scale-down" => "k7-img--scale-down",
+        _ => ""
+    };
+
+    private Dictionary<string, object?> MergedAttributes
     {
         get
         {
@@ -16,6 +26,12 @@
             if (Width > 0) d["width"] = Width;
             if (Height > 0) d["height"] = Height;
             if (!string.IsNullOrEmpty(Style)) d["style"] = Style;
+            if (AdditionalAttributes is not null)
+            {
+                foreach (var kv in AdditionalAttributes)
+                    d[kv.Key] = kv.Value;
+            }
+
             return d;
         }
     }

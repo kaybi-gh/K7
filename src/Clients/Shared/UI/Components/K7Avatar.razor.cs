@@ -22,11 +22,25 @@ public partial class K7Avatar
     [Parameter] public string Letter { get; set; } = "";
     [Parameter] public Guid? UserId { get; set; }
 
+    private string DisplayLetter
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(Letter))
+                return Letter;
+
+            if (string.IsNullOrWhiteSpace(Alt))
+                return "";
+
+            return char.ToUpperInvariant(Alt.Trim()[0]).ToString();
+        }
+    }
+
     private string? ComputedStyle
     {
         get
         {
-            if (!string.IsNullOrEmpty(Image) || string.IsNullOrEmpty(Letter))
+            if (!string.IsNullOrEmpty(Image) || string.IsNullOrEmpty(DisplayLetter))
                 return string.IsNullOrEmpty(Style) ? null : Style;
 
             var bgColor = UserId is not null ? GetColorForUser(UserId.Value) : null;

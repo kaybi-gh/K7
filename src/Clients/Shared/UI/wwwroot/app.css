@@ -58,6 +58,17 @@ html, body, #app {
     box-shadow: var(--focus-ring);
 }
 
+/* Headings are not interactive; hide programmatic focus rings (e.g. legacy skip targets) */
+h1:focus:not(:focus-visible),
+h2:focus:not(:focus-visible),
+h3:focus:not(:focus-visible),
+h4:focus:not(:focus-visible),
+h5:focus:not(:focus-visible),
+h6:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+}
+
 /* Selection */
 ::selection {
     background: var(--color-accent);
@@ -210,13 +221,16 @@ html.platform-tv .app-nav-popover-status {
 
 /* -- PersonRole avatar --------------------------------------------------- */
 
-html.platform-tv .personrole-item-link .k7-avatar {
-    /* Override inline style="height:150px; width:150px" on the component */
+html.platform-tv .personrole-item {
+    width: 180px;
+}
+
+html.platform-tv .personrole-item ::deep .k7-avatar {
     width: 180px !important;
     height: 180px !important;
 }
 
-html.platform-tv .person-text {
+html.platform-tv .person-footer {
     max-width: 180px;
 }
 
