@@ -8,10 +8,13 @@
 @inject IK7DialogService DialogService
 @inject IServerConnectionService ServerConnectionService
 @inject ISyncPlayService SyncPlay
+@inject IUserAdminService UserService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
-<PageTitle>@L["PageTitle"]</PageTitle>
+<PageTitle>@L["GeneralPageTitle"]</PageTitle>
 
-<h4 class="mb-4">@L["PageTitle"]</h4>
+<h4 class="mb-4">@L["GeneralPageTitle"]</h4>
 
 <div class="pa-4">
     <K7Select TValue="ThemeDefinition" Label="@L["Theme"]" @bind-Value="@ThemeService.Theme" ToStringFunc="@(t => t?.Name)">
@@ -21,6 +24,8 @@
         }
     </K7Select>
 
+    <K7LanguageSelect Value="@_currentCulture" ValueChanged="OnCultureChanged" Label="@L["Language"]" Languages="SupportedLanguages.Interface" Class="mt-4" />
+
     @if (DeviceService.GetClientType() == Server.Domain.Enums.ClientType.Web)
     {
         <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" />
@@ -29,27 +34,6 @@
     {
         <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" Adornment="end" AdornmentIcon="@Phosphor.Trash" OnAdornmentClick="ChangeBackendUrl" />
     }
-
-    <span>@L["FormFactor"]: @_deviceType</span>
-    <span>@L["Hdr"]: @_hdrSupport</span>
-
-    <div class="k7-expansion-panels">
-        <K7ExpansionPanel Text="@L["SupportedCodecs"]">
-            <ul>
-                @if (_supportedMediaFormats != null)
-                {
-                    foreach (var supportedMediaFormat in _supportedMediaFormats)
-                    {
-                        <li>@supportedMediaFormat.Id</li>
-                    }
-                }
-                else
-                {
-                    <p>Loading...</p>
-                }
-            </ul>
-        </K7ExpansionPanel>
-    </div>
 
     <AuthorizeView Roles="User,Administrator">
         <section class="d-flex flex-col gap-3 mt-6">

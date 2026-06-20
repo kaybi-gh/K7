@@ -14,35 +14,38 @@
                 </NavLink>
             }
             <NavLink class="nav-link focusable" href="/settings/general">
-                <span class="nav-icon"><K7Icon Icon="@Phosphor.Gear" /></span>
-                <span class="nav-label">@L["General"]</span>
+                <span class="nav-icon"><K7Icon Icon="@Phosphor.SlidersHorizontal" /></span>
+                <span class="nav-label">@L["Interface"]</span>
             </NavLink>
+
             @if (!_isGuest)
             {
-                <NavLink class="nav-link focusable" href="/settings/libraries">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Books" /></span>
-                    <span class="nav-label">@L["Libraries"]</span>
-                </NavLink>
-                <NavLink class="nav-link focusable" href="/settings/home">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.House" /></span>
-                    <span class="nav-label">@L["Home"]</span>
-                </NavLink>
-                <NavLink class="nav-link focusable" href="/settings/hidden">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.EyeSlash" /></span>
-                    <span class="nav-label">@L["Hidden"]</span>
-                </NavLink>
-                <NavLink class="nav-link focusable" href="/settings/video-player">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Play" /></span>
-                    <span class="nav-label">@L["VideoPlayer"]</span>
-                </NavLink>
-                <NavLink class="nav-link focusable" href="/settings/audio-player">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.MusicNotes" /></span>
-                    <span class="nav-label">@L["AudioPlayer"]</span>
-                </NavLink>
-                <NavLink class="nav-link focusable" href="/settings/track-selection">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Translate" /></span>
-                    <span class="nav-label">@L["TrackSelection"]</span>
-                </NavLink>
+                <SidebarNavGroup Title="@L["GroupMyContent"]" Icon="@Phosphor.Stack" Routes="@MyContentRoutes">
+                    <NavLink class="nav-link focusable" href="/settings/libraries">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.Books" /></span>
+                        <span class="nav-label">@L["Libraries"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/home">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.House" /></span>
+                        <span class="nav-label">@L["Home"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/hidden">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.EyeSlash" /></span>
+                        <span class="nav-label">@L["Hidden"]</span>
+                    </NavLink>
+                </SidebarNavGroup>
+
+                <SidebarNavGroup Title="@L["GroupPlayback"]" Icon="@Phosphor.Play" Routes="@PlaybackRoutes">
+                    <NavLink class="nav-link focusable" href="/settings/video-playback">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.Play" /></span>
+                        <span class="nav-label">@L["VideoPlayback"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link focusable" href="/settings/audio-player">
+                        <span class="nav-icon"><K7Icon Icon="@Phosphor.MusicNotes" /></span>
+                        <span class="nav-label">@L["AudioPlayer"]</span>
+                    </NavLink>
+                </SidebarNavGroup>
+
                 @if (DeviceService.GetClientType() == ClientType.Native)
                 {
                     <NavLink class="nav-link focusable" href="/settings/offline">
@@ -51,6 +54,7 @@
                     </NavLink>
                 }
             }
+
             <NavLink class="nav-link focusable" href="/settings/about">
                 <span class="nav-icon"><K7Icon Icon="@Phosphor.Info" /></span>
                 <span class="nav-label">@L["About"]</span>
@@ -63,3 +67,8 @@
         </div>
     </ChildContent>
 </SidebarLayout>
+
+@code {
+    private static readonly string[] MyContentRoutes = ["/settings/libraries", "/settings/home", "/settings/hidden"];
+    private static readonly string[] PlaybackRoutes = ["/settings/video-playback", "/settings/audio-player"];
+}

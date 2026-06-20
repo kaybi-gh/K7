@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -20,6 +20,7 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Paramètres</value></data>
+  <data name="GeneralPageTitle" xml:space="preserve"><value>Interface</value></data>
   <data name="DarkMode" xml:space="preserve"><value>Mode sombre</value></data>
   <data name="Theme" xml:space="preserve"><value>Thème</value></data>
   <data name="Language" xml:space="preserve"><value>Langue</value></data>
@@ -34,7 +35,7 @@
   <data name="SetPin" xml:space="preserve"><value>Définir un PIN</value></data>
   <data name="SupportedCodecs" xml:space="preserve"><value>Codecs supportés</value></data>
   <data name="WarningTitle" xml:space="preserve"><value>Attention</value></data>
-  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changer l'URL du serveur K7 supprimera toutes les donnees locales liees au serveur actuel (statistiques, fichiers hors-ligne, preferences). Les donnees sur le serveur ne seront pas affectees.</value></data>
+  <data name="ChangeServerUrlWarning" xml:space="preserve"><value>Changer l'URL du serveur K7 supprimera toutes les données locales liees au serveur actuel (statistiques, fichiers hors-ligne, préférences). Les données sur le serveur ne seront pas affectees.</value></data>
   <data name="SetPinDialogTitle" xml:space="preserve"><value>Définir un PIN</value></data>
   <data name="ConfirmPinDialogTitle" xml:space="preserve"><value>Confirmer le PIN</value></data>
   <data name="PinMismatch" xml:space="preserve"><value>Les PIN ne correspondent pas.</value></data>
