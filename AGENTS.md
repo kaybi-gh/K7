@@ -93,7 +93,7 @@ Placement:
 
 Use K7 component library (`Clients/Shared/UI/Components/`). No third-party UI frameworks in pages.
 Theming via `ThemeService` / `Themes.cs` and CSS variables. No hardcoded colors. No inline styles.
-Scoped CSS preferred. Mandatory localization: no hardcoded user-facing strings; use `IStringLocalizer` + `.resx`.
+Scoped CSS preferred. Mandatory localization: no hardcoded user-facing strings; use `IStringLocalizer` + `.resx`. Default `*.resx` files are French - use proper diacritics in `<value>` strings; English goes in `*.en.resx`. Resource keys stay ASCII.
 
 ## Testing (`tests/**`)
 
