@@ -1,38 +1,27 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<img class="@CssClass"
-     src="@Src"
-     alt="@Alt"
-     loading="@Loading"
-     @attributes="MergedAttributes" />
-
-@code {
-    private string CssClass =>
-        $"k7-img {ObjectFitClass} {(Fluid ? "k7-img--fluid" : "")} {Class}".Trim();
-
-    private string ObjectFitClass => ObjectFit switch
+<div class="@WrapCssClass" style="@WrapStyle" role="@(ShowFallback && !string.IsNullOrEmpty(Alt) ? "img" : null)" aria-label="@(ShowFallback ? Alt : null)">
+    @if (ShowFallback)
     {
-        "cover" => "k7-img--cover",
-        "contain" => "k7-img--contain",
-        "scale-down" => "k7-img--scale-down",
-        _ => ""
-    };
-
-    private Dictionary<string, object?> MergedAttributes
-    {
-        get
-        {
-            var d = new Dictionary<string, object?>();
-            if (Width > 0) d["width"] = Width;
-            if (Height > 0) d["height"] = Height;
-            if (!string.IsNullOrEmpty(Style)) d["style"] = Style;
-            if (AdditionalAttributes is not null)
-            {
-                foreach (var kv in AdditionalAttributes)
-                    d[kv.Key] = kv.Value;
-            }
-
-            return d;
-        }
+        <div class="k7-img-fallback" aria-hidden="@(!string.IsNullOrEmpty(Alt))">
+            <K7Icon Icon="@FallbackIcon" Class="k7-img-fallback-icon" />
+        </div>
     }
-}
+    else
+    {
+        @if (ShowLoading)
+        {
+            <div class="k7-img-loading" aria-hidden="true">
+                <K7Spinner Size="sm" />
+            </div>
+        }
+        <img @ref="_imgRef"
+             class="@ImageCssClass"
+             src="@Src"
+             alt="@Alt"
+             loading="@Loading"
+             @onload="OnLoad"
+             @onerror="OnError"
+             @attributes="ImageAttributes" />
+    }
+</div>
