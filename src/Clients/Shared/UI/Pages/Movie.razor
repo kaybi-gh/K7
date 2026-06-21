@@ -159,7 +159,9 @@ else
                     }
 
                     <AuthorizeView Roles="User,Administrator">
-                        <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-shown" />
+                        <K7IconButton Icon="@(_movie?.UserState?.IsCompleted == true ? Phosphor.Fill.CheckCircle : Phosphor.CheckCircle)"
+                                       AriaLabel="mark-as-watched"
+                                       OnClick="ToggleWatchStateAsync" />
                     </AuthorizeView>
 
                     <K7Menu>
@@ -210,6 +212,7 @@ else
                         <MediaCard Model="media"
                                    Href="@($"/movies/{media.Id}")"
                                    OverlayEnabled="true"
+                                   WatchStateMenuEnabled="true"
                                    FooterVisible="true" />
                     </CarouselItem>
                 }

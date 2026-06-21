@@ -1,6 +1,9 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
+using K7.Shared.Enums;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
@@ -18,6 +21,7 @@ public partial class Movie
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IFederationService FederationService { get; set; } = default!;
 
@@ -347,5 +351,28 @@ public partial class Movie
             _movie = await k7ServerService.GetMovieAsync(Guid.Parse(Id));
             StateHasChanged();
         }
+    }
+
+    private async Task ToggleWatchStateAsync()
+    {
+        if (_movie is null)
+            return;
+
+        var watched = _movie.UserState?.IsCompleted != true;
+        var success = await WatchStateActions.ApplyAsync(
+            k7ServerService,
+            CacheStore,
+            DialogService,
+            Snackbar,
+            S,
+            _movie.Id,
+            watched,
+            WatchStateScope.Item);
+
+        if (!success)
+            return;
+
+        _movie = await k7ServerService.GetMovieAsync(_movie.Id);
+        StateHasChanged();
     }
 }

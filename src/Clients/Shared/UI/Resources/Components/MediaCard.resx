@@ -22,5 +22,7 @@
   <data name="HideForMe" xml:space="preserve"><value>Masquer pour moi</value></data>
   <data name="HideForUser" xml:space="preserve"><value>Masquer pour un utilisateur</value></data>
   <data name="Play" xml:space="preserve"><value>Lecture</value></data>
+  <data name="MarkAsWatched" xml:space="preserve"><value>Marquer comme vu</value></data>
+  <data name="MarkAsUnwatched" xml:space="preserve"><value>Marquer comme non vu</value></data>
 </root>
 

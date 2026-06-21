@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
+using K7.Shared.Interfaces;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
@@ -17,13 +21,22 @@ public partial class MediaCard : IDisposable
     [Parameter] public bool WatchedStatusEnabled { get; set; }
     [Parameter] public bool FooterVisible { get; set; }
     [Parameter] public bool ExcludeMenuEnabled { get; set; }
+    [Parameter] public bool WatchStateMenuEnabled { get; set; }
+    [Parameter] public int? BulkEpisodeCount { get; set; }
     [Parameter] public bool IsAdmin { get; set; }
     [Parameter] public EventCallback OnExcludeForSelf { get; set; }
     [Parameter] public EventCallback OnExcludeForOthers { get; set; }
+    [Parameter] public EventCallback OnWatchStateChanged { get; set; }
     [Parameter] public EventCallback OnFocused { get; set; }
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private IMediaService MediaService { get; set; } = default!;
+    [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IStringLocalizer<SharedResource> SharedStrings { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     private const int LongPressDelayMs = 600;
     private const double LongPressMoveThresholdSquared = 100;
@@ -32,12 +45,13 @@ public partial class MediaCard : IDisposable
     private bool _longPressTriggered;
     private bool _menuOpenedViaKeyboard;
     private bool _preventNextClick;
+    private bool _watchStateMenuVisible;
     private CancellationTokenSource? _longPressCts;
     private CancellationTokenSource? _shortPressCts;
     private double _touchStartX;
     private double _touchStartY;
 
-    private bool LongPressEnabled => OverlayEnabled || ExcludeMenuEnabled;
+    private bool LongPressEnabled => OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible;
 
     private string GetRootClass()
     {
@@ -57,6 +71,13 @@ public partial class MediaCard : IDisposable
     };
 
     private bool ProgressBarIsHidden() => Model.Progress < 1 || Model.Progress >= 100;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _watchStateMenuVisible = WatchStateMenuEnabled
+            && WatchStateActions.SupportsWatchState(Model.Kind)
+            && await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+    }
 
     private async void OnMenuOpenChanged(bool open)
     {
@@ -229,6 +250,31 @@ public partial class MediaCard : IDisposable
     {
         if (!string.IsNullOrEmpty(Href))
             NavigationManager.NavigateTo(Href);
+    }
+
+    private async Task ToggleWatchStateAsync()
+    {
+        var watched = !Model.Watched;
+        var scope = WatchStateActions.GetScope(Model.Kind);
+        var success = await WatchStateActions.ApplyAsync(
+            MediaService,
+            CacheStore,
+            DialogService,
+            Snackbar,
+            SharedStrings,
+            Guid.Parse(Model.Id),
+            watched,
+            scope,
+            BulkEpisodeCount);
+
+        if (!success)
+            return;
+
+        WatchStateActions.ApplyLocalCardState(Model, watched);
+        if (OnWatchStateChanged.HasDelegate)
+            await OnWatchStateChanged.InvokeAsync();
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private string PlaceholderIcon => Variant switch

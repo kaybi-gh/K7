@@ -13,6 +13,10 @@
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<EpisodePage> L
 @inject IStringLocalizer<SharedResource> S
+@inject IStringLocalizer<MediaCard> CardL
+@inject MediaCacheStore CacheStore
+@inject IK7Snackbar Snackbar
+@inject IUserAdminService UserAdminService
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -92,6 +96,19 @@ else if (_episode is not null)
                                 <ChildContent>
                                     <K7MenuItem Icon="television" OnClick="NavigateToSerie">@L["BackToSerie"]</K7MenuItem>
                                     <K7MenuItem Icon="film-strip" OnClick="NavigateToSeason">@L["BackToSeason"]</K7MenuItem>
+                                    <AuthorizeView Roles="User,Administrator">
+                                        <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
+                                            @(_episode.UserState?.IsCompleted == true ? CardL["MarkAsUnwatched"] : CardL["MarkAsWatched"])
+                                        </K7MenuItem>
+                                    </AuthorizeView>
+                                    @if (_canExclude)
+                                    {
+                                        <K7MenuItem Icon="eye-slash" OnClick="ExcludeForSelfAsync">@S["HideForMe"]</K7MenuItem>
+                                    }
+                                    @if (_isAdmin)
+                                    {
+                                        <K7MenuItem Icon="circle" OnClick="ExcludeForOthersAsync">@S["HideForUser"]</K7MenuItem>
+                                    }
                                     <AuthorizeView Roles="Administrator">
                                         <K7MenuItem Icon="pencil-simple" OnClick="OpenEditMetadataAsync">@S["EditMetadata"]</K7MenuItem>
                                         @if (_episode.IndexedFiles is { Count: > 0 })
@@ -157,7 +174,13 @@ else if (_episode is not null)
                                    FooterVisible="true"
                                    ProgressEnabled="true"
                                    OverlayEnabled="true"
-                                   WatchedStatusEnabled="true" />
+                                   WatchedStatusEnabled="true"
+                                   ExcludeMenuEnabled="_canExclude"
+                                   WatchStateMenuEnabled="_canSetWatchState"
+                                   IsAdmin="_isAdmin"
+                                   OnExcludeForSelf="() => ExcludeCarouselEpisodeForSelfAsync(episode)"
+                                   OnExcludeForOthers="() => ExcludeCarouselEpisodeForOthersAsync(episode)"
+                                   OnWatchStateChanged="ReloadMoreEpisodesAsync" />
                     </CarouselItem>
                 }
             </Carousel>

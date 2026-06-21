@@ -34,6 +34,7 @@ public partial class Home : IDisposable
     private bool _isOffline;
     private bool _canTrackProgress;
     private bool _canExclude;
+    private bool _canSetWatchState;
     private bool _isAdmin;
     private bool _isTv;
     private MediaCardViewModel? _focusedItem;
@@ -45,6 +46,7 @@ public partial class Home : IDisposable
         var role = await FeatureAccess.GetRoleAsync();
         _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
         _canExclude = role is not null and not K7.Server.Domain.Constants.Roles.Guest;
+        _canSetWatchState = role is K7.Server.Domain.Constants.Roles.User or K7.Server.Domain.Constants.Roles.Administrator;
         _isAdmin = role == K7.Server.Domain.Constants.Roles.Administrator;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
@@ -130,14 +132,18 @@ public partial class Home : IDisposable
             }
         }
 
-        if (changed)
+        if (changed && !isCompleted)
         {
             _ = InvokeAsync(StateHasChanged);
             return;
         }
 
         if (!_rows.Any(r => r.Config.ContinueWatching))
+        {
+            if (changed)
+                _ = InvokeAsync(StateHasChanged);
             return;
+        }
 
         CacheStore.InvalidateByPrefix("home-feed");
         _ = InvokeAsync(async () =>

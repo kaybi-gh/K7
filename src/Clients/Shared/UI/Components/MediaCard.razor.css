@@ -1,4 +1,4 @@
-.media-card {
+﻿.media-card {
     position: relative;
     width: 100%;
     min-width: 0;
@@ -62,24 +62,22 @@
 
 .media-card-watched {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: var(--space-1);
+    right: var(--space-1);
     z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 8px;
     background-color: color-mix(in srgb, var(--color-overlay) 85%, var(--color-success) 15%);
-    border-radius: 0 0 0 var(--radius-sm);
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--color-border-subtle);
 }
 
 .media-card-group-count {
     position: absolute;
-    top: 4px;
-    left: 4px;
+    top: var(--space-1);
+    left: var(--space-1);
     display: flex;
     z-index: 2;
     pointer-events: none;
+    border: 1px solid var(--color-border-subtle);
 }
 
 .media-card-progress-bar {
@@ -110,8 +108,8 @@
 
 .media-card-menu {
     position: absolute;
-    top: 0;
-    right: 0;
+    bottom: var(--space-1);
+    right: var(--space-1);
     z-index: 2;
     display: none;
 }
