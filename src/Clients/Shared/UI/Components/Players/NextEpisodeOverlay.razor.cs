@@ -281,8 +281,6 @@ public partial class NextEpisodeOverlay : IDisposable
             return;
 
         _layerActive = false;
-        _closeCallbackRef?.Dispose();
-        _closeCallbackRef = null;
         try
         {
             await SpatialNav.PopLayerAsync(_overlayRef);
@@ -290,6 +288,9 @@ public partial class NextEpisodeOverlay : IDisposable
         catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
         }
+
+        _closeCallbackRef?.Dispose();
+        _closeCallbackRef = null;
     }
 
     public void Dispose()
