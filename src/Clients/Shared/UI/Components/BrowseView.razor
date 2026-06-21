@@ -8,6 +8,10 @@
             @ToolbarContent
         </div>
         <div class="browse-view-toolbar-end">
+            @if (ToolbarSecondaryContent is not null)
+            {
+                @ToolbarSecondaryContent
+            }
             <div class="browse-view-toolbar-actions">
                 @if (_currentMode is BrowseViewMode.Table && _hasColumnPicker)
                 {
@@ -22,10 +26,6 @@
                                    AriaLabel="@S["ViewMode"]" />
                 }
             </div>
-            @if (ToolbarSecondaryContent is not null)
-            {
-                @ToolbarSecondaryContent
-            }
         </div>
     </div>
 

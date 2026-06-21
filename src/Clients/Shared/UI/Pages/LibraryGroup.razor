@@ -38,23 +38,24 @@
                 <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
-        @if (_genres.Count > 0)
+        @if (ShowBrowseFilters)
         {
             <LibraryBrowseFilters Genres="_genres"
                                    SelectedGenres="_selectedGenres"
-                                   SelectedGenresChanged="OnSelectedGenresChanged" />
+                                   SelectedGenresChanged="OnSelectedGenresChanged"
+                                   WatchFilter="_watchFilter"
+                                   WatchFilterChanged="OnWatchFilterChanged"
+                                   ShowWatchFilters="_showWatchFilters" />
         }
-    </ToolbarContent>
-    <ToolbarSecondaryContent>
         <span class="library-toolbar-count">@string.Format(L["ItemCount"], _totalCount)</span>
-    </ToolbarSecondaryContent>
+    </ToolbarContent>
     <GridTemplate Context="item">
         @{
             var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));
         }
         @if (vm is not null)
         {
-            <MediaCard Model="vm" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" FooterVisible="true" />
+            <MediaCard Model="vm" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" WatchStateMenuEnabled="_canSetWatchState" FooterVisible="true" />
         }
     </GridTemplate>
     <GridPlaceholder>
