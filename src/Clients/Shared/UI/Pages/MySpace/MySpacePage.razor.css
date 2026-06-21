@@ -4,8 +4,8 @@
 
 .my-space-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+    gap: var(--space-5);
 }
 
 @media (max-width: 599.98px) {
@@ -16,12 +16,5 @@
     .my-space-cards {
         grid-template-columns: 1fr;
         gap: var(--space-3);
-    }
-}
-
-@media (min-width: 900px) {
-    .my-space-cards {
-        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-        gap: var(--space-5);
     }
 }
