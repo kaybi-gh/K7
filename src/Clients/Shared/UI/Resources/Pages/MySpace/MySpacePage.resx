@@ -30,4 +30,8 @@
   <data name="HistoryDesc" xml:space="preserve"><value>Vos lectures récentes</value></data>
   <data name="Downloads" xml:space="preserve"><value>Mes downloads</value></data>
   <data name="DownloadsDesc" xml:space="preserve"><value>Contenus téléchargés pour usage hors ligne</value></data>
+  <data name="PlaylistsCount" xml:space="preserve"><value>{0} playlists</value></data>
+  <data name="CollectionsCount" xml:space="preserve"><value>{0} collections</value></data>
+  <data name="VideoHoursKpi" xml:space="preserve"><value>{0:0.#} h vidéo</value></data>
+  <data name="MusicHoursKpi" xml:space="preserve"><value>{0:0.#} h musique</value></data>
 </root>
