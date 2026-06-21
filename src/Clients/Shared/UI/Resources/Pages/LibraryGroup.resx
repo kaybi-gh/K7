@@ -39,5 +39,7 @@
   <data name="PlayCount" xml:space="preserve"><value>Lectures</value></data>
   <data name="DateAdded" xml:space="preserve"><value>Date d'ajout</value></data>
   <data name="MediaTypeFilter" xml:space="preserve"><value>Type de média</value></data>
+  <data name="AllGenres" xml:space="preserve"><value>Tous les genres</value></data>
+  <data name="GenreFilterOption" xml:space="preserve"><value>{0} ({1})</value></data>
 </root>
 

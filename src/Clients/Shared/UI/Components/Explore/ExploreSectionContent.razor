@@ -1,0 +1,43 @@
+@if (IsTv)
+{
+    <CascadingValue Value="_tvFocusContext" IsFixed="true">
+        <ExploreTvHeroPanel @ref="_heroPanel"
+                            GroupTitle="@GroupTitle"
+                            BrowseHref="@BrowseHref"
+                            BrowseLabel="@BrowseLabel"
+                            BackAriaLabel="@BackAriaLabel"
+                            OnBack="OnBack" />
+        <VerticalCarousel @key="_carouselKey">
+            @if (IsLoading)
+            {
+                @for (var i = 0; i < 3; i++)
+                {
+                    <Carousel Skeleton="true">
+                        @for (var j = 0; j < 10; j++)
+                        {
+                            <CarouselItem>
+                                <MediaCard Skeleton="true" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                }
+            }
+            else
+            {
+                @ChildContent
+            }
+        </VerticalCarousel>
+    </CascadingValue>
+}
+else if (IsLoading)
+{
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
+}
+else
+{
+    <section class="explore-section">
+        @ChildContent
+    </section>
+}

@@ -38,5 +38,7 @@
   <data name="Rating" xml:space="preserve"><value>Rating</value></data>
   <data name="PlayCount" xml:space="preserve"><value>Play count</value></data>
   <data name="DateAdded" xml:space="preserve"><value>Date added</value></data>
+  <data name="AllGenres" xml:space="preserve"><value>All genres</value></data>
+  <data name="GenreFilterOption" xml:space="preserve"><value>{0} ({1})</value></data>
 </root>
 

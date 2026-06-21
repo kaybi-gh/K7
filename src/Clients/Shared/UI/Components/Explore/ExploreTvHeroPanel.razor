@@ -1,0 +1,22 @@
+<div class="explore-tv-hero-area @(ShowGroupChrome ? "explore-tv-hero-area--with-toolbar" : null)">
+    @if (ShowGroupChrome)
+    {
+        <div class="explore-tv-hero__toolbar">
+            <K7IconButton Icon="@Phosphor.ArrowLeft"
+                          Size="sm"
+                          AriaLabel="@BackAriaLabel"
+                          Focusable="true"
+                          OnClick="HandleBack" />
+            <h1 class="explore-tv-hero__group-title">@GroupTitle</h1>
+            <K7Button Variant="filled"
+                      Color="primary"
+                      Href="@BrowseHref"
+                      StartIcon="@Phosphor.SquaresFour"
+                      Size="sm"
+                      Focusable="true">
+                @BrowseLabel
+            </K7Button>
+        </div>
+    }
+    <HomeTvHero Model="_focusedItem" />
+</div>

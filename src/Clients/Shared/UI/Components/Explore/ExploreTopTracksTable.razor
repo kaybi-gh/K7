@@ -1,0 +1,74 @@
+@namespace K7.Clients.Shared.UI.Components.Explore
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@using K7.Clients.Shared.UI.Pages
+@using K7.Shared.Dtos
+@using K7.Shared.Dtos.Entities.Medias
+@inject IMediaService MediaService
+@inject IK7ServerService ApiClient
+@inject IAudioPlayerService Audio
+@inject IStringLocalizer<ExplorePage> L
+@inject IStringLocalizer<SharedResource> S
+
+@if (_loading)
+{
+    <div class="d-flex flex-col pa-8">
+        <K7Spinner />
+    </div>
+}
+else if (_tracks.Count > 0)
+{
+    <section class="explore-top-tracks">
+        <h3 class="explore-top-tracks__title">@L["TopTracks"]</h3>
+        <K7Table Items="_tracks"
+                 TItem="TrackRow"
+                 OnRowClick="OnTrackClick"
+                 RowClass="cursor-pointer">
+            <HeaderContent>
+                <th style="width: 40px;">#</th>
+                <th>@S["Title"]</th>
+                <th>@S["Artist"]</th>
+                <th>@S["Album"]</th>
+                <th style="width: 80px;"><K7Icon Icon="@Phosphor.Clock" Size="sm" /></th>
+                <th style="width: 100px;">@L["Plays"]</th>
+            </HeaderContent>
+            <RowTemplate>
+                <td>
+                    <span class="text-sm" Color="secondary">@context.Rank</span>
+                </td>
+                <td>
+                    <div class="d-flex align-center">
+                        @if (context.IsPlaying)
+                        {
+                            <K7Icon Icon="@Phosphor.Equalizer" Size="sm" Color="primary" />
+                        }
+                        <span style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
+                    </div>
+                </td>
+                <td>
+                    @if (context.ArtistId.HasValue)
+                    {
+                        <a href="@($"/music/artists/{context.ArtistId}")" class="explore-top-tracks__link" @onclick:stopPropagation="true">
+                            <span class="text-sm" Color="secondary">@context.ArtistName</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-sm" Color="secondary">@context.ArtistName</span>
+                    }
+                </td>
+                <td>
+                    <a href="@($"/music/albums/{context.AlbumId}")" class="explore-top-tracks__link" @onclick:stopPropagation="true">
+                        <span class="text-sm" Color="secondary">@context.AlbumTitle</span>
+                    </a>
+                </td>
+                <td>
+                    <span class="text-sm" Color="secondary">@FormatTime(context.Duration)</span>
+                </td>
+                <td>
+                    <K7Chip Size="sm" Color="primary" Variant="outlined">@context.PlayCount</K7Chip>
+                </td>
+            </RowTemplate>
+        </K7Table>
+    </section>
+}

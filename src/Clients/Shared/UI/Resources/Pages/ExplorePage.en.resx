@@ -1,23 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <root>
+
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+
     <xsd:element name="root" msdata:IsDataSet="true">
+
       <xsd:complexType>
+
         <xsd:choice maxOccurs="unbounded">
+
           <xsd:element name="data">
+
             <xsd:complexType>
+
               <xsd:sequence>
+
                 <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+
               </xsd:sequence>
+
               <xsd:attribute name="name" type="xsd:string" use="required" />
+
               <xsd:attribute name="xml:space" type="xsd:string" />
+
             </xsd:complexType>
+
           </xsd:element>
+
         </xsd:choice>
+
       </xsd:complexType>
+
     </xsd:element>
+
   </xsd:schema>
+
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+
   <resheader name="version"><value>2.0</value></resheader>
+
   <data name="PageTitle" xml:space="preserve"><value>Explore</value></data>
+
+  <data name="Films" xml:space="preserve"><value>Movies</value></data>
+
+  <data name="Series" xml:space="preserve"><value>Series</value></data>
+
+  <data name="Music" xml:space="preserve"><value>Music</value></data>
+
+  <data name="TrendingMovies" xml:space="preserve"><value>Trending movies</value></data>
+
+  <data name="TrendingSeries" xml:space="preserve"><value>Trending series</value></data>
+
+  <data name="TrendingAlbums" xml:space="preserve"><value>Trending albums</value></data>
+
+  <data name="RecentlyAddedMovies" xml:space="preserve"><value>Recently added movies</value></data>
+
+  <data name="RecentlyAddedSeries" xml:space="preserve"><value>Recently added series</value></data>
+
+  <data name="RecentlyAddedMusic" xml:space="preserve"><value>Recently added albums</value></data>
+
+  <data name="BestMoviesGenre" xml:space="preserve"><value>Best {0} movies</value></data>
+
+  <data name="BestSeriesGenre" xml:space="preserve"><value>Best {0} series</value></data>
+
+  <data name="Radios" xml:space="preserve"><value>Radio</value></data>
+
+  <data name="TopTracks" xml:space="preserve"><value>Top tracks</value></data>
+
+  <data name="Plays" xml:space="preserve"><value>Plays</value></data>
+
+  <data name="NoLibraryGroups" xml:space="preserve"><value>No media</value></data>
+
+  <data name="NoMovies" xml:space="preserve"><value>No movie libraries</value></data>
+
+  <data name="NoSeries" xml:space="preserve"><value>No series libraries</value></data>
+
+  <data name="NoMusic" xml:space="preserve"><value>No music libraries</value></data>
+
+  <data name="Back" xml:space="preserve"><value>Back</value></data>
+
+  <data name="BrowseAll" xml:space="preserve"><value>Browse all</value></data>
+
+  <data name="NoLibraryGroup" xml:space="preserve"><value>Group not found</value></data>
+
 </root>
+

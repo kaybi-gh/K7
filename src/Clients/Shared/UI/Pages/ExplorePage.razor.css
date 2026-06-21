@@ -1,8 +1,11 @@
 .explore-page {
     padding: var(--space-4) var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
 }
 
-.explore-grid {
+.explore-groups {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--space-4);
@@ -13,8 +16,22 @@
         padding: var(--space-3);
     }
 
-    .explore-grid {
+    .explore-groups {
         grid-template-columns: 1fr;
-        gap: var(--space-3);
     }
+}
+
+@media (min-width: 900px) {
+    .explore-groups {
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: var(--space-5);
+    }
+}
+
+.explore-group-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: var(--space-8);
 }

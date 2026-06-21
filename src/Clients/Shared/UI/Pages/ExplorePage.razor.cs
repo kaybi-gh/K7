@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using Microsoft.AspNetCore.Components;
@@ -6,10 +7,45 @@ namespace K7.Clients.Shared.UI.Pages;
 
 public partial class ExplorePage
 {
+    [SupplyParameterFromQuery(Name = "library-group")]
+    public Guid? LibraryGroupId { get; set; }
+
     private List<LibraryGroupDto> _libraryGroups = [];
+    private LibraryGroupDto? _activeGroup;
+    private bool _loading = true;
+    private bool _isTv;
+    private Guid? _loadedGroupId;
+
+    private string PageTitleText => _activeGroup is not null
+        ? $"{_activeGroup.Title} - {L["PageTitle"]}"
+        : L["PageTitle"];
+
+    private string _libraryGroupPageClass => _isTv
+        ? "tv-feed-page"
+        : "explore-group-page page-scrollable";
+
+    private string? _libraryGroupInitialFocus => _isTv
+        ? "[data-carousel-item] a, [data-carousel-item] button"
+        : null;
 
     protected override async Task OnInitializedAsync()
     {
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
+        await LoadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedGroupId == LibraryGroupId)
+            return;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
         try
         {
             _libraryGroups = await LibraryService.GetLibraryGroupsAsync();
@@ -18,6 +54,12 @@ public partial class ExplorePage
         {
             _libraryGroups = [];
         }
+
+        _activeGroup = LibraryGroupId.HasValue
+            ? _libraryGroups.FirstOrDefault(g => g.Id == LibraryGroupId.Value)
+            : null;
+        _loadedGroupId = LibraryGroupId;
+        _loading = false;
     }
 
     private static string GetLibraryIconName(LibraryMediaType mediaType) => mediaType switch

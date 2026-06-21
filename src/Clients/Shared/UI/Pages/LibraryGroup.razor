@@ -38,6 +38,12 @@
                 <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
+        @if (_genres.Count > 0)
+        {
+            <LibraryBrowseFilters Genres="_genres"
+                                   SelectedGenres="_selectedGenres"
+                                   SelectedGenresChanged="OnSelectedGenresChanged" />
+        }
     </ToolbarContent>
     <ToolbarSecondaryContent>
         <span class="library-toolbar-count">@string.Format(L["ItemCount"], _totalCount)</span>

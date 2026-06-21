@@ -1,0 +1,15 @@
+.explore-top-tracks__title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    margin: 0 0 var(--space-3);
+    padding-inline-start: var(--carousel-margin-start, 16px);
+}
+
+.explore-top-tracks__link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.explore-top-tracks__link:hover {
+    text-decoration: underline;
+}

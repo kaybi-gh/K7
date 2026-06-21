@@ -4,6 +4,7 @@ using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
@@ -31,6 +32,8 @@ public partial class LibraryGroup : IDisposable
     private List<ButtonGroupOption<MediaType>> _mediaTypeOptions = [];
     private MediaType _selectedMediaType;
     private MediaOrderingOption _selectedSort = MediaOrderingOption.TitleAsc;
+    private HashSet<string> _selectedGenres = new(StringComparer.OrdinalIgnoreCase);
+    private List<MediaGenreDto> _genres = [];
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
 
@@ -83,8 +86,13 @@ public partial class LibraryGroup : IDisposable
         _selectedSort = MediaOrderingOption.TitleAsc;
         _activeSortKey = "title";
         _activeSortDirection = K7SortDirection.Ascending;
+        _selectedGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _genres = [];
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
+
+        if (_libraryMediaType is LibraryMediaType.Movie or LibraryMediaType.Serie)
+            await LoadGenresAsync();
 
         // Initial load to get total count
         var query = BuildQuery(1, PageSize);
@@ -155,8 +163,9 @@ public partial class LibraryGroup : IDisposable
             {
                 var query = new GetMediasWithPaginationQuery
                 {
-                    LibraryIds = Guid.TryParse(Id, out var parsed) ? [parsed] : null,
+                    LibraryIds = _libraryIds?.ToArray(),
                     MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
+                    Genres = _selectedGenres.Count > 0 ? _selectedGenres.ToArray() : null,
                     OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
                     PageNumber = page,
                     PageSize = PageSize
@@ -196,16 +205,47 @@ public partial class LibraryGroup : IDisposable
     {
         LibraryIds = _libraryIds?.ToArray(),
         MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
+        Genres = _selectedGenres.Count > 0 ? _selectedGenres.ToArray() : null,
         OrderBy = [_selectedSort],
         PageNumber = pageNumber,
         PageSize = pageSize
     };
+
+    private async Task LoadGenresAsync()
+    {
+        try
+        {
+            var result = await k7ServerService.GetMediaGenresAsync(new GetMediaGenresQuery
+            {
+                LibraryIds = _libraryIds?.ToArray(),
+                MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
+                OrderBy = [GenreOrderingOption.MediaCountDesc],
+                PageNumber = 1,
+                PageSize = 100
+            });
+
+            _genres = result?.Items?.ToList() ?? [];
+        }
+        catch
+        {
+            _genres = [];
+        }
+    }
+
+    private async Task OnSelectedGenresChanged(IReadOnlySet<string> value)
+    {
+        _selectedGenres = new HashSet<string>(value, StringComparer.OrdinalIgnoreCase);
+        await RefreshAllAsync();
+    }
 
     private async Task OnMediaTypeFilterChanged(MediaType value)
     {
         if (value == default || value == _selectedMediaType) return;
 
         _selectedMediaType = value;
+        _selectedGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (_libraryMediaType is LibraryMediaType.Movie or LibraryMediaType.Serie)
+            await LoadGenresAsync();
         await RefreshAllAsync();
     }
 
@@ -263,11 +303,6 @@ public partial class LibraryGroup : IDisposable
     private void NavigateToItem(LiteMediaDto item)
     {
         Navigation.NavigateTo(GetItemHref(item));
-    }
-
-    private void NavigateToArtists()
-    {
-        Navigation.NavigateTo("/music/artists");
     }
 
     private void OnColumnPickerRequested()

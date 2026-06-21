@@ -1,0 +1,40 @@
+.explore-tv-hero-area {
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.explore-tv-hero__toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--carousel-margin-start, 40px) var(--space-2);
+    position: relative;
+    z-index: 3;
+}
+
+.explore-tv-hero__group-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--color-text-primary, #fff);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.explore-tv-hero-area--with-toolbar ::deep .home-tv-hero {
+    min-height: 180px;
+    max-height: 320px;
+}
+
+@media (max-width: 599.98px) {
+    .explore-tv-hero__toolbar {
+        padding-inline: var(--carousel-margin-start, 16px);
+    }
+}
