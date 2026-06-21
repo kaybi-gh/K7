@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -22,14 +23,17 @@ public partial class MediaCard : IDisposable
     [Parameter] public EventCallback OnFocused { get; set; }
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     private const int LongPressDelayMs = 600;
     private const double LongPressMoveThresholdSquared = 100;
 
     private bool _menuOpen;
     private bool _longPressTriggered;
+    private bool _menuOpenedViaKeyboard;
     private bool _preventNextClick;
     private CancellationTokenSource? _longPressCts;
+    private CancellationTokenSource? _shortPressCts;
     private double _touchStartX;
     private double _touchStartY;
 
@@ -54,7 +58,29 @@ public partial class MediaCard : IDisposable
 
     private bool ProgressBarIsHidden() => Model.Progress < 1 || Model.Progress >= 100;
 
-    private void OnMenuOpenChanged(bool open) => _menuOpen = open;
+    private async void OnMenuOpenChanged(bool open)
+    {
+        _menuOpen = open;
+        if (!open)
+            return;
+
+        _longPressTriggered = true;
+        _preventNextClick = true;
+        CancelLongPress();
+        _shortPressCts?.Cancel();
+
+        if (_menuOpenedViaKeyboard)
+        {
+            _menuOpenedViaKeyboard = false;
+            try
+            {
+                await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
 
     private void OnContextMenu(MouseEventArgs e)
     {
@@ -65,6 +91,62 @@ public partial class MediaCard : IDisposable
         _preventNextClick = true;
         _menuOpen = true;
     }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (!LongPressEnabled || !IsEnterKey(e.Key))
+            return;
+
+        _shortPressCts?.Cancel();
+
+        if (e.Repeat && _longPressCts is not null)
+            return;
+
+        CancelLongPress();
+        _longPressTriggered = false;
+        _longPressCts = new CancellationTokenSource();
+        _ = WaitForLongPressAsync(_longPressCts.Token);
+    }
+
+    private void OnKeyUp(KeyboardEventArgs e)
+    {
+        if (!LongPressEnabled || !IsEnterKey(e.Key))
+            return;
+
+        if (_longPressTriggered)
+        {
+            _preventNextClick = true;
+            CancelLongPress();
+            return;
+        }
+
+        _shortPressCts?.Cancel();
+        _shortPressCts = new CancellationTokenSource();
+        _ = CompleteShortPressAsync(_shortPressCts.Token);
+    }
+
+    private async Task CompleteShortPressAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(120, cancellationToken);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (_longPressTriggered)
+            return;
+
+        CancelLongPress();
+
+        if (!string.IsNullOrEmpty(Href))
+            NavigationManager.NavigateTo(Href);
+    }
+
+    private static bool IsEnterKey(string? key) =>
+        key is "Enter" or "NumpadEnter";
 
     private void OnTouchStart(TouchEventArgs e)
     {
@@ -106,6 +188,15 @@ public partial class MediaCard : IDisposable
         {
             await Task.Delay(LongPressDelayMs, cancellationToken);
             _longPressTriggered = true;
+            _menuOpenedViaKeyboard = true;
+            try
+            {
+                await JS.InvokeVoidAsync("K7.suppressEnterUntilKeyUp");
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+
             _menuOpen = true;
             await InvokeAsync(StateHasChanged);
         }
@@ -127,7 +218,12 @@ public partial class MediaCard : IDisposable
             _preventNextClick = false;
     }
 
-    public void Dispose() => CancelLongPress();
+    public void Dispose()
+    {
+        CancelLongPress();
+        _shortPressCts?.Cancel();
+        _shortPressCts?.Dispose();
+    }
 
     private void OnPlay()
     {

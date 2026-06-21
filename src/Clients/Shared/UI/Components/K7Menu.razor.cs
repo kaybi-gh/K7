@@ -96,7 +96,7 @@ public partial class K7Menu : IAsyncDisposable
         try
         {
             await JS.InvokeVoidAsync("K7.attachMobileMenu", _root, _dropdown, _backdrop);
-            await JS.InvokeVoidAsync("K7.positionDropdown", _root, _dropdown);
+            await JS.InvokeVoidAsync("K7.positionDropdownDeferred", _root, _dropdown);
 
             if (!_layerPushed)
             {

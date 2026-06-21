@@ -121,12 +121,6 @@
     display: block;
 }
 
-@media (min-width: 600px) {
-    .media-card--play-only .media-card-menu:not(.media-card-menu--open) {
-        display: none !important;
-    }
-}
-
 .media-card--menu-open,
 .media-card--menu-open .media-card-footer {
     user-select: none;

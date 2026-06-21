@@ -714,6 +714,9 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
   max-height: min(320px, calc(100vh - 80px));
   overflow-y: auto;
 }
+.k7-menu-dropdown--card-corner {
+  box-shadow: var(--shadow-lg, 0 10px 25px -5px rgba(0, 0, 0, 0.55));
+}
 .k7-menu-dropdown .k7-menu.k7-menu--open > .k7-menu-dropdown {
   opacity: 1;
   visibility: visible;

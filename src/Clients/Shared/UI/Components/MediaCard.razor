@@ -34,7 +34,9 @@ else
             <a class="media-card-link focusable"
                href="@Href"
                @onclick="OnLinkClick"
-               @onclick:preventDefault="@_preventNextClick">
+               @onclick:preventDefault="@_preventNextClick"
+               @onkeydown="OnKeyDown"
+               @onkeyup="OnKeyUp">
                 @if (!string.IsNullOrEmpty(Model.PictureUrl))
                 {
                     <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Fluid="true" ObjectFit="cover" loading="lazy" />
