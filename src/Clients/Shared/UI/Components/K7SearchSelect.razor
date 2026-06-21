@@ -1,0 +1,40 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-search-select @Class" style="@Style" @ref="_root">
+    <K7TextField TValue="string"
+                 Value="@Value"
+                 ValueChanged="OnInputChanged"
+                 Variant="@Variant"
+                 Placeholder="@Placeholder"
+                 DebounceInterval="@DebounceInterval"
+                 OnDebounceIntervalElapsed="OnDebouncedSearch"
+                 Adornment="end"
+                 AdornmentIcon="@Phosphor.MagnifyingGlass"
+                 @onfocus="OnFocus"
+                 @onfocusout="CloseDropdown" />
+
+    @if (_open)
+    {
+        <div class="k7-search-select-dropdown" role="listbox">
+            @if (_loading)
+            {
+                <div class="k7-search-select-status">
+                    <K7Spinner Size="sm" />
+                </div>
+            }
+            else
+            {
+                @foreach (var suggestion in _suggestions)
+                {
+                    <button type="button"
+                            class="k7-search-select-option focusable"
+                            role="option"
+                            @onclick="() => SelectSuggestionAsync(suggestion)"
+                            @onmousedown:preventDefault="true">
+                        @suggestion
+                    </button>
+                }
+            }
+        </div>
+    }
+</div>
