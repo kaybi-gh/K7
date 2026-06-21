@@ -20,6 +20,7 @@ public enum SmartPlaylistField
     Bpm,
     Duration,
 
-    // Movie
-    OriginalLanguage
+    // Movie / Serie
+    OriginalLanguage,
+    ActorName
 }
