@@ -1,0 +1,35 @@
+@namespace K7.Clients.Shared.UI.Components
+
+@if (_loading)
+{
+    <Carousel Skeleton="true" Title="@Title">
+        @for (var i = 0; i < 8; i++)
+        {
+            <CarouselItem>
+                <MediaCard Skeleton="true" FooterVisible="true" />
+            </CarouselItem>
+        }
+    </Carousel>
+}
+else if (_items.Count > 0)
+{
+    <Carousel Title="@Title">
+        @foreach (var item in _items)
+        {
+            <CarouselItem @key="item.Id">
+                <MediaCard Model="@item"
+                           Variant="@GetVariant(item)"
+                           Href="@GetHref(item)"
+                           OverlayEnabled="true"
+                           ProgressEnabled="@ProgressEnabled"
+                           WatchedStatusEnabled="@ProgressEnabled"
+                           FooterVisible="true"
+                           ExcludeMenuEnabled="_canExclude"
+                           IsAdmin="_isAdmin"
+                           OnExcludeForSelf="() => ExcludeForSelf(item)"
+                           OnExcludeForOthers="() => ExcludeForOthers(item)"
+                           OnFocused="() => TvFocus?.OnItemFocused(item)" />
+            </CarouselItem>
+        }
+    </Carousel>
+}
