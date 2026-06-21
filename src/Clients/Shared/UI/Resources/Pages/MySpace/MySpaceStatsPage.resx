@@ -20,7 +20,4 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Mes statistiques</value></data>
-  <data name="StatsTabs" xml:space="preserve"><value>Type de statistiques</value></data>
-  <data name="VideoTab" xml:space="preserve"><value>Vid&#233;o</value></data>
-  <data name="MusicTab" xml:space="preserve"><value>Musique</value></data>
 </root>

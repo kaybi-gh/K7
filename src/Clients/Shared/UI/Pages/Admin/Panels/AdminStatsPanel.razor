@@ -76,8 +76,8 @@
             }
 
             <!-- Hour + Day of week charts side by side -->
-            <div class="stats-chart-row">
-                <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 280px;">
+            <div class="stats-chart-row stats-chart-row--time-patterns">
+                <K7Paper Elevation="0" Class="stats-chart-card">
                     <h6>@L["ByHourOfDay"]</h6>
                     @if (HasNonZeroData(_hourData))
                     {
@@ -97,7 +97,7 @@
                         </div>
                     }
                 </K7Paper>
-                <K7Paper Elevation="0" Class="stats-chart-card" Style="flex: 1; min-width: 280px;">
+                <K7Paper Elevation="0" Class="stats-chart-card">
                     <h6>@L["ByDayOfWeek"]</h6>
                     @if (HasNonZeroData(_dowData))
                     {
@@ -168,7 +168,7 @@
                 @if (_stats.TopItems.Count > 0)
                 {
                     <K7Paper Elevation="0" Class="stats-chart-card">
-                        <h6>@L["TopItems"]</h6>
+                        <h6>@TopItemsLabel</h6>
                         <table class="stats-table">
                             <tbody>
                                 @foreach (var (item, index) in _stats.TopItems.Select((a, i) => (a, i)))
@@ -372,6 +372,23 @@
         display: flex;
         gap: var(--space-3);
         flex-wrap: wrap;
+    }
+
+    .stats-chart-row--time-patterns > * {
+        flex: 1;
+        min-width: 280px;
+    }
+
+    @@media (max-width: 1199px) {
+        .stats-chart-row--time-patterns {
+            flex-direction: column;
+        }
+
+        .stats-chart-row--time-patterns > * {
+            flex: 1 1 100%;
+            min-width: 0;
+            width: 100%;
+        }
     }
 
     .stats-top-grid {

@@ -8,7 +8,6 @@ public interface IServerInfoService
     Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default);
     Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default);
     Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default);
-    Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default);
     Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
     Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default);
     Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default);
