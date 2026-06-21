@@ -356,7 +356,31 @@ public sealed class MockMediaService : IMediaService
     public Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MovieDto?>(null);
     public Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MediaDto?>(null);
     public Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteMediaDto>?>(null);
+    public Task<PaginatedListDto<LiteMediaDto>?> QueryMediasAsync(QueryMediasRequest request, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteMediaDto>?>(null);
     public Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<MediaGenreDto>?>(null);
+    public Task<MediaBrowseFacetsDto?> GetMediaBrowseFacetsAsync(GetMediaBrowseFacetsQuery query, CancellationToken cancellationToken = default) => Task.FromResult<MediaBrowseFacetsDto?>(null);
+
+    public Task<IReadOnlyList<string>?> GetMediaBrowseFilterSuggestionsAsync(GetMediaBrowseFilterSuggestionsQuery query, CancellationToken cancellationToken = default)
+    {
+        string[] samples = query.Field switch
+        {
+            nameof(SmartPlaylistField.ActorName) => ["Leonardo DiCaprio", "Tom Hanks", "Bryan Cranston"],
+            "Studio" => ["Warner Bros.", "Universal Pictures", "Paramount Pictures"],
+            "Network" => ["HBO", "Netflix", "AMC"],
+            _ => []
+        };
+
+        if (string.IsNullOrWhiteSpace(query.SearchText))
+            return Task.FromResult<IReadOnlyList<string>?>([]);
+
+        var term = query.SearchText.Trim();
+        var matches = samples
+            .Where(s => s.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .Take(query.Limit)
+            .ToList();
+
+        return Task.FromResult<IReadOnlyList<string>?>(matches);
+    }
     public Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PersonDto?>(null);
     public Task<PaginatedListDto<PersonDto>?> GetPersonsAsync(GetPersonsWithPaginationQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<PersonDto>?>(null);
     public Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, MediaType? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult(Enumerable.Empty<MetadataSearchResult>());

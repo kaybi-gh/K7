@@ -1,0 +1,41 @@
+using K7.Shared.Dtos.Requests;
+using K7.Shared.Extensions;
+
+namespace K7.Shared.QueryBuilders;
+
+public static class GetMediaBrowseFilterSuggestionsQueryUriBuilder
+{
+    public const string Route = "/api/medias/browse-filter-suggestions";
+
+    public static string Build(GetMediaBrowseFilterSuggestionsQuery query)
+    {
+        var queryParams = new List<KeyValuePair<string, string?>>
+        {
+            new(nameof(query.Field), query.Field),
+            new(nameof(query.Limit), query.Limit.ToString())
+        };
+
+        if (query.LibraryIds?.Length > 0)
+        {
+            foreach (var id in query.LibraryIds)
+                queryParams.Add(new(nameof(query.LibraryIds), id.ToString()));
+        }
+
+        if (query.LibraryGroupIds?.Length > 0)
+        {
+            foreach (var id in query.LibraryGroupIds)
+                queryParams.Add(new(nameof(query.LibraryGroupIds), id.ToString()));
+        }
+
+        if (query.MediaTypes?.Length > 0)
+        {
+            foreach (var mediaType in query.MediaTypes)
+                queryParams.Add(new(nameof(query.MediaTypes), mediaType.ToString()));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.SearchText))
+            queryParams.Add(new(nameof(query.SearchText), query.SearchText.Trim()));
+
+        return QueryBuilderHelper.AddQueryParameters(Route, queryParams);
+    }
+}

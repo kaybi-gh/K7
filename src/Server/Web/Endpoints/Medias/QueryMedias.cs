@@ -1,42 +1,48 @@
-﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Requests;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 
 namespace K7.Server.Web.Endpoints.Medias;
 
-public class GetMedias : IEndpoint
+public class QueryMedias : IEndpoint
 {
     public void Map(IEndpointRouteBuilder endpointRouteBuilder)
     {
+#if GENERATING_OPENAPI
+        return;
+#endif
         var type = GetType();
-        string groupName = type.Namespace!.Split('.').Last();
+        var groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet(GetMediasWithPaginationQueryUriBuilder.Route, async (
+        endpointRouteBuilder.MapMethods(GetMediasWithPaginationQueryUriBuilder.Route, [HttpMethods.Query], async (
             HttpContext httpContext,
             [FromServices] ISender sender,
             [FromServices] IMediaQueryCacheInvalidator cacheInvalidator,
-            [AsParameters] GetMediasWithPaginationQuery query) =>
+            [FromBody] QueryMediasRequest request,
+            CancellationToken cancellationToken) =>
         {
             var etag = $"\"{cacheInvalidator.Version}\"";
 
             if (httpContext.Request.Headers.IfNoneMatch == etag)
                 return Results.StatusCode(StatusCodes.Status304NotModified);
 
-            var mediasPage = await sender.Send(query);
+            var mediasPage = await sender.Send(new QueryMediasQuery(request), cancellationToken);
             var result = mediasPage.ToDto(m => m.ToLiteMediaDto());
 
             httpContext.Response.Headers[HeaderNames.ETag] = etag;
-            httpContext.Response.Headers["Accept-Query"] = "application/json";
             return Results.Ok(result);
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
-        .WithTags(groupName);
+        .WithTags(groupName)
+        .Accepts<QueryMediasRequest>("application/json")
+        .ExcludeFromDescription();
     }
 }
