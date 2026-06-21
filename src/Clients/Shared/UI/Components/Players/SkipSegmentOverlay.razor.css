@@ -11,11 +11,11 @@
         animation: skip-fade-in 0.3s ease-out;
     }
 
-::deep .skip-overlay .k7-btn:focus-visible,
+/* ::deep .skip-overlay .k7-btn:focus-visible,
 ::deep .skip-overlay .k7-btn:focus {
     outline: 2px solid white;
     outline-offset: 2px;
-}
+} */
 
 @keyframes skip-fade-in {
     from {

@@ -55,8 +55,8 @@ html, body, #app {
 
 /* Focus ring - keyboard/D-pad */
 :focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }
 
 /* Headings are not interactive; hide programmatic focus rings (e.g. legacy skip targets) */
@@ -100,12 +100,11 @@ html.platform-tv *:hover {
     background-color: revert;
 }
 
-html.platform-tv :focus-visible {
-    /* Make focus very obvious for D-pad navigation at TV viewing distance */
+/* html.platform-tv :focus-visible {
     outline: 3px solid var(--color-accent);
     outline-offset: 3px;
     box-shadow: var(--focus-ring), 0 0 0 6px rgba(0, 0, 0, 0.35);
-}
+} */
 
 /* -- Typography bumps ---------------------------------------------------- */
 
