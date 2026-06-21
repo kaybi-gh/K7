@@ -9,6 +9,7 @@
 .personrole-item ::deep .k7-avatar {
     width: 150px;
     height: 150px;
+    overflow: visible;
 }
 
 .personrole-item:focus-visible {

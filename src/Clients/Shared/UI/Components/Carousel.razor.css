@@ -7,7 +7,8 @@
     align-items: flex-start;
     gap: var(--carousel-gap, 40px);
     padding-inline-start: var(--carousel-margin-start, 16px);
-    padding-inline-end: var(--carousel-margin-end, 16px);
+    padding-inline-end: var(--carousel-margin-end, var(--carousel-margin-start, 16px));
+    --carousel-slide-width: 200px;
 }
 
 .carousel-header {
@@ -32,41 +33,53 @@
     gap: 10px;
 }
 
+.carousel-container:has(.media-card--backdrop) {
+    --carousel-slide-width: 320px;
+}
+
+.carousel-container:has(.personrole-item) {
+    --carousel-slide-width: 150px;
+}
+
+.carousel-container:has(.music-radio-presets__item) {
+    --carousel-slide-width: 200px;
+}
+
+.carousel-container:has(.select-user-card) {
+    --carousel-slide-width: 140px;
+}
+
 @media (min-width: 601px) {
-    ::deep .carousel-item > .media-card.media-card--poster {
-        width: 200px !important;
-    }
-
-    ::deep .carousel-item > .media-card.media-card--cover {
-        width: 200px !important;
-    }
-
+    ::deep .carousel-item > .media-card.media-card--poster,
+    ::deep .carousel-item > .media-card.media-card--cover,
     ::deep .carousel-item > .media-card.media-card--backdrop {
-        width: 320px !important;
+        width: var(--carousel-slide-width) !important;
     }
 }
 
 @media (max-width: 599.98px) {
-    ::deep .carousel-item > .media-card.media-card--poster {
-        width: 30vw !important;
-    }
-
-    ::deep .carousel-item > .media-card.media-card--cover {
-        width: 30vw !important;
-    }
-
-    ::deep .carousel-item > .media-card.media-card--backdrop {
-        width: 60vw !important;
-    }
-
     .carousel-container {
         gap: var(--carousel-gap, 15px);
+        --carousel-slide-width: 30vw;
+    }
+
+    .carousel-container:has(.media-card--backdrop) {
+        --carousel-slide-width: 60vw;
+    }
+
+    .carousel-container:has(.personrole-item) {
+        --carousel-slide-width: 120px;
+    }
+
+    ::deep .carousel-item > .media-card.media-card--poster,
+    ::deep .carousel-item > .media-card.media-card--cover,
+    ::deep .carousel-item > .media-card.media-card--backdrop {
+        width: var(--carousel-slide-width) !important;
     }
 }
 
 .carousel-loop-back {
     flex: 0 0 auto;
-    width: 200px;
     visibility: hidden;
     opacity: 0;
     height: 0;
@@ -79,53 +92,187 @@
     opacity: 1;
     height: auto;
     overflow: visible;
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
+    align-self: flex-start;
+    width: var(--carousel-slide-width);
+    box-sizing: content-box;
+    /* Embla trimSnaps ignores trailing container padding; padding extends the last snap. */
+    padding-inline-end: var(--carousel-loop-back-trailing, 12px);
+}
+
+.carousel-loop-back-card {
+    width: 100%;
+    min-width: 0;
+    container-type: inline-size;
+}
+
+.carousel-loop-back__visual {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-md);
+    aspect-ratio: 2 / 3;
+}
+
+.carousel-loop-back__visual::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border: 2px solid transparent;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.carousel-loop-back__visual:has(.carousel-loop-back__image:focus-visible)::after {
+    border-color: var(--color-accent);
+}
+
+.carousel-container:has(.media-card--cover) .carousel-loop-back__visual,
+.carousel-container:has(.music-radio-presets__item) .carousel-loop-back__visual {
+    aspect-ratio: 1 / 1;
+}
+
+.carousel-container:has(.media-card--backdrop) .carousel-loop-back__visual {
+    aspect-ratio: 16 / 9;
+}
+
+.carousel-container:has(.personrole-item) .carousel-loop-back__visual {
+    width: 150px;
+    height: 150px;
+    aspect-ratio: auto;
+    border-radius: 50%;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.carousel-container:has(.select-user-card) .carousel-loop-back__visual {
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.carousel-container:has(.personrole-item) .carousel-loop-back-card {
+    padding: 4px;
+}
+
+.carousel-container:has(.personrole-item) .carousel-loop-back__image {
+    border-radius: 50%;
+    border: 1px solid var(--color-border-subtle);
 }
 
 .carousel-loop-back__image {
-    flex: 1;
-    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.5);
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--color-border-subtle);
+    color: var(--color-text-muted);
     cursor: pointer;
     transition: background 0.2s ease, color 0.2s ease;
     user-select: none;
-    overflow: hidden;
+    border-radius: inherit;
 }
 
 .carousel-loop-back__image:hover,
 .carousel-loop-back__image:focus-visible {
-    background: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--color-text);
 }
 
 .carousel-loop-back__image:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+    outline: none;
 }
 
-.carousel-loop-back__footer {
+.carousel-loop-back-card .media-card-footer {
+    width: 100%;
+}
+
+.carousel-loop-back-card .media-card-title {
+    display: block;
     width: 100%;
     text-align: center;
     overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    margin-top: 8px;
+    font-weight: 500;
 }
 
-.carousel-loop-back__footer span {
+.carousel-loop-back-card .media-card-subtitle {
+    display: block;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
     font-size: var(--text-xs);
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--color-text-muted);
+}
+
+.carousel-loop-back-card .media-card-title-inner,
+.carousel-loop-back-card .media-card-subtitle-inner {
+    display: block;
+    width: 100%;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
 }
 
+.carousel-container:has(.personrole-item) .carousel-loop-back-card .media-card-title {
+    margin-top: 0;
+}
+
+.carousel-container:has(.personrole-item) .carousel-loop-back-card .media-card-footer {
+    margin-top: 8px;
+}
+
+.carousel-container:has(.personrole-item) .carousel-loop-back-card .media-card-title,
+.carousel-container:has(.personrole-item) .carousel-loop-back-card .media-card-title-inner {
+    font-size: inherit;
+    font-weight: inherit;
+    color: var(--color-text);
+}
+
+.carousel-loop-back-card:hover .media-card-title,
+.carousel-loop-back-card:focus-within .media-card-title,
+.carousel-loop-back-card:hover .media-card-subtitle,
+.carousel-loop-back-card:focus-within .media-card-subtitle {
+    overflow: visible;
+}
+
+.carousel-loop-back-card:hover .media-card-title-inner,
+.carousel-loop-back-card:focus-within .media-card-title-inner,
+.carousel-loop-back-card:hover .media-card-subtitle-inner,
+.carousel-loop-back-card:focus-within .media-card-subtitle-inner {
+    display: inline-block;
+    width: auto;
+    overflow: visible;
+    animation: carousel-loop-back-title-scroll 3s linear 0.5s infinite alternate;
+}
+
+@keyframes carousel-loop-back-title-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(min(0px, calc(100cqw - 100%))); }
+}
+
 @media (max-width: 599.98px) {
-    .carousel-loop-back {
-        width: 30vw;
+    .carousel-container:has(.personrole-item) .carousel-loop-back__visual {
+        width: 120px;
+        height: 120px;
+    }
+
+    .carousel-loop-back-card:hover .media-card-title-inner,
+    .carousel-loop-back-card:focus-within .media-card-title-inner,
+    .carousel-loop-back-card:hover .media-card-subtitle-inner,
+    .carousel-loop-back-card:focus-within .media-card-subtitle-inner {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        animation: none;
+        transform: none;
     }
 }
