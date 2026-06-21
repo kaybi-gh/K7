@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -16,6 +17,7 @@ namespace K7.Server.Application.Features.Home.Queries.GetHomeFeedItems;
 public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
 {
     public Guid[]? LibraryIds { get; init; }
+    public Guid[]? LibraryGroupIds { get; init; }
     public bool? ContinueWatching { get; init; }
     public EnumHashSetQueryParam<MediaType>? MediaTypes { get; init; }
     public EnumHashSetQueryParam<MediaOrderingOption>? OrderBy { get; init; }
@@ -33,6 +35,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
     public async Task<PaginatedList<HomeFeedItemDto>> Handle(GetHomeFeedItemsQuery request, CancellationToken cancellationToken)
     {
         var userId = currentUser.Id;
+
+        var libraryIds = await LibraryGroupFilterHelper.ResolveLibraryIdsAsync(
+            context, request.LibraryIds, request.LibraryGroupIds, cancellationToken);
+        request = request with { LibraryIds = libraryIds, LibraryGroupIds = null };
+
         var strategy = InferStrategy(request);
         var cacheKey = BuildCacheKey(request, userId);
         var version = cacheInvalidator.Version;
@@ -73,6 +80,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         if (request.LibraryIds is { Length: > 0 })
             parts.Add($"lib:{string.Join(',', request.LibraryIds.OrderBy(x => x))}");
+        if (request.LibraryGroupIds is { Length: > 0 })
+            parts.Add($"lg:{string.Join(',', request.LibraryGroupIds.OrderBy(x => x))}");
         if (request.ContinueWatching.HasValue)
             parts.Add($"cw:{request.ContinueWatching.Value}");
         if (request.MediaTypes is { Count: > 0 })

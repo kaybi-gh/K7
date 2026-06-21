@@ -5,6 +5,7 @@ namespace K7.Shared.Dtos.Requests;
 public sealed record GetHomeFeedQuery
 {
     public Guid[]? LibraryIds { get; init; }
+    public Guid[]? LibraryGroupIds { get; init; }
     public bool? ContinueWatching { get; init; }
     public HashSet<MediaType>? MediaTypes { get; init; }
     public HashSet<MediaOrderingOption>? OrderBy { get; init; }

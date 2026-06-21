@@ -116,7 +116,7 @@ public class GetArtistTopTracksQueryHandlerTests
             Id = albumId,
             Title = "Album",
             ArtistId = artistId,
-            ReleaseDate = new DateTime(2024, 1, 1)
+            ReleaseDate = new DateOnly(2024, 1, 1)
         };
         var track1 = new MusicTrack
         {
