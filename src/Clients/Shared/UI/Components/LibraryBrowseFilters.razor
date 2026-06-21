@@ -1,0 +1,45 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<LibraryBrowseFilters> L
+
+<K7Menu Class="@($"library-browse-filters {Class}".Trim())" Title="@L["FilterGenres"]">
+    <ActivatorContent>
+        <div class="library-browse-filters__activator focusable" tabindex="0" role="button" aria-label="@L["Filters"]">
+            @if (SelectedGenres.Count > 0)
+            {
+                <button type="button"
+                        class="library-browse-filters__clear focusable"
+                        aria-label="@L["ClearFilters"]"
+                        @onclick="ClearFiltersAsync"
+                        @onclick:stopPropagation="true">
+                    <K7Icon Icon="@Phosphor.XCircle" Size="sm" />
+                </button>
+            }
+            <span class="library-browse-filters__label">@ActiveFiltersLabel</span>
+            <K7Icon Icon="@Phosphor.CaretDown" Size="sm" Class="library-browse-filters__caret" />
+        </div>
+    </ActivatorContent>
+    <ChildContent>
+        @if (SelectedGenres.Count > 0)
+        {
+            <K7MenuItem OnClick="ClearFiltersAsync">
+                @L["ClearFilters"]
+            </K7MenuItem>
+            <hr class="k7-menu-divider" />
+        }
+        <div class="library-browse-filters__menu">
+            @foreach (var genre in Genres)
+            {
+                var selected = SelectedGenres.Contains(genre.Name);
+                <button type="button"
+                        class="library-browse-filters__option focusable @(selected ? "library-browse-filters__option--selected" : "")"
+                        @onclick="() => ToggleGenreAsync(genre.Name)">
+                    <span class="library-browse-filters__option-label">@GetGenreLabel(genre)</span>
+                    @if (selected)
+                    {
+                        <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                    }
+                </button>
+            }
+        </div>
+    </ChildContent>
+</K7Menu>
