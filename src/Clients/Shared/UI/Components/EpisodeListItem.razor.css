@@ -2,7 +2,10 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-3) 0;
+    background: var(--color-overlay);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-top: var(--space-3);
 }
 
 .episode-card-link {
@@ -27,7 +30,7 @@
     flex-shrink: 0;
     width: 160px;
     height: 90px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--color-bg-gray);
 }
