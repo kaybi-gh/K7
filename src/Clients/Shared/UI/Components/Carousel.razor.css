@@ -95,8 +95,8 @@
     align-self: flex-start;
     width: var(--carousel-slide-width);
     box-sizing: content-box;
-    /* Embla trimSnaps ignores trailing container padding; padding extends the last snap. */
-    padding-inline-end: var(--carousel-loop-back-trailing, 12px);
+    /* Embla trimSnaps ignores trailing container padding; extend the last snap. */
+    padding-inline-end: var(--carousel-margin-end, var(--carousel-margin-start, 16px));
 }
 
 .carousel-loop-back-card {
