@@ -9,6 +9,7 @@ export function init(rootElement) {
 
     var embla = EmblaCarousel(viewportNode, {
         containScroll: 'trimSnaps',
+        skipSnaps: true,
         align: function () { return padStart; },
         slidesToScroll: 1
     });
@@ -35,22 +36,12 @@ export function init(rootElement) {
         function doLoopBack(fromKeyboard) {
             embla.scrollTo(0);
 
-            if (fromKeyboard) {
-                if (window.K7 && window.K7.suppressEnterUntilKeyUp) {
-                    window.K7.suppressEnterUntilKeyUp();
-                }
-
-                var onKeyUp = function (ev) {
-                    if (ev.key !== 'Enter' && ev.key !== ' ' && ev.key !== 'NumpadEnter') return;
-                    document.removeEventListener('keyup', onKeyUp, true);
-                    setTimeout(focusFirstCarouselItem, 0);
-                };
-
-                document.addEventListener('keyup', onKeyUp, true);
+            if (fromKeyboard && window.K7 && window.K7.suppressEnterUntilKeyUp) {
+                window.K7.suppressEnterUntilKeyUp(focusFirstCarouselItem);
                 return;
             }
 
-            setTimeout(focusFirstCarouselItem, 50);
+            setTimeout(focusFirstCarouselItem, fromKeyboard ? 0 : 50);
         }
 
         loopBackAction.addEventListener('click', function (e) {

@@ -29,6 +29,31 @@ var SpatialNav = (function () {
 
     // Layer Stack
 
+    function layerElementsMatch(a, b) {
+        if (!a || !b) return false;
+        if (a === b) return true;
+        if (a.isSameNode && a.isSameNode(b)) return true;
+        var uidA = a.getAttribute && a.getAttribute('data-sn-layer-uid');
+        var uidB = b.getAttribute && b.getAttribute('data-sn-layer-uid');
+        return !!(uidA && uidB && uidA === uidB);
+    }
+
+    function removeLayerAt(i) {
+        var layer = _layers.splice(i, 1)[0];
+        layer.onClose = null;
+        if (layer.restoreFocus && layer.restoreFocus.isConnected) {
+            layer.restoreFocus.focus({ preventScroll: true });
+        }
+    }
+
+    function isLayerActive(layer) {
+        if (!layer || !layer.el || !layer.el.isConnected) return false;
+        if (layer.type === 'page') return true;
+        if (layer.el.hasAttribute && layer.el.hasAttribute('data-sn-layer')) return true;
+        if (layer.type === 'popover') return false;
+        return isElementVisible(layer.el);
+    }
+
     function pruneDisconnectedLayers() {
         for (var i = _layers.length - 1; i >= 0; i--) {
             if (_layers[i].el && !_layers[i].el.isConnected) {
@@ -44,10 +69,11 @@ var SpatialNav = (function () {
         opts = opts || {};
         for (var i = 0; i < _layers.length; i++) {
             var existing = _layers[i].el;
-            if (existing === el || (existing.isSameNode && existing.isSameNode(el))) {
+            if (layerElementsMatch(existing, el)) {
                 // Merge options into existing layer (e.g. onClose callback arriving after auto-detection)
                 if (opts.onClose && !_layers[i].onClose) _layers[i].onClose = opts.onClose;
                 if (opts.focusSelector && !_layers[i].focusSelector) _layers[i].focusSelector = opts.focusSelector;
+                _layers[i].el = el;
                 return;
             }
         }
@@ -73,11 +99,11 @@ var SpatialNav = (function () {
                 }
             }
         }
-        // Fallback: match by reference or isSameNode
         for (var i = 0; i < _layers.length; i++) {
             var existing = _layers[i].el;
-            if (existing === el || (existing.isSameNode && existing.isSameNode(el))) {
+            if (layerElementsMatch(existing, el)) {
                 if (onClose) _layers[i].onClose = onClose;
+                _layers[i].el = el;
                 return;
             }
         }
@@ -95,22 +121,33 @@ var SpatialNav = (function () {
 
     function popLayer(el) {
         if (!el) return;
+        var uid = el.getAttribute && el.getAttribute('data-sn-layer-uid');
         for (var i = _layers.length - 1; i >= 0; i--) {
-            var existing = _layers[i].el;
-            if (existing === el || (existing.isSameNode && existing.isSameNode(el))) {
-                var layer = _layers.splice(i, 1)[0];
-                layer.onClose = null;
-                if (layer.restoreFocus && layer.restoreFocus.isConnected) {
-                    layer.restoreFocus.focus({ preventScroll: true });
-                }
+            if (layerElementsMatch(_layers[i].el, el)) {
+                removeLayerAt(i);
                 return;
+            }
+        }
+        if (uid) {
+            for (var i = _layers.length - 1; i >= 0; i--) {
+                var existing = _layers[i].el;
+                if (existing && existing.getAttribute && existing.getAttribute('data-sn-layer-uid') === uid) {
+                    removeLayerAt(i);
+                    return;
+                }
             }
         }
     }
 
     function peekLayer() {
         pruneDisconnectedLayers();
-        return _layers.length > 0 ? _layers[_layers.length - 1] : null;
+        while (_layers.length > 0) {
+            var top = _layers[_layers.length - 1];
+            if (isLayerActive(top)) return top;
+            var stale = _layers.pop();
+            stale.onClose = null;
+        }
+        return null;
     }
 
     function autoFocusLayer(layer) {
@@ -431,6 +468,14 @@ var SpatialNav = (function () {
             setTimeout(function () {
                 if (window.K7) window.K7._swallowNextEnterClick = false;
             }, 50);
+            var callbacks = window.K7._enterSuppressCallbacks
+                ? window.K7._enterSuppressCallbacks.splice(0)
+                : [];
+            setTimeout(function () {
+                for (var i = 0; i < callbacks.length; i++) {
+                    try { callbacks[i](); } catch (err) { /* ignore */ }
+                }
+            }, 0);
             var openMenu = document.querySelector('.k7-menu-dropdown--open');
             if (openMenu) {
                 var item = openMenu.querySelector('.k7-menu-item');
@@ -1264,9 +1309,13 @@ K7._positionMediaCardDropdown = function (dropdown, anchorRect, ddRect, cbOffset
 
 K7._suppressEnterUntilKeyUp = false;
 K7._swallowNextEnterClick = false;
-K7.suppressEnterUntilKeyUp = function () {
+K7._enterSuppressCallbacks = [];
+K7.suppressEnterUntilKeyUp = function (callback) {
     K7._suppressEnterUntilKeyUp = true;
     K7._swallowNextEnterClick = true;
+    if (typeof callback === 'function') {
+        K7._enterSuppressCallbacks.push(callback);
+    }
 };
 
 K7.positionDropdownDeferred = function (root, dropdown) {
