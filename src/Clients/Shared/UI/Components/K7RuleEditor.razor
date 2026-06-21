@@ -4,24 +4,34 @@
 @inject IStringLocalizer<K7RuleEditor> L
 
 <div class="k7-rule-editor @Class">
-    @RenderGroup(_root, null, -1)
+    @{ var counters = new RenderCounters(); }
+    @RenderGroup(_root, null, -1, counters)
 </div>
 
 @code {
-    private RenderFragment RenderGroup(EditGroup group, EditGroup? parent, int indexInParent) => __builder =>
+    private RenderFragment RenderGroup(EditGroup group, EditGroup? parent, int indexInParent, RenderCounters counters) => __builder =>
     {
-        <div class="k7-rule-group @(parent is not null ? "k7-rule-group--nested" : "")">
+        var groupNumber = parent is null ? 0 : counters.NextGroup();
+
+        <K7Paper Outlined="true" Elevation="0" Class="@($"k7-rule-group{(parent is not null ? " k7-rule-group--nested" : "")}")">
             <div class="k7-rule-group-header">
+                @if (parent is not null)
+                {
+                    <span class="k7-rule-group-title">@GetGroupTitle(groupNumber)</span>
+                }
+
                 <K7Select TValue="RuleMatchCondition" Value="group.MatchCondition"
                            ValueChanged="(v) => OnMatchConditionChanged(group, v)"
-                           Variant="outlined" Style="width: 120px;">
-                    <K7SelectItem Value="RuleMatchCondition.All">@L["MatchAll"]</K7SelectItem>
-                    <K7SelectItem Value="RuleMatchCondition.Any">@L["MatchAny"]</K7SelectItem>
+                           Variant="outlined" Style="width: 140px;">
+                    <K7SelectItem Value="@RuleMatchCondition.All" Text="@L["MatchAll"]">@L["MatchAll"]</K7SelectItem>
+                    <K7SelectItem Value="@RuleMatchCondition.Any" Text="@L["MatchAny"]">@L["MatchAny"]</K7SelectItem>
                 </K7Select>
 
                 @if (parent is not null)
                 {
                     <K7IconButton Icon="@Phosphor.X" Size="sm" Color="error"
+                                   Class="k7-rule-group-remove"
+                                   AriaLabel="@L["RemoveGroup"]"
                                    OnClick="() => RemoveItem(parent, indexInParent)" />
                 }
             </div>
@@ -34,60 +44,86 @@
 
                     @if (item is EditRule rule)
                     {
-                        <div class="k7-rule-item">
-                            @{ var descriptor = GetDescriptor(rule.Field); }
+                        var conditionNumber = counters.NextCondition();
+                        var descriptor = GetDescriptor(rule.Field);
 
-                            <K7Select TValue="string" Value="rule.Field"
-                                       ValueChanged="(v) => OnFieldChanged(group, index, v)"
-                                       Variant="outlined" Style="min-width: 160px;">
-                                @foreach (var field in FieldDescriptors)
-                                {
-                                    <K7SelectItem Value="field.FieldName">@field.DisplayName</K7SelectItem>
-                                }
-                            </K7Select>
+                        <K7Paper Outlined="true" Elevation="0" Class="k7-rule-item">
+                            <div class="k7-rule-item-header">
+                                <span class="k7-rule-item-title">@GetConditionTitle(conditionNumber)</span>
+                                <K7IconButton Icon="@Phosphor.X" Size="sm" Color="error"
+                                               AriaLabel="@L["RemoveCondition"]"
+                                               OnClick="() => RemoveItem(group, index)" />
+                            </div>
 
-                            <K7Select TValue="RuleOperator" Value="rule.Operator"
-                                       ValueChanged="(v) => OnOperatorChanged(group, index, v)"
-                                       Variant="outlined" Style="min-width: 140px;">
-                                @if (descriptor is not null)
-                                {
-                                    @foreach (var op in descriptor.Operators)
+                            <div class="k7-rule-item-body">
+                                <K7Select TValue="string" Value="rule.Field"
+                                           ValueChanged="(v) => OnFieldChanged(group, index, v)"
+                                           Variant="outlined" Style="min-width: 160px;">
+                                    @foreach (var field in FieldDescriptors)
                                     {
-                                        <K7SelectItem Value="op">@GetOperatorLabel(op)</K7SelectItem>
+                                        <K7SelectItem Value="@field.FieldName" Text="@field.DisplayName">@field.DisplayName</K7SelectItem>
+                                    }
+                                </K7Select>
+
+                                <K7Select TValue="RuleOperator" Value="rule.Operator"
+                                           ValueChanged="(v) => OnOperatorChanged(group, index, v)"
+                                           Variant="outlined" Style="min-width: 160px;">
+                                    @if (descriptor is not null)
+                                    {
+                                        @foreach (var op in descriptor.Operators)
+                                        {
+                                            <K7SelectItem Value="@op" Text="@GetOperatorLabel(op)">@GetOperatorLabel(op)</K7SelectItem>
+                                        }
+                                    }
+                                </K7Select>
+
+                                @if (!IsUnaryOperator(rule.Operator))
+                                {
+                                    @if (descriptor?.ValueType is RuleFieldValueType.Select or RuleFieldValueType.Boolean
+                                         && descriptor.Options is not null)
+                                    {
+                                        <K7Select TValue="string" Value="@(rule.Value ?? "")"
+                                                   ValueChanged="(v) => OnValueChanged(group, index, v)"
+                                                   Variant="outlined" Style="min-width: 160px;">
+                                            @foreach (var opt in descriptor.Options)
+                                            {
+                                                <K7SelectItem Value="@opt.Value" Text="@opt.Label">@opt.Label</K7SelectItem>
+                                            }
+                                        </K7Select>
+                                    }
+                                    else if (descriptor?.ValueType == RuleFieldValueType.Language)
+                                    {
+                                        <K7LanguageSelect Value="@(rule.Value ?? "")"
+                                                          ValueChanged="(v) => OnValueChanged(group, index, v)"
+                                                          Variant="outlined"
+                                                          Class="k7-rule-editor-language-select"
+                                                          Style="min-width: 200px;" />
+                                    }
+                                    else if (descriptor?.ValueType == RuleFieldValueType.Search && SearchSuggestionsAsync is not null)
+                                    {
+                                        <K7SearchSelect Value="@(rule.Value ?? "")"
+                                                        ValueChanged="(v) => OnValueChanged(group, index, v)"
+                                                        Variant="outlined"
+                                                        Placeholder="@GetValuePlaceholder(rule, descriptor)"
+                                                        Style="min-width: 220px;"
+                                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(rule.Field, text, ct)" />
+                                    }
+                                    else
+                                    {
+                                        <K7TextField TValue="string" Value="@(rule.Value ?? "")"
+                                                      ValueChanged="(v) => OnValueChanged(group, index, v)"
+                                                      Variant="outlined"
+                                                      Type="@GetInputType(descriptor)"
+                                                      Placeholder="@GetValuePlaceholder(rule, descriptor)"
+                                                      Style="min-width: 160px;" />
                                     }
                                 }
-                            </K7Select>
-
-                            @if (!IsUnaryOperator(rule.Operator))
-                            {
-                                @if (descriptor?.ValueType == RuleFieldValueType.Select && descriptor.Options is not null)
-                                {
-                                    <K7Select TValue="string" Value="@(rule.Value ?? "")"
-                                               ValueChanged="(v) => OnValueChanged(group, index, v)"
-                                               Variant="outlined" Style="min-width: 140px;">
-                                        @foreach (var opt in descriptor.Options)
-                                        {
-                                            <K7SelectItem Value="opt.Value">@opt.Label</K7SelectItem>
-                                        }
-                                    </K7Select>
-                                }
-                                else
-                                {
-                                    <K7TextField TValue="string" Value="@(rule.Value ?? "")"
-                                                  ValueChanged="(v) => OnValueChanged(group, index, v)"
-                                                  Variant="outlined"
-                                                  Type="@GetInputType(descriptor)"
-                                                  Style="min-width: 140px;" />
-                                }
-                            }
-
-                            <K7IconButton Icon="@Phosphor.X" Size="sm" Color="error"
-                                           OnClick="() => RemoveItem(group, index)" />
-                        </div>
+                            </div>
+                        </K7Paper>
                     }
                     else if (item is EditGroup nested)
                     {
-                        @RenderGroup(nested, group, index)
+                        @RenderGroup(nested, group, index, counters)
                     }
                 }
             </div>
@@ -102,6 +138,16 @@
                     @L["AddGroup"]
                 </K7Button>
             </div>
-        </div>
+        </K7Paper>
     };
+
+    private sealed class RenderCounters
+    {
+        private int _condition;
+        private int _group;
+
+        public int NextCondition() => ++_condition;
+
+        public int NextGroup() => ++_group;
+    }
 }

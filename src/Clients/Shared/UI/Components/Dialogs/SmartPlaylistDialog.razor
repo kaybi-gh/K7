@@ -46,7 +46,7 @@
                                        Style="min-width: 160px;">
                                 @foreach (var field in GetAvailableFields())
                                 {
-                                    <K7SelectItem Value="field">@GetFieldLabel(field)</K7SelectItem>
+                                    <K7SelectItem Value="@field" Text="@GetFieldLabel(field)">@GetFieldLabel(field)</K7SelectItem>
                                 }
                             </K7Select>
                             <K7Select TValue="SmartPlaylistOperator" @bind-Value="_rules[index].Operator"
@@ -54,15 +54,31 @@
                                        Style="min-width: 140px;">
                                 @foreach (var op in GetAvailableOperators(_rules[index].Field))
                                 {
-                                    <K7SelectItem Value="op">@GetOperatorLabel(op)</K7SelectItem>
+                                    <K7SelectItem Value="@op" Text="@GetOperatorLabel(op)">@GetOperatorLabel(op)</K7SelectItem>
                                 }
                             </K7Select>
                             @if (!IsUnaryOperator(_rules[index].Operator))
                             {
-                                <K7TextField TValue="string" @bind-Value="_rules[index].Value"
-                                              Variant="outlined"
-                                              Placeholder="@GetValuePlaceholder(_rules[index].Field)"
-                                              Style="min-width: 140px;" />
+                                @if (_rules[index].Field == SmartPlaylistField.IsCompleted)
+                                {
+                                    <K7Select TValue="string" @bind-Value="_rules[index].Value"
+                                               Variant="outlined" Style="min-width: 140px;">
+                                        <K7SelectItem Value="@("true")" Text="@L["BooleanTrue"]">@L["BooleanTrue"]</K7SelectItem>
+                                        <K7SelectItem Value="@("false")" Text="@L["BooleanFalse"]">@L["BooleanFalse"]</K7SelectItem>
+                                    </K7Select>
+                                }
+                                else if (_rules[index].Field == SmartPlaylistField.OriginalLanguage)
+                                {
+                                    <K7LanguageSelect @bind-Value="_rules[index].Value"
+                                                      Variant="outlined" Style="min-width: 200px;" />
+                                }
+                                else
+                                {
+                                    <K7TextField TValue="string" @bind-Value="_rules[index].Value"
+                                                  Variant="outlined"
+                                                  Placeholder="@GetValuePlaceholder(_rules[index].Field)"
+                                                  Style="min-width: 140px;" />
+                                }
                             }
                             <button type="button" class="k7-icon-btn" Name="x" Size="sm"
                                            Color="error" OnClick="() => RemoveRule(index)" ></button>
@@ -82,7 +98,7 @@
                            Variant="outlined" Style="flex: 1;">
                     @foreach (var order in GetAvailableOrderBy())
                     {
-                        <K7SelectItem Value="order">@GetOrderByLabel(order)</K7SelectItem>
+                        <K7SelectItem Value="@order" Text="@GetOrderByLabel(order)">@GetOrderByLabel(order)</K7SelectItem>
                     }
                 </K7Select>
                 <div class="d-flex align-center mt-2">

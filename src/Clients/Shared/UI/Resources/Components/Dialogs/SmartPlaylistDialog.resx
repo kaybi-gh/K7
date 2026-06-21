@@ -40,43 +40,46 @@
   <data name="FieldGenre" xml:space="preserve"><value>Genre</value></data>
   <data name="FieldYear" xml:space="preserve"><value>Année</value></data>
   <data name="FieldRating" xml:space="preserve"><value>Note</value></data>
-  <data name="FieldPlayCount" xml:space="preserve"><value>Nb lectures</value></data>
+  <data name="FieldPlayCount" xml:space="preserve"><value>Nombre de lectures</value></data>
   <data name="FieldDateAdded" xml:space="preserve"><value>Date d'ajout</value></data>
   <data name="FieldLastPlayed" xml:space="preserve"><value>Dernière lecture</value></data>
   <data name="FieldIsWatched" xml:space="preserve"><value>Terminé</value></data>
   <data name="FieldArtist" xml:space="preserve"><value>Artiste</value></data>
   <data name="FieldAlbum" xml:space="preserve"><value>Album</value></data>
-  <data name="FieldTrackNumber" xml:space="preserve"><value>N° piste</value></data>
-  <data name="FieldDiscNumber" xml:space="preserve"><value>N° disque</value></data>
-  <data name="FieldBpm" xml:space="preserve"><value>BPM</value></data>
-  <data name="FieldDuration" xml:space="preserve"><value>Durée (s)</value></data>
+  <data name="FieldTrackNumber" xml:space="preserve"><value>Numéro de piste</value></data>
+  <data name="FieldDiscNumber" xml:space="preserve"><value>Numéro de disque</value></data>
+  <data name="FieldBpm" xml:space="preserve"><value>Battements par minute</value></data>
+  <data name="FieldDuration" xml:space="preserve"><value>Durée en secondes</value></data>
   <data name="FieldOriginalLanguage" xml:space="preserve"><value>Langue originale</value></data>
+  <data name="FieldActor" xml:space="preserve"><value>Acteur</value></data>
+  <data name="BooleanTrue" xml:space="preserve"><value>Oui</value></data>
+  <data name="BooleanFalse" xml:space="preserve"><value>Non</value></data>
   <data name="OperatorIs" xml:space="preserve"><value>est</value></data>
   <data name="OperatorIsNot" xml:space="preserve"><value>n'est pas</value></data>
   <data name="OperatorContains" xml:space="preserve"><value>contient</value></data>
-  <data name="OperatorInLastDays" xml:space="preserve"><value>dans les derniers (jours)</value></data>
+  <data name="OperatorInLastDays" xml:space="preserve"><value>dans les derniers jours</value></data>
   <data name="OperatorIsEmpty" xml:space="preserve"><value>est vide</value></data>
   <data name="OperatorIsNotEmpty" xml:space="preserve"><value>n'est pas vide</value></data>
-  <data name="PlaceholderYear" xml:space="preserve"><value>ex : 2024</value></data>
+  <data name="PlaceholderYear" xml:space="preserve"><value>Par exemple : 2024</value></data>
   <data name="PlaceholderRating" xml:space="preserve"><value>0-10</value></data>
-  <data name="PlaceholderCount" xml:space="preserve"><value>ex : 5</value></data>
+  <data name="PlaceholderCount" xml:space="preserve"><value>Par exemple : 5</value></data>
   <data name="PlaceholderDays" xml:space="preserve"><value>jours</value></data>
-  <data name="PlaceholderBoolean" xml:space="preserve"><value>true / false</value></data>
-  <data name="PlaceholderDuration" xml:space="preserve"><value>ex : 120</value></data>
+  <data name="PlaceholderBoolean" xml:space="preserve"><value>vrai / faux</value></data>
+  <data name="PlaceholderDuration" xml:space="preserve"><value>Par exemple : 120</value></data>
   <data name="PlaceholderSeconds" xml:space="preserve"><value>secondes</value></data>
-  <data name="PlaceholderTrackDisc" xml:space="preserve"><value>ex : 1</value></data>
+  <data name="PlaceholderTrackDisc" xml:space="preserve"><value>Par exemple : 1</value></data>
   <data name="PlaceholderDefault" xml:space="preserve"><value>valeur</value></data>
   <data name="OrderByTitle" xml:space="preserve"><value>Titre</value></data>
   <data name="OrderByDateAdded" xml:space="preserve"><value>Date d'ajout</value></data>
   <data name="OrderByLastPlayed" xml:space="preserve"><value>Dernière lecture</value></data>
-  <data name="OrderByPlayCount" xml:space="preserve"><value>Nb lectures</value></data>
+  <data name="OrderByPlayCount" xml:space="preserve"><value>Nombre de lectures</value></data>
   <data name="OrderByRating" xml:space="preserve"><value>Note</value></data>
   <data name="OrderByYear" xml:space="preserve"><value>Année</value></data>
   <data name="OrderByRandom" xml:space="preserve"><value>Aléatoire</value></data>
   <data name="OrderByArtist" xml:space="preserve"><value>Artiste</value></data>
   <data name="OrderByAlbum" xml:space="preserve"><value>Album</value></data>
-  <data name="OrderByTrackNumber" xml:space="preserve"><value>N° piste</value></data>
-  <data name="OrderByBpm" xml:space="preserve"><value>BPM</value></data>
+  <data name="OrderByTrackNumber" xml:space="preserve"><value>Numéro de piste</value></data>
+  <data name="OrderByBpm" xml:space="preserve"><value>Battements par minute</value></data>
   <data name="OrderByDuration" xml:space="preserve"><value>Durée</value></data>
 </root>
 
