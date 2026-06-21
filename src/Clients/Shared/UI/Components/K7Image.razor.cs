@@ -19,6 +19,7 @@ public partial class K7Image
     [Parameter] public bool Fluid { get; set; }
     [Parameter] public bool ShowLoadingState { get; set; } = true;
     [Parameter] public string FallbackIcon { get; set; } = Phosphor.ImageBroken;
+    [Parameter] public RenderFragment? FallbackContent { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
 
     private ElementReference _imgRef;
@@ -28,6 +29,7 @@ public partial class K7Image
     private bool _checkedCachedLoad;
 
     private bool HasSource => !string.IsNullOrEmpty(Src);
+    private bool HasCustomFallback => FallbackContent is not null;
     private bool ShowFallback => !HasSource || _failed;
     private bool ShowLoading => HasSource && !_loaded && !_failed && ShouldShowLoadingState;
     private bool ShouldShowLoadingState => ShowLoadingState && !IsTinyThumbnail;
@@ -40,6 +42,7 @@ public partial class K7Image
             {
                 "k7-img-wrap",
                 Fluid ? "k7-img-wrap--fluid" : null,
+                ShowFallback && HasCustomFallback ? "k7-img-wrap--custom-fallback" : null,
                 _loaded ? "k7-img-wrap--loaded" : null,
                 UseLoadTransition && !_loaded ? "k7-img-wrap--pending" : null,
                 Class

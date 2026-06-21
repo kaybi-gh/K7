@@ -12,6 +12,11 @@
     height: 100%;
 }
 
+.k7-img-wrap--custom-fallback {
+    display: block;
+    overflow: visible;
+}
+
 .k7-img-loading {
     position: absolute;
     inset: 0;
