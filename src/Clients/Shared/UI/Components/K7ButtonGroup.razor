@@ -1,7 +1,7 @@
 @namespace K7.Clients.Shared.UI.Components
 @typeparam TValue
 
-<div class="k7-button-group" role="radiogroup" aria-label="@AriaLabel">
+<div class="k7-button-group @Class" role="radiogroup" aria-label="@AriaLabel">
     @foreach (var option in Options)
     {
         var opt = option;
@@ -28,6 +28,7 @@
     [Parameter] public TValue? Value { get; set; }
     [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
     [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string? Class { get; set; }
 
     private async Task OnOptionClicked(TValue value)
     {
