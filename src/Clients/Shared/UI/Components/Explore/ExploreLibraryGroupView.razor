@@ -1,0 +1,70 @@
+@using K7.Clients.Shared.UI.Components.Explore
+@using K7.Clients.Shared.UI.Components.Music
+@using K7.Clients.Shared.UI.Pages
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<ExplorePage> L
+
+@if (!IsTv)
+{
+    <header class="explore-group-header">
+        <div class="explore-group-header__start">
+            <K7IconButton Icon="@Phosphor.ArrowLeft"
+                          Size="sm"
+                          AriaLabel="@L["Back"]"
+                          OnClick="GoBack" />
+            <h1 class="explore-group-header__title">@Group.Title</h1>
+        </div>
+        <K7Button Variant="filled"
+                  Color="primary"
+                  Href="@BrowseHref"
+                  StartIcon="@Phosphor.SquaresFour">
+            @L["BrowseAll"]
+        </K7Button>
+    </header>
+}
+
+<ExploreSectionContent IsTv="IsTv"
+                       IsLoading="_loading"
+                       GroupTitle="@(IsTv ? Group.Title : null)"
+                       BrowseHref="@(IsTv ? BrowseHref : null)"
+                       BrowseLabel="@(IsTv ? L["BrowseAll"].Value : null)"
+                       BackAriaLabel="@(IsTv ? L["Back"].Value : null)"
+                       OnBack="GoBack">
+    @switch (Group.MediaType)
+    {
+        case LibraryMediaType.Movie:
+            <HomeFeedCarouselRow Title="@L["RecentlyAddedMovies"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_movieTypes" OrderBy="CreatedOrder" ProgressEnabled="true" />
+            <MediasCarouselRow Title="@L["TrendingMovies"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_movieTypes" OrderBy="TrendingOrder" ProgressEnabled="true" />
+            @foreach (var genre in _genres)
+            {
+                <MediasCarouselRow Title="@string.Format(L["BestMoviesGenre"].Value, genre.Name)"
+                                   LibraryGroupIds="_libraryGroupIds"
+                                   MediaTypes="_movieTypes"
+                                   Genres="@(new[] { genre.Name })"
+                                   OrderBy="ProviderRatingOrder"
+                                   UnwatchedOnly="true"
+                                   ProgressEnabled="true" />
+            }
+            break;
+        case LibraryMediaType.Serie:
+            <HomeFeedCarouselRow Title="@L["RecentlyAddedSeries"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_serieTypes" OrderBy="CreatedOrder" ProgressEnabled="true" />
+            <MediasCarouselRow Title="@L["TrendingSeries"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_serieTypes" OrderBy="TrendingOrder" ProgressEnabled="true" />
+            @foreach (var genre in _genres)
+            {
+                <MediasCarouselRow Title="@string.Format(L["BestSeriesGenre"].Value, genre.Name)"
+                                   LibraryGroupIds="_libraryGroupIds"
+                                   MediaTypes="_serieTypes"
+                                   Genres="@(new[] { genre.Name })"
+                                   OrderBy="ProviderRatingOrder"
+                                   UnwatchedOnly="true"
+                                   ProgressEnabled="true" />
+            }
+            break;
+        case LibraryMediaType.Music:
+            <HomeFeedCarouselRow Title="@L["RecentlyAddedMusic"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="CreatedOrder" />
+            <MediasCarouselRow Title="@L["TrendingAlbums"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="TrendingOrder" />
+            <MusicRadioPresets Title="@L["Radios"]" />
+            <ExploreTopTracksTable LibraryIds="_libraryIds" />
+            break;
+    }
+</ExploreSectionContent>

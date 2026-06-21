@@ -20,4 +20,25 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Explorer</value></data>
+  <data name="Films" xml:space="preserve"><value>Films</value></data>
+  <data name="Series" xml:space="preserve"><value>S&#233;ries</value></data>
+  <data name="Music" xml:space="preserve"><value>Musique</value></data>
+  <data name="TrendingMovies" xml:space="preserve"><value>Films populaires</value></data>
+  <data name="TrendingSeries" xml:space="preserve"><value>S&#233;ries populaires</value></data>
+  <data name="TrendingAlbums" xml:space="preserve"><value>Albums populaires</value></data>
+  <data name="RecentlyAddedMovies" xml:space="preserve"><value>Films r&#233;cemment ajout&#233;s</value></data>
+  <data name="RecentlyAddedSeries" xml:space="preserve"><value>S&#233;ries r&#233;cemment ajout&#233;es</value></data>
+  <data name="RecentlyAddedMusic" xml:space="preserve"><value>Albums r&#233;cemment ajout&#233;s</value></data>
+  <data name="BestMoviesGenre" xml:space="preserve"><value>Meilleurs films {0}</value></data>
+  <data name="BestSeriesGenre" xml:space="preserve"><value>Meilleures s&#233;ries {0}</value></data>
+  <data name="Radios" xml:space="preserve"><value>Radios</value></data>
+  <data name="TopTracks" xml:space="preserve"><value>Top morceaux</value></data>
+  <data name="Plays" xml:space="preserve"><value>Lectures</value></data>
+  <data name="NoLibraryGroups" xml:space="preserve"><value>Aucun m&#233;dia</value></data>
+  <data name="NoMovies" xml:space="preserve"><value>Aucune biblioth&#232;que de films</value></data>
+  <data name="NoSeries" xml:space="preserve"><value>Aucune biblioth&#232;que de s&#233;ries</value></data>
+  <data name="NoMusic" xml:space="preserve"><value>Aucune biblioth&#232;que musicale</value></data>
+  <data name="Back" xml:space="preserve"><value>Retour</value></data>
+  <data name="BrowseAll" xml:space="preserve"><value>Tout parcourir</value></data>
+  <data name="NoLibraryGroup" xml:space="preserve"><value>Groupe introuvable</value></data>
 </root>

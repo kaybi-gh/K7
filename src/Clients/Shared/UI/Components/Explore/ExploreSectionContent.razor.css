@@ -1,0 +1,13 @@
+.explore-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    --carousel-margin-start: 40px;
+}
+
+@media (max-width: 599.98px) {
+    .explore-section {
+        gap: 16px;
+        --carousel-margin-start: 16px;
+    }
+}

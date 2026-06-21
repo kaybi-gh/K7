@@ -1,29 +1,65 @@
 @page "/explore"
+@layout ExploreLayout
 @using K7.Clients.Shared.Helpers
-@using K7.Server.Domain.Enums
+@using K7.Clients.Shared.UI.Components.Explore
 @inject ILibraryService LibraryService
+@inject IDeviceService DeviceService
 @inject IStringLocalizer<ExplorePage> L
 @inject NavigationManager NavigationManager
 
-<PageTitle>@L["PageTitle"]</PageTitle>
+<PageTitle>@PageTitleText</PageTitle>
 
-<div class="explore-page page-scrollable">
-    <div class="explore-grid">
-        @foreach (var group in _libraryGroups)
-        {
-            var (gs, ge, ic) = LibraryGroupCardColors.GetRgbaColors(group);
-            var icon = !string.IsNullOrEmpty(group.Icon) ? group.Icon : GetLibraryIconName(group.MediaType);
-            var imageUrl = group.CoverPictureId.HasValue ? $"/api/metadata-pictures/{group.CoverPictureId}?size=Medium" : null;
-            <K7CategoryCard @key="group.Id"
-                            Title="@group.Title"
-                            Description="@(group.Description ?? "")"
-                            Icon="@icon"
-                            GradientStart="@gs"
-                            GradientEnd="@ge"
-                            IconColor="@ic"
-                            ImageUrl="@imageUrl"
-                            DominantColor="@group.CoverDominantColor"
-                            OnClick="@(() => NavigationManager.NavigateTo($"/library-groups/{group.Id}"))" />
-        }
+@if (_loading)
+{
+    <div class="explore-page page-scrollable">
+        <div class="d-flex flex-col pa-16">
+            <K7Spinner />
+        </div>
     </div>
-</div>
+}
+else if (LibraryGroupId.HasValue)
+{
+  @if (_activeGroup is null)
+  {
+      <div class="explore-page page-scrollable">
+          <K7EmptyState Title="@L["NoLibraryGroup"]" />
+      </div>
+  }
+  else
+  {
+      <div class="@_libraryGroupPageClass" data-initial-focus="@_libraryGroupInitialFocus">
+          <ExploreLibraryGroupView Group="_activeGroup" IsTv="_isTv" />
+      </div>
+  }
+}
+else if (_libraryGroups.Count == 0)
+{
+    <div class="explore-page page-scrollable">
+        <K7EmptyState Title="@L["NoLibraryGroups"]" />
+    </div>
+}
+else
+{
+    <div class="explore-page page-scrollable">
+        <section class="explore-groups">
+            @foreach (var group in _libraryGroups)
+            {
+                var (gs, ge, ic) = LibraryGroupCardColors.GetRgbaColors(group);
+                var icon = !string.IsNullOrEmpty(group.Icon) ? group.Icon : GetLibraryIconName(group.MediaType);
+                var imageUrl = group.CoverPictureId.HasValue ? $"/api/metadata-pictures/{group.CoverPictureId}?size=Medium" : null;
+                <K7CategoryCard @key="group.Id"
+                                Title="@group.Title"
+                                Description="@(group.Description ?? "")"
+                                Icon="@icon"
+                                GradientStart="@gs"
+                                GradientEnd="@ge"
+                                IconColor="@ic"
+                                ImageUrl="@imageUrl"
+                                DominantColor="@group.CoverDominantColor"
+                                CardColor="@group.CardColor"
+                                Class="k7-category-card--lg"
+                                OnClick="@(() => NavigationManager.NavigateTo($"/explore?library-group={group.Id}"))" />
+            }
+        </section>
+    </div>
+}
