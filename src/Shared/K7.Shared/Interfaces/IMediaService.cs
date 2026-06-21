@@ -15,6 +15,7 @@ public interface IMediaService
     Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default);
     Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default);
+    Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default);
     Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<PersonDto>?> GetPersonsAsync(GetPersonsWithPaginationQuery query, CancellationToken cancellationToken = default);
@@ -38,5 +39,6 @@ public interface IMediaService
     Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default);
     Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default);
     Task<List<PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default);
 }
