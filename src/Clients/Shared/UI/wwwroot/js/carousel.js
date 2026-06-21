@@ -24,22 +24,37 @@ export function init(rootElement) {
 
     if (loopBackBtn) {
         var loopBackAction = loopBackBtn.querySelector('.carousel-loop-back__image') || loopBackBtn;
-        function doLoopBack() {
-            embla.scrollTo(0);
-            setTimeout(function () {
-                var firstItem = rootElement.querySelector('[data-carousel-item]:not([data-carousel-loop-back])');
-                if (firstItem) {
-                    var target = firstItem.querySelector('.focusable') || firstItem;
-                    target.focus({ preventScroll: true });
-                }
-            }, 50);
+
+        function focusFirstCarouselItem() {
+            var firstItem = rootElement.querySelector('[data-carousel-item]:not([data-carousel-loop-back])');
+            if (!firstItem) return;
+            var target = firstItem.querySelector('.focusable') || firstItem;
+            target.focus({ preventScroll: true });
         }
-        loopBackAction.addEventListener('click', doLoopBack);
-        loopBackAction.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                doLoopBack();
+
+        function doLoopBack(fromKeyboard) {
+            embla.scrollTo(0);
+
+            if (fromKeyboard) {
+                if (window.K7 && window.K7.suppressEnterUntilKeyUp) {
+                    window.K7.suppressEnterUntilKeyUp();
+                }
+
+                var onKeyUp = function (ev) {
+                    if (ev.key !== 'Enter' && ev.key !== ' ' && ev.key !== 'NumpadEnter') return;
+                    document.removeEventListener('keyup', onKeyUp, true);
+                    setTimeout(focusFirstCarouselItem, 0);
+                };
+
+                document.addEventListener('keyup', onKeyUp, true);
+                return;
             }
+
+            setTimeout(focusFirstCarouselItem, 50);
+        }
+
+        loopBackAction.addEventListener('click', function (e) {
+            doLoopBack(e.detail === 0);
         });
     }
 
