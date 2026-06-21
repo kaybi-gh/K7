@@ -2588,26 +2588,6 @@
         }
       }
     },
-    "/api/music/stats": {
-      "get": {
-        "tags": [
-          "Music"
-        ],
-        "operationId": "GetMusicStats",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MusicStatsDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/music/top-tracks": {
       "get": {
         "tags": [
@@ -3444,6 +3424,40 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdatePlaybackProgressCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{mediaId}/watch-state": {
+      "put": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "SetMediaWatchState",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMediaWatchStateRequest"
               }
             }
           },
@@ -13240,59 +13254,6 @@
       "MusicRadioType": {
         "type": "integer"
       },
-      "MusicStatsDto": {
-        "type": "object",
-        "properties": {
-          "totalListeningHours": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "totalCompletedPlays": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "uniqueTracksPlayed": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "topArtists": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TopItemDto"
-            }
-          },
-          "topAlbums": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TopItemDto"
-            }
-          },
-          "topTracks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TopItemDto"
-            }
-          },
-          "topGenres": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GenreStatDto"
-            }
-          }
-        }
-      },
       "NativeDeviceDetailsDto": {
         "type": "object",
         "properties": {
@@ -15019,6 +14980,20 @@
           }
         }
       },
+      "SetMediaWatchStateRequest": {
+        "required": [
+          "watched"
+        ],
+        "type": "object",
+        "properties": {
+          "watched": {
+            "type": "boolean"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/WatchStateScope"
+          }
+        }
+      },
       "SetPasswordRequest": {
         "required": [
           "newPassword"
@@ -16483,6 +16458,10 @@
       },
       "VideoResolutionIdentifier": {
         "type": "integer"
+      },
+      "WatchStateScope": {
+        "type": "integer",
+        "default": 0
       },
       "WatchStatsDto": {
         "type": "object",

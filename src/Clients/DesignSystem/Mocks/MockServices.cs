@@ -20,6 +20,7 @@ using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Users;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -380,6 +381,8 @@ public sealed class MockMediaService : IMediaService
     public Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LiteMusicTrackDto>>([]);
     public Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PlayedMusicTrackDto>>([]);
     public Task<List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default) => Task.FromResult(new List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>());
+    public Task<SetMediaWatchStateResultDto?> SetMediaWatchStateAsync(Guid mediaId, bool watched, WatchStateScope scope = WatchStateScope.Item, CancellationToken cancellationToken = default) =>
+        Task.FromResult<SetMediaWatchStateResultDto?>(new SetMediaWatchStateResultDto { AffectedMediaIds = [mediaId] });
 }
 
 public sealed class MockLibraryService : ILibraryService
@@ -501,7 +504,6 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AboutInfoDto?>(new AboutInfoDto { ServerVersion = "1.0.0" });
     public Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<ServerInfoDto?>(null);
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
-    public Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default) => Task.FromResult<MusicStatsDto?>(null);
     public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
     public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
     public Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<List<MediaDto>?>(null);

@@ -154,7 +154,8 @@ public static class MediaMappings
                         Poster = s.Pictures
                             .Where(p => p.Type == MetadataPictureType.Poster)
                             .Select(p => p.ToMetadataPictureDto())
-                            .FirstOrDefault()
+                            .FirstOrDefault(),
+                        UserState = SeasonWatchStateHelper.AggregateFromEpisodes(s.Episodes.ToList())
                     })
                     .ToList(),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
@@ -332,9 +333,10 @@ public static class MediaMappings
                     .Where(p => p.Type == MetadataPictureType.Poster)
                     .Select(p => p.ToMetadataPictureDto())
                     .FirstOrDefault(),
-                UserState = domain.UserMediaStates.FirstOrDefault() is { } state
-                    ? state.ToUserMediaStateDto()
-                    : null,
+                UserState = SeasonWatchStateHelper.AggregateFromEpisodes(season.Episodes.ToList())
+                    ?? (domain.UserMediaStates.FirstOrDefault() is { } state
+                        ? state.ToUserMediaStateDto()
+                        : null),
                 UserRating = GetUserRating(domain)
             },
             SerieEpisode episode => new LiteSerieEpisodeDto()
