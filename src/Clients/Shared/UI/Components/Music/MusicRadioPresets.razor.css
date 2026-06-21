@@ -1,0 +1,98 @@
+.music-radio-presets__item {
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    min-width: 0;
+}
+
+.music-radio-presets__container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-md);
+}
+
+.music-radio-presets__visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border: none;
+    padding: var(--space-2);
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.92);
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--radio-tone) 70%, var(--color-surface)),
+        color-mix(in srgb, var(--radio-tone) 36%, var(--color-bg)));
+}
+
+.music-radio-presets__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding-inline: var(--space-1);
+}
+
+.music-radio-presets__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.music-radio-presets__card-title {
+    width: 100%;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.music-radio-presets__overlay {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius-lg);
+    display: none;
+    pointer-events: none;
+}
+
+.music-radio-presets__item:hover .music-radio-presets__overlay,
+.music-radio-presets__item:focus-within .music-radio-presets__overlay {
+    display: block;
+}
+
+.music-radio-presets__visual:focus-visible {
+    outline: none;
+}
+
+.music-radio-presets__footer {
+    width: 100%;
+    margin-top: var(--space-1);
+    min-width: 0;
+}
+
+.music-radio-presets__subtitle {
+    display: -webkit-box;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    font-size: var(--text-xs);
+    line-height: 1.35;
+    color: var(--color-text-muted);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+@media (max-width: 599.98px) {
+    .music-radio-presets__item {
+        width: 30vw;
+    }
+}

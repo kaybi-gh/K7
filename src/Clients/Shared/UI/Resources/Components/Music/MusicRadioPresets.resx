@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PresetDiscovery" xml:space="preserve"><value>D&#233;couverte</value></data>
+  <data name="PresetDiscoveryDesc" xml:space="preserve"><value>Morceaux jamais &#233;cout&#233;s, proches de vos go&#251;ts</value></data>
+  <data name="PresetSonic" xml:space="preserve"><value>Similaire</value></data>
+  <data name="PresetSonicDesc" xml:space="preserve"><value>Morceaux au son proche de ce que vous &#233;coutez</value></data>
+  <data name="PresetTempo" xml:space="preserve"><value>Tempo</value></data>
+  <data name="PresetTempoDesc" xml:space="preserve"><value>Mix bas&#233; sur le BPM de vos morceaux pr&#233;f&#233;r&#233;s</value></data>
+  <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>
+  <data name="PresetTimeCapsuleDesc" xml:space="preserve"><value>Red&#233;couvrez ce que vous &#233;coutiez il y a un an</value></data>
+  <data name="PresetRecentlyAdded" xml:space="preserve"><value>Nouveaut&#233;s</value></data>
+  <data name="PresetRecentlyAddedDesc" xml:space="preserve"><value>Les derniers morceaux ajout&#233;s &#224; votre biblioth&#232;que</value></data>
+  <data name="PresetArtist" xml:space="preserve"><value>Artiste</value></data>
+  <data name="PresetArtistDesc" xml:space="preserve"><value>Mix centr&#233; sur un artiste et ses proches</value></data>
+</root>

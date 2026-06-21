@@ -21,6 +21,11 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Statistics</value></data>
   <data name="NoData" xml:space="preserve"><value>No data available</value></data>
+  <data name="NoDataHint" xml:space="preserve"><value>Listen to music to see your statistics.</value></data>
+  <data name="ListeningTime" xml:space="preserve"><value>Listening time</value></data>
+  <data name="CompletedPlays" xml:space="preserve"><value>Completed plays</value></data>
+  <data name="UniqueTracks" xml:space="preserve"><value>Unique tracks</value></data>
+  <data name="PlayCountChip" xml:space="preserve"><value>{0} plays</value></data>
   <data name="TopArtists" xml:space="preserve"><value>Top Artists</value></data>
   <data name="TopAlbums" xml:space="preserve"><value>Top Albums</value></data>
   <data name="TopTracks" xml:space="preserve"><value>Top Tracks</value></data>

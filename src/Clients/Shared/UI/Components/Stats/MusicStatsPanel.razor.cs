@@ -1,8 +1,8 @@
 using K7.Shared.Dtos;
 
-namespace K7.Clients.Shared.UI.Pages.Music;
+namespace K7.Clients.Shared.UI.Components.Stats;
 
-public partial class MusicStats : IDisposable
+public partial class MusicStatsPanel : IDisposable
 {
     private MusicStatsDto? _stats;
     private bool _loading = true;
