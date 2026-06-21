@@ -77,14 +77,14 @@ else
         <K7BackButton />
         <div class="hero-page-stack">
             <div class="d-flex flex-col pa-10" style="gap: 8px;">
-                @if (apiClient.GetAbsoluteUri(_movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Logo)?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri is string logoUri)
-                {
-                    <K7Image Style="max-height: 180px; max-width: 500px;" ObjectFit="scale-down" Src="@logoUri"></K7Image>
-                }
-                else
-                {
-                    <h2 Style="font-weight: 800; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">@_movie.Title?.ToUpper()</h2>  
-                }
+                <K7Image Class="movie-page-logo"
+                         ObjectFit="scale-down"
+                         Src="@GetLogoUrl()"
+                         Alt="">
+                    <FallbackContent>
+                        <h2 class="media-logo-title">@_movie.Title?.ToUpper()</h2>
+                    </FallbackContent>
+                </K7Image>
                 <div class="movie-meta">
                     <div class="movie-meta-chips">
                         @if (@_movie.Ratings?.FirstOrDefault(x => x.Source == RatingSource.MetadataProvider)?.Value is double externalRating)

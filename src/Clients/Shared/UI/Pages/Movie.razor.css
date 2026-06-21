@@ -110,6 +110,18 @@
     overflow: visible;
 }
 
+.movie-page-logo:not(.k7-img-wrap--custom-fallback) {
+    max-height: 180px;
+    max-width: 500px;
+}
+
+.movie-page-logo ::deep .k7-img {
+    max-height: 180px;
+    max-width: 500px;
+    object-fit: scale-down;
+    object-position: left center;
+}
+
 .mobile-layout .hero-page-stack {
     height: 85vh;
     width: 100vw;

@@ -40,14 +40,14 @@ else if (_season is not null && _isTv)
 
 
         <div class="tv-details">
-            @if (_logoUrl is not null)
-            {
-                <K7Image Class="tv-logo" ObjectFit="scale-down" Src="@_logoUrl" Alt="@_season.SerieTitle" />
-            }
-            else
-            {
-                <h3 class="tv-serie-title">@_season.SerieTitle?.ToUpper()</h3>
-            }
+            <K7Image Class="tv-logo"
+                     ObjectFit="scale-down"
+                     Src="@_logoUrl"
+                     Alt="">
+                <FallbackContent>
+                    <h3 class="media-logo-title">@_season.SerieTitle?.ToUpper()</h3>
+                </FallbackContent>
+            </K7Image>
 
             <div class="tv-episode-info">
                 @if (_focusedEpisode is not null)
@@ -115,14 +115,14 @@ else if (_season is not null)
 
             <div class="season-header">
                 <div class="season-header-info">
-                    @if (_logoUrl is not null)
-                    {
-                        <K7Image Class="season-logo" ObjectFit="scale-down" Src="@_logoUrl" Alt="@_season.SerieTitle" />
-                    }
-                    else
-                    {
-                        <h3 class="season-serie-title">@_season.SerieTitle?.ToUpper()</h3>
-                    }
+                    <K7Image Class="season-logo"
+                             ObjectFit="scale-down"
+                             Src="@_logoUrl"
+                             Alt="">
+                        <FallbackContent>
+                            <h3 class="media-logo-title">@_season.SerieTitle</h3>
+                        </FallbackContent>
+                    </K7Image>
 
                     <div class="season-title-row">
                         <h4 class="season-title">

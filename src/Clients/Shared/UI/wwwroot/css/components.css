@@ -1109,6 +1109,14 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 .k7-img--contain { object-fit: contain; }
 .k7-img--scale-down { object-fit: scale-down; }
 
+.media-logo-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
 /* ── Tooltip ─────────────────────────────────────────────────────────────────── */
 .k7-tooltip-wrap { position: relative; display: inline-flex; }
 .k7-tooltip-tip {

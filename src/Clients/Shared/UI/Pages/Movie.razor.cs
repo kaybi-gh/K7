@@ -34,6 +34,11 @@ public partial class Movie
     private List<MediaCardViewModel> _similarMedia = [];
     private string? _previousId;
 
+    private string? GetLogoUrl() =>
+        apiClient.GetAbsoluteUri(
+            _movie?.Pictures?.FirstOrDefault(x => x.Type == MetadataPictureType.Logo)?
+                .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
+
     protected override async Task OnParametersSetAsync()
     {
         if (_previousId == Id) return;

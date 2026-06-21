@@ -31,14 +31,14 @@ else if (_serie is not null)
             <K7BackButton />
             <div class="serie-hero">
                 <div class="d-flex flex-col pa-10" style="height: 100%; justify-content: flex-end; gap: 8px;">
-                @if (_logoUrl is not null)
-                {
-                    <img src="@_logoUrl" alt="@_serie.Title" style="height: 180px; max-width: 80vw; object-fit: scale-down; object-position: left center;" />
-                }
-                else
-                {
-                    <h2>@_serie.Title?.ToUpper()</h2>
-                }
+                <K7Image Class="serie-logo"
+                         ObjectFit="scale-down"
+                         Src="@_logoUrl"
+                         Alt="">
+                    <FallbackContent>
+                        <h2 class="media-logo-title">@_serie.Title?.ToUpper()</h2>
+                    </FallbackContent>
+                </K7Image>
 
                 <div class="serie-meta">
                     <div class="serie-ratings">

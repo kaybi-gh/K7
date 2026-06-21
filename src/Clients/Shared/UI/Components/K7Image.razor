@@ -1,11 +1,18 @@
 @namespace K7.Clients.Shared.UI.Components
 
-<div class="@WrapCssClass" style="@WrapStyle" role="@(ShowFallback && !string.IsNullOrEmpty(Alt) ? "img" : null)" aria-label="@(ShowFallback ? Alt : null)">
+<div class="@WrapCssClass" style="@WrapStyle" role="@(ShowFallback && !HasCustomFallback && !string.IsNullOrEmpty(Alt) ? "img" : null)" aria-label="@(ShowFallback && !HasCustomFallback ? Alt : null)">
     @if (ShowFallback)
     {
-        <div class="k7-img-fallback" aria-hidden="@(!string.IsNullOrEmpty(Alt))">
-            <K7Icon Icon="@FallbackIcon" Class="k7-img-fallback-icon" />
-        </div>
+        @if (HasCustomFallback)
+        {
+            @FallbackContent
+        }
+        else
+        {
+            <div class="k7-img-fallback" aria-hidden="@(!string.IsNullOrEmpty(Alt))">
+                <K7Icon Icon="@FallbackIcon" Class="k7-img-fallback-icon" />
+            </div>
+        }
     }
     else
     {
