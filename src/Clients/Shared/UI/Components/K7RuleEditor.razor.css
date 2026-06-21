@@ -1,44 +1,79 @@
 .k7-rule-editor {
     display: flex;
     flex-direction: column;
+    gap: var(--space-3);
 }
 
-.k7-rule-group {
+.k7-rule-editor ::deep .k7-rule-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    border-radius: var(--k7-radius-md);
-    border: 1px solid var(--k7-outline);
+    gap: var(--space-3);
+    padding: var(--space-4);
 }
 
-.k7-rule-group--nested {
-    margin-top: 0.5rem;
-    background: var(--k7-surface-container);
+.k7-rule-editor ::deep .k7-rule-group--nested {
+    background: var(--color-surface-hover);
 }
 
 .k7-rule-group-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.k7-rule-group-title,
+.k7-rule-item-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text-secondary);
+}
+
+.k7-rule-group-remove {
+    margin-left: auto;
 }
 
 .k7-rule-group-items {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding-left: 0.75rem;
+    gap: var(--space-3);
 }
 
-.k7-rule-item {
+.k7-rule-editor ::deep .k7-rule-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-surface);
+}
+
+.k7-rule-item-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.k7-rule-item-body {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
     flex-wrap: wrap;
 }
 
 .k7-rule-group-actions {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+@media (max-width: 599.98px) {
+    .k7-rule-item-body {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .k7-rule-item-body ::deep .k7-field {
+        width: 100%;
+    }
 }

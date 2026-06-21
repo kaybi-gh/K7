@@ -23,17 +23,23 @@
   <data name="MatchAny" xml:space="preserve"><value>Any</value></data>
   <data name="AddRule" xml:space="preserve"><value>Add condition</value></data>
   <data name="AddGroup" xml:space="preserve"><value>Add group</value></data>
-  <data name="OpEquals" xml:space="preserve"><value>is</value></data>
-  <data name="OpNotEquals" xml:space="preserve"><value>is not</value></data>
-  <data name="OpContains" xml:space="preserve"><value>contains</value></data>
-  <data name="OpNotContains" xml:space="preserve"><value>does not contain</value></data>
-  <data name="OpGreaterThan" xml:space="preserve"><value>greater than</value></data>
-  <data name="OpLessThan" xml:space="preserve"><value>less than</value></data>
-  <data name="OpGreaterThanOrEqual" xml:space="preserve"><value>greater than or equal</value></data>
-  <data name="OpLessThanOrEqual" xml:space="preserve"><value>less than or equal</value></data>
-  <data name="OpBeginsWith" xml:space="preserve"><value>begins with</value></data>
-  <data name="OpEndsWith" xml:space="preserve"><value>ends with</value></data>
-  <data name="OpInLast" xml:space="preserve"><value>in last</value></data>
-  <data name="OpIsEmpty" xml:space="preserve"><value>is empty</value></data>
-  <data name="OpIsNotEmpty" xml:space="preserve"><value>is not empty</value></data>
+  <data name="ConditionTitle" xml:space="preserve"><value>Condition {0}</value></data>
+  <data name="GroupTitle" xml:space="preserve"><value>Group {0}</value></data>
+  <data name="RemoveCondition" xml:space="preserve"><value>Remove condition</value></data>
+  <data name="RemoveGroup" xml:space="preserve"><value>Remove group</value></data>
+  <data name="ValuePlaceholderDays" xml:space="preserve"><value>Number of days</value></data>
+  <data name="ValuePlaceholderDefault" xml:space="preserve"><value>Value</value></data>
+  <data name="OpEquals" xml:space="preserve"><value>Is</value></data>
+  <data name="OpNotEquals" xml:space="preserve"><value>Is not</value></data>
+  <data name="OpContains" xml:space="preserve"><value>Contains</value></data>
+  <data name="OpNotContains" xml:space="preserve"><value>Does not contain</value></data>
+  <data name="OpGreaterThan" xml:space="preserve"><value>Greater than</value></data>
+  <data name="OpLessThan" xml:space="preserve"><value>Less than</value></data>
+  <data name="OpGreaterThanOrEqual" xml:space="preserve"><value>Greater than or equal</value></data>
+  <data name="OpLessThanOrEqual" xml:space="preserve"><value>Less than or equal</value></data>
+  <data name="OpBeginsWith" xml:space="preserve"><value>Begins with</value></data>
+  <data name="OpEndsWith" xml:space="preserve"><value>Ends with</value></data>
+  <data name="OpInLast" xml:space="preserve"><value>In the last days</value></data>
+  <data name="OpIsEmpty" xml:space="preserve"><value>Is empty</value></data>
+  <data name="OpIsNotEmpty" xml:space="preserve"><value>Is not empty</value></data>
 </root>

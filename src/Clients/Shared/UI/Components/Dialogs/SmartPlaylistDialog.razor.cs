@@ -138,14 +138,19 @@ public partial class SmartPlaylistDialog
         SmartPlaylistField.DiscNumber,
         SmartPlaylistField.Bpm,
         SmartPlaylistField.Duration,
-        SmartPlaylistField.OriginalLanguage
+        SmartPlaylistField.OriginalLanguage,
+        SmartPlaylistField.ActorName
     ];
 
     private static SmartPlaylistOperator[] GetAvailableOperators(SmartPlaylistField field) => field switch
     {
         SmartPlaylistField.Title or SmartPlaylistField.ArtistName or SmartPlaylistField.AlbumTitle
-            or SmartPlaylistField.OriginalLanguage =>
+            or SmartPlaylistField.ActorName =>
             [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals, SmartPlaylistOperator.Contains,
+             SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
+
+        SmartPlaylistField.OriginalLanguage =>
+            [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals,
              SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
 
         SmartPlaylistField.Genre =>
@@ -189,6 +194,7 @@ public partial class SmartPlaylistDialog
         SmartPlaylistField.Bpm => L["FieldBpm"],
         SmartPlaylistField.Duration => L["FieldDuration"],
         SmartPlaylistField.OriginalLanguage => L["FieldOriginalLanguage"],
+        SmartPlaylistField.ActorName => L["FieldActor"],
         _ => field.ToString()
     };
 

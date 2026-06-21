@@ -10,27 +10,30 @@ public partial class K7RuleEditor : ComponentBase
     [Parameter] public RuleGroupDto Value { get; set; } = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
     [Parameter] public EventCallback<RuleGroupDto> ValueChanged { get; set; }
     [Parameter] public IReadOnlyList<RuleFieldDescriptorDto> FieldDescriptors { get; set; } = [];
+    [Parameter] public Func<string, string, CancellationToken, Task<IReadOnlyList<string>>>? SearchSuggestionsAsync { get; set; }
     [Parameter] public string Class { get; set; } = "";
 
     private EditGroup _root = new();
 
     protected override void OnParametersSet()
     {
+        if (FiltersEqual(Value, ToDto(_root)))
+            return;
+
         _root = FromDto(Value);
     }
 
-    private RuleFieldDescriptorDto? GetDescriptor(string fieldName) =>
-        FieldDescriptors.FirstOrDefault(f => f.FieldName == fieldName);
-
-    private static bool IsUnaryOperator(RuleOperator op) =>
-        op is RuleOperator.IsEmpty or RuleOperator.IsNotEmpty;
-
-    private static string GetInputType(RuleFieldDescriptorDto? descriptor) => descriptor?.ValueType switch
-    {
-        RuleFieldValueType.Number => "number",
-        RuleFieldValueType.Date => "date",
-        _ => "text"
-    };
+    private static bool FiltersEqual(RuleGroupDto left, RuleGroupDto right) =>
+        left.MatchCondition == right.MatchCondition
+        && left.Items.Count == right.Items.Count
+        && left.Items.Zip(right.Items).All(pair => pair.First switch
+        {
+            ConditionRuleItemDto l when pair.Second is ConditionRuleItemDto r =>
+                l.Field == r.Field && l.Operator == r.Operator && l.Value == r.Value,
+            NestedGroupItemDto l when pair.Second is NestedGroupItemDto r =>
+                l.MatchCondition == r.MatchCondition && l.Items.Count == r.Items.Count,
+            _ => false
+        });
 
     private string GetOperatorLabel(RuleOperator op) => op switch
     {
@@ -49,6 +52,18 @@ public partial class K7RuleEditor : ComponentBase
         RuleOperator.IsNotEmpty => L["OpIsNotEmpty"],
         _ => op.ToString()
     };
+
+    private string GetConditionTitle(int number) => string.Format(L["ConditionTitle"], number);
+
+    private string GetGroupTitle(int number) => string.Format(L["GroupTitle"], number);
+
+    private string GetValuePlaceholder(EditRule rule, RuleFieldDescriptorDto? descriptor)
+    {
+        if (rule.Operator == RuleOperator.InLast)
+            return L["ValuePlaceholderDays"];
+
+        return descriptor?.ValuePlaceholder ?? L["ValuePlaceholderDefault"];
+    }
 
     private void OnMatchConditionChanged(EditGroup group, RuleMatchCondition value)
     {
@@ -146,4 +161,17 @@ public partial class K7RuleEditor : ComponentBase
         public RuleMatchCondition MatchCondition { get; set; }
         public List<EditItem> Items { get; set; } = [];
     }
+
+    private RuleFieldDescriptorDto? GetDescriptor(string fieldName) =>
+        FieldDescriptors.FirstOrDefault(f => f.FieldName == fieldName);
+
+    private static bool IsUnaryOperator(RuleOperator op) =>
+        op is RuleOperator.IsEmpty or RuleOperator.IsNotEmpty;
+
+    private static string GetInputType(RuleFieldDescriptorDto? descriptor) => descriptor?.ValueType switch
+    {
+        RuleFieldValueType.Number => "number",
+        RuleFieldValueType.Date => "date",
+        _ => "text"
+    };
 }

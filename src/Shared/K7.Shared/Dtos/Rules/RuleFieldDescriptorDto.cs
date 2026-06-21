@@ -9,6 +9,7 @@ public sealed record RuleFieldDescriptorDto
     public required RuleFieldValueType ValueType { get; init; }
     public required IReadOnlyList<RuleOperator> Operators { get; init; }
     public IReadOnlyList<RuleFieldOptionDto>? Options { get; init; }
+    public string? ValuePlaceholder { get; init; }
 }
 
 public sealed record RuleFieldOptionDto
@@ -24,4 +25,6 @@ public enum RuleFieldValueType
     Date,
     Boolean,
     Select,
+    Search,
+    Language,
 }

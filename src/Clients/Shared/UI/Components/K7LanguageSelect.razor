@@ -2,7 +2,7 @@
 @using K7.Shared
 @using System.Globalization
 
-<K7Select TValue="string" Value="@Value" ValueChanged="@ValueChanged" Label="@Label" Variant="@Variant" Class="@Class" Disabled="Disabled">
+<K7Select TValue="string" Value="@Value" ValueChanged="@ValueChanged" Label="@Label" Variant="@Variant" Class="@Class" Style="@Style" Disabled="Disabled">
     <SelectedContent>
         @{ var selected = Languages.FirstOrDefault(l => l.Code == Value); }
         @if (selected is not null)
@@ -27,6 +27,7 @@
     [Parameter] public string Label { get; set; } = "";
     [Parameter] public string Variant { get; set; } = "outlined";
     [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
     [Parameter] public bool Disabled { get; set; }
 
     /// <summary>

@@ -46,25 +46,28 @@
   <data name="FieldIsWatched" xml:space="preserve"><value>Watched</value></data>
   <data name="FieldArtist" xml:space="preserve"><value>Artist</value></data>
   <data name="FieldAlbum" xml:space="preserve"><value>Album</value></data>
-  <data name="FieldTrackNumber" xml:space="preserve"><value>Track #</value></data>
-  <data name="FieldDiscNumber" xml:space="preserve"><value>Disc #</value></data>
-  <data name="FieldBpm" xml:space="preserve"><value>BPM</value></data>
-  <data name="FieldDuration" xml:space="preserve"><value>Duration (s)</value></data>
+  <data name="FieldTrackNumber" xml:space="preserve"><value>Track number</value></data>
+  <data name="FieldDiscNumber" xml:space="preserve"><value>Disc number</value></data>
+  <data name="FieldBpm" xml:space="preserve"><value>Beats per minute</value></data>
+  <data name="FieldDuration" xml:space="preserve"><value>Duration in seconds</value></data>
   <data name="FieldOriginalLanguage" xml:space="preserve"><value>Original language</value></data>
+  <data name="FieldActor" xml:space="preserve"><value>Actor</value></data>
+  <data name="BooleanTrue" xml:space="preserve"><value>Yes</value></data>
+  <data name="BooleanFalse" xml:space="preserve"><value>No</value></data>
   <data name="OperatorIs" xml:space="preserve"><value>is</value></data>
   <data name="OperatorIsNot" xml:space="preserve"><value>is not</value></data>
   <data name="OperatorContains" xml:space="preserve"><value>contains</value></data>
-  <data name="OperatorInLastDays" xml:space="preserve"><value>in the last (days)</value></data>
+  <data name="OperatorInLastDays" xml:space="preserve"><value>in the last days</value></data>
   <data name="OperatorIsEmpty" xml:space="preserve"><value>is empty</value></data>
   <data name="OperatorIsNotEmpty" xml:space="preserve"><value>is not empty</value></data>
-  <data name="PlaceholderYear" xml:space="preserve"><value>e.g.: 2024</value></data>
+  <data name="PlaceholderYear" xml:space="preserve"><value>For example: 2024</value></data>
   <data name="PlaceholderRating" xml:space="preserve"><value>0-10</value></data>
-  <data name="PlaceholderCount" xml:space="preserve"><value>e.g.: 5</value></data>
+  <data name="PlaceholderCount" xml:space="preserve"><value>For example: 5</value></data>
   <data name="PlaceholderDays" xml:space="preserve"><value>days</value></data>
   <data name="PlaceholderBoolean" xml:space="preserve"><value>true / false</value></data>
-  <data name="PlaceholderDuration" xml:space="preserve"><value>e.g.: 120</value></data>
+  <data name="PlaceholderDuration" xml:space="preserve"><value>For example: 120</value></data>
   <data name="PlaceholderSeconds" xml:space="preserve"><value>seconds</value></data>
-  <data name="PlaceholderTrackDisc" xml:space="preserve"><value>e.g.: 1</value></data>
+  <data name="PlaceholderTrackDisc" xml:space="preserve"><value>For example: 1</value></data>
   <data name="PlaceholderDefault" xml:space="preserve"><value>value</value></data>
   <data name="OrderByTitle" xml:space="preserve"><value>Title</value></data>
   <data name="OrderByDateAdded" xml:space="preserve"><value>Date added</value></data>
@@ -75,8 +78,8 @@
   <data name="OrderByRandom" xml:space="preserve"><value>Random</value></data>
   <data name="OrderByArtist" xml:space="preserve"><value>Artist</value></data>
   <data name="OrderByAlbum" xml:space="preserve"><value>Album</value></data>
-  <data name="OrderByTrackNumber" xml:space="preserve"><value>Track #</value></data>
-  <data name="OrderByBpm" xml:space="preserve"><value>BPM</value></data>
+  <data name="OrderByTrackNumber" xml:space="preserve"><value>Track number</value></data>
+  <data name="OrderByBpm" xml:space="preserve"><value>Beats per minute</value></data>
   <data name="OrderByDuration" xml:space="preserve"><value>Duration</value></data>
 </root>
 
