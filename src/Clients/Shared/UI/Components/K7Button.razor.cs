@@ -12,10 +12,13 @@ public partial class K7Button
     [Parameter] public string Style { get; set; } = "";
     [Parameter] public string Type { get; set; } = "button";
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Focusable { get; set; } = true;
     [Parameter] public string StartIcon { get; set; } = "";
     [Parameter] public string EndIcon { get; set; } = "";
     [Parameter] public string Href { get; set; } = "";
     [Parameter] public string AriaLabel { get; set; } = "";
     [Parameter] public EventCallback OnClick { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string FocusableClass => Focusable ? "focusable" : "";
 }

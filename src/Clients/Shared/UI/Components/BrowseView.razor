@@ -8,18 +8,20 @@
             @ToolbarContent
         </div>
         <div class="browse-view-toolbar-end">
-            @if (_currentMode is BrowseViewMode.Table && _hasColumnPicker)
-            {
-                <K7IconButton OnClick="OnColumnPickerClicked" AriaLabel="@S["ToggleColumns"]" Icon="@Phosphor.Columns" />
-            }
-            @if (_availableModes.Count > 1)
-            {
-                <K7ButtonGroup TValue="BrowseViewMode"
-                               Options="_modeOptions"
-                               Value="_currentMode"
-                               ValueChanged="SetViewModeAsync"
-                               AriaLabel="@S["ViewMode"]" />
-            }
+            <div class="browse-view-toolbar-actions">
+                @if (_currentMode is BrowseViewMode.Table && _hasColumnPicker)
+                {
+                    <K7IconButton OnClick="OnColumnPickerClicked" AriaLabel="@S["ToggleColumns"]" Icon="@Phosphor.Columns" />
+                }
+                @if (_availableModes.Count > 1)
+                {
+                    <K7ButtonGroup TValue="BrowseViewMode"
+                                   Options="_modeOptions"
+                                   Value="_currentMode"
+                                   ValueChanged="SetViewModeAsync"
+                                   AriaLabel="@S["ViewMode"]" />
+                }
+            </div>
             @if (ToolbarSecondaryContent is not null)
             {
                 @ToolbarSecondaryContent
