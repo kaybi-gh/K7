@@ -22,6 +22,12 @@ public static class GetMediasWithPaginationQueryUriBuilder
                 queryParams.Add(new(nameof(query.LibraryIds), id.ToString()));
         }
 
+        if (query.LibraryGroupIds?.Length > 0)
+        {
+            foreach (var id in query.LibraryGroupIds)
+                queryParams.Add(new(nameof(query.LibraryGroupIds), id.ToString()));
+        }
+
         if (query.Ids?.Length > 0)
         {
             foreach (var id in query.Ids)
@@ -71,6 +77,11 @@ public static class GetMediasWithPaginationQueryUriBuilder
         if (query.Provenance.HasValue)
         {
             queryParams.Add(new(nameof(query.Provenance), query.Provenance.Value.ToString()));
+        }
+
+        if (query.UnwatchedOnly.HasValue)
+        {
+            queryParams.Add(new(nameof(query.UnwatchedOnly), $"{query.UnwatchedOnly.Value}"));
         }
 
         return QueryBuilderHelper.AddQueryParameters(Route, queryParams);

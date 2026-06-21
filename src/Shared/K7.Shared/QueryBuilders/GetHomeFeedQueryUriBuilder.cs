@@ -21,6 +21,12 @@ public static class GetHomeFeedQueryUriBuilder
                 queryParams.Add(new(nameof(query.LibraryIds), id.ToString()));
         }
 
+        if (query.LibraryGroupIds?.Length > 0)
+        {
+            foreach (var id in query.LibraryGroupIds)
+                queryParams.Add(new(nameof(query.LibraryGroupIds), id.ToString()));
+        }
+
         if (query.MediaTypes?.Count > 0)
         {
             foreach (var mt in query.MediaTypes)

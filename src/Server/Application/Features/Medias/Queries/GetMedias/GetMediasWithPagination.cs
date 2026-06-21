@@ -2,6 +2,7 @@
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.QueryExtensions;
+using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
@@ -14,8 +15,9 @@ namespace K7.Server.Application.Features.Medias.Queries.GetMedias;
 public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
 {
     public Guid[]? LibraryIds { get; init; }
+    public Guid[]? LibraryGroupIds { get; init; }
     public Guid[]? Ids { get; init; }
-    // TODO - public bool? Seen { get; init; }
+    public bool? UnwatchedOnly { get; init; }
     public bool? ContinueWatching { get; init; }
     public Guid[]? PersonIds { get; init; }
     public Guid[]? ArtistIds { get; init; }
@@ -52,10 +54,14 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (request.LibraryIds is { Length: > 0 })
             parts.Add($"lib:{string.Join(',', request.LibraryIds.OrderBy(x => x))}");
+        if (request.LibraryGroupIds is { Length: > 0 })
+            parts.Add($"lg:{string.Join(',', request.LibraryGroupIds.OrderBy(x => x))}");
         if (request.Ids is { Length: > 0 })
             parts.Add($"ids:{string.Join(',', request.Ids.OrderBy(x => x))}");
         if (request.ContinueWatching.HasValue)
             parts.Add($"cw:{request.ContinueWatching.Value}");
+        if (request.UnwatchedOnly.HasValue)
+            parts.Add($"uw:{request.UnwatchedOnly.Value}");
         if (request.PersonIds is { Length: > 0 })
             parts.Add($"pid:{string.Join(',', request.PersonIds.OrderBy(x => x))}");
         if (request.Genres is { Length: > 0 })
@@ -77,6 +83,10 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
     private async Task<PaginatedList<BaseMedia>> ExecuteQueryAsync(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
     {
         Guid? userId = currentUser.Id;
+
+        var libraryIds = await LibraryGroupFilterHelper.ResolveLibraryIdsAsync(
+            context, request.LibraryIds, request.LibraryGroupIds, cancellationToken);
+        request = request with { LibraryIds = libraryIds, LibraryGroupIds = null };
 
         var filterQuery = context.Medias
             .AsNoTracking()
@@ -130,7 +140,12 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         var totalCount = await filterQuery.CountAsync(cancellationToken);
 
-        var pageIds = await ApplyOrdering(request.OrderBy, filterQuery, userId)
+        var applicableProviders = await MediaOrderingHelper.ResolveApplicableProvidersAsync(
+            context, request.LibraryIds, cancellationToken);
+        var recentCutoff = DateTime.UtcNow.AddDays(-14);
+        var providerRatings = context.Ratings.OfType<MetadataProviderRating>().AsNoTracking();
+
+        var pageIds = await ApplyOrdering(request.OrderBy, filterQuery, userId, applicableProviders, recentCutoff, providerRatings)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(m => m.Id)
@@ -199,7 +214,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         return new PaginatedList<BaseMedia>(ordered, totalCount, request.PageNumber, request.PageSize);
     }
 
-    private static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)
+    internal static IQueryable<BaseMedia> ApplyFilters(GetMediasWithPaginationQuery request, IQueryable<BaseMedia> query, Guid? userId)
     {
         var includeSeasons = request.MediaTypes?.Contains(MediaType.SerieSeason) == true;
         var includeEpisodes = request.MediaTypes?.Contains(MediaType.SerieEpisode) == true;
@@ -294,10 +309,21 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             query = query.Where(x => x.Title != null && EF.Functions.Like(x.Title.ToLower(), $"%{term}%"));
         }
 
+        if (request.UnwatchedOnly == true && userId.HasValue)
+        {
+            query = query.Where(x => !x.UserMediaStates.Any(s => s.UserId == userId.Value && s.IsCompleted));
+        }
+
         return query;
     }
 
-    private static IOrderedQueryable<BaseMedia> ApplyOrdering(HashSet<MediaOrderingOption>? orderBy, IQueryable<BaseMedia> queryable, Guid? userId)
+    private static IOrderedQueryable<BaseMedia> ApplyOrdering(
+        HashSet<MediaOrderingOption>? orderBy,
+        IQueryable<BaseMedia> queryable,
+        Guid? userId,
+        HashSet<MetadataProvider> applicableProviders,
+        DateTime recentCutoff,
+        IQueryable<MetadataProviderRating> providerRatings)
     {
         ArgumentException.ThrowIfNullOrEmpty(nameof(orderBy));
         IOrderedQueryable<BaseMedia>? orderedQueryable = null;
@@ -383,6 +409,14 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                         .FirstOrDefault()),
                 MediaOrderingOption.PopularityAsc => throw new NotImplementedException(),
                 MediaOrderingOption.PopularityDesc => throw new NotImplementedException(),
+                MediaOrderingOption.TrendingDesc => MediaOrderingHelper.ApplyTrendingOrder(
+                    queryable, orderedQueryable, descending: true, applicableProviders, recentCutoff, providerRatings),
+                MediaOrderingOption.TrendingAsc => MediaOrderingHelper.ApplyTrendingOrder(
+                    queryable, orderedQueryable, descending: false, applicableProviders, recentCutoff, providerRatings),
+                MediaOrderingOption.ProviderRatingDesc => MediaOrderingHelper.ApplyProviderRatingOrder(
+                    queryable, orderedQueryable, descending: true, applicableProviders, providerRatings),
+                MediaOrderingOption.ProviderRatingAsc => MediaOrderingHelper.ApplyProviderRatingOrder(
+                    queryable, orderedQueryable, descending: false, applicableProviders, providerRatings),
                 MediaOrderingOption.ReleaseDateAsc => orderedQueryable == null ?
                     queryable.OrderBy(x => x.ReleaseDate)
                     : orderedQueryable.ThenBy(x => x.ReleaseDate),
