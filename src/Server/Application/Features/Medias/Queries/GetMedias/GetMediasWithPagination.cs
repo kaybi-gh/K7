@@ -3,12 +3,15 @@ using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Features.Medias.Queries.Common;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Rules;
 using Microsoft.Extensions.Caching.Memory;
+using System.Text.Json;
 
 namespace K7.Server.Application.Features.Medias.Queries.GetMedias;
 
@@ -30,25 +33,37 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
     public required int PageSize { get; init; } = 10;
 }
 
+public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<BaseMedia>>;
+
 public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator)
-    : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>
+    : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>,
+      IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
 
-    public async Task<PaginatedList<BaseMedia>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
+    public Task<PaginatedList<BaseMedia>> Handle(QueryMediasQuery request, CancellationToken cancellationToken) =>
+        HandleInternal(MapQueryRequest(request.Request), request.Request.Filter, cancellationToken);
+
+    public Task<PaginatedList<BaseMedia>> Handle(GetMediasWithPaginationQuery request, CancellationToken cancellationToken) =>
+        HandleInternal(request, filter: null, cancellationToken);
+
+    private async Task<PaginatedList<BaseMedia>> HandleInternal(
+        GetMediasWithPaginationQuery request,
+        RuleGroupDto? filter,
+        CancellationToken cancellationToken)
     {
-        var cacheKey = BuildCacheKey(request, currentUser.Id);
+        var cacheKey = BuildCacheKey(request, currentUser.Id, filter);
         var version = cacheInvalidator.Version;
 
         if (cache.TryGetValue(cacheKey, out (long Version, PaginatedList<BaseMedia> Result) cached) && cached.Version == version)
             return cached.Result;
 
-        var result = await ExecuteQueryAsync(request, cancellationToken);
+        var result = await ExecuteQueryAsync(request, filter, cancellationToken);
         cache.Set(cacheKey, (version, result), CacheDuration);
         return result;
     }
 
-    private static string BuildCacheKey(GetMediasWithPaginationQuery request, Guid? userId)
+    private static string BuildCacheKey(GetMediasWithPaginationQuery request, Guid? userId, RuleGroupDto? filter)
     {
         var parts = new List<string> { "medias", $"u:{userId}" };
 
@@ -74,13 +89,18 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             parts.Add($"prov:{request.Provenance.Value}");
         if (!string.IsNullOrWhiteSpace(request.SearchText))
             parts.Add($"st:{request.SearchText.Trim()}");
+        if (filter is { Items.Count: > 0 })
+            parts.Add($"f:{JsonSerializer.Serialize(filter)}");
         parts.Add($"p:{request.PageNumber}");
         parts.Add($"ps:{request.PageSize}");
 
         return string.Join('|', parts);
     }
 
-    private async Task<PaginatedList<BaseMedia>> ExecuteQueryAsync(GetMediasWithPaginationQuery request, CancellationToken cancellationToken)
+    private async Task<PaginatedList<BaseMedia>> ExecuteQueryAsync(
+        GetMediasWithPaginationQuery request,
+        RuleGroupDto? filter,
+        CancellationToken cancellationToken)
     {
         Guid? userId = currentUser.Id;
 
@@ -93,6 +113,9 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .AsQueryable();
 
         filterQuery = ApplyFilters(request, filterQuery, userId);
+
+        if (filter is { Items.Count: > 0 } filterDto)
+            filterQuery = MediaRuleEvaluator.ApplyFilter(filterQuery, filterDto.ToRuleGroup(), userId);
 
         if (userId.HasValue)
         {
@@ -318,6 +341,31 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         }
 
         return query;
+    }
+
+    private static GetMediasWithPaginationQuery MapQueryRequest(QueryMediasRequest request) => new()
+    {
+        LibraryIds = request.LibraryIds,
+        LibraryGroupIds = request.LibraryGroupIds,
+        Ids = request.Ids,
+        MediaTypes = ToEnumHashSet<MediaType>(request.MediaTypes),
+        OrderBy = ToEnumHashSet<MediaOrderingOption>(request.OrderBy),
+        Provenance = request.Provenance,
+        SearchText = request.SearchText,
+        PageNumber = request.PageNumber,
+        PageSize = request.PageSize
+    };
+
+    private static EnumHashSetQueryParam<TEnum>? ToEnumHashSet<TEnum>(HashSet<TEnum>? values)
+        where TEnum : struct, Enum
+    {
+        if (values is not { Count: > 0 })
+            return null;
+
+        var result = new EnumHashSetQueryParam<TEnum>();
+        foreach (var value in values)
+            result.Add(value);
+        return result;
     }
 
     private static IOrderedQueryable<BaseMedia> ApplyOrdering(

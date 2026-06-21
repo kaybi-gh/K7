@@ -101,10 +101,36 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteMediaDto>>(requestUri, _serializerOptions, cancellationToken);
     }
 
+    public async Task<PaginatedListDto<LiteMediaDto>?> QueryMediasAsync(QueryMediasRequest request, CancellationToken cancellationToken = default)
+    {
+        using var httpRequest = new HttpRequestMessage(new HttpMethod("QUERY"), "api/medias")
+        {
+            Content = JsonContent.Create(request, options: _serializerOptions)
+        };
+
+        using var response = await HttpClient.SendAsync(httpRequest, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<PaginatedListDto<LiteMediaDto>>(_serializerOptions, cancellationToken);
+    }
+
     public async Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default)
     {
         var requestUri = GetMediaGenresQueryUriBuilder.Build(query);
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<MediaGenreDto>>(requestUri, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<MediaBrowseFacetsDto?> GetMediaBrowseFacetsAsync(GetMediaBrowseFacetsQuery query, CancellationToken cancellationToken = default)
+    {
+        var requestUri = GetMediaBrowseFacetsQueryUriBuilder.Build(query);
+        return await HttpClient.GetFromJsonAsync<MediaBrowseFacetsDto>(requestUri, _serializerOptions, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>?> GetMediaBrowseFilterSuggestionsAsync(
+        GetMediaBrowseFilterSuggestionsQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        var requestUri = GetMediaBrowseFilterSuggestionsQueryUriBuilder.Build(query);
+        return await HttpClient.GetFromJsonAsync<IReadOnlyList<string>>(requestUri, _serializerOptions, cancellationToken);
     }
 
     public async Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default)

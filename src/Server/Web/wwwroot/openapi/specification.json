@@ -2917,6 +2917,53 @@
         }
       }
     },
+    "/api/medias/browse-facets": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMediaBrowseFacets",
+        "parameters": [
+          {
+            "name": "LibraryIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "LibraryGroupIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "MediaTypes",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/genres": {
       "get": {
         "tags": [
