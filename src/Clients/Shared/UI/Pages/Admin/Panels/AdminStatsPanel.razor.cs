@@ -49,6 +49,14 @@ public partial class AdminStatsPanel
         new("SerieEpisode", Label: "Series")
     ];
 
+    private string TopItemsLabel => _selectedMediaType switch
+    {
+        "MusicTrack" => L["TopTracks"],
+        "Movie" => L["TopMovies"],
+        "SerieEpisode" => L["TopEpisodes"],
+        _ => L["TopItems"]
+    };
+
     protected override async Task OnInitializedAsync()
     {
         try

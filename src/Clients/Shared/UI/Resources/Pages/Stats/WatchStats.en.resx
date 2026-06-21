@@ -29,13 +29,18 @@
   <data name="Movies" xml:space="preserve"><value>Movies</value></data>
   <data name="TVShows" xml:space="preserve"><value>TV Shows</value></data>
   <data name="NoData" xml:space="preserve"><value>No data available</value></data>
-  <data name="WatchTime" xml:space="preserve"><value>Watch Time</value></data>
-  <data name="TotalPlays" xml:space="preserve"><value>Total Plays</value></data>
-  <data name="UniqueItems" xml:space="preserve"><value>Unique Items</value></data>
+  <data name="WatchTime" xml:space="preserve"><value>Watch time</value></data>
+  <data name="ListeningTime" xml:space="preserve"><value>Listening time</value></data>
+  <data name="TotalPlays" xml:space="preserve"><value>Total plays</value></data>
+  <data name="UniqueItems" xml:space="preserve"><value>Unique items</value></data>
+  <data name="UniqueTracks" xml:space="preserve"><value>Unique tracks</value></data>
   <data name="PlaysOverTime" xml:space="preserve"><value>Plays Over Time</value></data>
   <data name="ByHourOfDay" xml:space="preserve"><value>By Hour of Day</value></data>
   <data name="ByDayOfWeek" xml:space="preserve"><value>By Day of Week</value></data>
-  <data name="TopItems" xml:space="preserve"><value>Top Items</value></data>
+  <data name="TopItems" xml:space="preserve"><value>Top items</value></data>
+  <data name="TopTracks" xml:space="preserve"><value>Top tracks</value></data>
+  <data name="TopMovies" xml:space="preserve"><value>Top movies</value></data>
+  <data name="TopEpisodes" xml:space="preserve"><value>Top episodes</value></data>
   <data name="TopArtists" xml:space="preserve"><value>Top Artists</value></data>
   <data name="TopAlbums" xml:space="preserve"><value>Top Albums</value></data>
   <data name="TopShows" xml:space="preserve"><value>Top Shows</value></data>
@@ -50,5 +55,9 @@
   <data name="Resolutions" xml:space="preserve"><value>Resolutions</value></data>
   <data name="AudioLanguages" xml:space="preserve"><value>Audio Languages</value></data>
   <data name="SubtitleLanguages" xml:space="preserve"><value>Subtitle Languages</value></data>
-  <data name="TranscodeReasons" xml:space="preserve"><value>Transcode Reasons</value></data>
+  <data name="TranscodeReasons" xml:space="preserve"><value>Transcode reasons</value></data>
+  <data name="WeekShort" xml:space="preserve"><value>Wk</value></data>
+  <data name="MonthShort" xml:space="preserve"><value>Mo</value></data>
+  <data name="YearShort" xml:space="preserve"><value>Yr</value></data>
+  <data name="CustomShort" xml:space="preserve"><value>Custom</value></data>
 </root>

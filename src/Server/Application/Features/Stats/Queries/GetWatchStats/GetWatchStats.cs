@@ -111,54 +111,41 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         if (request.MediaType is null or MediaType.MusicTrack)
         {
-            var musicStatesBase = context.UserMediaStates
-                .Where(s => s.PlayCount > 0);
-
-            if (targetUserId is not null)
-                musicStatesBase = musicStatesBase.Where(s => s.UserId == targetUserId.Value);
-
-            var musicStates = musicStatesBase
-                .Join(
-                    context.Medias.Where(m => m.Type == MediaType.MusicTrack),
-                    s => s.MediaId,
-                    m => m.Id,
-                    (s, m) => new { s.MediaId, s.PlayCount, Media = m });
-
-            topArtists = await musicStates
+            topArtists = await sessionsWithMedia
                 .Join(
                     context.Medias.OfType<MusicTrack>(),
                     s => s.MediaId,
                     t => t.Id,
-                    (s, t) => new { s.PlayCount, ArtistId = t.ArtistId ?? t.Album!.ArtistId, ArtistTitle = t.Artist != null ? t.Artist.Title : t.Album!.Artist!.Title })
+                    (s, t) => new { s.ReferenceId, ArtistId = t.ArtistId ?? t.Album!.ArtistId, ArtistTitle = t.Artist != null ? t.Artist.Title : t.Album!.Artist!.Title })
                 .Where(x => x.ArtistId != null)
                 .GroupBy(x => new { x.ArtistId, x.ArtistTitle })
                 .Select(g => new TopItemDto
                 {
                     Id = g.Key.ArtistId!.Value,
                     Name = g.Key.ArtistTitle ?? "Unknown artist",
-                    PlayCount = g.Sum(x => x.PlayCount)
+                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.PlayCount)
                 .Take(10)
                 .ToListAsync(cancellationToken);
 
-            topAlbums = await musicStates
+            topAlbums = await sessionsWithMedia
                 .Join(
                     context.Medias.OfType<MusicTrack>(),
                     s => s.MediaId,
                     t => t.Id,
-                    (s, t) => new { s.PlayCount, t.AlbumId })
+                    (s, t) => new { s.ReferenceId, t.AlbumId })
                 .Join(
                     context.Medias.OfType<MusicAlbum>(),
                     x => x.AlbumId,
                     a => a.Id,
-                    (x, a) => new { x.PlayCount, a.Id, a.Title })
+                    (x, a) => new { x.ReferenceId, a.Id, a.Title })
                 .GroupBy(x => new { x.Id, x.Title })
                 .Select(g => new TopItemDto
                 {
                     Id = g.Key.Id,
                     Name = g.Key.Title ?? "Unknown album",
-                    PlayCount = g.Sum(x => x.PlayCount)
+                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.PlayCount)
                 .Take(10)
@@ -167,29 +154,23 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
         if (request.MediaType is null or MediaType.SerieEpisode)
         {
-            var showStatesBase = context.UserMediaStates
-                .Where(s => s.PlayCount > 0);
-
-            if (targetUserId is not null)
-                showStatesBase = showStatesBase.Where(s => s.UserId == targetUserId.Value);
-
-            topShows = await showStatesBase
+            topShows = await sessionsWithMedia
                 .Join(
                     context.Medias.OfType<SerieEpisode>(),
                     s => s.MediaId,
                     e => e.Id,
-                    (s, e) => new { s.PlayCount, e.SerieId })
+                    (s, e) => new { s.ReferenceId, e.SerieId })
                 .Join(
                     context.Medias.OfType<Serie>(),
                     x => x.SerieId,
                     se => se.Id,
-                    (x, se) => new { x.PlayCount, se.Id, se.Title })
+                    (x, se) => new { x.ReferenceId, se.Id, se.Title })
                 .GroupBy(x => new { x.Id, x.Title })
                 .Select(g => new TopItemDto
                 {
                     Id = g.Key.Id,
                     Name = g.Key.Title ?? "Unknown show",
-                    PlayCount = g.Sum(x => x.PlayCount)
+                    PlayCount = g.Select(x => x.ReferenceId).Distinct().Count()
                 })
                 .OrderByDescending(x => x.PlayCount)
                 .Take(10)
@@ -213,7 +194,9 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
             .Take(10)
             .ToListAsync(cancellationToken);
 
-        var playbackDetails = await BuildPlaybackDetailsStatsAsync(sessionsWithMedia, cancellationToken);
+        var playbackDetails = request.MediaType == MediaType.MusicTrack
+            ? null
+            : await BuildPlaybackDetailsStatsAsync(sessionsWithMedia, cancellationToken);
 
         return new WatchStatsDto
         {

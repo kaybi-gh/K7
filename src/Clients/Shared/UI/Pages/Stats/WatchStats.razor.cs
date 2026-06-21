@@ -1,11 +1,20 @@
 ﻿using ApexCharts;
 using K7.Clients.Shared.UI.Components;
 using K7.Shared.Dtos;
+using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Stats;
 
 public partial class WatchStats : IDisposable
 {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "type")]
+    public string? Type { get; set; }
+
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? Tab { get; set; }
+
     private WatchStatsDto? _stats;
     private bool _loading = true;
     private string _selectedPeriod = "month";
@@ -30,27 +39,60 @@ public partial class WatchStats : IDisposable
     private ApexChartOptions<ChartDataPoint> _donutChartOptionsDecision = CreateDonutChartOptions();
     private ApexChartOptions<ChartDataPoint> _donutChartOptionsResolution = CreateDonutChartOptions();
 
-    private readonly List<ButtonGroupOption<string>> _periodOptions =
-    [
-        new("week", Label: "Sem."),
-        new("month", Label: "Mois"),
-        new("year", Label: "An"),
-        new("all", Label: "Tout"),
-        new("custom", Label: "Perso.")
-    ];
+    private List<ButtonGroupOption<string>> _periodOptions = [];
+    private List<ButtonGroupOption<string>> _mediaTypeOptions = [];
 
-    private readonly List<ButtonGroupOption<string>> _mediaTypeOptions =
-    [
-        new("", Label: "Tous"),
-        new("MusicTrack", Label: "Musique"),
-        new("Movie", Label: "Films"),
-        new("SerieEpisode", Label: "Series")
-    ];
+    private bool IsMusicOnly => _selectedMediaType == "MusicTrack";
+    private bool IsVideoOnly => _selectedMediaType is "Movie" or "SerieEpisode";
+    private bool ShowMusicRankings => _selectedMediaType is "" or "MusicTrack";
+    private bool ShowShowRankings => _selectedMediaType is "" or "SerieEpisode";
+
+    private string TopItemsLabel => _selectedMediaType switch
+    {
+        "MusicTrack" => L["TopTracks"],
+        "Movie" => L["TopMovies"],
+        "SerieEpisode" => L["TopEpisodes"],
+        _ => L["TopItems"]
+    };
+
+    protected override void OnInitialized()
+    {
+        _periodOptions =
+        [
+            new("week", Label: L["WeekShort"]),
+            new("month", Label: L["MonthShort"]),
+            new("year", Label: L["YearShort"]),
+            new("all", Label: L["AllTime"]),
+            new("custom", Label: L["CustomShort"])
+        ];
+
+        _mediaTypeOptions =
+        [
+            new("", Label: L["All"]),
+            new("MusicTrack", Label: L["Music"]),
+            new("Movie", Label: L["Movies"]),
+            new("SerieEpisode", Label: L["TVShows"])
+        ];
+
+        _selectedMediaType = ResolveInitialMediaType();
+    }
 
     protected override async Task OnInitializedAsync()
     {
         K7HubClient.ProgressUpdated += OnProgressUpdated;
         await FetchStatsAsync();
+    }
+
+    private string ResolveInitialMediaType()
+    {
+        if (Tab == "music")
+            return "MusicTrack";
+
+        return Type switch
+        {
+            "MusicTrack" or "Movie" or "SerieEpisode" => Type,
+            _ => ""
+        };
     }
 
     private void OnProgressUpdated(Guid mediaId, double progress, bool isCompleted)
@@ -78,7 +120,19 @@ public partial class WatchStats : IDisposable
     private async Task OnMediaTypeChanged(string mediaType)
     {
         _selectedMediaType = mediaType ?? "";
+        UpdateMediaTypeUrl(_selectedMediaType);
         await FetchStatsAsync();
+    }
+
+    private void UpdateMediaTypeUrl(string mediaType)
+    {
+        var uri = Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["type"] = string.IsNullOrEmpty(mediaType) ? null : mediaType,
+            ["tab"] = null
+        });
+
+        Navigation.NavigateTo(uri, replace: true);
     }
 
     private async Task OnDateRangeChanged((DateOnly? From, DateOnly? To) range)

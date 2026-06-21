@@ -40,6 +40,9 @@
   <data name="TopGenres" xml:space="preserve"><value>Top genres</value></data>
   <data name="TopDevices" xml:space="preserve"><value>Top devices</value></data>
   <data name="TopItems" xml:space="preserve"><value>Top items</value></data>
+  <data name="TopTracks" xml:space="preserve"><value>Top tracks</value></data>
+  <data name="TopMovies" xml:space="preserve"><value>Top movies</value></data>
+  <data name="TopEpisodes" xml:space="preserve"><value>Top episodes</value></data>
   <data name="TopArtists" xml:space="preserve"><value>Top artists</value></data>
   <data name="TopAlbums" xml:space="preserve"><value>Top albums</value></data>
   <data name="TopShows" xml:space="preserve"><value>Top shows</value></data>

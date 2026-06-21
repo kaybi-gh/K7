@@ -1,24 +1,9 @@
 @page "/my-space/stats"
 @layout MySpaceLayout
-@using K7.Clients.Shared.UI.Components.Stats
 @using K7.Clients.Shared.UI.Pages.Stats
 @inject IStringLocalizer<MySpaceStatsPage> L
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 <div class="page-scrollable my-space-stats-page">
-    <K7ButtonGroup TValue="string"
-                   Options="_tabOptions"
-                   Value="_activeTab"
-                   ValueChanged="OnTabChanged"
-                   AriaLabel="@L["StatsTabs"]"
-                   Class="my-space-stats-tabs" />
-
-    @if (_activeTab == "music")
-    {
-        <MusicStatsPanel />
-    }
-    else
-    {
-        <WatchStats />
-    }
+    <WatchStats />
 </div>

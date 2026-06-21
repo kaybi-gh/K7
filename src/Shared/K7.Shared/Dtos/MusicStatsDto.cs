@@ -1,16 +1,5 @@
 namespace K7.Shared.Dtos;
 
-public sealed record MusicStatsDto
-{
-    public double TotalListeningHours { get; init; }
-    public int TotalCompletedPlays { get; init; }
-    public int UniqueTracksPlayed { get; init; }
-    public IReadOnlyList<TopItemDto> TopArtists { get; init; } = [];
-    public IReadOnlyList<TopItemDto> TopAlbums { get; init; } = [];
-    public IReadOnlyList<TopItemDto> TopTracks { get; init; } = [];
-    public IReadOnlyList<GenreStatDto> TopGenres { get; init; } = [];
-}
-
 public sealed record TopItemDto
 {
     public Guid Id { get; init; }
