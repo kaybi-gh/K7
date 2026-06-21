@@ -20,7 +20,7 @@
   outline-offset: 2px;
   line-height: 1;
 }
-.k7-btn:focus-visible { outline: 2px solid var(--color-accent); }
+/* .k7-btn:focus-visible { outline: 2px solid var(--color-accent); } */
 .k7-btn:disabled,
 .k7-btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 
@@ -81,7 +81,7 @@
 .k7-icon-btn:hover { background: var(--color-surface-hover); }
 .k7-icon-btn:disabled,
 .k7-icon-btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
-.k7-icon-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+/* .k7-icon-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; } */
 .k7-icon-btn--sm { width: 32px; height: 32px; font-size: 1rem; }
 .k7-icon-btn--lg { width: 48px; height: 48px; font-size: 1.5rem; }
 .k7-icon-btn--primary { color: var(--color-accent); }
@@ -205,11 +205,18 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  overflow: hidden;
   background: var(--color-surface-2);
   color: var(--color-text-muted);
   font-size: 1rem;
   font-weight: 600;
   flex-shrink: 0;
+}
+.k7-avatar > .k7-img-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .k7-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .k7-avatar__letter { text-transform: uppercase; user-select: none; }
@@ -378,10 +385,10 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
 .k7-switch-wrap input:disabled + .k7-switch-track { opacity: 0.45; cursor: not-allowed; }
 .k7-switch-wrap:has(input:disabled) { cursor: not-allowed; }
 .k7-switch-wrap:focus-visible { box-shadow: none; outline: none; }
-.k7-switch-wrap:focus-visible .k7-switch-track { box-shadow: var(--focus-ring); outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.k7-switch-wrap:has(input:checked):focus-visible .k7-switch-track { outline-color: #fff; box-shadow: var(--focus-ring), 0 0 0 4px rgba(0,0,0,.35); }
-html.platform-tv .k7-switch-wrap:focus-visible .k7-switch-track { outline: 3px solid var(--color-accent); outline-offset: 3px; box-shadow: var(--focus-ring), 0 0 0 6px rgba(0, 0, 0, 0.35); }
-html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-track { outline-color: #fff; }
+.k7-switch-wrap:focus-visible .k7-switch-track { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+/* .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-track { outline-color: #fff; box-shadow: var(--focus-ring), 0 0 0 4px rgba(0,0,0,.35); } */
+/* html.platform-tv .k7-switch-wrap:focus-visible .k7-switch-track { outline: 3px solid var(--color-accent); outline-offset: 3px; box-shadow: var(--focus-ring), 0 0 0 6px rgba(0, 0, 0, 0.35); }
+html.platform-tv .k7-switch-wrap:has(input:checked):focus-visible .k7-switch-track { outline-color: #fff; } */
 
 /* slider */
 .k7-slider-wrap { display: flex; align-items: center; gap: var(--space-2); width: 100%; }
@@ -684,6 +691,10 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
   cursor: pointer;
 }
 .k7-menu-activator-inner > * { pointer-events: none; }
+.k7-menu-activator-inner:hover > .k7-icon-btn,
+.k7-menu.k7-menu--open > .k7-menu-activator > .k7-menu-activator-inner > .k7-icon-btn {
+  background: var(--color-surface-hover);
+}
 .k7-menu-dropdown {
   position: fixed;
   z-index: var(--z-dropdown, 1000);
