@@ -7,8 +7,8 @@
 
 .explore-groups {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+    gap: var(--space-5);
 }
 
 @media (max-width: 599.98px) {
@@ -18,13 +18,6 @@
 
     .explore-groups {
         grid-template-columns: 1fr;
-    }
-}
-
-@media (min-width: 900px) {
-    .explore-groups {
-        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-        gap: var(--space-5);
     }
 }
 
