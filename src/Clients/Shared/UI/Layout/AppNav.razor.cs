@@ -212,6 +212,11 @@ public partial class AppNav : IDisposable
         SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
         SyncPlay.ChatMessageReceived -= OnChatMessageReceived;
         SyncPlay.ErrorReceived -= OnSyncPlayErrorReceived;
+        if (_profileMenuOpen)
+        {
+            try { _ = SpatialNav.PopLayerAsync(_profilePopoverRef); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        }
         _profileCloseRef?.Dispose();
     }
 
