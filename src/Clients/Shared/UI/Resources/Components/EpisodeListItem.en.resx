@@ -21,4 +21,5 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Download" xml:space="preserve"><value>Download</value></data>
   <data name="MarkAsWatched" xml:space="preserve"><value>Mark as watched</value></data>
+  <data name="MarkAsUnwatched" xml:space="preserve"><value>Mark as unwatched</value></data>
 </root>

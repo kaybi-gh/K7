@@ -32,4 +32,6 @@
   <data name="DetectIntrosOutros" xml:space="preserve"><value>Détecter les intros/outros</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
   <data name="ChooseSeason" xml:space="preserve"><value>Choisir une saison</value></data>
+  <data name="MarkSeasonWatched" xml:space="preserve"><value>Marquer la saison comme vue</value></data>
+  <data name="MarkSeasonUnwatched" xml:space="preserve"><value>Marquer la saison comme non vue</value></data>
 </root>

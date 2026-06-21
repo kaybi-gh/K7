@@ -30,4 +30,6 @@
   <data name="Overview" xml:space="preserve"><value>Overview</value></data>
   <data name="SimilarMedia" xml:space="preserve"><value>You might also like</value></data>
   <data name="Trailer" xml:space="preserve"><value>Trailer</value></data>
+  <data name="MarkSerieWatched" xml:space="preserve"><value>Mark series as watched</value></data>
+  <data name="MarkSerieUnwatched" xml:space="preserve"><value>Mark series as unwatched</value></data>
 </root>

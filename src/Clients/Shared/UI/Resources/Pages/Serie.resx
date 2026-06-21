@@ -30,4 +30,6 @@
   <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
   <data name="SimilarMedia" xml:space="preserve"><value>Vous aimerez aussi</value></data>
   <data name="Trailer" xml:space="preserve"><value>Bande-annonce</value></data>
+  <data name="MarkSerieWatched" xml:space="preserve"><value>Marquer la série comme vue</value></data>
+  <data name="MarkSerieUnwatched" xml:space="preserve"><value>Marquer la série comme non vue</value></data>
 </root>

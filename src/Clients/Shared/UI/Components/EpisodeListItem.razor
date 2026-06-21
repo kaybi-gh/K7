@@ -1,6 +1,7 @@
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos.Entities.Medias
 @using Microsoft.AspNetCore.Components.Authorization
+@inject IStringLocalizer<SharedResource> S
 
 <div class="episode-card">
     <a class="episode-card-link focusable" href="@Href">
@@ -20,7 +21,7 @@
                     <K7Icon Icon="@Phosphor.ImageBroken" Style="font-size: 24px; opacity: 0.3;" />
                 </div>
             }
-            @if (Episode.UserState is { ProgressPercentage: > 0 and < 100 })
+            @if (Episode.UserState is { ProgressPercentage: >= 1 and < 100 })
             {
                 <div class="episode-card-progress">
                     <K7ProgressBar Value="@Episode.UserState.ProgressPercentage" />
@@ -29,7 +30,7 @@
             @if (Episode.UserState?.IsCompleted == true)
             {
                 <div class="episode-card-watched">
-                    <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
+                    <K7Icon Size="lg" Color="success" Icon="@Phosphor.Fill.CheckCircle" />
                 </div>
             }
         </div>
@@ -70,7 +71,9 @@
                     <K7MenuItem Icon="download-simple" OnClick="NavigateToDetailAsync">@L["Download"]</K7MenuItem>
                 }
                 <AuthorizeView Roles="User,Administrator">
-                    <K7MenuItem Icon="check-circle">@L["MarkAsWatched"]</K7MenuItem>
+                    <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
+                        @(Episode.UserState?.IsCompleted == true ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
+                    </K7MenuItem>
                 </AuthorizeView>
             </ChildContent>
         </K7Menu>

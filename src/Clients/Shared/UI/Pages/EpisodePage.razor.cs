@@ -1,7 +1,12 @@
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
+using K7.Shared.Enums;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages;
@@ -18,6 +23,9 @@ public partial class EpisodePage
     private string? _dominantColor;
     private string _pageTitle = "";
     private bool _loading = true;
+    private bool _canExclude;
+    private bool _canSetWatchState;
+    private bool _isAdmin;
     private LiteSerieEpisodeDto? _previousEpisode;
     private LiteSerieEpisodeDto? _nextEpisode;
     private List<LiteSerieEpisodeDto> _moreEpisodes = [];
@@ -28,6 +36,9 @@ public partial class EpisodePage
 
     protected override async Task OnParametersSetAsync()
     {
+        (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
+        _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+
         _loading = true;
         StateHasChanged();
 
@@ -198,5 +209,107 @@ public partial class EpisodePage
         return apiClient.GetAbsoluteUri(
             episode.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
                 ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
+    }
+
+    private async Task ReloadEpisodeAsync()
+    {
+        if (_episode is null)
+            return;
+
+        var media = await k7ServerService.GetMediaAsync(_episode.Id);
+        _episode = media as SerieEpisodeDto;
+        _indexedFile = _episode?.IndexedFiles?.FirstOrDefault();
+        StateHasChanged();
+    }
+
+    private async Task ToggleWatchStateAsync()
+    {
+        if (_episode is null)
+            return;
+
+        var watched = _episode.UserState?.IsCompleted != true;
+        var success = await WatchStateActions.ApplyAsync(
+            k7ServerService,
+            CacheStore,
+            DialogService,
+            Snackbar,
+            S,
+            _episode.Id,
+            watched,
+            WatchStateScope.Item);
+
+        if (success)
+            await ReloadEpisodeAsync();
+    }
+
+    private async Task ExcludeForSelfAsync()
+    {
+        if (_episode is null)
+            return;
+
+        var model = new MediaCardViewModel
+        {
+            Id = _episode.Id.ToString(),
+            Title = _episode.Title ?? $"E{_episode.EpisodeNumber}"
+        };
+
+        await MediaCardExcludeActions.ExcludeForSelfAsync(model, UserAdminService, Snackbar, S);
+    }
+
+    private async Task ExcludeForOthersAsync()
+    {
+        if (_episode is null)
+            return;
+
+        var model = new MediaCardViewModel
+        {
+            Id = _episode.Id.ToString(),
+            Title = _episode.Title ?? $"E{_episode.EpisodeNumber}"
+        };
+
+        await MediaCardExcludeActions.ExcludeForOthersAsync(model, DialogService, Snackbar, S);
+    }
+
+    private async Task ExcludeCarouselEpisodeForSelfAsync(LiteSerieEpisodeDto episode)
+    {
+        var model = new MediaCardViewModel
+        {
+            Id = episode.Id.ToString(),
+            Title = episode.Title ?? $"E{episode.EpisodeNumber}"
+        };
+
+        var excluded = await MediaCardExcludeActions.ExcludeForSelfAsync(model, UserAdminService, Snackbar, S);
+        if (excluded)
+        {
+            _moreEpisodes.RemoveAll(e => e.Id == episode.Id);
+            StateHasChanged();
+        }
+    }
+
+    private Task ExcludeCarouselEpisodeForOthersAsync(LiteSerieEpisodeDto episode)
+    {
+        var model = new MediaCardViewModel
+        {
+            Id = episode.Id.ToString(),
+            Title = episode.Title ?? $"E{episode.EpisodeNumber}"
+        };
+
+        return MediaCardExcludeActions.ExcludeForOthersAsync(model, DialogService, Snackbar, S);
+    }
+
+    private async Task ReloadMoreEpisodesAsync()
+    {
+        if (_episode is null)
+            return;
+
+        var seasonMedia = await k7ServerService.GetMediaAsync(_episode.SeasonId);
+        if (seasonMedia is not SerieSeasonDto seasonDto)
+            return;
+
+        _moreEpisodes = (seasonDto.Episodes ?? [])
+            .OrderBy(e => e.EpisodeNumber)
+            .Where(e => e.EpisodeNumber != EpisodeNumber)
+            .ToList();
+        StateHasChanged();
     }
 }

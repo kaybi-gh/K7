@@ -2,6 +2,7 @@ using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
+using K7.Shared.Enums;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
@@ -334,6 +335,75 @@ public partial class SerieSeason
                 _season = season;
                 StateHasChanged();
             }
+        }
+    }
+
+    private async Task MarkSeasonWatchedAsync()
+    {
+        if (_season is null)
+            return;
+
+        var success = await WatchStateActions.ApplyAsync(
+            k7ServerService,
+            CacheStore,
+            DialogService,
+            Snackbar,
+            S,
+            _season.Id,
+            watched: true,
+            WatchStateScope.Season,
+            _episodes.Count);
+
+        if (success)
+            await ReloadSeasonAsync();
+    }
+
+    private async Task MarkSeasonUnwatchedAsync()
+    {
+        if (_season is null)
+            return;
+
+        var success = await WatchStateActions.ApplyAsync(
+            k7ServerService,
+            CacheStore,
+            DialogService,
+            Snackbar,
+            S,
+            _season.Id,
+            watched: false,
+            WatchStateScope.Season,
+            _episodes.Count);
+
+        if (success)
+            await ReloadSeasonAsync();
+    }
+
+    private async Task OnEpisodeWatchStateChangedAsync(LiteSerieEpisodeDto episode)
+    {
+        var media = await k7ServerService.GetMediaAsync(episode.Id);
+        if (media is SerieEpisodeDto updated)
+        {
+            var index = _episodes.FindIndex(e => e.Id == episode.Id);
+            if (index >= 0)
+                _episodes[index] = _episodes[index] with { UserState = updated.UserState };
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ReloadSeasonAsync()
+    {
+        if (_season is null)
+            return;
+
+        var media = await k7ServerService.GetMediaAsync(_season.Id);
+        if (media is SerieSeasonDto season)
+        {
+            _season = season;
+            _episodes = (season.Episodes ?? [])
+                .OrderBy(e => e.EpisodeNumber)
+                .ToList();
+            StateHasChanged();
         }
     }
 }

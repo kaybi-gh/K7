@@ -51,14 +51,14 @@ else
                 @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
                     <div class="media-card-watched">
-                        <K7Icon Size="md" Color="success" Icon="@Phosphor.Fill.CheckCircle" />
+                        <K7Icon Size="lg" Color="success" Icon="@Phosphor.Fill.CheckCircle" />
                     </div>
                 }
 
                 @if (Model.GroupCount > 1)
                 {
                     <div class="media-card-group-count">
-                        <K7Chip Size="sm" Color="dark" Variant="filled">@Model.GroupCount</K7Chip>
+                        <K7Chip Style="padding: 0; justify-content: space-around; width: 32px; height: 32px" Size="sm" Color="dark" Variant="filled">@Model.GroupCount</K7Chip>
                     </div>
                 }
 
@@ -72,7 +72,7 @@ else
                 @if (OverlayEnabled)
                 {
                     <div class="media-card-overlay">
-                        <K7FabButton AriaLabel="Play" Icon="@Phosphor.Play" Focusable="false" />
+                        <K7FabButton AriaLabel="Play" Icon="@Phosphor.Fill.Play" Focusable="false" />
                     </div>
                 }
             </a>
@@ -93,32 +93,38 @@ else
             </div>
             }
 
-        </div>
-
-        @if (LongPressEnabled)
-        {
-            <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target>
-                <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged" Title="@Model.Title">
-                    <ActivatorContent>
-                        <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
-                    </ActivatorContent>
-                    <ChildContent>
-                        @if (OverlayEnabled && !string.IsNullOrEmpty(Href))
-                        {
-                            <K7MenuItem Icon="play" OnClick="OnPlay">@L["Play"]</K7MenuItem>
-                        }
-                        @if (ExcludeMenuEnabled)
-                        {
-                            <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
-                            @if (IsAdmin)
+            @if (LongPressEnabled)
+            {
+                <div class="media-card-menu @(_menuOpen ? "media-card-menu--open" : "")" data-longpress-target>
+                    <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged" Title="@Model.Title">
+                        <ActivatorContent>
+                            <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            @if (OverlayEnabled && !string.IsNullOrEmpty(Href))
                             {
-                                <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
+                                <K7MenuItem Icon="play" OnClick="OnPlay">@L["Play"]</K7MenuItem>
                             }
-                        }
-                    </ChildContent>
-                </K7Menu>
-            </div>
-        }
+                            @if (ExcludeMenuEnabled)
+                            {
+                                <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
+                                @if (IsAdmin)
+                                {
+                                    <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
+                                }
+                            }
+                            @if (_watchStateMenuVisible)
+                            {
+                                <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
+                                    @(Model.Watched ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
+                                </K7MenuItem>
+                            }
+                        </ChildContent>
+                    </K7Menu>
+                </div>
+            }
+
+        </div>
 
         @if (FooterVisible)
         {

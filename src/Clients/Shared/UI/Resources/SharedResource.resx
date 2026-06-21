@@ -47,6 +47,14 @@
   <data name="ErrorWithDetails" xml:space="preserve"><value>Erreur : {0}</value></data>
   <data name="Hidden" xml:space="preserve"><value>« {0} » masqué</value></data>
   <data name="Unhidden" xml:space="preserve"><value>« {0} » affiché à nouveau</value></data>
+  <data name="MarkedAsWatched" xml:space="preserve"><value>Marqué comme vu.</value></data>
+  <data name="MarkedAsUnwatched" xml:space="preserve"><value>Marqué comme non vu.</value></data>
+  <data name="ConfirmMarkWatchedTitle" xml:space="preserve"><value>Marquer comme vu</value></data>
+  <data name="ConfirmMarkUnwatchedTitle" xml:space="preserve"><value>Marquer comme non vu</value></data>
+  <data name="ConfirmMarkWatchedMessage" xml:space="preserve"><value>Marquer {0} épisodes comme vus ?</value></data>
+  <data name="ConfirmMarkUnwatchedMessage" xml:space="preserve"><value>Marquer {0} épisodes comme non vus ?</value></data>
+  <data name="ConfirmMarkBulkWatchedMessage" xml:space="preserve"><value>Marquer tous les épisodes comme vus ?</value></data>
+  <data name="ConfirmMarkBulkUnwatchedMessage" xml:space="preserve"><value>Marquer tous les épisodes comme non vus ?</value></data>
   <data name="Tracks" xml:space="preserve"><value>morceaux</value></data>
   <data name="Disc" xml:space="preserve"><value>Disque</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>

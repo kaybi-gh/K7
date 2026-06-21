@@ -31,4 +31,7 @@
   <data name="Overview" xml:space="preserve"><value>Overview</value></data>
   <data name="DetectIntrosOutros" xml:space="preserve"><value>Detect intros/outros</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Edit metadata</value></data>
+  <data name="ChooseSeason" xml:space="preserve"><value>Choose season</value></data>
+  <data name="MarkSeasonWatched" xml:space="preserve"><value>Mark season as watched</value></data>
+  <data name="MarkSeasonUnwatched" xml:space="preserve"><value>Mark season as unwatched</value></data>
 </root>

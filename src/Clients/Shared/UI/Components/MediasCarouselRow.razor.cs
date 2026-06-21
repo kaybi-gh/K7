@@ -35,11 +35,13 @@ public partial class MediasCarouselRow
     private bool _loading = true;
     private string? _loadKey;
     private bool _canExclude;
+    private bool _canSetWatchState;
     private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
         (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
+        _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
     }
 
     protected override async Task OnParametersSetAsync()

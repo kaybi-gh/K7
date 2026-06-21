@@ -115,7 +115,15 @@ else if (_serie is not null)
                         }
 
                         <AuthorizeView Roles="User,Administrator">
-                            <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-watched" />
+                            <K7Menu>
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-as-watched" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    <K7MenuItem Icon="check-circle" OnClick="MarkSerieWatchedAsync">@L["MarkSerieWatched"]</K7MenuItem>
+                                    <K7MenuItem Icon="circle" OnClick="MarkSerieUnwatchedAsync">@L["MarkSerieUnwatched"]</K7MenuItem>
+                                </ChildContent>
+                            </K7Menu>
                         </AuthorizeView>
 
                         <K7Menu>
@@ -156,11 +164,18 @@ else if (_serie is not null)
                                        Title = season.SeasonNumber == 0 ? S["Specials"] : string.Format(S["SeasonNumber"], season.SeasonNumber),
                                        AdditionalInformations = string.Format(S["EpisodeCount"], season.EpisodeCount),
                                        PictureUrl = GetSeasonPosterUrl(season),
+                                       Watched = season.UserState?.IsCompleted ?? false,
+                                       Progress = season.UserState?.ProgressPercentage ?? 0,
                                    })"
                                    Variant="MediaCardVariant.Poster"
                                    Href="@($"/series/{Id}/seasons/{season.SeasonNumber}")"
                                    FooterVisible="true"
-                                   OverlayEnabled="true" />
+                                   OverlayEnabled="true"
+                                   ProgressEnabled="true"
+                                   WatchedStatusEnabled="true"
+                                   WatchStateMenuEnabled="true"
+                                   BulkEpisodeCount="@season.EpisodeCount"
+                                   OnWatchStateChanged="ReloadSerieAsync" />
                     </CarouselItem>
                 }
             </Carousel>
@@ -187,6 +202,7 @@ else if (_serie is not null)
                         <MediaCard Model="media"
                                    Href="@($"/series/{media.Id}")"
                                    OverlayEnabled="true"
+                                   WatchStateMenuEnabled="true"
                                    FooterVisible="true" />
                     </CarouselItem>
                 }

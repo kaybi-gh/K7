@@ -12,6 +12,9 @@
 @inject IStringLocalizer<SharedResource> S
 @inject IJSRuntime JSRuntime
 @inject IK7DialogService DialogService
+@inject MediaCacheStore CacheStore
+@inject IK7Snackbar Snackbar
+@using Microsoft.AspNetCore.Components.Authorization
 
 <PageTitle>@_pageTitle</PageTitle>
 
@@ -150,6 +153,18 @@ else if (_season is not null)
 
                         <DownloadAllButton Items="GetDownloadRequests()" Size="sm" />
 
+                        <AuthorizeView Roles="User,Administrator">
+                            <K7Menu>
+                                <ActivatorContent>
+                                    <K7IconButton Icon="@Phosphor.CheckCircle" AriaLabel="mark-season-watched" Size="sm" />
+                                </ActivatorContent>
+                                <ChildContent>
+                                    <K7MenuItem Icon="check-circle" OnClick="MarkSeasonWatchedAsync">@L["MarkSeasonWatched"]</K7MenuItem>
+                                    <K7MenuItem Icon="circle" OnClick="MarkSeasonUnwatchedAsync">@L["MarkSeasonUnwatched"]</K7MenuItem>
+                                </ChildContent>
+                            </K7Menu>
+                        </AuthorizeView>
+
                         <AuthorizeView Roles="Administrator">
                             <K7Menu>
                                 <ActivatorContent>
@@ -188,7 +203,8 @@ else if (_season is not null)
                                      Episode="episode"
                                      StillUrl="@GetEpisodeStillUrl(episode)"
                                      Href="@($"/series/{SerieId}/seasons/{SeasonNumber}/episodes/{episode.EpisodeNumber}")"
-                                     OnPlay="PlayEpisodeAsync" />
+                                     OnPlay="PlayEpisodeAsync"
+                                     OnWatchStateChanged="OnEpisodeWatchStateChangedAsync" />
                 </div>
             }
         </div>

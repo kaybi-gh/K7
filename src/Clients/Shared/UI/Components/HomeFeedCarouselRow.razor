@@ -25,9 +25,11 @@ else if (_items.Count > 0)
                            WatchedStatusEnabled="@ProgressEnabled"
                            FooterVisible="true"
                            ExcludeMenuEnabled="_canExclude"
+                           WatchStateMenuEnabled="_canSetWatchState"
                            IsAdmin="_isAdmin"
                            OnExcludeForSelf="() => ExcludeForSelf(item)"
                            OnExcludeForOthers="() => ExcludeForOthers(item)"
+                           OnWatchStateChanged="RefreshAfterWatchStateChangeAsync"
                            OnFocused="() => TvFocus?.OnItemFocused(item)" />
             </CarouselItem>
         }
