@@ -2,8 +2,11 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    padding: var(--space-4);
-    overflow-y: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: clip;
 }
 
 .dashboard-header h5 {
@@ -12,8 +15,10 @@
 
 .dashboard-kpis {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--space-3);
+    min-width: 0;
+    width: 100%;
 }
 
 .dashboard-kpi--link {
@@ -39,10 +44,6 @@
     gap: var(--space-1);
     padding: var(--space-3);
     height: 100%;
-}
-
-.dashboard-kpi__inner--static {
-    cursor: default;
 }
 
 .dashboard-kpi--link .dashboard-kpi__inner {

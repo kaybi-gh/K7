@@ -58,8 +58,8 @@ public partial class ServerHealthCharts
                 ? (decimal)(snapshot.MemoryUsedMb / snapshot.MemoryTotalMb * 100)
                 : 0m;
 
-            _cpuData.Add(new ChartDataPoint(label, (decimal)snapshot.CpuPercent));
-            _memoryData.Add(new ChartDataPoint(label, memoryPercent));
+            _cpuData.Add(new ChartDataPoint(label, (decimal)Math.Round(snapshot.CpuPercent)));
+            _memoryData.Add(new ChartDataPoint(label, (decimal)Math.Round(memoryPercent)));
             _networkData.Add(new ChartDataPoint(label, (decimal)snapshot.NetworkMbps));
         }
     }
@@ -70,7 +70,7 @@ public partial class ServerHealthCharts
             return "0%";
 
         var percent = snapshot.MemoryUsedMb / snapshot.MemoryTotalMb * 100;
-        return $"{percent:0.#}%";
+        return $"{percent:0}%";
     }
 
     private static ApexChartOptions<ChartDataPoint> CreateAreaChartOptions(decimal? max = null)
@@ -81,7 +81,8 @@ public partial class ServerHealthCharts
             {
                 Background = "transparent",
                 Toolbar = new Toolbar { Show = false },
-                Sparkline = new ChartSparkline { Enabled = false }
+                Sparkline = new ChartSparkline { Enabled = false },
+                Width = "100%"
             },
             Stroke = new Stroke { Curve = Curve.Smooth, Width = 2 },
             Fill = new Fill { Opacity = new Opacity(0.2) },
