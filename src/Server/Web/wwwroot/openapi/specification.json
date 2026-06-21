@@ -2608,6 +2608,45 @@
         }
       }
     },
+    "/api/music/top-tracks": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "operationId": "GetTopMusicTracks",
+        "parameters": [
+          {
+            "name": "LibraryIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "Count",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/metadata-providers": {
       "get": {
         "tags": [
@@ -2898,6 +2937,90 @@
         }
       }
     },
+    "/api/medias/genres": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMediaGenres",
+        "parameters": [
+          {
+            "name": "LibraryIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "LibraryGroupIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "MediaTypes",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "UnwatchedOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "OrderBy",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/medias/{id}/provider-images": {
       "get": {
         "tags": [
@@ -2941,6 +3064,17 @@
             }
           },
           {
+            "name": "LibraryGroupIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
             "name": "Ids",
             "in": "query",
             "schema": {
@@ -2949,6 +3083,13 @@
                 "type": "string",
                 "format": "uuid"
               }
+            }
+          },
+          {
+            "name": "UnwatchedOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -4656,6 +4797,17 @@
         "parameters": [
           {
             "name": "LibraryIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "LibraryGroupIds",
             "in": "query",
             "schema": {
               "type": "array",
