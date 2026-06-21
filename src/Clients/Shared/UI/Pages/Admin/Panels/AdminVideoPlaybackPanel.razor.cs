@@ -18,6 +18,7 @@ public partial class AdminVideoPlaybackPanel
     private List<LibraryDto> _libraries = [];
     private Guid? _selectedLibraryId;
     private bool _loading = true;
+    private bool _saving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -53,47 +54,53 @@ public partial class AdminVideoPlaybackPanel
         }
     }
 
-    private async Task SaveVideoSettingsAsync()
+    private async Task SaveAsync()
     {
-        if (_settings is null)
+        if (_saving || _settings is null || _preferences is null)
             return;
 
-        await ServerPreferencesService.UpdateServerVideoPlayerSettingsAsync(_settings);
-    }
-
-    private async Task ResetVideoSettingsAsync()
-    {
-        await ServerPreferencesService.DeleteServerVideoPlayerSettingsAsync();
-        _settings = new VideoPlayerSettingsDto();
-    }
-
-    private async Task SaveTrackPreferencesAsync()
-    {
-        if (_preferences is null)
-            return;
-
+        _saving = true;
         try
         {
-            await ServerPreferencesService.UpdateServerTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId);
-            Snackbar.Add(Lt["SaveSuccess"], K7Severity.Success);
+            await Task.WhenAll(
+                ServerPreferencesService.UpdateServerVideoPlayerSettingsAsync(_settings),
+                ServerPreferencesService.UpdateServerTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId));
+            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
+        finally
+        {
+            _saving = false;
+        }
     }
 
-    private async Task ResetTrackPreferencesAsync()
+    private async Task ResetAsync()
     {
+        if (_saving)
+            return;
+
+        _saving = true;
         try
         {
-            await ServerPreferencesService.DeleteServerTrackSelectionPreferencesAsync(_selectedLibraryId);
-            _preferences = new TrackSelectionPreferencesDto();
-            Snackbar.Add(Lt["ResetSuccess"], K7Severity.Success);
+            await Task.WhenAll(
+                ServerPreferencesService.DeleteServerVideoPlayerSettingsAsync(),
+                ServerPreferencesService.DeleteServerTrackSelectionPreferencesAsync(_selectedLibraryId));
+            _settings = await ServerPreferencesService.GetServerVideoPlayerSettingsAsync()
+                        ?? new VideoPlayerSettingsDto();
+            _preferences = await ServerPreferencesService.GetServerTrackSelectionPreferencesAsync(_selectedLibraryId)
+                           ?? new TrackSelectionPreferencesDto();
+            Snackbar.Add(L["ResetSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
         }
     }
 }
