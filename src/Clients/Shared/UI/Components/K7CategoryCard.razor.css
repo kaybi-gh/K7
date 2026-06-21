@@ -1,61 +1,73 @@
 .k7-category-card {
-    position: relative;
     display: block;
     width: 100%;
     height: 120px;
-    border-radius: var(--radius-xl);
+}
+
+.k7-category-card__container {
+    position: relative;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-md);
+}
+
+.k7-category-card__hit {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
     border: none;
     padding: 0;
     cursor: pointer;
     text-align: left;
-    background: var(--card-gradient-start);
-    transition: transform var(--duration-fast) var(--ease-out),
-                box-shadow var(--duration-fast) var(--ease-out);
+    background: transparent;
 }
 
-.k7-category-card:hover,
-.k7-category-card:focus-visible {
-    transform: scale(1.015);
-    box-shadow: var(--shadow-lg);
-    outline: none;
-}
-
-.k7-category-card:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-}
-
-.k7-category-card:active {
-    transform: scale(0.99);
-}
-
-/* Optional background image */
 .k7-category-card__bg {
     position: absolute;
     inset: 0;
     background-size: cover;
     background-position: center;
-    opacity: 0.65;
+    opacity: 0.35;
 }
 
-/* Gradient overlay — default: soft semi-transparent gradient */
 .k7-category-card__overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to right, var(--card-gradient-start), var(--card-gradient-end));
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--card-tone) 70%, var(--color-surface)),
+        color-mix(in srgb, var(--card-tone) 36%, var(--color-bg)));
 }
 
-/* Gradient overlay — when a solid dominant color is available */
-.k7-category-card.has-dominant-color .k7-category-card__overlay {
-    background: linear-gradient(to right,
-        var(--card-color) 0%,
-        var(--card-color) 50%,
-        color-mix(in srgb, var(--card-color) 50%, transparent) 80%,
-        color-mix(in srgb, var(--card-color) 10%, transparent) 100%);
+.k7-category-card--has-image .k7-category-card__overlay {
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--card-tone) 62%, transparent),
+        color-mix(in srgb, var(--card-tone) 18%, transparent));
 }
 
-/* Content row */
+.k7-category-card__focus-overlay {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius-xl);
+    display: none;
+    pointer-events: none;
+}
+
+.k7-category-card:hover .k7-category-card__focus-overlay,
+.k7-category-card:focus-within .k7-category-card__focus-overlay {
+    display: block;
+}
+
+.k7-category-card__hit:focus-visible {
+    outline: none;
+}
+
 .k7-category-card__body {
     position: relative;
     z-index: 1;
@@ -101,7 +113,6 @@
     text-overflow: ellipsis;
 }
 
-/* Icon badge */
 .k7-category-card__icon-badge {
     flex-shrink: 0;
     display: flex;
@@ -120,21 +131,6 @@
         min-width: 280px;
     }
 
-    .k7-category-card:hover,
-    .k7-category-card:focus-visible {
-        transform: none;
-        box-shadow: none;
-    }
-
-    .k7-category-card:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-    }
-
-    .k7-category-card:active {
-        transform: none;
-    }
-
     .k7-category-card__title {
         font-size: var(--text-2xl);
         white-space: normal;
@@ -142,5 +138,21 @@
         display: -webkit-box;
         -webkit-box-orient: vertical;
         overflow: hidden;
+    }
+}
+
+@media (min-width: 900px) {
+    .k7-category-card--lg {
+        height: 180px;
+    }
+
+    .k7-category-card--lg .k7-category-card__body {
+        padding: 0 var(--space-8);
+    }
+
+    .k7-category-card--lg .k7-category-card__icon-badge {
+        width: 64px;
+        height: 64px;
+        font-size: 1.875rem;
     }
 }

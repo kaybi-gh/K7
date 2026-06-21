@@ -1,15 +1,18 @@
 <div class="d-flex flex-col carousel-wrapper" style="@Style">
     <div data-carousel @ref="_root">
-        <div class="carousel-header">
-            @if (Skeleton)
-            {
-                <K7Skeleton Shape="text" Width="160px" Class="carousel-skeleton-title" />
-            }
-            else
-            {
-                <h6>@Title</h6>
-            }
-        </div>
+        @if (Skeleton || !string.IsNullOrEmpty(Title))
+        {
+            <div class="carousel-header">
+                @if (Skeleton)
+                {
+                    <K7Skeleton Shape="text" Width="160px" Class="carousel-skeleton-title" />
+                }
+                else
+                {
+                    <h6>@Title</h6>
+                }
+            </div>
+        }
         <div class="carousel-viewport" data-carousel-viewport tabindex="-1">
             <div class="carousel-container">
                 @ChildContent

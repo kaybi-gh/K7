@@ -2,7 +2,7 @@
 
 @if (!string.IsNullOrEmpty(Href))
 {
-    <a class="k7-btn k7-btn--@Variant focusable @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
+    <a class="k7-btn k7-btn--@Variant @FocusableClass @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
        style="@Style"
        href="@Href"
        @attributes="AdditionalAttributes">
@@ -19,7 +19,7 @@
 }
 else
 {
-    <button class="k7-btn k7-btn--@Variant focusable @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
+    <button class="k7-btn k7-btn--@Variant @FocusableClass @(string.IsNullOrEmpty(Color) ? "" : $"k7-btn--{Color}") @(Size == "sm" ? "k7-btn--sm" : Size == "lg" ? "k7-btn--lg" : Size == "xl" ? "k7-btn--xl" : "") @Class"
             style="@Style"
             type="@Type"
             disabled="@Disabled"
