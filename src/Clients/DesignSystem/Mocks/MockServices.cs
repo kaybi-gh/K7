@@ -355,6 +355,7 @@ public sealed class MockMediaService : IMediaService
     public Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MovieDto?>(null);
     public Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MediaDto?>(null);
     public Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteMediaDto>?>(null);
+    public Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<MediaGenreDto>?>(null);
     public Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PersonDto?>(null);
     public Task<PaginatedListDto<PersonDto>?> GetPersonsAsync(GetPersonsWithPaginationQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<PersonDto>?>(null);
     public Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, MediaType? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult(Enumerable.Empty<MetadataSearchResult>());
@@ -377,6 +378,7 @@ public sealed class MockMediaService : IMediaService
     public Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(new List<LiteMediaDto>());
     public Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<LiteMusicTrackDto>>([]);
+    public Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PlayedMusicTrackDto>>([]);
     public Task<List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default) => Task.FromResult(new List<K7.Shared.Dtos.Entities.Persons.PersonKnownForItemDto>());
 }
 
