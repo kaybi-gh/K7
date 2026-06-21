@@ -1,7 +1,8 @@
 .vertical-carousel {
+    position: relative;
+    z-index: 2;
     flex: 1;
     min-height: 0;
-    position: relative;
 }
 
 .vertical-carousel__viewport {
