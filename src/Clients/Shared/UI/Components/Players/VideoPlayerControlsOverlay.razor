@@ -857,8 +857,6 @@
         _doubleTapTimer?.Dispose();
         _tapDelayTimer?.Dispose();
         BrightnessService.ResetBrightness();
-        _dotNetRef?.Dispose();
-        _overlayCloseRef?.Dispose();
         try
         {
             if (!SyncPlaySidebarOpen)
@@ -867,6 +865,8 @@
             }
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        _dotNetRef?.Dispose();
+        _overlayCloseRef?.Dispose();
         PlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
         PlayerService.IsMutedChanged -= OnIsMutedChanged;
         PlayerService.VolumeChanged -= OnVolumeChanged;
