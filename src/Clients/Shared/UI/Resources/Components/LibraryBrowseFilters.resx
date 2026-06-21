@@ -22,4 +22,7 @@
   <data name="Filters" xml:space="preserve"><value>Filtres</value></data>
   <data name="ClearFilters" xml:space="preserve"><value>Effacer les filtres</value></data>
   <data name="FilterGenres" xml:space="preserve"><value>Genres</value></data>
+  <data name="WatchFilterAll" xml:space="preserve"><value>Tout</value></data>
+  <data name="WatchFilterUnwatched" xml:space="preserve"><value>Non vu</value></data>
+  <data name="WatchFilterInProgress" xml:space="preserve"><value>En cours</value></data>
 </root>

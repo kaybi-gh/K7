@@ -1,4 +1,5 @@
-﻿using K7.Clients.Shared.Enums;
+﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -17,6 +18,7 @@ public partial class LibraryGroup : IDisposable
 {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     [Parameter]
     public required string Id { get; set; }
@@ -24,6 +26,7 @@ public partial class LibraryGroup : IDisposable
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
     private bool _loading = true;
+    private bool _canSetWatchState;
     private int _totalCount;
     private const int PageSize = 50;
     private LibraryMediaType? _libraryMediaType;
@@ -34,6 +37,10 @@ public partial class LibraryGroup : IDisposable
     private MediaOrderingOption _selectedSort = MediaOrderingOption.TitleAsc;
     private HashSet<string> _selectedGenres = new(StringComparer.OrdinalIgnoreCase);
     private List<MediaGenreDto> _genres = [];
+    private LibraryBrowseWatchFilter _watchFilter = LibraryBrowseWatchFilter.All;
+    private bool ShowBrowseFilters => _showWatchFilters || _genres.Count > 0;
+    private bool _showWatchFilters =>
+        _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
 
@@ -53,6 +60,7 @@ public partial class LibraryGroup : IDisposable
     {
         _loading = true;
         _selectedMediaType = default;
+        _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
         var groupId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
 
@@ -87,12 +95,12 @@ public partial class LibraryGroup : IDisposable
         _activeSortKey = "title";
         _activeSortDirection = K7SortDirection.Ascending;
         _selectedGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _watchFilter = LibraryBrowseWatchFilter.All;
         _genres = [];
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
 
-        if (_libraryMediaType is LibraryMediaType.Movie or LibraryMediaType.Serie)
-            await LoadGenresAsync();
+        await LoadGenresAsync();
 
         // Initial load to get total count
         var query = BuildQuery(1, PageSize);
@@ -160,18 +168,8 @@ public partial class LibraryGroup : IDisposable
 
             var pages = Enumerable.Range(firstPage, lastPage - firstPage + 1);
             var tasks = pages.Select(page =>
-            {
-                var query = new GetMediasWithPaginationQuery
-                {
-                    LibraryIds = _libraryIds?.ToArray(),
-                    MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
-                    Genres = _selectedGenres.Count > 0 ? _selectedGenres.ToArray() : null,
-                    OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
-                    PageNumber = page,
-                    PageSize = PageSize
-                };
-                return k7ServerService.GetLiteMediasAsync(query, cancellationToken);
-            });
+                k7ServerService.GetLiteMediasAsync(
+                    BuildQuery(page, PageSize, orderBy), cancellationToken));
 
             var results = await Task.WhenAll(tasks);
 
@@ -201,12 +199,17 @@ public partial class LibraryGroup : IDisposable
         }
     }
 
-    private GetMediasWithPaginationQuery BuildQuery(int pageNumber, int pageSize) => new()
+    private GetMediasWithPaginationQuery BuildQuery(
+        int pageNumber,
+        int pageSize,
+        MediaOrderingOption? orderBy = null) => new()
     {
         LibraryIds = _libraryIds?.ToArray(),
         MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
         Genres = _selectedGenres.Count > 0 ? _selectedGenres.ToArray() : null,
-        OrderBy = [_selectedSort],
+        UnwatchedOnly = _watchFilter is LibraryBrowseWatchFilter.Unwatched ? true : null,
+        ContinueWatching = _watchFilter is LibraryBrowseWatchFilter.InProgress ? true : null,
+        OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
         PageNumber = pageNumber,
         PageSize = pageSize
     };
@@ -238,14 +241,23 @@ public partial class LibraryGroup : IDisposable
         await RefreshAllAsync();
     }
 
+    private async Task OnWatchFilterChanged(LibraryBrowseWatchFilter value)
+    {
+        if (value == _watchFilter)
+            return;
+
+        _watchFilter = value;
+        await RefreshAllAsync();
+    }
+
     private async Task OnMediaTypeFilterChanged(MediaType value)
     {
         if (value == default || value == _selectedMediaType) return;
 
         _selectedMediaType = value;
         _selectedGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (_libraryMediaType is LibraryMediaType.Movie or LibraryMediaType.Serie)
-            await LoadGenresAsync();
+        _watchFilter = LibraryBrowseWatchFilter.All;
+        await LoadGenresAsync();
         await RefreshAllAsync();
     }
 

@@ -71,14 +71,22 @@ public class GetMediaGenresQueryHandler(IApplicationDbContext context, IUser cur
         }
 
         var mediaGenrePairs = mediasQuery
-            .SelectMany(m => m.Genres, (m, genre) => new { m.Id, Genre = genre });
+            .SelectMany(m => m.Genres, (m, genre) => new { m.Id, Genre = genre })
+            .Concat(mediasQuery.OfType<SerieSeason>()
+                .SelectMany(s => s.Serie.Genres, (s, genre) => new { s.Id, Genre = genre }))
+            .Concat(mediasQuery.OfType<SerieEpisode>()
+                .SelectMany(e => e.Serie.Genres, (e, genre) => new { e.Id, Genre = genre }))
+            .Concat(mediasQuery.OfType<MusicTrack>()
+                .SelectMany(t => t.Album.Genres, (t, genre) => new { t.Id, Genre = genre }))
+            .Concat(mediasQuery.OfType<MusicArtist>()
+                .SelectMany(a => a.Albums.SelectMany(al => al.Genres), (a, genre) => new { a.Id, Genre = genre }));
 
         var genreRows = mediaGenrePairs
             .GroupBy(x => x.Genre)
             .Select(g => new GenreAggregateRow
             {
                 Name = g.Key,
-                MediaCount = g.Count(),
+                MediaCount = g.Select(x => x.Id).Distinct().Count(),
                 UserPlayCount = userId.HasValue
                     ? context.UserMediaStates
                         .Where(s => s.UserId == userId.Value && g.Select(x => x.Id).Contains(s.MediaId))

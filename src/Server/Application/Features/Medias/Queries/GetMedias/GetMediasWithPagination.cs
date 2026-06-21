@@ -290,7 +290,10 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
         if (request.Genres?.Length > 0)
         {
             query = query.Where(x => x.Genres.Any(g => request.Genres.Contains(g))
-                || (x is MusicTrack && ((MusicTrack)x).Album.Genres.Any(g => request.Genres.Contains(g))));
+                || (x is MusicTrack && ((MusicTrack)x).Album.Genres.Any(g => request.Genres.Contains(g)))
+                || (x is SerieSeason && ((SerieSeason)x).Serie.Genres.Any(g => request.Genres.Contains(g)))
+                || (x is SerieEpisode && ((SerieEpisode)x).Serie.Genres.Any(g => request.Genres.Contains(g)))
+                || (x is MusicArtist && ((MusicArtist)x).Albums.Any(a => a.Genres.Any(g => request.Genres.Contains(g)))));
         }
 
         if (request.Provenance.HasValue)
