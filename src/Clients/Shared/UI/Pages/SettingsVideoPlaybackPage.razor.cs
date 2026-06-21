@@ -18,6 +18,7 @@ public partial class SettingsVideoPlaybackPage
     private List<LibraryDto> _libraries = [];
     private Guid? _selectedLibraryId;
     private bool _loading = true;
+    private bool _saving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,47 +51,51 @@ public partial class SettingsVideoPlaybackPage
         }
     }
 
-    private async Task SaveVideoSettingsAsync()
+    private async Task SaveAsync()
     {
-        if (_settings is null)
+        if (_saving || _settings is null || _preferences is null)
             return;
 
-        await UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings);
-    }
-
-    private async Task ResetVideoSettingsAsync()
-    {
-        await UserPreferencesService.ResetUserVideoPlayerSettingsAsync();
-        _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
-    }
-
-    private async Task SaveTrackPreferencesAsync()
-    {
-        if (_preferences is null)
-            return;
-
+        _saving = true;
         try
         {
-            await UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId);
-            Snackbar.Add(Lt["SaveSuccess"], K7Severity.Success);
+            await Task.WhenAll(
+                UserPreferencesService.UpdateUserVideoPlayerSettingsAsync(_settings),
+                UserPreferencesService.UpdateUserTrackSelectionPreferencesAsync(_preferences, _selectedLibraryId));
+            Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
+        finally
+        {
+            _saving = false;
+        }
     }
 
-    private async Task ResetTrackPreferencesAsync()
+    private async Task ResetAsync()
     {
+        if (_saving)
+            return;
+
+        _saving = true;
         try
         {
-            await UserPreferencesService.ResetUserTrackSelectionPreferencesAsync(_selectedLibraryId);
+            await Task.WhenAll(
+                UserPreferencesService.ResetUserVideoPlayerSettingsAsync(),
+                UserPreferencesService.ResetUserTrackSelectionPreferencesAsync(_selectedLibraryId));
+            _settings = await UserPreferencesService.GetEffectiveVideoPlayerSettingsAsync();
             _preferences = await UserPreferencesService.GetEffectiveTrackSelectionPreferencesAsync(_selectedLibraryId);
-            Snackbar.Add(Lt["ResetSuccess"], K7Severity.Success);
+            Snackbar.Add(L["ResetSuccess"], K7Severity.Success);
         }
         catch (Exception ex)
         {
             Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
         }
     }
 }

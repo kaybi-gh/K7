@@ -73,11 +73,6 @@ else
                     <K7LanguageSelect Label="@Lt["SubtitleLanguageWhenOtherAudio"]"
                                       @bind-Value="_preferences.SubtitleLanguageWhenOtherAudio" />
                 }
-
-                <div class="d-flex gap-2">
-                    <K7Button Color="primary" OnClick="SaveTrackPreferencesAsync">@Lt["Save"]</K7Button>
-                    <K7Button OnClick="ResetTrackPreferencesAsync">@Lt["Reset"]</K7Button>
-                </div>
             }
         </section>
 
@@ -155,10 +150,13 @@ else
                                      ShadowColor="@_settings.SubtitleShadowColor"
                                      ShadowBlur="_settings.SubtitleShadowBlur" />
             </section>
+        }
 
+        @if (_settings is not null && _preferences is not null)
+        {
             <div class="d-flex gap-2">
-                <K7Button Color="primary" OnClick="SaveVideoSettingsAsync">@L["Save"]</K7Button>
-                <K7Button OnClick="ResetVideoSettingsAsync">@L["Reset"]</K7Button>
+                <K7Button Color="primary" Disabled="_saving" OnClick="SaveAsync">@L["Save"]</K7Button>
+                <K7Button Disabled="_saving" OnClick="ResetAsync">@L["Reset"]</K7Button>
             </div>
         }
     </div>

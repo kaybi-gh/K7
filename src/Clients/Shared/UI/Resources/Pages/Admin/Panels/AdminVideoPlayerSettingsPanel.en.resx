@@ -46,4 +46,6 @@
   <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Server preferences saved</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Server preferences reset</value></data>
 </root>

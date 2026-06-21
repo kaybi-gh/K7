@@ -44,4 +44,6 @@
   <data name="Disabled" xml:space="preserve"><value>Désactivé</value></data>
   <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
   <data name="ResetToDefault" xml:space="preserve"><value>Réinitialiser par défaut</value></data>
+  <data name="SaveSuccess" xml:space="preserve"><value>Préférences enregistrées</value></data>
+  <data name="ResetSuccess" xml:space="preserve"><value>Préférences réinitialisées</value></data>
 </root>
