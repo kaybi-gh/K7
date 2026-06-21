@@ -8,7 +8,7 @@
                 <span class="text-overline">@L["CpuUsage"]</span>
                 @if (Latest is not null)
                 {
-                    <span class="dashboard-health__current">@Latest.CpuPercent.ToString("0.#")%</span>
+                    <span class="dashboard-health__current">@Latest.CpuPercent.ToString("0")%</span>
                 }
             </div>
             @if (_cpuData.Count > 0)
@@ -32,7 +32,7 @@
                 <span class="text-overline">@L["MemoryUsage"]</span>
                 @if (Latest is not null)
                 {
-                    <span class="dashboard-health__current">@FormatMemoryPercent(Latest)%</span>
+                    <span class="dashboard-health__current">@FormatMemoryPercent(Latest)</span>
                 }
             </div>
             @if (_memoryData.Count > 0)
