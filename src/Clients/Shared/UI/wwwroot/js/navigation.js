@@ -32,6 +32,7 @@ var SpatialNav = (function () {
     function pruneDisconnectedLayers() {
         for (var i = _layers.length - 1; i >= 0; i--) {
             if (_layers[i].el && !_layers[i].el.isConnected) {
+                _layers[i].onClose = null;
                 _layers.splice(i, 1);
             }
         }
@@ -98,6 +99,7 @@ var SpatialNav = (function () {
             var existing = _layers[i].el;
             if (existing === el || (existing.isSameNode && existing.isSameNode(el))) {
                 var layer = _layers.splice(i, 1)[0];
+                layer.onClose = null;
                 if (layer.restoreFocus && layer.restoreFocus.isConnected) {
                     layer.restoreFocus.focus({ preventScroll: true });
                 }
@@ -479,8 +481,13 @@ var SpatialNav = (function () {
             );
 
             if (layer.onClose) {
-                if (layer.type !== 'overlay') popLayer(layer.el);
-                invokeCallback(layer.onClose, 'OnLayerClosed');
+                var isOverlay = layer.type === 'overlay';
+                var staleCallback = layer.onClose;
+                layer.onClose = null;
+                if (!isOverlay) popLayer(layer.el);
+                invokeCallback(staleCallback, 'OnLayerClosed', function (ok) {
+                    if (!ok) closeLayerDom(layer);
+                });
                 return;
             }
 
@@ -564,13 +571,50 @@ var SpatialNav = (function () {
         }, 50);
     }
 
-    function invokeCallback(callback, methodName) {
-        if (!callback) return;
+    function closeLayerDom(layer) {
+        if (!layer || !layer.el) return;
+        popLayer(layer.el);
+        var closeTarget = null;
+        var closeSelector = layer.el.getAttribute('data-sn-layer-close');
+        if (closeSelector === 'self') {
+            closeTarget = layer.el;
+        } else if (closeSelector) {
+            closeTarget = document.querySelector(closeSelector);
+        }
+        if (!closeTarget) {
+            var parent = layer.el.parentElement;
+            while (parent && parent !== document.body) {
+                closeTarget = parent.querySelector(':scope > .k7-backdrop');
+                if (closeTarget) break;
+                parent = parent.parentElement;
+            }
+        }
+        if (closeTarget) closeTarget.click();
+    }
+
+    function invokeCallback(callback, methodName, onComplete) {
+        if (!callback) {
+            if (onComplete) onComplete(false);
+            return;
+        }
         if (callback.invokeMethodAsync) {
-            try { callback.invokeMethodAsync(methodName || 'Invoke'); } catch (ex) { }
+            try {
+                var promise = callback.invokeMethodAsync(methodName || 'Invoke');
+                if (promise && promise.then) {
+                    promise.then(
+                        function () { if (onComplete) onComplete(true); },
+                        function () { if (onComplete) onComplete(false); }
+                    );
+                } else if (onComplete) {
+                    onComplete(true);
+                }
+            } catch (ex) {
+                if (onComplete) onComplete(false);
+            }
             return;
         }
         if (typeof callback === 'function') callback();
+        if (onComplete) onComplete(true);
     }
 
     // Key Handler
@@ -1062,6 +1106,10 @@ var SpatialNav = (function () {
 
 // RatingStars JS helper
 window.K7 = window.K7 || {};
+
+K7.isImageLoaded = function (element) {
+    return !!element && element.complete && element.naturalHeight > 0;
+};
 
 K7.setSafeArea = function (top, bottom, left, right) {
     var s = document.documentElement.style;
