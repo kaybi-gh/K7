@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Services;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
+using K7.Shared.Dtos.Diagnostics;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -17,7 +18,6 @@ public partial class AdminDashboardPanel : IDisposable
     [Inject] private K7HubClient HubClient { get; set; } = default!;
 
     private IReadOnlyList<ServerMetricsSnapshotDto> _metricSnapshots = [];
-    private int _activeStreamCount;
     private int _errorCount;
     private int _runningTaskCount;
     private PeriodicTimer? _metricsPollTimer;
@@ -31,18 +31,9 @@ public partial class AdminDashboardPanel : IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        HubClient.ActiveStreamsUpdated += OnActiveStreamsUpdated;
         HubClient.ServerMetricsUpdated += OnServerMetricsUpdated;
 
         await Task.WhenAll(LoadKpisAsync(), LoadMetricsHistoryAsync(initialLoad: true));
-
-        try
-        {
-            await HubClient.JoinAdminStreamsGroupAsync();
-        }
-        catch
-        {
-        }
 
         _pollCts = new CancellationTokenSource();
         _metricsPollTimer = new PeriodicTimer(MetricsPollInterval);
@@ -65,21 +56,8 @@ public partial class AdminDashboardPanel : IDisposable
     {
         try
         {
-            var streams = await K7ServerService.GetActiveStreamsAsync();
-            _activeStreamCount = streams?.Count ?? 0;
-        }
-        catch
-        {
-            _activeStreamCount = 0;
-        }
-
-        try
-        {
             var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
-            _errorCount = summaries.Sum(s =>
-                s.OrphanIndexedFileCount + s.UnidentifiedIndexedFileCount + s.MissingFileMetadataCount
-                + s.MissingHlsSegmentsCount + s.MediaMissingPicturesCount + s.MediaMissingMetadataCount
-                + s.MediaWithoutFilesCount + s.InaccessiblePathCount);
+            _errorCount = LibraryHealthSummaryCounts.SumErrors(summaries);
         }
         catch
         {
@@ -127,18 +105,6 @@ public partial class AdminDashboardPanel : IDisposable
         }
     }
 
-    private void OnActiveStreamsUpdated(IReadOnlyList<ActiveStreamDto> streams)
-    {
-        InvokeAsync(() =>
-        {
-            if (_activeStreamCount == streams.Count)
-                return;
-
-            _activeStreamCount = streams.Count;
-            StateHasChanged();
-        });
-    }
-
     private void OnServerMetricsUpdated(ServerMetricsSnapshotDto snapshot)
     {
         InvokeAsync(() =>
@@ -180,7 +146,6 @@ public partial class AdminDashboardPanel : IDisposable
 
     public void Dispose()
     {
-        HubClient.ActiveStreamsUpdated -= OnActiveStreamsUpdated;
         HubClient.ServerMetricsUpdated -= OnServerMetricsUpdated;
 
         _pollCts?.Cancel();

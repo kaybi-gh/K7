@@ -79,11 +79,10 @@ public partial class AdminDiagnosticsPanel
     {
         if (_summaries is null) return;
 
-        _errorCount = _summaries.Sum(l => l.OrphanIndexedFileCount + l.MediaWithoutFilesCount + l.MissingFileMetadataCount);
-        _warningCount = _summaries.Sum(l => l.UnidentifiedIndexedFileCount + l.MissingHlsSegmentsCount
-            + l.MediaMissingPicturesCount + l.MediaMissingMetadataCount + l.StaleMetadataCount + l.InaccessiblePathCount);
-        _infoCount = _summaries.Sum(l => l.MissingAudioAnalysisCount);
-        _totalIssueCount = _errorCount + _warningCount + _infoCount;
+        _errorCount = LibraryHealthSummaryCounts.SumErrors(_summaries);
+        _warningCount = LibraryHealthSummaryCounts.SumWarnings(_summaries);
+        _infoCount = LibraryHealthSummaryCounts.SumInfo(_summaries);
+        _totalIssueCount = LibraryHealthSummaryCounts.SumTotal(_summaries);
     }
 
     private async Task LoadItemsAsync()

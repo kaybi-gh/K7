@@ -9,12 +9,6 @@
     </div>
 
     <div class="dashboard-kpis">
-        <div class="dashboard-kpi">
-            <K7Paper Outlined="true" Class="dashboard-kpi__inner dashboard-kpi__inner--static">
-                <span class="text-overline">@L["ActiveStreamsKpi"]</span>
-                <h3 class="dashboard-kpi__value">@_activeStreamCount</h3>
-            </K7Paper>
-        </div>
         <NavLink href="/admin/users" class="dashboard-kpi dashboard-kpi--link focusable">
             <K7Paper Outlined="true" Class="dashboard-kpi__inner">
                 <span class="text-overline">@L["OnlineUsersKpi"]</span>
@@ -24,7 +18,7 @@
         <NavLink href="/admin/diagnostics" class="dashboard-kpi dashboard-kpi--link focusable">
             <K7Paper Outlined="true" Class="dashboard-kpi__inner">
                 <span class="text-overline">@L["DiagnosticErrorsKpi"]</span>
-                <h3 class="dashboard-kpi__value dashboard-kpi__value--error">@_errorCount</h3>
+                <h3 class="dashboard-kpi__value @(_errorCount > 0 ? "dashboard-kpi__value--error" : null)">@_errorCount</h3>
             </K7Paper>
         </NavLink>
         <NavLink href="/admin/background-tasks" class="dashboard-kpi dashboard-kpi--link focusable">
