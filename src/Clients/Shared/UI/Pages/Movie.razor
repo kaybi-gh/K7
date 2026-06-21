@@ -98,7 +98,7 @@ else
                         @foreach (var studio in (_movie.Studios ?? []).Take(1))
                         {
                             var s = studio;
-                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
+                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@studio</K7Chip>
                         }
                     </div>
                     <div class="movie-meta-details">

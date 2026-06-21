@@ -300,11 +300,6 @@ public partial class Movie
         return DialogService.ShowAsync<TrailerDialog>(trailer.Name ?? L["Trailer"], parameters, options);
     }
 
-    private void NavigateToStudio(string studio)
-    {
-        NavigationManager.NavigateTo($"/search?studio={Uri.EscapeDataString(studio)}");
-    }
-
     private async Task LoadSimilarMediaAsync()
     {
         if (_movie is null) return;
