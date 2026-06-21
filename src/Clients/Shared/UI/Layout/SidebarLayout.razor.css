@@ -53,10 +53,10 @@
     border-radius: var(--radius-sm);
 }
 
-.page-sidebar ::deep .nav-link:focus-visible {
+/* .page-sidebar ::deep .nav-link:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
-}
+} */
 
 .page-sidebar ::deep .nav-link .nav-icon,
 .page-sidebar ::deep .nav-group-toggle .nav-icon {
