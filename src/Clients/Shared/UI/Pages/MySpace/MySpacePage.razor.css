@@ -18,3 +18,10 @@
         gap: var(--space-3);
     }
 }
+
+@media (min-width: 900px) {
+    .my-space-cards {
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: var(--space-5);
+    }
+}
