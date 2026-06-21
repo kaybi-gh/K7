@@ -116,6 +116,7 @@ var SpatialNav = (function () {
         function tryFocus() {
             var container = layer.el;
             if (!container || !container.isConnected) return;
+            if (window.K7 && window.K7._suppressEnterUntilKeyUp) return;
             var target = null;
             if (layer.focusSelector) {
                 target = container.querySelector(layer.focusSelector);
@@ -319,14 +320,27 @@ var SpatialNav = (function () {
         }
     }
 
-    // Long-press state for Enter/OK on elements inside [data-longpress] containers
-    var _longPressState = null;
+    // Long-press helpers for touch fallback in navigation.js
     var LONG_PRESS_MS = 600;
 
-    function cancelLongPress() {
-        if (!_longPressState) return;
-        clearTimeout(_longPressState.timer);
-        _longPressState = null;
+    function isEnterKey(key) {
+        return key === 'Enter' || key === 'NumpadEnter';
+    }
+
+    function findLongPressTarget(container) {
+        if (!container) return null;
+        var root = container.closest('.media-card') || container.parentElement;
+        if (!root) return null;
+        return root.querySelector('[data-longpress-target]');
+    }
+
+    function openLongPressMenu(container) {
+        var targetRoot = findLongPressTarget(container);
+        if (!targetRoot) return;
+        var activator = targetRoot.querySelector('.k7-menu-activator-inner')
+            || targetRoot.querySelector('.k7-menu-activator')
+            || targetRoot.querySelector('button');
+        if (activator) activator.click();
     }
 
     // Enter Handling
@@ -334,6 +348,12 @@ var SpatialNav = (function () {
     function handleEnter(e) {
         var active = document.activeElement;
         if (!active || active === document.body) return;
+
+        if (window.K7 && window.K7._suppressEnterUntilKeyUp) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return;
+        }
 
         // Text inputs: let Enter pass through so form/Blazor handlers can fire
         if (active && isTextInput(active) && !isActivatable(active)) return;
@@ -348,25 +368,16 @@ var SpatialNav = (function () {
             return;
         }
 
-        // Long-press detection for elements inside [data-longpress] containers.
-        // On first Enter keydown, prevent default (stops immediate navigation for <a>)
-        // and start a timer. On repeated keydown, just suppress.
+        // Long-press on [data-longpress]: block native Enter navigation; MediaCard handles timing.
         var longPressContainer = active.closest('[data-longpress]');
         if (longPressContainer) {
             e.preventDefault();
-            if (_longPressState) return; // repeated keydown - ignore
-            _longPressState = {
-                element: active,
-                container: longPressContainer,
-                triggered: false,
-                timer: setTimeout(function () {
-                    if (!_longPressState) return;
-                    _longPressState.triggered = true;
-                    var target = longPressContainer.querySelector('[data-longpress-target] .k7-menu-activator')
-                        || longPressContainer.querySelector('[data-longpress-target] button');
-                    if (target) target.click();
-                }, LONG_PRESS_MS)
-            };
+            var card = longPressContainer.closest('.media-card');
+            var openMenu = card && card.querySelector('.k7-menu-dropdown--open');
+            if (openMenu) {
+                var menuItem = openMenu.querySelector('.k7-menu-item');
+                if (menuItem) menuItem.focus({ preventScroll: true });
+            }
             return;
         }
 
@@ -408,16 +419,21 @@ var SpatialNav = (function () {
     }
 
     function handleKeyUp(e) {
-        if (e.key !== 'Enter') return;
-        if (!_longPressState) return;
+        if (!isEnterKey(e.key)) return;
 
-        clearTimeout(_longPressState.timer);
-        var state = _longPressState;
-        _longPressState = null;
-
-        if (!state.triggered) {
-            // Short press - perform the default action (navigate for <a>, click for buttons)
-            state.element.click();
+        if (window.K7 && window.K7._suppressEnterUntilKeyUp) {
+            window.K7._suppressEnterUntilKeyUp = false;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            window.K7._swallowNextEnterClick = true;
+            setTimeout(function () {
+                if (window.K7) window.K7._swallowNextEnterClick = false;
+            }, 50);
+            var openMenu = document.querySelector('.k7-menu-dropdown--open');
+            if (openMenu) {
+                var item = openMenu.querySelector('.k7-menu-item');
+                if (item) item.focus({ preventScroll: true });
+            }
         }
     }
 
@@ -628,7 +644,18 @@ var SpatialNav = (function () {
             }
         }
 
-        if (key === 'Enter') { handleEnter(e); return; }
+        if (isEnterKey(key)) {
+            if (window.K7 && window.K7._suppressEnterUntilKeyUp) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
+            if (window.K7 && window.K7._swallowNextEnterClick) {
+                window.K7._swallowNextEnterClick = false;
+            }
+            handleEnter(e);
+            return;
+        }
         if (key === 'Escape' || key === 'GoBack' || key === 'BrowserBack') { handleEscape(e); return; }
         if (key === 'Backspace' || key === 'XF86Back') { handleBackKey(e); return; }
         if (key === ' ' && active && active.closest('.video-controls-overlay')) { e.preventDefault(); }
@@ -942,6 +969,12 @@ var SpatialNav = (function () {
 
         document.addEventListener('keydown', handleKeyDown, true);
         document.addEventListener('keyup', handleKeyUp, true);
+        document.addEventListener('click', function (e) {
+            if (!window.K7 || !window.K7._swallowNextEnterClick) return;
+            window.K7._swallowNextEnterClick = false;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }, true);
         document.addEventListener('enhancedload', onPageNavigated);
         setTimeout(ensurePageFocus, 200);
 
@@ -966,13 +999,7 @@ var SpatialNav = (function () {
                 timer: setTimeout(function () {
                     if (!_touchLongPress) return;
                     _touchLongPress.triggered = true;
-                    var activator = container.querySelector('[data-longpress-target] .k7-menu-activator');
-                    if (activator) {
-                        activator.click();
-                    } else {
-                        var btn = container.querySelector('[data-longpress-target] button');
-                        if (btn) btn.click();
-                    }
+                    openLongPressMenu(container);
                 }, LONG_PRESS_MS),
                 triggered: false,
                 startX: e.touches[0].clientX,
@@ -1051,10 +1078,15 @@ K7.positionDropdown = function (root, dropdown) {
     if (window.innerWidth < 600) return;
 
     var isSubmenu = !!root.closest('.k7-menu-dropdown');
-    // .k7-menu-activator uses display:contents so has no box - use its first child or root
-    var activatorEl = root.querySelector('.k7-menu-activator');
-    var anchor = (activatorEl && activatorEl.firstElementChild) || root;
+    var anchor = K7._resolveMenuAnchor(root);
     var anchorRect = anchor.getBoundingClientRect();
+    if (anchorRect.width === 0 && anchorRect.height === 0) {
+        var mediaCard = root.closest('.media-card');
+        if (mediaCard) {
+            anchor = mediaCard.querySelector('.media-card-container') || mediaCard;
+            anchorRect = anchor.getBoundingClientRect();
+        }
+    }
     var gap = 4;
     var inVideoPlayer = root.closest('.video-controls-overlay');
     if (inVideoPlayer && isSubmenu) gap = 8;
@@ -1117,6 +1149,14 @@ K7.positionDropdown = function (root, dropdown) {
         dropdown.style.zIndex = '100014';
     } else {
         root.classList.remove('k7-menu--upward');
+        var mediaCard = root.closest('.media-card');
+        if (mediaCard) {
+            dropdown.classList.add('k7-menu-dropdown--card-corner');
+            K7._positionMediaCardDropdown(dropdown, anchorRect, ddRect, cbOffset, vw, vh);
+            return;
+        }
+
+        dropdown.classList.remove('k7-menu-dropdown--card-corner');
 
         // Root menu: open below/above the activator
         var spaceBelow = vh - anchorRect.bottom - gap;
@@ -1140,6 +1180,65 @@ K7.positionDropdown = function (root, dropdown) {
         }
         dropdown.style.left = (left - cbOffset.left) + 'px';
     }
+};
+
+K7._positionMediaCardDropdown = function (dropdown, anchorRect, ddRect, cbOffset, vw, vh) {
+    var margin = 8;
+    dropdown.style.bottom = '';
+    dropdown.style.transform = 'none';
+    dropdown.style.zIndex = '100014';
+    dropdown.style.maxHeight = 'min(320px, calc(100vh - 16px))';
+    dropdown.style.overflowY = 'auto';
+    dropdown.style.minWidth = '180px';
+    dropdown.style.width = 'max-content';
+    dropdown.style.maxWidth = Math.min(280, vw - margin * 2) + 'px';
+
+    // top-start + left-start: menu top-left on card top-left, overlapping the corner
+    var left = anchorRect.left;
+    var top = anchorRect.top;
+
+    // top-end + right-start: flip when menu would overflow the viewport on the right
+    if (left + ddRect.width > vw - margin) {
+        left = anchorRect.right - ddRect.width;
+    }
+
+    if (left < margin) left = margin;
+    if (left + ddRect.width > vw - margin) left = vw - ddRect.width - margin;
+
+    if (top + ddRect.height > vh - margin) {
+        top = Math.max(margin, vh - ddRect.height - margin);
+    }
+    if (top < margin) top = margin;
+
+    dropdown.style.left = (left - cbOffset.left) + 'px';
+    dropdown.style.top = (top - cbOffset.top) + 'px';
+};
+
+K7._suppressEnterUntilKeyUp = false;
+K7._swallowNextEnterClick = false;
+K7.suppressEnterUntilKeyUp = function () {
+    K7._suppressEnterUntilKeyUp = true;
+    K7._swallowNextEnterClick = true;
+};
+
+K7.positionDropdownDeferred = function (root, dropdown) {
+    K7.positionDropdown(root, dropdown);
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            K7.positionDropdown(root, dropdown);
+        });
+    });
+};
+
+K7._resolveMenuAnchor = function (root) {
+    if (!root) return root;
+    var mediaCard = root.closest('.media-card');
+    if (mediaCard) {
+        var cardContainer = mediaCard.querySelector('[data-longpress]');
+        if (cardContainer) return cardContainer;
+    }
+    var activatorEl = root.querySelector('.k7-menu-activator');
+    return (activatorEl && activatorEl.firstElementChild) || root;
 };
 
 K7._getFixedContainingBlockOffset = function (el) {
