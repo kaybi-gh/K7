@@ -101,6 +101,9 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
         {
             query = query
                 .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
+                .Include(x => (x as Serie)!.Seasons)
+                    .ThenInclude(s => s.Episodes)
+                        .ThenInclude(e => e.UserMediaStates.Where(s => s.UserId == userId.Value))
                 .Include(x => (x as SerieSeason)!.Episodes)
                     .ThenInclude(e => e.UserMediaStates.Where(s => s.UserId == userId.Value));
         }

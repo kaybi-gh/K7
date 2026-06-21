@@ -19,6 +19,7 @@ using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.QueryBuilders;
 using K7.Shared.Dtos.Home;
+using K7.Shared.Enums;
 using K7.Shared.Extensions;
 
 namespace K7.Shared.Services;
@@ -193,9 +194,15 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<MusicStatsDto?> GetMusicStatsAsync(CancellationToken cancellationToken = default)
+    public async Task<SetMediaWatchStateResultDto?> SetMediaWatchStateAsync(Guid mediaId, bool watched, WatchStateScope scope = WatchStateScope.Item, CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<MusicStatsDto>("api/music/stats", _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync(
+            $"api/medias/{mediaId}/watch-state",
+            new { Watched = watched, Scope = scope },
+            _serializerOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<SetMediaWatchStateResultDto>(_serializerOptions, cancellationToken);
     }
 
     public async Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)

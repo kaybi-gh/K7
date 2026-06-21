@@ -7,6 +7,8 @@ using K7.Shared.Dtos.Entities.Persons;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 
+using K7.Shared.Enums;
+
 namespace K7.Shared.Interfaces;
 
 public interface IMediaService
@@ -41,4 +43,5 @@ public interface IMediaService
     Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default);
     Task<List<PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default);
+    Task<SetMediaWatchStateResultDto?> SetMediaWatchStateAsync(Guid mediaId, bool watched, WatchStateScope scope = WatchStateScope.Item, CancellationToken cancellationToken = default);
 }
