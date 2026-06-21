@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Interfaces;
@@ -76,7 +77,8 @@ public static class LiteMediaMappings
             Watched = userState?.IsCompleted ?? false,
             Progress = userState?.ProgressPercentage ?? 0,
             SerieSeasonCount = episodeDto?.SerieSeasonCount ?? 1,
-            SerieReleaseYear = episodeDto?.SerieReleaseDate?.Year
+            SerieReleaseYear = episodeDto?.SerieReleaseDate?.Year,
+            ReleaseYear = item.ReleaseDate?.Year
         };
     }
 
@@ -132,5 +134,65 @@ public static class LiteMediaMappings
             Rating = item.Rating,
             ReleaseYear = item.ReleaseDate?.Year
         };
+    }
+
+    public static bool HasHeroDetails(this MediaCardViewModel item) =>
+        item.Overview is not null
+        || item.Genres is not null
+        || item.Rating is not null
+        || item.ContentRating is not null
+        || item.RuntimeMinutes is not null;
+
+    public static MediaCardViewModel WithHeroDetailsFromMedia(
+        this MediaCardViewModel source,
+        MediaDto media,
+        IK7ServerService apiClient)
+    {
+        var backdropPicture = media.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
+        var backdropUrl = backdropPicture is not null
+            ? apiClient.GetAbsoluteUri(backdropPicture.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri
+            : source.BackdropUrl;
+
+        return source with
+        {
+            Overview = GetOverview(media),
+            Genres = media.Genres,
+            ContentRating = GetContentRating(media),
+            RuntimeMinutes = GetRuntimeMinutes(media),
+            Rating = GetBestRating(media.Ratings),
+            ReleaseYear = source.ReleaseYear ?? media.ReleaseDate?.Year,
+            BackdropUrl = backdropUrl ?? source.BackdropUrl
+        };
+    }
+
+    private static string? GetOverview(MediaDto media) => media switch
+    {
+        MovieDto movie => movie.TagLine ?? movie.Overview,
+        SerieDto serie => serie.Overview,
+        SerieEpisodeDto episode => episode.Overview,
+        MusicAlbumDto album => album.Overview,
+        _ => null
+    };
+
+    private static string? GetContentRating(MediaDto media) => media switch
+    {
+        MovieDto movie => movie.ContentRating,
+        SerieDto serie => serie.ContentRating,
+        _ => null
+    };
+
+    private static int? GetRuntimeMinutes(MediaDto media) => media switch
+    {
+        SerieEpisodeDto episode => episode.Runtime,
+        _ => null
+    };
+
+    private static double? GetBestRating(IReadOnlyList<RatingDto>? ratings)
+    {
+        var rating = ratings?.FirstOrDefault(r => r.MaximumValue is > 0);
+        if (rating?.Value is null || rating.MaximumValue is null or 0)
+            return null;
+
+        return Math.Round(rating.Value.Value / rating.MaximumValue.Value * 10, 1);
     }
 }

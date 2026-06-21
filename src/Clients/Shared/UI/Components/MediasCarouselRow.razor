@@ -1,0 +1,39 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.Mappings
+@using K7.Shared.Dtos.Entities.Medias
+
+@if (_loading)
+{
+    <Carousel Skeleton="true" Title="@Title">
+        @for (var i = 0; i < 8; i++)
+        {
+            <CarouselItem>
+                <MediaCard Skeleton="true" FooterVisible="true" />
+            </CarouselItem>
+        }
+    </Carousel>
+}
+else if (_items.Count > 0)
+{
+    <Carousel Title="@Title">
+        @foreach (var item in _items)
+        {
+            var vm = item.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+            if (vm is null) continue;
+            <CarouselItem @key="item.Id">
+                <MediaCard Model="@vm"
+                           Variant="@GetVariant(item)"
+                           Href="@GetHref(item)"
+                           OverlayEnabled="true"
+                           ProgressEnabled="@ProgressEnabled"
+                           WatchedStatusEnabled="@ProgressEnabled"
+                           FooterVisible="true"
+                           ExcludeMenuEnabled="_canExclude"
+                           IsAdmin="_isAdmin"
+                           OnExcludeForSelf="() => ExcludeForSelf(vm)"
+                           OnExcludeForOthers="() => ExcludeForOthers(vm)"
+                           OnFocused="() => TvFocus?.OnItemFocused(vm)" />
+            </CarouselItem>
+        }
+    </Carousel>
+}
