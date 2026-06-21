@@ -1,0 +1,34 @@
+@namespace K7.Clients.Shared.UI.Components.Music
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<MusicRadioPresets> L
+
+<div class="music-radio-presets @Class">
+    <Carousel Title="@Title">
+        @foreach (var radio in Presets)
+        {
+            <CarouselItem @key="radio.Type">
+                <div class="music-radio-presets__item">
+                    <div class="music-radio-presets__container">
+                        <button type="button"
+                                class="music-radio-presets__visual focusable"
+                                style="@radio.BackgroundStyle"
+                                tabindex="0"
+                                aria-label="@radio.Title"
+                                @onclick="() => PlayRadioAsync(radio)">
+                            <span class="music-radio-presets__content">
+                                <span class="music-radio-presets__icon">
+                                    <K7Icon Icon="@radio.Icon" Size="lg" />
+                                </span>
+                                <span class="music-radio-presets__card-title">@radio.Title</span>
+                            </span>
+                        </button>
+                        <div class="music-radio-presets__overlay" aria-hidden="true"></div>
+                    </div>
+                    <div class="music-radio-presets__footer">
+                        <span class="music-radio-presets__subtitle">@radio.Description</span>
+                    </div>
+                </div>
+            </CarouselItem>
+        }
+    </Carousel>
+</div>

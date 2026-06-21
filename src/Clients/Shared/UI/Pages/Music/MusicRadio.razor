@@ -1,116 +1,14 @@
 @page "/music/radio"
-@using K7.Server.Domain.Enums
-@using K7.Shared.Dtos.Entities.Medias
-@inject IServerInfoService K7ServerService
-@inject IK7ServerService ApiClient
+@using K7.Clients.Shared.UI.Components.Music
 @inject IStringLocalizer<MusicRadio> L
-@inject IStringLocalizer<SharedResource> S
+
 <PageTitle>@L["PageTitle"]</PageTitle>
 
 <div class="page-scrollable">
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["PageTitle"]</h5>
-</div>
-
-<div class="pa-4">
-    <div class="grid">
-        @foreach (var radio in _radioTypes)
-        {
-            <div>
-                <div class="k7-card radio-card" Outlined="true" tabindex="0" role="button" @onclick="() => PlayRadioAsync(radio)">
-                    <div class="radio-card-content">
-                        <K7Icon Name="@radio.Icon" Style="font-size: 48px;" Color="@radio.Color" />
-                        <h6>@radio.Title</h6>
-                        <p class="text-sm" Color="secondary">@radio.Description</p>
-                    </div>
-                </div>
-            </div>
-        }
+    <div class="d-flex pa-4" style="width: 100%">
+        <h5>@L["PageTitle"]</h5>
     </div>
-
-    @if (_selectedRadio is not null)
-    {
-        <hr class="k7-divider my-6" />
-
-        <div class="d-flex align-center mb-4">
-            <K7Icon Name="@_selectedRadio.Icon" Color="@_selectedRadio.Color" />
-            <h6>@_selectedRadio.Title</h6>
-            @if (!_loading)
-            {
-                <div class="flex-1"></div>
-                <K7Button Variant="outlined"
-                           Color="primary"
-                           StartIcon="@Phosphor.ArrowClockwise"
-                           OnClick="() => PlayRadioAsync(_selectedRadio)"
-                           Size="sm">
-                    Rafraîchir
-                </K7Button>
-            }
-        </div>
-
-        @if (_loading)
-        {
-            <div class="d-flex flex-col pa-8">
-                <K7Spinner />
-                <p class="text-sm" Color="secondary">@L["Generating"]</p>
-            </div>
-        }
-        else if (_tracks.Count == 0)
-        {
-            <div class="d-flex flex-col pa-8">
-                <K7Icon Name="circle" Style="font-size: 48px; opacity: 0.3;" />
-                <p Color="secondary">@L["NotEnoughData"]</p>
-                <p class="text-sm" Color="secondary">@L["ListenMoreHint"]</p>
-            </div>
-        }
-        else
-        {
-            <K7Table Items="_tracks"
-                      TItem="TrackViewModel"
-                      OnRowClick="@(args => OnTrackClick(args))"
-                      RowClass="cursor-pointer">
-                <HeaderContent>
-                    <th Style="width: 50px;"></th>
-                    <th>@S["Title"]</th>
-                    <th>Album</th>
-                    <th Style="width: 100px; text-align: right;">
-                        <K7Icon Name="clock" Size="sm" />
-                    </th>
-                </HeaderContent>
-                <RowTemplate>
-                    <td>
-                        @if (context.CoverUrl is not null)
-                        {
-                            <K7Image Src="@context.CoverUrl" Width="36" ObjectFit="cover" Class="rounded" loading="lazy" />
-                        }
-                        else
-                        {
-                            <K7Icon Name="music-note" />
-                        }
-                    </td>
-                    <td>
-                        <div class="d-flex flex-col">
-                            <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">
-                                @context.Title
-                            </span>
-                            @if (!string.IsNullOrEmpty(context.ArtistName))
-                            {
-                                <span class="text-caption" Color="secondary">@context.ArtistName</span>
-                            }
-                        </div>
-                    </td>
-                    <td>
-                        @if (!string.IsNullOrEmpty(context.AlbumTitle))
-                        {
-                            <p class="text-sm" Color="secondary">@context.AlbumTitle</p>
-                        }
-                    </td>
-                    <td Style="text-align: right;">
-                        <p class="text-sm" Color="secondary">@FormatTime(context.Duration)</p>
-                    </td>
-                </RowTemplate>
-            </K7Table>
-        }
-    }
-</div>
+    <div class="pa-4">
+        <MusicRadioPresets />
+    </div>
 </div>

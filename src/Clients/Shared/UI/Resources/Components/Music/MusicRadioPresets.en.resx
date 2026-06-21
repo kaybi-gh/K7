@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PresetDiscovery" xml:space="preserve"><value>Discovery</value></data>
+  <data name="PresetDiscoveryDesc" xml:space="preserve"><value>Tracks you have never played, close to your taste</value></data>
+  <data name="PresetSonic" xml:space="preserve"><value>Similar</value></data>
+  <data name="PresetSonicDesc" xml:space="preserve"><value>Tracks that sound like what you listen to</value></data>
+  <data name="PresetTempo" xml:space="preserve"><value>Tempo</value></data>
+  <data name="PresetTempoDesc" xml:space="preserve"><value>A mix based on the BPM of your favorite tracks</value></data>
+  <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>
+  <data name="PresetTimeCapsuleDesc" xml:space="preserve"><value>Rediscover what you were listening to a year ago</value></data>
+  <data name="PresetRecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
+  <data name="PresetRecentlyAddedDesc" xml:space="preserve"><value>The latest tracks added to your library</value></data>
+  <data name="PresetArtist" xml:space="preserve"><value>Artist</value></data>
+  <data name="PresetArtistDesc" xml:space="preserve"><value>A mix centered on an artist and related acts</value></data>
+</root>
