@@ -100,6 +100,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteMediaDto>>(requestUri, _serializerOptions, cancellationToken);
     }
 
+    public async Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default)
+    {
+        var requestUri = GetMediaGenresQueryUriBuilder.Build(query);
+        return await HttpClient.GetFromJsonAsync<PaginatedListDto<MediaGenreDto>>(requestUri, _serializerOptions, cancellationToken);
+    }
+
     public async Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default)
     {
         var requestUri = GetHomeFeedQueryUriBuilder.Build(query);
@@ -1055,6 +1061,17 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default)
     {
         var result = await HttpClient.GetFromJsonAsync<List<LiteMusicTrackDto>>($"api/medias/{artistId}/top-tracks", _serializerOptions, cancellationToken);
+        return result ?? [];
+    }
+
+    public async Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default)
+    {
+        var query = new List<string> { $"count={count}" };
+        if (libraryIds is { Length: > 0 })
+            query.AddRange(libraryIds.Select(id => $"libraryIds={id}"));
+
+        var uri = $"api/music/top-tracks?{string.Join('&', query)}";
+        var result = await HttpClient.GetFromJsonAsync<List<PlayedMusicTrackDto>>(uri, _serializerOptions, cancellationToken);
         return result ?? [];
     }
 
