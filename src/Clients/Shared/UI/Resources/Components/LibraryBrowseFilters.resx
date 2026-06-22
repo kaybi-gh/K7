@@ -25,4 +25,23 @@
   <data name="WatchFilterAll" xml:space="preserve"><value>Tout</value></data>
   <data name="WatchFilterUnwatched" xml:space="preserve"><value>Non vu</value></data>
   <data name="WatchFilterInProgress" xml:space="preserve"><value>En cours</value></data>
+  <data name="AdvancedFilters" xml:space="preserve"><value>Filtres avancés</value></data>
+  <data name="ApplyFilters" xml:space="preserve"><value>Appliquer</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="FilterGenresSelected" xml:space="preserve"><value>Genres ({0} sélectionnés)</value></data>
+  <data name="FilterActor" xml:space="preserve"><value>Acteur / casting</value></data>
+  <data name="FilterActorSelected" xml:space="preserve"><value>Acteur : {0}</value></data>
+  <data name="FilterStudio" xml:space="preserve"><value>Studio</value></data>
+  <data name="FilterStudioSelected" xml:space="preserve"><value>Studio : {0}</value></data>
+  <data name="FilterContentRatingSelected" xml:space="preserve"><value>Classification ({0})</value></data>
+  <data name="FieldContentRating" xml:space="preserve"><value>Classification</value></data>
+  <data name="FieldNetwork" xml:space="preserve"><value>Diffuseur</value></data>
+  <data name="FieldStudio" xml:space="preserve"><value>Studio de production</value></data>
+  <data name="ValuePlaceholderStudio" xml:space="preserve"><value>Par exemple : Warner Bros.</value></data>
+  <data name="ValuePlaceholderActor" xml:space="preserve"><value>Par exemple : Leonardo DiCaprio</value></data>
+  <data name="SearchPlaceholderStudio" xml:space="preserve"><value>Rechercher un studio...</value></data>
+  <data name="SearchPlaceholderNetwork" xml:space="preserve"><value>Rechercher un diffuseur...</value></data>
+  <data name="SearchPlaceholderActor" xml:space="preserve"><value>Rechercher un acteur...</value></data>
+  <data name="BooleanTrue" xml:space="preserve"><value>Oui</value></data>
+  <data name="BooleanFalse" xml:space="preserve"><value>Non</value></data>
 </root>

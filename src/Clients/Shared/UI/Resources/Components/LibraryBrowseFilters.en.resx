@@ -25,4 +25,23 @@
   <data name="WatchFilterAll" xml:space="preserve"><value>All</value></data>
   <data name="WatchFilterUnwatched" xml:space="preserve"><value>Unwatched</value></data>
   <data name="WatchFilterInProgress" xml:space="preserve"><value>In progress</value></data>
+  <data name="AdvancedFilters" xml:space="preserve"><value>Advanced filters</value></data>
+  <data name="ApplyFilters" xml:space="preserve"><value>Apply</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="FilterGenresSelected" xml:space="preserve"><value>Genres ({0} selected)</value></data>
+  <data name="FilterActor" xml:space="preserve"><value>Actor / cast</value></data>
+  <data name="FilterActorSelected" xml:space="preserve"><value>Actor: {0}</value></data>
+  <data name="FilterStudio" xml:space="preserve"><value>Studio</value></data>
+  <data name="FilterStudioSelected" xml:space="preserve"><value>Studio: {0}</value></data>
+  <data name="FilterContentRatingSelected" xml:space="preserve"><value>Content rating ({0})</value></data>
+  <data name="FieldContentRating" xml:space="preserve"><value>Content rating</value></data>
+  <data name="FieldNetwork" xml:space="preserve"><value>Broadcaster</value></data>
+  <data name="FieldStudio" xml:space="preserve"><value>Production studio</value></data>
+  <data name="ValuePlaceholderStudio" xml:space="preserve"><value>For example: Warner Bros.</value></data>
+  <data name="ValuePlaceholderActor" xml:space="preserve"><value>For example: Leonardo DiCaprio</value></data>
+  <data name="SearchPlaceholderStudio" xml:space="preserve"><value>Search for a studio...</value></data>
+  <data name="SearchPlaceholderNetwork" xml:space="preserve"><value>Search for a broadcaster...</value></data>
+  <data name="SearchPlaceholderActor" xml:space="preserve"><value>Search for an actor...</value></data>
+  <data name="BooleanTrue" xml:space="preserve"><value>Yes</value></data>
+  <data name="BooleanFalse" xml:space="preserve"><value>No</value></data>
 </root>

@@ -1,5 +1,5 @@
-﻿using K7.Clients.Shared.Interfaces;
-using K7.Clients.Shared.Enums;
+﻿using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -9,6 +9,7 @@ using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 
@@ -31,14 +32,14 @@ public partial class LibraryGroup : IDisposable
     private const int PageSize = 50;
     private LibraryMediaType? _libraryMediaType;
     private IReadOnlyList<Guid>? _libraryIds;
+    private Guid[]? _libraryGroupIds;
     private List<MediaType> _availableMediaTypes = [];
     private List<ButtonGroupOption<MediaType>> _mediaTypeOptions = [];
     private MediaType _selectedMediaType;
     private MediaOrderingOption _selectedSort = MediaOrderingOption.TitleAsc;
-    private HashSet<string> _selectedGenres = new(StringComparer.OrdinalIgnoreCase);
+    private RuleGroupDto _filter = MediaBrowseFilterPresets.Empty;
     private List<MediaGenreDto> _genres = [];
-    private LibraryBrowseWatchFilter _watchFilter = LibraryBrowseWatchFilter.All;
-    private bool ShowBrowseFilters => _showWatchFilters || _genres.Count > 0;
+    private MediaBrowseFacetsDto? _facets;
     private bool _showWatchFilters =>
         _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
     private string? _activeSortKey = "title";
@@ -70,6 +71,11 @@ public partial class LibraryGroup : IDisposable
             var group = groups.FirstOrDefault(g => g.Id == groupId.Value);
             _libraryMediaType = group?.MediaType;
             _libraryIds = group?.LibraryIds;
+            _libraryGroupIds = [groupId.Value];
+        }
+        else
+        {
+            _libraryGroupIds = null;
         }
 
         _availableMediaTypes = _libraryMediaType switch
@@ -94,17 +100,16 @@ public partial class LibraryGroup : IDisposable
         _selectedSort = MediaOrderingOption.TitleAsc;
         _activeSortKey = "title";
         _activeSortDirection = K7SortDirection.Ascending;
-        _selectedGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        _watchFilter = LibraryBrowseWatchFilter.All;
+        _filter = MediaBrowseFilterPresets.Empty;
         _genres = [];
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
 
         await LoadGenresAsync();
+        await LoadFacetsAsync();
 
         // Initial load to get total count
-        var query = BuildQuery(1, PageSize);
-        var result = await k7ServerService.GetLiteMediasAsync(query);
+        var result = await k7ServerService.QueryMediasAsync(BuildQuery(1, PageSize));
         _totalCount = result?.TotalCount ?? 0;
         _loading = false;
     }
@@ -122,7 +127,7 @@ public partial class LibraryGroup : IDisposable
 
             var pages = Enumerable.Range(firstPage, lastPage - firstPage + 1);
             var tasks = pages.Select(page =>
-                k7ServerService.GetLiteMediasAsync(
+                k7ServerService.QueryMediasAsync(
                     BuildQuery(page, PageSize), request.CancellationToken));
 
             var results = await Task.WhenAll(tasks);
@@ -168,7 +173,7 @@ public partial class LibraryGroup : IDisposable
 
             var pages = Enumerable.Range(firstPage, lastPage - firstPage + 1);
             var tasks = pages.Select(page =>
-                k7ServerService.GetLiteMediasAsync(
+                k7ServerService.QueryMediasAsync(
                     BuildQuery(page, PageSize, orderBy), cancellationToken));
 
             var results = await Task.WhenAll(tasks);
@@ -199,16 +204,14 @@ public partial class LibraryGroup : IDisposable
         }
     }
 
-    private GetMediasWithPaginationQuery BuildQuery(
+    private QueryMediasRequest BuildQuery(
         int pageNumber,
         int pageSize,
         MediaOrderingOption? orderBy = null) => new()
     {
         LibraryIds = _libraryIds?.ToArray(),
         MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
-        Genres = _selectedGenres.Count > 0 ? _selectedGenres.ToArray() : null,
-        UnwatchedOnly = _watchFilter is LibraryBrowseWatchFilter.Unwatched ? true : null,
-        ContinueWatching = _watchFilter is LibraryBrowseWatchFilter.InProgress ? true : null,
+        Filter = _filter,
         OrderBy = orderBy is not null ? [orderBy.Value] : [_selectedSort],
         PageNumber = pageNumber,
         PageSize = pageSize
@@ -235,18 +238,25 @@ public partial class LibraryGroup : IDisposable
         }
     }
 
-    private async Task OnSelectedGenresChanged(IReadOnlySet<string> value)
+    private async Task LoadFacetsAsync()
     {
-        _selectedGenres = new HashSet<string>(value, StringComparer.OrdinalIgnoreCase);
-        await RefreshAllAsync();
+        try
+        {
+            _facets = await k7ServerService.GetMediaBrowseFacetsAsync(new GetMediaBrowseFacetsQuery
+            {
+                LibraryIds = _libraryIds?.ToArray(),
+                MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null
+            });
+        }
+        catch
+        {
+            _facets = null;
+        }
     }
 
-    private async Task OnWatchFilterChanged(LibraryBrowseWatchFilter value)
+    private async Task OnFilterChanged(RuleGroupDto value)
     {
-        if (value == _watchFilter)
-            return;
-
-        _watchFilter = value;
+        _filter = value;
         await RefreshAllAsync();
     }
 
@@ -255,9 +265,9 @@ public partial class LibraryGroup : IDisposable
         if (value == default || value == _selectedMediaType) return;
 
         _selectedMediaType = value;
-        _selectedGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        _watchFilter = LibraryBrowseWatchFilter.All;
+        _filter = MediaBrowseFilterPresets.Empty;
         await LoadGenresAsync();
+        await LoadFacetsAsync();
         await RefreshAllAsync();
     }
 
@@ -428,7 +438,7 @@ public partial class LibraryGroup : IDisposable
 
             try
             {
-                var page = await k7ServerService.GetLiteMediasAsync(query);
+                var page = await k7ServerService.QueryMediasAsync(query);
                 var offset = mid - ((mid / PageSize) * PageSize);
                 var items = page?.Items?.ToList();
 

@@ -79,6 +79,11 @@
     letter-spacing: 0.04em;
 }
 
+.library-browse-filters__search {
+    padding: 0 var(--space-2) var(--space-2);
+    min-width: 240px;
+}
+
 .library-browse-filters__menu {
     display: flex;
     flex-direction: column;
@@ -119,6 +124,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.library-browse-filters__option-chevron {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
 }
 
 @media (max-width: 599.98px) {

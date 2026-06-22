@@ -1,0 +1,15 @@
+@namespace K7.Clients.Shared.UI.Components.Dialogs
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Rules
+
+<div class="k7-dialog-content library-browse-advanced-filters">
+    <K7RuleEditor Value="_filter"
+                  ValueChanged="OnFilterChanged"
+                  FieldDescriptors="_fieldDescriptors"
+                  SearchSuggestionsAsync="SearchSuggestionsAsync" />
+</div>
+
+<div class="k7-dialog-actions">
+    <K7Button Variant="text" OnClick="Cancel">@L["Cancel"]</K7Button>
+    <K7Button Variant="filled" Color="primary" OnClick="Apply">@L["ApplyFilters"]</K7Button>
+</div>

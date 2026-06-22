@@ -1,8 +1,12 @@
 @namespace K7.Clients.Shared.UI.Components
-@using K7.Clients.Shared.Enums
+@using K7.Clients.Shared.Helpers
+@using K7.Server.Domain.Enums
 @inject IStringLocalizer<LibraryBrowseFilters> L
 
-<K7Menu Class="@($"library-browse-filters {Class}".Trim())" Title="@L["Filters"]">
+<K7Menu Class="@($"library-browse-filters {Class}".Trim())"
+        Title="@L["Filters"]"
+        Open="_menuOpen"
+        OpenChanged="OnMenuOpenChanged">
     <ActivatorContent>
         <div class="library-browse-filters__activator focusable" tabindex="0" role="button" aria-label="@L["Filters"]">
             @if (HasActiveFilters)
@@ -27,59 +31,152 @@
             </K7MenuItem>
             <hr class="k7-menu-divider" />
         }
-        @if (ShowWatchFilters)
+        @if (_submenu != QuickFilterSubmenu.None)
         {
-            <div class="library-browse-filters__menu library-browse-filters__menu--section">
-                <button type="button"
-                        class="library-browse-filters__option focusable @(WatchFilter is LibraryBrowseWatchFilter.All ? "library-browse-filters__option--selected" : "")"
-                        @onclick="() => SetWatchFilterAsync(LibraryBrowseWatchFilter.All)">
-                    <span class="library-browse-filters__option-label">@L["WatchFilterAll"]</span>
-                    @if (WatchFilter is LibraryBrowseWatchFilter.All)
-                    {
-                        <K7Icon Icon="@Phosphor.Check" Size="sm" />
-                    }
-                </button>
-                <button type="button"
-                        class="library-browse-filters__option focusable @(WatchFilter is LibraryBrowseWatchFilter.Unwatched ? "library-browse-filters__option--selected" : "")"
-                        @onclick="() => SetWatchFilterAsync(LibraryBrowseWatchFilter.Unwatched)">
-                    <span class="library-browse-filters__option-label">@L["WatchFilterUnwatched"]</span>
-                    @if (WatchFilter is LibraryBrowseWatchFilter.Unwatched)
-                    {
-                        <K7Icon Icon="@Phosphor.Check" Size="sm" />
-                    }
-                </button>
-                <button type="button"
-                        class="library-browse-filters__option focusable @(WatchFilter is LibraryBrowseWatchFilter.InProgress ? "library-browse-filters__option--selected" : "")"
-                        @onclick="() => SetWatchFilterAsync(LibraryBrowseWatchFilter.InProgress)">
-                    <span class="library-browse-filters__option-label">@L["WatchFilterInProgress"]</span>
-                    @if (WatchFilter is LibraryBrowseWatchFilter.InProgress)
-                    {
-                        <K7Icon Icon="@Phosphor.Check" Size="sm" />
-                    }
-                </button>
-            </div>
+            <K7MenuItem Icon="@Phosphor.CaretLeft" PreventClose="true" OnClick="() => _submenu = QuickFilterSubmenu.None">
+                @S["Back"]
+            </K7MenuItem>
+            @switch (_submenu)
+            {
+                case QuickFilterSubmenu.Actor:
+                    <div class="library-browse-filters__section-label">@L["FilterActor"]</div>
+                    <div class="library-browse-filters__search">
+                        <K7SearchSelect Value="@(_actorDraft ?? "")"
+                                        ValueChanged="v => _actorDraft = v"
+                                        CommitOnSelectOnly="true"
+                                        OnDebouncedCommit="SetActorAsync"
+                                        Variant="outlined"
+                                        Placeholder="@L["SearchPlaceholderActor"]"
+                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(SmartPlaylistField.ActorName), text, ct)" />
+                    </div>
+                    break;
+                case QuickFilterSubmenu.Studio:
+                    <div class="library-browse-filters__section-label">@L["FilterStudio"]</div>
+                    <div class="library-browse-filters__search">
+                        <K7SearchSelect Value="@(_studioDraft ?? "")"
+                                        ValueChanged="v => _studioDraft = v"
+                                        CommitOnSelectOnly="true"
+                                        OnDebouncedCommit="SetStudioAsync"
+                                        Variant="outlined"
+                                        Placeholder="@L["SearchPlaceholderStudio"]"
+                                        SearchAsync='(text, ct) => SearchSuggestionsAsync("Studio", text, ct)' />
+                    </div>
+                    break;
+                case QuickFilterSubmenu.ContentRating:
+                    <div class="library-browse-filters__section-label">@L["FieldContentRating"]</div>
+                    <div class="library-browse-filters__menu">
+                        @foreach (var rating in Facets!.ContentRatings)
+                        {
+                            var selected = SelectedContentRatings.Contains(rating);
+                            <button type="button"
+                                    class="library-browse-filters__option focusable @(selected ? "library-browse-filters__option--selected" : "")"
+                                    @onclick="() => ToggleContentRatingAsync(rating)">
+                                <span class="library-browse-filters__option-label">@rating</span>
+                                @if (selected)
+                                {
+                                    <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                                }
+                            </button>
+                        }
+                    </div>
+                    break;
+                case QuickFilterSubmenu.Genres:
+                    <div class="library-browse-filters__section-label">@L["FilterGenres"]</div>
+                    <div class="library-browse-filters__menu">
+                        @foreach (var genre in Genres)
+                        {
+                            var selected = SelectedGenres.Contains(genre.Name);
+                            <button type="button"
+                                    class="library-browse-filters__option focusable @(selected ? "library-browse-filters__option--selected" : "")"
+                                    @onclick="() => ToggleGenreAsync(genre.Name)">
+                                <span class="library-browse-filters__option-label">@GetGenreLabel(genre)</span>
+                                @if (selected)
+                                {
+                                    <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                                }
+                            </button>
+                        }
+                    </div>
+                    break;
+            }
         }
-        @if (ShowWatchFilters && Genres.Count > 0)
+        else
         {
-            <hr class="k7-menu-divider" />
-        }
-        @if (Genres.Count > 0)
-        {
-            <div class="library-browse-filters__section-label">@L["FilterGenres"]</div>
-            <div class="library-browse-filters__menu">
-                @foreach (var genre in Genres)
-                {
-                    var selected = SelectedGenres.Contains(genre.Name);
+            @if (ShowWatchFilters)
+            {
+                <div class="library-browse-filters__menu library-browse-filters__menu--section">
                     <button type="button"
-                            class="library-browse-filters__option focusable @(selected ? "library-browse-filters__option--selected" : "")"
-                            @onclick="() => ToggleGenreAsync(genre.Name)">
-                        <span class="library-browse-filters__option-label">@GetGenreLabel(genre)</span>
-                        @if (selected)
+                            class="library-browse-filters__option focusable @(!MediaBrowseFilterPresets.IsUnwatched(Filter) && !MediaBrowseFilterPresets.IsInProgress(Filter) ? "library-browse-filters__option--selected" : "")"
+                            @onclick="() => SetPresetAsync(MediaBrowseFilterPresets.Empty)">
+                        <span class="library-browse-filters__option-label">@L["WatchFilterAll"]</span>
+                        @if (!MediaBrowseFilterPresets.IsUnwatched(Filter) && !MediaBrowseFilterPresets.IsInProgress(Filter))
                         {
                             <K7Icon Icon="@Phosphor.Check" Size="sm" />
                         }
                     </button>
+                    <button type="button"
+                            class="library-browse-filters__option focusable @(MediaBrowseFilterPresets.IsUnwatched(Filter) ? "library-browse-filters__option--selected" : "")"
+                            @onclick="() => SetPresetAsync(MediaBrowseFilterPresets.Unwatched)">
+                        <span class="library-browse-filters__option-label">@L["WatchFilterUnwatched"]</span>
+                        @if (MediaBrowseFilterPresets.IsUnwatched(Filter))
+                        {
+                            <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                        }
+                    </button>
+                    <button type="button"
+                            class="library-browse-filters__option focusable @(MediaBrowseFilterPresets.IsInProgress(Filter) ? "library-browse-filters__option--selected" : "")"
+                            @onclick="() => SetPresetAsync(MediaBrowseFilterPresets.InProgress)">
+                        <span class="library-browse-filters__option-label">@L["WatchFilterInProgress"]</span>
+                        @if (MediaBrowseFilterPresets.IsInProgress(Filter))
+                        {
+                            <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                        }
+                    </button>
+                </div>
+            }
+            @if (ShowWatchFilters)
+            {
+                <hr class="k7-menu-divider" />
+            }
+            <div class="library-browse-filters__menu">
+                @if (ShowMetadataQuickFilters)
+                {
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.Actor)">
+                        <span class="library-browse-filters__option-label">@GetActorMenuLabel()</span>
+                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.Studio)">
+                        <span class="library-browse-filters__option-label">@GetStudioMenuLabel()</span>
+                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                    @if (HasContentRatings)
+                    {
+                        <button type="button"
+                                class="library-browse-filters__option focusable"
+                                @onclick="() => OpenSubmenu(QuickFilterSubmenu.ContentRating)">
+                            <span class="library-browse-filters__option-label">@GetContentRatingMenuLabel()</span>
+                            <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                        </button>
+                    }
                 }
+                @if (Genres.Count > 0)
+                {
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.Genres)">
+                        <span class="library-browse-filters__option-label">@GetGenresMenuLabel()</span>
+                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                }
+                <button type="button"
+                        class="library-browse-filters__option focusable"
+                        @onclick="OpenAdvancedFiltersAsync">
+                    <span class="library-browse-filters__option-label">@L["AdvancedFilters"]</span>
+                </button>
             </div>
         }
     </ChildContent>

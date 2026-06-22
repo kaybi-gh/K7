@@ -38,15 +38,14 @@
                 <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
-        @if (ShowBrowseFilters)
-        {
-            <LibraryBrowseFilters Genres="_genres"
-                                   SelectedGenres="_selectedGenres"
-                                   SelectedGenresChanged="OnSelectedGenresChanged"
-                                   WatchFilter="_watchFilter"
-                                   WatchFilterChanged="OnWatchFilterChanged"
-                                   ShowWatchFilters="_showWatchFilters" />
-        }
+        <LibraryBrowseFilters Genres="_genres"
+                               Facets="_facets"
+                               LibraryIds="_libraryIds?.ToArray()"
+                               LibraryGroupIds="_libraryGroupIds"
+                               Filter="_filter"
+                               FilterChanged="OnFilterChanged"
+                               MediaType="_selectedMediaType"
+                               ShowWatchFilters="_showWatchFilters" />
         <span class="library-toolbar-count">@string.Format(L["ItemCount"], _totalCount)</span>
     </ToolbarContent>
     <GridTemplate Context="item">
