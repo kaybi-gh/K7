@@ -327,6 +327,7 @@ button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+  z-index: calc(var(--z-dialog, 1300) + 10);
 }
 .k7-select-option {
   display: flex;
@@ -680,6 +681,12 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
   background: transparent;
 }
 
+/* Teleported with select/menu inside dialog: sit above dialog, below dropdown */
+.k7-menu-portal.k7-backdrop--teleported,
+.k7-backdrop--teleported {
+  z-index: calc(var(--z-dialog, 1300) + 9);
+}
+
 /* ── Menu ────────────────────────────────────────────────────────────────────── */
 .k7-menu { position: relative; display: inline-block; }
 .k7-menu-activator { display: contents; }
@@ -976,6 +983,7 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    z-index: calc(var(--z-dialog, 1300) + 10);
   }
 
   .k7-select-dropdown--teleported .k7-select-option {

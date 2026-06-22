@@ -1485,14 +1485,20 @@ K7.detachMobileMenu = function (root, dropdown, backdrop) {
 K7.attachSelectPortal = function (root, dropdown, backdrop) {
     if (!root || !dropdown) return;
     K7._teleportMenuElement(dropdown, root);
-    if (backdrop) K7._teleportMenuElement(backdrop, root);
+    if (backdrop) {
+        K7._teleportMenuElement(backdrop, root);
+        backdrop.classList.add('k7-backdrop--teleported');
+    }
     dropdown.classList.add('k7-select-dropdown--teleported');
 };
 
 K7.detachSelectPortal = function (root, dropdown, backdrop) {
     if (!root) return;
     K7._restoreMenuElement(dropdown, root);
-    if (backdrop) K7._restoreMenuElement(backdrop, root);
+    if (backdrop) {
+        K7._restoreMenuElement(backdrop, root);
+        backdrop.classList.remove('k7-backdrop--teleported');
+    }
     if (dropdown) dropdown.classList.remove('k7-select-dropdown--teleported');
 };
 
