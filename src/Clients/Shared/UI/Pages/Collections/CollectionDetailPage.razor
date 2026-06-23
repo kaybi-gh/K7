@@ -86,8 +86,13 @@ else
                             Href="@GetItemHref(item)"
                             FooterVisible="true"
                             OverlayEnabled="true"
-                            ProgressEnabled="true"
-                            WatchedStatusEnabled="true" />
+                            ProgressEnabled="_canTrackProgress"
+                            WatchedStatusEnabled="_canTrackProgress"
+                            ExcludeMenuEnabled="_canExclude"
+                            WatchStateMenuEnabled="_canSetWatchState"
+                            IsAdmin="_isAdmin"
+                            OnExcludeForSelf="() => ExcludeForSelf(item)"
+                            OnExcludeForOthers="() => ExcludeForOthers(item)" />
             </GridTemplate>
             <ListTemplate Context="item">
                 <a href="@GetItemHref(item)" class="library-list-item">

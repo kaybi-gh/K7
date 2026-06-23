@@ -768,6 +768,14 @@ details.k7-expansion[open] .k7-expansion-icon { transform: rotate(180deg); }
 .k7-menu-item-chevron { display: inline-flex; align-items: center; margin-left: auto; opacity: 0.6; }
 hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); margin: var(--space-1) 0; }
 
+.track-context-rating {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
 .k7-menu-header {
   display: flex;
   align-items: center;
@@ -911,13 +919,6 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
     visibility: visible;
     transform: translateY(0);
     z-index: 100013;
-  }
-
-  .track-context-rating {
-    display: flex;
-    justify-content: center;
-    padding: var(--space-3) var(--space-5);
-    border-bottom: 1px solid var(--color-border);
   }
 
   .k7-backdrop,

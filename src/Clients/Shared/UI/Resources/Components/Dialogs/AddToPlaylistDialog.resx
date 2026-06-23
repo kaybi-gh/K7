@@ -28,5 +28,9 @@
   <data name="NewPlaylistTitle" xml:space="preserve"><value>Nouvelle playlist</value></data>
   <data name="AddedToNewPlaylist" xml:space="preserve"><value>Ajouté à la nouvelle playlist</value></data>
   <data name="CreatedButAddFailed" xml:space="preserve"><value>Playlist créée mais erreur lors de l'ajout</value></data>
+  <data name="NoTracksToAdd" xml:space="preserve"><value>Aucun élément à ajouter</value></data>
+  <data name="AddedTracksToPlaylist" xml:space="preserve"><value>{0} éléments ajoutés à « {1} »</value></data>
+  <data name="AddedTracksToNewPlaylist" xml:space="preserve"><value>{0} éléments ajoutés à la nouvelle playlist</value></data>
+  <data name="CreatedButNoTracksAdded" xml:space="preserve"><value>Playlist créée mais aucun élément à ajouter</value></data>
 </root>
 

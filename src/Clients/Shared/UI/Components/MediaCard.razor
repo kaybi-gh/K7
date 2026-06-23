@@ -1,4 +1,4 @@
-@inject IStringLocalizer<MediaCard> L
+@inject IFeatureAccessService FeatureAccess
 
 @if (Skeleton)
 {
@@ -101,24 +101,19 @@ else
                             <K7IconButton Icon="@Phosphor.DotsThreeVertical" aria-label="Menu" Focusable="false" />
                         </ActivatorContent>
                         <ChildContent>
-                            @if (OverlayEnabled && !string.IsNullOrEmpty(Href))
-                            {
-                                <K7MenuItem Icon="play" OnClick="OnPlay">@L["Play"]</K7MenuItem>
-                            }
-                            @if (ExcludeMenuEnabled)
-                            {
-                                <K7MenuItem Icon="eye-slash" OnClick="OnExcludeForSelf">@L["HideForMe"]</K7MenuItem>
-                                @if (IsAdmin)
-                                {
-                                    <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
-                                }
-                            }
-                            @if (_watchStateMenuVisible)
-                            {
-                                <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
-                                    @(Model.Watched ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
-                                </K7MenuItem>
-                            }
+                            <MediaCardContextMenu Model="Model"
+                                                  Href="Href"
+                                                  ShowPlay="OverlayEnabled && !string.IsNullOrEmpty(Href)"
+                                                  ShowRating="_showRating"
+                                                  ShowPlaylist="_showPlaylist"
+                                                  ShowCollection="_showCollection"
+                                                  ShowWatchState="_watchStateMenuVisible"
+                                                  ExcludeMenuEnabled="ExcludeMenuEnabled"
+                                                  IsAdmin="IsAdmin"
+                                                  BulkEpisodeCount="BulkEpisodeCount"
+                                                  OnExcludeForSelf="OnExcludeForSelf"
+                                                  OnExcludeForOthers="OnExcludeForOthers"
+                                                  OnWatchStateChanged="OnWatchStateChanged" />
                         </ChildContent>
                     </K7Menu>
                 </div>

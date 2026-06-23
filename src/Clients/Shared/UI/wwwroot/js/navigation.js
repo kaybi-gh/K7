@@ -1393,6 +1393,14 @@ K7._hasFixedContainingBlockAncestor = function (el) {
                 return true;
             }
         }
+        // Page-level z-index stacking contexts trap fixed dropdowns under later siblings
+        // (e.g. movie hero vs cast carousel). Skip dialog/modal layers (z >= 500).
+        if (style.position !== 'static' && style.zIndex !== 'auto') {
+            var z = parseInt(style.zIndex, 10);
+            if (!isNaN(z) && z > 0 && z < 500) {
+                return true;
+            }
+        }
         parent = parent.parentElement;
     }
     return false;
@@ -1401,6 +1409,9 @@ K7._hasFixedContainingBlockAncestor = function (el) {
 K7._needsMenuPortal = function (root) {
     if (!root) return false;
     if (root.closest('.fullscreen-player')) {
+        return false;
+    }
+    if (root.closest('.k7-dialog-backdrop')) {
         return false;
     }
     if (window.innerWidth < 600) {

@@ -11,11 +11,20 @@ public partial class CreateCollectionDialog
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
+    [Parameter]
+    public MediaType? DefaultMediaType { get; set; }
+
     private string _title = "";
     private string? _description;
     private MediaType? _mediaType;
     private bool _isPublic;
     private bool _isSubmitting;
+
+    protected override void OnParametersSet()
+    {
+        if (DefaultMediaType.HasValue)
+            _mediaType = DefaultMediaType;
+    }
 
     private void Cancel() => Dialog.Cancel();
 

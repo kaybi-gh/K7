@@ -81,6 +81,11 @@
   <data name="MediaTypeMovies" xml:space="preserve"><value>Movies</value></data>
   <data name="MediaTypeSeries" xml:space="preserve"><value>Series</value></data>
   <data name="MediaTypeMusic" xml:space="preserve"><value>Music</value></data>
+  <data name="MediaTypeMusicAlbums" xml:space="preserve"><value>Albums</value></data>
+  <data name="MediaTypeMusicTracks" xml:space="preserve"><value>Tracks</value></data>
+  <data name="MediaTypeMusicArtists" xml:space="preserve"><value>Artists</value></data>
+  <data name="MediaTypeSerieSeasons" xml:space="preserve"><value>Seasons</value></data>
+  <data name="MediaTypeSerieEpisodes" xml:space="preserve"><value>Episodes</value></data>
   <data name="ItemSize" xml:space="preserve"><value>Size</value></data>
   <data name="Spacing" xml:space="preserve"><value>Spacing</value></data>
   <data name="SeekBar" xml:space="preserve"><value>Seek bar</value></data>
