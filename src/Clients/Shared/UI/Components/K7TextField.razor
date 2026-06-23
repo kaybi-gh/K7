@@ -18,7 +18,9 @@
                   maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
                   value="@Value"
                   @oninput="OnInput"
-                  @onchange="OnChange"></textarea>
+                  @onchange="OnChange"
+                  @onfocus="OnFocus"
+                  @onfocusout="OnFocusOut"></textarea>
     }
     else
     {
@@ -33,7 +35,9 @@
                    maxlength="@(MaxLength > 0 ? MaxLength : int.MaxValue)"
                    value="@Value"
                    @oninput="OnInput"
-                   @onchange="OnChange" />
+                   @onchange="OnChange"
+                   @onfocus="OnFocus"
+                   @onfocusout="OnFocusOut" />
             @if (!string.IsNullOrEmpty(AdornmentIcon) && !(Clearable && Value is not null && !string.IsNullOrEmpty(Value.ToString())))
             {
                 <K7IconButton Icon="@AdornmentIcon" Class="k7-input-adornment" OnClick="OnAdornmentClick" />
