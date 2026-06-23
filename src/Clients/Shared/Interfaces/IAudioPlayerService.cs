@@ -46,6 +46,8 @@ public interface IAudioPlayerService
     int CurrentIndex { get; }
     RepeatMode Repeat { get; }
     bool Shuffle { get; }
+    string? ActiveRadioTitle { get; }
+    event Action? ActiveRadioChanged;
 
     // Transport controls
     void Play();
@@ -59,6 +61,7 @@ public interface IAudioPlayerService
     // Queue management
     Task PlayTrackAsync(AudioQueueItem track, CancellationToken cancellationToken = default);
     Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, CancellationToken cancellationToken = default);
+    Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default);
     void AddToQueue(AudioQueueItem track);
     void AddToQueueNext(AudioQueueItem track);
     void RemoveFromQueue(int index);

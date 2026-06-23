@@ -29,6 +29,5 @@
   <data name="PresetTimeCapsuleDesc" xml:space="preserve"><value>Rediscover what you were listening to a year ago</value></data>
   <data name="PresetRecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
   <data name="PresetRecentlyAddedDesc" xml:space="preserve"><value>The latest tracks added to your library</value></data>
-  <data name="PresetArtist" xml:space="preserve"><value>Artist</value></data>
-  <data name="PresetArtistDesc" xml:space="preserve"><value>A mix centered on an artist and related acts</value></data>
+  <data name="EmptyRadio" xml:space="preserve"><value>No tracks available for this radio.</value></data>
 </root>

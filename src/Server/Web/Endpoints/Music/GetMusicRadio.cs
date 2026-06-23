@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.MusicRadio.Queries.GetMusicRadio;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,11 +16,27 @@ public class GetMusicRadio : IEndpoint
 
         endpointRouteBuilder.MapGet("/api/music/radio", async (
             [FromServices] ISender sender,
-            [AsParameters] GetMusicRadioQuery query,
-            CancellationToken cancellationToken) =>
+            [FromQuery] MusicRadioType radioType,
+            [FromQuery] Guid[]? libraryIds,
+            [FromQuery] Guid[]? libraryGroupIds,
+            [FromQuery] Guid? seedTrackId,
+            [FromQuery] Guid? seedArtistId,
+            [FromQuery] string? moodPreset,
+            [FromQuery] int limit = 50,
+            CancellationToken cancellationToken = default) =>
         {
-            var tracks = await sender.Send(query, cancellationToken);
-            return tracks.Select(t => t.ToMediaDto());
+            var tracks = await sender.Send(new GetMusicRadioQuery
+            {
+                RadioType = radioType,
+                LibraryIds = libraryIds,
+                LibraryGroupIds = libraryGroupIds,
+                SeedTrackId = seedTrackId,
+                SeedArtistId = seedArtistId,
+                MoodPreset = moodPreset,
+                Limit = limit
+            }, cancellationToken);
+
+            return Results.Ok(tracks.Select(t => t.ToMediaDto()));
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)
