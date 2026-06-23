@@ -25,6 +25,15 @@ public partial class AdminAudioMuseAiPanel
         _loading = false;
     }
 
+    private void OnEnabledChanged(bool enabled)
+    {
+        if (_settings is null)
+            return;
+
+        _settings = _settings with { Enabled = enabled };
+        _testResult = null;
+    }
+
     private async Task SaveAsync()
     {
         if (_settings is null)

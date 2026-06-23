@@ -11,6 +11,8 @@ public interface IServerPreferencesService
     Task DeleteServerHomeLayoutAsync(CancellationToken cancellationToken = default);
     Task<ServerFeatureFlagsDto> GetServerFeatureFlagsAsync(CancellationToken cancellationToken = default);
     Task UpdateServerFeatureFlagsAsync(ServerFeatureFlagsDto flags, CancellationToken cancellationToken = default);
+    Task<MusicIntelligenceStatusDto> GetMusicIntelligenceStatusAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MusicMoodPresetDto>> GetMusicMoodPresetsAsync(CancellationToken cancellationToken = default);
     Task<VideoPlayerSettingsDto?> GetServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);
     Task UpdateServerVideoPlayerSettingsAsync(VideoPlayerSettingsDto settings, CancellationToken cancellationToken = default);
     Task DeleteServerVideoPlayerSettingsAsync(CancellationToken cancellationToken = default);

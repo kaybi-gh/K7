@@ -8,12 +8,12 @@ namespace K7.Server.Application.Features.AudioMuseAi.Commands.TestAudioMuseAiCon
 [Authorize(Roles = Roles.Administrator)]
 public record TestAudioMuseAiConnectionCommand : IRequest<AudioMuseAiConnectionResultDto>;
 
-public class TestAudioMuseAiConnectionCommandHandler(IAudioMuseAiService audioMuseAiService)
+public class TestAudioMuseAiConnectionCommandHandler(IMusicIntelligenceService musicIntelligenceService)
     : IRequestHandler<TestAudioMuseAiConnectionCommand, AudioMuseAiConnectionResultDto>
 {
     public async Task<AudioMuseAiConnectionResultDto> Handle(TestAudioMuseAiConnectionCommand request, CancellationToken cancellationToken)
     {
-        var result = await audioMuseAiService.TestConnectionAsync(cancellationToken);
+        var result = await musicIntelligenceService.TestConnectionAsync(cancellationToken);
         return new AudioMuseAiConnectionResultDto
         {
             Success = result.Success,
