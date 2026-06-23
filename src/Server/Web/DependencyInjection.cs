@@ -55,6 +55,8 @@ public static class DependencyInjection
         authenticationBuilder.AddIdentityCookies();
         authenticationBuilder.AddScheme<AuthenticationSchemeOptions, EphemeralStreamTokenAuthenticationHandler>(
             EphemeralStreamTokenDefaults.AuthenticationScheme, _ => { });
+        authenticationBuilder.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+            ApiKeyAuthenticationDefaults.AuthenticationScheme, null);
 
         services.ConfigureApplicationCookie(options =>
         {
@@ -71,6 +73,7 @@ public static class DependencyInjection
             {
                 policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
                 policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.AuthenticationSchemes.Add(ApiKeyAuthenticationDefaults.AuthenticationScheme);
                 policy.RequireRole(Roles.Guest, Roles.User, Roles.Administrator);
             });
 
@@ -78,6 +81,7 @@ public static class DependencyInjection
             {
                 policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
                 policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.AuthenticationSchemes.Add(ApiKeyAuthenticationDefaults.AuthenticationScheme);
                 policy.RequireRole(Roles.User, Roles.Administrator);
             });
 
@@ -85,6 +89,7 @@ public static class DependencyInjection
             {
                 policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
                 policy.AuthenticationSchemes.Add(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+                policy.AuthenticationSchemes.Add(ApiKeyAuthenticationDefaults.AuthenticationScheme);
                 policy.RequireRole(Roles.Administrator);
             });
 

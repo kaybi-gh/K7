@@ -80,6 +80,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<RemoteIndexedFile> RemoteIndexedFiles => Set<RemoteIndexedFile>();
     public DbSet<MetadataTag> MetadataTags => Set<MetadataTag>();
     public DbSet<MediaMetadataTag> MediaMetadataTags => Set<MediaMetadataTag>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -1,0 +1,50 @@
+@page "/admin/api-keys"
+@layout AdminLayout
+@inject IStringLocalizer<AdminApiKeysPanel> L
+@inject IApiKeyAdminService ApiKeyAdminService
+
+<div class="d-flex pa-4 align-center justify-between" style="width: 100%">
+    <h5>@L["Title"]</h5>
+    <K7Button StartIcon="@Phosphor.Plus" Variant="filled" Color="primary" OnClick="ShowCreateDialog">@L["CreateKey"]</K7Button>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
+}
+else
+{
+    <div class="pa-4 d-flex flex-col gap-4">
+        @if (_apiKeys.Count == 0)
+        {
+            <span class="text-caption" style="color: var(--color-text-muted);">@L["NoKeys"]</span>
+        }
+        else
+        {
+            @foreach (var key in _apiKeys)
+            {
+                <K7Paper Elevation="0" Style="padding: var(--space-3) var(--space-4); width: 100%;">
+                    <div class="d-flex align-center justify-between">
+                        <div class="d-flex flex-col">
+                            <span class="text-body-1 font-weight-medium">@key.Name</span>
+                            <span class="text-caption" style="color: var(--color-text-muted);">
+                                @key.KeyPrefix... - @key.Scope
+                                @if (key.ExpiresAt.HasValue)
+                                {
+                                    <text> - @L["ExpiresAt"] @key.ExpiresAt.Value.ToLocalTime().ToString("g")</text>
+                                }
+                                @if (key.LastUsedAt.HasValue)
+                                {
+                                    <text> - @L["LastUsed"] @key.LastUsedAt.Value.ToLocalTime().ToString("g")</text>
+                                }
+                            </span>
+                        </div>
+                        <K7Button OnClick="() => RevokeKey(key)" Variant="K7ButtonVariant.Text" Color="var(--color-error)">@L["Revoke"]</K7Button>
+                    </div>
+                </K7Paper>
+            }
+        }
+    </div>
+}

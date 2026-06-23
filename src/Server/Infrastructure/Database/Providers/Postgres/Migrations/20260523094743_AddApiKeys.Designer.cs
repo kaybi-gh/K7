@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523094743_AddApiKeys")]
+    partial class AddApiKeys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -356,46 +359,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("Downloads");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.EphemeralStreamToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("StreamSessionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExpiresAt");
-
-                    b.HasIndex("StreamSessionId");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("EphemeralStreamTokens");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
                 {
                     b.Property<Guid>("Id")
@@ -440,230 +403,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("PersonRoleId");
 
                     b.ToTable("ExternalIds");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RequesterName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("RequesterUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTimeOffset?>("RespondedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PeerRequests");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerServer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("AutoAddNewLibraries")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("BaseUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("InboundApplicationId")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset?>("LastSeen")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool?>("LastTestSucceeded")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("OutboundClientId")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("OutboundClientSecret")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PeerServers");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerShareAgreement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Direction")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("LibraryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("MaxConcurrentStreams")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("PeerServerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("SharePlaybackHistory")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LibraryId");
-
-                    b.HasIndex("PeerServerId");
-
-                    b.ToTable("PeerShareAgreements");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.RemoteIndexedFile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Container")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<TimeSpan?>("Duration")
-                        .HasColumnType("interval");
-
-                    b.Property<string>("Extension")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("LibraryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MediaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("PeerServerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RemoteFileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RemoteLibraryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RemoteMediaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("VideoBitrate")
-                        .HasColumnType("bigint");
-
-                    b.Property<int?>("VideoResolution")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LibraryId");
-
-                    b.HasIndex("MediaId");
-
-                    b.HasIndex("PeerServerId");
-
-                    b.ToTable("RemoteIndexedFiles");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.HlsSegment", b =>
@@ -765,19 +504,17 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<bool>("IntroDetectionEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Icon")
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
-
-                    b.Property<Guid>("LibraryGroupId")
-                        .HasColumnType("uuid");
 
                     b.Property<int>("MediaType")
                         .HasColumnType("integer");
@@ -804,90 +541,21 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int?>("MetadataRefreshIntervalDays")
                         .HasColumnType("integer");
 
-                    b.Property<bool>("MusicAudioAnalysisEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<Guid?>("PeerServerId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("RootPath")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool?>("RootPathAccessible")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("SeekbarThumbnailGenerationEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<bool>("TranscodingEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("TransmuxingEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
                     b.HasKey("Id");
-
-                    b.HasIndex("LibraryGroupId");
-
-                    b.HasIndex("PeerServerId");
 
                     b.ToTable("Libraries");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.LibraryGroup", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CardColor")
-                        .HasMaxLength(7)
-                        .HasColumnType("character varying(7)");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Icon")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int>("MediaType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LibraryGroups");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.LibraryScanIssue", b =>
@@ -1015,6 +683,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
+                    b.PrimitiveCollection<string[]>("Genres")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<DateTimeOffset?>("LastMetadataRefreshedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1031,9 +703,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("OriginalTitle")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("PeerServerId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateOnly?>("ReleaseDate")
                         .HasColumnType("date");
 
@@ -1046,8 +715,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OriginalTitle");
-
-                    b.HasIndex("PeerServerId");
 
                     b.HasIndex("ReleaseDate");
 
@@ -1161,7 +828,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("LibraryGroupId")
+                    b.Property<Guid?>("LibraryId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("LocalPath")
@@ -1185,9 +852,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("VideoFileMetadataId")
                         .HasColumnType("uuid");
 
@@ -1196,7 +860,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("CollectionId")
                         .IsUnique();
 
-                    b.HasIndex("LibraryGroupId")
+                    b.HasIndex("LibraryId")
                         .IsUnique();
 
                     b.HasIndex("MediaId");
@@ -1209,8 +873,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasIndex("PlaylistId")
                         .IsUnique();
-
-                    b.HasIndex("UserId");
 
                     b.HasIndex("VideoFileMetadataId")
                         .IsUnique();
@@ -1336,48 +998,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MediaMetadataTag", b =>
-                {
-                    b.Property<Guid>("MediaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MetadataTagId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("MediaId", "MetadataTagId");
-
-                    b.HasIndex("MetadataTagId");
-
-                    b.ToTable("MediaMetadataTags");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MetadataTag", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("NormalizedKey")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Kind", "NormalizedKey")
-                        .IsUnique();
-
-                    b.ToTable("MetadataTags");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Person", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1419,12 +1039,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("PeerServerId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("PeerServerId");
 
                     b.ToTable("Persons");
                 });
@@ -1472,66 +1087,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Notifications.NotificationRule", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BodyTemplate")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("EventTypeNames")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("PayloadFormat")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ProviderConfig")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("ProviderType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("RawJsonTemplate")
-                        .HasColumnType("text");
-
-                    b.Property<string>("RuleFilter")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("TitleTemplate")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsEnabled")
-                        .HasDatabaseName("IX_NotificationRules_IsEnabled");
-
-                    b.ToTable("NotificationRules");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.Playlists.Playlist", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1560,7 +1115,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("MediaType")
-                        .HasColumnType("integer");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(3);
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1671,14 +1228,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
+                    b.Property<int>("MatchCondition")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
-
-                    b.Property<string>("RuleFilter")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 
@@ -1738,13 +1294,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("DeviceId")
+                    b.Property<Guid>("DeviceId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset?>("EndedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("IndexedFileId")
+                    b.Property<Guid>("IndexedFileId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("LastModified")
@@ -1753,21 +1306,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("PeerServerId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("PlaybackSettingsJson")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<double>("Position")
                         .HasColumnType("double precision");
-
-                    b.Property<Guid?>("RemoteIndexedFileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("RemoteSessionId")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("RootDirectory")
                         .IsRequired()
@@ -1784,10 +1328,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("DeviceId");
 
                     b.HasIndex("IndexedFileId");
-
-                    b.HasIndex("PeerServerId");
-
-                    b.HasIndex("RemoteIndexedFileId");
 
                     b.HasIndex("UserId");
 
@@ -1877,21 +1417,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("AudioChannelLayout")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
                     b.Property<string>("AudioDecision")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
-
-                    b.Property<string>("AudioTrackLanguage")
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<string>("AudioTrackTitle")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
 
                     b.Property<int?>("Bitrate")
                         .HasColumnType("integer");
@@ -1924,14 +1452,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
-                    b.Property<string>("SubtitleTrackLanguage")
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<string>("SubtitleTrackTitle")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
                     b.Property<int?>("TranscodeReason")
                         .HasColumnType("integer");
 
@@ -1962,13 +1482,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisplayName")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("IdentityUserId")
                         .HasColumnType("text");
 
@@ -1981,17 +1494,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("PeerServerId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("PinHash")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ContentRestrictionProfileId");
-
-                    b.HasIndex("PeerServerId");
 
                     b.ToTable("Users");
                 });
@@ -2547,6 +2055,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<long?>("Budget")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("ContentRating")
+                        .HasColumnType("text");
+
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("text");
 
@@ -2555,6 +2066,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<long?>("Revenue")
                         .HasColumnType("bigint");
+
+                    b.PrimitiveCollection<string[]>("Studios")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<string>("Tagline")
                         .HasColumnType("text");
@@ -2638,6 +2153,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<string>("ContentRating")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Network")
+                        .HasColumnType("text");
+
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("text");
 
@@ -2647,13 +2168,23 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("text");
 
+                    b.PrimitiveCollection<string[]>("Studios")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.ToTable("Medias", t =>
                         {
+                            t.Property("ContentRating")
+                                .HasColumnName("Serie_ContentRating");
+
                             t.Property("OriginalLanguage")
                                 .HasColumnName("Serie_OriginalLanguage");
 
                             t.Property("Overview")
                                 .HasColumnName("Serie_Overview");
+
+                            t.Property("Studios")
+                                .HasColumnName("Serie_Studios");
                         });
 
                     b.HasDiscriminator().HasValue(4);
@@ -2953,15 +2484,14 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<int?>("Limit")
                         .HasColumnType("integer");
 
+                    b.Property<int>("MatchCondition")
+                        .HasColumnType("integer");
+
                     b.Property<int>("OrderBy")
                         .HasColumnType("integer");
 
                     b.Property<bool>("OrderDescending")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("RuleFilter")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
 
                     b.HasDiscriminator().HasValue("SmartPlaylist");
                 });
@@ -3175,25 +2705,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.EphemeralStreamToken", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.StreamSession", "StreamSession")
-                        .WithMany()
-                        .HasForeignKey("StreamSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("StreamSession");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.ExternalId", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -3213,52 +2724,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Person");
 
                     b.Navigation("PersonRole");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerShareAgreement", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
-                        .WithMany()
-                        .HasForeignKey("LibraryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
-                        .WithMany("ShareAgreements")
-                        .HasForeignKey("PeerServerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Library");
-
-                    b.Navigation("PeerServer");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.RemoteIndexedFile", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
-                        .WithMany("RemoteIndexedFiles")
-                        .HasForeignKey("LibraryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
-                        .WithMany("RemoteIndexedFiles")
-                        .HasForeignKey("MediaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
-                        .WithMany("RemoteIndexedFiles")
-                        .HasForeignKey("PeerServerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Library");
-
-                    b.Navigation("Media");
-
-                    b.Navigation("PeerServer");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.HlsSegment", b =>
@@ -3328,24 +2793,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Media");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Library", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.LibraryGroup", "LibraryGroup")
-                        .WithMany("Libraries")
-                        .HasForeignKey("LibraryGroupId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
-                        .WithMany("RemoteLibraries")
-                        .HasForeignKey("PeerServerId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("LibraryGroup");
-
-                    b.Navigation("PeerServer");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.LibraryScanIssue", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Library", null)
@@ -3379,10 +2826,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.BaseMedia", b =>
                 {
-                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
-                        .WithMany()
-                        .HasForeignKey("PeerServerId");
-
                     b.OwnsMany("K7.Server.Domain.Entities.Metadatas.TrailerInfo", "Trailers", b1 =>
                         {
                             b1.Property<Guid>("BaseMediaId");
@@ -3413,8 +2856,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("BaseMediaId");
                         });
-
-                    b.Navigation("PeerServer");
 
                     b.Navigation("Trailers");
                 });
@@ -3460,9 +2901,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "CollectionId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("K7.Server.Domain.Entities.LibraryGroup", "LibraryGroup")
+                    b.HasOne("K7.Server.Domain.Entities.Library", "Library")
                         .WithOne("CoverPicture")
-                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "LibraryGroupId")
+                        .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "LibraryId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
@@ -3482,11 +2923,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "PlaylistId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", "VideoFileMetadata")
                         .WithOne("Thumbnails")
                         .HasForeignKey("K7.Server.Domain.Entities.MetadataPicture", "VideoFileMetadataId")
@@ -3494,7 +2930,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Navigation("Collection");
 
-                    b.Navigation("LibraryGroup");
+                    b.Navigation("Library");
 
                     b.Navigation("Media");
 
@@ -3503,8 +2939,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("PersonRole");
 
                     b.Navigation("Playlist");
-
-                    b.Navigation("User");
 
                     b.Navigation("VideoFileMetadata");
                 });
@@ -3529,34 +2963,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
 
                     b.Navigation("IndexedFile");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MediaMetadataTag", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
-                        .WithMany("MetadataTags")
-                        .HasForeignKey("MediaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Metadatas.MetadataTag", "MetadataTag")
-                        .WithMany("MediaAssignments")
-                        .HasForeignKey("MetadataTagId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Media");
-
-                    b.Navigation("MetadataTag");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Person", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
-                        .WithMany()
-                        .HasForeignKey("PeerServerId");
-
-                    b.Navigation("PeerServer");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.PersonRoles.BasePersonRole", b =>
@@ -3619,27 +3025,47 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Media");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>
+                {
+                    b.OwnsMany("K7.Server.Domain.Entities.Restrictions.ContentRestrictionRule", "Rules", b1 =>
+                        {
+                            b1.Property<Guid>("ContentRestrictionProfileId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<int>("Field");
+
+                            b1.Property<int>("Operator");
+
+                            b1.Property<string>("Value");
+
+                            b1.HasKey("ContentRestrictionProfileId", "__synthesizedOrdinal");
+
+                            b1.ToTable("ContentRestrictionProfiles");
+
+                            b1.ToJson("Rules");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ContentRestrictionProfileId");
+                        });
+
+                    b.Navigation("Rules");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.StreamSession", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Devices.Device", "Device")
                         .WithMany()
                         .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("K7.Server.Domain.Entities.IndexedFile", "IndexedFile")
                         .WithMany()
                         .HasForeignKey("IndexedFileId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
-                        .WithMany()
-                        .HasForeignKey("PeerServerId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("K7.Server.Domain.Entities.Federation.RemoteIndexedFile", "RemoteIndexedFile")
-                        .WithMany()
-                        .HasForeignKey("RemoteIndexedFileId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
                         .WithMany()
@@ -3649,10 +3075,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Device");
 
                     b.Navigation("IndexedFile");
-
-                    b.Navigation("PeerServer");
-
-                    b.Navigation("RemoteIndexedFile");
 
                     b.Navigation("User");
                 });
@@ -3701,13 +3123,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .HasForeignKey("ContentRestrictionProfileId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
-                        .WithMany()
-                        .HasForeignKey("PeerServerId");
-
                     b.Navigation("ContentRestrictionProfile");
-
-                    b.Navigation("PeerServer");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserCapabilityOverride", b =>
@@ -3918,6 +3334,34 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Playlists.SmartPlaylist", b =>
+                {
+                    b.OwnsMany("K7.Server.Domain.Entities.Playlists.SmartPlaylistRule", "Rules", b1 =>
+                        {
+                            b1.Property<Guid>("SmartPlaylistId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<int>("Field");
+
+                            b1.Property<int>("Operator");
+
+                            b1.Property<string>("Value");
+
+                            b1.HasKey("SmartPlaylistId", "__synthesizedOrdinal");
+
+                            b1.ToTable("Playlists");
+
+                            b1.ToJson("Rules");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SmartPlaylistId");
+                        });
+
+                    b.Navigation("Rules");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Ratings.UserRating", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
@@ -3936,15 +3380,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Items");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Federation.PeerServer", b =>
-                {
-                    b.Navigation("RemoteIndexedFiles");
-
-                    b.Navigation("RemoteLibraries");
-
-                    b.Navigation("ShareAgreements");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.IndexedFile", b =>
                 {
                     b.Navigation("FileMetadata");
@@ -3952,18 +3387,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Library", b =>
                 {
-                    b.Navigation("IndexedFiles");
-
-                    b.Navigation("RemoteIndexedFiles");
-
-                    b.Navigation("ScanIssues");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.LibraryGroup", b =>
-                {
                     b.Navigation("CoverPicture");
 
-                    b.Navigation("Libraries");
+                    b.Navigation("IndexedFiles");
+
+                    b.Navigation("ScanIssues");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Medias.BaseMedia", b =>
@@ -3972,8 +3400,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Navigation("IndexedFiles");
 
-                    b.Navigation("MetadataTags");
-
                     b.Navigation("PersonRoles");
 
                     b.Navigation("Pictures");
@@ -3981,8 +3407,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Ratings");
 
                     b.Navigation("Recommendations");
-
-                    b.Navigation("RemoteIndexedFiles");
 
                     b.Navigation("Segments");
 
@@ -3997,11 +3421,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", b =>
                 {
                     b.Navigation("HlsSegments");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MetadataTag", b =>
-                {
-                    b.Navigation("MediaAssignments");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Person", b =>
