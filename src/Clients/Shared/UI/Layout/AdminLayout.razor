@@ -21,7 +21,7 @@
                 </NavLink>
             </SidebarNavGroup>
 
-            <SidebarNavGroup Title="@L["GroupAccess"]" Icon="@Phosphor.UsersThree" Routes="@AccessRoutes">
+            <SidebarNavGroup Title="@L["GroupMembers"]" Icon="@Phosphor.UsersThree" Routes="@MembersRoutes">
                 <NavLink class="nav-link focusable" href="/admin/users">
                     <span class="nav-icon"><K7Icon Icon="@Phosphor.Users" /></span>
                     <span class="nav-label">@L["Users"]</span>
@@ -77,7 +77,7 @@
                 </NavLink>
             </SidebarNavGroup>
 
-            <SidebarNavGroup Title="@L["GroupFeatures"]" Icon="@Phosphor.PlugsConnected" Routes="@FeatureRoutes">
+            <SidebarNavGroup Title="@L["GroupIntegrations"]" Icon="@Phosphor.PlugsConnected" Routes="@IntegrationRoutes">
                 <NavLink class="nav-link focusable" href="/admin/federation">
                     <span class="nav-icon"><K7Icon Icon="@Phosphor.Globe" /></span>
                     <span class="nav-label">@L["Federation"]</span>
@@ -85,6 +85,14 @@
                 <NavLink class="nav-link focusable" href="/admin/notifications">
                     <span class="nav-icon"><K7Icon Icon="@Phosphor.Bell" /></span>
                     <span class="nav-label">@L["Notifications"]</span>
+                </NavLink>
+                <NavLink class="nav-link focusable" href="/admin/audiomuse-ai">
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Brain" /></span>
+                    <span class="nav-label">@L["AudioMuseAi"]</span>
+                </NavLink>
+                <NavLink class="nav-link focusable" href="/admin/api-keys">
+                    <span class="nav-icon"><K7Icon Icon="@Phosphor.Key" /></span>
+                    <span class="nav-label">@L["ApiKeys"]</span>
                 </NavLink>
             </SidebarNavGroup>
         </nav>
@@ -98,9 +106,9 @@
 
 @code {
     private static readonly string[] ContentRoutes = ["/admin/libraries", "/admin/library-groups"];
-    private static readonly string[] AccessRoutes = ["/admin/users", "/admin/devices", "/admin/restrictions", "/admin/authentication"];
+    private static readonly string[] MembersRoutes = ["/admin/users", "/admin/devices", "/admin/restrictions", "/admin/authentication"];
     private static readonly string[] ExperienceRoutes = ["/admin/general", "/admin/home-layout", "/admin/video-playback"];
     private static readonly string[] ActivityRoutes = ["/admin/playback-history", "/admin/stats"];
     private static readonly string[] SystemRoutes = ["/admin/background-tasks", "/admin/diagnostics"];
-    private static readonly string[] FeatureRoutes = ["/admin/federation", "/admin/notifications"];
+    private static readonly string[] IntegrationRoutes = ["/admin/federation", "/admin/notifications", "/admin/audiomuse-ai", "/admin/api-keys"];
 }

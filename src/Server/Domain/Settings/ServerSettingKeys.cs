@@ -11,4 +11,5 @@ public static class ServerSettingKeys
     public static readonly SettingKey<string> FeatureFlags = new("FeatureFlags");
     public static readonly SettingKey<string> VideoPlayerSettings = new("VideoPlayerSettings");
     public static readonly SettingKey<string> TrackSelectionPreferences = new("TrackSelectionPreferences");
+    public static readonly SettingKey<string> AudioMuseAi = new("AudioMuseAi");
 }
