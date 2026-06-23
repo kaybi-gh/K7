@@ -136,7 +136,6 @@ public partial class SmartPlaylistDialog
         SmartPlaylistField.AlbumTitle,
         SmartPlaylistField.TrackNumber,
         SmartPlaylistField.DiscNumber,
-        SmartPlaylistField.Bpm,
         SmartPlaylistField.Duration,
         SmartPlaylistField.OriginalLanguage,
         SmartPlaylistField.ActorName
@@ -163,7 +162,7 @@ public partial class SmartPlaylistDialog
              SmartPlaylistOperator.GreaterThan, SmartPlaylistOperator.LessThan,
              SmartPlaylistOperator.GreaterThanOrEqual, SmartPlaylistOperator.LessThanOrEqual],
 
-        SmartPlaylistField.Rating or SmartPlaylistField.Bpm or SmartPlaylistField.Duration =>
+        SmartPlaylistField.Rating or SmartPlaylistField.Duration =>
             [SmartPlaylistOperator.Equals, SmartPlaylistOperator.GreaterThan, SmartPlaylistOperator.LessThan,
              SmartPlaylistOperator.GreaterThanOrEqual, SmartPlaylistOperator.LessThanOrEqual,
              SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
@@ -191,7 +190,6 @@ public partial class SmartPlaylistDialog
         SmartPlaylistField.AlbumTitle => L["FieldAlbum"],
         SmartPlaylistField.TrackNumber => L["FieldTrackNumber"],
         SmartPlaylistField.DiscNumber => L["FieldDiscNumber"],
-        SmartPlaylistField.Bpm => L["FieldBpm"],
         SmartPlaylistField.Duration => L["FieldDuration"],
         SmartPlaylistField.OriginalLanguage => L["FieldOriginalLanguage"],
         SmartPlaylistField.ActorName => L["FieldActor"],
@@ -220,7 +218,6 @@ public partial class SmartPlaylistDialog
         SmartPlaylistField.PlayCount => L["PlaceholderCount"],
         SmartPlaylistField.DateAdded or SmartPlaylistField.LastPlayed => L["PlaceholderDays"],
         SmartPlaylistField.IsCompleted => L["PlaceholderBoolean"],
-        SmartPlaylistField.Bpm => L["PlaceholderDuration"],
         SmartPlaylistField.Duration => L["PlaceholderSeconds"],
         SmartPlaylistField.TrackNumber or SmartPlaylistField.DiscNumber => L["PlaceholderTrackDisc"],
         _ => L["PlaceholderDefault"]
@@ -238,7 +235,6 @@ public partial class SmartPlaylistDialog
         SmartPlaylistOrderBy.ArtistName,
         SmartPlaylistOrderBy.AlbumTitle,
         SmartPlaylistOrderBy.TrackNumber,
-        SmartPlaylistOrderBy.Bpm,
         SmartPlaylistOrderBy.Duration
     ];
 
@@ -254,7 +250,6 @@ public partial class SmartPlaylistDialog
         SmartPlaylistOrderBy.ArtistName => L["OrderByArtist"],
         SmartPlaylistOrderBy.AlbumTitle => L["OrderByAlbum"],
         SmartPlaylistOrderBy.TrackNumber => L["OrderByTrackNumber"],
-        SmartPlaylistOrderBy.Bpm => L["OrderByBpm"],
         SmartPlaylistOrderBy.Duration => L["OrderByDuration"],
         _ => order.ToString()
     };

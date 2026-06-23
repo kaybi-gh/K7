@@ -62,7 +62,6 @@ public static class MediaRuleEvaluator
             nameof(SmartPlaylistField.AlbumTitle) => BuildAlbumTitlePredicate(rule),
             nameof(SmartPlaylistField.TrackNumber) => BuildNullableIntPredicate(m => ((MusicTrack)m).TrackNumber, rule),
             nameof(SmartPlaylistField.DiscNumber) => BuildNullableIntPredicate(m => ((MusicTrack)m).DiscNumber, rule),
-            nameof(SmartPlaylistField.Bpm) => _ => true,
             nameof(SmartPlaylistField.Duration) => BuildDurationPredicate(rule),
             nameof(SmartPlaylistField.OriginalLanguage) => BuildStringPredicate(m => ((Movie)m).OriginalLanguage!, rule),
             nameof(SmartPlaylistField.ActorName) => BuildActorNamePredicate(rule),
