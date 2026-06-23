@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
 
-public partial class K7SearchSelect : ComponentBase, IDisposable
+public partial class K7SearchSelect : ComponentBase, IAsyncDisposable
 {
     [Parameter] public string? Value { get; set; }
     [Parameter] public EventCallback<string?> ValueChanged { get; set; }
@@ -18,6 +18,7 @@ public partial class K7SearchSelect : ComponentBase, IDisposable
 
     private bool _open;
     private bool _loading;
+    private bool _disposed;
     private IReadOnlyList<string> _suggestions = [];
     private CancellationTokenSource? _searchCts;
     private ElementReference _root;
@@ -31,13 +32,17 @@ public partial class K7SearchSelect : ComponentBase, IDisposable
 
     private async Task OnDebouncedSearch(string? value)
     {
+        if (_disposed)
+            return;
+
         if (SearchAsync is null || string.IsNullOrWhiteSpace(value))
         {
             _suggestions = [];
             _open = false;
             if (CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
                 await OnDebouncedCommit.InvokeAsync(null);
-            StateHasChanged();
+            if (!_disposed)
+                StateHasChanged();
             return;
         }
 
@@ -48,15 +53,18 @@ public partial class K7SearchSelect : ComponentBase, IDisposable
 
         _loading = true;
         _open = true;
-        StateHasChanged();
+        if (!_disposed)
+            StateHasChanged();
 
         try
         {
             _suggestions = await SearchAsync(value.Trim(), token);
-            if (!token.IsCancellationRequested)
-                _open = _suggestions.Count > 0;
+            if (_disposed || token.IsCancellationRequested)
+                return;
 
-            if (!token.IsCancellationRequested && CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
+            _open = _suggestions.Count > 0;
+
+            if (CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
                 await OnDebouncedCommit.InvokeAsync(value.Trim());
         }
         catch (OperationCanceledException)
@@ -64,14 +72,19 @@ public partial class K7SearchSelect : ComponentBase, IDisposable
         }
         finally
         {
-            if (!token.IsCancellationRequested)
+            if (!_disposed && !token.IsCancellationRequested)
+            {
                 _loading = false;
-            StateHasChanged();
+                StateHasChanged();
+            }
         }
     }
 
     private async Task SelectSuggestionAsync(string suggestion)
     {
+        if (_disposed)
+            return;
+
         Value = suggestion;
         await ValueChanged.InvokeAsync(suggestion);
         if (CommitOnSelectOnly && OnDebouncedCommit.HasDelegate)
@@ -86,14 +99,21 @@ public partial class K7SearchSelect : ComponentBase, IDisposable
             _open = true;
     }
 
+    private void OnFocusOut(FocusEventArgs _)
+    {
+        CloseDropdown();
+    }
+
     private void CloseDropdown()
     {
         _open = false;
     }
 
-    public void Dispose()
+    public ValueTask DisposeAsync()
     {
+        _disposed = true;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+        return ValueTask.CompletedTask;
     }
 }

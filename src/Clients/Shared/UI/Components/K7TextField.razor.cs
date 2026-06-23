@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -27,11 +28,14 @@ public partial class K7TextField<TValue> : IDisposable
     [Parameter] public string HelperText { get; set; } = "";
     [Parameter] public bool Clearable { get; set; }
     [Parameter] public Func<TValue?, string?>? Validation { get; set; }
+    [Parameter] public EventCallback<FocusEventArgs> OnFocus { get; set; }
+    [Parameter] public EventCallback<FocusEventArgs> OnFocusOut { get; set; }
 
     private readonly string _id = $"k7tf-{Guid.NewGuid():N}";
     private bool _hasError;
     private string _errorText = "";
     private Timer? _debounceTimer;
+    private bool _disposed;
 
     private async Task OnInput(ChangeEventArgs e)
     {
@@ -43,6 +47,8 @@ public partial class K7TextField<TValue> : IDisposable
             {
                 await InvokeAsync(async () =>
                 {
+                    if (_disposed) return;
+
                     await OnDebounceIntervalElapsed.InvokeAsync(val);
                     Validate(val);
                     StateHasChanged();
@@ -92,7 +98,11 @@ public partial class K7TextField<TValue> : IDisposable
         _hasError = false;
     }
 
-    public void Dispose() => _debounceTimer?.Dispose();
+    public void Dispose()
+    {
+        _disposed = true;
+        _debounceTimer?.Dispose();
+    }
 
     private async Task ClearAsync()
     {
