@@ -246,13 +246,13 @@ public class AudioMuseMusicIntelligenceAdapter(
             httpClient.DefaultRequestHeaders.Add("X-Api-Key", settings.ApiKey);
     }
 
-    private async Task<AudioMuseAiSettingsDto?> ReadSettingsAsync(CancellationToken cancellationToken)
+    private async Task<MusicIntelligenceSettingsDto?> ReadSettingsAsync(CancellationToken cancellationToken)
     {
         var json = await serverSettingsService.GetAsync(ServerSettingKeys.AudioMuseAi, cancellationToken);
         if (string.IsNullOrEmpty(json))
             return null;
 
-        return JsonSerializer.Deserialize<AudioMuseAiSettingsDto>(json);
+        return JsonSerializer.Deserialize<MusicIntelligenceSettingsDto>(json);
     }
 
     private static List<Guid> ParseItemIds(JsonElement? element)

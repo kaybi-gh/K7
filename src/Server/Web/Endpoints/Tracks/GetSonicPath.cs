@@ -1,4 +1,4 @@
-using K7.Server.Application.Features.AudioMuseAi.Queries.GetSonicPath;
+using K7.Server.Application.Features.MusicIntelligence.Queries.GetSonicPath;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 

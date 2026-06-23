@@ -16,8 +16,7 @@ public class GetMusicIntelligenceStatusQueryHandler(IMusicIntelligenceService mu
         return new MusicIntelligenceStatusDto
         {
             IsEnabled = isAvailable,
-            IsAvailable = isAvailable,
-            Provider = "audiomuse"
+            IsAvailable = isAvailable
         };
     }
 }

@@ -1,7 +1,7 @@
 @using K7.Clients.Shared.Interfaces
 @using K7.Clients.Shared.Models
 @inject IStringLocalizer<AiSmartPlaylistDialog> L
-@inject IAudioMuseAiClientService AudioMuseAi
+@inject IMusicIntelligenceClientService MusicIntelligence
 @inject IMediaService MediaService
 @inject IAudioPlayerService Audio
 @inject IK7Snackbar Snackbar
@@ -44,7 +44,7 @@
 
         try
         {
-            var trackIds = await AudioMuseAi.CreateSmartPlaylistAsync(_prompt);
+            var trackIds = await MusicIntelligence.CreateSmartPlaylistAsync(_prompt);
 
             if (trackIds.Count == 0)
             {

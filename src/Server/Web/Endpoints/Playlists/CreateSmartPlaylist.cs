@@ -1,4 +1,4 @@
-using K7.Server.Application.Features.AudioMuseAi.Commands.CreateSmartPlaylist;
+using K7.Server.Application.Features.MusicIntelligence.Commands.CreateSmartPlaylist;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 

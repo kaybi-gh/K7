@@ -24,7 +24,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IAudioMuseAiAdminService, IAudioMuseAiClientService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -1423,27 +1423,27 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    // IAudioMuseAiAdminService
+    // IMusicIntelligenceAdminService
 
-    async Task<AudioMuseAiSettingsDto> IAudioMuseAiAdminService.GetSettingsAsync(CancellationToken cancellationToken)
+    async Task<MusicIntelligenceSettingsDto> IMusicIntelligenceAdminService.GetSettingsAsync(CancellationToken cancellationToken)
     {
-        return (await HttpClient.GetFromJsonAsync<AudioMuseAiSettingsDto>("api/admin/audiomuse-ai", _serializerOptions, cancellationToken))!;
+        return (await HttpClient.GetFromJsonAsync<MusicIntelligenceSettingsDto>("api/admin/music-intelligence", _serializerOptions, cancellationToken))!;
     }
 
-    async Task IAudioMuseAiAdminService.UpdateSettingsAsync(AudioMuseAiSettingsDto settings, CancellationToken cancellationToken)
+    async Task IMusicIntelligenceAdminService.UpdateSettingsAsync(MusicIntelligenceSettingsDto settings, CancellationToken cancellationToken)
     {
-        var response = await HttpClient.PutAsJsonAsync("api/admin/audiomuse-ai", settings, _serializerOptions, cancellationToken);
+        var response = await HttpClient.PutAsJsonAsync("api/admin/music-intelligence", settings, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
-    async Task<AudioMuseAiConnectionResultDto> IAudioMuseAiAdminService.TestConnectionAsync(CancellationToken cancellationToken)
+    async Task<MusicIntelligenceConnectionResultDto> IMusicIntelligenceAdminService.TestConnectionAsync(CancellationToken cancellationToken)
     {
-        var response = await HttpClient.PostAsync("api/admin/audiomuse-ai/test", null, cancellationToken);
+        var response = await HttpClient.PostAsync("api/admin/music-intelligence/test", null, cancellationToken);
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<AudioMuseAiConnectionResultDto>(_serializerOptions, cancellationToken))!;
+        return (await response.Content.ReadFromJsonAsync<MusicIntelligenceConnectionResultDto>(_serializerOptions, cancellationToken))!;
     }
 
-    // IAudioMuseAiClientService
+    // IMusicIntelligenceClientService
 
     public async Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
     {
