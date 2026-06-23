@@ -180,6 +180,7 @@ public static class DependencyInjection
         services.AddScoped<IServerSettingsService, ServerSettingsService>();
         services.AddScoped<IUserSettingsService, UserSettingsService>();
         services.AddScoped<ISetupService, SetupService>();
+        services.AddScoped<IApiKeyService, ApiKeyService>();
 
         // Notification providers
         services.AddKeyedSingleton<INotificationProvider, WebhookNotificationProvider>(NotificationProviderType.Webhook);

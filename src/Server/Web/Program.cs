@@ -6,6 +6,7 @@ using K7.Server.Infrastructure.Database.Context.Data;
 using K7.Server.Infrastructure.Database.Context.Oidc;
 using K7.Server.Infrastructure.FileSystem;
 using K7.Server.Infrastructure.MediaProcessing;
+using K7.Server.Infrastructure.ExternalServices;
 using K7.Server.Web;
 using K7.Server.Web.Components;
 using K7.Server.Web.Components.Account;
@@ -32,6 +33,7 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration);
     builder.Services.AddMediaProcessingServices();
+    builder.Services.AddExternalServices();
     builder.Services.AddWebServices(builder.Configuration);
     builder.Services.AddEndpoints();
     builder.Services.ConfigureCors(builder.Configuration);

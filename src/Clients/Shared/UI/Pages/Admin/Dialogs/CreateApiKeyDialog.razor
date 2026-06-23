@@ -1,0 +1,46 @@
+@using K7.Server.Domain.Enums
+@inject IStringLocalizer<CreateApiKeyDialog> L
+
+@if (_createdKey is null)
+{
+    <div class="k7-dialog-content">
+        <div class="d-flex flex-col mt-2 gap-4">
+            <K7TextField @bind-Value="_name" Label="@L["KeyName"]" Variant="outlined"
+                         Required="true" />
+            <K7Select TValue="ApiKeyScope" @bind-Value="_scope" Label="@L["Scope"]" Variant="outlined">
+                @foreach (var scope in Enum.GetValues<ApiKeyScope>())
+                {
+                    <K7SelectItem Value="scope">@scope.ToString()</K7SelectItem>
+                }
+            </K7Select>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+        <K7Button Color="primary" Variant="filled" OnClick="Submit"
+                  Disabled="@(string.IsNullOrWhiteSpace(_name) || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <K7Spinner Size="sm" />
+            }
+            @L["Create"]
+        </K7Button>
+    </div>
+}
+else
+{
+    <div class="k7-dialog-content">
+        <div class="d-flex flex-col mt-2 gap-4">
+            <K7Alert Severity="K7Severity.Warning" Icon="@Phosphor.WarningCircle">@L["CopyWarning"]</K7Alert>
+            <div class="d-flex align-center gap-2">
+                <code style="word-break: break-all; flex: 1; padding: 12px; background: var(--color-surface-variant); border-radius: 6px;">@_createdKey</code>
+                <K7Button OnClick="CopyToClipboard" Variant="K7ButtonVariant.Outlined" StartIcon="@Phosphor.Clipboard">
+                    @L["CopyToClipboard"]
+                </K7Button>
+            </div>
+        </div>
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button Color="primary" Variant="filled" OnClick="Close">@L["Done"]</K7Button>
+    </div>
+}

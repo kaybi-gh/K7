@@ -32,6 +32,61 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("DeviceUser");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.ApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KeyPrefix")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique();
+
+                    b.ToTable("ApiKeys");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.BackgroundTask", b =>
                 {
                     b.Property<Guid>("Id")
@@ -926,9 +981,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<DateTime?>("AnalyzedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<double?>("Bpm")
-                        .HasColumnType("REAL");
-
                     b.Property<int?>("ChromaprintDurationSeconds")
                         .HasColumnType("INTEGER");
 
@@ -941,12 +993,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
-
-                    b.Property<double?>("Danceability")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("Energy")
-                        .HasColumnType("REAL");
 
                     b.Property<double?>("FadeInDuration")
                         .HasColumnType("REAL");
@@ -964,22 +1010,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<double?>("LoudnessLufs")
                         .HasColumnType("REAL");
 
-                    b.Property<double?>("LoudnessRange")
-                        .HasColumnType("REAL");
-
                     b.Property<Guid>("MusicTrackId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("MusicalKey")
                         .HasColumnType("TEXT");
 
                     b.Property<double?>("ReplayGainAlbumGain")
                         .HasColumnType("REAL");
 
                     b.Property<double?>("ReplayGainTrackGain")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("Valence")
                         .HasColumnType("REAL");
 
                     b.PrimitiveCollection<string>("WaveformPeaks")
