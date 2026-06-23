@@ -74,9 +74,6 @@ public partial class ExploreTopTracksTable
                 ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
             Genre = track.Genre,
             UserRating = track.UserRating,
-            Bpm = track.Bpm,
-            MusicalKey = track.MusicalKey,
-            Energy = track.Energy,
             IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
         };
     }
@@ -93,10 +90,7 @@ public partial class ExploreTopTracksTable
         CoverUrl = track.CoverUrl,
         CoverDominantColor = track.CoverDominantColor,
         Duration = track.Duration,
-        UserRating = track.UserRating,
-        Bpm = track.Bpm,
-        MusicalKey = track.MusicalKey,
-        Energy = track.Energy
+        UserRating = track.UserRating
     };
 
     private static string FormatTime(double seconds)
@@ -126,9 +120,6 @@ public partial class ExploreTopTracksTable
         public string? CoverDominantColor { get; init; }
         public string? Genre { get; init; }
         public int? UserRating { get; init; }
-        public double? Bpm { get; init; }
-        public string? MusicalKey { get; init; }
-        public double? Energy { get; init; }
         public bool IsPlaying { get; init; }
     }
 }

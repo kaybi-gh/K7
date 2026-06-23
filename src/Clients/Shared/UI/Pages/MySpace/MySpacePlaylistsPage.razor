@@ -28,7 +28,7 @@
             <ChildContent>
                 <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
                 <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
-                @if (_audioMuseEnabled)
+                @if (_musicIntelligenceAvailable)
                 {
                     <K7MenuItem Icon="magic-wand" OnClick="OpenAiPlaylistDialog">@L["AiPlaylist"]</K7MenuItem>
                 }

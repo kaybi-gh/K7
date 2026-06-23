@@ -1001,6 +1001,112 @@
         }
       }
     },
+    "/api/tracks/{trackId}/similar": {
+      "get": {
+        "tags": [
+          "Tracks"
+        ],
+        "operationId": "GetSimilarTracks",
+        "parameters": [
+          {
+            "name": "trackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/tracks/sonic-path": {
+      "get": {
+        "tags": [
+          "Tracks"
+        ],
+        "operationId": "GetSonicPath",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/tracks/suggestions": {
+      "get": {
+        "tags": [
+          "Tracks"
+        ],
+        "operationId": "GetTrackSuggestions",
+        "parameters": [
+          {
+            "name": "recentIds",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/remote-stream-sessions": {
       "post": {
         "tags": [
@@ -1509,6 +1615,32 @@
         }
       }
     },
+    "/api/server/music-intelligence/status": {
+      "get": {
+        "tags": [
+          "Server"
+        ],
+        "operationId": "GetMusicIntelligenceStatus",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/server/music-intelligence/mood-presets": {
+      "get": {
+        "tags": [
+          "Server"
+        ],
+        "operationId": "GetMusicMoodPresets",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/search": {
       "get": {
         "tags": [
@@ -1876,6 +2008,29 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/playlists/ai-generate": {
+      "post": {
+        "tags": [
+          "Playlists"
+        ],
+        "operationId": "CreateAiSmartPlaylist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSmartPlaylistCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -2577,6 +2732,18 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "moodCentroidIndex",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           },
           {
@@ -3377,6 +3544,43 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/medias/{id}/similar-artists": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetSimilarMusicArtists",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           }
         ],
@@ -6888,6 +7092,40 @@
         }
       }
     },
+    "/api/admin/api-keys": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "CreateApiKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetApiKeys",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/server/preferences/home-layout": {
       "delete": {
         "tags": [
@@ -7260,6 +7498,40 @@
         }
       }
     },
+    "/api/admin/music-intelligence": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "GetMusicIntelligenceSettings",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "UpdateMusicIntelligenceSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MusicIntelligenceSettingsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/server/preferences/feature-flags": {
       "get": {
         "tags": [
@@ -7310,6 +7582,43 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/admin/api-keys/{id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "RevokeApiKey",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/music-intelligence/test": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "TestMusicIntelligenceConnection",
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -7762,6 +8071,9 @@
             }
           }
         }
+      },
+      "ApiKeyScope": {
+        "type": "integer"
       },
       "ArtistLinkItem": {
         "required": [
@@ -8408,6 +8720,27 @@
           }
         }
       },
+      "CreateApiKeyCommand": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ApiKeyScope"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "CreateCollectionCommand": {
         "required": [
           "title"
@@ -8759,6 +9092,25 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CreateSmartPlaylistCommand": {
+        "required": [
+          "prompt"
+        ],
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
               "integer",
               "string"
             ],
@@ -10397,30 +10749,6 @@
               "string"
             ]
           },
-          "bpm": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "musicalKey": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "energy": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
           "loudnessLufs": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
@@ -10945,30 +11273,6 @@
               "null",
               "string"
             ]
-          },
-          "bpm": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "musicalKey": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "energy": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
           },
           "loudnessLufs": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
@@ -12243,6 +12547,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "albumTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "artistId": {
             "type": [
               "null",
@@ -12286,49 +12596,7 @@
               "string"
             ]
           },
-          "bpm": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "musicalKey": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
           "loudnessLufs": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "energy": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "danceability": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "valence": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
@@ -13379,6 +13647,20 @@
       },
       "MusicArtistType": {
         "type": "integer"
+      },
+      "MusicIntelligenceSettingsDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "apiKey": {
+            "type": "string"
+          }
+        }
       },
       "MusicRadioType": {
         "type": "integer"
@@ -14524,30 +14806,6 @@
               "string"
             ],
             "format": "int32"
-          },
-          "bpm": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "musicalKey": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "energy": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
           },
           "pictures": {
             "type": [
@@ -16757,6 +17015,9 @@
       "name": "Users"
     },
     {
+      "name": "Tracks"
+    },
+    {
       "name": "StreamSessions"
     },
     {
@@ -16767,6 +17028,9 @@
     },
     {
       "name": "Setup"
+    },
+    {
+      "name": "Server"
     },
     {
       "name": "Search"
