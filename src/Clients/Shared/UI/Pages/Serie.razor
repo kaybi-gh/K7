@@ -184,10 +184,10 @@ else if (_serie is not null)
         @if ((_serie.PersonRoles?.Count ?? 0) > 0)
         {
             <Carousel Title="@L["CastingAndCrew"]">
-                @foreach (var cast in _serie.PersonRoles!.Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
+                @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_serie.PersonRoles))
                 {
-                    <CarouselItem @key="cast.Id">
-                        <PersonRole LitePersonRoleDto="@cast" />
+                    <CarouselItem @key="cast.Key">
+                        <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
                     </CarouselItem>
                 }
             </Carousel>
@@ -202,8 +202,14 @@ else if (_serie is not null)
                         <MediaCard Model="media"
                                    Href="@($"/series/{media.Id}")"
                                    OverlayEnabled="true"
-                                   WatchStateMenuEnabled="true"
-                                   FooterVisible="true" />
+                                   ProgressEnabled="_canTrackProgress"
+                                   WatchedStatusEnabled="_canTrackProgress"
+                                   FooterVisible="true"
+                                   ExcludeMenuEnabled="_canExclude"
+                                   WatchStateMenuEnabled="_canSetWatchState"
+                                   IsAdmin="_isAdmin"
+                                   OnExcludeForSelf="() => ExcludeSimilarForSelf(media)"
+                                   OnExcludeForOthers="() => ExcludeSimilarForOthers(media)" />
                     </CarouselItem>
                 }
             </Carousel>

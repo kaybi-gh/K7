@@ -1,8 +1,12 @@
-﻿using K7.Clients.Shared.Models;
+﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Persons;
-using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -22,13 +26,25 @@ public partial class Person : IDisposable
     private bool _loading = true;
     private int _activeBackdropIndex;
     private Timer? _backdropTimer;
+    private bool _canTrackProgress;
+    private bool _canExclude;
+    private bool _canSetWatchState;
+    private bool _isAdmin;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+
     protected override async Task OnInitializedAsync()
     {
+        _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+        (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
+        _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+
         _person = await k7ServerService.GetPersonAsync(Guid.Parse(Id));
         if (_person is null)
         {
@@ -53,45 +69,7 @@ public partial class Person : IDisposable
                     _backdropUrls.Add(url);
             }
 
-            switch (role.Media)
-            {
-                case LiteMovieDto movie when _medias.All(m => m.Id != movie.Id.ToString()):
-                    _medias.Add(new MediaCardViewModel
-                    {
-                        Id = movie.Id.ToString(),
-                        Title = movie.Title,
-                        AdditionalInformations = movie.ReleaseDate?.Year.ToString(),
-                        PictureUrl = apiClient.GetAbsoluteUri(
-                            movie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-                    });
-                    break;
-
-                case LiteSerieDto serie when seenSeries.Add(serie.Id):
-                    _medias.Add(new MediaCardViewModel
-                    {
-                        Id = serie.Id.ToString(),
-                        Kind = MediaCardKind.Serie,
-                        Title = serie.Title,
-                        AdditionalInformations = serie.ReleaseDate?.Year.ToString(),
-                        PictureUrl = apiClient.GetAbsoluteUri(
-                            serie.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-                    });
-                    break;
-
-                case LiteSerieEpisodeDto episode when seenSeries.Add(episode.SerieId):
-                    _medias.Add(new MediaCardViewModel
-                    {
-                        Id = episode.SerieId.ToString(),
-                        Kind = MediaCardKind.Serie,
-                        Title = episode.SerieTitle,
-                        PictureUrl = apiClient.GetAbsoluteUri(
-                            episode.SeriePictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                                ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-                    });
-                    break;
-            }
+            AddFilmographyRole(role, seenSeries);
         }
 
         var seenAlbums = new HashSet<Guid>();
@@ -177,6 +155,75 @@ public partial class Person : IDisposable
         return DialogService.ShowAsync<OverviewDialog>(_person.Name ?? string.Empty, parameters, options);
     }
 
+    private void AddFilmographyRole(PersonRoleDto role, HashSet<Guid> seenSeries)
+    {
+        switch (role.Media)
+        {
+            case LiteMovieDto movie when _medias.All(m => m.Id != movie.Id.ToString()):
+                if (movie.ToCardViewModel(apiClient, FormatSeasonNumber) is { } movieCard)
+                    _medias.Add(movieCard);
+                break;
+
+            case LiteSerieDto serie when seenSeries.Add(serie.Id):
+                if (serie.ToCardViewModel(apiClient, FormatSeasonNumber) is { } serieCard)
+                    _medias.Add(serieCard);
+                break;
+
+            case LiteSerieEpisodeDto episode when seenSeries.Add(episode.SerieId):
+                var serieMedia = _person!.Roles
+                    .Select(r => r.Media)
+                    .OfType<LiteSerieDto>()
+                    .FirstOrDefault(s => s.Id == episode.SerieId);
+
+                if (serieMedia?.ToCardViewModel(apiClient, FormatSeasonNumber) is { } serieFromRole)
+                {
+                    _medias.Add(serieFromRole);
+                    break;
+                }
+
+                if (ToSerieCardFromEpisode(episode) is { } serieFromEpisode)
+                    _medias.Add(serieFromEpisode);
+                break;
+        }
+    }
+
+    private MediaCardViewModel? ToSerieCardFromEpisode(LiteSerieEpisodeDto episode)
+    {
+        var poster = episode.SeriePictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
+        return new MediaCardViewModel
+        {
+            Id = episode.SerieId.ToString(),
+            Kind = MediaCardKind.Serie,
+            MediaType = MediaType.Serie,
+            UserRating = episode.UserRating,
+            Title = episode.SerieTitle,
+            AdditionalInformations = episode.SerieReleaseDate?.Year.ToString(),
+            PictureUrl = apiClient.GetAbsoluteUri(poster?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
+            Watched = episode.UserState?.IsCompleted ?? false,
+            Progress = episode.UserState?.ProgressPercentage ?? 0
+        };
+    }
+
+    private string FormatSeasonNumber(int seasonNumber) => string.Format(S["SeasonNumber"], seasonNumber);
+
+    private static string GetFilmographyHref(MediaCardViewModel item) => item.Kind switch
+    {
+        MediaCardKind.Serie => $"/series/{item.Id}",
+        _ => $"/movies/{item.Id}"
+    };
+
+    private static MediaCardVariant GetFilmographyVariant(MediaCardViewModel item) =>
+        item.Kind == MediaCardKind.Cover ? MediaCardVariant.Cover : MediaCardVariant.Poster;
+
+    private async Task ExcludeForSelf(MediaCardViewModel item)
+    {
+        if (await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
+            _medias.RemoveAll(m => m.Id == item.Id || m.ParentId == item.Id);
+    }
+
+    private Task ExcludeForOthers(MediaCardViewModel item) =>
+        MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
+
     private void AddAlbumToDiscography(LiteMusicAlbumDto album)
     {
         var coverUri = album.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
@@ -191,6 +238,9 @@ public partial class Person : IDisposable
         _discography.Add(new MediaCardViewModel
         {
             Id = album.Id.ToString(),
+            Kind = MediaCardKind.Cover,
+            MediaType = MediaType.MusicAlbum,
+            UserRating = album.UserRating,
             Title = album.Title,
             AdditionalInformations = album.ReleaseDate?.Year.ToString(),
             PictureUrl = apiClient.GetAbsoluteUri(

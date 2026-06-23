@@ -1,4 +1,5 @@
 ﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Services;
@@ -24,6 +25,7 @@ public partial class Movie
     [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IFederationService FederationService { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
 
@@ -37,6 +39,10 @@ public partial class Movie
     private SubtitleFileTrackDto? _selectedSubtitleFileTrack;
     private List<MediaCardViewModel> _similarMedia = [];
     private string? _previousId;
+    private bool _canTrackProgress;
+    private bool _canExclude;
+    private bool _canSetWatchState;
+    private bool _isAdmin;
 
     private string? GetLogoUrl() =>
         apiClient.GetAbsoluteUri(
@@ -45,6 +51,13 @@ public partial class Movie
 
     protected override async Task OnParametersSetAsync()
     {
+        if (_previousId is null)
+        {
+            _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+            (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
+            _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+        }
+
         if (_previousId == Id) return;
         _previousId = Id;
 
@@ -316,15 +329,12 @@ public partial class Movie
         try
         {
             var similar = await k7ServerService.GetSimilarMediaAsync(_movie.Id);
-            _similarMedia = similar.Select(m => new MediaCardViewModel
+            _similarMedia = [];
+            foreach (var media in similar)
             {
-                Id = m.Id.ToString(),
-                Title = m.Title,
-                AdditionalInformations = m.ReleaseDate?.Year.ToString(),
-                PictureUrl = apiClient.GetAbsoluteUri(
-                    m.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                        ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-            }).ToList();
+                if (media.ToCardViewModel(apiClient, FormatSeasonNumber) is { } vm)
+                    _similarMedia.Add(vm);
+            }
             await InvokeAsync(StateHasChanged);
         }
         catch
@@ -375,4 +385,21 @@ public partial class Movie
         _movie = await k7ServerService.GetMovieAsync(_movie.Id);
         StateHasChanged();
     }
+
+    private string FormatSeasonNumber(int seasonNumber) => string.Format(S["SeasonNumber"], seasonNumber);
+
+    private static string GetSimilarMediaHref(MediaCardViewModel item) => item.Kind switch
+    {
+        MediaCardKind.Serie => $"/series/{item.Id}",
+        _ => $"/movies/{item.Id}"
+    };
+
+    private async Task ExcludeSimilarForSelf(MediaCardViewModel item)
+    {
+        if (await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
+            _similarMedia.RemoveAll(m => m.Id == item.Id || m.ParentId == item.Id);
+    }
+
+    private Task ExcludeSimilarForOthers(MediaCardViewModel item) =>
+        MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
 }

@@ -141,11 +141,17 @@ else if (_person is not null)
                         {
                             <CarouselItem @key="media.Id">
                                 <MediaCard Model="media"
-                                           Href="@(media.Kind == MediaCardKind.Serie ? $"/series/{media.Id}" : $"/movies/{media.Id}")"
+                                           Variant="@GetFilmographyVariant(media)"
+                                           Href="@GetFilmographyHref(media)"
                                            OverlayEnabled="true"
-                                           ProgressEnabled="true"
-                                           WatchedStatusEnabled="true"
-                                           FooterVisible="true" />
+                                           ProgressEnabled="_canTrackProgress"
+                                           WatchedStatusEnabled="_canTrackProgress"
+                                           FooterVisible="true"
+                                           ExcludeMenuEnabled="_canExclude"
+                                           WatchStateMenuEnabled="_canSetWatchState"
+                                           IsAdmin="_isAdmin"
+                                           OnExcludeForSelf="() => ExcludeForSelf(media)"
+                                           OnExcludeForOthers="() => ExcludeForOthers(media)" />
                             </CarouselItem>
                         }
                     </Carousel>

@@ -94,6 +94,7 @@
                             <th class="col-track-number">#</th>
                             <th>@S["Title"]</th>
                             <th class="col-duration">@S["Duration"]</th>
+                            <th class="col-actions"></th>
                         </HeaderContent>
                         <RowTemplate>
                             <td>
@@ -112,6 +113,9 @@
                             <td class="col-duration">
                                 <span class="track-duration">@FormatTime(context.Duration)</span>
                             </td>
+                            <td>
+                                <TrackContextMenu Track="BuildQueueItem(context)" UserRating="context.UserRating" />
+                            </td>
                         </RowTemplate>
                     </K7Table>
                 </div>
@@ -124,7 +128,7 @@
                         @foreach (var album in _albums)
                         {
                             <CarouselItem @key="album.Id">
-                                <MediaCard Model="album" Variant="MediaCardVariant.Cover" Href="@($"/music/albums/{album.Id}")" FooterVisible="true" />
+                                <MediaCard Model="album" Variant="MediaCardVariant.Cover" Href="@($"/music/albums/{album.Id}")" OverlayEnabled="true" FooterVisible="true" />
                             </CarouselItem>
                         }
                     </Carousel>

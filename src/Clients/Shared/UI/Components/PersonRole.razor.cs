@@ -10,6 +10,7 @@ public partial class PersonRole
 
     [Parameter] public bool Skeleton { get; set; }
     [Parameter] public required LitePersonRoleDto LitePersonRoleDto { get; set; }
+    [Parameter] public string? SubtitleOverride { get; set; }
 
     private string? GetImageUrl()
     {
@@ -18,7 +19,7 @@ public partial class PersonRole
             picture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri;
     }
 
-    private string? GetSubtitle() => LitePersonRoleDto switch
+    private string? GetSubtitle() => SubtitleOverride ?? LitePersonRoleDto switch
     {
         LiteCrewMemberDto crew => $"{crew.Department} / {crew.Job}",
         LiteActorDto actor => actor.CharacterName,

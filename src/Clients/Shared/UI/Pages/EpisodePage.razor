@@ -144,10 +144,10 @@ else if (_episode is not null)
         @if ((_episode.PersonRoles?.Count ?? 0) > 0)
         {
             <Carousel Title="@L["CastingAndCrew"]">
-                @foreach (var cast in _episode.PersonRoles!.Where(x => x.Person != null).OrderBy(x => x.Order == null).ThenBy(x => x.Order))
+                @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_episode.PersonRoles))
                 {
-                    <CarouselItem @key="cast.Id">
-                        <PersonRole LitePersonRoleDto="@cast" />
+                    <CarouselItem @key="cast.Key">
+                        <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
                     </CarouselItem>
                 }
             </Carousel>
