@@ -3,25 +3,25 @@ using System.Text;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
+using K7.Shared;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
+using K7.Shared.Dtos.Requests;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
-using K7.Clients.Shared.UI;
-using K7.Clients.Shared.UI.Components.Dialogs;
-using K7.Shared;
-using K7.Shared.Dtos.Requests;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
 public enum FullScreenView { Player, Lyrics, Queue, Info, SyncPlay }
-public enum QueueTab { UpNext, Previous, Similar }
+public enum QueueTab { UpNext, Previous, Similar, Suggestions }
 
 public partial class FullScreenMusicPlayer : IAsyncDisposable
 {
@@ -50,17 +50,20 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private bool _menuOpen;
     private bool _sleepTimerSubmenuOpen;
     private bool _visualizerEnabled;
-    private bool _audioMuseEnabled;
+    private bool _musicIntelligenceAvailable;
     private List<AudioQueueItem> _similarTracks = [];
+    private List<AudioQueueItem> _suggestionTracks = [];
     private bool _similarLoading;
+    private bool _suggestionsLoading;
     private Guid? _similarLoadedForTrackId;
+    private Guid? _suggestionsLoadedForTrackId;
     private ElementReference _visualizerCanvas;
     private MusicTrackDto? _trackDetails;
     private AudioFileMetadataDto? _audioMetadata;
     private long _fileSize;
     private QueueTab _queueTab;
-    private IReadOnlyList<TabOption<QueueTab>> _queueTabOptions => _audioMuseEnabled
-        ? [new(QueueTab.UpNext, S["UpNext"]), new(QueueTab.Previous, S["Previous"]), new(QueueTab.Similar, S["Similar"])]
+    private IReadOnlyList<TabOption<QueueTab>> _queueTabOptions => _musicIntelligenceAvailable
+        ? [new(QueueTab.UpNext, S["UpNext"]), new(QueueTab.Previous, S["Previous"]), new(QueueTab.Similar, S["Similar"]), new(QueueTab.Suggestions, S["Suggestions"])]
         : [new(QueueTab.UpNext, S["UpNext"]), new(QueueTab.Previous, S["Previous"])];
 
     private double DisplayPercent => _isScrubbing && DisplayDuration > 0
@@ -138,12 +141,12 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
         try
         {
-            var flags = await ServerPreferences.GetServerFeatureFlagsAsync();
-            _audioMuseEnabled = flags.AudioMuseAiEnabled;
+            var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
+            _musicIntelligenceAvailable = status.IsAvailable;
         }
         catch
         {
-            _audioMuseEnabled = false;
+            _musicIntelligenceAvailable = false;
         }
     }
 
@@ -624,6 +627,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     {
         _detailsLoadedForMediaId = null;
         _similarLoadedForTrackId = null;
+        _suggestionsLoadedForTrackId = null;
         if (Audio.IsFullScreenVisible)
             await LoadTrackDetailsAsync();
         StateHasChanged();
@@ -804,6 +808,8 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         _queueTab = tab;
         if (tab == QueueTab.Similar)
             await LoadSimilarTracksAsync();
+        else if (tab == QueueTab.Suggestions)
+            await LoadSuggestionTracksAsync();
         StateHasChanged();
     }
 
@@ -855,6 +861,75 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         }
 
         _similarLoading = false;
+    }
+
+    private async Task LoadSuggestionTracksAsync()
+    {
+        if (Audio.CurrentTrack is null) return;
+
+        var currentId = Audio.CurrentTrack.MediaId;
+        if (currentId == _suggestionsLoadedForTrackId) return;
+
+        _suggestionsLoading = true;
+        _suggestionTracks = [];
+        StateHasChanged();
+
+        try
+        {
+            var recentIds = Audio.Queue
+                .Take(Audio.CurrentIndex)
+                .Select(t => t.MediaId)
+                .Append(currentId)
+                .Distinct()
+                .ToList();
+
+            var trackIds = await AudioMuseAi.GetSuggestionsAsync(recentIds);
+            if (trackIds.Count > 0)
+            {
+                var result = await Server.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+                {
+                    MediaTypes = [MediaType.MusicTrack],
+                    Ids = trackIds.ToArray(),
+                    PageNumber = 1,
+                    PageSize = trackIds.Count
+                });
+
+                _suggestionTracks = result?.Items?.OfType<LiteMusicTrackDto>()
+                    .Where(t => t.IndexedFileId.HasValue)
+                    .Select(t => new AudioQueueItem
+                    {
+                        IndexedFileId = t.IndexedFileId!.Value,
+                        MediaId = t.Id,
+                        Title = t.Title ?? S["Untitled"],
+                        Artist = t.ArtistName,
+                        AlbumTitle = t.AlbumTitle,
+                        ArtistId = t.ArtistId,
+                        Genre = t.Genre,
+                        Duration = t.Duration
+                    })
+                    .ToList() ?? [];
+            }
+
+            _suggestionsLoadedForTrackId = currentId;
+        }
+        catch
+        {
+            _suggestionTracks = [];
+        }
+
+        _suggestionsLoading = false;
+    }
+
+    private async Task PlaySuggestionFromIndex(int index)
+    {
+        if (index < 0 || index >= _suggestionTracks.Count) return;
+        await Audio.PlayTracksAsync(_suggestionTracks, index);
+    }
+
+    private async Task OnSuggestionItemKeyDown(KeyboardEventArgs e, int index)
+    {
+        if (e.Code is "Enter" or "Space")
+            await PlaySuggestionFromIndex(index);
     }
 
     private async Task PlaySimilarFromIndex(int index)

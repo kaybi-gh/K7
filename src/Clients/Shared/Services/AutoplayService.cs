@@ -18,16 +18,20 @@ public class AutoplayService : IDisposable
 
     public bool Enabled { get; private set; }
 
+    private readonly IServerPreferencesService _serverPreferences;
+
     public AutoplayService(
         IAudioPlayerService audioPlayerService,
         IServerInfoService serverInfoService,
         IK7ServerService apiClient,
-        IDeviceStorageService deviceStorageService)
+        IDeviceStorageService deviceStorageService,
+        IServerPreferencesService serverPreferences)
     {
         _audioPlayerService = audioPlayerService;
         _serverInfoService = serverInfoService;
         _apiClient = apiClient;
         _deviceStorageService = deviceStorageService;
+        _serverPreferences = serverPreferences;
         Enabled = deviceStorageService.Get(PreferenceKeys.AUTOPLAY_ENABLED, true);
 
         _audioPlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -51,6 +55,10 @@ public class AutoplayService : IDisposable
         _isLoading = true;
         try
         {
+            var status = await _serverPreferences.GetMusicIntelligenceStatusAsync();
+            if (!status.IsAvailable)
+                return;
+
             var radioTracks = await _serverInfoService.GetMusicRadioAsync(
                 "sonic",
                 seedTrackId: currentTrack.MediaId,

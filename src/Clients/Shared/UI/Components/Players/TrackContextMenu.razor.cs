@@ -20,7 +20,7 @@ public partial class TrackContextMenu
     [Inject] private IServerInfoService ServerInfo { get; set; } = default!;
 
     private bool _canCreatePlaylist;
-    private bool _audioMuseEnabled;
+    private bool _musicIntelligenceAvailable;
 
     protected override async Task OnInitializedAsync()
     {
@@ -28,12 +28,12 @@ public partial class TrackContextMenu
 
         try
         {
-            var flags = await ServerPreferences.GetServerFeatureFlagsAsync();
-            _audioMuseEnabled = flags.AudioMuseAiEnabled;
+            var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
+            _musicIntelligenceAvailable = status.IsAvailable;
         }
         catch
         {
-            _audioMuseEnabled = false;
+            _musicIntelligenceAvailable = false;
         }
     }
 
