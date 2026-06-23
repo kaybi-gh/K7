@@ -15,6 +15,7 @@ public partial class MySpacePlaylistsPage
     private bool _canCreate;
     private MediaType? _mediaTypeFilter;
     private List<ButtonGroupOption<MediaType?>> _mediaTypeOptions = [];
+    private bool _musicIntelligenceAvailable;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -32,6 +33,16 @@ public partial class MySpacePlaylistsPage
 
         _canCreate = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         await LoadPlaylistsAsync();
+
+        try
+        {
+            var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
+            _musicIntelligenceAvailable = status?.IsAvailable ?? false;
+        }
+        catch
+        {
+            _musicIntelligenceAvailable = false;
+        }
     }
 
     private async Task LoadPlaylistsAsync()
@@ -69,6 +80,13 @@ public partial class MySpacePlaylistsPage
             try { await K7ServerService.EvaluateSmartPlaylistAsync(id); } catch { }
             NavigationManager.NavigateTo($"/smart-playlists/{id}");
         }
+    }
+
+    private async Task OpenAiPlaylistDialog()
+    {
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<AiSmartPlaylistDialog>(L["AiPlaylist"], null, options);
+        await dialog.Result;
     }
 
     private void GoToPlaylist(LitePlaylistDto playlist)

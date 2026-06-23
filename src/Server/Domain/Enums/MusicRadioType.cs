@@ -4,9 +4,7 @@ public enum MusicRadioType
 {
     Sonic,
     Artist,
-    Mood,
     Discovery,
     TimeCapsule,
-    Tempo,
     RecentlyAdded
 }

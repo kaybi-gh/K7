@@ -16,11 +16,12 @@ using Microsoft.JSInterop;
 using K7.Clients.Shared.UI;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Shared;
+using K7.Shared.Dtos.Requests;
 
 namespace K7.Clients.Shared.UI.Components.Players;
 
 public enum FullScreenView { Player, Lyrics, Queue, Info, SyncPlay }
-public enum QueueTab { UpNext, Previous }
+public enum QueueTab { UpNext, Previous, Similar }
 
 public partial class FullScreenMusicPlayer : IAsyncDisposable
 {
@@ -49,15 +50,18 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private bool _menuOpen;
     private bool _sleepTimerSubmenuOpen;
     private bool _visualizerEnabled;
+    private bool _audioMuseEnabled;
+    private List<AudioQueueItem> _similarTracks = [];
+    private bool _similarLoading;
+    private Guid? _similarLoadedForTrackId;
     private ElementReference _visualizerCanvas;
     private MusicTrackDto? _trackDetails;
     private AudioFileMetadataDto? _audioMetadata;
     private long _fileSize;
     private QueueTab _queueTab;
-    private IReadOnlyList<TabOption<QueueTab>> _queueTabOptions => [
-        new(QueueTab.UpNext, S["UpNext"]),
-        new(QueueTab.Previous, S["Previous"])
-    ];
+    private IReadOnlyList<TabOption<QueueTab>> _queueTabOptions => _audioMuseEnabled
+        ? [new(QueueTab.UpNext, S["UpNext"]), new(QueueTab.Previous, S["Previous"]), new(QueueTab.Similar, S["Similar"])]
+        : [new(QueueTab.UpNext, S["UpNext"]), new(QueueTab.Previous, S["Previous"])];
 
     private double DisplayPercent => _isScrubbing && DisplayDuration > 0
         ? (_scrubTime / DisplayDuration) * 100
@@ -101,8 +105,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     };
 
     private bool HasTrackProperties => _trackDetails is { } t &&
-        (t.Bpm is > 0 || !string.IsNullOrEmpty(t.MusicalKey) || t.LoudnessLufs is not null ||
-         t.ReplayGainTrackGain is not null || t.Energy is not null || t.Danceability is not null || t.Valence is not null);
+        (t.LoudnessLufs is not null || t.ReplayGainTrackGain is not null);
 
     private string VolumeIcon => (IsRemoteMode ? DisplayVolume <= 0 : Audio.IsMuted || Audio.Volume <= 0)
         ? Phosphor.SpeakerX
@@ -132,6 +135,16 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
         var deviceType = await DeviceService.GetDeviceTypeAsync();
         _showVolumeControls = deviceType is not (DeviceType.TV or DeviceType.Phone);
+
+        try
+        {
+            var flags = await ServerPreferences.GetServerFeatureFlagsAsync();
+            _audioMuseEnabled = flags.AudioMuseAiEnabled;
+        }
+        catch
+        {
+            _audioMuseEnabled = false;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -610,6 +623,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
     private void OnTrackChanged(AudioQueueItem? _) => InvokeAsync(async () =>
     {
         _detailsLoadedForMediaId = null;
+        _similarLoadedForTrackId = null;
         if (Audio.IsFullScreenVisible)
             await LoadTrackDetailsAsync();
         StateHasChanged();
@@ -783,5 +797,75 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
             >= 1024 => $"{bytes / 1024.0:F0} KB",
             _ => $"{bytes} B"
         };
+    }
+
+    private async Task OnQueueTabChanged(QueueTab tab)
+    {
+        _queueTab = tab;
+        if (tab == QueueTab.Similar)
+            await LoadSimilarTracksAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadSimilarTracksAsync()
+    {
+        if (Audio.CurrentTrack is null) return;
+
+        var currentId = Audio.CurrentTrack.MediaId;
+        if (currentId == _similarLoadedForTrackId) return;
+
+        _similarLoading = true;
+        _similarTracks = [];
+        StateHasChanged();
+
+        try
+        {
+            var trackIds = await AudioMuseAi.GetSimilarTracksAsync(currentId);
+            if (trackIds.Count > 0)
+            {
+                var result = await Server.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+                {
+                    MediaTypes = [MediaType.MusicTrack],
+                    Ids = trackIds.ToArray(),
+                    PageNumber = 1,
+                    PageSize = trackIds.Count
+                });
+
+                _similarTracks = result?.Items?.OfType<LiteMusicTrackDto>()
+                    .Where(t => t.IndexedFileId.HasValue)
+                    .Select(t => new AudioQueueItem
+                    {
+                        IndexedFileId = t.IndexedFileId!.Value,
+                        MediaId = t.Id,
+                        Title = t.Title ?? S["Untitled"],
+                        Artist = t.ArtistName,
+                        AlbumTitle = t.AlbumTitle,
+                        ArtistId = t.ArtistId,
+                        Genre = t.Genre,
+                        Duration = t.Duration
+                    })
+                    .ToList() ?? [];
+            }
+
+            _similarLoadedForTrackId = currentId;
+        }
+        catch
+        {
+            _similarTracks = [];
+        }
+
+        _similarLoading = false;
+    }
+
+    private async Task PlaySimilarFromIndex(int index)
+    {
+        if (index < 0 || index >= _similarTracks.Count) return;
+        await Audio.PlayTracksAsync(_similarTracks, index);
+    }
+
+    private async Task OnSimilarItemKeyDown(KeyboardEventArgs e, int index)
+    {
+        if (e.Code is "Enter" or "Space")
+            await PlaySimilarFromIndex(index);
     }
 }

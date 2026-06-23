@@ -1,0 +1,95 @@
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@inject IStringLocalizer<AiSmartPlaylistDialog> L
+@inject IAudioMuseAiClientService AudioMuseAi
+@inject IMediaService MediaService
+@inject IAudioPlayerService Audio
+@inject IK7Snackbar Snackbar
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-4 pa-4">
+        <K7TextField @bind-Value="_prompt" Label="@L["Prompt"]" Placeholder="@L["PromptPlaceholder"]" />
+
+        <div class="d-flex gap-2 justify-end">
+            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="Generate" Variant="K7ButtonVariant.Filled" Disabled="string.IsNullOrWhiteSpace(_prompt) || _loading">
+                @if (_loading)
+                {
+                    <K7Spinner Size="16" />
+                }
+                else
+                {
+                    @L["Generate"]
+                }
+            </K7Button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
+
+    private string _prompt = string.Empty;
+    private bool _loading;
+
+    private void Cancel() => Dialog.Close(K7DialogResult.Cancel());
+
+    private async Task Generate()
+    {
+        if (string.IsNullOrWhiteSpace(_prompt))
+            return;
+
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var trackIds = await AudioMuseAi.CreateSmartPlaylistAsync(_prompt);
+
+            if (trackIds.Count == 0)
+            {
+                Snackbar.Add(L["NoResults"], K7Severity.Warning);
+                _loading = false;
+                StateHasChanged();
+                return;
+            }
+
+            var result = await MediaService.GetLiteMediasAsync(new K7.Shared.Dtos.Requests.GetMediasWithPaginationQuery
+            {
+                MediaTypes = [K7.Server.Domain.Enums.MediaType.MusicTrack],
+                Ids = trackIds.ToArray(),
+                PageNumber = 1,
+                PageSize = trackIds.Count
+            });
+
+            var tracks = result?.Items?.OfType<K7.Shared.Dtos.Entities.Medias.LiteMusicTrackDto>()
+                .Where(t => t.IndexedFileId.HasValue)
+                .Select(t => new AudioQueueItem
+                {
+                    IndexedFileId = t.IndexedFileId!.Value,
+                    MediaId = t.Id,
+                    Title = t.Title ?? "Untitled",
+                    Artist = t.ArtistName,
+                    AlbumTitle = t.AlbumTitle,
+                    ArtistId = t.ArtistId,
+                    Genre = t.Genre,
+                    Duration = t.Duration
+                })
+                .ToList();
+
+            if (tracks is { Count: > 0 })
+            {
+                await Audio.PlayTracksAsync(tracks, 0);
+                Snackbar.Add(string.Format(L["Playing"], tracks.Count), K7Severity.Info);
+            }
+
+            Dialog.Close(K7DialogResult.Ok(true));
+        }
+        catch
+        {
+            Snackbar.Add(L["Error"], K7Severity.Error);
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -44,9 +44,7 @@ public static class SmartPlaylistEvaluator
             SmartPlaylistOrderBy.TrackNumber => desc
                 ? query.OrderByDescending(m => ((MusicTrack)m).TrackNumber)
                 : query.OrderBy(m => ((MusicTrack)m).TrackNumber),
-            SmartPlaylistOrderBy.Bpm => desc
-                ? query.OrderByDescending(m => ((MusicTrack)m).AudioAnalysis!.Bpm)
-                : query.OrderBy(m => ((MusicTrack)m).AudioAnalysis!.Bpm),
+            SmartPlaylistOrderBy.Bpm => query,
             SmartPlaylistOrderBy.PlayCount => desc
                 ? query.OrderByDescending(m => m.UserMediaStates.Sum(s => s.PlayCount))
                 : query.OrderBy(m => m.UserMediaStates.Sum(s => s.PlayCount)),

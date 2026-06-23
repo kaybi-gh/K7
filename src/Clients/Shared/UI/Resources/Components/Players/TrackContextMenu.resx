@@ -35,4 +35,8 @@
   <data name="DownloadQueued" xml:space="preserve"><value>« {0} » en file d'attente</value></data>
   <data name="Menu" xml:space="preserve"><value>Actions sur la piste</value></data>
   <data name="ActionsTitle" xml:space="preserve"><value>Plus d'actions</value></data>
+  <data name="PlaySimilar" xml:space="preserve"><value>Jouer des titres similaires</value></data>
+  <data name="NoSimilarTracks" xml:space="preserve"><value>Aucun titre similaire trouvé</value></data>
+  <data name="PlayingSimilar" xml:space="preserve"><value>Titres similaires à « {0} »</value></data>
+  <data name="SimilarTracksError" xml:space="preserve"><value>Erreur lors de la recherche de titres similaires</value></data>
 </root>

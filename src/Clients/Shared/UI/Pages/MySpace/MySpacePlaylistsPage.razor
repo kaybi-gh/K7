@@ -6,6 +6,7 @@
 @inject IK7ServerService ApiClient
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<MySpacePlaylistsPage> L
+@inject IServerPreferencesService ServerPreferences
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
@@ -27,6 +28,10 @@
             <ChildContent>
                 <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
                 <K7MenuItem Icon="sparkle" OnClick="OpenCreateSmartPlaylistDialog">@L["SmartPlaylist"]</K7MenuItem>
+                @if (_audioMuseEnabled)
+                {
+                    <K7MenuItem Icon="magic-wand" OnClick="OpenAiPlaylistDialog">@L["AiPlaylist"]</K7MenuItem>
+                }
             </ChildContent>
         </K7Menu>
     </ToolbarContent>

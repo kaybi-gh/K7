@@ -20,10 +20,21 @@ public partial class TrackContextMenu
     [Inject] private IServerInfoService ServerInfo { get; set; } = default!;
 
     private bool _canCreatePlaylist;
+    private bool _audioMuseEnabled;
 
     protected override async Task OnInitializedAsync()
     {
         _canCreatePlaylist = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
+
+        try
+        {
+            var flags = await ServerPreferences.GetServerFeatureFlagsAsync();
+            _audioMuseEnabled = flags.AudioMuseAiEnabled;
+        }
+        catch
+        {
+            _audioMuseEnabled = false;
+        }
     }
 
     private void PlayNext()
@@ -150,5 +161,41 @@ public partial class TrackContextMenu
             IsCacheItem = false
         });
         Snackbar.Add(string.Format(L["DownloadQueued"], Track.Title), K7Severity.Info);
+    }
+
+    private async Task PlaySimilar()
+    {
+        try
+        {
+            var trackIds = await AudioMuseAi.GetSimilarTracksAsync(Track.MediaId);
+            if (trackIds.Count == 0)
+            {
+                Snackbar.Add(L["NoSimilarTracks"], K7Severity.Warning);
+                return;
+            }
+
+            var result = await K7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
+            {
+                MediaTypes = [MediaType.MusicTrack],
+                Ids = trackIds.ToArray(),
+                PageNumber = 1,
+                PageSize = trackIds.Count
+            });
+
+            var tracks = result?.Items?.OfType<LiteMusicTrackDto>()
+                .Where(t => t.IndexedFileId.HasValue)
+                .Select(t => ToQueueItem(t))
+                .ToList();
+
+            if (tracks is { Count: > 0 })
+            {
+                await Audio.PlayTracksAsync(tracks, 0);
+                Snackbar.Add(string.Format(L["PlayingSimilar"], Track.Title), K7Severity.Info);
+            }
+        }
+        catch
+        {
+            Snackbar.Add(L["SimilarTracksError"], K7Severity.Error);
+        }
     }
 }

@@ -140,4 +140,9 @@
   <data name="GoToArtist" xml:space="preserve"><value>Aller a l'artiste</value></data>
   <data name="GoToAlbum" xml:space="preserve"><value>Aller a l'album</value></data>
   <data name="AddToPlaylist" xml:space="preserve"><value>Ajouter a une playlist...</value></data>
+  <data name="PlaySimilar" xml:space="preserve"><value>Jouer des similaires</value></data>
+  <data name="Similar" xml:space="preserve"><value>Similaires</value></data>
+  <data name="NoSimilarTracks" xml:space="preserve"><value>Aucun morceau similaire trouve</value></data>
+  <data name="PlayingSimilar" xml:space="preserve"><value>Lecture de morceaux similaires a {0}</value></data>
+  <data name="SimilarTracksError" xml:space="preserve"><value>Erreur lors de la recherche de morceaux similaires</value></data>
 </root>

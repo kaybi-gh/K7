@@ -104,9 +104,6 @@ public partial class MusicTracks
             ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
         Duration = track.Duration ?? 0,
         UserRating = track.UserRating,
-        Bpm = track.Bpm,
-        MusicalKey = track.MusicalKey,
-        Energy = track.Energy,
         IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
     };
 

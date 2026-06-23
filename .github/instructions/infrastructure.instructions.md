@@ -16,7 +16,7 @@ Implements interfaces defined in Domain/Application. Houses external concerns: d
 | `Database/Providers/Postgres` | Postgres-specific provider, migrations |
 | `Database/Providers/Sqlite` | Sqlite-specific provider, migrations |
 | `FileSystem` | File system abstraction and access |
-| `MediaProcessing` | ffmpeg, Essentia, transcoding, image extraction |
+| `MediaProcessing` | ffmpeg, transcoding, image extraction |
 | `Configuration` | Configuration binding, options classes |
 
 ## EF Core Entity Configuration
