@@ -19,12 +19,16 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PresetDiscovery" xml:space="preserve"><value>D&#233;couverte</value></data>
-  <data name="PresetDiscoveryDesc" xml:space="preserve"><value>Morceaux jamais &#233;cout&#233;s, proches de vos go&#251;ts</value></data>
+  <data name="PresetDiscovery" xml:space="preserve"><value>D&#233;couverte al&#233;atoire</value></data>
+  <data name="PresetDiscoveryDesc" xml:space="preserve"><value>Morceaux jamais &#233;cout&#233;s, ou jamais not&#233;s si tout a d&#233;j&#224; &#233;t&#233; lu, dans un ordre al&#233;atoire</value></data>
+  <data name="PresetDiscoveryAi" xml:space="preserve"><value>D&#233;couverte similaire</value></data>
+  <data name="PresetDiscoveryAiDesc" xml:space="preserve"><value>Proche de vos go&#251;ts, parmi les morceaux que vous n'avez pas encore &#233;cout&#233;s</value></data>
   <data name="PresetSonic" xml:space="preserve"><value>Similaire</value></data>
   <data name="PresetSonicDesc" xml:space="preserve"><value>Morceaux au son proche de ce que vous &#233;coutez</value></data>
-  <data name="PresetTempo" xml:space="preserve"><value>Tempo</value></data>
-  <data name="PresetTempoDesc" xml:space="preserve"><value>Mix bas&#233; sur le BPM de vos morceaux pr&#233;f&#233;r&#233;s</value></data>
+  <data name="PresetAmbiance" xml:space="preserve"><value>Ambiance</value></data>
+  <data name="PresetAmbianceDesc" xml:space="preserve"><value>Choisissez une ambiance parmi celles disponibles</value></data>
+  <data name="PresetSonicPath" xml:space="preserve"><value>Chemin sonore</value></data>
+  <data name="PresetSonicPathDesc" xml:space="preserve"><value>Encha&#238;nement progressif entre deux morceaux</value></data>
   <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>
   <data name="PresetTimeCapsuleDesc" xml:space="preserve"><value>Red&#233;couvrez ce que vous &#233;coutiez il y a un an</value></data>
   <data name="PresetRecentlyAdded" xml:space="preserve"><value>Nouveaut&#233;s</value></data>

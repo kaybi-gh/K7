@@ -1,0 +1,39 @@
+@namespace K7.Clients.Shared.UI.Components.Dialogs
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Requests
+
+<div class="track-search-field">
+    <K7TextField TValue="string"
+                 Label="@Label"
+                 Value="_query"
+                 DebounceInterval="300"
+                 OnDebounceIntervalElapsed="OnDebouncedSearch"
+                 Placeholder="@Placeholder" />
+
+    @if (_loading)
+    {
+        <K7Spinner Size="20" />
+    }
+    else if (_results.Count > 0)
+    {
+        <div class="track-search-field__results">
+            @foreach (var track in _results)
+            {
+                <button type="button"
+                        class="track-search-field__item focusable"
+                        @onclick="() => SelectTrack(track)">
+                    <span class="track-search-field__title">@track.Title</span>
+                    <span class="track-search-field__artist">@track.ArtistName</span>
+                </button>
+            }
+        </div>
+    }
+
+    @if (SelectedTrack is not null)
+    {
+        <span class="text-caption track-search-field__selected">
+            @SelectedTrack.Title @if (!string.IsNullOrEmpty(SelectedTrack.ArtistName)) { <text>- @SelectedTrack.ArtistName</text> }
+        </span>
+    }
+</div>

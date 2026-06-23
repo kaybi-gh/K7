@@ -6,7 +6,7 @@
     <Carousel Title="@Title">
         @foreach (var radio in Presets)
         {
-            <CarouselItem @key="radio.Type">
+            <CarouselItem @key="radio.Title">
                 <div class="music-radio-presets__item">
                     <div class="music-radio-presets__container">
                         <button type="button"
@@ -14,7 +14,7 @@
                                 style="@radio.BackgroundStyle"
                                 tabindex="0"
                                 aria-label="@radio.Title"
-                                @onclick="() => PlayRadioAsync(radio)">
+                                @onclick="() => OnPresetClickedAsync(radio)">
                             <span class="music-radio-presets__content">
                                 <span class="music-radio-presets__icon">
                                     <K7Icon Icon="@radio.Icon" Size="lg" />

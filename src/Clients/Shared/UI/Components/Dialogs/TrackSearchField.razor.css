@@ -1,0 +1,46 @@
+.track-search-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.track-search-field__results {
+    display: flex;
+    flex-direction: column;
+    max-height: 12rem;
+    overflow-y: auto;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.track-search-field__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-1);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
+.track-search-field__item:hover,
+.track-search-field__item:focus-visible {
+    background: var(--color-surface-hover);
+}
+
+.track-search-field__title {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.track-search-field__artist {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.track-search-field__selected {
+    color: var(--color-text-muted);
+}
