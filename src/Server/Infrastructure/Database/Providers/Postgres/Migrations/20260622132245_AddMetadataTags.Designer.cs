@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260622132245_AddMetadataTags")]
+    partial class AddMetadataTags
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -979,6 +982,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
+
+                    b.PrimitiveCollection<string[]>("Genres")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<DateTimeOffset?>("LastMetadataRefreshedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2512,6 +2519,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<long?>("Budget")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("ContentRating")
+                        .HasColumnType("text");
+
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("text");
 
@@ -2520,6 +2530,10 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<long?>("Revenue")
                         .HasColumnType("bigint");
+
+                    b.PrimitiveCollection<string[]>("Studios")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<string>("Tagline")
                         .HasColumnType("text");
@@ -2603,6 +2617,12 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
+                    b.Property<string>("ContentRating")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Network")
+                        .HasColumnType("text");
+
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("text");
 
@@ -2612,13 +2632,23 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("text");
 
+                    b.PrimitiveCollection<string[]>("Studios")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.ToTable("Medias", t =>
                         {
+                            t.Property("ContentRating")
+                                .HasColumnName("Serie_ContentRating");
+
                             t.Property("OriginalLanguage")
                                 .HasColumnName("Serie_OriginalLanguage");
 
                             t.Property("Overview")
                                 .HasColumnName("Serie_Overview");
+
+                            t.Property("Studios")
+                                .HasColumnName("Serie_Studios");
                         });
 
                     b.HasDiscriminator().HasValue(4);

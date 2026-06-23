@@ -21,7 +21,7 @@ public abstract class BaseMedia(MediaType type) : BaseAuditableEntity
     public IList<MetadataPicture> Pictures { get; set; } = [];
     public IList<BaseRating> Ratings { get; set; } = [];
     public IList<BasePersonRole> PersonRoles { get; set; } = [];
-    public IList<string> Genres { get; set; } = []; // TODO - Use typed tags instead
+    public IList<MediaMetadataTag> MetadataTags { get; set; } = [];
     public IList<TrailerInfo> Trailers { get; set; } = [];
     public IList<MediaRecommendation> Recommendations { get; set; } = [];
     public DateTimeOffset? LastMetadataRefreshedAt { get; set; }
