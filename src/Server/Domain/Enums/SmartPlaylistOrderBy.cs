@@ -2,18 +2,17 @@ namespace K7.Server.Domain.Enums;
 
 public enum SmartPlaylistOrderBy
 {
-    Title,
-    DateAdded,
-    LastPlayed,
-    PlayCount,
-    Rating,
-    Year,
-    Random,
+    Title = 0,
+    DateAdded = 1,
+    LastPlayed = 2,
+    PlayCount = 3,
+    Rating = 4,
+    Year = 5,
+    Random = 6,
 
-    // MusicTrack
-    ArtistName,
-    AlbumTitle,
-    TrackNumber,
-    Bpm,
-    Duration
+    // MusicTrack (10 reserved: former Bpm)
+    ArtistName = 7,
+    AlbumTitle = 8,
+    TrackNumber = 9,
+    Duration = 11
 }

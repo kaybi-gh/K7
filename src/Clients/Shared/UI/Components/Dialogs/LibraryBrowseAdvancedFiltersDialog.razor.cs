@@ -149,7 +149,6 @@ public partial class LibraryBrowseAdvancedFiltersDialog
         nameof(SmartPlaylistField.AlbumTitle) => SpL["FieldAlbum"],
         nameof(SmartPlaylistField.TrackNumber) => SpL["FieldTrackNumber"],
         nameof(SmartPlaylistField.DiscNumber) => SpL["FieldDiscNumber"],
-        nameof(SmartPlaylistField.Bpm) => SpL["FieldBpm"],
         nameof(SmartPlaylistField.Duration) => SpL["FieldDuration"],
         nameof(SmartPlaylistField.OriginalLanguage) => SpL["FieldOriginalLanguage"],
         nameof(SmartPlaylistField.ActorName) => SpL["FieldActor"],

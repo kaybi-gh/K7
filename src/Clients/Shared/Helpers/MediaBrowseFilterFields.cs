@@ -53,7 +53,6 @@ public static class MediaBrowseFilterFields
         TextField(nameof(SmartPlaylistField.AlbumTitle)),
         NumberField(nameof(SmartPlaylistField.TrackNumber)),
         NumberField(nameof(SmartPlaylistField.DiscNumber)),
-        NumberField(nameof(SmartPlaylistField.Bpm)),
         NumberField(nameof(SmartPlaylistField.Duration))
     ];
 

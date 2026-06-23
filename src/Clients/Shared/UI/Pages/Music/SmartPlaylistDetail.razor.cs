@@ -205,7 +205,6 @@ public partial class SmartPlaylistDetail
         SmartPlaylistField.AlbumTitle => "Album",
         SmartPlaylistField.TrackNumber => "N� piste",
         SmartPlaylistField.DiscNumber => "N� disque",
-        SmartPlaylistField.Bpm => "BPM",
         SmartPlaylistField.Duration => "Dur�e",
         SmartPlaylistField.OriginalLanguage => "Langue",
         _ => field.ToString()

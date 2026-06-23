@@ -17,7 +17,6 @@ public enum SmartPlaylistField
     AlbumTitle,
     TrackNumber,
     DiscNumber,
-    Bpm,
     Duration,
 
     // Movie / Serie
