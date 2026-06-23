@@ -73,6 +73,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
+        services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
         services.AddScoped<INextEpisodeEnqueueService, NextEpisodeEnqueueService>();
 
         // Outbound Notifications
