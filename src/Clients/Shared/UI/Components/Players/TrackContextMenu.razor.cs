@@ -167,7 +167,7 @@ public partial class TrackContextMenu
     {
         try
         {
-            var trackIds = await AudioMuseAi.GetSimilarTracksAsync(Track.MediaId);
+            var trackIds = await MusicIntelligence.GetSimilarTracksAsync(Track.MediaId);
             if (trackIds.Count == 0)
             {
                 Snackbar.Add(L["NoSimilarTracks"], K7Severity.Warning);

@@ -1,6 +1,6 @@
 namespace K7.Shared.Dtos;
 
-public sealed record AudioMuseAiSettingsDto
+public sealed record MusicIntelligenceSettingsDto
 {
     public bool Enabled { get; init; }
     public string BaseUrl { get; init; } = string.Empty;

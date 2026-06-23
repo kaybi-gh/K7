@@ -2,7 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 
-namespace K7.Server.Application.Features.AudioMuseAi.Queries.GetTrackSuggestions;
+namespace K7.Server.Application.Features.MusicIntelligence.Queries.GetTrackSuggestions;
 
 [Authorize(Roles = Roles.User)]
 public record GetTrackSuggestionsQuery(List<Guid> RecentTrackIds, int Count = 20) : IRequest<List<Guid>>;

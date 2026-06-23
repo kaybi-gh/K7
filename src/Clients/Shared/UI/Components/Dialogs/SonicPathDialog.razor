@@ -6,7 +6,7 @@
 @using K7.Shared.Dtos.Requests
 @inject IStringLocalizer<SonicPathDialog> L
 @inject IMediaService MediaService
-@inject IAudioMuseAiClientService AudioMuseAi
+@inject IMusicIntelligenceClientService MusicIntelligence
 @inject IK7ServerService ApiClient
 @inject IAudioPlayerService Audio
 @inject IK7Snackbar Snackbar
@@ -50,7 +50,7 @@
         _loading = true;
         try
         {
-            var trackIds = await AudioMuseAi.GetSonicPathAsync(_startTrack.Id, _endTrack.Id);
+            var trackIds = await MusicIntelligence.GetSonicPathAsync(_startTrack.Id, _endTrack.Id);
             if (trackIds.Count == 0)
             {
                 Snackbar.Add(L["NoPath"], K7Severity.Warning);

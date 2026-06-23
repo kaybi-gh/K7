@@ -1,6 +1,6 @@
 namespace K7.Shared.Interfaces;
 
-public interface IAudioMuseAiClientService
+public interface IMusicIntelligenceClientService
 {
     Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default);
     Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken = default);

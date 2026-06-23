@@ -826,7 +826,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
 
         try
         {
-            var trackIds = await AudioMuseAi.GetSimilarTracksAsync(currentId);
+            var trackIds = await MusicIntelligence.GetSimilarTracksAsync(currentId);
             if (trackIds.Count > 0)
             {
                 var result = await Server.GetLiteMediasAsync(new GetMediasWithPaginationQuery
@@ -883,7 +883,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
                 .Distinct()
                 .ToList();
 
-            var trackIds = await AudioMuseAi.GetSuggestionsAsync(recentIds);
+            var trackIds = await MusicIntelligence.GetSuggestionsAsync(recentIds);
             if (trackIds.Count > 0)
             {
                 var result = await Server.GetLiteMediasAsync(new GetMediasWithPaginationQuery

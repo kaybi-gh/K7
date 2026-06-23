@@ -1,4 +1,4 @@
-using K7.Server.Application.Features.AudioMuseAi.Queries.GetSimilarTracks;
+using K7.Server.Application.Features.MusicIntelligence.Queries.GetSimilarTracks;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 

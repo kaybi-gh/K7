@@ -3,23 +3,23 @@ using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
-public partial class AdminAudioMuseAiPanel
+public partial class AdminMusicIntelligencePanel
 {
-    private AudioMuseAiSettingsDto? _settings;
+    private MusicIntelligenceSettingsDto? _settings;
     private bool _loading = true;
     private bool _saving;
     private bool _testing;
-    private AudioMuseAiConnectionResultDto? _testResult;
+    private MusicIntelligenceConnectionResultDto? _testResult;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _settings = await AudioMuseAiAdminService.GetSettingsAsync();
+            _settings = await MusicIntelligenceAdmin.GetSettingsAsync();
         }
         catch
         {
-            _settings = new AudioMuseAiSettingsDto();
+            _settings = new MusicIntelligenceSettingsDto();
         }
 
         _loading = false;
@@ -43,7 +43,7 @@ public partial class AdminAudioMuseAiPanel
 
         try
         {
-            await AudioMuseAiAdminService.UpdateSettingsAsync(_settings);
+            await MusicIntelligenceAdmin.UpdateSettingsAsync(_settings);
             Snackbar.Add(L["SaveSuccess"], K7Severity.Success);
         }
         catch
@@ -64,11 +64,11 @@ public partial class AdminAudioMuseAiPanel
 
         try
         {
-            _testResult = await AudioMuseAiAdminService.TestConnectionAsync();
+            _testResult = await MusicIntelligenceAdmin.TestConnectionAsync();
         }
         catch (Exception ex)
         {
-            _testResult = new AudioMuseAiConnectionResultDto { Success = false, Error = ex.Message };
+            _testResult = new MusicIntelligenceConnectionResultDto { Success = false, Error = ex.Message };
         }
 
         _testing = false;

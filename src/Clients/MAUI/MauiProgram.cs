@@ -95,8 +95,8 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IUserPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
-        builder.Services.AddSingleton<IAudioMuseAiAdminService>(sp => sp.GetRequiredService<K7ServerService>());
-        builder.Services.AddSingleton<IAudioMuseAiClientService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IMusicIntelligenceClientService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IDownloadService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<INotificationAdminService>(sp => sp.GetRequiredService<K7ServerService>());
         builder.Services.AddSingleton<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());

@@ -1,4 +1,4 @@
-using K7.Server.Application.Features.AudioMuseAi.Queries.GetTrackSuggestions;
+using K7.Server.Application.Features.MusicIntelligence.Queries.GetTrackSuggestions;
 using K7.Server.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
