@@ -135,6 +135,20 @@
                 </div>
             }
 
+            @if (_similarArtists.Count > 0)
+            {
+                <div class="artist-similar-section">
+                    <Carousel Title="@L["SimilarArtists"]">
+                        @foreach (var artist in _similarArtists)
+                        {
+                            <CarouselItem @key="artist.Id">
+                                <MediaCard Model="artist" Variant="MediaCardVariant.Cover" Href="@($"/music/artists/{artist.Id}")" OverlayEnabled="true" FooterVisible="true" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
+                </div>
+            }
+
             @if (_members.Count > 0)
             {
                 <div class="artist-members-section">

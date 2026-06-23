@@ -43,6 +43,7 @@ public interface IMediaService
     Task DetectMediaSegmentsAsync(Guid seasonId, CancellationToken cancellationToken = default);
     Task<List<LiteMediaDto>> GetSimilarMediaAsync(Guid mediaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LiteMusicTrackDto>> GetArtistTopTracksAsync(Guid artistId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<LiteMusicArtistDto>> GetSimilarMusicArtistsAsync(Guid artistId, int count = 12, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default);
     Task<List<PersonKnownForItemDto>> GetPersonKnownForAsync(Guid personId, CancellationToken cancellationToken = default);
     Task<SetMediaWatchStateResultDto?> SetMediaWatchStateAsync(Guid mediaId, bool watched, WatchStateScope scope = WatchStateScope.Item, CancellationToken cancellationToken = default);

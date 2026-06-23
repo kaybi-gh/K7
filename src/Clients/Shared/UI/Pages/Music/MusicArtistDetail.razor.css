@@ -121,6 +121,7 @@
 }
 
 .artist-albums-section,
+.artist-similar-section,
 .artist-members-section {
     position: relative;
     flex-shrink: 0;

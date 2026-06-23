@@ -22,6 +22,7 @@
   <data name="ShowLess" xml:space="preserve"><value>Less</value></data>
   <data name="ShowMore" xml:space="preserve"><value>More</value></data>
   <data name="AlbumsSection" xml:space="preserve"><value>Albums</value></data>
+  <data name="SimilarArtists" xml:space="preserve"><value>Similar artists</value></data>
   <data name="TracksSection" xml:space="preserve"><value>Tracks</value></data>
   <data name="ViewPerson" xml:space="preserve"><value>View person</value></data>
   <data name="ArtistType" xml:space="preserve"><value>Artist</value></data>
