@@ -23,11 +23,13 @@
   <data name="AddToQueue" xml:space="preserve"><value>Add to queue</value></data>
   <data name="AddToPlaylist" xml:space="preserve"><value>Add to a playlist</value></data>
   <data name="RadioArtist" xml:space="preserve"><value>Radio {0}</value></data>
+  <data name="RadioSonic" xml:space="preserve"><value>Similar to {0}</value></data>
   <data name="RadioGenre" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="PlayNextSnackbar" xml:space="preserve"><value>'{0}' playing next</value></data>
   <data name="AddedToQueueSnackbar" xml:space="preserve"><value>'{0}' added to queue</value></data>
   <data name="AddToPlaylistTitle" xml:space="preserve"><value>Add to a playlist</value></data>
   <data name="RadioArtistSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
+  <data name="RadioSonicSnackbar" xml:space="preserve"><value>Similar to {0}</value></data>
   <data name="RadioGenreSnackbar" xml:space="preserve"><value>Radio {0}</value></data>
   <data name="DownloadOffline" xml:space="preserve"><value>Download offline</value></data>
   <data name="DownloadQueued" xml:space="preserve"><value>'{0}' queued for download</value></data>

@@ -38,7 +38,7 @@
                 }
                 else
                 {
-                    <span class="fullscreen-player-header-title">@S["NowPlaying"]</span>
+                    <span class="fullscreen-player-header-title">@(Audio.ActiveRadioTitle ?? S["NowPlaying"])</span>
                 }
                 @if (SleepTimer.IsActive && !IsRemoteMode)
                 {

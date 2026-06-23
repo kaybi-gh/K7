@@ -33,6 +33,7 @@
         @if (!string.IsNullOrEmpty(Track.Artist))
         {
             <hr class="k7-divider" />
+            <K7MenuItem Icon="waves" OnClick="RadioSonic">@string.Format(L["RadioSonic"], Track.Title)</K7MenuItem>
             <K7MenuItem Icon="radio" OnClick="RadioArtist">@string.Format(L["RadioArtist"], Track.Artist)</K7MenuItem>
         }
         @if (!string.IsNullOrEmpty(Track.Genre))

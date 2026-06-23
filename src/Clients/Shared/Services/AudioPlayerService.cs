@@ -163,6 +163,9 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     private bool _shuffle;
     public bool Shuffle => _shuffle;
 
+    public string? ActiveRadioTitle { get; private set; }
+    public event Action? ActiveRadioChanged;
+
     private static readonly Random Rng = new();
 
     // Transport controls
@@ -246,16 +249,24 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     // Queue management
     public async Task PlayTrackAsync(AudioQueueItem track, CancellationToken cancellationToken = default)
     {
-        _queue.Clear();
-        _queue.Add(track);
-        _currentIndex = 0;
-        RebuildShuffleOrder();
-        QueueChanged?.Invoke();
-
-        await LoadAndPlayCurrentAsync(cancellationToken);
+        ClearRadioContext();
+        await LoadQueueAsync([track], 0, cancellationToken);
     }
 
     public async Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, CancellationToken cancellationToken = default)
+    {
+        ClearRadioContext();
+        await LoadQueueAsync(tracks, startIndex, cancellationToken);
+    }
+
+    public async Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default)
+    {
+        ActiveRadioTitle = radioTitle;
+        ActiveRadioChanged?.Invoke();
+        await LoadQueueAsync(tracks, startIndex, cancellationToken);
+    }
+
+    private async Task LoadQueueAsync(IEnumerable<AudioQueueItem> tracks, int startIndex, CancellationToken cancellationToken)
     {
         _queue.Clear();
         _queue.AddRange(tracks);
@@ -264,6 +275,15 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
         QueueChanged?.Invoke();
 
         await LoadAndPlayCurrentAsync(cancellationToken);
+    }
+
+    private void ClearRadioContext()
+    {
+        if (ActiveRadioTitle is null)
+            return;
+
+        ActiveRadioTitle = null;
+        ActiveRadioChanged?.Invoke();
     }
 
     public void AddToQueue(AudioQueueItem track)

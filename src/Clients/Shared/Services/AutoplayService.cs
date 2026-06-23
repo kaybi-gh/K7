@@ -1,9 +1,9 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 using K7.Shared.Dtos.Entities.Medias;
-using K7.Shared.Dtos.Entities.Metadatas.Files;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
@@ -12,6 +12,7 @@ public class AutoplayService : IDisposable
 {
     private readonly IAudioPlayerService _audioPlayerService;
     private readonly IServerInfoService _serverInfoService;
+    private readonly IK7ServerService _apiClient;
     private readonly IDeviceStorageService _deviceStorageService;
     private bool _isLoading;
 
@@ -20,10 +21,12 @@ public class AutoplayService : IDisposable
     public AutoplayService(
         IAudioPlayerService audioPlayerService,
         IServerInfoService serverInfoService,
+        IK7ServerService apiClient,
         IDeviceStorageService deviceStorageService)
     {
         _audioPlayerService = audioPlayerService;
         _serverInfoService = serverInfoService;
+        _apiClient = apiClient;
         _deviceStorageService = deviceStorageService;
         Enabled = deviceStorageService.Get(PreferenceKeys.AUTOPLAY_ENABLED, true);
 
@@ -58,40 +61,20 @@ public class AutoplayService : IDisposable
 
             var queueItems = radioTracks
                 .OfType<MusicTrackDto>()
-                .Where(t => t.IndexedFiles is { Count: > 0 })
-                .Select(MapToQueueItem)
+                .Select(t => MusicTrackQueueMapper.ToQueueItem(t, _apiClient))
+                .Where(t => t is not null)
+                .Cast<AudioQueueItem>()
                 .ToList();
 
             if (queueItems.Count == 0)
                 return;
 
-            await _audioPlayerService.PlayTracksAsync(queueItems);
+            await _audioPlayerService.PlayRadioAsync(queueItems, "Similaire");
         }
         finally
         {
             _isLoading = false;
         }
-    }
-
-    private static AudioQueueItem MapToQueueItem(MusicTrackDto track)
-    {
-        return new AudioQueueItem
-        {
-            MediaId = track.Id,
-            IndexedFileId = track.IndexedFiles!.First().Id,
-            Title = track.Title ?? "Unknown",
-            Artist = track.ArtistName,
-            AlbumTitle = null,
-            CoverUrl = track.Pictures?.FirstOrDefault()?.GetUri(MetadataPictureSize.Small)?.OriginalString,
-            Duration = (track.IndexedFiles!.First().FileMetadata as AudioFileMetadataDto)?.Duration.TotalSeconds,
-            Bpm = track.Bpm,
-            Energy = track.Energy,
-            MusicalKey = track.MusicalKey,
-            LoudnessLufs = track.LoudnessLufs,
-            FadeInDuration = track.FadeInDuration,
-            FadeOutDuration = track.FadeOutDuration,
-            ReplayGainTrackGain = track.ReplayGainTrackGain
-        };
     }
 
     public void Dispose()

@@ -118,6 +118,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         Audio.BufferedTimeChanged += OnTimeChanged;
         Audio.CurrentTrackChanged += OnTrackChanged;
         Audio.QueueChanged += OnQueueChanged;
+        Audio.ActiveRadioChanged += OnRadioChanged;
         Audio.ShuffleChanged += OnShuffleChanged;
         Audio.RepeatModeChanged += OnRepeatChanged;
         Audio.VolumeChanged += OnVolumeStateChanged;
@@ -202,6 +203,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         Audio.BufferedTimeChanged -= OnTimeChanged;
         Audio.CurrentTrackChanged -= OnTrackChanged;
         Audio.QueueChanged -= OnQueueChanged;
+        Audio.ActiveRadioChanged -= OnRadioChanged;
         Audio.ShuffleChanged -= OnShuffleChanged;
         Audio.RepeatModeChanged -= OnRepeatChanged;
         Audio.VolumeChanged -= OnVolumeStateChanged;
@@ -613,6 +615,7 @@ public partial class FullScreenMusicPlayer : IAsyncDisposable
         StateHasChanged();
     });
     private void OnQueueChanged() => InvokeAsync(StateHasChanged);
+    private void OnRadioChanged() => InvokeAsync(StateHasChanged);
     private void OnShuffleChanged(bool _) => InvokeAsync(StateHasChanged);
     private void OnRepeatChanged(RepeatMode _) => InvokeAsync(StateHasChanged);
     private void OnVolumeStateChanged(double _) => InvokeAsync(StateHasChanged);

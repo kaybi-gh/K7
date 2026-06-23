@@ -70,6 +70,8 @@ public static class LiteMediaMappings
             SeasonNumber = seasonDto?.SeasonNumber ?? episodeDto?.SeasonNumber,
             EpisodeNumber = episodeDto?.EpisodeNumber,
             Kind = kind.Value,
+            MediaType = GetMediaType(item),
+            UserRating = item.UserRating,
             Title = cardTitle,
             AdditionalInformations = GetAdditionalInfo(item, seasonDto, episodeDto, seasonFormatter),
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
@@ -119,6 +121,7 @@ public static class LiteMediaMappings
         {
             Id = item.Id.ToString(),
             Kind = kind,
+            MediaType = item.MediaType,
             Title = item.Title,
             AdditionalInformations = item.AdditionalInfo ?? item.ReleaseDate?.Year.ToString(),
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
@@ -195,4 +198,16 @@ public static class LiteMediaMappings
 
         return Math.Round(rating.Value.Value / rating.MaximumValue.Value * 10, 1);
     }
+
+    private static MediaType GetMediaType(LiteMediaDto item) => item switch
+    {
+        LiteMovieDto => MediaType.Movie,
+        LiteMusicAlbumDto => MediaType.MusicAlbum,
+        LiteMusicTrackDto => MediaType.MusicTrack,
+        LiteMusicArtistDto => MediaType.MusicArtist,
+        LiteSerieDto => MediaType.Serie,
+        LiteSerieSeasonDto => MediaType.SerieSeason,
+        LiteSerieEpisodeDto => MediaType.SerieEpisode,
+        _ => throw new InvalidOperationException($"Unsupported media type: {item.GetType().Name}")
+    };
 }

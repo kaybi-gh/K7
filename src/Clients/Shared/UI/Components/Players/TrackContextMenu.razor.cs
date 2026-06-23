@@ -1,8 +1,10 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Players;
@@ -14,6 +16,8 @@ public partial class TrackContextMenu
 
     [Parameter]
     public int? UserRating { get; set; }
+
+    [Inject] private IServerInfoService ServerInfo { get; set; } = default!;
 
     private bool _canCreatePlaylist;
 
@@ -38,40 +42,36 @@ public partial class TrackContextMenu
     {
         var parameters = new K7DialogParameters<Dialogs.AddToPlaylistDialog>
         {
-            { x => x.MediaId, Track.MediaId }
+            { x => x.MediaId, Track.MediaId },
+            { x => x.SourceMediaType, MediaType.MusicTrack }
         };
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.ExtraSmall, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<Dialogs.AddToPlaylistDialog>(L["AddToPlaylistTitle"], parameters, options);
     }
 
+    private async Task RadioSonic()
+    {
+        await PlayServerRadioAsync(
+            MusicRadioType.Sonic,
+            string.Format(L["RadioSonicSnackbar"], Track.Title),
+            seedTrackId: Track.MediaId);
+    }
+
     private async Task RadioArtist()
     {
-        if (Track.ArtistId is null) return;
+        if (Track.ArtistId is null)
+            return;
 
-        var result = await K7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
-        {
-            MediaTypes = [MediaType.MusicTrack],
-            ArtistIds = [Track.ArtistId.Value],
-            PageNumber = 1,
-            PageSize = 200
-        });
-
-        var tracks = result?.Items?.OfType<LiteMusicTrackDto>()
-            .Where(t => t.IndexedFileId.HasValue)
-            .Select(t => ToQueueItem(t))
-            .ToList();
-
-        if (tracks is { Count: > 0 })
-        {
-            if (!Audio.Shuffle) Audio.ToggleShuffle();
-            await Audio.PlayTracksAsync(tracks, 0);
-            Snackbar.Add(string.Format(L["RadioArtistSnackbar"], Track.Artist), K7Severity.Info);
-        }
+        await PlayServerRadioAsync(
+            MusicRadioType.Artist,
+            string.Format(L["RadioArtistSnackbar"], Track.Artist),
+            seedArtistId: Track.ArtistId);
     }
 
     private async Task RadioGenre()
     {
-        if (string.IsNullOrEmpty(Track.Genre)) return;
+        if (string.IsNullOrEmpty(Track.Genre))
+            return;
 
         var result = await K7ServerService.GetLiteMediasAsync(new GetMediasWithPaginationQuery
         {
@@ -83,15 +83,41 @@ public partial class TrackContextMenu
 
         var tracks = result?.Items?.OfType<LiteMusicTrackDto>()
             .Where(t => t.IndexedFileId.HasValue)
-            .Select(t => ToQueueItem(t))
+            .Select(ToQueueItem)
             .ToList();
 
         if (tracks is { Count: > 0 })
         {
-            if (!Audio.Shuffle) Audio.ToggleShuffle();
-            await Audio.PlayTracksAsync(tracks, 0);
-            Snackbar.Add(string.Format(L["RadioGenreSnackbar"], Track.Genre), K7Severity.Info);
+            if (!Audio.Shuffle)
+                Audio.ToggleShuffle();
+
+            await Audio.PlayRadioAsync(tracks, string.Format(L["RadioGenreSnackbar"], Track.Genre));
         }
+    }
+
+    private async Task PlayServerRadioAsync(
+        MusicRadioType radioType,
+        string radioTitle,
+        Guid? seedTrackId = null,
+        Guid? seedArtistId = null)
+    {
+        var results = await ServerInfo.GetMusicRadioAsync(
+            radioType.ToString(),
+            seedTrackId: seedTrackId,
+            seedArtistId: seedArtistId);
+
+        var tracks = results?
+            .OfType<MusicTrackDto>()
+            .Select(t => MusicTrackQueueMapper.ToQueueItem(t, ApiClient, S["Untitled"]))
+            .Where(t => t is not null)
+            .Cast<AudioQueueItem>()
+            .ToList();
+
+        if (tracks is not { Count: > 0 })
+            return;
+
+        await Audio.PlayRadioAsync(tracks, radioTitle);
+        Snackbar.Add(radioTitle, K7Severity.Info);
     }
 
     private AudioQueueItem ToQueueItem(LiteMusicTrackDto t) => new()
