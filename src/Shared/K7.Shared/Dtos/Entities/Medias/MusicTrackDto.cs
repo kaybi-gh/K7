@@ -3,6 +3,7 @@ namespace K7.Shared.Dtos.Entities.Medias;
 public sealed record MusicTrackDto : MediaDto
 {
     public Guid AlbumId { get; init; }
+    public string? AlbumTitle { get; init; }
     public Guid? ArtistId { get; init; }
     public string? ArtistName { get; init; }
     public int? TrackNumber { get; init; }

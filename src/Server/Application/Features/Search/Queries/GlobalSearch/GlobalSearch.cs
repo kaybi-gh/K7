@@ -6,6 +6,7 @@ using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Search;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,8 +40,7 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
         {
             var studio = request.Studio.Trim();
             mediaQuery = mediaQuery
-                .Where(m => (m is Movie && ((Movie)m).Studios.Contains(studio))
-                         || (m is Serie && ((Serie)m).Studios.Contains(studio)))
+                .Where(m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.DisplayName == studio))
                 .OrderBy(m => m.Title);
         }
         else
@@ -178,6 +178,7 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
 
     private static IQueryable<BaseMedia> ApplySearchMediaIncludes(IQueryable<BaseMedia> query) =>
         query
+            .IncludeMetadataTagsForMapping()
             .Include(m => m.Pictures)
                 .ThenInclude(p => p.Variants)
             .Include(m => ((MusicTrack)m).Album)

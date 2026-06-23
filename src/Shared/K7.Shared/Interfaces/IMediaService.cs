@@ -18,8 +18,7 @@ public interface IMediaService
     Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<LiteMediaDto>?> QueryMediasAsync(QueryMediasRequest request, CancellationToken cancellationToken = default);
-    Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default);
-    Task<MediaBrowseFacetsDto?> GetMediaBrowseFacetsAsync(GetMediaBrowseFacetsQuery query, CancellationToken cancellationToken = default);
+    Task<MediaTagsDto?> GetMediaTagsAsync(GetMediaTagsQuery query, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<string>?> GetMediaBrowseFilterSuggestionsAsync(GetMediaBrowseFilterSuggestionsQuery query, CancellationToken cancellationToken = default);
     Task<PaginatedListDto<HomeFeedItemDto>?> GetHomeFeedAsync(GetHomeFeedQuery query, CancellationToken cancellationToken = default);
     Task<PersonDto?> GetPersonAsync(Guid id, CancellationToken cancellationToken = default);

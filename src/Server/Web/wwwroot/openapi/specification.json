@@ -2527,7 +2527,7 @@
         "operationId": "GetMusicRadio",
         "parameters": [
           {
-            "name": "Type",
+            "name": "radioType",
             "in": "query",
             "required": true,
             "schema": {
@@ -2535,7 +2535,29 @@
             }
           },
           {
-            "name": "SeedTrackId",
+            "name": "libraryIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "libraryGroupIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "seedTrackId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -2543,7 +2565,7 @@
             }
           },
           {
-            "name": "SeedArtistId",
+            "name": "seedArtistId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -2551,39 +2573,29 @@
             }
           },
           {
-            "name": "MoodPreset",
+            "name": "moodPreset",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "Limit",
+            "name": "limit",
             "in": "query",
-            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": [
                 "integer",
                 "string"
               ],
-              "format": "int32"
+              "format": "int32",
+              "default": 50
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MediaDto"
-                  }
-                }
-              }
-            }
+            "description": "OK"
           }
         }
       }
@@ -2917,12 +2929,12 @@
         }
       }
     },
-    "/api/medias/browse-facets": {
+    "/api/medias/browse-filter-suggestions": {
       "get": {
         "tags": [
           "Medias"
         ],
-        "operationId": "GetMediaBrowseFacets",
+        "operationId": "GetMediaBrowseFilterSuggestions",
         "parameters": [
           {
             "name": "LibraryIds",
@@ -2955,80 +2967,24 @@
                 "$ref": "#/components/schemas/MediaType"
               }
             }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/medias/genres": {
-      "get": {
-        "tags": [
-          "Medias"
-        ],
-        "operationId": "GetMediaGenres",
-        "parameters": [
-          {
-            "name": "LibraryIds",
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              }
-            }
           },
           {
-            "name": "LibraryGroupIds",
-            "in": "query",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              }
-            }
-          },
-          {
-            "name": "MediaTypes",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "UnwatchedOnly",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "OrderBy",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "PageNumber",
+            "name": "Field",
             "in": "query",
             "required": true,
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
+              "type": "string"
             }
           },
           {
-            "name": "PageSize",
+            "name": "SearchText",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Limit",
             "in": "query",
             "required": true,
             "schema": {
@@ -3250,6 +3206,126 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/medias/tags": {
+      "get": {
+        "tags": [
+          "Medias"
+        ],
+        "operationId": "GetMediaTags",
+        "parameters": [
+          {
+            "name": "LibraryIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "LibraryGroupIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "MediaTypes",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/MediaType"
+              }
+            }
+          },
+          {
+            "name": "Kinds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/MetadataTagKind"
+              }
+            }
+          },
+          {
+            "name": "SearchText",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "UnwatchedOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "OrderBy",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/MediaTagOrderingOption"
+              }
+            }
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -13097,6 +13173,9 @@
           }
         }
       },
+      "MediaTagOrderingOption": {
+        "type": "integer"
+      },
       "MediaType": {
         "type": "integer"
       },
@@ -13183,6 +13262,9 @@
             }
           }
         }
+      },
+      "MetadataTagKind": {
+        "type": "integer"
       },
       "MusicAlbumDto": {
         "type": "object",

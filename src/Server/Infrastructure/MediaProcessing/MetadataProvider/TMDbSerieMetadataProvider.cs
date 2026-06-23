@@ -386,7 +386,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
                 CharacterName = role.Character,
                 ExternalIds =
                 [
-                    new ExternalId { ProviderName = "tmdb", Value = role.Id.ToString() }
+                    new ExternalId { ProviderName = "tmdb", Value = role.CreditId ?? $"{role.Id}:{role.Order}:{role.Character}" }
                 ],
                 Person = ConvertToPerson(tmdbPerson)
             };
@@ -431,14 +431,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             roles.Add(crewMember);
         }
 
-        // Dedup persons by name + birthday
-        var groupedRoles = roles.GroupBy(x => new { x.Person.Name, x.Person.Birthday });
-        foreach (var group in groupedRoles.Where(x => x.Count() > 1))
-        {
-            var duplicateRoles = group.OrderBy(x => x.ExternalIds.First(e => e.ProviderName == "tmdb").Value).Skip(1);
-            roles.RemoveAll(duplicateRoles.Contains);
-        }
-
+        PersonRoleImportHelper.DedupByTmdbCreditId(roles);
         return roles;
     }
 

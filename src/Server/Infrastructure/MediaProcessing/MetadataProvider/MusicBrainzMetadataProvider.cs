@@ -113,7 +113,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         {
             Title = releaseGroup?.Title ?? release?.Title,
             ReleaseDate = ParseDate(releaseGroup?.FirstReleaseDate ?? release?.Date),
-            Genres = ExtractGenres(releaseGroup?.Genres),
+            Genres = ExtractGenreTags(releaseGroup?.Genres, releaseGroup?.Tags),
             ExternalIds = externalIds,
             Tracks = ExtractTracks(release),
             Artists = ExtractArtists(release),
@@ -239,15 +239,30 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         return null;
     }
 
-    private static IList<string> ExtractGenres(List<MbGenre>? genres)
+    private static IList<string> ExtractGenreTags(List<MbGenre>? genres, List<MbGenre>? tags)
     {
-        if (genres == null || genres.Count == 0) return [];
-        return genres
-            .OrderByDescending(g => g.Count)
-            .Select(g => g.Name)
-            .Where(n => !string.IsNullOrWhiteSpace(n))
-            .ToList()!;
+        if (genres is { Count: > 0 })
+            return OrderGenreLikeValues(genres);
+
+        if (tags is { Count: > 0 })
+        {
+            return tags
+                .Where(t => !string.IsNullOrWhiteSpace(t.Name))
+                .OrderByDescending(t => t.Count)
+                .Take(8)
+                .Select(t => t.Name!)
+                .ToList();
+        }
+
+        return [];
     }
+
+    private static IList<string> OrderGenreLikeValues(List<MbGenre> values) =>
+        values
+            .Where(g => !string.IsNullOrWhiteSpace(g.Name))
+            .OrderByDescending(g => g.Count)
+            .Select(g => g.Name!)
+            .ToList();
 
     private static IList<ExternalMusicTrackMetadata> ExtractTracks(MbRelease? release)
     {
@@ -608,6 +623,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
         [JsonPropertyName("first-release-date")]
         public string? FirstReleaseDate { get; init; }
         public List<MbGenre>? Genres { get; init; }
+        public List<MbGenre>? Tags { get; init; }
         public List<MbRelation>? Relations { get; init; }
     }
 

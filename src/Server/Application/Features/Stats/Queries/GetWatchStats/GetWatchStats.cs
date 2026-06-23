@@ -86,10 +86,17 @@ public class GetWatchStatsQueryHandler(IApplicationDbContext context, IUser curr
 
             var mediaGenres = await context.Medias
                 .Where(m => genreMediaIds.Contains(m.Id))
-                .Select(m => new { m.Id, m.Genres })
+                .Select(m => new
+                {
+                    m.Id,
+                    Genres = m.MetadataTags
+                        .Where(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+                        .Select(mt => mt.MetadataTag.DisplayName)
+                        .ToList()
+                })
                 .ToListAsync(cancellationToken);
 
-            var genreLookup = mediaGenres.ToDictionary(x => x.Id, x => x.Genres);
+            var genreLookup = mediaGenres.ToDictionary(x => x.Id, x => (IList<string>)x.Genres);
 
             topGenres = genreSessionPairs
                 .SelectMany(x => genreLookup.GetValueOrDefault(x.Id, []),

@@ -1,7 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
-using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.QueryExtensions;
+using K7.Server.Application.Common.Models;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.Restrictions.Services;
@@ -179,6 +179,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         var dataQuery = context.Medias
             .Where(m => pageIds.Contains(m.Id))
+            .IncludeMetadataTagsForMapping()
             .Include(x => x.Pictures)
                 .ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
@@ -312,11 +313,11 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
 
         if (request.Genres?.Length > 0)
         {
-            query = query.Where(x => x.Genres.Any(g => request.Genres.Contains(g))
-                || (x is MusicTrack && ((MusicTrack)x).Album.Genres.Any(g => request.Genres.Contains(g)))
-                || (x is SerieSeason && ((SerieSeason)x).Serie.Genres.Any(g => request.Genres.Contains(g)))
-                || (x is SerieEpisode && ((SerieEpisode)x).Serie.Genres.Any(g => request.Genres.Contains(g)))
-                || (x is MusicArtist && ((MusicArtist)x).Albums.Any(a => a.Genres.Any(g => request.Genres.Contains(g)))));
+            query = query.Where(x => x.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && request.Genres.Contains(mt.MetadataTag.DisplayName))
+                || (x is MusicTrack && ((MusicTrack)x).Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && request.Genres.Contains(mt.MetadataTag.DisplayName)))
+                || (x is SerieSeason && ((SerieSeason)x).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && request.Genres.Contains(mt.MetadataTag.DisplayName)))
+                || (x is SerieEpisode && ((SerieEpisode)x).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && request.Genres.Contains(mt.MetadataTag.DisplayName)))
+                || (x is MusicArtist && ((MusicArtist)x).Albums.Any(a => a.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && request.Genres.Contains(mt.MetadataTag.DisplayName)))));
         }
 
         if (request.Provenance.HasValue)

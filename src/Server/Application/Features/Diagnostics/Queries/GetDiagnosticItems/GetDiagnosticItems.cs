@@ -160,7 +160,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 m.Type,
                 m.LastMetadataRefreshedAt,
                 HasExternalIds = m.ExternalIds.Any(),
-                GenreCount = m.Genres.Count,
+                GenreCount = m.MetadataTags.Count(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre),
                 HasIndexedFiles = m.IndexedFiles.Any(),
                 IsMusicTrack = m is MusicTrack,
                 HasAudioAnalysis = m is MusicTrack && ((MusicTrack)m).AudioAnalysis != null

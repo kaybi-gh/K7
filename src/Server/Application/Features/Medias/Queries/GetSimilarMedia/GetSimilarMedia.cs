@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
@@ -39,6 +40,7 @@ public class GetSimilarMediaQueryHandler(IApplicationDbContext context)
             {
                 var matchingMedia = await context.Medias
                     .AsNoTracking()
+                    .IncludeMetadataTagsForMapping()
                     .Include(m => m.Pictures)
                         .ThenInclude(p => p.Variants)
                     .Include(m => m.UserMediaStates)

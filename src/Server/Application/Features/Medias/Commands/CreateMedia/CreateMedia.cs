@@ -2,6 +2,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.MetadataPictures.Commands.GenerateMetadataPictureVariants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -31,19 +32,22 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
     private readonly IServiceProvider _serviceProvider;
     private readonly IAudioTagReader _audioTagReader;
     private readonly PathsConfiguration _pathsConfiguration;
+    private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
 
     public CreateMediaCommandHandler(
         IApplicationDbContext context,
         ISender sender,
         IServiceProvider serviceProvider,
         IAudioTagReader audioTagReader,
-        IOptions<PathsConfiguration> pathsConfiguration)
+        IOptions<PathsConfiguration> pathsConfiguration,
+        IMediaMetadataTagSyncService metadataTagSyncService)
     {
         _context = context;
         _sender = sender;
         _serviceProvider = serviceProvider;
         _audioTagReader = audioTagReader;
         _pathsConfiguration = pathsConfiguration.Value;
+        _metadataTagSyncService = metadataTagSyncService;
     }
 
     public async Task<Guid> Handle(CreateMediaCommand request, CancellationToken cancellationToken)
@@ -169,7 +173,10 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             if (firstTags?.Genres is { Count: > 0 })
             {
-                foreach (var genre in firstTags.Genres) album.Genres.Add(genre);
+                await _metadataTagSyncService.ApplyTagsAsync(
+                    album,
+                    MetadataTagBuilder.FromGenres(album, firstTags.Genres),
+                    cancellationToken);
             }
 
             await TryAttachAlbumCoverAsync(firstFile, album, firstTags, cancellationToken);
@@ -243,7 +250,10 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
             if (tags?.Genres is { Count: > 0 })
             {
-                foreach (var genre in tags.Genres) track.Genres.Add(genre);
+                await _metadataTagSyncService.ApplyTagsAsync(
+                    track,
+                    MetadataTagBuilder.FromGenres(track, tags.Genres),
+                    cancellationToken);
             }
 
             var lrcPath = Path.ChangeExtension(indexedFile.Path, ".lrc");

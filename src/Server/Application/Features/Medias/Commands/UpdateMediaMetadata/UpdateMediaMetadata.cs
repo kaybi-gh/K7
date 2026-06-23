@@ -3,6 +3,7 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Shared.Dtos.Entities;
 
 namespace K7.Server.Application.Features.Medias.Commands.UpdateMediaMetadata;
@@ -47,19 +48,17 @@ public record UpdateMediaMetadataCommand : IRequest
     public IList<ExternalIdEditDto>? ExternalIds { get; init; }
 }
 
-public class UpdateMediaMetadataCommandHandler : IRequestHandler<UpdateMediaMetadataCommand>
+public class UpdateMediaMetadataCommandHandler(
+    IApplicationDbContext context,
+    IMediaMetadataTagSyncService metadataTagSyncService)
+    : IRequestHandler<UpdateMediaMetadataCommand>
 {
-    private readonly IApplicationDbContext _context;
-
-    public UpdateMediaMetadataCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task Handle(UpdateMediaMetadataCommand request, CancellationToken cancellationToken)
     {
-        var media = await _context.Medias
+        var media = await context.Medias
             .Include(m => m.ExternalIds)
+            .Include(m => m.MetadataTags)
+                .ThenInclude(mt => mt.MetadataTag)
             .FirstOrDefaultAsync(m => m.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, media);
@@ -73,11 +72,6 @@ public class UpdateMediaMetadataCommandHandler : IRequestHandler<UpdateMediaMeta
             media.OriginalTitle = request.OriginalTitle;
         if (request.ReleaseDate is not null)
             media.ReleaseDate = request.ReleaseDate;
-        if (request.Genres is not null)
-        {
-            media.Genres.Clear();
-            foreach (var genre in request.Genres) media.Genres.Add(genre);
-        }
         if (request.Overview is not null)
             ApplyOverview(media, request.Overview);
 
@@ -87,16 +81,13 @@ public class UpdateMediaMetadataCommandHandler : IRequestHandler<UpdateMediaMeta
             case Movie movie:
                 if (request.Tagline is not null) movie.Tagline = request.Tagline;
                 if (request.OriginalLanguage is not null) movie.OriginalLanguage = request.OriginalLanguage;
-                if (request.ContentRating is not null) movie.ContentRating = request.ContentRating;
                 if (request.Budget is not null) movie.Budget = request.Budget;
                 if (request.Revenue is not null) movie.Revenue = request.Revenue;
                 break;
 
             case Serie serie:
                 if (request.OriginalLanguage is not null) serie.OriginalLanguage = request.OriginalLanguage;
-                if (request.ContentRating is not null) serie.ContentRating = request.ContentRating;
                 if (request.Status is not null) serie.Status = request.Status;
-                if (request.Network is not null) serie.Network = request.Network;
                 break;
 
             case SerieSeason:
@@ -130,7 +121,11 @@ public class UpdateMediaMetadataCommandHandler : IRequestHandler<UpdateMediaMeta
                 media.ExternalIds.Add(new ExternalId { ProviderName = dto.ProviderName, Value = dto.Value, MediaId = media.Id });
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await metadataTagSyncService.ApplyTagsAsync(
+            media,
+            MetadataTagBuilder.FromManualUpdate(media, request.Genres, request.ContentRating, request.Network),
+            cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     private static void ApplyOverview(BaseMedia media, string overview)

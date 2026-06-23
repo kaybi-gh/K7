@@ -3,6 +3,7 @@ using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
+using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
 
@@ -85,8 +86,8 @@ public static class PlaylistMappings
                 : (media as MusicAlbum)?.Artist;
 
             var genre = media is MusicTrack t2
-                ? (t2.Album?.Genres?.FirstOrDefault() ?? t2.Genres?.FirstOrDefault())
-                : media?.Genres?.FirstOrDefault();
+                ? (GetFirstGenreTag(t2.Album) ?? GetFirstGenreTag(t2))
+                : GetFirstGenreTag(media);
 
             var pictures = media is MusicTrack mt2
                 ? (mt2.Pictures.Count != 0 ? mt2.Pictures : (mt2.Album?.Pictures ?? []))
@@ -112,4 +113,9 @@ public static class PlaylistMappings
             };
         }
     }
+
+    private static string? GetFirstGenreTag(BaseMedia? media) =>
+        media?.MetadataTags
+            .FirstOrDefault(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+            ?.MetadataTag.DisplayName;
 }

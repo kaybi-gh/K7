@@ -1,4 +1,5 @@
 ﻿using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -20,6 +21,7 @@ public class GetMediaQueryHandler(IApplicationDbContext context, IUser currentUs
 
         var query = context.Medias
             .AsNoTracking()
+            .IncludeMetadataTagsForMapping()
             .Include(x => x.ExternalIds)
             .Include(x => x.Pictures)
                 .ThenInclude(p => p.Variants)

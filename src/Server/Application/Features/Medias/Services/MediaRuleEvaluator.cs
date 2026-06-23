@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
@@ -135,38 +136,39 @@ public static class MediaRuleEvaluator
     private static Expression<Func<BaseMedia, bool>> BuildGenrePredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
+        var normalized = MetadataTagNormalizer.NormalizeKey(value);
         return rule.Operator switch
         {
-            RuleOperator.Equals => m => m.Genres.Any(g => g == value)
-                || (m is MusicTrack && ((MusicTrack)m).Album.Genres.Any(g => g == value))
-                || (m is SerieSeason && ((SerieSeason)m).Serie.Genres.Any(g => g == value))
-                || (m is SerieEpisode && ((SerieEpisode)m).Serie.Genres.Any(g => g == value))
-                || (m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.Genres.Any(g => g == value))),
-            RuleOperator.NotEquals => m => !m.Genres.Any(g => g == value)
-                && !(m is MusicTrack && ((MusicTrack)m).Album.Genres.Any(g => g == value))
-                && !(m is SerieSeason && ((SerieSeason)m).Serie.Genres.Any(g => g == value))
-                && !(m is SerieEpisode && ((SerieEpisode)m).Serie.Genres.Any(g => g == value))
-                && !(m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.Genres.Any(g => g == value))),
-            RuleOperator.Contains => m => m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%"))
-                || (m is MusicTrack && ((MusicTrack)m).Album.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))
-                || (m is SerieSeason && ((SerieSeason)m).Serie.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))
-                || (m is SerieEpisode && ((SerieEpisode)m).Serie.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))
-                || (m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))),
-            RuleOperator.NotContains => m => !m.Genres.Any(g => EF.Functions.Like(g, $"%{value}%"))
-                && !(m is MusicTrack && ((MusicTrack)m).Album.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))
-                && !(m is SerieSeason && ((SerieSeason)m).Serie.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))
-                && !(m is SerieEpisode && ((SerieEpisode)m).Serie.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))
-                && !(m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.Genres.Any(g => EF.Functions.Like(g, $"%{value}%")))),
-            RuleOperator.IsEmpty => m => !m.Genres.Any()
-                && !(m is MusicTrack && ((MusicTrack)m).Album.Genres.Any())
-                && !(m is SerieSeason && ((SerieSeason)m).Serie.Genres.Any())
-                && !(m is SerieEpisode && ((SerieEpisode)m).Serie.Genres.Any())
-                && !(m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.Genres.Any())),
-            RuleOperator.IsNotEmpty => m => m.Genres.Any()
-                || (m is MusicTrack && ((MusicTrack)m).Album.Genres.Any())
-                || (m is SerieSeason && ((SerieSeason)m).Serie.Genres.Any())
-                || (m is SerieEpisode && ((SerieEpisode)m).Serie.Genres.Any())
-                || (m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.Genres.Any())),
+            RuleOperator.Equals => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized)
+                || (m is MusicTrack && ((MusicTrack)m).Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))
+                || (m is SerieSeason && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))
+                || (m is SerieEpisode && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))
+                || (m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))),
+            RuleOperator.NotEquals => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized)
+                && !(m is MusicTrack && ((MusicTrack)m).Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))
+                && !(m is SerieSeason && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))
+                && !(m is SerieEpisode && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))
+                && !(m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && mt.MetadataTag.NormalizedKey == normalized))),
+            RuleOperator.Contains => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%"))
+                || (m is MusicTrack && ((MusicTrack)m).Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))
+                || (m is SerieSeason && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))
+                || (m is SerieEpisode && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))
+                || (m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))),
+            RuleOperator.NotContains => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%"))
+                && !(m is MusicTrack && ((MusicTrack)m).Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))
+                && !(m is SerieSeason && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))
+                && !(m is SerieEpisode && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))
+                && !(m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")))),
+            RuleOperator.IsEmpty => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+                && !(m is MusicTrack && ((MusicTrack)m).Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
+                && !(m is SerieSeason && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
+                && !(m is SerieEpisode && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
+                && !(m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))),
+            RuleOperator.IsNotEmpty => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+                || (m is MusicTrack && ((MusicTrack)m).Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
+                || (m is SerieSeason && ((SerieSeason)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
+                || (m is SerieEpisode && ((SerieEpisode)m).Serie.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
+                || (m is MusicArtist && ((MusicArtist)m).Albums.Any(a => a.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))),
             _ => _ => true
         };
     }
@@ -196,20 +198,15 @@ public static class MediaRuleEvaluator
     private static Expression<Func<BaseMedia, bool>> BuildContentRatingPredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
+        var normalized = MetadataTagNormalizer.NormalizeKey(value);
         return rule.Operator switch
         {
-            RuleOperator.Equals => m => (m is Movie && ((Movie)m).ContentRating == value)
-                || (m is Serie && ((Serie)m).ContentRating == value),
-            RuleOperator.NotEquals => m => !(m is Movie && ((Movie)m).ContentRating == value)
-                && !(m is Serie && ((Serie)m).ContentRating == value),
-            RuleOperator.Contains => m => (m is Movie && ((Movie)m).ContentRating != null && EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"))
-                || (m is Serie && ((Serie)m).ContentRating != null && EF.Functions.Like(((Serie)m).ContentRating!, $"%{value}%")),
-            RuleOperator.NotContains => m => !(m is Movie && ((Movie)m).ContentRating != null && EF.Functions.Like(((Movie)m).ContentRating!, $"%{value}%"))
-                && !(m is Serie && ((Serie)m).ContentRating != null && EF.Functions.Like(((Serie)m).ContentRating!, $"%{value}%")),
-            RuleOperator.IsEmpty => m => !(m is Movie && !string.IsNullOrEmpty(((Movie)m).ContentRating))
-                && !(m is Serie && !string.IsNullOrEmpty(((Serie)m).ContentRating)),
-            RuleOperator.IsNotEmpty => m => (m is Movie && !string.IsNullOrEmpty(((Movie)m).ContentRating))
-                || (m is Serie && !string.IsNullOrEmpty(((Serie)m).ContentRating)),
+            RuleOperator.Equals => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && mt.MetadataTag.NormalizedKey == normalized),
+            RuleOperator.NotEquals => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && mt.MetadataTag.NormalizedKey == normalized),
+            RuleOperator.Contains => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")),
+            RuleOperator.NotContains => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")),
+            RuleOperator.IsEmpty => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating),
+            RuleOperator.IsNotEmpty => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating),
             _ => _ => true
         };
     }
@@ -217,13 +214,14 @@ public static class MediaRuleEvaluator
     private static Expression<Func<BaseMedia, bool>> BuildNetworkPredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
+        var normalized = MetadataTagNormalizer.NormalizeKey(value);
         return rule.Operator switch
         {
-            RuleOperator.Equals => m => m is Serie && ((Serie)m).Network == value,
-            RuleOperator.NotEquals => m => !(m is Serie) || ((Serie)m).Network != value,
-            RuleOperator.Contains => m => m is Serie && ((Serie)m).Network != null && EF.Functions.Like(((Serie)m).Network!, $"%{value}%"),
-            RuleOperator.IsEmpty => m => !(m is Serie) || string.IsNullOrEmpty(((Serie)m).Network),
-            RuleOperator.IsNotEmpty => m => m is Serie && !string.IsNullOrEmpty(((Serie)m).Network),
+            RuleOperator.Equals => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network && mt.MetadataTag.NormalizedKey == normalized),
+            RuleOperator.NotEquals => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network && mt.MetadataTag.NormalizedKey == normalized),
+            RuleOperator.Contains => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")),
+            RuleOperator.IsEmpty => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network),
+            RuleOperator.IsNotEmpty => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Network),
             _ => _ => true
         };
     }
@@ -231,14 +229,15 @@ public static class MediaRuleEvaluator
     private static Expression<Func<BaseMedia, bool>> BuildStudioPredicate(ConditionRuleItem rule)
     {
         var value = rule.Value ?? "";
+        var normalized = MetadataTagNormalizer.NormalizeKey(value);
         return rule.Operator switch
         {
-            RuleOperator.Equals => m => (m is Movie && ((Movie)m).Studios.Any(s => s == value))
-                || (m is Serie && ((Serie)m).Studios.Any(s => s == value)),
-            RuleOperator.Contains => m => (m is Movie && ((Movie)m).Studios.Any(s => EF.Functions.Like(s, $"%{value}%")))
-                || (m is Serie && ((Serie)m).Studios.Any(s => EF.Functions.Like(s, $"%{value}%"))),
-            RuleOperator.IsEmpty => m => !(m is Movie && ((Movie)m).Studios.Any()) && !(m is Serie && ((Serie)m).Studios.Any()),
-            RuleOperator.IsNotEmpty => m => (m is Movie && ((Movie)m).Studios.Any()) || (m is Serie && ((Serie)m).Studios.Any()),
+            RuleOperator.Equals => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.NormalizedKey == normalized),
+            RuleOperator.NotEquals => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.NormalizedKey == normalized),
+            RuleOperator.Contains => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")),
+            RuleOperator.NotContains => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && EF.Functions.Like(mt.MetadataTag.DisplayName, $"%{value}%")),
+            RuleOperator.IsEmpty => m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio),
+            RuleOperator.IsNotEmpty => m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio),
             _ => _ => true
         };
     }
@@ -346,9 +345,54 @@ public static class MediaRuleEvaluator
         var value = rule.Value ?? "";
         return rule.Operator switch
         {
-            RuleOperator.Equals => m => ((MusicTrack)m).Artist!.Title == value || ((MusicTrack)m).Album!.Artist!.Title == value,
-            RuleOperator.NotEquals => m => ((MusicTrack)m).Artist!.Title != value && ((MusicTrack)m).Album!.Artist!.Title != value,
-            RuleOperator.Contains => m => EF.Functions.Like(((MusicTrack)m).Artist!.Title!, $"%{value}%") || EF.Functions.Like(((MusicTrack)m).Album!.Artist!.Title!, $"%{value}%"),
+            RuleOperator.Equals => m =>
+                (m is MusicArtist && ((MusicArtist)m).Title == value)
+                || (m is MusicAlbum && ((MusicAlbum)m).Artist != null && ((MusicAlbum)m).Artist!.Title == value)
+                || (m is MusicTrack && (
+                    (((MusicTrack)m).Artist != null && ((MusicTrack)m).Artist!.Title == value)
+                    || (((MusicTrack)m).Album != null && ((MusicTrack)m).Album!.Artist != null
+                        && ((MusicTrack)m).Album!.Artist!.Title == value))),
+            RuleOperator.NotEquals => m =>
+                !(m is MusicArtist && ((MusicArtist)m).Title == value)
+                && !(m is MusicAlbum && ((MusicAlbum)m).Artist != null && ((MusicAlbum)m).Artist!.Title == value)
+                && !(m is MusicTrack && (
+                    (((MusicTrack)m).Artist != null && ((MusicTrack)m).Artist!.Title == value)
+                    || (((MusicTrack)m).Album != null && ((MusicTrack)m).Album!.Artist != null
+                        && ((MusicTrack)m).Album!.Artist!.Title == value))),
+            RuleOperator.Contains => m =>
+                (m is MusicArtist && ((MusicArtist)m).Title != null && EF.Functions.Like(((MusicArtist)m).Title!, $"%{value}%"))
+                || (m is MusicAlbum && ((MusicAlbum)m).Artist != null && ((MusicAlbum)m).Artist!.Title != null
+                    && EF.Functions.Like(((MusicAlbum)m).Artist!.Title!, $"%{value}%"))
+                || (m is MusicTrack && (
+                    (((MusicTrack)m).Artist != null && ((MusicTrack)m).Artist!.Title != null
+                        && EF.Functions.Like(((MusicTrack)m).Artist!.Title!, $"%{value}%"))
+                    || (((MusicTrack)m).Album != null && ((MusicTrack)m).Album!.Artist != null
+                        && ((MusicTrack)m).Album!.Artist!.Title != null
+                        && EF.Functions.Like(((MusicTrack)m).Album!.Artist!.Title!, $"%{value}%")))),
+            RuleOperator.NotContains => m =>
+                !(m is MusicArtist && ((MusicArtist)m).Title != null && EF.Functions.Like(((MusicArtist)m).Title!, $"%{value}%"))
+                && !(m is MusicAlbum && ((MusicAlbum)m).Artist != null && ((MusicAlbum)m).Artist!.Title != null
+                    && EF.Functions.Like(((MusicAlbum)m).Artist!.Title!, $"%{value}%"))
+                && !(m is MusicTrack && (
+                    (((MusicTrack)m).Artist != null && ((MusicTrack)m).Artist!.Title != null
+                        && EF.Functions.Like(((MusicTrack)m).Artist!.Title!, $"%{value}%"))
+                    || (((MusicTrack)m).Album != null && ((MusicTrack)m).Album!.Artist != null
+                        && ((MusicTrack)m).Album!.Artist!.Title != null
+                        && EF.Functions.Like(((MusicTrack)m).Album!.Artist!.Title!, $"%{value}%")))),
+            RuleOperator.IsEmpty => m =>
+                (m is MusicArtist && string.IsNullOrEmpty(((MusicArtist)m).Title))
+                || (m is MusicAlbum && (((MusicAlbum)m).Artist == null || string.IsNullOrEmpty(((MusicAlbum)m).Artist!.Title)))
+                || (m is MusicTrack && (
+                    (((MusicTrack)m).Artist == null || string.IsNullOrEmpty(((MusicTrack)m).Artist!.Title))
+                    && (((MusicTrack)m).Album == null || ((MusicTrack)m).Album!.Artist == null
+                        || string.IsNullOrEmpty(((MusicTrack)m).Album!.Artist!.Title)))),
+            RuleOperator.IsNotEmpty => m =>
+                (m is MusicArtist && !string.IsNullOrEmpty(((MusicArtist)m).Title))
+                || (m is MusicAlbum && ((MusicAlbum)m).Artist != null && !string.IsNullOrEmpty(((MusicAlbum)m).Artist!.Title))
+                || (m is MusicTrack && (
+                    (((MusicTrack)m).Artist != null && !string.IsNullOrEmpty(((MusicTrack)m).Artist!.Title))
+                    || (((MusicTrack)m).Album != null && ((MusicTrack)m).Album!.Artist != null
+                        && !string.IsNullOrEmpty(((MusicTrack)m).Album!.Artist!.Title)))),
             _ => _ => true
         };
     }
