@@ -411,10 +411,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
                 AlbumTitle = t.AlbumTitle,
                 Genre = t.Genre,
                 CoverUrl = GetPictureUrl(t.Pictures),
-                Duration = t.Duration,
-                Bpm = t.Bpm,
-                MusicalKey = t.MusicalKey,
-                Energy = t.Energy
+                Duration = t.Duration
             })
             .ToArray();
     }
@@ -442,10 +439,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
                 AlbumTitle = album.Title,
                 Genre = album.Genres?.FirstOrDefault(),
                 CoverUrl = coverUrl,
-                Duration = t.Duration,
-                Bpm = t.Bpm,
-                MusicalKey = t.MusicalKey,
-                Energy = t.Energy
+                Duration = t.Duration
             })
             .ToArray();
     }
@@ -658,10 +652,7 @@ public sealed class MediaBrowseService : IMediaBrowseService
                     ArtistId = artist.Id,
                     AlbumTitle = fullAlbum.Title,
                     CoverUrl = coverUrl,
-                    Duration = t.Duration,
-                    Bpm = t.Bpm,
-                    MusicalKey = t.MusicalKey,
-                    Energy = t.Energy
+                    Duration = t.Duration
                 }));
         }
 
