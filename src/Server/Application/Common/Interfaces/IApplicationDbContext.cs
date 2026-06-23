@@ -61,6 +61,8 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<PeerShareAgreement> PeerShareAgreements { get; }
     DbSet<PeerRequest> PeerRequests { get; }
     DbSet<RemoteIndexedFile> RemoteIndexedFiles { get; }
+    DbSet<MetadataTag> MetadataTags { get; }
+    DbSet<MediaMetadataTag> MediaMetadataTags { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;
