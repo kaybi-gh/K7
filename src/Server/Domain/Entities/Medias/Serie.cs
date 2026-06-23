@@ -9,12 +9,7 @@ public class Serie() : BaseMedia(MediaType.Serie)
 
     public string? Overview { get; set; }
     public string? OriginalLanguage { get; set; }
-    public string? ContentRating { get; set; }
     public string? Status { get; set; }
-    public string? Network { get; set; }
-    public IList<string> Studios { get; set; } = [];
-
-
 
     public void ApplyMetadata(ExternalSerieMetadata metadata)
     {
@@ -28,24 +23,8 @@ public class Serie() : BaseMedia(MediaType.Serie)
             Overview = metadata.Overview ?? Overview;
         if (!IsFieldLocked(nameof(OriginalLanguage)))
             OriginalLanguage = metadata.OriginalLanguage ?? OriginalLanguage;
-        if (!IsFieldLocked(nameof(ContentRating)))
-            ContentRating = metadata.ContentRating ?? ContentRating;
         if (!IsFieldLocked(nameof(Status)))
             Status = metadata.Status ?? Status;
-        if (!IsFieldLocked(nameof(Network)))
-            Network = metadata.Network ?? Network;
-
-        if (!IsFieldLocked(nameof(Genres)) && metadata.Genres?.Count > 0)
-        {
-            Genres.Clear();
-            foreach (var genre in metadata.Genres) Genres.Add(genre);
-        }
-
-        if (!IsFieldLocked(nameof(Studios)) && metadata.Studios?.Count > 0)
-        {
-            Studios.Clear();
-            foreach (var studio in metadata.Studios) Studios.Add(studio);
-        }
 
         if (!IsFieldLocked(nameof(Trailers)) && metadata.Trailers?.Count > 0)
         {

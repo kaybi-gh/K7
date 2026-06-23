@@ -21,12 +21,6 @@ public class MusicAlbum() : BaseMedia(MediaType.MusicAlbum)
         if (!IsFieldLocked(nameof(Overview)))
             Overview = metadata.Overview ?? Overview;
 
-        if (!IsFieldLocked(nameof(Genres)) && metadata.Genres is { Count: > 0 })
-        {
-            Genres.Clear();
-            foreach (var genre in metadata.Genres) Genres.Add(genre);
-        }
-
         if (!IsFieldLocked(nameof(ExternalIds)) && metadata.ExternalIds is { Count: > 0 })
         {
             foreach (var externalId in metadata.ExternalIds)

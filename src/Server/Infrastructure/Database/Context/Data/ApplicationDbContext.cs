@@ -78,6 +78,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<PeerShareAgreement> PeerShareAgreements => Set<PeerShareAgreement>();
     public DbSet<PeerRequest> PeerRequests => Set<PeerRequest>();
     public DbSet<RemoteIndexedFile> RemoteIndexedFiles => Set<RemoteIndexedFile>();
+    public DbSet<MetadataTag> MetadataTags => Set<MetadataTag>();
+    public DbSet<MediaMetadataTag> MediaMetadataTags => Set<MediaMetadataTag>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

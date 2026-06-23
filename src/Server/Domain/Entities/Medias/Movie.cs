@@ -7,12 +7,8 @@ public class Movie() : BaseMedia(MediaType.Movie)
     public string? Tagline { get; set; }
     public string? Overview { get; set; }
     public string? OriginalLanguage { get; set; }
-    public string? ContentRating { get; set; }
     public long? Budget { get; set; }
     public long? Revenue { get; set; }
-    public IList<string> Studios { get; set; } = [];
-
-
 
     public void ApplyMetadata(ExternalMovieMetadata metadata)
     {
@@ -28,24 +24,10 @@ public class Movie() : BaseMedia(MediaType.Movie)
             Tagline = metadata.Tagline ?? Tagline;
         if (!IsFieldLocked(nameof(OriginalLanguage)))
             OriginalLanguage = metadata.OriginalLanguage ?? OriginalLanguage;
-        if (!IsFieldLocked(nameof(ContentRating)))
-            ContentRating = metadata.ContentRating ?? ContentRating;
         if (!IsFieldLocked(nameof(Budget)))
             Budget = metadata.Budget ?? Budget;
         if (!IsFieldLocked(nameof(Revenue)))
             Revenue = metadata.Revenue ?? Revenue;
-
-        if (!IsFieldLocked(nameof(Genres)) && metadata.Genres?.Count > 0)
-        {
-            Genres.Clear();
-            foreach (var genre in metadata.Genres) Genres.Add(genre);
-        }
-
-        if (!IsFieldLocked(nameof(Studios)) && metadata.Studios?.Count > 0)
-        {
-            Studios.Clear();
-            foreach (var studio in metadata.Studios) Studios.Add(studio);
-        }
 
         if (!IsFieldLocked(nameof(Trailers)) && metadata.Trailers?.Count > 0)
         {

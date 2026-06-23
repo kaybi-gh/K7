@@ -1006,10 +1006,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Genres")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("LastMetadataRefreshedAt")
                         .HasColumnType("TEXT");
 
@@ -1341,6 +1337,48 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasDiscriminator<int>("Type");
 
                     b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MediaMetadataTag", b =>
+                {
+                    b.Property<Guid>("MediaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("MetadataTagId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("MediaId", "MetadataTagId");
+
+                    b.HasIndex("MetadataTagId");
+
+                    b.ToTable("MediaMetadataTags");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MetadataTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NormalizedKey")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kind", "NormalizedKey")
+                        .IsUnique();
+
+                    b.ToTable("MetadataTags");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Person", b =>
@@ -2528,9 +2566,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<long?>("Budget")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ContentRating")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("TEXT");
 
@@ -2539,10 +2574,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Property<long?>("Revenue")
                         .HasColumnType("INTEGER");
-
-                    b.PrimitiveCollection<string>("Studios")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("Tagline")
                         .HasColumnType("TEXT");
@@ -2626,12 +2657,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                 {
                     b.HasBaseType("K7.Server.Domain.Entities.Medias.BaseMedia");
 
-                    b.Property<string>("ContentRating")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Network")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("OriginalLanguage")
                         .HasColumnType("TEXT");
 
@@ -2641,23 +2666,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Studios")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.ToTable("Medias", t =>
                         {
-                            t.Property("ContentRating")
-                                .HasColumnName("Serie_ContentRating");
-
                             t.Property("OriginalLanguage")
                                 .HasColumnName("Serie_OriginalLanguage");
 
                             t.Property("Overview")
                                 .HasColumnName("Serie_Overview");
-
-                            t.Property("Studios")
-                                .HasColumnName("Serie_Studios");
                         });
 
                     b.HasDiscriminator().HasValue(4);
@@ -3535,6 +3550,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("IndexedFile");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MediaMetadataTag", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Medias.BaseMedia", "Media")
+                        .WithMany("MetadataTags")
+                        .HasForeignKey("MediaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Metadatas.MetadataTag", "MetadataTag")
+                        .WithMany("MediaAssignments")
+                        .HasForeignKey("MetadataTagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Media");
+
+                    b.Navigation("MetadataTag");
+                });
+
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Person", b =>
                 {
                     b.HasOne("K7.Server.Domain.Entities.Federation.PeerServer", "PeerServer")
@@ -3957,6 +3991,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
                     b.Navigation("IndexedFiles");
 
+                    b.Navigation("MetadataTags");
+
                     b.Navigation("PersonRoles");
 
                     b.Navigation("Pictures");
@@ -3980,6 +4016,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", b =>
                 {
                     b.Navigation("HlsSegments");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MetadataTag", b =>
+                {
+                    b.Navigation("MediaAssignments");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Person", b =>
