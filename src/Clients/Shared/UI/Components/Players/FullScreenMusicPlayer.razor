@@ -302,6 +302,48 @@
                             }
                         </div>
                     }
+                    else if (_queueTab == QueueTab.Suggestions)
+                    {
+                        <div class="queue-list">
+                            @if (_suggestionsLoading)
+                            {
+                                <div class="d-flex justify-center pa-8">
+                                    <K7Spinner />
+                                </div>
+                            }
+                            else if (_suggestionTracks.Count == 0)
+                            {
+                                <div class="queue-empty">@S["NoSuggestions"]</div>
+                            }
+                            else
+                            {
+                                @for (var i = 0; i < _suggestionTracks.Count; i++)
+                                {
+                                    var index = i;
+                                    var track = _suggestionTracks[i];
+                                    <div class="queue-item focusable"
+                                         tabindex="0" role="button"
+                                         @onclick="() => PlaySuggestionFromIndex(index)"
+                                         @onkeydown="(e) => OnSuggestionItemKeyDown(e, index)">
+                                        <div class="queue-item-index"><span>@(i + 1)</span></div>
+                                        @if (!string.IsNullOrEmpty(track.CoverUrl))
+                                        {
+                                            <K7Image Src="@track.CoverUrl" Alt="Cover" Width="40" ObjectFit="cover" Class="queue-item-cover" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <K7Icon Icon="@Phosphor.MusicNote" Class="queue-item-cover-placeholder" />
+                                        }
+                                        <div class="queue-item-info">
+                                            <span class="queue-item-title">@track.Title</span>
+                                            <span class="queue-item-artist">@track.Artist</span>
+                                        </div>
+                                        <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
                     else
                     {
                         <div class="queue-list">

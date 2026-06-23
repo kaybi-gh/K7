@@ -32,20 +32,25 @@
             <hr class="k7-divider" />
             <K7MenuItem Icon="download-simple" OnClick="DownloadOffline">@L["DownloadOffline"]</K7MenuItem>
         }
-        @if (!string.IsNullOrEmpty(Track.Artist))
+        @if (!string.IsNullOrEmpty(Track.Artist) || !string.IsNullOrEmpty(Track.Genre) || _musicIntelligenceAvailable)
         {
             <hr class="k7-divider" />
-            <K7MenuItem Icon="waves" OnClick="RadioSonic">@string.Format(L["RadioSonic"], Track.Title)</K7MenuItem>
-            <K7MenuItem Icon="radio" OnClick="RadioArtist">@string.Format(L["RadioArtist"], Track.Artist)</K7MenuItem>
-        }
-        @if (!string.IsNullOrEmpty(Track.Genre))
-        {
-            <K7MenuItem Icon="broadcast" OnClick="RadioGenre">@string.Format(L["RadioGenre"], Track.Genre)</K7MenuItem>
-        }
-        @if (_audioMuseEnabled)
-        {
-            <hr class="k7-divider" />
-            <K7MenuItem Icon="magic-wand" OnClick="PlaySimilar">@L["PlaySimilar"]</K7MenuItem>
+            @if (_musicIntelligenceAvailable)
+            {
+                <K7MenuItem Icon="waves" OnClick="RadioSonic">@string.Format(L["RadioSonic"], Track.Title)</K7MenuItem>
+            }
+            @if (!string.IsNullOrEmpty(Track.Artist))
+            {
+                <K7MenuItem Icon="radio" OnClick="RadioArtist">@string.Format(L["RadioArtist"], Track.Artist)</K7MenuItem>
+            }
+            @if (!string.IsNullOrEmpty(Track.Genre))
+            {
+                <K7MenuItem Icon="broadcast" OnClick="RadioGenre">@string.Format(L["RadioGenre"], Track.Genre)</K7MenuItem>
+            }
+            @if (_musicIntelligenceAvailable)
+            {
+                <K7MenuItem Icon="magic-wand" OnClick="PlaySimilar">@L["PlaySimilar"]</K7MenuItem>
+            }
         }
         </ChildContent>
     </K7Menu>

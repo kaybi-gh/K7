@@ -1,26 +1,26 @@
 ﻿using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Devices;
 using K7.Shared.Dtos.Diagnostics;
-using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Entities;
-using K7.Shared.Dtos.Users;
-using K7.Shared.Interfaces;
-using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Entities.Collections;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using K7.Shared.Dtos.Entities.Persons;
-using K7.Shared.Dtos.Search;
-using K7.Shared.Dtos.Entities.Collections;
 using K7.Shared.Dtos.Entities.Playlists;
-using K7.Shared.Dtos.Restrictions;
-using K7.Shared.QueryBuilders;
 using K7.Shared.Dtos.Home;
+using K7.Shared.Dtos.Notifications;
+using K7.Shared.Dtos.Requests;
+using K7.Shared.Dtos.Restrictions;
+using K7.Shared.Dtos.Search;
+using K7.Shared.Dtos.Users;
 using K7.Shared.Enums;
 using K7.Shared.Extensions;
+using K7.Shared.Interfaces;
+using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
@@ -243,7 +243,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<List<MediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<List<MediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, int limit = 50, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"radioType={Uri.EscapeDataString(radioType)}" };
         if (libraryIds is { Length: > 0 })
@@ -258,6 +258,8 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         }
         if (seedTrackId.HasValue) queryParams.Add($"seedTrackId={seedTrackId.Value}");
         if (seedArtistId.HasValue) queryParams.Add($"seedArtistId={seedArtistId.Value}");
+        if (!string.IsNullOrWhiteSpace(moodPreset)) queryParams.Add($"moodPreset={Uri.EscapeDataString(moodPreset)}");
+        if (moodCentroidIndex.HasValue) queryParams.Add($"moodCentroidIndex={moodCentroidIndex.Value}");
         if (limit != 50) queryParams.Add($"limit={limit}");
         var url = $"api/music/radio?{string.Join("&", queryParams)}";
         return await HttpClient.GetFromJsonAsync<List<MediaDto>>(url, _serializerOptions, cancellationToken);
@@ -266,7 +268,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, K7.Server.Domain.Enums.MediaType? mediaType = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"query={Uri.EscapeDataString(query)}" };
-        
+
         if (year.HasValue)
         {
             queryParams.Add($"year={year.Value}");
@@ -1100,6 +1102,15 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return result ?? [];
     }
 
+    public async Task<IReadOnlyList<LiteMusicArtistDto>> GetSimilarMusicArtistsAsync(Guid artistId, int count = 12, CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<LiteMusicArtistDto>>(
+            $"api/medias/{artistId}/similar-artists?count={count}",
+            _serializerOptions,
+            cancellationToken);
+        return result ?? [];
+    }
+
     public async Task<IReadOnlyList<PlayedMusicTrackDto>> GetTopMusicTracksAsync(Guid[]? libraryIds = null, int count = 20, CancellationToken cancellationToken = default)
     {
         var query = new List<string> { $"count={count}" };
@@ -1127,6 +1138,18 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var response = await HttpClient.PutAsJsonAsync("api/server/preferences/feature-flags", flags, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<MusicIntelligenceStatusDto> GetMusicIntelligenceStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<MusicIntelligenceStatusDto>("api/server/music-intelligence/status", _serializerOptions, cancellationToken);
+        return result ?? new MusicIntelligenceStatusDto();
+    }
+
+    public async Task<IReadOnlyList<MusicMoodPresetDto>> GetMusicMoodPresetsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<MusicMoodPresetDto>>("api/server/music-intelligence/mood-presets", _serializerOptions, cancellationToken);
+        return result ?? [];
     }
 
     // IFederationService

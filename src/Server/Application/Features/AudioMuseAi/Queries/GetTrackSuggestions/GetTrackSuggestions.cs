@@ -7,11 +7,14 @@ namespace K7.Server.Application.Features.AudioMuseAi.Queries.GetTrackSuggestions
 [Authorize(Roles = Roles.User)]
 public record GetTrackSuggestionsQuery(List<Guid> RecentTrackIds, int Count = 20) : IRequest<List<Guid>>;
 
-public class GetTrackSuggestionsQueryHandler(IAudioMuseAiService audioMuseAiService)
+public class GetTrackSuggestionsQueryHandler(IMusicIntelligenceService musicIntelligenceService)
     : IRequestHandler<GetTrackSuggestionsQuery, List<Guid>>
 {
     public async Task<List<Guid>> Handle(GetTrackSuggestionsQuery request, CancellationToken cancellationToken)
     {
-        return await audioMuseAiService.GetSuggestionsAsync(request.RecentTrackIds, request.Count, cancellationToken);
+        if (request.RecentTrackIds.Count == 0 || request.RecentTrackIds.Count > 1)
+            return await musicIntelligenceService.GetDiscoveryTracksAsync(request.Count, cancellationToken);
+
+        return await musicIntelligenceService.GetSimilarTracksAsync(request.RecentTrackIds[0], request.Count, cancellationToken);
     }
 }
