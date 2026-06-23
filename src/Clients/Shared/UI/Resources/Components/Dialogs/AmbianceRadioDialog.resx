@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="MoodLabel" xml:space="preserve"><value>Ambiance</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Play" xml:space="preserve"><value>Lancer</value></data>
+  <data name="NoMoods" xml:space="preserve"><value>Aucune ambiance disponible.</value></data>
+  <data name="EmptyRadio" xml:space="preserve"><value>Aucun morceau disponible pour cette ambiance.</value></data>
+  <data name="MoodVariant" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="Mood_relaxed" xml:space="preserve"><value>D&#233;tendu</value></data>
+  <data name="Mood_danceable" xml:space="preserve"><value>Dansant</value></data>
+  <data name="Mood_happy" xml:space="preserve"><value>Joyeux</value></data>
+  <data name="Mood_sad" xml:space="preserve"><value>M&#233;lancolique</value></data>
+  <data name="Mood_aggressive" xml:space="preserve"><value>&#201;nergique</value></data>
+  <data name="Mood_party" xml:space="preserve"><value>F&#234;te</value></data>
+</root>

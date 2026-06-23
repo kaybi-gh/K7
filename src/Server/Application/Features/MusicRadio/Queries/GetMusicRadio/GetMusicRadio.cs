@@ -1,6 +1,7 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Domain.Entities.Medias;
+using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Shared;
 
@@ -14,10 +15,14 @@ public record GetMusicRadioQuery : IRequest<List<BaseMedia>>
     public Guid? SeedTrackId { get; init; }
     public Guid? SeedArtistId { get; init; }
     public string? MoodPreset { get; init; }
+    public int? MoodCentroidIndex { get; init; }
     public int Limit { get; init; } = 50;
 }
 
-public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser currentUser)
+public class GetMusicRadioQueryHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    IMusicIntelligenceService musicIntelligenceService)
     : IRequestHandler<GetMusicRadioQuery, List<BaseMedia>>
 {
     public async Task<List<BaseMedia>> Handle(GetMusicRadioQuery request, CancellationToken cancellationToken)
@@ -32,6 +37,7 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
             MusicRadioType.Artist => await GetArtistRadio(request, userId, libraryIds, cancellationToken),
             MusicRadioType.Mood => await GetMoodMix(request, userId, libraryIds, cancellationToken),
             MusicRadioType.Discovery => await GetDiscoveryMix(userId, libraryIds, request.Limit, cancellationToken),
+            MusicRadioType.DiscoveryAi => await GetDiscoveryAiMix(userId, libraryIds, request.Limit, cancellationToken),
             MusicRadioType.TimeCapsule => await GetTimeCapsule(userId, libraryIds, request.Limit, cancellationToken),
             MusicRadioType.Tempo => await GetTempoMix(request, userId, libraryIds, cancellationToken),
             MusicRadioType.RecentlyAdded => await GetRecentlyAdded(userId, libraryIds, request.Limit, cancellationToken),
@@ -40,8 +46,7 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
     }
 
     /// <summary>
-    /// Sonic Radio: from a seed track, find tracks with similar audio profile.
-    /// Distance is computed on Energy, Danceability, Valence (euclidean) + BPM proximity + key compatibility.
+    /// Sonic Radio: similar tracks via music intelligence when available.
     /// </summary>
     private async Task<List<BaseMedia>> GetSonicRadio(
         GetMusicRadioQuery request,
@@ -49,35 +54,15 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
         Guid[]? libraryIds,
         CancellationToken ct)
     {
+        if (!await musicIntelligenceService.IsAvailableAsync(ct))
+            return [];
+
         var seedId = request.SeedTrackId ?? await PickAutoSeedTrackIdAsync(userId, libraryIds, ct);
         if (seedId is null)
             return [];
 
-        var seedQuery = context.Medias
-            .OfType<MusicTrack>()
-            .Include(t => t.AudioAnalysis)
-            .AsNoTracking()
-            .Where(t => t.Id == seedId.Value);
-
-        seedQuery = ApplyLibraryFilter(seedQuery, libraryIds);
-
-        var seed = await seedQuery.FirstOrDefaultAsync(ct);
-
-        if (seed?.AudioAnalysis is not { } seedAnalysis)
-            return [];
-
-        var candidates = await BuildTrackQuery(userId, libraryIds)
-            .Where(t => t.Id != seedId)
-            .Where(t => t.AudioAnalysis != null)
-            .Include(t => t.AudioAnalysis)
-            .ToListAsync(ct);
-
-        return candidates
-            .Select(t => new { Track = t, Distance = ComputeSonicDistance(seedAnalysis, t.AudioAnalysis!) })
-            .OrderBy(x => x.Distance)
-            .Take(request.Limit)
-            .Select(x => (BaseMedia)x.Track)
-            .ToList();
+        var trackIds = await musicIntelligenceService.GetSimilarTracksAsync(seedId.Value, request.Limit, ct);
+        return await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
     }
 
     /// <summary>
@@ -130,8 +115,7 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
     }
 
     /// <summary>
-    /// Mood Mix: filter tracks by Energy/Valence/Danceability ranges based on preset name.
-    /// Presets: chill, energetic, happy, dark, focus
+    /// Mood Mix: mood-based mix via music intelligence when available.
     /// </summary>
     private async Task<List<BaseMedia>> GetMoodMix(
         GetMusicRadioQuery request,
@@ -139,60 +123,55 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
         Guid[]? libraryIds,
         CancellationToken ct)
     {
-        var (energyMin, energyMax, valenceMin, valenceMax, danceMin, danceMax) = GetMoodRanges(request.MoodPreset);
+        if (!await musicIntelligenceService.IsAvailableAsync(ct))
+            return [];
 
-        var tracks = await BuildTrackQuery(userId, libraryIds)
-            .Where(t => t.AudioAnalysis != null)
-            .Where(t => t.AudioAnalysis!.Energy >= energyMin && t.AudioAnalysis!.Energy <= energyMax)
-            .Where(t => t.AudioAnalysis!.Valence >= valenceMin && t.AudioAnalysis!.Valence <= valenceMax)
-            .Where(t => t.AudioAnalysis!.Danceability >= danceMin && t.AudioAnalysis!.Danceability <= danceMax)
-            .ToListAsync(ct);
-
-        return Shuffle(tracks).Take(request.Limit).Cast<BaseMedia>().ToList();
+        var moodKey = request.MoodPreset ?? "relaxed";
+        var centroidIndex = request.MoodCentroidIndex ?? 0;
+        var trackIds = await musicIntelligenceService.GetMoodTracksAsync(moodKey, centroidIndex, request.Limit, ct);
+        return await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
     }
 
     /// <summary>
-    /// Discovery Mix: tracks the user has never listened to, sonically close to their most played tracks.
+    /// Discovery: never-played tracks in random order; falls back to never-rated when everything was played.
     /// </summary>
     private async Task<List<BaseMedia>> GetDiscoveryMix(Guid? userId, Guid[]? libraryIds, int limit, CancellationToken ct)
     {
         if (userId is null)
-            return [];
+        {
+            var guestTracks = await BuildTrackQuery(null, libraryIds).ToListAsync(ct);
+            return Shuffle(guestTracks).Take(limit).Cast<BaseMedia>().ToList();
+        }
 
-        var topTracksQuery = context.Medias
-            .OfType<MusicTrack>()
-            .Include(t => t.AudioAnalysis)
-            .Where(t => t.AudioAnalysis != null)
-            .Where(t => t.UserMediaStates.Any(s => s.UserId == userId.Value && s.PlayCount > 0))
-            .OrderByDescending(t => t.UserMediaStates
-                .Where(s => s.UserId == userId.Value)
-                .Select(s => s.PlayCount)
-                .FirstOrDefault())
-            .Take(20)
-            .AsNoTracking()
-            .AsQueryable();
+        var uid = userId.Value;
 
-        topTracksQuery = ApplyLibraryFilter(topTracksQuery, libraryIds);
-
-        var topTracks = await topTracksQuery.ToListAsync(ct);
-
-        if (topTracks.Count == 0)
-            return await GetRecentlyAdded(userId, libraryIds, limit, ct);
-
-        var avgProfile = ComputeAverageProfile(topTracks.Select(t => t.AudioAnalysis!).ToList());
-
-        var candidates = await BuildTrackQuery(userId, libraryIds)
-            .Where(t => t.AudioAnalysis != null)
-            .Where(t => !t.UserMediaStates.Any(s => s.UserId == userId.Value && s.PlayCount > 0))
-            .Include(t => t.AudioAnalysis)
+        var neverPlayed = await BuildTrackQuery(userId, libraryIds)
+            .Where(t => !t.UserMediaStates.Any(s => s.UserId == uid && s.PlayCount > 0))
             .ToListAsync(ct);
 
-        return candidates
-            .Select(t => new { Track = t, Distance = ComputeSonicDistance(avgProfile, t.AudioAnalysis!) })
-            .OrderBy(x => x.Distance)
-            .Take(limit)
-            .Select(x => (BaseMedia)x.Track)
-            .ToList();
+        if (neverPlayed.Count > 0)
+            return Shuffle(neverPlayed).Take(limit).Cast<BaseMedia>().ToList();
+
+        var neverRated = await BuildTrackQuery(userId, libraryIds)
+            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid))
+            .ToListAsync(ct);
+
+        return Shuffle(neverRated).Take(limit).Cast<BaseMedia>().ToList();
+    }
+
+    /// <summary>
+    /// Discovery AI: taste-based recommendations, preferring tracks the user has not played yet,
+    /// then tracks they have not rated (same fallback as local discovery).
+    /// </summary>
+    private async Task<List<BaseMedia>> GetDiscoveryAiMix(Guid? userId, Guid[]? libraryIds, int limit, CancellationToken ct)
+    {
+        if (!await musicIntelligenceService.IsAvailableAsync(ct))
+            return [];
+
+        var candidateCount = Math.Clamp(limit * 5, limit, 250);
+        var trackIds = await musicIntelligenceService.GetDiscoveryTracksAsync(candidateCount, ct);
+        var tracks = await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
+        return FilterUnexploredTracks(tracks, trackIds, userId, limit);
     }
 
     /// <summary>
@@ -246,8 +225,7 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
     }
 
     /// <summary>
-    /// Tempo Mix: tracks within +-5% BPM of the seed track, or a fixed BPM if no seed.
-    /// Ordered by BPM proximity for smooth DJ-style progression.
+    /// Tempo / ambiance mix mapped to danceable mood via music intelligence.
     /// </summary>
     private async Task<List<BaseMedia>> GetTempoMix(
         GetMusicRadioQuery request,
@@ -255,57 +233,11 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
         Guid[]? libraryIds,
         CancellationToken ct)
     {
-        double? targetBpm = null;
+        if (!await musicIntelligenceService.IsAvailableAsync(ct))
+            return [];
 
-        if (request.SeedTrackId is { } seedId)
-        {
-            targetBpm = await context.Medias
-                .OfType<MusicTrack>()
-                .Where(t => t.Id == seedId && t.AudioAnalysis != null)
-                .Select(t => t.AudioAnalysis!.Bpm)
-                .FirstOrDefaultAsync(ct);
-        }
-        else
-        {
-            var autoSeedId = await PickAutoSeedTrackIdAsync(userId, libraryIds, ct);
-            if (autoSeedId.HasValue)
-            {
-                targetBpm = await context.Medias
-                    .OfType<MusicTrack>()
-                    .Where(t => t.Id == autoSeedId.Value && t.AudioAnalysis != null)
-                    .Select(t => t.AudioAnalysis!.Bpm)
-                    .FirstOrDefaultAsync(ct);
-            }
-        }
-
-        targetBpm ??= 120;
-
-        var bpmMin = targetBpm.Value * 0.95;
-        var bpmMax = targetBpm.Value * 1.05;
-
-        var tracks = await BuildTrackQuery(userId, libraryIds)
-            .Where(t => t.AudioAnalysis != null && t.AudioAnalysis.Bpm >= bpmMin && t.AudioAnalysis.Bpm <= bpmMax)
-            .Include(t => t.AudioAnalysis)
-            .ToListAsync(ct);
-
-        if (tracks.Count == 0)
-        {
-            tracks = await BuildTrackQuery(userId, libraryIds)
-                .Where(t => t.AudioAnalysis != null && t.AudioAnalysis.Bpm.HasValue)
-                .Include(t => t.AudioAnalysis)
-                .OrderBy(t => Math.Abs(t.AudioAnalysis!.Bpm!.Value - targetBpm.Value))
-                .Take(request.Limit)
-                .ToListAsync(ct);
-        }
-
-        if (tracks.Count == 0)
-            return await GetRecentlyAdded(userId, libraryIds, request.Limit, ct);
-
-        return tracks
-            .OrderBy(t => Math.Abs(t.AudioAnalysis!.Bpm!.Value - targetBpm.Value))
-            .Take(request.Limit)
-            .Cast<BaseMedia>()
-            .ToList();
+        var trackIds = await musicIntelligenceService.GetMoodTracksAsync("danceable", 0, request.Limit, ct);
+        return await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
     }
 
     /// <summary>
@@ -331,7 +263,6 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
     {
         var query = context.Medias
             .OfType<MusicTrack>()
-            .Where(t => t.AudioAnalysis != null)
             .AsNoTracking();
 
         query = ApplyLibraryFilter(query, libraryIds);
@@ -356,6 +287,27 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
             return null;
 
         return candidateIds[Random.Shared.Next(candidateIds.Count)];
+    }
+
+    private async Task<List<BaseMedia>> LoadTracksByIdsAsync(
+        IReadOnlyList<Guid> trackIds,
+        Guid? userId,
+        Guid[]? libraryIds,
+        CancellationToken ct)
+    {
+        if (trackIds.Count == 0)
+            return [];
+
+        var idSet = trackIds.ToHashSet();
+        var tracks = await BuildTrackQuery(userId, libraryIds)
+            .Where(t => idSet.Contains(t.Id))
+            .ToListAsync(ct);
+
+        var trackMap = tracks.ToDictionary(t => t.Id);
+        return trackIds
+            .Where(trackMap.ContainsKey)
+            .Select(id => (BaseMedia)trackMap[id])
+            .ToList();
     }
 
     private IQueryable<MusicTrack> BuildTrackQuery(Guid? userId, Guid[]? libraryIds)
@@ -402,59 +354,41 @@ public class GetMusicRadioQueryHandler(IApplicationDbContext context, IUser curr
                 || track.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))));
     }
 
-    private static double ComputeSonicDistance(AudioAnalysis a, AudioAnalysis b)
+    private static List<BaseMedia> FilterUnexploredTracks(
+        List<BaseMedia> loaded,
+        IReadOnlyList<Guid> orderedIds,
+        Guid? userId,
+        int limit)
     {
-        double distance = 0;
+        var trackMap = loaded.OfType<MusicTrack>().ToDictionary(t => t.Id);
+        var ordered = orderedIds
+            .Where(trackMap.ContainsKey)
+            .Select(id => trackMap[id])
+            .ToList();
 
-        distance += FeatureDistance(a.Energy, b.Energy);
-        distance += FeatureDistance(a.Danceability, b.Danceability);
-        distance += FeatureDistance(a.Valence, b.Valence);
+        if (userId is null)
+            return ordered.Take(limit).Cast<BaseMedia>().ToList();
 
-        if (a.Bpm.HasValue && b.Bpm.HasValue)
-            distance += Math.Pow(Math.Min(Math.Abs(a.Bpm.Value - b.Bpm.Value) / 50.0, 1.0), 2);
-        else
-            distance += 0.25;
+        var uid = userId.Value;
 
-        if (a.MusicalKey is not null && b.MusicalKey is not null
-            && CamelotWheel.AreKeysCompatible(a.MusicalKey, b.MusicalKey))
-        {
-            distance *= 0.8;
-        }
+        var neverPlayed = ordered
+            .Where(t => !t.UserMediaStates.Any(s => s.UserId == uid && s.PlayCount > 0))
+            .ToList();
 
-        return Math.Sqrt(distance);
-    }
+        if (neverPlayed.Count >= limit)
+            return neverPlayed.Take(limit).Cast<BaseMedia>().ToList();
 
-    private static double FeatureDistance(double? a, double? b)
-    {
-        if (a.HasValue && b.HasValue)
-            return Math.Pow(a.Value - b.Value, 2);
-        return 0.1;
-    }
+        var neverPlayedIds = neverPlayed.Select(t => t.Id).ToHashSet();
+        var neverRated = ordered
+            .Where(t => !neverPlayedIds.Contains(t.Id))
+            .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid))
+            .ToList();
 
-    private static AudioAnalysis ComputeAverageProfile(List<AudioAnalysis> analyses)
-    {
-        return new AudioAnalysis
-        {
-            Energy = analyses.Where(a => a.Energy.HasValue).Select(a => a.Energy!.Value).DefaultIfEmpty(0.5).Average(),
-            Danceability = analyses.Where(a => a.Danceability.HasValue).Select(a => a.Danceability!.Value).DefaultIfEmpty(0.5).Average(),
-            Valence = analyses.Where(a => a.Valence.HasValue).Select(a => a.Valence!.Value).DefaultIfEmpty(0.5).Average(),
-            Bpm = analyses.Where(a => a.Bpm.HasValue).Select(a => a.Bpm!.Value).DefaultIfEmpty(120).Average(),
-            MusicalKey = analyses.GroupBy(a => a.MusicalKey).OrderByDescending(g => g.Count()).FirstOrDefault()?.Key
-        };
-    }
-
-    private static (double EnergyMin, double EnergyMax, double ValenceMin, double ValenceMax, double DanceMin, double DanceMax)
-        GetMoodRanges(string? preset)
-    {
-        return (preset?.ToLowerInvariant()) switch
-        {
-            "chill" => (0.0, 0.4, 0.2, 0.7, 0.0, 0.5),
-            "energetic" => (0.6, 1.0, 0.3, 1.0, 0.5, 1.0),
-            "happy" => (0.4, 1.0, 0.6, 1.0, 0.4, 1.0),
-            "dark" => (0.2, 0.7, 0.0, 0.3, 0.0, 0.6),
-            "focus" => (0.2, 0.6, 0.3, 0.6, 0.1, 0.4),
-            _ => (0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
-        };
+        return neverPlayed
+            .Concat(neverRated)
+            .Take(limit)
+            .Cast<BaseMedia>()
+            .ToList();
     }
 
     private static List<T> Shuffle<T>(List<T> list)

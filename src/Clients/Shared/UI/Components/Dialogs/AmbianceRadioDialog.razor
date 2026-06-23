@@ -1,0 +1,155 @@
+@using K7.Clients.Shared.Helpers
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos
+@using K7.Shared.Dtos.Entities.Medias
+@inject IStringLocalizer<AmbianceRadioDialog> L
+@inject IServerPreferencesService ServerPreferences
+@inject IServerInfoService ServerInfo
+@inject IK7ServerService ApiClient
+@inject IAudioPlayerService Audio
+@inject IK7Snackbar Snackbar
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-4 pa-4">
+        @if (_loading)
+        {
+            <K7Spinner />
+        }
+        else if (_presets.Count == 0)
+        {
+            <p Color="secondary">@L["NoMoods"]</p>
+        }
+        else
+        {
+            <K7Select TValue="string" Value="_selectedPresetKey" ValueChanged="OnPresetKeyChanged" Label="@L["MoodLabel"]" Variant="outlined">
+                @foreach (var preset in _presets)
+                {
+                    var key = GetPresetKey(preset);
+                    var label = GetPresetLabel(preset);
+                    <K7SelectItem TValue="string" Value="@key" Text="@label">@label</K7SelectItem>
+                }
+            </K7Select>
+
+            @if (_selectedPreset?.TopTags is not null)
+            {
+                <span class="text-caption ambiance-mood-tags">@_selectedPreset.TopTags</span>
+            }
+        }
+
+        <div class="d-flex gap-2 justify-end">
+            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="PlayAsync" Variant="K7ButtonVariant.Filled" Disabled="_selectedPreset is null || _playing">
+                @if (_playing)
+                {
+                    <K7Spinner Size="16" />
+                }
+                else
+                {
+                    @L["Play"]
+                }
+            </K7Button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
+    [Parameter] public Guid[]? LibraryIds { get; set; }
+    [Parameter] public Guid[]? LibraryGroupIds { get; set; }
+
+    private List<MusicMoodPresetDto> _presets = [];
+    private bool _loading = true;
+    private bool _playing;
+    private string? _selectedPresetKey;
+    private MusicMoodPresetDto? _selectedPreset;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _presets = (await ServerPreferences.GetMusicMoodPresetsAsync()).ToList();
+            if (_presets.Count > 0)
+            {
+                _selectedPreset = _presets[0];
+                _selectedPresetKey = GetPresetKey(_presets[0]);
+            }
+        }
+        catch
+        {
+            _presets = [];
+        }
+
+        _loading = false;
+    }
+
+    private void Cancel() => Dialog.Close(K7DialogResult.Cancel());
+
+    private void OnPresetKeyChanged(string? key)
+    {
+        _selectedPresetKey = key;
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            _selectedPreset = null;
+            return;
+        }
+
+        var parts = key.Split(':', 2);
+        if (parts.Length != 2 || !int.TryParse(parts[1], out var centroidIndex))
+        {
+            _selectedPreset = null;
+            return;
+        }
+
+        _selectedPreset = _presets.FirstOrDefault(p => p.MoodKey == parts[0] && p.CentroidIndex == centroidIndex);
+    }
+
+    private async Task PlayAsync()
+    {
+        if (_selectedPreset is null)
+            return;
+
+        _playing = true;
+        try
+        {
+            var results = await ServerInfo.GetMusicRadioAsync(
+                MusicRadioType.Mood.ToString(),
+                LibraryIds,
+                LibraryGroupIds,
+                moodPreset: _selectedPreset.MoodKey,
+                moodCentroidIndex: _selectedPreset.CentroidIndex);
+
+            var queueItems = results?
+                .OfType<MusicTrackDto>()
+                .Select(t => MusicTrackQueueMapper.ToQueueItem(t, ApiClient, S["Untitled"]))
+                .Where(q => q is not null)
+                .Cast<AudioQueueItem>()
+                .ToList();
+
+            if (queueItems is not { Count: > 0 })
+            {
+                Snackbar.Add(L["EmptyRadio"], K7Severity.Info);
+                return;
+            }
+
+            await Audio.PlayRadioAsync(queueItems, GetPresetLabel(_selectedPreset));
+            Dialog.Close(K7DialogResult.Ok(true));
+        }
+        finally
+        {
+            _playing = false;
+        }
+    }
+
+    private static string GetPresetKey(MusicMoodPresetDto preset) => $"{preset.MoodKey}:{preset.CentroidIndex}";
+
+    private string GetPresetLabel(MusicMoodPresetDto preset)
+    {
+        var moodLabel = L[$"Mood_{preset.MoodKey}"];
+        return preset.CentroidIndex > 0
+            ? string.Format(L["MoodVariant"], moodLabel, preset.CentroidIndex + 1)
+            : moodLabel;
+    }
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="StartTrack" xml:space="preserve"><value>Morceau de d&#233;part</value></data>
+  <data name="EndTrack" xml:space="preserve"><value>Morceau d'arriv&#233;e</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Play" xml:space="preserve"><value>Lancer le chemin</value></data>
+  <data name="NoPath" xml:space="preserve"><value>Aucun chemin sonore trouv&#233; entre ces morceaux.</value></data>
+  <data name="PlayingPath" xml:space="preserve"><value>Chemin sonore de {0} morceaux</value></data>
+  <data name="Error" xml:space="preserve"><value>Erreur lors de la recherche du chemin sonore.</value></data>
+</root>

@@ -22,6 +22,7 @@ public class GetMusicRadio : IEndpoint
             [FromQuery] Guid? seedTrackId,
             [FromQuery] Guid? seedArtistId,
             [FromQuery] string? moodPreset,
+            [FromQuery] int? moodCentroidIndex,
             [FromQuery] int limit = 50,
             CancellationToken cancellationToken = default) =>
         {
@@ -33,6 +34,7 @@ public class GetMusicRadio : IEndpoint
                 SeedTrackId = seedTrackId,
                 SeedArtistId = seedArtistId,
                 MoodPreset = moodPreset,
+                MoodCentroidIndex = moodCentroidIndex,
                 Limit = limit
             }, cancellationToken);
 

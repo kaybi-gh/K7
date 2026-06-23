@@ -19,12 +19,16 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="PresetDiscovery" xml:space="preserve"><value>Discovery</value></data>
-  <data name="PresetDiscoveryDesc" xml:space="preserve"><value>Tracks you have never played, close to your taste</value></data>
+  <data name="PresetDiscovery" xml:space="preserve"><value>Random discovery</value></data>
+  <data name="PresetDiscoveryDesc" xml:space="preserve"><value>Tracks you have never played, or never rated if everything was already played, in random order</value></data>
+  <data name="PresetDiscoveryAi" xml:space="preserve"><value>Similar discovery</value></data>
+  <data name="PresetDiscoveryAiDesc" xml:space="preserve"><value>Close to your taste, from tracks you have not heard yet</value></data>
   <data name="PresetSonic" xml:space="preserve"><value>Similar</value></data>
   <data name="PresetSonicDesc" xml:space="preserve"><value>Tracks that sound like what you listen to</value></data>
-  <data name="PresetTempo" xml:space="preserve"><value>Tempo</value></data>
-  <data name="PresetTempoDesc" xml:space="preserve"><value>A mix based on the BPM of your favorite tracks</value></data>
+  <data name="PresetAmbiance" xml:space="preserve"><value>Ambiance</value></data>
+  <data name="PresetAmbianceDesc" xml:space="preserve"><value>Pick a mood from those available on the server</value></data>
+  <data name="PresetSonicPath" xml:space="preserve"><value>Sonic path</value></data>
+  <data name="PresetSonicPathDesc" xml:space="preserve"><value>A gradual transition between two tracks</value></data>
   <data name="PresetTimeCapsule" xml:space="preserve"><value>Time Capsule</value></data>
   <data name="PresetTimeCapsuleDesc" xml:space="preserve"><value>Rediscover what you were listening to a year ago</value></data>
   <data name="PresetRecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
