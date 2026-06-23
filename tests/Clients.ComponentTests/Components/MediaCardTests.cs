@@ -1,5 +1,6 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
