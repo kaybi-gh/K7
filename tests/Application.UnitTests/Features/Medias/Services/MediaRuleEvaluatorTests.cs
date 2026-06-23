@@ -83,6 +83,95 @@ public class MediaRuleEvaluatorTests
     }
 
     [Test]
+    public async Task ApplyFilter_ArtistNameContains_ShouldMatchAlbumAndArtistEntities()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var radiohead = new MusicArtist
+        {
+            Id = Guid.NewGuid(),
+            Title = "Radiohead",
+            Created = now,
+            LastModified = now
+        };
+        var okComputer = new MusicAlbum
+        {
+            Id = Guid.NewGuid(),
+            Title = "OK Computer",
+            ArtistId = radiohead.Id,
+            Artist = radiohead,
+            Created = now,
+            LastModified = now
+        };
+        radiohead.Albums.Add(okComputer);
+
+        var coldplay = new MusicArtist
+        {
+            Id = Guid.NewGuid(),
+            Title = "Coldplay",
+            Created = now,
+            LastModified = now
+        };
+        var parachutes = new MusicAlbum
+        {
+            Id = Guid.NewGuid(),
+            Title = "Parachutes",
+            ArtistId = coldplay.Id,
+            Artist = coldplay,
+            Created = now,
+            LastModified = now
+        };
+        coldplay.Albums.Add(parachutes);
+
+        _context.Medias.AddRange(radiohead, okComputer, coldplay, parachutes);
+        await _context.SaveChangesAsync();
+
+        var filter = Rule(nameof(SmartPlaylistField.ArtistName), RuleOperator.Contains, "Radio");
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().BeEquivalentTo([radiohead.Id, okComputer.Id]);
+    }
+
+    [Test]
+    public async Task ApplyFilter_ArtistNameContains_ShouldMatchTrackViaAlbumArtist()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var artist = new MusicArtist
+        {
+            Id = Guid.NewGuid(),
+            Title = "Daft Punk",
+            Created = now,
+            LastModified = now
+        };
+        var album = new MusicAlbum
+        {
+            Id = Guid.NewGuid(),
+            Title = "Discovery",
+            ArtistId = artist.Id,
+            Artist = artist,
+            Created = now,
+            LastModified = now
+        };
+        var track = new MusicTrack
+        {
+            Id = Guid.NewGuid(),
+            Title = "One More Time",
+            AlbumId = album.Id,
+            Album = album,
+            Created = now,
+            LastModified = now
+        };
+        album.Tracks.Add(track);
+
+        _context.Medias.AddRange(artist, album, track);
+        await _context.SaveChangesAsync();
+
+        var filter = Rule(nameof(SmartPlaylistField.ArtistName), RuleOperator.Contains, "Daft");
+        var ids = await ApplyAndGetIdsAsync(filter, userId: _userA);
+
+        ids.Should().Contain(track.Id);
+    }
+
+    [Test]
     public async Task ApplyFilter_OriginalLanguageEquals_ShouldMatchMovies()
     {
         var filter = Rule(nameof(SmartPlaylistField.OriginalLanguage), RuleOperator.Equals, "en");

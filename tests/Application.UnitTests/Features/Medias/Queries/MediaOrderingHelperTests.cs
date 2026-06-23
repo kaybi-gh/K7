@@ -25,14 +25,14 @@ public class MediaOrderingHelperTests
     [Test]
     public void RequiresUserPlayCount_ShouldBeTrue_WhenUserPlayCountOrderingPresent()
     {
-        HashSet<GenreOrderingOption> orderBy = [GenreOrderingOption.UserPlayCountDesc, GenreOrderingOption.MediaCountDesc];
+        HashSet<MediaTagOrderingOption> orderBy = [MediaTagOrderingOption.UserPlayCountDesc, MediaTagOrderingOption.MediaCountDesc];
         MediaOrderingHelper.RequiresUserPlayCount(orderBy).Should().BeTrue();
     }
 
     [Test]
     public void RequiresUserPlayCount_ShouldBeFalse_WhenOnlyCatalogOrdering()
     {
-        HashSet<GenreOrderingOption> orderBy = [GenreOrderingOption.MediaCountDesc];
+        HashSet<MediaTagOrderingOption> orderBy = [MediaTagOrderingOption.MediaCountDesc];
         MediaOrderingHelper.RequiresUserPlayCount(orderBy).Should().BeFalse();
     }
 }
