@@ -1,5 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 @using K7.Clients.Shared.Helpers
+@using K7.Shared.Extensions
 @using K7.Server.Domain.Enums
 @inject IStringLocalizer<LibraryBrowseFilters> L
 
@@ -62,10 +63,22 @@
                                         SearchAsync='(text, ct) => SearchSuggestionsAsync("Studio", text, ct)' />
                     </div>
                     break;
+                case QuickFilterSubmenu.Artist:
+                    <div class="library-browse-filters__section-label">@L["FilterArtist"]</div>
+                    <div class="library-browse-filters__search">
+                        <K7SearchSelect Value="@(_artistDraft ?? "")"
+                                        ValueChanged="v => _artistDraft = v"
+                                        CommitOnSelectOnly="true"
+                                        OnDebouncedCommit="SetArtistAsync"
+                                        Variant="outlined"
+                                        Placeholder="@L["SearchPlaceholderArtist"]"
+                                        SearchAsync="(text, ct) => SearchSuggestionsAsync(nameof(SmartPlaylistField.ArtistName), text, ct)" />
+                    </div>
+                    break;
                 case QuickFilterSubmenu.ContentRating:
                     <div class="library-browse-filters__section-label">@L["FieldContentRating"]</div>
                     <div class="library-browse-filters__menu">
-                        @foreach (var rating in Facets!.ContentRatings)
+                        @foreach (var rating in Tags!.GetValues(MetadataTagKind.ContentRating))
                         {
                             var selected = SelectedContentRatings.Contains(rating);
                             <button type="button"
@@ -83,12 +96,12 @@
                 case QuickFilterSubmenu.Genres:
                     <div class="library-browse-filters__section-label">@L["FilterGenres"]</div>
                     <div class="library-browse-filters__menu">
-                        @foreach (var genre in Genres)
+                        @foreach (var genre in GenreTags)
                         {
-                            var selected = SelectedGenres.Contains(genre.Name);
+                            var selected = SelectedGenres.Contains(genre.DisplayName);
                             <button type="button"
                                     class="library-browse-filters__option focusable @(selected ? "library-browse-filters__option--selected" : "")"
-                                    @onclick="() => ToggleGenreAsync(genre.Name)">
+                                    @onclick="() => ToggleGenreAsync(genre.DisplayName)">
                                 <span class="library-browse-filters__option-label">@GetGenreLabel(genre)</span>
                                 @if (selected)
                                 {
@@ -139,7 +152,7 @@
                 <hr class="k7-menu-divider" />
             }
             <div class="library-browse-filters__menu">
-                @if (ShowMetadataQuickFilters)
+                @if (ShowVideoMetadataQuickFilters)
                 {
                     <button type="button"
                             class="library-browse-filters__option focusable"
@@ -163,7 +176,16 @@
                         </button>
                     }
                 }
-                @if (Genres.Count > 0)
+                @if (ShowArtistQuickFilter)
+                {
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.Artist)">
+                        <span class="library-browse-filters__option-label">@GetArtistMenuLabel()</span>
+                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                }
+                @if (ShowGenreQuickFilter)
                 {
                     <button type="button"
                             class="library-browse-filters__option focusable"

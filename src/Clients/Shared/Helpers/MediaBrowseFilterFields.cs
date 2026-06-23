@@ -60,6 +60,7 @@ public static class MediaBrowseFilterFields
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> MusicAlbumFields =
     [
         TextField(nameof(SmartPlaylistField.Title)),
+        SearchField(nameof(SmartPlaylistField.ArtistName)),
         TextField(nameof(SmartPlaylistField.Genre)),
         NumberField(nameof(SmartPlaylistField.Year)),
         NumberField(nameof(SmartPlaylistField.Rating)),
@@ -70,6 +71,7 @@ public static class MediaBrowseFilterFields
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> MusicArtistFields =
     [
         TextField(nameof(SmartPlaylistField.Title)),
+        SearchField(nameof(SmartPlaylistField.ArtistName)),
         TextField(nameof(SmartPlaylistField.Genre)),
         NumberField(nameof(SmartPlaylistField.PlayCount)),
         DateField(nameof(SmartPlaylistField.DateAdded))

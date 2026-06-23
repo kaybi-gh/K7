@@ -29,6 +29,7 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     private float _estimatedRowHeight = 300;
     private int _lastTotalRows;
     private bool _observing;
+    private bool _disposed;
 
     private List<List<TItem>> _rows = [];
 
@@ -71,7 +72,7 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
     [JSInvokable]
     public async Task OnContainerWidthChanged(int width)
     {
-        if (width == _containerWidth) return;
+        if (_disposed || width == _containerWidth) return;
 
         var isFirstMeasure = _containerWidth == 0;
         var previousRowHeight = _estimatedRowHeight;
@@ -227,6 +228,8 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+
         if (_module is not null)
         {
             try

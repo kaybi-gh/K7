@@ -3,6 +3,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Extensions;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Explore;
@@ -15,7 +16,7 @@ public partial class ExploreLibraryGroupView
     [Parameter, EditorRequired] public LibraryGroupDto Group { get; set; } = default!;
     [Parameter] public bool IsTv { get; set; }
 
-    private List<MediaGenreDto> _genres = [];
+    private List<MediaTagValueDto> _genres = [];
     private Guid[] _libraryGroupIds = [];
     private Guid[] _libraryIds = [];
     private bool _loading = true;
@@ -30,7 +31,11 @@ public partial class ExploreLibraryGroupView
     private static readonly HashSet<MediaOrderingOption> CreatedOrder = [MediaOrderingOption.CreatedDesc];
     private static readonly HashSet<MediaOrderingOption> TrendingOrder = [MediaOrderingOption.TrendingDesc];
     private static readonly HashSet<MediaOrderingOption> ProviderRatingOrder = [MediaOrderingOption.ProviderRatingDesc];
-    private static readonly HashSet<GenreOrderingOption> GenreOrder = [GenreOrderingOption.UserPlayCountDesc, GenreOrderingOption.MediaCountDesc];
+    private static readonly MediaTagOrderingOption[] GenreOrder =
+    [
+        MediaTagOrderingOption.UserPlayCountDesc,
+        MediaTagOrderingOption.MediaCountDesc
+    ];
 
     protected override async Task OnParametersSetAsync()
     {
@@ -51,7 +56,7 @@ public partial class ExploreLibraryGroupView
 
     private void GoBack() => NavigationManager.NavigateTo("/explore");
 
-    private async Task<List<MediaGenreDto>> LoadGenresAsync(LibraryMediaType mediaType)
+    private async Task<List<MediaTagValueDto>> LoadGenresAsync(LibraryMediaType mediaType)
     {
         var mediaTypes = mediaType switch
         {
@@ -65,16 +70,17 @@ public partial class ExploreLibraryGroupView
 
         try
         {
-            var result = await MediaService.GetMediaGenresAsync(new GetMediaGenresQuery
+            var result = await MediaService.GetMediaTagsAsync(new GetMediaTagsQuery
             {
                 LibraryGroupIds = _libraryGroupIds,
-                MediaTypes = mediaTypes,
+                MediaTypes = [.. mediaTypes],
+                Kinds = [MetadataTagKind.Genre],
                 OrderBy = GenreOrder,
                 PageNumber = 1,
                 PageSize = 3
             });
 
-            return result?.Items?.ToList() ?? [];
+            return result.GetTagValues(MetadataTagKind.Genre).ToList();
         }
         catch
         {
