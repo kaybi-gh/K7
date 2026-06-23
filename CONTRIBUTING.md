@@ -17,7 +17,6 @@ For the full breakdown, see [`docs/SolutionArchitecture.md`](docs/SolutionArchit
 - **.NET SDK 10.0+** - `dotnet --version`
 - **Docker** - for Aspire (Postgres, pgAdmin) or the Docker launch profile
 - **ffmpeg** - media processing (installed automatically in DevContainer/Docker)
-- **Essentia** - audio analysis, Linux-only, optional (soft-fails if missing)
 
 ## Developer setup
 
@@ -29,18 +28,18 @@ git clone --recurse-submodules <repo-url>
 git submodule update --init --recursive .github/dotnet-skills
 ```
 
-K7.Server.Web targets Linux at runtime (Essentia is a precompiled static binary downloaded from [essentia.upf.edu](https://essentia.upf.edu/extractors/)).
+K7.Server.Web targets Linux at runtime for media processing (ffmpeg).
 
 ### DevContainer (recommended on Windows)
 
-The simplest path - everything pre-installed (SDK, ffmpeg, Essentia, docker-in-docker):
+The simplest path - everything pre-installed (SDK, ffmpeg, docker-in-docker):
 
 1. Open the repo in VS Code → accept **"Reopen in Container"**
 2. Run Aspire: `dotnet run --project src/Shared/Aspire/AppHost`
 
-### Visual Studio - Docker profile (Windows + Essentia)
+### Visual Studio - Docker profile (Windows)
 
-Full Essentia support with VS debugger:
+Full ffmpeg support with VS debugger:
 
 1. Run Aspire once to create the persistent Postgres + pgAdmin containers:
    ```bash
@@ -49,23 +48,19 @@ Full Essentia support with VS debugger:
    Stop with Ctrl+C - the database containers stay alive.
 2. Select the **Docker** launch profile → F5
 
-The `dev` Dockerfile stage provides the SDK + ffmpeg + Essentia. Postgres is reached via `host.docker.internal:5432` (pinned port, same `postgres`/`postgres` credentials).
+The `dev` Dockerfile stage provides the SDK + ffmpeg. Postgres is reached via `host.docker.internal:5432` (pinned port, same `postgres`/`postgres` credentials).
 
 ### Linux / WSL2
 
 ```bash
-sudo apt-get update && sudo apt-get install -y ffmpeg curl
-curl -fsSL https://essentia.upf.edu/extractors/essentia-extractors-v2.1_beta2-linux-x86_64.tar.gz \
-  | tar xz --strip-components=1 --wildcards '*/streaming_extractor_music' -C /usr/local/bin/
-sudo mv /usr/local/bin/streaming_extractor_music /usr/local/bin/essentia_streaming_extractor_music
-sudo chmod +x /usr/local/bin/essentia_streaming_extractor_music
+sudo apt-get update && sudo apt-get install -y ffmpeg
 ```
 
 Install .NET 10 SDK: https://learn.microsoft.com/dotnet/core/install/linux-ubuntu
 
 ### Windows native (no WSL/Docker)
 
-Everything works except Essentia audio analysis (silently skipped).
+Everything works out of the box.
 
 ## Running the application
 

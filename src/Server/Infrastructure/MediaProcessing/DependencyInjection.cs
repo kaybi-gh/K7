@@ -22,9 +22,9 @@ public static class DependencyInjection
         services.AddSingleton<IImageProcessor, ImageProcessor>();
         services.AddSingleton<ITranscodeJobManager, TranscodeJobManager>();
         services.AddSingleton<IAudioTagReader, TagLibAudioTagReader>();
-        services.AddSingleton<IAudioAnalyzer, EssentiaAudioAnalyzer>();
         services.AddSingleton<IWaveformGenerator, FfmpegWaveformGenerator>();
         services.AddSingleton<IFadeAnalyzer, FfmpegFadeAnalyzer>();
+        services.AddSingleton<ILoudnessAnalyzer, FfmpegLoudnessAnalyzer>();
         services.AddSingleton<IChromaprintService, ChromaprintService>();
         services.AddSingleton<ISegmentDetectionService, SegmentDetectionService>();
         services.AddHostedService<TranscodeJobCleanupService>();
