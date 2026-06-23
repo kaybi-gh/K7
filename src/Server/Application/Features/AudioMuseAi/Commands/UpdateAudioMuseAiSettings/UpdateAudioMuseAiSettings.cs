@@ -20,13 +20,5 @@ public class UpdateAudioMuseAiSettingsCommandHandler(IServerSettingsService serv
     {
         var json = JsonSerializer.Serialize(request.Settings);
         await serverSettingsService.SetAsync(ServerSettingKeys.AudioMuseAi, json, cancellationToken);
-
-        var flagsJson = await serverSettingsService.GetAsync(ServerSettingKeys.FeatureFlags, cancellationToken);
-        var flags = flagsJson is not null
-            ? JsonSerializer.Deserialize<ServerFeatureFlagsDto>(flagsJson) ?? new ServerFeatureFlagsDto()
-            : new ServerFeatureFlagsDto();
-
-        var updatedFlags = flags with { AudioMuseAiEnabled = request.Settings.Enabled };
-        await serverSettingsService.SetAsync(ServerSettingKeys.FeatureFlags, JsonSerializer.Serialize(updatedFlags), cancellationToken);
     }
 }
