@@ -6,6 +6,8 @@
 @inject IK7DialogService DialogService
 @inject IK7Snackbar Snackbar
 @inject NavigationManager Navigation
+@inject IServerPreferencesService ServerPreferences
+@inject IAudioMuseAiClientService AudioMuseAi
 
 @if (Audio.IsFullScreenVisible && Audio.CurrentTrack is not null)
 {
@@ -223,7 +225,7 @@
             else if (_view == FullScreenView.Queue)
             {
                 <div class="fullscreen-player-queue">
-                    <K7Tabs TValue="QueueTab" Tabs="_queueTabOptions" Value="_queueTab" ValueChanged="v => { _queueTab = v; StateHasChanged(); }" Class="queue-tabs" />
+                    <K7Tabs TValue="QueueTab" Tabs="_queueTabOptions" Value="_queueTab" ValueChanged="OnQueueTabChanged" Class="queue-tabs" />
 
                     @if (_queueTab == QueueTab.Previous)
                     {
@@ -255,6 +257,48 @@
                             @if (Audio.CurrentIndex == 0)
                             {
                                 <div class="queue-empty">@S["NoPreviousTracks"]</div>
+                            }
+                        </div>
+                    }
+                    else if (_queueTab == QueueTab.Similar)
+                    {
+                        <div class="queue-list">
+                            @if (_similarLoading)
+                            {
+                                <div class="d-flex justify-center pa-8">
+                                    <K7Spinner />
+                                </div>
+                            }
+                            else if (_similarTracks.Count == 0)
+                            {
+                                <div class="queue-empty">@S["NoSimilarTracks"]</div>
+                            }
+                            else
+                            {
+                                @for (var i = 0; i < _similarTracks.Count; i++)
+                                {
+                                    var index = i;
+                                    var track = _similarTracks[i];
+                                    <div class="queue-item focusable"
+                                         tabindex="0" role="button"
+                                         @onclick="() => PlaySimilarFromIndex(index)"
+                                         @onkeydown="(e) => OnSimilarItemKeyDown(e, index)">
+                                        <div class="queue-item-index"><span>@(i + 1)</span></div>
+                                        @if (!string.IsNullOrEmpty(track.CoverUrl))
+                                        {
+                                            <K7Image Src="@track.CoverUrl" Alt="Cover" Width="40" ObjectFit="cover" Class="queue-item-cover" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <K7Icon Icon="@Phosphor.MusicNote" Class="queue-item-cover-placeholder" />
+                                        }
+                                        <div class="queue-item-info">
+                                            <span class="queue-item-title">@track.Title</span>
+                                            <span class="queue-item-artist">@track.Artist</span>
+                                        </div>
+                                        <span class="queue-item-duration">@FormatTime(track.Duration ?? 0)</span>
+                                    </div>
+                                }
                             }
                         </div>
                     }
@@ -374,20 +418,6 @@
                             {
                             <div class="info-section">
                                 <span class="info-section-title">@S["TrackProperties"]</span>
-                                @if (_trackDetails.Bpm is > 0)
-                                {
-                                    <div class="info-row">
-                                        <span class="info-label">BPM</span>
-                                        <span class="info-value">@_trackDetails.Bpm</span>
-                                    </div>
-                                }
-                                @if (!string.IsNullOrEmpty(_trackDetails.MusicalKey))
-                                {
-                                    <div class="info-row">
-                                        <span class="info-label">@S["Key"]</span>
-                                        <span class="info-value">@_trackDetails.MusicalKey</span>
-                                    </div>
-                                }
                                 @if (_trackDetails.LoudnessLufs is not null)
                                 {
                                     <div class="info-row">
@@ -400,27 +430,6 @@
                                     <div class="info-row">
                                         <span class="info-label">ReplayGain</span>
                                         <span class="info-value">@($"{_trackDetails.ReplayGainTrackGain:+0.00;-0.00} dB")</span>
-                                    </div>
-                                }
-                                @if (_trackDetails.Energy is not null)
-                                {
-                                    <div class="info-row">
-                                        <span class="info-label">@S["Energy"]</span>
-                                        <span class="info-value">@($"{_trackDetails.Energy:P0}")</span>
-                                    </div>
-                                }
-                                @if (_trackDetails.Danceability is not null)
-                                {
-                                    <div class="info-row">
-                                        <span class="info-label">@S["Danceability"]</span>
-                                        <span class="info-value">@($"{_trackDetails.Danceability:P0}")</span>
-                                    </div>
-                                }
-                                @if (_trackDetails.Valence is not null)
-                                {
-                                    <div class="info-row">
-                                        <span class="info-label">@S["Valence"]</span>
-                                        <span class="info-value">@($"{_trackDetails.Valence:P0}")</span>
                                     </div>
                                 }
                             </div>

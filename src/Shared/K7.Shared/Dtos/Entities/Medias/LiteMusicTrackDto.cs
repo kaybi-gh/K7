@@ -11,9 +11,6 @@ public sealed record LiteMusicTrackDto : LiteMediaDto
     public string? ArtistName { get; init; }
     public Guid? ArtistId { get; init; }
     public string? Genre { get; init; }
-    public double? Bpm { get; init; }
-    public string? MusicalKey { get; init; }
-    public double? Energy { get; init; }
     public double? LoudnessLufs { get; init; }
     public double? FadeInDuration { get; init; }
     public double? FadeOutDuration { get; init; }

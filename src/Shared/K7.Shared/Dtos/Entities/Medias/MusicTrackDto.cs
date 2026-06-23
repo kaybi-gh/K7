@@ -10,12 +10,7 @@ public sealed record MusicTrackDto : MediaDto
     public int? DiscNumber { get; init; }
     public string? Lyrics { get; init; }
     public string? LyricsLrc { get; init; }
-    public double? Bpm { get; init; }
-    public string? MusicalKey { get; init; }
     public double? LoudnessLufs { get; init; }
-    public double? Energy { get; init; }
-    public double? Danceability { get; init; }
-    public double? Valence { get; init; }
     public float[]? WaveformPeaks { get; init; }
     public double? FadeInDuration { get; init; }
     public double? FadeOutDuration { get; init; }

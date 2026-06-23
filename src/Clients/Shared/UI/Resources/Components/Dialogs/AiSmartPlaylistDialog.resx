@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="Prompt" xml:space="preserve"><value>Decrivez votre playlist</value></data>
+  <data name="PromptPlaceholder" xml:space="preserve"><value>Ex: Jazz chill pour un dimanche pluvieux</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Generate" xml:space="preserve"><value>Generer</value></data>
+  <data name="NoResults" xml:space="preserve"><value>Aucun resultat trouve</value></data>
+  <data name="Playing" xml:space="preserve"><value>{0} titres en lecture</value></data>
+  <data name="Error" xml:space="preserve"><value>Erreur lors de la generation</value></data>
+</root>

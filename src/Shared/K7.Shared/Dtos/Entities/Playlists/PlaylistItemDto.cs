@@ -13,9 +13,6 @@ public sealed record PlaylistItemDto
     public Guid? IndexedFileId { get; init; }
     public double? Duration { get; init; }
     public int? UserRating { get; init; }
-    public double? Bpm { get; init; }
-    public string? MusicalKey { get; init; }
-    public double? Energy { get; init; }
     public IReadOnlyList<MetadataPictureDto>? Pictures { get; init; }
 
 }

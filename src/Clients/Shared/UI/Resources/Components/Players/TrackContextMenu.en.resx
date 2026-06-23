@@ -35,4 +35,8 @@
   <data name="DownloadQueued" xml:space="preserve"><value>'{0}' queued for download</value></data>
   <data name="Menu" xml:space="preserve"><value>Track actions</value></data>
   <data name="ActionsTitle" xml:space="preserve"><value>More actions</value></data>
+  <data name="PlaySimilar" xml:space="preserve"><value>Play similar tracks</value></data>
+  <data name="NoSimilarTracks" xml:space="preserve"><value>No similar tracks found</value></data>
+  <data name="PlayingSimilar" xml:space="preserve"><value>Playing tracks similar to '{0}'</value></data>
+  <data name="SimilarTracksError" xml:space="preserve"><value>Error finding similar tracks</value></data>
 </root>

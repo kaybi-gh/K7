@@ -106,9 +106,6 @@ public static class PlaylistMappings
                 IndexedFileId = indexedFile?.Id,
                 Duration = (indexedFile?.FileMetadata as AudioFileMetadata)?.Duration.TotalSeconds,
                 UserRating = media?.Ratings.OfType<UserRating>().FirstOrDefault()?.Value is double v ? (int)v : null,
-                Bpm = media is MusicTrack mt ? mt.AudioAnalysis?.Bpm : null,
-                MusicalKey = media is MusicTrack mk ? mk.AudioAnalysis?.MusicalKey : null,
-                Energy = media is MusicTrack me ? me.AudioAnalysis?.Energy : null,
                 Pictures = pictures.Select(p => p.ToMetadataPictureDto()).ToList()
             };
         }

@@ -32,4 +32,5 @@
   <data name="Movies" xml:space="preserve"><value>movies</value></data>
   <data name="Episodes" xml:space="preserve"><value>episodes</value></data>
   <data name="Items" xml:space="preserve"><value>items</value></data>
+  <data name="AiPlaylist" xml:space="preserve"><value>AI Playlist</value></data>
 </root>

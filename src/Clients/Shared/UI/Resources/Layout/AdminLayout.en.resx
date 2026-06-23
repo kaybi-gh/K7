@@ -46,4 +46,6 @@
   <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
   <data name="PlaybackHistory" xml:space="preserve"><value>Playback History</value></data>
   <data name="Stats" xml:space="preserve"><value>Statistics</value></data>
+  <data name="ApiKeys" xml:space="preserve"><value>API Keys</value></data>
+  <data name="AudioMuseAi" xml:space="preserve"><value>AudioMuse AI</value></data>
 </root>

@@ -31,5 +31,6 @@
   <data name="Tracks" xml:space="preserve"><value>morceaux</value></data>
   <data name="Movies" xml:space="preserve"><value>films</value></data>
   <data name="Episodes" xml:space="preserve"><value>épisodes</value></data>
-  <data name="Items" xml:space="preserve"><value>éléments</value></data>
+  <data name="Items" xml:space="preserve"><value>elements</value></data>
+  <data name="AiPlaylist" xml:space="preserve"><value>AI Playlist</value></data>
 </root>

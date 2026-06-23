@@ -142,4 +142,9 @@
   <data name="ResumeHere" xml:space="preserve"><value>Resume here</value></data>
   <data name="AudioTrack" xml:space="preserve"><value>Audio</value></data>
   <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
+  <data name="PlaySimilar" xml:space="preserve"><value>Play similar</value></data>
+  <data name="Similar" xml:space="preserve"><value>Similar</value></data>
+  <data name="NoSimilarTracks" xml:space="preserve"><value>No similar tracks found</value></data>
+  <data name="PlayingSimilar" xml:space="preserve"><value>Playing tracks similar to {0}</value></data>
+  <data name="SimilarTracksError" xml:space="preserve"><value>Error finding similar tracks</value></data>
 </root>

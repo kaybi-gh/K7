@@ -42,6 +42,9 @@ builder.Services.AddTransient<IUserPreferencesService>(sp => sp.GetRequiredServi
 builder.Services.AddTransient<IServerPreferencesService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<INotificationAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IFederationService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IApiKeyAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IAudioMuseAiAdminService>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddTransient<IAudioMuseAiClientService>(sp => sp.GetRequiredService<K7ServerService>());
 
 builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();

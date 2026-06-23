@@ -80,9 +80,6 @@ public partial class PlaylistDetail
             ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
         Duration = item.Duration ?? 0,
         UserRating = item.UserRating,
-        Bpm = item.Bpm,
-        MusicalKey = item.MusicalKey,
-        Energy = item.Energy,
         IsPlaying = Audio.CurrentTrack?.MediaId == item.MediaId
     };
 

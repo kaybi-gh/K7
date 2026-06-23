@@ -6,6 +6,8 @@
 @inject IDeviceService DeviceService
 @inject IK7Snackbar Snackbar
 @inject IK7DialogService DialogService
+@inject IAudioMuseAiClientService AudioMuseAi
+@inject IServerPreferencesService ServerPreferences
 @inject IStringLocalizer<TrackContextMenu> L
 @inject IStringLocalizer<SharedResource> S
 
@@ -39,6 +41,11 @@
         @if (!string.IsNullOrEmpty(Track.Genre))
         {
             <K7MenuItem Icon="broadcast" OnClick="RadioGenre">@string.Format(L["RadioGenre"], Track.Genre)</K7MenuItem>
+        }
+        @if (_audioMuseEnabled)
+        {
+            <hr class="k7-divider" />
+            <K7MenuItem Icon="magic-wand" OnClick="PlaySimilar">@L["PlaySimilar"]</K7MenuItem>
         }
         </ChildContent>
     </K7Menu>
