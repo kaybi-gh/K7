@@ -1,5 +1,6 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.Persons.Commands.RefreshPersonMetadata;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -29,17 +30,20 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
     private readonly IServiceProvider _serviceProvider;
     private readonly ISender _sender;
     private readonly IReadOnlyDictionary<string, IMusicArtistMetadataProvider> _artistProviders;
+    private readonly IMediaMetadataTagSyncService _metadataTagSyncService;
 
     public RefreshMediaMetadatasCommandHandler(
         IApplicationDbContext context,
         IServiceProvider serviceProvider,
         ISender sender,
-        IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders)
+        IEnumerable<IMusicArtistMetadataProvider> artistMetadataProviders,
+        IMediaMetadataTagSyncService metadataTagSyncService)
     {
         _context = context;
         _serviceProvider = serviceProvider;
         _sender = sender;
         _artistProviders = artistMetadataProviders.ToDictionary(p => p.ProviderName);
+        _metadataTagSyncService = metadataTagSyncService;
     }
 
     public async Task Handle(RefreshMediaMetadatasCommand request, CancellationToken cancellationToken)
@@ -54,6 +58,8 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .Include(m => m.PersonRoles)
                 .ThenInclude(pr => pr.PortraitPicture)
             .Include(m => m.Ratings)
+            .Include(m => m.MetadataTags)
+                .ThenInclude(mt => mt.MetadataTag)
             .FirstOrDefaultAsync(m => m.Id == request.MediaId, cancellationToken);
         Guard.Against.NotFound(request.MediaId, media);
 
@@ -125,6 +131,10 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             }
 
             movie.ApplyMetadata(metadata);
+            await _metadataTagSyncService.ApplyTagsAsync(
+                movie,
+                MetadataTagBuilder.FromMovieMetadata(metadata, movie),
+                cancellationToken);
 
             if (metadata.RecommendedExternalIds.Count > 0)
             {
@@ -177,6 +187,10 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                 .LoadAsync(cancellationToken);
 
             album.ApplyMetadata(metadata);
+            await _metadataTagSyncService.ApplyTagsAsync(
+                album,
+                MetadataTagBuilder.FromMusicAlbumMetadata(metadata, album),
+                cancellationToken);
 
             // Federation: create tracks and artist from peer metadata (no local scan to do it)
             if (request.MetadataProviderName == "federation")
@@ -323,6 +337,10 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         var serieMetadata = await metadataProvider.FetchSerieMetadataAsync(
             request.MetadataProviderExternalId, request.Language, cancellationToken);
         serie.ApplyMetadata(serieMetadata);
+        await _metadataTagSyncService.ApplyTagsAsync(
+            serie,
+            MetadataTagBuilder.FromSerieMetadata(serieMetadata, serie),
+            cancellationToken);
 
         if (serieMetadata.RecommendedExternalIds.Count > 0)
         {

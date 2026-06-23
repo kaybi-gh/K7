@@ -55,6 +55,7 @@ public class GetFederationMedia : IEndpoint
                     && m.IndexedFiles.Any(f => f.LibraryId == libraryId))
                 .Include(m => m.ExternalIds)
                 .Include(m => m.Pictures)
+                .Include(m => m.MetadataTags).ThenInclude(mt => mt.MetadataTag)
                 .Include(m => m.IndexedFiles.Where(f => f.LibraryId == libraryId))
                     .ThenInclude(f => f.FileMetadata)
                         .ThenInclude(fm => (fm as VideoFileMetadata)!.AudioTracks)
@@ -73,6 +74,7 @@ public class GetFederationMedia : IEndpoint
                     && a.Tracks.Any(t => t.IndexedFiles.Any(f => f.LibraryId == libraryId)))
                 .Include(a => a.ExternalIds)
                 .Include(a => a.Pictures)
+                .Include(a => a.MetadataTags).ThenInclude(mt => mt.MetadataTag)
                 .Include(a => a.Tracks)
                     .ThenInclude(t => t.IndexedFiles.Where(f => f.LibraryId == libraryId))
                         .ThenInclude(f => f.FileMetadata)
@@ -86,6 +88,7 @@ public class GetFederationMedia : IEndpoint
                     && s.Seasons.Any(ss => ss.Episodes.Any(e => e.IndexedFiles.Any(f => f.LibraryId == libraryId))))
                 .Include(s => s.ExternalIds)
                 .Include(s => s.Pictures)
+                .Include(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
                 .Include(s => s.Seasons)
                     .ThenInclude(ss => ss.Episodes)
                         .ThenInclude(e => e.IndexedFiles.Where(f => f.LibraryId == libraryId))
@@ -150,7 +153,10 @@ public class GetFederationMedia : IEndpoint
                         Value = e.Value
                     }).ToList(),
                     Files = files,
-                    Genres = m.Genres.ToList()
+                    Genres = m.MetadataTags
+                        .Where(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+                        .Select(mt => mt.MetadataTag.DisplayName)
+                        .ToList()
                 };
             }).ToList();
 

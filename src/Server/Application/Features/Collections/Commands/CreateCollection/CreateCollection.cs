@@ -9,7 +9,16 @@ namespace K7.Server.Application.Features.Collections.Commands.CreateCollection;
 
 public static class AllowedCollectionMediaTypes
 {
-    public static readonly MediaType[] Values = [MediaType.Movie, MediaType.MusicAlbum, MediaType.Serie];
+    public static readonly MediaType[] Values =
+    [
+        MediaType.Movie,
+        MediaType.MusicAlbum,
+        MediaType.MusicTrack,
+        MediaType.MusicArtist,
+        MediaType.Serie,
+        MediaType.SerieSeason,
+        MediaType.SerieEpisode
+    ];
 }
 
 [Authorize(Roles = $"{Roles.User},{Roles.Administrator}")]

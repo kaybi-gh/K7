@@ -300,12 +300,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             roles.Add(crewMember);
         }
 
-        var groupedRoles = roles.GroupBy(x => new { x.Person.Name, x.Person.Birthday });
-        foreach (var group in groupedRoles.Where(x => x.Count() > 1))
-        {
-            var duplicateRoles = group.OrderBy(x => x.ExternalIds.First(x => x.ProviderName == "tmdb").Value).Skip(1);
-            roles.RemoveAll(duplicateRoles.Contains);
-        }
+        PersonRoleImportHelper.DedupByTmdbCreditId(roles);
         return roles;
     }
 

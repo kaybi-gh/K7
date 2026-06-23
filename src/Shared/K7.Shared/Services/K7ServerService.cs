@@ -113,16 +113,10 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<PaginatedListDto<LiteMediaDto>>(_serializerOptions, cancellationToken);
     }
 
-    public async Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default)
+    public async Task<MediaTagsDto?> GetMediaTagsAsync(GetMediaTagsQuery query, CancellationToken cancellationToken = default)
     {
-        var requestUri = GetMediaGenresQueryUriBuilder.Build(query);
-        return await HttpClient.GetFromJsonAsync<PaginatedListDto<MediaGenreDto>>(requestUri, _serializerOptions, cancellationToken);
-    }
-
-    public async Task<MediaBrowseFacetsDto?> GetMediaBrowseFacetsAsync(GetMediaBrowseFacetsQuery query, CancellationToken cancellationToken = default)
-    {
-        var requestUri = GetMediaBrowseFacetsQueryUriBuilder.Build(query);
-        return await HttpClient.GetFromJsonAsync<MediaBrowseFacetsDto>(requestUri, _serializerOptions, cancellationToken);
+        var requestUri = GetMediaTagsQueryUriBuilder.Build(query);
+        return await HttpClient.GetFromJsonAsync<MediaTagsDto>(requestUri, _serializerOptions, cancellationToken);
     }
 
     public async Task<IReadOnlyList<string>?> GetMediaBrowseFilterSuggestionsAsync(
@@ -249,9 +243,19 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<List<MediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default)
     {
-        var queryParams = new List<string> { $"type={Uri.EscapeDataString(type)}" };
+        var queryParams = new List<string> { $"radioType={Uri.EscapeDataString(radioType)}" };
+        if (libraryIds is { Length: > 0 })
+        {
+            foreach (var libraryId in libraryIds)
+                queryParams.Add($"libraryIds={libraryId}");
+        }
+        if (libraryGroupIds is { Length: > 0 })
+        {
+            foreach (var libraryGroupId in libraryGroupIds)
+                queryParams.Add($"libraryGroupIds={libraryGroupId}");
+        }
         if (seedTrackId.HasValue) queryParams.Add($"seedTrackId={seedTrackId.Value}");
         if (seedArtistId.HasValue) queryParams.Add($"seedArtistId={seedArtistId.Value}");
         if (moodPreset is not null) queryParams.Add($"moodPreset={Uri.EscapeDataString(moodPreset)}");

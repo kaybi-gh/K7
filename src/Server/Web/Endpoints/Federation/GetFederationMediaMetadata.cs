@@ -36,6 +36,7 @@ public class GetFederationMediaMetadata : IEndpoint
             var media = await context.Medias
                 .Include(m => m.ExternalIds)
                 .Include(m => m.Pictures)
+                .Include(m => m.MetadataTags).ThenInclude(mt => mt.MetadataTag)
                 .Include(m => m.Trailers)
                 .Include(m => m.Ratings)
                 .Include(m => m.PersonRoles)
@@ -128,6 +129,11 @@ public class GetFederationMediaMetadata : IEndpoint
 
     private static PeerFullMediaMetadataDto BuildDto(BaseMedia media)
     {
+        var genres = media.MetadataTags
+            .Where(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+            .Select(mt => mt.MetadataTag.DisplayName)
+            .ToList();
+
         var dto = new PeerFullMediaMetadataDto
         {
             Id = media.Id,
@@ -135,7 +141,7 @@ public class GetFederationMediaMetadata : IEndpoint
             Title = media.Title ?? string.Empty,
             OriginalTitle = media.OriginalTitle,
             ReleaseDate = media.ReleaseDate,
-            Genres = media.Genres.ToList(),
+            Genres = genres,
             ExternalIds = media.ExternalIds.Select(e => new PeerExternalIdDto
             {
                 Provider = e.ProviderName,
@@ -172,19 +178,19 @@ public class GetFederationMediaMetadata : IEndpoint
                 Overview = movie.Overview,
                 Tagline = movie.Tagline,
                 OriginalLanguage = movie.OriginalLanguage,
-                ContentRating = movie.ContentRating,
+                ContentRating = GetTagDisplayName(movie, MetadataTagKind.ContentRating),
                 Budget = movie.Budget,
                 Revenue = movie.Revenue,
-                Studios = movie.Studios.ToList(),
+                Studios = GetTagDisplayNames(movie, MetadataTagKind.Studio),
             },
             Serie serie => dto with
             {
                 Overview = serie.Overview,
                 OriginalLanguage = serie.OriginalLanguage,
-                ContentRating = serie.ContentRating,
+                ContentRating = GetTagDisplayName(serie, MetadataTagKind.ContentRating),
                 Status = serie.Status,
-                Network = serie.Network,
-                Studios = serie.Studios.ToList(),
+                Network = GetTagDisplayName(serie, MetadataTagKind.Network),
+                Studios = GetTagDisplayNames(serie, MetadataTagKind.Studio),
                 TotalSeasons = serie.Seasons.Count,
                 Seasons = serie.Seasons.Select(s => new PeerSeasonDto
                 {
@@ -255,6 +261,17 @@ public class GetFederationMediaMetadata : IEndpoint
             _ => dto
         };
     }
+
+    private static string? GetTagDisplayName(BaseMedia media, MetadataTagKind kind) =>
+        media.MetadataTags
+            .FirstOrDefault(mt => mt.MetadataTag.Kind == kind)
+            ?.MetadataTag.DisplayName;
+
+    private static List<string> GetTagDisplayNames(BaseMedia media, MetadataTagKind kind) =>
+        media.MetadataTags
+            .Where(mt => mt.MetadataTag.Kind == kind)
+            .Select(mt => mt.MetadataTag.DisplayName)
+            .ToList();
 
     private static PeerPersonRoleDto MapPersonRole(BasePersonRole role)
     {

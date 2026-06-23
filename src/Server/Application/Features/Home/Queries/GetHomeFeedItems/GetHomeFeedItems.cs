@@ -123,9 +123,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Take(request.PageSize)
             .Include(x => x.Pictures).ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
+            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
             .AsSplitQuery()
@@ -160,8 +162,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Take(fetchSize)
             .Include(x => x.Pictures).ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
+            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
             .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
@@ -218,6 +222,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Where(m => pageIds.Contains(m.Id))
             .Include(x => x.Pictures).ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
+            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -323,8 +328,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 ReleaseDate = serie.ReleaseDate,
                 Watched = allWatched,
                 Overview = detailed ? (serie.Overview ?? ep.Overview) : null,
-                Genres = detailed && serie.Genres.Count > 0 ? serie.Genres.ToList() : null,
-                ContentRating = detailed ? serie.ContentRating : null,
+                Genres = detailed && GetGenres(serie).Count > 0 ? GetGenres(serie) : null,
+                ContentRating = detailed ? GetContentRating(serie) : null,
                 RuntimeMinutes = detailed ? ep.Runtime : null,
                 Rating = detailed ? GetBestRating(serie) : null
             };
@@ -347,8 +352,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 ReleaseDate = serie.ReleaseDate,
                 Watched = allWatched,
                 Overview = detailed ? serie.Overview : null,
-                Genres = detailed && serie.Genres.Count > 0 ? serie.Genres.ToList() : null,
-                ContentRating = detailed ? serie.ContentRating : null,
+                Genres = detailed && GetGenres(serie).Count > 0 ? GetGenres(serie) : null,
+                ContentRating = detailed ? GetContentRating(serie) : null,
                 Rating = detailed ? GetBestRating(serie) : null
             };
         }
@@ -366,8 +371,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             ReleaseDate = serie.ReleaseDate,
             Watched = allWatched,
             Overview = detailed ? serie.Overview : null,
-            Genres = detailed && serie.Genres.Count > 0 ? serie.Genres.ToList() : null,
-            ContentRating = detailed ? serie.ContentRating : null,
+            Genres = detailed && GetGenres(serie).Count > 0 ? GetGenres(serie) : null,
+            ContentRating = detailed ? GetContentRating(serie) : null,
             Rating = detailed ? GetBestRating(serie) : null
         };
     }
@@ -416,7 +421,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             Progress = userState?.ProgressPercentage ?? 0,
             GroupCount = 1,
             Overview = detailed ? GetOverview(item) : null,
-            Genres = detailed && item.Genres.Count > 0 ? item.Genres.ToList() : null,
+            Genres = detailed && GetGenres(item).Count > 0 ? GetGenres(item) : null,
             ContentRating = detailed ? GetContentRating(item) : null,
             RuntimeMinutes = detailed ? GetRuntimeMinutes(item) : null,
             Rating = detailed ? GetBestRating(item) : null
@@ -465,7 +470,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             Progress = userState?.ProgressPercentage ?? 0,
             GroupCount = 1,
             Overview = detailed ? GetOverview(detailSource) : null,
-            Genres = detailed && detailSource.Genres.Count > 0 ? detailSource.Genres.ToList() : null,
+            Genres = detailed && GetGenres(detailSource).Count > 0 ? GetGenres(detailSource) : null,
             ContentRating = detailed ? GetContentRating(detailSource) : null,
             RuntimeMinutes = detailed ? GetRuntimeMinutes(item) : null,
             Rating = detailed ? GetBestRating(detailSource) : null
@@ -650,6 +655,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Take(request.PageSize)
             .Include(x => x.Pictures).ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
+            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
@@ -675,12 +681,16 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         _ => null
     };
 
-    private static string? GetContentRating(BaseMedia item) => item switch
-    {
-        Movie m => m.ContentRating,
-        Serie s => s.ContentRating,
-        _ => null
-    };
+    private static List<string> GetGenres(BaseMedia media) =>
+        media.MetadataTags
+            .Where(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre)
+            .Select(mt => mt.MetadataTag.DisplayName)
+            .ToList();
+
+    private static string? GetContentRating(BaseMedia item) =>
+        item.MetadataTags
+            .FirstOrDefault(mt => mt.MetadataTag.Kind == MetadataTagKind.ContentRating)
+            ?.MetadataTag.DisplayName;
 
     private static int? GetRuntimeMinutes(BaseMedia item) => item switch
     {

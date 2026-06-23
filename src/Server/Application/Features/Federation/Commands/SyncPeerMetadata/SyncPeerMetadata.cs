@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Federation;
@@ -19,6 +20,7 @@ public class SyncPeerMetadataCommandHandler(
     IApplicationDbContext context,
     IPeerClient peerClient,
     ISender sender,
+    IMediaMetadataTagSyncService tagSyncService,
     ILogger<SyncPeerMetadataCommandHandler> logger)
     : IRequestHandler<SyncPeerMetadataCommand>
 {
@@ -192,7 +194,11 @@ public class SyncPeerMetadataCommandHandler(
             localMedia.OriginalTitle = media.OriginalTitle;
             localMedia.ReleaseDate = media.ReleaseDate;
             localMedia.PeerServerId = peer.Id;
-            localMedia.Genres = media.Genres.ToList();
+
+            await tagSyncService.ApplyTagsAsync(
+                localMedia,
+                MetadataTagBuilder.FromGenres(localMedia, media.Genres),
+                cancellationToken);
 
             // Add federation external ID for identification
             localMedia.ExternalIds.Add(new ExternalId

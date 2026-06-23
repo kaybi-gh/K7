@@ -180,6 +180,6 @@ public static class MediaOrderingHelper
                     : 0.0)
                 .Max());
 
-    public static bool RequiresUserPlayCount(HashSet<GenreOrderingOption>? orderBy) =>
-        orderBy is not null && orderBy.Any(o => o is GenreOrderingOption.UserPlayCountAsc or GenreOrderingOption.UserPlayCountDesc);
+    public static bool RequiresUserPlayCount(HashSet<MediaTagOrderingOption>? orderBy) =>
+        orderBy is not null && orderBy.Any(o => o is MediaTagOrderingOption.UserPlayCountAsc or MediaTagOrderingOption.UserPlayCountDesc);
 }
