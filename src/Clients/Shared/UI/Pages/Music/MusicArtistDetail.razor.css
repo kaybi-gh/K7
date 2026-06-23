@@ -143,6 +143,10 @@
     text-align: right;
 }
 
+.col-actions {
+    width: 50px;
+}
+
 ::deep .cursor-pointer {
     cursor: pointer;
 }

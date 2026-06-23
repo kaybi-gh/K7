@@ -1,4 +1,6 @@
-﻿using K7.Clients.Shared.Models;
+﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Mappings;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
@@ -15,6 +17,8 @@ public partial class Serie
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Parameter]
     public required string Id { get; set; }
 
@@ -26,9 +30,22 @@ public partial class Serie
     private List<LiteSerieSeasonDto> _seasons = [];
     private List<MediaCardViewModel> _similarMedia = [];
     private bool _loading = true;
+    private bool _canTrackProgress;
+    private bool _canExclude;
+    private bool _canSetWatchState;
+    private bool _isAdmin;
+    private bool _permissionsLoaded;
 
     protected override async Task OnParametersSetAsync()
     {
+        if (!_permissionsLoaded)
+        {
+            _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+            (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
+            _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+            _permissionsLoaded = true;
+        }
+
         _loading = true;
 
         var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
@@ -178,16 +195,12 @@ public partial class Serie
         try
         {
             var similar = await k7ServerService.GetSimilarMediaAsync(_serie.Id);
-            _similarMedia = similar.Select(m => new MediaCardViewModel
+            _similarMedia = [];
+            foreach (var media in similar)
             {
-                Id = m.Id.ToString(),
-                Kind = MediaCardKind.Serie,
-                Title = m.Title,
-                AdditionalInformations = m.ReleaseDate?.Year.ToString(),
-                PictureUrl = apiClient.GetAbsoluteUri(
-                    m.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-                        ?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-            }).ToList();
+                if (media.ToCardViewModel(apiClient, FormatSeasonNumber) is { } vm)
+                    _similarMedia.Add(vm);
+            }
             await InvokeAsync(StateHasChanged);
         }
         catch
@@ -246,4 +259,15 @@ public partial class Serie
             .ToList();
         StateHasChanged();
     }
+
+    private string FormatSeasonNumber(int seasonNumber) => string.Format(S["SeasonNumber"], seasonNumber);
+
+    private async Task ExcludeSimilarForSelf(MediaCardViewModel item)
+    {
+        if (await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
+            _similarMedia.RemoveAll(m => m.Id == item.Id || m.ParentId == item.Id);
+    }
+
+    private Task ExcludeSimilarForOthers(MediaCardViewModel item) =>
+        MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
 }

@@ -52,6 +52,8 @@ public partial class MusicArtistDetail
                 .Select(album => new MediaCardViewModel
                 {
                     Id = album.Id.ToString(),
+                    Kind = MediaCardKind.Cover,
+                    MediaType = MediaType.MusicAlbum,
                     Title = album.Title,
                     AdditionalInformations = album.ReleaseDate?.Year.ToString(),
                     PictureUrl = apiClient.GetAbsoluteUri(
@@ -104,12 +106,29 @@ public partial class MusicArtistDetail
         IndexedFileId = track.IndexedFileId,
         Title = track.Title ?? S["Untitled"],
         AlbumTitle = track.AlbumTitle,
+        ArtistId = track.ArtistId ?? _artist?.Id,
+        Genre = track.Genre,
         CoverUrl = apiClient.GetAbsoluteUri(
             (track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
                 ?? track.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
                 .GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
         Duration = track.Duration ?? 0,
+        UserRating = track.UserRating,
         IsPlaying = Audio.CurrentTrack?.MediaId == track.Id
+    };
+
+    private AudioQueueItem BuildQueueItem(TrackViewModel track) => new()
+    {
+        IndexedFileId = track.IndexedFileId ?? Guid.Empty,
+        MediaId = track.Id,
+        Title = track.Title,
+        Artist = _artist?.Title,
+        ArtistId = track.ArtistId,
+        AlbumTitle = track.AlbumTitle,
+        Genre = track.Genre,
+        CoverUrl = track.CoverUrl,
+        Duration = track.Duration,
+        UserRating = track.UserRating
     };
 
     private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<TrackViewModel> args)
@@ -240,8 +259,11 @@ public partial class MusicArtistDetail
         public required string Title { get; init; }
         public int? Rank { get; init; }
         public string? AlbumTitle { get; init; }
+        public Guid? ArtistId { get; init; }
+        public string? Genre { get; init; }
         public string? CoverUrl { get; init; }
         public double Duration { get; init; }
+        public int? UserRating { get; init; }
         public bool IsPlaying { get; init; }
     }
 }

@@ -171,6 +171,10 @@
     padding-bottom: var(--space-6);
 }
 
+.movie-main:has(.k7-menu--open) {
+    z-index: 3;
+}
+
 .movie-page-content ::deep .carousel-wrapper {
     position: relative;
     flex-shrink: 0;
