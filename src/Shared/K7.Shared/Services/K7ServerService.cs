@@ -24,7 +24,7 @@ using K7.Shared.Extensions;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IAudioMuseAiAdminService, IAudioMuseAiClientService
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -258,7 +258,6 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         }
         if (seedTrackId.HasValue) queryParams.Add($"seedTrackId={seedTrackId.Value}");
         if (seedArtistId.HasValue) queryParams.Add($"seedArtistId={seedArtistId.Value}");
-        if (moodPreset is not null) queryParams.Add($"moodPreset={Uri.EscapeDataString(moodPreset)}");
         if (limit != 50) queryParams.Add($"limit={limit}");
         var url = $"api/music/radio?{string.Join("&", queryParams)}";
         return await HttpClient.GetFromJsonAsync<List<MediaDto>>(url, _serializerOptions, cancellationToken);
@@ -1379,4 +1378,71 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
 
     private sealed record EphemeralTokenResponse(string Token);
     private sealed record TestPeerResponse(bool Reachable);
+
+    // IApiKeyAdminService
+
+    public async Task<List<ApiKeyDto>> GetApiKeysAsync(CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<ApiKeyDto>>("api/admin/api-keys", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<CreateApiKeyResponse> CreateApiKeyAsync(string name, ApiKeyScope scope, DateTime? expiresAt = null, CancellationToken cancellationToken = default)
+    {
+        var request = new { Name = name, Scope = scope, ExpiresAt = expiresAt };
+        var response = await HttpClient.PostAsJsonAsync("api/admin/api-keys", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<CreateApiKeyResponse>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task RevokeApiKeyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/admin/api-keys/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    // IAudioMuseAiAdminService
+
+    async Task<AudioMuseAiSettingsDto> IAudioMuseAiAdminService.GetSettingsAsync(CancellationToken cancellationToken)
+    {
+        return (await HttpClient.GetFromJsonAsync<AudioMuseAiSettingsDto>("api/admin/audiomuse-ai", _serializerOptions, cancellationToken))!;
+    }
+
+    async Task IAudioMuseAiAdminService.UpdateSettingsAsync(AudioMuseAiSettingsDto settings, CancellationToken cancellationToken)
+    {
+        var response = await HttpClient.PutAsJsonAsync("api/admin/audiomuse-ai", settings, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    async Task<AudioMuseAiConnectionResultDto> IAudioMuseAiAdminService.TestConnectionAsync(CancellationToken cancellationToken)
+    {
+        var response = await HttpClient.PostAsync("api/admin/audiomuse-ai/test", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<AudioMuseAiConnectionResultDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    // IAudioMuseAiClientService
+
+    public async Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<Guid>>($"api/tracks/{trackId}/similar?count={count}", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken = default)
+    {
+        return (await HttpClient.GetFromJsonAsync<List<Guid>>($"api/tracks/sonic-path?from={fromId}&to={toId}", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<List<Guid>> GetSuggestionsAsync(IEnumerable<Guid> recentTrackIds, int count = 20, CancellationToken cancellationToken = default)
+    {
+        var ids = string.Join(",", recentTrackIds);
+        return (await HttpClient.GetFromJsonAsync<List<Guid>>($"api/tracks/suggestions?recentIds={ids}&count={count}", _serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<List<Guid>> CreateSmartPlaylistAsync(string prompt, int count = 30, CancellationToken cancellationToken = default)
+    {
+        var request = new { Prompt = prompt, Count = count };
+        var response = await HttpClient.PostAsJsonAsync("api/playlists/ai-generate", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<List<Guid>>(_serializerOptions, cancellationToken))!;
+    }
 }

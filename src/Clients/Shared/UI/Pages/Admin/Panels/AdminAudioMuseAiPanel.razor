@@ -1,0 +1,51 @@
+@page "/admin/audiomuse-ai"
+@layout AdminLayout
+@inject IStringLocalizer<AdminAudioMuseAiPanel> L
+@inject IAudioMuseAiAdminService AudioMuseAiAdminService
+@inject IK7Snackbar Snackbar
+
+<div class="d-flex pa-4" style="width: 100%">
+    <h5>@L["Title"]</h5>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex flex-col pa-16">
+        <K7Spinner />
+    </div>
+}
+else if (_settings is not null)
+{
+    <div class="pa-4 d-flex flex-col gap-4">
+        <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="v => _settings = _settings with { Enabled = v }" />
+
+        <K7TextField TValue="string" Label="@L["BaseUrl"]" Value="_settings.BaseUrl" ValueChanged="v => _settings = _settings with { BaseUrl = v }"
+                     Placeholder="http://localhost:8000" />
+
+        <K7TextField TValue="string" Label="@L["ApiKey"]" Value="_settings.ApiKey" ValueChanged="v => _settings = _settings with { ApiKey = v }"
+                     Placeholder="audiomuse_..." Type="password" />
+
+        <div class="d-flex align-center gap-2">
+            <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
+            <K7Button OnClick="TestConnection" Variant="K7ButtonVariant.Outlined" Disabled="_testing">
+                @L["TestConnection"]
+            </K7Button>
+
+            @if (_testing)
+            {
+                <K7Spinner Size="20" />
+            }
+            else if (_testResult is not null)
+            {
+                @if (_testResult.Success)
+                {
+                    <span style="color: var(--color-success);">@L["Connected"] @(_testResult.Version is not null ? $"(v{_testResult.Version})" : "")</span>
+                }
+                else
+                {
+                    <span style="color: var(--color-error);">@L["ConnectionFailed"]: @_testResult.Error</span>
+                }
+            }
+        </div>
+    </div>
+}

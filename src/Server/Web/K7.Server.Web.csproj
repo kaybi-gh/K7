@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Infrastructure\Database\Providers\Postgres\K7.Server.Infrastructure.Database.Providers.Postgres.csproj" />
     <ProjectReference Include="..\Infrastructure\Database\Providers\Sqlite\K7.Server.Infrastructure.Database.Providers.Sqlite.csproj" />
     <ProjectReference Include="..\Infrastructure\FileSystem\K7.Server.Infrastructure.FileSystem.csproj" />
+    <ProjectReference Include="..\Infrastructure\ExternalServices\K7.Server.Infrastructure.ExternalServices.csproj" />
     <ProjectReference Include="..\Infrastructure\MediaProcessing\K7.Server.Infrastructure.MediaProcessing.csproj" />
   </ItemGroup>
 

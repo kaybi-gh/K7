@@ -46,6 +46,13 @@
     <Project Path="src/Shared/Aspire/AppHost/K7.Shared.Aspire.AppHost.csproj" />
     <Project Path="src/Shared/Aspire/ServiceDefaults/K7.Shared.Aspire.ServiceDefaults.csproj" />
   </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Server/" />
+  <Folder Name="/src/Server/Application/" />
+  <Folder Name="/src/Server/Infrastructure/" />
+  <Folder Name="/src/Server/Infrastructure/ExternalServices/">
+    <Project Path="src/Server/Infrastructure/ExternalServices/K7.Server.Infrastructure.ExternalServices.csproj" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/Application.FunctionalTests/Application.FunctionalTests.csproj" />
     <Project Path="tests/Application.UnitTests/Application.UnitTests.csproj" />
