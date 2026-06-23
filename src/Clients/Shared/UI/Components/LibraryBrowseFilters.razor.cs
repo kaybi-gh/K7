@@ -6,6 +6,7 @@ using K7.Clients.Shared.UI.Pages;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Extensions;
 using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 
@@ -17,8 +18,7 @@ public partial class LibraryBrowseFilters
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
 
-    [Parameter] public IReadOnlyList<MediaGenreDto> Genres { get; set; } = [];
-    [Parameter] public MediaBrowseFacetsDto? Facets { get; set; }
+    [Parameter] public MediaTagsDto? Tags { get; set; }
     [Parameter] public Guid[]? LibraryIds { get; set; }
     [Parameter] public Guid[]? LibraryGroupIds { get; set; }
     [Parameter] public RuleGroupDto Filter { get; set; } = MediaBrowseFilterPresets.Empty;
@@ -33,6 +33,7 @@ public partial class LibraryBrowseFilters
     private QuickFilterSubmenu _submenu = QuickFilterSubmenu.None;
     private string? _actorDraft;
     private string? _studioDraft;
+    private string? _artistDraft;
 
     private IReadOnlySet<string> SelectedGenres => MediaBrowseFilterPresets.GetSelectedGenres(Filter);
 
@@ -42,12 +43,19 @@ public partial class LibraryBrowseFilters
 
     private string? SelectedStudio => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, "Studio");
 
+    private string? SelectedArtist => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, nameof(SmartPlaylistField.ArtistName));
+
     private bool HasActiveFilters => !MediaBrowseFilterPresets.IsEmpty(Filter);
 
-    private bool ShowMetadataQuickFilters =>
+    private bool ShowVideoMetadataQuickFilters =>
         MediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
 
-    private bool HasContentRatings => Facets?.ContentRatings is { Count: > 0 };
+    private bool ShowArtistQuickFilter =>
+        MediaType is MediaType.MusicTrack or MediaType.MusicAlbum or MediaType.MusicArtist;
+
+    private bool ShowGenreQuickFilter => GenreTags.Count > 0;
+
+    private bool HasContentRatings => Tags.GetValues(MetadataTagKind.ContentRating) is { Count: > 0 };
 
     private string ActiveFiltersLabel
     {
@@ -61,6 +69,8 @@ public partial class LibraryBrowseFilters
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(SelectedActor))
                 parts.Add(SelectedActor);
+            if (!string.IsNullOrWhiteSpace(SelectedArtist))
+                parts.Add(SelectedArtist);
             if (!string.IsNullOrWhiteSpace(SelectedStudio))
                 parts.Add(SelectedStudio);
 
@@ -82,8 +92,10 @@ public partial class LibraryBrowseFilters
         }
     }
 
-    private string GetGenreLabel(MediaGenreDto genre) =>
-        string.Format(LibraryGroupL["GenreFilterOption"], genre.Name, genre.MediaCount);
+    private IReadOnlyList<MediaTagValueDto> GenreTags => Tags.GetTagValues(MetadataTagKind.Genre);
+
+    private string GetGenreLabel(MediaTagValueDto genre) =>
+        string.Format(LibraryGroupL["GenreFilterOption"], genre.DisplayName, genre.MediaCount);
 
     private string GetGenresMenuLabel()
     {
@@ -109,6 +121,14 @@ public partial class LibraryBrowseFilters
             : string.Format(L["FilterStudioSelected"], value);
     }
 
+    private string GetArtistMenuLabel()
+    {
+        var value = SelectedArtist;
+        return string.IsNullOrWhiteSpace(value)
+            ? L["FilterArtist"]
+            : string.Format(L["FilterArtistSelected"], value);
+    }
+
     private string GetContentRatingMenuLabel()
     {
         var count = SelectedContentRatings.Count;
@@ -131,6 +151,8 @@ public partial class LibraryBrowseFilters
             _actorDraft = SelectedActor;
         else if (submenu == QuickFilterSubmenu.Studio)
             _studioDraft = SelectedStudio;
+        else if (submenu == QuickFilterSubmenu.Artist)
+            _artistDraft = SelectedArtist;
     }
 
     private async Task SetPresetAsync(RuleGroupDto preset)
@@ -163,6 +185,12 @@ public partial class LibraryBrowseFilters
         await FilterChanged.InvokeAsync(MediaBrowseFilterPresets.SetSearchFieldValue(Filter, "Studio", value));
     }
 
+    private async Task SetArtistAsync(string? value)
+    {
+        await FilterChanged.InvokeAsync(
+            MediaBrowseFilterPresets.SetSearchFieldValue(Filter, nameof(SmartPlaylistField.ArtistName), value));
+    }
+
     private async Task ClearFiltersAsync()
     {
         if (!HasActiveFilters)
@@ -179,8 +207,7 @@ public partial class LibraryBrowseFilters
             { nameof(LibraryBrowseAdvancedFiltersDialog.MediaType), MediaType },
             { nameof(LibraryBrowseAdvancedFiltersDialog.LibraryIds), LibraryIds },
             { nameof(LibraryBrowseAdvancedFiltersDialog.LibraryGroupIds), LibraryGroupIds },
-            { nameof(LibraryBrowseAdvancedFiltersDialog.Genres), Genres },
-            { nameof(LibraryBrowseAdvancedFiltersDialog.Facets), Facets }
+            { nameof(LibraryBrowseAdvancedFiltersDialog.Tags), Tags }
         };
 
         var dialog = await DialogService.ShowAsync<LibraryBrowseAdvancedFiltersDialog>(
@@ -196,20 +223,15 @@ public partial class LibraryBrowseFilters
     private async Task<IReadOnlyList<string>> SearchSuggestionsAsync(
         string field,
         string searchText,
-        CancellationToken cancellationToken)
-    {
-        var results = await MediaService.GetMediaBrowseFilterSuggestionsAsync(new GetMediaBrowseFilterSuggestionsQuery
-        {
-            LibraryIds = LibraryIds,
-            LibraryGroupIds = LibraryGroupIds,
-            MediaTypes = MediaType != default ? [MediaType] : null,
-            Field = field,
-            SearchText = searchText,
-            Limit = 20
-        }, cancellationToken);
-
-        return results ?? [];
-    }
+        CancellationToken cancellationToken) =>
+        await MediaBrowseTagSearch.SearchAsync(
+            MediaService,
+            field,
+            searchText,
+            LibraryIds,
+            LibraryGroupIds,
+            MediaType,
+            cancellationToken);
 
     private static bool FiltersEqual(RuleGroupDto left, RuleGroupDto right) =>
         left.MatchCondition == right.MatchCondition
@@ -219,6 +241,7 @@ public partial class LibraryBrowseFilters
     {
         None,
         Actor,
+        Artist,
         Studio,
         ContentRating,
         Genres

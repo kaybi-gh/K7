@@ -55,6 +55,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private bool _isMobileViewport;
     private int _itemWidth;
     private int _spacing;
+    private bool _disposed;
+    private bool _sentinelObserving;
     private bool _loadingMore;
     private int? _totalItemCount;
 
@@ -91,8 +93,9 @@ public partial class BrowseView<TItem> : IAsyncDisposable
             return;
         }
 
-        if (HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 })
+        if (!_sentinelObserving && HasMore && OnLoadMore is not null && !Loading && Items is { Count: > 0 })
         {
+            _sentinelObserving = true;
             await StartObservingSentinel();
         }
     }
@@ -168,6 +171,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [JSInvokable]
     public Task OnViewportChanged(bool isMobile)
     {
+        if (_disposed) return Task.CompletedTask;
+
         if (_isMobileViewport == isMobile) return Task.CompletedTask;
 
         _isMobileViewport = isMobile;
@@ -178,7 +183,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [JSInvokable]
     public async Task OnSentinelVisible()
     {
-        if (_loadingMore || OnLoadMore is null || !HasMore) return;
+        if (_disposed || _loadingMore || OnLoadMore is null || !HasMore) return;
 
         _loadingMore = true;
         try
@@ -263,6 +268,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+
         if (_module is not null)
         {
             try

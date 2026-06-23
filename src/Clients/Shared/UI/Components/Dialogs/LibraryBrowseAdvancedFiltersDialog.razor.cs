@@ -5,6 +5,7 @@ using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
+using K7.Shared.Extensions;
 using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -23,8 +24,7 @@ public partial class LibraryBrowseAdvancedFiltersDialog
     [Parameter] public MediaType MediaType { get; set; }
     [Parameter] public Guid[]? LibraryIds { get; set; }
     [Parameter] public Guid[]? LibraryGroupIds { get; set; }
-    [Parameter] public IReadOnlyList<MediaGenreDto> Genres { get; set; } = [];
-    [Parameter] public MediaBrowseFacetsDto? Facets { get; set; }
+    [Parameter] public MediaTagsDto? Tags { get; set; }
 
     private RuleGroupDto _filter = MediaBrowseFilterPresets.Empty;
     private IReadOnlyList<RuleFieldDescriptorDto> _fieldDescriptors = [];
@@ -44,20 +44,15 @@ public partial class LibraryBrowseAdvancedFiltersDialog
     private async Task<IReadOnlyList<string>> SearchSuggestionsAsync(
         string field,
         string searchText,
-        CancellationToken cancellationToken)
-    {
-        var results = await MediaService.GetMediaBrowseFilterSuggestionsAsync(new GetMediaBrowseFilterSuggestionsQuery
-        {
-            LibraryIds = LibraryIds,
-            LibraryGroupIds = LibraryGroupIds,
-            MediaTypes = MediaType != default ? [MediaType] : null,
-            Field = field,
-            SearchText = searchText,
-            Limit = 20
-        }, cancellationToken);
-
-        return results ?? [];
-    }
+        CancellationToken cancellationToken) =>
+        await MediaBrowseTagSearch.SearchAsync(
+            MediaService,
+            field,
+            searchText,
+            LibraryIds,
+            LibraryGroupIds,
+            MediaType,
+            cancellationToken);
 
     private IReadOnlyList<RuleFieldDescriptorDto> LocalizeDescriptors(IReadOnlyList<RuleFieldDescriptorDto> descriptors) =>
         descriptors.Select(LocalizeDescriptor).ToList();
@@ -107,21 +102,23 @@ public partial class LibraryBrowseAdvancedFiltersDialog
 
         if (fieldName is nameof(SmartPlaylistField.Genre) or nameof(RestrictionField.Genre))
         {
-            if (Genres.Count == 0)
+            var genres = Tags.GetTagValues(MetadataTagKind.Genre);
+            if (genres.Count == 0)
                 return false;
 
-            options = Genres
-                .Select(g => new RuleFieldOptionDto { Value = g.Name, Label = g.Name })
+            options = genres
+                .Select(g => new RuleFieldOptionDto { Value = g.DisplayName, Label = g.DisplayName })
                 .ToList();
             return true;
         }
 
         if (fieldName == nameof(RestrictionField.ContentRating))
         {
-            if (Facets?.ContentRatings is not { Count: > 0 })
+            var contentRatings = Tags.GetValues(MetadataTagKind.ContentRating);
+            if (contentRatings.Count == 0)
                 return false;
 
-            options = Facets.ContentRatings
+            options = contentRatings
                 .Select(r => new RuleFieldOptionDto { Value = r, Label = r })
                 .ToList();
             return true;

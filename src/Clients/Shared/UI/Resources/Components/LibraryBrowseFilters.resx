@@ -31,6 +31,8 @@
   <data name="FilterGenresSelected" xml:space="preserve"><value>Genres ({0} sélectionnés)</value></data>
   <data name="FilterActor" xml:space="preserve"><value>Acteur / casting</value></data>
   <data name="FilterActorSelected" xml:space="preserve"><value>Acteur : {0}</value></data>
+  <data name="FilterArtist" xml:space="preserve"><value>Artiste</value></data>
+  <data name="FilterArtistSelected" xml:space="preserve"><value>Artiste : {0}</value></data>
   <data name="FilterStudio" xml:space="preserve"><value>Studio</value></data>
   <data name="FilterStudioSelected" xml:space="preserve"><value>Studio : {0}</value></data>
   <data name="FilterContentRatingSelected" xml:space="preserve"><value>Classification ({0})</value></data>
@@ -42,6 +44,7 @@
   <data name="SearchPlaceholderStudio" xml:space="preserve"><value>Rechercher un studio...</value></data>
   <data name="SearchPlaceholderNetwork" xml:space="preserve"><value>Rechercher un diffuseur...</value></data>
   <data name="SearchPlaceholderActor" xml:space="preserve"><value>Rechercher un acteur...</value></data>
+  <data name="SearchPlaceholderArtist" xml:space="preserve"><value>Rechercher un artiste...</value></data>
   <data name="BooleanTrue" xml:space="preserve"><value>Oui</value></data>
   <data name="BooleanFalse" xml:space="preserve"><value>Non</value></data>
 </root>

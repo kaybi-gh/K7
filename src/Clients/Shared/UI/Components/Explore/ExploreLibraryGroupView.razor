@@ -37,10 +37,10 @@
             <MediasCarouselRow Title="@L["TrendingMovies"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_movieTypes" OrderBy="TrendingOrder" ProgressEnabled="true" />
             @foreach (var genre in _genres)
             {
-                <MediasCarouselRow Title="@string.Format(L["BestMoviesGenre"].Value, genre.Name)"
+                <MediasCarouselRow Title="@string.Format(L["BestMoviesGenre"].Value, genre.DisplayName)"
                                    LibraryGroupIds="_libraryGroupIds"
                                    MediaTypes="_movieTypes"
-                                   Genres="@(new[] { genre.Name })"
+                                   Genres="@(new[] { genre.DisplayName })"
                                    OrderBy="ProviderRatingOrder"
                                    UnwatchedOnly="true"
                                    ProgressEnabled="true" />
@@ -51,10 +51,10 @@
             <MediasCarouselRow Title="@L["TrendingSeries"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_serieTypes" OrderBy="TrendingOrder" ProgressEnabled="true" />
             @foreach (var genre in _genres)
             {
-                <MediasCarouselRow Title="@string.Format(L["BestSeriesGenre"].Value, genre.Name)"
+                <MediasCarouselRow Title="@string.Format(L["BestSeriesGenre"].Value, genre.DisplayName)"
                                    LibraryGroupIds="_libraryGroupIds"
                                    MediaTypes="_serieTypes"
-                                   Genres="@(new[] { genre.Name })"
+                                   Genres="@(new[] { genre.DisplayName })"
                                    OrderBy="ProviderRatingOrder"
                                    UnwatchedOnly="true"
                                    ProgressEnabled="true" />
@@ -63,7 +63,7 @@
         case LibraryMediaType.Music:
             <HomeFeedCarouselRow Title="@L["RecentlyAddedMusic"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="CreatedOrder" />
             <MediasCarouselRow Title="@L["TrendingAlbums"]" LibraryGroupIds="_libraryGroupIds" MediaTypes="_musicAlbumTypes" OrderBy="TrendingOrder" />
-            <MusicRadioPresets Title="@L["Radios"]" />
+            <MusicRadioPresets Title="@L["Radios"]" LibraryGroupIds="_libraryGroupIds" />
             <ExploreTopTracksTable LibraryIds="_libraryIds" />
             break;
     }

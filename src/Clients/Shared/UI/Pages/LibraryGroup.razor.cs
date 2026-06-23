@@ -10,6 +10,7 @@ using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Notifications;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
+using K7.Shared.Extensions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 
@@ -38,8 +39,7 @@ public partial class LibraryGroup : IDisposable
     private MediaType _selectedMediaType;
     private MediaOrderingOption _selectedSort = MediaOrderingOption.TitleAsc;
     private RuleGroupDto _filter = MediaBrowseFilterPresets.Empty;
-    private List<MediaGenreDto> _genres = [];
-    private MediaBrowseFacetsDto? _facets;
+    private MediaTagsDto? _tags;
     private bool _showWatchFilters =>
         _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
     private string? _activeSortKey = "title";
@@ -101,12 +101,10 @@ public partial class LibraryGroup : IDisposable
         _activeSortKey = "title";
         _activeSortDirection = K7SortDirection.Ascending;
         _filter = MediaBrowseFilterPresets.Empty;
-        _genres = [];
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
 
-        await LoadGenresAsync();
-        await LoadFacetsAsync();
+        await LoadTagsAsync();
 
         // Initial load to get total count
         var result = await k7ServerService.QueryMediasAsync(BuildQuery(1, PageSize));
@@ -217,40 +215,31 @@ public partial class LibraryGroup : IDisposable
         PageSize = pageSize
     };
 
-    private async Task LoadGenresAsync()
+    private async Task LoadTagsAsync()
     {
         try
         {
-            var result = await k7ServerService.GetMediaGenresAsync(new GetMediaGenresQuery
+            _tags = await k7ServerService.GetMediaTagsAsync(new GetMediaTagsQuery
             {
                 LibraryIds = _libraryIds?.ToArray(),
+                LibraryGroupIds = _libraryGroupIds,
                 MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null,
-                OrderBy = [GenreOrderingOption.MediaCountDesc],
+                Kinds =
+                [
+                    MetadataTagKind.Genre,
+                    MetadataTagKind.ContentRating,
+                    MetadataTagKind.Studio,
+                    MetadataTagKind.Network
+                ],
+                OrderBy = [MediaTagOrderingOption.MediaCountDesc],
                 PageNumber = 1,
                 PageSize = 100
             });
 
-            _genres = result?.Items?.ToList() ?? [];
         }
         catch
         {
-            _genres = [];
-        }
-    }
-
-    private async Task LoadFacetsAsync()
-    {
-        try
-        {
-            _facets = await k7ServerService.GetMediaBrowseFacetsAsync(new GetMediaBrowseFacetsQuery
-            {
-                LibraryIds = _libraryIds?.ToArray(),
-                MediaTypes = _selectedMediaType != default ? [_selectedMediaType] : null
-            });
-        }
-        catch
-        {
-            _facets = null;
+            _tags = null;
         }
     }
 
@@ -266,8 +255,7 @@ public partial class LibraryGroup : IDisposable
 
         _selectedMediaType = value;
         _filter = MediaBrowseFilterPresets.Empty;
-        await LoadGenresAsync();
-        await LoadFacetsAsync();
+        await LoadTagsAsync();
         await RefreshAllAsync();
     }
 

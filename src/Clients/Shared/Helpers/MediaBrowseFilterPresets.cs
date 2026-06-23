@@ -176,6 +176,7 @@ public static class MediaBrowseFilterPresets
     private static bool IsQuickFilterField(string fieldName) =>
         fieldName is nameof(SmartPlaylistField.Genre)
             or nameof(SmartPlaylistField.ActorName)
+            or nameof(SmartPlaylistField.ArtistName)
             or "Studio"
             or nameof(RestrictionField.ContentRating);
 
