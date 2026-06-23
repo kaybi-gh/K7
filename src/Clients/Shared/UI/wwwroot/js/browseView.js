@@ -4,6 +4,21 @@ let _sentinelPending = false;
 let _gridKeyHandlers = new Map();
 let _viewportObservers = new Map();
 
+function invokeDotNet(dotnetRef, methodName, ...args) {
+    if (!dotnetRef) {
+        return Promise.resolve();
+    }
+
+    return dotnetRef.invokeMethodAsync(methodName, ...args).catch(error => {
+        const message = error?.message ?? String(error);
+        if (message.includes("DotNetObjectReference") || message.includes("tracked object with id")) {
+            return;
+        }
+
+        throw error;
+    });
+}
+
 export function isMobileViewport() {
     return window.innerWidth < 600;
 }
@@ -14,7 +29,7 @@ export function observeViewport(dotnetRef) {
     }
 
     const handler = () => {
-        dotnetRef.invokeMethodAsync("OnViewportChanged", isMobileViewport());
+        invokeDotNet(dotnetRef, "OnViewportChanged", isMobileViewport());
     };
 
     window.addEventListener("resize", handler);
@@ -53,7 +68,7 @@ export function observeContainerWidth(element, dotnetRef) {
     const observer = new ResizeObserver(entries => {
         for (const entry of entries) {
             const width = Math.floor(entry.contentRect.width);
-            dotnetRef.invokeMethodAsync("OnContainerWidthChanged", width);
+            invokeDotNet(dotnetRef, "OnContainerWidthChanged", width);
         }
     });
 
@@ -91,7 +106,7 @@ export function observeSentinel(element, dotnetRef) {
         for (const entry of entries) {
             if (entry.isIntersecting && !_sentinelPending) {
                 _sentinelPending = true;
-                dotnetRef.invokeMethodAsync("OnSentinelVisible").finally(() => {
+                invokeDotNet(dotnetRef, "OnSentinelVisible").finally(() => {
                     _sentinelPending = false;
                 });
             }

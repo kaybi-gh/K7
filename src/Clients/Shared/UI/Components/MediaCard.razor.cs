@@ -1,6 +1,6 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
-using K7.Clients.Shared.Services;
+using K7.Server.Domain.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -31,12 +31,6 @@ public partial class MediaCard : IDisposable
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
-    [Inject] private IMediaService MediaService { get; set; } = default!;
-    [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
-    [Inject] private IK7DialogService DialogService { get; set; } = default!;
-    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
-    [Inject] private IStringLocalizer<SharedResource> SharedStrings { get; set; } = default!;
-    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
 
     private const int LongPressDelayMs = 600;
     private const double LongPressMoveThresholdSquared = 100;
@@ -46,12 +40,16 @@ public partial class MediaCard : IDisposable
     private bool _menuOpenedViaKeyboard;
     private bool _preventNextClick;
     private bool _watchStateMenuVisible;
+    private bool _showRating;
+    private bool _showPlaylist;
+    private bool _showCollection;
     private CancellationTokenSource? _longPressCts;
     private CancellationTokenSource? _shortPressCts;
     private double _touchStartX;
     private double _touchStartY;
 
-    private bool LongPressEnabled => OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible;
+    private bool LongPressEnabled =>
+        OverlayEnabled || ExcludeMenuEnabled || _watchStateMenuVisible || _showRating || _showPlaylist || _showCollection;
 
     private string GetRootClass()
     {
@@ -74,9 +72,26 @@ public partial class MediaCard : IDisposable
 
     protected override async Task OnParametersSetAsync()
     {
+        if (Model is null)
+        {
+            _watchStateMenuVisible = false;
+            _showRating = false;
+            _showPlaylist = false;
+            _showCollection = false;
+            return;
+        }
+
         _watchStateMenuVisible = WatchStateMenuEnabled
             && WatchStateActions.SupportsWatchState(Model.Kind)
             && await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+
+        var canRate = await FeatureAccess.HasCapabilityAsync(Capability.CanRate);
+        var canCreateLibrary = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
+        var mediaType = MediaCardMenuActions.InferMediaType(Model);
+
+        _showRating = canRate;
+        _showPlaylist = canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
+        _showCollection = canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
     }
 
     private async void OnMenuOpenChanged(bool open)
@@ -244,37 +259,6 @@ public partial class MediaCard : IDisposable
         CancelLongPress();
         _shortPressCts?.Cancel();
         _shortPressCts?.Dispose();
-    }
-
-    private void OnPlay()
-    {
-        if (!string.IsNullOrEmpty(Href))
-            NavigationManager.NavigateTo(Href);
-    }
-
-    private async Task ToggleWatchStateAsync()
-    {
-        var watched = !Model.Watched;
-        var scope = WatchStateActions.GetScope(Model.Kind);
-        var success = await WatchStateActions.ApplyAsync(
-            MediaService,
-            CacheStore,
-            DialogService,
-            Snackbar,
-            SharedStrings,
-            Guid.Parse(Model.Id),
-            watched,
-            scope,
-            BulkEpisodeCount);
-
-        if (!success)
-            return;
-
-        WatchStateActions.ApplyLocalCardState(Model, watched);
-        if (OnWatchStateChanged.HasDelegate)
-            await OnWatchStateChanged.InvokeAsync();
-
-        await InvokeAsync(StateHasChanged);
     }
 
     private string PlaceholderIcon => Variant switch

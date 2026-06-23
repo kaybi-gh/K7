@@ -1,3 +1,5 @@
+using K7.Server.Domain.Enums;
+
 namespace K7.Clients.Shared.Models;
 
 public enum MediaCardKind { Poster, Cover, Serie, Season, Episode }
@@ -9,6 +11,8 @@ public record MediaCardViewModel
     public int? SeasonNumber { get; init; }
     public int? EpisodeNumber { get; init; }
     public MediaCardKind Kind { get; init; }
+    public MediaType? MediaType { get; init; }
+    public int? UserRating { get; init; }
     public string? Title { get; init; }
     public string? PictureUrl { get; init; }
     public string? BackdropUrl { get; init; }

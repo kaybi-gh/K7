@@ -222,6 +222,7 @@ public partial class EditMetadataDialog
                 break;
 
             case MusicTrackDto track:
+                _showGenres = true;
                 _showTrackNumber = true;
                 _showLyrics = true;
                 _trackNumber = track.TrackNumber;
@@ -231,6 +232,7 @@ public partial class EditMetadataDialog
                 break;
 
             case MusicAlbumDto:
+                _showGenres = true;
                 _showOverview = false;
                 _canBrowseProviderImages = true;
                 _allowedPictureTypes = [MetadataPictureType.Cover];

@@ -11,10 +11,19 @@ public partial class CreatePlaylistDialog
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
+    [Parameter]
+    public MediaType? DefaultMediaType { get; set; }
+
     private string _title = "";
     private string? _description;
     private MediaType _mediaType = MediaType.MusicTrack;
     private bool _isSubmitting;
+
+    protected override void OnParametersSet()
+    {
+        if (DefaultMediaType.HasValue)
+            _mediaType = DefaultMediaType.Value;
+    }
 
     private string MediaTypeToString(MediaType value) => value switch
     {

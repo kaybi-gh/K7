@@ -1,0 +1,45 @@
+@inject IStringLocalizer<AddToCollectionDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+        @if (_loading)
+        {
+            <K7ProgressBar Indeterminate="true" />
+        }
+        else if (_collections.Count == 0)
+        {
+            <div class="d-flex flex-col pa-4">
+                <p Color="secondary">@L["Empty"]</p>
+                <K7Button Variant="filled" Color="primary" OnClick="CreateNewCollection">
+                    @L["CreateCollection"]
+                </K7Button>
+            </div>
+        }
+        else
+        {
+            <div class="collection-list">
+                @foreach (var collection in _collections)
+                {
+                    <div class="collection-tile focusable" tabindex="0" role="button" @onclick="() => SelectCollection(collection)">
+                        <K7Paper Elevation="2" Class="collection-tile-paper">
+                            <K7Icon Icon="@Phosphor.Folders" Color="primary" />
+                            <div class="collection-tile-info">
+                                <span class="collection-tile-title">@collection.Title</span>
+                                <span class="text-caption collection-tile-count">@string.Format(L["ItemCount"], collection.ItemCount)</span>
+                            </div>
+                        </K7Paper>
+                    </div>
+                }
+            </div>
+            <hr class="k7-divider my-2" />
+            <K7Button Variant="text"
+                       Color="primary"
+                       StartIcon="@Phosphor.Plus"
+                       OnClick="CreateNewCollection">
+                @L["NewCollection"]
+            </K7Button>
+        }
+    </div>
+    <div class="k7-dialog-actions">
+        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    </div>

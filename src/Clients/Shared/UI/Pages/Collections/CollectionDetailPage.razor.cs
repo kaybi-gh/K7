@@ -1,6 +1,8 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Collections;
@@ -16,15 +18,25 @@ public partial class CollectionDetailPage
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
 
     private CollectionDto? _collection;
     private List<MediaCardViewModel> _items = [];
     private string? _coverUrl;
     private bool _loading = true;
     private bool _loadingItems = true;
+    private bool _canTrackProgress;
+    private bool _canExclude;
+    private bool _canSetWatchState;
+    private bool _isAdmin;
 
     protected override async Task OnParametersSetAsync()
     {
+        _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+        (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
+        _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+
         _loading = true;
         _items.Clear();
 
@@ -95,4 +107,13 @@ public partial class CollectionDetailPage
 
     private static MediaCardVariant GetVariant(MediaCardViewModel item) =>
         item.Kind == MediaCardKind.Cover ? MediaCardVariant.Cover : MediaCardVariant.Poster;
+
+    private async Task ExcludeForSelf(MediaCardViewModel item)
+    {
+        if (await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
+            _items.RemoveAll(m => m.Id == item.Id || m.ParentId == item.Id);
+    }
+
+    private Task ExcludeForOthers(MediaCardViewModel item) =>
+        MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
 }
