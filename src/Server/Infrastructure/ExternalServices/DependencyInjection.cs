@@ -7,7 +7,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddExternalServices(this IServiceCollection services)
     {
-        services.AddHttpClient<IAudioMuseAiService, AudioMuseAiService>();
+        services.AddMemoryCache();
+        services.AddHttpClient<AudioMuseMusicIntelligenceAdapter>();
+        services.AddScoped<IMusicIntelligenceService, MusicIntelligenceService>();
         return services;
     }
 }

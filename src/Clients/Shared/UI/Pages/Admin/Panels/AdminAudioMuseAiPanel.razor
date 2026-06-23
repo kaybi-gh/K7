@@ -1,51 +1,75 @@
 @page "/admin/audiomuse-ai"
 @layout AdminLayout
 @inject IStringLocalizer<AdminAudioMuseAiPanel> L
+@inject IStringLocalizer<SharedResource> S
 @inject IAudioMuseAiAdminService AudioMuseAiAdminService
 @inject IK7Snackbar Snackbar
 
-<div class="d-flex pa-4" style="width: 100%">
-    <h5>@L["Title"]</h5>
+<div class="audiomuse-panel">
+    <div class="audiomuse-panel__header">
+        <h6>@L["Title"]</h6>
+    </div>
+
+    @if (_loading)
+    {
+        <K7Paper Outlined="true" Style="padding: var(--space-6); text-align: center;">
+            <K7Spinner />
+        </K7Paper>
+    }
+    else if (_settings is not null)
+    {
+        <K7Paper Outlined="true" Style="padding: var(--space-4); margin-bottom: var(--space-4);">
+            <div class="d-flex flex-col gap-3">
+                <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="OnEnabledChanged" />
+                <span class="text-caption" style="color: var(--color-text-muted);">@L["EnabledDescription"]</span>
+
+                @if (!_settings.Enabled)
+                {
+                    <span class="text-caption" style="color: var(--color-warning);">@L["DisabledWarning"]</span>
+                }
+            </div>
+        </K7Paper>
+
+        @if (!_settings.Enabled)
+        {
+            <K7Paper Outlined="true" Style="padding: var(--space-6); text-align: center;">
+                <K7EmptyState Icon="@Phosphor.MagicWand" Title="@L["DisabledTitle"]" Subtitle="@L["DisabledHint"]" />
+            </K7Paper>
+        }
+        else
+        {
+            <K7Paper Outlined="true" Style="padding: var(--space-4);">
+                <div class="d-flex flex-col gap-4">
+                    <K7TextField TValue="string" Label="@L["BaseUrl"]" Value="_settings.BaseUrl" ValueChanged="v => _settings = _settings with { BaseUrl = v }"
+                                 Placeholder="http://localhost:8000" />
+
+                    <K7TextField TValue="string" Label="@L["ApiKey"]" Value="_settings.ApiKey" ValueChanged="v => _settings = _settings with { ApiKey = v }"
+                                 Placeholder="audiomuse_..." Type="password" />
+
+                    <div class="d-flex align-center gap-2">
+                        <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
+                        <K7Button OnClick="TestConnection" Variant="K7ButtonVariant.Outlined" Disabled="_testing">
+                            @L["TestConnection"]
+                        </K7Button>
+
+                        @if (_testing)
+                        {
+                            <K7Spinner Size="20" />
+                        }
+                        else if (_testResult is not null)
+                        {
+                            @if (_testResult.Success)
+                            {
+                                <span style="color: var(--color-success);">@L["Connected"] @(_testResult.Version is not null ? $"(v{_testResult.Version})" : "")</span>
+                            }
+                            else
+                            {
+                                <span style="color: var(--color-error);">@L["ConnectionFailed"]: @_testResult.Error</span>
+                            }
+                        }
+                    </div>
+                </div>
+            </K7Paper>
+        }
+    }
 </div>
-
-@if (_loading)
-{
-    <div class="d-flex flex-col pa-16">
-        <K7Spinner />
-    </div>
-}
-else if (_settings is not null)
-{
-    <div class="pa-4 d-flex flex-col gap-4">
-        <K7Switch Label="@L["Enabled"]" Value="_settings.Enabled" ValueChanged="v => _settings = _settings with { Enabled = v }" />
-
-        <K7TextField TValue="string" Label="@L["BaseUrl"]" Value="_settings.BaseUrl" ValueChanged="v => _settings = _settings with { BaseUrl = v }"
-                     Placeholder="http://localhost:8000" />
-
-        <K7TextField TValue="string" Label="@L["ApiKey"]" Value="_settings.ApiKey" ValueChanged="v => _settings = _settings with { ApiKey = v }"
-                     Placeholder="audiomuse_..." Type="password" />
-
-        <div class="d-flex align-center gap-2">
-            <K7Button Color="primary" OnClick="SaveAsync" Disabled="_saving">@L["Save"]</K7Button>
-            <K7Button OnClick="TestConnection" Variant="K7ButtonVariant.Outlined" Disabled="_testing">
-                @L["TestConnection"]
-            </K7Button>
-
-            @if (_testing)
-            {
-                <K7Spinner Size="20" />
-            }
-            else if (_testResult is not null)
-            {
-                @if (_testResult.Success)
-                {
-                    <span style="color: var(--color-success);">@L["Connected"] @(_testResult.Version is not null ? $"(v{_testResult.Version})" : "")</span>
-                }
-                else
-                {
-                    <span style="color: var(--color-error);">@L["ConnectionFailed"]: @_testResult.Error</span>
-                }
-            }
-        </div>
-    </div>
-}

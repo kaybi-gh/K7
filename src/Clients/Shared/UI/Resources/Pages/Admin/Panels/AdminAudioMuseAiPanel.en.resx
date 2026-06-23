@@ -21,6 +21,10 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Title" xml:space="preserve"><value>AudioMuse AI</value></data>
   <data name="Enabled" xml:space="preserve"><value>Enable AudioMuse AI</value></data>
+  <data name="EnabledDescription" xml:space="preserve"><value>Music recommendations, smart radios, and AI playlists via AudioMuse.</value></data>
+  <data name="DisabledWarning" xml:space="preserve"><value>AI features stay hidden while the integration is disabled.</value></data>
+  <data name="DisabledTitle" xml:space="preserve"><value>AudioMuse disabled</value></data>
+  <data name="DisabledHint" xml:space="preserve"><value>Enable the integration to configure your AudioMuse server and unlock AI recommendations.</value></data>
   <data name="BaseUrl" xml:space="preserve"><value>Server URL</value></data>
   <data name="ApiKey" xml:space="preserve"><value>API Key</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
