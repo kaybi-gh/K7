@@ -12,10 +12,10 @@ public record AnalyzeMusicTrackAudioCommand : IRequest
 
 public class AnalyzeMusicTrackAudioCommandHandler(
     IApplicationDbContext context,
-    IAudioAnalyzer audioAnalyzer,
     IWaveformGenerator waveformGenerator,
     IFadeAnalyzer fadeAnalyzer,
     IAudioTagReader audioTagReader,
+    ILoudnessAnalyzer loudnessAnalyzer,
     ILogger<AnalyzeMusicTrackAudioCommandHandler> logger) : IRequestHandler<AnalyzeMusicTrackAudioCommand>
 {
     public async Task Handle(AnalyzeMusicTrackAudioCommand request, CancellationToken cancellationToken)
@@ -45,9 +45,6 @@ public class AnalyzeMusicTrackAudioCommandHandler(
             return;
         }
 
-        // Essentia analysis (optional - may not be installed)
-        var analysis = await audioAnalyzer.AnalyzeAsync(filePath, cancellationToken);
-
         // Waveform peaks via ffmpeg (always available)
         var waveformPeaks = await waveformGenerator.GenerateAsync(filePath, cancellationToken: cancellationToken);
 
@@ -57,12 +54,19 @@ public class AnalyzeMusicTrackAudioCommandHandler(
         // ReplayGain from file tags
         var tags = audioTagReader.ReadTags(filePath, includeCoverArt: false);
 
-        if (analysis is null && waveformPeaks is null && fadeResult is null && tags?.ReplayGainTrackGain is null)
+        // Loudness via ffmpeg ebur128 filter
+        var loudnessLufs = await loudnessAnalyzer.AnalyzeLufsAsync(filePath, cancellationToken);
+
+        if (waveformPeaks is null && fadeResult is null && tags?.ReplayGainTrackGain is null && loudnessLufs is null)
             return;
 
-        analysis ??= new AudioAnalysis { AnalyzedAt = DateTime.UtcNow };
-        analysis.WaveformPeaks = waveformPeaks;
-        analysis.MusicTrackId = track.Id;
+        var analysis = new AudioAnalysis
+        {
+            AnalyzedAt = DateTime.UtcNow,
+            WaveformPeaks = waveformPeaks,
+            MusicTrackId = track.Id,
+            LoudnessLufs = loudnessLufs
+        };
 
         if (fadeResult is not null)
         {
@@ -79,7 +83,7 @@ public class AnalyzeMusicTrackAudioCommandHandler(
         context.AudioAnalysis.Add(analysis);
         await context.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Audio analysis completed for '{Title}' (BPM={Bpm}, Key={Key}, FadeOut={FadeOut}s)",
-            track.Title, analysis.Bpm, analysis.MusicalKey, analysis.FadeOutDuration);
+        logger.LogInformation("Audio analysis completed for '{Title}' (LUFS={Lufs}, FadeOut={FadeOut}s)",
+            track.Title, analysis.LoudnessLufs, analysis.FadeOutDuration);
     }
 }

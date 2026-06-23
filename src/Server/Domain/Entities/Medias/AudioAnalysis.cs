@@ -2,7 +2,7 @@ namespace K7.Server.Domain.Entities.Medias;
 
 /// <summary>
 /// Stores audio analysis results computed from the actual audio signal (not file tags).
-/// Populated asynchronously by background analysis tasks using tools like Chromaprint/Essentia.
+/// Populated asynchronously by background analysis tasks using tools like ffmpeg/Chromaprint.
 /// One-to-one optional relationship with MusicTrack.
 /// </summary>
 public class AudioAnalysis : BaseAuditableEntity
@@ -21,32 +21,9 @@ public class AudioAnalysis : BaseAuditableEntity
     public string? AcoustId { get; set; }
     public double? AcoustIdScore { get; set; }
 
-    // Tempo/rhythm analysis (detected from the signal, not file tags).
-    public double? Bpm { get; set; }
-
-    // Musical key detected from harmonic analysis (e.g. "C major", "A minor").
-    // Uses Camelot or Open Key notation for DJ-friendly compatibility.
-    public string? MusicalKey { get; set; }
-
     // Loudness in LUFS (Loudness Units Full Scale). Industry standard measurement.
     // Typical values: -14 LUFS (streaming target), -6 LUFS (very loud master).
     public double? LoudnessLufs { get; set; }
-
-    // Loudness range in LU - how much dynamic variation the track has.
-    // Low (< 5 LU) = compressed/loud, High (> 10 LU) = dynamic/classical.
-    public double? LoudnessRange { get; set; }
-
-    // Energy: overall perceived intensity (0.0 = ambient, 1.0 = extreme).
-    // Computed from RMS, spectral flux, and onset rate.
-    public double? Energy { get; set; }
-
-    // Danceability: how suitable the track is for dancing (0.0 to 1.0).
-    // Based on tempo stability, beat strength, and rhythmic regularity.
-    public double? Danceability { get; set; }
-
-    // Valence: musical positivity (0.0 = sad/dark, 1.0 = happy/bright).
-    // Inferred from mode (major/minor), tempo, and harmonic content.
-    public double? Valence { get; set; }
 
     // Normalized amplitude peaks (0.0-1.0) sampled across the track duration.
     // Used to render waveform visualization in the player UI.

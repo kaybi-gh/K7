@@ -7,7 +7,6 @@ public class PathsConfiguration
     public string Logs { get; set; } = "";
     public string Transcoding { get; set; } = "";
     public string FFMpegBinaryFolder { get; set; } = "";
-    public string EssentiaBinaryPath { get; set; } = "essentia_streaming_extractor_music";
 
     /// <summary>
     /// Converts an absolute path to a relative path if it falls under the <see cref="Metadatas"/> base directory.

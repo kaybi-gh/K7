@@ -1,12 +1,3 @@
-FROM ubuntu:noble AS essentia
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates \
-    && curl -fsSL https://essentia.upf.edu/extractors/essentia-extractors-v2.1_beta2-linux-x86_64.tar.gz \
-       | tar xz --strip-components=1 --wildcards '*/streaming_extractor_music' \
-    && mv streaming_extractor_music /essentia_streaming_extractor_music \
-    && chmod +x /essentia_streaming_extractor_music \
-    && rm -rf /var/lib/apt/lists/*
-
 FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 WORKDIR /src
 
@@ -43,7 +34,6 @@ FROM build AS dev
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=essentia /essentia_streaming_extractor_music /usr/local/bin/
 EXPOSE 8080 8081
 
 
@@ -51,7 +41,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gosu ffmpeg \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=essentia /essentia_streaming_extractor_music /usr/local/bin/
 
 
 FROM runtime AS final
