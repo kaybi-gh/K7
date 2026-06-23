@@ -1,6 +1,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Server.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 
@@ -18,6 +19,7 @@ public class MediaCardTests
         {
             Id = Guid.NewGuid().ToString(),
             Kind = MediaCardKind.Poster,
+            MediaType = MediaType.Movie,
             Title = "Test Movie",
             AdditionalInformations = "2010"
         };
@@ -74,10 +76,15 @@ public class MediaCardTests
         var ctx = new BunitContext();
         ctx.Services.AddSingleton(Substitute.For<ISpatialNavService>());
 
-        var localizer = Substitute.For<IStringLocalizer<MediaCard>>();
-        localizer[Arg.Any<string>()].Returns(call =>
+        var featureAccess = Substitute.For<IFeatureAccessService>();
+        featureAccess.HasCapabilityAsync(Capability.CanRate).Returns(false);
+        featureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist).Returns(false);
+        ctx.Services.AddSingleton(featureAccess);
+
+        var contextMenuLocalizer = Substitute.For<IStringLocalizer<MediaCardContextMenu>>();
+        contextMenuLocalizer[Arg.Any<string>()].Returns(call =>
             new LocalizedString(call.Arg<string>(), call.Arg<string>()));
-        ctx.Services.AddSingleton(localizer);
+        ctx.Services.AddSingleton(contextMenuLocalizer);
 
         return ctx;
     }
@@ -86,6 +93,7 @@ public class MediaCardTests
     {
         Id = Guid.NewGuid().ToString(),
         Kind = MediaCardKind.Poster,
+        MediaType = MediaType.Movie,
         Title = "Test Movie"
     };
 }
