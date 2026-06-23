@@ -149,6 +149,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public event Action<AudioQueueItem?>? CurrentTrackChanged;
     public event Action<RepeatMode>? RepeatModeChanged;
     public event Action<bool>? ShuffleChanged;
+    public event Action? ActiveRadioChanged;
     public event Func<PlayerSource, double, Task>? CrossfadeRequested;
     public event Action? CrossfadeDurationChanged;
     public event Action? IsFullScreenVisibleChanged;
@@ -166,6 +167,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public int CurrentIndex => _currentIndex;
     public RepeatMode Repeat => RepeatMode.Off;
     public bool Shuffle => false;
+    public string? ActiveRadioTitle { get; private set; }
     public bool AdaptiveCrossfade => false;
     public double CrossfadeDuration => 0;
     public double CrossfadeTriggerWindow => 0;
@@ -230,6 +232,18 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
 
     public Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, CancellationToken cancellationToken = default)
     {
+        ActiveRadioTitle = null;
+        ActiveRadioChanged?.Invoke();
+        _queue = [.. tracks];
+        _currentIndex = startIndex;
+        if (_queue.Count > 0) { SetCurrentTrack(_queue[_currentIndex]); Play(); }
+        return Task.CompletedTask;
+    }
+
+    public Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default)
+    {
+        ActiveRadioTitle = radioTitle;
+        ActiveRadioChanged?.Invoke();
         _queue = [.. tracks];
         _currentIndex = startIndex;
         if (_queue.Count > 0) { SetCurrentTrack(_queue[_currentIndex]); Play(); }
@@ -357,14 +371,14 @@ public sealed class MockMediaService : IMediaService
     public Task<MediaDto?> GetMediaAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<MediaDto?>(null);
     public Task<PaginatedListDto<LiteMediaDto>?> GetLiteMediasAsync(GetMediasWithPaginationQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteMediaDto>?>(null);
     public Task<PaginatedListDto<LiteMediaDto>?> QueryMediasAsync(QueryMediasRequest request, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteMediaDto>?>(null);
-    public Task<PaginatedListDto<MediaGenreDto>?> GetMediaGenresAsync(GetMediaGenresQuery query, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<MediaGenreDto>?>(null);
-    public Task<MediaBrowseFacetsDto?> GetMediaBrowseFacetsAsync(GetMediaBrowseFacetsQuery query, CancellationToken cancellationToken = default) => Task.FromResult<MediaBrowseFacetsDto?>(null);
+    public Task<MediaTagsDto?> GetMediaTagsAsync(GetMediaTagsQuery query, CancellationToken cancellationToken = default) => Task.FromResult<MediaTagsDto?>(null);
 
     public Task<IReadOnlyList<string>?> GetMediaBrowseFilterSuggestionsAsync(GetMediaBrowseFilterSuggestionsQuery query, CancellationToken cancellationToken = default)
     {
         string[] samples = query.Field switch
         {
             nameof(SmartPlaylistField.ActorName) => ["Leonardo DiCaprio", "Tom Hanks", "Bryan Cranston"],
+            nameof(SmartPlaylistField.ArtistName) => ["Daft Punk", "Radiohead", "Bjork"],
             "Studio" => ["Warner Bros.", "Universal Pictures", "Paramount Pictures"],
             "Network" => ["HBO", "Netflix", "AMC"],
             _ => []
@@ -530,7 +544,7 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
     public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
     public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
-    public Task<List<MediaDto>?> GetMusicRadioAsync(string type, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<List<MediaDto>?>(null);
+    public Task<List<MediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<List<MediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<List<ActiveStreamDto>?> GetActiveStreamsAsync(CancellationToken cancellationToken = default) => Task.FromResult<List<ActiveStreamDto>?>(null);
