@@ -1,4 +1,4 @@
-﻿using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
@@ -23,9 +23,13 @@ public partial class MusicArtistDetail
     [Inject]
     private IK7Snackbar Snackbar { get; set; } = default!;
 
+    [Inject]
+    private IServerPreferencesService ServerPreferences { get; set; } = default!;
+
     private MusicArtistDto? _artist;
     private string? _portraitUrl;
     private List<MediaCardViewModel> _albums = [];
+    private List<MediaCardViewModel> _similarArtists = [];
     private List<TrackViewModel> _topTracks = [];
     private List<TrackViewModel> _tracks = [];
     private List<LitePersonRoleDto> _members = [];
@@ -89,10 +93,44 @@ public partial class MusicArtistDetail
                 .OrderBy(r => r.Order ?? int.MaxValue)
                 .Cast<LitePersonRoleDto>()
                 .ToList();
+
+            await LoadSimilarArtistsAsync(artist.Id);
         }
 
         _loading = false;
     }
+
+    private async Task LoadSimilarArtistsAsync(Guid artistId)
+    {
+        _similarArtists = [];
+        try
+        {
+            var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
+            if (!status.IsAvailable)
+                return;
+
+            var similar = await k7ServerService.GetSimilarMusicArtistsAsync(artistId);
+            _similarArtists = similar
+                .Select(MapArtistCard)
+                .ToList();
+        }
+        catch
+        {
+            _similarArtists = [];
+        }
+    }
+
+    private MediaCardViewModel MapArtistCard(LiteMusicArtistDto artist) => new()
+    {
+        Id = artist.Id.ToString(),
+        Kind = MediaCardKind.Cover,
+        MediaType = MediaType.MusicArtist,
+        Title = artist.Title,
+        PictureUrl = apiClient.GetAbsoluteUri(
+            (artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? artist.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover))?
+                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
+    };
 
     private List<TrackViewModel> MapTracks(IEnumerable<LiteMusicTrackDto> tracks) =>
         tracks.Select(MapTrack).ToList();
