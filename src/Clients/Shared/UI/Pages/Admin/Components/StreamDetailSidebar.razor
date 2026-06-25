@@ -147,24 +147,31 @@
                             </div>
                         }
                     </div>
+                }
 
-                    @if (Model.SubtitleTrackLanguage is not null)
-                    {
-                        <div class="detail-sidebar__sub-group">
-                            <span class="detail-sidebar__sub-title">@L["Subtitle"]</span>
-                            <div class="detail-sidebar__row">
-                                <span class="detail-sidebar__label">@L["Track"]</span>
-                                <span class="detail-sidebar__value detail-sidebar__value--track">
-                                    @{ var subLang = K7.Shared.SupportedLanguages.FindByCode(Model.SubtitleTrackLanguage); }
-                                    @if (subLang is not null)
+                @if (Model.SubtitleTrackLanguage is not null || Model.SubtitleTrackTitle is not null)
+                {
+                    <div class="detail-sidebar__sub-group">
+                        <span class="detail-sidebar__sub-title">@L["Subtitle"]</span>
+                        <div class="detail-sidebar__row">
+                            <span class="detail-sidebar__label">@L["Track"]</span>
+                            <span class="detail-sidebar__value detail-sidebar__value--track">
+                                @if (Model.SubtitleTrackLanguage is not null)
+                                {
+                                    var subLang = K7.Shared.SupportedLanguages.FindByCode(Model.SubtitleTrackLanguage);
+                                    if (subLang is not null)
                                     {
                                         <span class="fi fi-@subLang.CountryCode"></span>
                                     }
-                                    @(Model.SubtitleTrackTitle ?? K7.Shared.SupportedLanguages.GetDisplayLabel(Model.SubtitleTrackLanguage))
-                                </span>
-                            </div>
+                                }
+                                @(Model.SubtitleTrackTitle ?? K7.Shared.SupportedLanguages.GetDisplayLabel(Model.SubtitleTrackLanguage ?? ""))
+                                @if (Model.IsSubtitleBurnIn)
+                                {
+                                    <span class="detail-sidebar__badge detail-sidebar__badge--transcode">@L["BurnIn"]</span>
+                                }
+                            </span>
                         </div>
-                    }
+                    </div>
                 }
 
                 @if (Model.TranscodeReason is not null)

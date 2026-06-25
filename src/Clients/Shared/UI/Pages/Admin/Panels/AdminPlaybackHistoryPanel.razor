@@ -75,6 +75,18 @@
                         }
                     </CellTemplate>
                 </K7DataColumn>
+                <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Subtitles"]" Width="130px" VisibleOnMobile="false">
+                    <CellTemplate>
+                        @if (context.StreamQuality is { } sq && (sq.SubtitleTrackTitle is not null || sq.SubtitleTrackLanguage is not null))
+                        {
+                            <span class="text-sm">@FormatSubtitleLabel(sq)</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">@L["SubtitlesOff"]</span>
+                        }
+                    </CellTemplate>
+                </K7DataColumn>
                 <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Duration"]" Width="90px">
                     <CellTemplate>@FormatDuration(context.TotalWatchedSeconds)</CellTemplate>
                 </K7DataColumn>

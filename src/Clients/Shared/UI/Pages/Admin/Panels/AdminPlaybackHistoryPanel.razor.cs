@@ -161,6 +161,17 @@ public partial class AdminPlaybackHistoryPanel
             : $"{ts.Minutes}m {ts.Seconds:D2}s";
     }
 
+    private static string FormatSubtitleLabel(StreamQualityDto sq)
+    {
+        if (!string.IsNullOrWhiteSpace(sq.SubtitleTrackTitle))
+            return sq.SubtitleTrackTitle;
+
+        if (!string.IsNullOrWhiteSpace(sq.SubtitleTrackLanguage))
+            return K7.Shared.SupportedLanguages.GetDisplayLabel(sq.SubtitleTrackLanguage);
+
+        return "-";
+    }
+
     private static string FormatTranscodeReason(string reason)
     {
         return reason
@@ -228,7 +239,8 @@ public partial class AdminPlaybackHistoryPanel
             AudioTrackTitle = sq?.AudioTrackTitle,
             AudioChannelLayout = sq?.AudioChannelLayout,
             SubtitleTrackLanguage = sq?.SubtitleTrackLanguage,
-            SubtitleTrackTitle = sq?.SubtitleTrackTitle
+            SubtitleTrackTitle = sq?.SubtitleTrackTitle,
+            IsSubtitleBurnIn = sq?.TranscodeReason?.Contains("SubtitlesBurnIn", StringComparison.Ordinal) == true
         };
     }
 

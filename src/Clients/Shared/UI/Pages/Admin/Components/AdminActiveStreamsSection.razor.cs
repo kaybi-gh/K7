@@ -76,9 +76,13 @@ public partial class AdminActiveStreamsSection : IDisposable
         var sd = stream.StreamDecision;
         var hasStream = sd is not null;
 
-        var videoIsTranscoded = sd?.SourceVideoCodec is not null
-            && sd.StreamVideoCodec is not null
-            && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase);
+        var isSubtitleBurnIn = sd is { IsSubtitleBurnIn: true }
+            || sd?.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn) == true;
+
+        var videoIsTranscoded = isSubtitleBurnIn
+            || (sd?.SourceVideoCodec is not null
+                && sd.StreamVideoCodec is not null
+                && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase));
         var audioIsTranscoded = sd?.SourceAudioCodec is not null
             && sd!.StreamAudioCodec is not null
             && !string.Equals(sd.SourceAudioCodec, sd.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
@@ -146,7 +150,8 @@ public partial class AdminActiveStreamsSection : IDisposable
             AudioTrackTitle = sd?.AudioTrackTitle,
             AudioChannelLayout = sd?.AudioChannelLayout,
             SubtitleTrackLanguage = sd?.SubtitleTrackLanguage,
-            SubtitleTrackTitle = sd?.SubtitleTrackTitle
+            SubtitleTrackTitle = sd?.SubtitleTrackTitle,
+            IsSubtitleBurnIn = isSubtitleBurnIn
         };
     }
 

@@ -19,10 +19,20 @@ public partial class AdminStreamCard
 
     private string PlaceholderIcon => IsMusic ? Phosphor.MusicNote : Phosphor.FilmSlate;
 
+    private bool IsSubtitleBurnIn => Stream.StreamDecision is { IsSubtitleBurnIn: true }
+        || Stream.StreamDecision?.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn) == true;
+
+    private bool HasSubtitleTrack => Stream.StreamDecision is { } d
+        && (IsSubtitleBurnIn
+            || d.SubtitleTrackLanguage is not null
+            || d.SubtitleTrackTitle is not null
+            || d.SubtitleCodec is not null);
+
     private bool IsVideoTranscoded => Stream.StreamDecision is { } d
-        && d.SourceVideoCodec is not null
-        && d.StreamVideoCodec is not null
-        && !string.Equals(d.SourceVideoCodec, d.StreamVideoCodec, StringComparison.OrdinalIgnoreCase);
+        && (IsSubtitleBurnIn
+            || (d.SourceVideoCodec is not null
+                && d.StreamVideoCodec is not null
+                && !string.Equals(d.SourceVideoCodec, d.StreamVideoCodec, StringComparison.OrdinalIgnoreCase)));
 
     private bool IsAudioTranscoded => Stream.StreamDecision is { } d
         && d.SourceAudioCodec is not null
