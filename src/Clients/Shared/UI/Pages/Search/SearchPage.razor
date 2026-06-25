@@ -35,7 +35,7 @@
             <p class="text-sm" Color="secondary">@L["Loading"]</p>
         </div>
     }
-    else if (_result is null || (_movieResults.Count == 0 && _serieResults.Count == 0 && _musicResults.Count == 0 && _result.PersonResults.Count == 0 && _result.CharacterResults.Count == 0))
+    else if (_result is null || (_movieResults.Count == 0 && _serieSeasonResults.Count == 0 && _episodeResults.Count == 0 && _musicResults.Count == 0 && _result.PersonResults.Count == 0 && _result.CharacterResults.Count == 0))
     {
         <div class="search-page__empty">
             <K7Icon Icon="@Phosphor.SmileyMeh" Style="font-size: 64px; opacity: 0.2;" />
@@ -71,12 +71,39 @@
             </Carousel>
         }
 
-        @if (_serieResults.Count > 0)
+        @if (_serieSeasonResults.Count > 0)
         {
-            <Carousel Title="@L["Series"]" ShowLoopBack="false">
-                @foreach (var media in _serieResults)
+            <Carousel Title="@L["SeriesAndSeasons"]" ShowLoopBack="false">
+                @foreach (var media in _serieSeasonResults)
                 {
                     var card = media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+                    @if (card is not null)
+                    {
+                        <CarouselItem>
+                            <MediaCard Model="card"
+                                        Variant="@GetVariant(card)"
+                                        Href="@GetMediaHref(media)"
+                                        FooterVisible="true"
+                                        OverlayEnabled="true"
+                                        ProgressEnabled="_canTrackProgress"
+                                        WatchedStatusEnabled="_canTrackProgress"
+                                        ExcludeMenuEnabled="_canExclude"
+                                        WatchStateMenuEnabled="_canSetWatchState"
+                                        IsAdmin="_isAdmin"
+                                        OnExcludeForSelf="() => ExcludeForSelf(card)"
+                                        OnExcludeForOthers="() => ExcludeForOthers(card)" />
+                        </CarouselItem>
+                    }
+                }
+            </Carousel>
+        }
+
+        @if (_episodeResults.Count > 0)
+        {
+            <Carousel Title="@L["Episodes"]" ShowLoopBack="false">
+                @foreach (var media in _episodeResults)
+                {
+                    var card = ToEpisodeCard(media);
                     @if (card is not null)
                     {
                         <CarouselItem>
