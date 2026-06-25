@@ -30,5 +30,7 @@
   <data name="Loading" xml:space="preserve"><value>Recherche en cours...</value></data>
   <data name="Movies" xml:space="preserve"><value>Films</value></data>
   <data name="Series" xml:space="preserve"><value>Series</value></data>
+  <data name="SeriesAndSeasons" xml:space="preserve"><value>Séries et saisons</value></data>
+  <data name="Episodes" xml:space="preserve"><value>Épisodes</value></data>
   <data name="Music" xml:space="preserve"><value>Musique</value></data>
 </root>

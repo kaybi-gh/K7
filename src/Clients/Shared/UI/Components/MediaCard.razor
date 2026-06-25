@@ -77,6 +77,51 @@ else
                 }
             </a>
             }
+            else if (OverlayEnabled)
+            {
+            <div class="media-card-link focusable"
+                 tabindex="0"
+                 role="button"
+                 aria-label="@Model.Title"
+                 @onkeydown="OnKeyDown"
+                 @onkeyup="OnKeyUp">
+                @if (!string.IsNullOrEmpty(Model.PictureUrl))
+                {
+                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Fluid="true" ObjectFit="cover" loading="lazy" />
+                }
+                else
+                {
+                    <div class="media-card-placeholder rounded-lg">
+                        <K7Icon Name="@PlaceholderIcon" Style="font-size: 48px; opacity: 0.3;" />
+                    </div>
+                }
+
+                @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
+                {
+                    <div class="media-card-watched">
+                        <K7Icon Size="lg" Color="success" Icon="@Phosphor.Fill.CheckCircle" />
+                    </div>
+                }
+
+                @if (Model.GroupCount > 1)
+                {
+                    <div class="media-card-group-count">
+                        <K7Chip Style="padding: 0; justify-content: space-around; width: 32px; height: 32px" Size="sm" Color="dark" Variant="filled">@Model.GroupCount</K7Chip>
+                    </div>
+                }
+
+                @if (ProgressEnabled && !ProgressBarIsHidden())
+                {
+                    <div class="media-card-progress-bar">
+                        <K7ProgressBar Value="@Model.Progress" />
+                    </div>
+                }
+
+                <div class="media-card-overlay">
+                    <K7FabButton AriaLabel="Play" Icon="@Phosphor.Fill.Play" Focusable="false" />
+                </div>
+            </div>
+            }
             else
             {
             <div class="media-card-link">

@@ -17,7 +17,8 @@ public partial class SearchPage
     private bool _loading;
     private GlobalSearchResultDto? _result;
     private List<LiteMediaDto> _movieResults = [];
-    private List<LiteMediaDto> _serieResults = [];
+    private List<LiteMediaDto> _serieSeasonResults = [];
+    private List<LiteMediaDto> _episodeResults = [];
     private List<LiteMediaDto> _musicResults = [];
 
     [Inject] private ISearchService SearchService { get; set; } = default!;
@@ -73,7 +74,8 @@ public partial class SearchPage
         {
             _result = null;
             _movieResults = [];
-            _serieResults = [];
+            _serieSeasonResults = [];
+            _episodeResults = [];
             _musicResults = [];
         }
         finally
@@ -88,13 +90,15 @@ public partial class SearchPage
         if (_result is null)
         {
             _movieResults = [];
-            _serieResults = [];
+            _serieSeasonResults = [];
+            _episodeResults = [];
             _musicResults = [];
             return;
         }
 
         _movieResults = _result.MediaResults.Where(m => m is LiteMovieDto).ToList();
-        _serieResults = _result.MediaResults.Where(m => m is LiteSerieDto or LiteSerieSeasonDto or LiteSerieEpisodeDto).ToList();
+        _serieSeasonResults = _result.MediaResults.Where(m => m is LiteSerieDto or LiteSerieSeasonDto).ToList();
+        _episodeResults = _result.MediaResults.Where(m => m is LiteSerieEpisodeDto).ToList();
         _musicResults = _result.MediaResults.Where(m => m is LiteMusicArtistDto or LiteMusicAlbumDto or LiteMusicTrackDto).ToList();
     }
 
@@ -110,8 +114,15 @@ public partial class SearchPage
         _ => "#"
     };
 
-    private static MediaCardVariant GetVariant(MediaCardViewModel card) =>
-        card.Kind == MediaCardKind.Cover ? MediaCardVariant.Cover : MediaCardVariant.Poster;
+    private static MediaCardVariant GetVariant(MediaCardViewModel card) => card.Kind switch
+    {
+        MediaCardKind.Cover => MediaCardVariant.Cover,
+        MediaCardKind.Episode => MediaCardVariant.Backdrop,
+        _ => MediaCardVariant.Poster
+    };
+
+    private MediaCardViewModel? ToEpisodeCard(LiteMediaDto media) =>
+        media.ToCardViewModel(ApiClient, FormatSeasonNumber, preferEpisodeStill: true);
 
     private string? GetPersonPictureUrl(LitePersonDto person) =>
         ApiClient.GetAbsoluteUri(
@@ -126,7 +137,8 @@ public partial class SearchPage
     private void RemoveSearchResult(MediaCardViewModel item)
     {
         _movieResults.RemoveAll(m => m.Id.ToString() == item.Id);
-        _serieResults.RemoveAll(m => m.Id.ToString() == item.Id || m.Id.ToString() == item.ParentId);
+        _serieSeasonResults.RemoveAll(m => m.Id.ToString() == item.Id || m.Id.ToString() == item.ParentId);
+        _episodeResults.RemoveAll(m => m.Id.ToString() == item.Id || m.Id.ToString() == item.ParentId);
         _musicResults.RemoveAll(m => m.Id.ToString() == item.Id || m.Id.ToString() == item.ParentId);
     }
 
