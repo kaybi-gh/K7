@@ -42,6 +42,120 @@ public static class LanguageNormalizer
         return NormalizeToIso6391(input) ?? input.Trim().ToLowerInvariant();
     }
 
+    /// <summary>
+    /// Returns true when a normalized language code represents an unknown or missing language.
+    /// </summary>
+    public static bool IsUndetermined(string? language) =>
+        string.IsNullOrWhiteSpace(language)
+        || language.Equals("und", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Attempts to infer an ISO 639-1 code from a track title (e.g. "Français Complets (Colors)").
+    /// </summary>
+    public static string? InferFromTrackTitle(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return null;
+
+        var trimmedTitle = title.Trim();
+        var prefix = TrimTitleForLanguageHint(trimmedTitle);
+
+        if (TryNormalizeTitleWords(prefix) is { } prefixLanguage)
+            return prefixLanguage;
+
+        if (!string.Equals(prefix, trimmedTitle, StringComparison.Ordinal)
+            && TryNormalizeTitleWords(trimmedTitle) is { } fullTitleLanguage)
+        {
+            return fullTitleLanguage;
+        }
+
+        return FindLanguageAliasInText(trimmedTitle);
+    }
+
+    /// <summary>
+    /// Normalizes a container language tag, inferring from the track title when missing.
+    /// </summary>
+    public static string ResolveSubtitleLanguage(string? containerLanguage, string? trackTitle)
+    {
+        var language = NormalizeOrPassthrough(containerLanguage);
+        if (IsUndetermined(language) && InferFromTrackTitle(trackTitle) is { } inferred)
+            return inferred;
+
+        return language;
+    }
+
+    private static string TrimTitleForLanguageHint(string title)
+    {
+        var end = title.Length;
+        foreach (var separator in TitleHintSeparators)
+        {
+            var idx = title.IndexOf(separator, StringComparison.Ordinal);
+            if (idx >= 0 && idx < end)
+                end = idx;
+        }
+
+        var dashIdx = title.IndexOf(" - ", StringComparison.Ordinal);
+        if (dashIdx >= 0 && dashIdx < end)
+            end = dashIdx;
+
+        return title[..end].Trim();
+    }
+
+    private static string? TryNormalizeTitleWords(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return null;
+
+        var words = title.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var maxWords = Math.Min(words.Length, 3);
+
+        for (var wordCount = maxWords; wordCount >= 1; wordCount--)
+        {
+            var phrase = string.Join(' ', words.AsSpan(0, wordCount).ToArray());
+            var code = NormalizeToIso6391(phrase);
+            if (code is not null && !IsUndetermined(code))
+                return code;
+        }
+
+        return null;
+    }
+
+    private static string? FindLanguageAliasInText(string text)
+    {
+        foreach (var (alias, code) in TitleScanAliases)
+        {
+            if (IsUndetermined(code))
+                continue;
+
+            if (ContainsWholeWord(text, alias))
+                return code;
+        }
+
+        return null;
+    }
+
+    private static bool ContainsWholeWord(string text, string word)
+    {
+        if (string.IsNullOrEmpty(word))
+            return false;
+
+        var index = 0;
+        while ((index = text.IndexOf(word, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            var beforeOk = index == 0 || !char.IsLetterOrDigit(text[index - 1]);
+            var end = index + word.Length;
+            var afterOk = end >= text.Length || !char.IsLetterOrDigit(text[end]);
+            if (beforeOk && afterOk)
+                return true;
+
+            index++;
+        }
+
+        return false;
+    }
+
+    private static readonly char[] TitleHintSeparators = ['(', '[', '|'];
+
     private static readonly HashSet<string> Iso6391Codes = new(StringComparer.OrdinalIgnoreCase)
     {
         "fr", "en", "de", "es", "it", "ja", "ko", "pt", "ru", "zh",
@@ -337,4 +451,11 @@ public static class LanguageNormalizer
         ["undetermined"] = "und",
         ["unknown"] = "und"
     };
+
+    private static readonly (string Alias, string Code)[] TitleScanAliases =
+        Aliases
+            .Where(entry => !IsUndetermined(entry.Value))
+            .OrderByDescending(entry => entry.Key.Length)
+            .Select(entry => (entry.Key, entry.Value))
+            .ToArray();
 }

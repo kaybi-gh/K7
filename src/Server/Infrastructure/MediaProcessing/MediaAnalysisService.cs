@@ -312,16 +312,20 @@ public class MediaAnalysisService : IMediaAnalysisService
     private static List<SubtitleFileTrack> ExtractSubtitleTracksFromMediaAnalysis(IMediaAnalysis mediaAnalysis)
     {
         bool hasDefaultSub = mediaAnalysis.SubtitleStreams.Any(s => s.Disposition?.Any(d => d.Key == "default" && d.Value) ?? false);
-        return [.. mediaAnalysis.SubtitleStreams.Select(x => new SubtitleFileTrack
+        return [.. mediaAnalysis.SubtitleStreams.Select(x =>
         {
-            Index = x.Index,
-            IsDefault = IsDefaultTrack(hasDefaultSub, x.Disposition, x.Index),
-            Language = LanguageNormalizer.NormalizeOrPassthrough(x.Language),
-            Name = x.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? x.Language,
-            Codec = x.CodecName,
-            IsTextBased = TextBasedSubtitleCodecs.Contains(x.CodecName),
-            IsForced = x.Disposition?.Any(d => d.Key == "forced" && d.Value) ?? false,
-            IsHearingImpaired = x.Disposition?.Any(d => d.Key == "hearing_impaired" && d.Value) ?? false
+            var name = x.Tags?.FirstOrDefault(t => t.Key == "title").Value ?? x.Language;
+            return new SubtitleFileTrack
+            {
+                Index = x.Index,
+                IsDefault = IsDefaultTrack(hasDefaultSub, x.Disposition, x.Index),
+                Language = LanguageNormalizer.ResolveSubtitleLanguage(x.Language, name),
+                Name = name,
+                Codec = x.CodecName,
+                IsTextBased = TextBasedSubtitleCodecs.Contains(x.CodecName),
+                IsForced = x.Disposition?.Any(d => d.Key == "forced" && d.Value) ?? false,
+                IsHearingImpaired = x.Disposition?.Any(d => d.Key == "hearing_impaired" && d.Value) ?? false
+            };
         })];
     }
 }
