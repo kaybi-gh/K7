@@ -51,6 +51,7 @@ public partial class MusicRadioPresets
             presets.Insert(1, new(L["PresetDiscoveryAi"], L["PresetDiscoveryAiDesc"], Phosphor.Sparkle, "--radio-tone: #7A9E7E;", MusicRadioType.DiscoveryAi));
             presets.Add(new(L["PresetAmbiance"], L["PresetAmbianceDesc"], Phosphor.MoonStars, "--radio-tone: var(--color-warning);", Action: RadioPresetAction.Ambiance));
             presets.Add(new(L["PresetSonicPath"], L["PresetSonicPathDesc"], Phosphor.Path, "--radio-tone: #9A8BB8;", Action: RadioPresetAction.SonicPath));
+            presets.Add(new(L["PresetIntelligentSearch"], L["PresetIntelligentSearchDesc"], Phosphor.MagnifyingGlass, "--radio-tone: #6B8FA3;", Action: RadioPresetAction.IntelligentSearch));
         }
 
         Presets = presets;
@@ -65,6 +66,9 @@ public partial class MusicRadioPresets
                 return;
             case RadioPresetAction.SonicPath:
                 await OpenSonicPathDialogAsync();
+                return;
+            case RadioPresetAction.IntelligentSearch:
+                await OpenIntelligentSearchDialogAsync();
                 return;
             default:
                 await PlayRadioAsync(radio);
@@ -87,6 +91,17 @@ public partial class MusicRadioPresets
     {
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
         await DialogService.ShowAsync<SonicPathDialog>(L["PresetSonicPath"], null, options);
+    }
+
+    private async Task OpenIntelligentSearchDialogAsync()
+    {
+        var parameters = new K7DialogParameters<IntelligentSearchDialog>
+        {
+            { x => x.LibraryIds, LibraryIds },
+            { x => x.LibraryGroupIds, LibraryGroupIds }
+        };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<IntelligentSearchDialog>(L["PresetIntelligentSearch"], parameters, options);
     }
 
     private async Task PlayRadioAsync(RadioPresetInfo radio)
@@ -121,7 +136,8 @@ public partial class MusicRadioPresets
     {
         Play,
         Ambiance,
-        SonicPath
+        SonicPath,
+        IntelligentSearch
     }
 
     private sealed record RadioPresetInfo(

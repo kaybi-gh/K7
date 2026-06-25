@@ -33,5 +33,7 @@
   <data name="PresetTimeCapsuleDesc" xml:space="preserve"><value>Rediscover what you were listening to a year ago</value></data>
   <data name="PresetRecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
   <data name="PresetRecentlyAddedDesc" xml:space="preserve"><value>The latest tracks added to your library</value></data>
+  <data name="PresetIntelligentSearch" xml:space="preserve"><value>Intelligent search</value></data>
+  <data name="PresetIntelligentSearchDesc" xml:space="preserve"><value>Describe a sound or lyrics to start a radio</value></data>
   <data name="EmptyRadio" xml:space="preserve"><value>No tracks available for this radio.</value></data>
 </root>
