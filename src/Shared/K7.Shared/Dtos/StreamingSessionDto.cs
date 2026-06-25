@@ -1,4 +1,5 @@
 ﻿using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Shared.Dtos;
 
@@ -9,6 +10,9 @@ public class StreamingSessionDto
     public PlaybackState State { get; set; }
     public double Position { get; set; }
     public required PlaybackSettingsDto PlaybackSettings { get; set; }
+
+    public IReadOnlyList<AudioFileTrackDto> AudioTracks { get; set; } = [];
+    public IReadOnlyList<SubtitleFileTrackDto> SubtitleTracks { get; set; } = [];
 
     /// <summary>
     /// Initial stream URL and MIME type selected for this session
