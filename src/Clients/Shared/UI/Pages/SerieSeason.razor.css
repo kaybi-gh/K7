@@ -148,10 +148,56 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    --tv-carousel-gutter: 12px;
+    --carousel-margin-start: 32px;
+}
+
+.season-tv--scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.season-tv-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.season-tv--scrollable .season-tv-main {
+    min-height: 100%;
+    height: 100%;
+}
+
+.season-tv:not(.season-tv--scrollable) .season-tv-main {
+    flex: 1;
+    min-height: 0;
+}
+
+.tv-hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.season-tv-page-content {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    margin-left: var(--tv-carousel-gutter);
+    padding-bottom: var(--space-6);
+}
+
+.season-tv-page-content ::deep .carousel-wrapper {
+    position: relative;
+    flex-shrink: 0;
 }
 
 .tv-backdrop {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 0;
     background-image: var(--tv-backdrop);
@@ -176,6 +222,7 @@
     align-self: flex-start;
     margin: 16px 0 0 48px;
     flex-shrink: 0;
+    z-index: 2;
 }
 
 .tv-details {
@@ -184,9 +231,29 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 0 48px 48px;
+    padding: 0 48px var(--space-8);
     gap: 8px;
     max-width: 700px;
+}
+
+.season-tv-scroll-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    opacity: 0.4;
+    animation: season-tv-bounce-hint 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes season-tv-bounce-hint {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+}
+
+.season-tv ::deep .carousel-wrapper {
+    padding-bottom: var(--space-4);
 }
 
 ::deep .tv-logo:not(.k7-img-wrap--custom-fallback) {
@@ -264,10 +331,10 @@
     position: relative;
     flex-shrink: 0;
     padding-bottom: 32px;
-    margin-left: 12px !important;
+    margin-left: var(--tv-carousel-gutter);
 }
 
 .tv-season-title {
-    margin-left: 32px;
+    margin-left: var(--carousel-margin-start);
     margin-bottom: 4px;
 }

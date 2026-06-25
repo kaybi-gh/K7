@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
@@ -8,6 +9,7 @@ using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Dtos.Entities.Metadatas.Files;
+using K7.Shared.Dtos.Entities.PersonRoles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -37,11 +39,18 @@ public partial class SerieSeason
     private string? _previousStillUrl;
     private Carousel? _tvCarousel;
     private bool _isFederated;
+    private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
+    private IReadOnlyList<PersonRoleDisplayHelper.GroupedDisplay> _focusedEpisodeDisplayableCast = [];
+    private Guid? _castLoadEpisodeId;
+
+    private bool HasDisplayableCast => _focusedEpisodeDisplayableCast.Count > 0;
 
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
         _focusEpisodeFragment = null;
+        _focusedEpisodeDisplayableCast = [];
+        _castLoadEpisodeId = null;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         var serieMedia = await k7ServerService.GetMediaAsync(Guid.Parse(SerieId));
@@ -105,6 +114,10 @@ public partial class SerieSeason
                 ? _episodes.FirstOrDefault(e => e.EpisodeNumber == targetEpNumber)
                 : null) ?? _episodes[0];
             _focusedStillUrl = GetEpisodeStillUrl(_focusedEpisode, MetadataPictureSize.Medium);
+            if (_episodeCastCache.TryGetValue(_focusedEpisode.Id, out var cached))
+                ApplyFocusedEpisodeCast(cached);
+            else
+                await LoadFocusedEpisodeCastAsync(_focusedEpisode);
         }
 
         _loading = false;
@@ -156,12 +169,44 @@ public partial class SerieSeason
 
     private void OnTvEpisodeFocus(LiteSerieEpisodeDto episode)
     {
+        if (_focusedEpisode?.Id == episode.Id)
+            return;
+
         _focusedEpisode = episode;
         _previousStillUrl = _focusedStillUrl;
         _focusedStillUrl = GetEpisodeStillUrl(episode, MetadataPictureSize.Medium);
         var baseUri = NavigationManager.Uri.Split('#')[0];
         NavigationManager.NavigateTo($"{baseUri}#ep-{episode.EpisodeNumber}", replace: true);
+
+        if (_episodeCastCache.TryGetValue(episode.Id, out var cached))
+            ApplyFocusedEpisodeCast(cached);
+        else
+            _ = LoadFocusedEpisodeCastAsync(episode);
+
         StateHasChanged();
+    }
+
+    private async Task LoadFocusedEpisodeCastAsync(LiteSerieEpisodeDto episode)
+    {
+        var loadId = episode.Id;
+        _castLoadEpisodeId = loadId;
+
+        var media = await k7ServerService.GetMediaAsync(episode.Id);
+        if (_castLoadEpisodeId != loadId || _focusedEpisode?.Id != loadId)
+            return;
+
+        var roles = media is SerieEpisodeDto episodeDto
+            ? episodeDto.PersonRoles ?? []
+            : [];
+
+        _episodeCastCache[loadId] = roles;
+        ApplyFocusedEpisodeCast(roles);
+        StateHasChanged();
+    }
+
+    private void ApplyFocusedEpisodeCast(IReadOnlyList<LitePersonRoleDto> roles)
+    {
+        _focusedEpisodeDisplayableCast = PersonRoleDisplayHelper.GroupForCarousel(roles);
     }
 
     private Task OpenSeasonOverviewDialogAsync()
