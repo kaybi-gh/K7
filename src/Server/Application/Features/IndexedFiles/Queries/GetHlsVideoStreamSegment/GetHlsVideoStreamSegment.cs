@@ -1,4 +1,6 @@
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -33,21 +35,25 @@ public record GetHlsVideoStreamSegmentQuery(
     string Quality, 
     int SegmentNumber,
     Guid StreamSessionId,
-    string? TranscodingVideoCodec = null) : IRequest<IResult>;
+    string? TranscodingVideoCodec = null,
+    int? SubtitleBurnInStreamIndex = null) : IRequest<IResult>;
 
 public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoStreamSegmentQuery, IResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly ITranscodeJobManager _transcodeJobManager;
+    private readonly IActiveStreamTracker _activeStreamTracker;
     private readonly ILogger<GetHlsVideoStreamSegmentQueryHandler> _logger;
 
     public GetHlsVideoStreamSegmentQueryHandler(
         IApplicationDbContext context,
         ITranscodeJobManager transcodeJobManager,
+        IActiveStreamTracker activeStreamTracker,
         ILogger<GetHlsVideoStreamSegmentQueryHandler> logger)
     {
         _context = context;
         _transcodeJobManager = transcodeJobManager;
+        _activeStreamTracker = activeStreamTracker;
         _logger = logger;
     }
 
@@ -87,7 +93,8 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
         }
 
         var isTransmuxing = query.Quality == "original"
-            && string.IsNullOrEmpty(query.TranscodingVideoCodec);
+            && string.IsNullOrEmpty(query.TranscodingVideoCodec)
+            && !query.SubtitleBurnInStreamIndex.HasValue;
         List<HlsSegment> allSegments;
 
         if (isTransmuxing)
@@ -133,7 +140,30 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             return Results.NotFound($"Segment index {query.SegmentNumber} out of range (0-{allSegments.Count - 1})");
         }
 
-        var videoCodec = query.TranscodingVideoCodec;
+        var videoCodec = query.TranscodingVideoCodec
+            ?? (query.SubtitleBurnInStreamIndex.HasValue ? "h264" : null);
+
+        if (query.SubtitleBurnInStreamIndex is int burnInIndex
+            && entity.FileMetadata is VideoFileMetadata videoMetadata)
+        {
+            await _context.Entry(videoMetadata).Collection(v => v.SubtitleTracks).LoadAsync(cancellationToken);
+
+            var burnInTrack = videoMetadata.SubtitleTracks.FirstOrDefault(t => t.Index == burnInIndex);
+            if (burnInTrack is not null)
+            {
+                var existing = _activeStreamTracker.GetStreamInfo(query.StreamSessionId)?.StreamDecision;
+                _activeStreamTracker.UpdateStreamDecision(
+                    query.StreamSessionId,
+                    StreamDecisionExtensions.ApplySubtitleBurnIn(existing, burnInTrack));
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Subtitle burn-in stream index {StreamIndex} not found among subtitle tracks for IndexedFile {Id}",
+                    burnInIndex,
+                    query.Id);
+            }
+        }
 
         var streamSessionId = query.StreamSessionId;
         var job = await _transcodeJobManager.GetOrStartJobAsync(
@@ -145,7 +175,8 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             audioTrackIndex: 0,
             isAudioOnly: false,
             streamSessionId,
-            cancellationToken);
+            cancellationToken,
+            query.SubtitleBurnInStreamIndex);
 
         if (query.SegmentNumber == -1)
         {

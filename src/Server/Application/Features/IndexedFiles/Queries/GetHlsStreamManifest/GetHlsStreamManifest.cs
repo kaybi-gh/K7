@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using K7.Server.Application.Common;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsStream;
@@ -27,6 +28,7 @@ public static class GetHlsStreamManifestQueryUriBuilder
             { nameof(query.TranscodingVideoCodec), query.TranscodingVideoCodec },
             { nameof(query.DefaultAudioTrackIndex), query.DefaultAudioTrackIndex?.ToString() },
             { nameof(query.DefaultSubtitleTrackIndex), query.DefaultSubtitleTrackIndex?.ToString() },
+            { nameof(query.SubtitleBurnInStreamIndex), query.SubtitleBurnInStreamIndex?.ToString() },
             { nameof(query.Quality), query.Quality },
             { nameof(query.AudioTrackTranscodings), SerializeAudioTrackTranscodings(query.AudioTrackTranscodings) }
         };
@@ -77,6 +79,7 @@ public record GetHlsStreamManifestQuery : IRequest<IResult>
     public string? TranscodingVideoCodec { get; set; }
     public int? DefaultAudioTrackIndex { get; set; }
     public int? DefaultSubtitleTrackIndex { get; set; }
+    public int? SubtitleBurnInStreamIndex { get; set; }
     public string? Quality { get; set; }
     public Dictionary<int, string>? AudioTrackTranscodings { get; set; }
 };
@@ -85,11 +88,16 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 {
     private readonly IApplicationDbContext _context;
     private readonly IMediaAccessGuard _accessGuard;
+    private readonly IActiveStreamTracker _activeStreamTracker;
 
-    public GetHlsStreamManifestQueryHandler(IApplicationDbContext context, IMediaAccessGuard accessGuard)
+    public GetHlsStreamManifestQueryHandler(
+        IApplicationDbContext context,
+        IMediaAccessGuard accessGuard,
+        IActiveStreamTracker activeStreamTracker)
     {
         _context = context;
         _accessGuard = accessGuard;
+        _activeStreamTracker = activeStreamTracker;
     }
 
     public async Task<IResult> Handle(GetHlsStreamManifestQuery query, CancellationToken cancellationToken)
@@ -110,6 +118,19 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
         }
 
         await LoadFileTracksAsync(indexedFile.FileMetadata, cancellationToken);
+
+        if (query.SubtitleBurnInStreamIndex is int burnInIndex
+            && indexedFile.FileMetadata is VideoFileMetadata videoMetadata)
+        {
+            var burnInTrack = videoMetadata.SubtitleTracks.FirstOrDefault(t => t.Index == burnInIndex);
+            if (burnInTrack is not null)
+            {
+                var existing = _activeStreamTracker.GetStreamInfo(query.StreamSessionId)?.StreamDecision;
+                _activeStreamTracker.UpdateStreamDecision(
+                    query.StreamSessionId,
+                    StreamDecisionExtensions.ApplySubtitleBurnIn(existing, burnInTrack));
+            }
+        }
 
         var masterPlaylist = indexedFile.FileMetadata switch
         {
@@ -318,6 +339,12 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
             }
         }
 
+        // Bitmap subtitles (PGS) are burned into the video and require transcoding
+        if (query.SubtitleBurnInStreamIndex.HasValue)
+        {
+            effectiveVideoCodec ??= query.TranscodingVideoCodec ?? "h264";
+        }
+
         var effectiveVideoCodecString = !string.IsNullOrEmpty(effectiveVideoCodec)
             ? HlsCodecStringHelpers.GetHlsCodecs(effectiveVideoCodec, audioCodec: null)
             : videoCodecString;
@@ -347,6 +374,9 @@ public class GetHlsStreamManifestQueryHandler : IRequestHandler<GetHlsStreamMani
 
         if (!string.IsNullOrEmpty(effectiveVideoCodec))
             videoQueryParams.Add($"TranscodingVideoCodec={effectiveVideoCodec}");
+
+        if (query.SubtitleBurnInStreamIndex.HasValue)
+            videoQueryParams.Add($"SubtitleBurnInStreamIndex={query.SubtitleBurnInStreamIndex.Value}");
 
         var videoQueryString = "?" + string.Join("&", videoQueryParams);
         playlistUrl += videoQueryString;

@@ -23,7 +23,7 @@ public interface IMediaTranscoder
     /// <summary>
     /// Starts a video streaming transcode job.
     /// Generates video fMP4 segments from startSegmentIndex up to (but not including) endSegmentIndex.
-    /// When <paramref name="subtitleBurnInStreamIndex"/> is set, burns the bitmap subtitle into the video.
+    /// When <paramref name="subtitleBurnInStreamIndex"/> is set, burns the bitmap subtitle into the video via overlay.
     /// </summary>
     Task StartVideoStreamingTranscodeAsync(
         string inputFilePath,

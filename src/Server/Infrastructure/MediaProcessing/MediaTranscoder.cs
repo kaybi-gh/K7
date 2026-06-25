@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json;
 using FFMpegCore;
 using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
@@ -121,23 +122,65 @@ public class MediaTranscoder : IMediaTranscoder
         var needsTranscode = !string.IsNullOrEmpty(videoCodec) || hasBurnIn;
 
         _logger.LogInformation(
-            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, burnIn={BurnIn}",
+            "Starting video streaming transcode: input={Input}, output={Output}, startSeg={Start}, endSeg={End}, videoCodec={VideoCodec}, burnInStreamIndex={BurnInStreamIndex}",
             inputFilePath, outputDirectory, startSegmentIndex, endSegmentIndex, videoCodec ?? "copy", subtitleBurnInStreamIndex?.ToString() ?? "none");
 
+        var stderrLines = new List<string>();
+        var burnInFilterComplex = string.Empty;
+        string? burnInCanvasSizeArg = null;
+
+        if (hasBurnIn)
+        {
+            var dimensions = await GetBurnInStreamDimensionsAsync(
+                inputFilePath,
+                subtitleBurnInStreamIndex!.Value,
+                cancellationToken);
+            burnInFilterComplex = PgsBurnInFilterBuilder.BuildFilterComplex(
+                subtitleBurnInStreamIndex.Value,
+                dimensions.VideoWidth,
+                dimensions.VideoHeight,
+                dimensions.SubtitleWidth,
+                dimensions.SubtitleHeight);
+            burnInCanvasSizeArg = PgsBurnInFilterBuilder.BuildCanvasSizeArgument(
+                dimensions.SubtitleWidth,
+                dimensions.SubtitleHeight);
+
+            _logger.LogInformation(
+                "PGS burn-in filter for stream {SubStreamIndex}: video={VideoWidth}x{VideoHeight}, subtitle={SubtitleWidth}x{SubtitleHeight}, canvasSize={CanvasSize}",
+                subtitleBurnInStreamIndex.Value,
+                dimensions.VideoWidth,
+                dimensions.VideoHeight,
+                dimensions.SubtitleWidth,
+                dimensions.SubtitleHeight,
+                burnInCanvasSizeArg ?? "default");
+        }
+
         var ffmpegTask = FFMpegArguments
-            .FromFileInput(inputFilePath, verifyExists: true, options => options
-                .WithHardwareAcceleration(HardwareAccelerationDevice.Auto)
-                .Seek(startTime))
+            .FromFileInput(inputFilePath, verifyExists: true, options =>
+            {
+                if (hasBurnIn)
+                {
+                    options.WithCustomArgument("-probesize 50000000");
+                    options.WithCustomArgument("-analyzeduration 50000000");
+                    if (burnInCanvasSizeArg is not null)
+                    {
+                        options.WithCustomArgument(burnInCanvasSizeArg);
+                    }
+                }
+                else
+                {
+                    options.WithHardwareAcceleration(HardwareAccelerationDevice.Auto);
+                }
+
+                options.Seek(startTime);
+            })
             .OutputToFile("index.m3u8", overwrite: true, options =>
             {
                 if (hasBurnIn)
                 {
-                    // Map both video and subtitle for overlay filter
-                    options.WithCustomArgument("-map 0:v:0");
+                    options.WithCustomArgument($"-filter_complex \"{burnInFilterComplex}\"");
+                    options.WithCustomArgument("-map \"[vout]\"");
                     options.WithCustomArgument("-an");
-
-                    // Apply subtitle overlay filter
-                    options.WithCustomArgument($"-filter_complex \"[0:v][0:{subtitleBurnInStreamIndex!.Value}]overlay\"");
                 }
                 else
                 {
@@ -152,7 +195,7 @@ public class MediaTranscoder : IMediaTranscoder
 
                     if (effectiveCodec == "h264")
                     {
-                        options.WithCustomArgument("-c:v h264")
+                        options.WithCustomArgument("-c:v libx264")
                             .WithCustomArgument("-profile:v main")
                             .WithCustomArgument("-level:v 4.0")
                             .WithCustomArgument("-pix_fmt yuv420p");
@@ -182,11 +225,107 @@ public class MediaTranscoder : IMediaTranscoder
             .Configure(options => options.WorkingDirectory = outputDirectory)
             .Configure(options => options.TemporaryFilesFolder = outputDirectory)
             .NotifyOnOutput((output) => _logger.LogDebug("FFmpeg stdout: {Output}", output))
-            .NotifyOnError((error) => _logger.LogDebug("FFmpeg stderr: {Error}", error))
+            .NotifyOnError((error) =>
+            {
+                stderrLines.Add(error);
+                _logger.LogDebug("FFmpeg stderr: {Error}", error);
+            })
             .CancellableThrough(cancellationToken);
 
         var result = await ffmpegTask.ProcessAsynchronously(throwOnError: false);
+        if (!result)
+        {
+            var stderr = string.Join(Environment.NewLine, stderrLines);
+            _logger.LogError(
+                "FFmpeg video transcode failed for {Input}, burnInStreamIndex={BurnInStreamIndex}. Stderr: {Stderr}",
+                inputFilePath,
+                subtitleBurnInStreamIndex?.ToString() ?? "none",
+                stderr);
+        }
+
         _logger.LogInformation("FFmpeg video process completed for output directory: {OutputDir}, Success: {Success}", outputDirectory, result);
+    }
+
+    private static async Task<(int VideoWidth, int VideoHeight, int SubtitleWidth, int SubtitleHeight)> GetBurnInStreamDimensionsAsync(
+        string inputFilePath,
+        int subtitleStreamIndex,
+        CancellationToken cancellationToken)
+    {
+        var mediaAnalysis = await FFProbe.AnalyseAsync(inputFilePath, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        var videoStream = mediaAnalysis.PrimaryVideoStream;
+        var subtitleDimensions = await ProbeStreamDimensionsAsync(
+            inputFilePath,
+            subtitleStreamIndex,
+            cancellationToken);
+
+        return (
+            videoStream?.Width ?? 0,
+            videoStream?.Height ?? 0,
+            subtitleDimensions.Width,
+            subtitleDimensions.Height);
+    }
+
+    private static async Task<(int Width, int Height)> ProbeStreamDimensionsAsync(
+        string inputFilePath,
+        int streamIndex,
+        CancellationToken cancellationToken)
+    {
+        var stdoutLines = new List<string>();
+        var ffprobePath = GlobalFFOptions.GetFFProbeBinaryPath();
+        var arguments =
+            $"-v error -select_streams {streamIndex} -show_entries stream=width,height,coded_width,coded_height -of json \"{inputFilePath}\"";
+
+        var exitCode = await SafeProcessRunner.RunAsync(
+            ffprobePath,
+            arguments,
+            onStdout: line => stdoutLines.Add(line),
+            timeout: TimeSpan.FromSeconds(30),
+            cancellationToken: cancellationToken);
+
+        if (exitCode != 0 || stdoutLines.Count == 0)
+        {
+            return (0, 0);
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(string.Join(string.Empty, stdoutLines));
+            if (!doc.RootElement.TryGetProperty("streams", out var streams)
+                || streams.GetArrayLength() == 0)
+            {
+                return (0, 0);
+            }
+
+            var stream = streams[0];
+            var width = ReadStreamDimension(stream, "width", "coded_width");
+            var height = ReadStreamDimension(stream, "height", "coded_height");
+            return (width, height);
+        }
+        catch (JsonException)
+        {
+            return (0, 0);
+        }
+    }
+
+    private static int ReadStreamDimension(JsonElement stream, string primaryKey, string fallbackKey)
+    {
+        if (stream.TryGetProperty(primaryKey, out var primary)
+            && primary.TryGetInt32(out var primaryValue)
+            && primaryValue > 0)
+        {
+            return primaryValue;
+        }
+
+        if (stream.TryGetProperty(fallbackKey, out var fallback)
+            && fallback.TryGetInt32(out var fallbackValue)
+            && fallbackValue > 0)
+        {
+            return fallbackValue;
+        }
+
+        return 0;
     }
 
     public async Task StartAudioStreamingTranscodeAsync(

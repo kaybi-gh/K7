@@ -15,6 +15,7 @@ public class GetHlsVideoStreamSegment : IEndpoint
                     [FromRoute] string segmentNumber,
                     [FromQuery] Guid streamSessionId,
                     [FromQuery] string? TranscodingVideoCodec,
+                    [FromQuery] int? SubtitleBurnInStreamIndex,
                     [FromServices] ISender sender, 
                     CancellationToken cancellationToken) =>
                 {
@@ -25,7 +26,8 @@ public class GetHlsVideoStreamSegment : IEndpoint
                         quality, 
                         segmentIndex,
                         streamSessionId,
-                        TranscodingVideoCodec), cancellationToken);
+                        TranscodingVideoCodec,
+                        SubtitleBurnInStreamIndex), cancellationToken);
                 })
             .RequireAuthorization(Policies.StreamAccess)
             .WithName(nameof(GetHlsVideoStreamSegment))

@@ -117,8 +117,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 }, cancellationToken);
             }
 
-            // Resolve track selection preferences when no explicit audio track index is specified
-            int? subtitleTrackIndex = null;
+            var subtitleTrackIndex = request.SubtitleTrackIndex;
             if (request.AudioTrackIndex is null)
             {
                 var preferences = await _sender.Send(
@@ -137,7 +136,7 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
 
                 var selection = TrackSelector.SelectTracks(preferences, audioDtos, subtitleDtos);
                 request.AudioTrackIndex = selection.AudioTrackIndex;
-                subtitleTrackIndex = selection.SubtitleTrackIndex;
+                subtitleTrackIndex ??= selection.SubtitleTrackIndex;
                 request.SubtitleTrackIndex = subtitleTrackIndex;
             }
 
@@ -165,8 +164,6 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 ?? throw new InvalidOperationException($"Indexed file with id '{indexedFile.Id}' has no audio tracks.");
         }
 
-        //var selectedSubtitlesTrack = videoFileMetadata.SubtitleTracks // TODO - Subtitles
-
         var selectedVideoTrack = videoFileMetadata.VideoTracks.FirstOrDefault()
             ?? throw new InvalidOperationException($"Indexed file with id '{indexedFile.Id}' has no video tracks.");
 
@@ -184,6 +181,9 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         var selectedSubtitle = subtitleTrackIndex.HasValue
             ? videoFileMetadata.SubtitleTracks.FirstOrDefault(t => t.Index == subtitleTrackIndex.Value)
             : null;
+
+        var subtitleBurnInStreamIndex = selectedSubtitle is { IsTextBased: false } ? selectedSubtitle.Index : (int?)null;
+        var defaultTextSubtitleTrackIndex = selectedSubtitle is { IsTextBased: true } ? selectedSubtitle.Index : (int?)null;
 
         // If both audio and video are directly supported (container + codec), return a direct-stream URL
         if (audioDirectSupported && videoDirectSupported)
@@ -205,7 +205,10 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 AudioTrackTitle = selectedAudioTrack.Name,
                 AudioChannelLayout = selectedAudioTrack.ChannelLayout,
                 SubtitleTrackLanguage = selectedSubtitle?.Language,
-                SubtitleTrackTitle = selectedSubtitle?.Name
+                SubtitleTrackTitle = selectedSubtitle?.Name,
+                SubtitleCodec = selectedSubtitle?.Codec,
+                SelectedSubtitleTrackIndex = selectedSubtitle?.Index,
+                IsSubtitleBurnIn = subtitleBurnInStreamIndex.HasValue
             };
 
             return (new IndexedFileStreamUri
@@ -218,7 +221,6 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         // Otherwise we go through HLS
         var videoCodecSupported = supportedVideoFormats.Any(x => x.VideoCodec == selectedVideoTrack.Codec);
 
-        //var requiresSubtitlesTranscoding = false; // TODO - Subtitles
         var requiresVideoTranscoding = !videoCodecSupported;
 
         // When HLS segments aren't available, force transcoding to avoid the "original"
@@ -230,6 +232,11 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         }
 
         VideoMediaFormat? videoTranscodingMediaFormat = null;
+
+        if (subtitleBurnInStreamIndex.HasValue)
+        {
+            requiresVideoTranscoding = true;
+        }
 
         if (requiresVideoTranscoding)
         {
@@ -260,7 +267,12 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             ? audioTrackTranscodings![selectedAudioTrack.Index]
             : selectedAudioTrack.Codec;
 
-        var reason = BuildVideoTranscodeReason(requiresVideoTranscoding, forcedByMissingSegments, videoCodecSupported, selectedAudioNeedsTranscode);
+        var reason = BuildVideoTranscodeReason(
+            requiresVideoTranscoding,
+            forcedByMissingSegments,
+            videoCodecSupported,
+            selectedAudioNeedsTranscode,
+            subtitleBurnInStreamIndex.HasValue);
         var mode = requiresVideoTranscoding ? PlaybackMode.Transcode : PlaybackMode.Transmux;
 
         var hlsDecision = new StreamDecisionDto
@@ -277,7 +289,10 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
             AudioTrackTitle = selectedAudioTrack.Name,
             AudioChannelLayout = selectedAudioTrack.ChannelLayout,
             SubtitleTrackLanguage = selectedSubtitle?.Language,
-            SubtitleTrackTitle = selectedSubtitle?.Name
+            SubtitleTrackTitle = selectedSubtitle?.Name,
+            SubtitleCodec = selectedSubtitle?.Codec,
+            SelectedSubtitleTrackIndex = selectedSubtitle?.Index,
+            IsSubtitleBurnIn = subtitleBurnInStreamIndex.HasValue
         };
 
         return (new IndexedFileStreamUri
@@ -289,19 +304,27 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
                 TranscodingVideoCodec = videoTranscodingMediaFormat?.VideoCodec,
                 AudioTrackTranscodings = audioTrackTranscodings,
                 DefaultAudioTrackIndex = request.AudioTrackIndex,
-                DefaultSubtitleTrackIndex = subtitleTrackIndex
+                DefaultSubtitleTrackIndex = defaultTextSubtitleTrackIndex,
+                SubtitleBurnInStreamIndex = subtitleBurnInStreamIndex
             }), UriKind.Relative),
             MimeType = "application/vnd.apple.mpegurl"
         }, hlsDecision);
     }
 
-    private static TranscodeReason BuildVideoTranscodeReason(bool requiresVideoTranscoding, bool forcedByMissingSegments, bool videoCodecSupported, bool audioNeedsTranscode)
+    private static TranscodeReason BuildVideoTranscodeReason(
+        bool requiresVideoTranscoding,
+        bool forcedByMissingSegments,
+        bool videoCodecSupported,
+        bool audioNeedsTranscode,
+        bool subtitlesBurnIn)
     {
         var reason = TranscodeReason.None;
 
         if (requiresVideoTranscoding)
         {
-            if (forcedByMissingSegments)
+            if (subtitlesBurnIn)
+                reason |= TranscodeReason.SubtitlesBurnIn;
+            else if (forcedByMissingSegments)
                 reason |= TranscodeReason.HlsSegmentsUnavailable;
             else if (!videoCodecSupported)
                 reason |= TranscodeReason.VideoCodecNotSupported;

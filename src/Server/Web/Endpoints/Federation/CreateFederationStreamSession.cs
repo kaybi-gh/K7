@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
@@ -180,6 +181,14 @@ public class CreateFederationStreamSession : IEndpoint
                 StartedAt = DateTime.UtcNow
             });
 
+            var playbackTracks = indexedFile.FileMetadata is VideoFileMetadata videoForTracks
+                ? new
+                {
+                    Audio = videoForTracks.AudioTracks.Select(t => t.ToAudioFileTrackDto()).ToList(),
+                    Subtitles = videoForTracks.SubtitleTracks.Select(t => t.ToSubtitleFileTrackDto()).ToList()
+                }
+                : null;
+
             var result = new StreamingSessionDto
             {
                 Id = session.Id,
@@ -187,7 +196,9 @@ public class CreateFederationStreamSession : IEndpoint
                 State = session.State,
                 Position = session.Position,
                 PlaybackSettings = new PlaybackSettingsDto(),
-                Source = streamUri
+                Source = streamUri,
+                AudioTracks = playbackTracks?.Audio ?? [],
+                SubtitleTracks = playbackTracks?.Subtitles ?? []
             };
 
             return Results.Created($"/api/federation/stream-sessions/{session.Id}", result);
