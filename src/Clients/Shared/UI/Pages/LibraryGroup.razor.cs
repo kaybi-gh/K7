@@ -21,6 +21,9 @@ public partial class LibraryGroup : IDisposable
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private K7HubClient K7HubClient { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private IMusicIntelligenceClientService MusicIntelligence { get; set; } = default!;
+    [Inject] private IAudioPlayerService Audio { get; set; } = default!;
+    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     [Parameter]
     public required string Id { get; set; }
@@ -39,9 +42,19 @@ public partial class LibraryGroup : IDisposable
     private MediaType _selectedMediaType;
     private MediaOrderingOption _selectedSort = MediaOrderingOption.TitleAsc;
     private RuleGroupDto _filter = MediaBrowseFilterPresets.Empty;
+    private IntelligentSearchRequest? _intelligentSearch;
+    private List<LiteMediaDto> _intelligentSearchResults = [];
+    private bool _intelligentSearchLoading;
     private MediaTagsDto? _tags;
     private bool _showWatchFilters =>
         _selectedMediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
+
+    private bool _showMusicPlaybackActions =>
+        _libraryMediaType == LibraryMediaType.Music
+        && (_intelligentSearch is not null || _selectedMediaType == MediaType.MusicTrack);
+
+    private bool _canPlayMusic =>
+        _totalCount > 0 && !_loading && !_intelligentSearchLoading;
     private string? _activeSortKey = "title";
     private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
 
@@ -101,6 +114,8 @@ public partial class LibraryGroup : IDisposable
         _activeSortKey = "title";
         _activeSortDirection = K7SortDirection.Ascending;
         _filter = MediaBrowseFilterPresets.Empty;
+        _intelligentSearch = null;
+        _intelligentSearchResults = [];
 
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
 
@@ -115,6 +130,9 @@ public partial class LibraryGroup : IDisposable
     private async ValueTask<ItemsProviderResult<LiteMediaDto>> ProvideMediasAsync(
         ItemsProviderRequest request)
     {
+        if (_intelligentSearch is not null)
+            return ProvideIntelligentSearchMedias(request);
+
         try
         {
             var startIndex = request.StartIndex;
@@ -160,6 +178,15 @@ public partial class LibraryGroup : IDisposable
     private async Task<K7DataTableResult<LiteMediaDto>> LoadTableDataAsync(
         K7DataTableState<LiteMediaDto> state, CancellationToken cancellationToken)
     {
+        if (_intelligentSearch is not null)
+        {
+            var items = _intelligentSearchResults
+                .Skip(state.StartIndex)
+                .Take(state.Count)
+                .ToList();
+            return new K7DataTableResult<LiteMediaDto>(items, _intelligentSearchResults.Count);
+        }
+
         try
         {
             var startIndex = state.StartIndex;
@@ -246,7 +273,119 @@ public partial class LibraryGroup : IDisposable
     private async Task OnFilterChanged(RuleGroupDto value)
     {
         _filter = value;
+        if (_intelligentSearch is not null)
+        {
+            _intelligentSearch = null;
+            _intelligentSearchResults = [];
+        }
+
         await RefreshAllAsync();
+    }
+
+    private async Task OnIntelligentSearchChanged(IntelligentSearchRequest? value)
+    {
+        _intelligentSearch = value;
+        _filter = MediaBrowseFilterPresets.Empty;
+
+        if (value is null)
+        {
+            _intelligentSearchResults = [];
+            _totalCount = 0;
+            await RefreshAllAsync();
+            return;
+        }
+
+        if (_libraryMediaType == LibraryMediaType.Music)
+            _selectedMediaType = MediaType.MusicTrack;
+
+        _intelligentSearchLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var trackIds = await IntelligentSearchHelper.SearchTrackIdsAsync(MusicIntelligence, value);
+            if (trackIds.Count == 0)
+            {
+                Snackbar.Add(L["IntelligentSearchNoResults"], K7Severity.Info);
+                _intelligentSearchResults = [];
+                _totalCount = 0;
+                return;
+            }
+
+            var tracks = await IntelligentSearchHelper.LoadScopedTracksAsync(
+                k7ServerService,
+                trackIds,
+                _libraryIds?.ToArray(),
+                _libraryGroupIds);
+
+            _intelligentSearchResults = tracks.Cast<LiteMediaDto>().ToList();
+            _totalCount = _intelligentSearchResults.Count;
+        }
+        catch
+        {
+            Snackbar.Add(L["IntelligentSearchError"], K7Severity.Error);
+            _intelligentSearchResults = [];
+            _totalCount = 0;
+        }
+        finally
+        {
+            _intelligentSearchLoading = false;
+            await RefreshAllAsync();
+        }
+    }
+
+    private ItemsProviderResult<LiteMediaDto> ProvideIntelligentSearchMedias(ItemsProviderRequest request)
+    {
+        var items = _intelligentSearchResults
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToList();
+
+        return new ItemsProviderResult<LiteMediaDto>(items, _intelligentSearchResults.Count);
+    }
+
+    private async Task PlayAllAsync()
+    {
+        var tracks = await GetPlayableTracksAsync();
+        var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, S["Untitled"]);
+        if (queueItems.Count > 0)
+            await Audio.PlayTracksAsync(queueItems, 0);
+    }
+
+    private async Task ShuffleAllAsync()
+    {
+        var tracks = await GetPlayableTracksAsync();
+        var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, S["Untitled"]);
+        if (queueItems.Count == 0)
+            return;
+
+        if (!Audio.Shuffle)
+            Audio.ToggleShuffle();
+
+        await Audio.PlayTracksAsync(queueItems, 0);
+    }
+
+    private async Task<List<LiteMusicTrackDto>> GetPlayableTracksAsync(CancellationToken cancellationToken = default)
+    {
+        if (_intelligentSearch is not null)
+            return _intelligentSearchResults.OfType<LiteMusicTrackDto>().ToList();
+
+        if (_selectedMediaType != MediaType.MusicTrack || _totalCount == 0)
+            return [];
+
+        var tracks = new List<LiteMusicTrackDto>(_totalCount);
+        var totalPages = (_totalCount + PageSize - 1) / PageSize;
+
+        for (var page = 1; page <= totalPages; page++)
+        {
+            var result = await k7ServerService.QueryMediasAsync(BuildQuery(page, PageSize), cancellationToken);
+            if (result?.Items is null)
+                break;
+
+            tracks.AddRange(result.Items.OfType<LiteMusicTrackDto>().Where(t => t.IndexedFileId.HasValue));
+        }
+
+        return tracks;
     }
 
     private async Task OnMediaTypeFilterChanged(MediaType value)
@@ -255,6 +394,8 @@ public partial class LibraryGroup : IDisposable
 
         _selectedMediaType = value;
         _filter = MediaBrowseFilterPresets.Empty;
+        _intelligentSearch = null;
+        _intelligentSearchResults = [];
         await LoadTagsAsync();
         await RefreshAllAsync();
     }

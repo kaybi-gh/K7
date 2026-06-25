@@ -1,5 +1,6 @@
 @namespace K7.Clients.Shared.UI.Components
 @using K7.Clients.Shared.Helpers
+@using K7.Clients.Shared.Models
 @using K7.Shared.Extensions
 @using K7.Server.Domain.Enums
 @inject IStringLocalizer<LibraryBrowseFilters> L
@@ -111,6 +112,36 @@
                         }
                     </div>
                     break;
+                case QuickFilterSubmenu.SonicSearch:
+                    <div class="library-browse-filters__section-label">@L["FilterSonicSearch"]</div>
+                    <p class="library-browse-filters__hint text-caption">@L["SonicSearchHint"]</p>
+                    <div class="library-browse-filters__search">
+                        <K7TextField @bind-Value="_intelligentSearchDraft"
+                                     Placeholder="@L["SonicSearchPlaceholder"]"
+                                     Variant="outlined" />
+                        <K7Button Class="mt-2"
+                                    Variant="K7ButtonVariant.Filled"
+                                    Disabled="string.IsNullOrWhiteSpace(_intelligentSearchDraft)"
+                                    OnClick="() => ApplyIntelligentSearchAsync(IntelligentSearchKind.Sonic)">
+                            @L["ApplySearch"]
+                        </K7Button>
+                    </div>
+                    break;
+                case QuickFilterSubmenu.LyricsSearch:
+                    <div class="library-browse-filters__section-label">@L["FilterLyricsSearch"]</div>
+                    <p class="library-browse-filters__hint text-caption">@L["LyricsSearchHint"]</p>
+                    <div class="library-browse-filters__search">
+                        <K7TextField @bind-Value="_intelligentSearchDraft"
+                                     Placeholder="@L["LyricsSearchPlaceholder"]"
+                                     Variant="outlined" />
+                        <K7Button Class="mt-2"
+                                    Variant="K7ButtonVariant.Filled"
+                                    Disabled="string.IsNullOrWhiteSpace(_intelligentSearchDraft)"
+                                    OnClick="() => ApplyIntelligentSearchAsync(IntelligentSearchKind.Lyrics)">
+                            @L["ApplySearch"]
+                        </K7Button>
+                    </div>
+                    break;
             }
         }
         else
@@ -191,6 +222,21 @@
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.Genres)">
                         <span class="library-browse-filters__option-label">@GetGenresMenuLabel()</span>
+                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                }
+                @if (ShowIntelligentSearchFilters)
+                {
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.SonicSearch)">
+                        <span class="library-browse-filters__option-label">@L["FilterSonicSearch"]</span>
+                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                    </button>
+                    <button type="button"
+                            class="library-browse-filters__option focusable"
+                            @onclick="() => OpenSubmenu(QuickFilterSubmenu.LyricsSearch)">
+                        <span class="library-browse-filters__option-label">@L["FilterLyricsSearch"]</span>
                         <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
                     </button>
                 }

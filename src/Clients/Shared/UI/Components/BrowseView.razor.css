@@ -105,6 +105,11 @@
     max-width: 100%;
 }
 
+.library-group-browse ::deep .browse-view-toolbar-start > .library-toolbar-playback {
+    flex-shrink: 0;
+    height: 40px;
+}
+
 .library-group-browse ::deep .browse-view-toolbar-actions {
     height: 40px;
 }

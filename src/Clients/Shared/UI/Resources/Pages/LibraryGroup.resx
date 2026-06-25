@@ -41,5 +41,7 @@
   <data name="MediaTypeFilter" xml:space="preserve"><value>Type de média</value></data>
   <data name="AllGenres" xml:space="preserve"><value>Tous les genres</value></data>
   <data name="GenreFilterOption" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="IntelligentSearchNoResults" xml:space="preserve"><value>Aucun r&#233;sultat pour cette recherche dans ce groupe.</value></data>
+  <data name="IntelligentSearchError" xml:space="preserve"><value>La recherche intelligente a &#233;chou&#233;.</value></data>
 </root>
 
