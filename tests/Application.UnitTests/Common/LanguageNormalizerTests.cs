@@ -255,4 +255,43 @@ public class LanguageNormalizerTests
     {
         LanguageNormalizer.NormalizeToIso6391(input).Should().Be(expected);
     }
+
+    [TestCase("Français Complets (Colors)", "fr")]
+    [TestCase("English Full Subtitles", "en")]
+    [TestCase("English (SDH)", "en")]
+    [TestCase("VFF Forced", "fr")]
+    [TestCase("Forced - Français", "fr")]
+    [TestCase("Complets en Français", "fr")]
+    public void InferFromTrackTitle_ShouldInferLanguage_WhenTitleContainsHint(string title, string expected)
+    {
+        LanguageNormalizer.InferFromTrackTitle(title).Should().Be(expected);
+    }
+
+    [TestCase(null)]
+    [TestCase("")]
+    [TestCase("SDH")]
+    [TestCase("Forced")]
+    [TestCase("Complets (Colors)")]
+    public void InferFromTrackTitle_ShouldReturnNull_WhenTitleHasNoLanguageHint(string? title)
+    {
+        LanguageNormalizer.InferFromTrackTitle(title).Should().BeNull();
+    }
+
+    [Test]
+    public void ResolveSubtitleLanguage_ShouldInferFromTitle_WhenContainerLanguageMissing()
+    {
+        LanguageNormalizer.ResolveSubtitleLanguage(null, "Français Complets (Colors)").Should().Be("fr");
+    }
+
+    [Test]
+    public void ResolveSubtitleLanguage_ShouldKeepContainerLanguage_WhenPresent()
+    {
+        LanguageNormalizer.ResolveSubtitleLanguage("eng", "Français Complets (Colors)").Should().Be("en");
+    }
+
+    [Test]
+    public void ResolveSubtitleLanguage_ShouldInferFromTitle_WhenContainerLanguageUndetermined()
+    {
+        LanguageNormalizer.ResolveSubtitleLanguage("und", "English (SDH)").Should().Be("en");
+    }
 }
