@@ -41,6 +41,8 @@
   <data name="Direct" xml:space="preserve"><value>Direct</value></data>
   <data name="Library" xml:space="preserve"><value>Library</value></data>
   <data name="Transcode" xml:space="preserve"><value>Transcode</value></data>
+  <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
+  <data name="SubtitlesOff" xml:space="preserve"><value>Off</value></data>
   <data name="StoppedAt" xml:space="preserve"><value>Stopped</value></data>
   <data name="Resolution" xml:space="preserve"><value>Resolution</value></data>
   <data name="VideoCodec" xml:space="preserve"><value>Video codec</value></data>

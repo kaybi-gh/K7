@@ -158,6 +158,14 @@
     color: var(--color-text-primary);
 }
 
+::deep .stream-card__track-title {
+    color: var(--color-text-secondary);
+    max-width: 5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 ::deep .stream-card__track-arrow {
     color: var(--color-text-secondary);
     opacity: 0.5;

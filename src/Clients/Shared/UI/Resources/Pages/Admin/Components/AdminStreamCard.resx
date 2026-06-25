@@ -21,6 +21,9 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="Video" xml:space="preserve"><value>Video</value></data>
   <data name="Audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="Subtitles" xml:space="preserve"><value>Sous-titres</value></data>
+  <data name="BurnIn" xml:space="preserve"><value>Incrustation</value></data>
+  <data name="Sidecar" xml:space="preserve"><value>Sidecar</value></data>
   <data name="Arrow" xml:space="preserve"><value>-></value></data>
   <data name="Paused" xml:space="preserve"><value>En pause</value></data>
   <data name="Buffering" xml:space="preserve"><value>Chargement</value></data>

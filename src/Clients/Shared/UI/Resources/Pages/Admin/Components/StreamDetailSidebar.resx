@@ -45,4 +45,5 @@
   <data name="Reason" xml:space="preserve"><value>Raison</value></data>
   <data name="Bitrate" xml:space="preserve"><value>Débit</value></data>
   <data name="NoStreamData" xml:space="preserve"><value>Aucune donnée de flux</value></data>
+  <data name="BurnIn" xml:space="preserve"><value>Incrustation</value></data>
 </root>

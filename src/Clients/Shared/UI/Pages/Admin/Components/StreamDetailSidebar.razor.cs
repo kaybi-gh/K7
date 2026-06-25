@@ -72,4 +72,5 @@ public sealed record StreamDetailModel
     public string? AudioChannelLayout { get; init; }
     public string? SubtitleTrackLanguage { get; init; }
     public string? SubtitleTrackTitle { get; init; }
+    public bool IsSubtitleBurnIn { get; init; }
 }

@@ -45,4 +45,5 @@
   <data name="Reason" xml:space="preserve"><value>Reason</value></data>
   <data name="Bitrate" xml:space="preserve"><value>Bitrate</value></data>
   <data name="NoStreamData" xml:space="preserve"><value>No stream data</value></data>
+  <data name="BurnIn" xml:space="preserve"><value>Burn-in</value></data>
 </root>

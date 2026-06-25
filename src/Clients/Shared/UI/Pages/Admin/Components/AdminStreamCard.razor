@@ -76,6 +76,30 @@
                         </span>
                     </div>
                 }
+                @if (HasSubtitleTrack)
+                {
+                    var subLang = decision.SubtitleTrackLanguage is not null
+                        ? K7.Shared.SupportedLanguages.FindByCode(decision.SubtitleTrackLanguage)
+                        : null;
+                    <div class="stream-card__track-row">
+                        <span class="stream-card__track-label">@L["Subtitles"]</span>
+                        @if (subLang is not null)
+                        {
+                            <span class="fi fi-@subLang.CountryCode stream-card__track-flag"></span>
+                        }
+                        @if (decision.SubtitleTrackTitle is { } subTitle)
+                        {
+                            <span class="stream-card__track-title">@subTitle</span>
+                        }
+                        @if (decision.SubtitleCodec is { } subCodec)
+                        {
+                            <span class="stream-card__track-codec">@subCodec.ToUpperInvariant()</span>
+                        }
+                        <span class="stream-card__track-decision @(IsSubtitleBurnIn ? "stream-card__track-decision--transcode" : "stream-card__track-decision--direct")">
+                            @(IsSubtitleBurnIn ? L["BurnIn"] : L["Sidecar"])
+                        </span>
+                    </div>
+                }
                 @if (decision.Reason != K7.Server.Domain.Enums.TranscodeReason.None)
                 {
                     <span class="stream-card__reason">@FormatReason(decision.Reason)</span>
