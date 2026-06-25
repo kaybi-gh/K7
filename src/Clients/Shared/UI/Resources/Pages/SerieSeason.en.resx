@@ -34,4 +34,5 @@
   <data name="ChooseSeason" xml:space="preserve"><value>Choose season</value></data>
   <data name="MarkSeasonWatched" xml:space="preserve"><value>Mark season as watched</value></data>
   <data name="MarkSeasonUnwatched" xml:space="preserve"><value>Mark season as unwatched</value></data>
+  <data name="CastingAndCrew" xml:space="preserve"><value>Cast and crew</value></data>
 </root>

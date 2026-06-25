@@ -25,13 +25,14 @@
   <data name="PreviousSeason" xml:space="preserve"><value>Saison précédente</value></data>
   <data name="NextSeason" xml:space="preserve"><value>Saison suivante</value></data>
   <data name="BackToSerie" xml:space="preserve"><value>Retour à la série</value></data>
-  <data name="EpisodeLabel" xml:space="preserve"><value>Saison {0} - Episode {1}</value></data>
-  <data name="EpisodeList" xml:space="preserve"><value>Liste des episodes</value></data>
-  <data name="EpisodeNumber" xml:space="preserve"><value>Episode {0}</value></data>
+  <data name="EpisodeLabel" xml:space="preserve"><value>Saison {0} - &#201;pisode {1}</value></data>
+  <data name="EpisodeList" xml:space="preserve"><value>Liste des &#233;pisodes</value></data>
+  <data name="EpisodeNumber" xml:space="preserve"><value>&#201;pisode {0}</value></data>
   <data name="Overview" xml:space="preserve"><value>Synopsis</value></data>
   <data name="DetectIntrosOutros" xml:space="preserve"><value>Détecter les intros/outros</value></data>
   <data name="EditMetadata" xml:space="preserve"><value>Modifier les métadonnées</value></data>
   <data name="ChooseSeason" xml:space="preserve"><value>Choisir une saison</value></data>
   <data name="MarkSeasonWatched" xml:space="preserve"><value>Marquer la saison comme vue</value></data>
   <data name="MarkSeasonUnwatched" xml:space="preserve"><value>Marquer la saison comme non vue</value></data>
+  <data name="CastingAndCrew" xml:space="preserve"><value>Casting et &#233;quipe</value></data>
 </root>
