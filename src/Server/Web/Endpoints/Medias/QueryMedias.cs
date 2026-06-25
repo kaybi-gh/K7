@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
@@ -25,6 +26,7 @@ public class QueryMedias : IEndpoint
             HttpContext httpContext,
             [FromServices] ISender sender,
             [FromServices] IMediaQueryCacheInvalidator cacheInvalidator,
+            [FromServices] LiteMediaProjectionService liteMediaProjection,
             [FromBody] QueryMediasRequest request,
             CancellationToken cancellationToken) =>
         {
@@ -34,7 +36,8 @@ public class QueryMedias : IEndpoint
                 return Results.StatusCode(StatusCodes.Status304NotModified);
 
             var mediasPage = await sender.Send(new QueryMediasQuery(request), cancellationToken);
-            var result = mediasPage.ToDto(m => m.ToLiteMediaDto());
+            var serieSeasonCounts = await liteMediaProjection.GetSerieSeasonCountsAsync(mediasPage.Items, cancellationToken);
+            var result = mediasPage.ToDto(m => m.ToLiteMediaDto(serieSeasonCounts));
 
             httpContext.Response.Headers[HeaderNames.ETag] = etag;
             return Results.Ok(result);

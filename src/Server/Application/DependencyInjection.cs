@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using K7.Server.Application.Common.Behaviours;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Features.Notifications.EventHandlers;
 using K7.Server.Application.Features.Notifications.Services;
@@ -34,6 +35,7 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromMinutes(5);
         }).ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear());
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+        services.AddScoped<LiteMediaProjectionService>();
 
         services.AddMediatR(cfg =>
         {

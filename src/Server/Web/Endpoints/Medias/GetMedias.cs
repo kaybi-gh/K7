@@ -1,5 +1,6 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
@@ -21,15 +22,18 @@ public class GetMedias : IEndpoint
             HttpContext httpContext,
             [FromServices] ISender sender,
             [FromServices] IMediaQueryCacheInvalidator cacheInvalidator,
-            [AsParameters] GetMediasWithPaginationQuery query) =>
+            [FromServices] LiteMediaProjectionService liteMediaProjection,
+            [AsParameters] GetMediasWithPaginationQuery query,
+            CancellationToken cancellationToken) =>
         {
             var etag = $"\"{cacheInvalidator.Version}\"";
 
             if (httpContext.Request.Headers.IfNoneMatch == etag)
                 return Results.StatusCode(StatusCodes.Status304NotModified);
 
-            var mediasPage = await sender.Send(query);
-            var result = mediasPage.ToDto(m => m.ToLiteMediaDto());
+            var mediasPage = await sender.Send(query, cancellationToken);
+            var serieSeasonCounts = await liteMediaProjection.GetSerieSeasonCountsAsync(mediasPage.Items, cancellationToken);
+            var result = mediasPage.ToDto(m => m.ToLiteMediaDto(serieSeasonCounts));
 
             httpContext.Response.Headers[HeaderNames.ETag] = etag;
             httpContext.Response.Headers["Accept-Query"] = "application/json";

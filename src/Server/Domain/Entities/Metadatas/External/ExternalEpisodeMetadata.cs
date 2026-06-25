@@ -1,3 +1,4 @@
+using K7.Server.Domain.Entities.Metadatas.PersonRoles;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Domain.Entities.Metadatas.External;
@@ -14,4 +15,5 @@ public class ExternalEpisodeMetadata : IExternalMetadata
     public string? StillImageUrl { get; init; }
 
     public IList<ExternalId> ExternalIds { get; init; } = [];
+    public IList<BasePersonRole> PersonRoles { get; init; } = [];
 }
