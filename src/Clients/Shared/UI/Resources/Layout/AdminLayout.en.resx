@@ -23,10 +23,12 @@
   <data name="Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="GroupContent" xml:space="preserve"><value>Content</value></data>
   <data name="GroupAccess" xml:space="preserve"><value>Access</value></data>
+  <data name="GroupMembers" xml:space="preserve"><value>Members</value></data>
   <data name="GroupExperience" xml:space="preserve"><value>Default experience</value></data>
   <data name="GroupActivity" xml:space="preserve"><value>Activity</value></data>
   <data name="GroupSystem" xml:space="preserve"><value>Health</value></data>
   <data name="GroupFeatures" xml:space="preserve"><value>Advanced</value></data>
+  <data name="GroupIntegrations" xml:space="preserve"><value>Integrations</value></data>
   <data name="General" xml:space="preserve"><value>General</value></data>
   <data name="Libraries" xml:space="preserve"><value>Libraries</value></data>
   <data name="LibraryGroups" xml:space="preserve"><value>Library groups</value></data>
