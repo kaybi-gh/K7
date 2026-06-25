@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class SerieSeason
+public partial class SerieSeason : IAsyncDisposable
 {
     [Parameter]
     public required string SerieId { get; set; }
@@ -38,6 +38,8 @@ public partial class SerieSeason
     private string? _focusedStillUrl;
     private string? _previousStillUrl;
     private Carousel? _tvCarousel;
+    private ElementReference _seasonTvRoot;
+    private bool _seasonTvScrollInitialized;
     private bool _isFederated;
     private readonly Dictionary<Guid, IReadOnlyList<LitePersonRoleDto>> _episodeCastCache = [];
     private IReadOnlyList<PersonRoleDisplayHelper.GroupedDisplay> _focusedEpisodeDisplayableCast = [];
@@ -51,6 +53,7 @@ public partial class SerieSeason
         _focusEpisodeFragment = null;
         _focusedEpisodeDisplayableCast = [];
         _castLoadEpisodeId = null;
+        _seasonTvScrollInitialized = false;
         _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         var serieMedia = await k7ServerService.GetMediaAsync(Guid.Parse(SerieId));
@@ -125,6 +128,19 @@ public partial class SerieSeason
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_isTv && _season is not null && !_loading)
+        {
+            if (!_seasonTvScrollInitialized)
+            {
+                await JSRuntime.InvokeVoidAsync("K7.SeasonTv.init", _seasonTvRoot);
+                _seasonTvScrollInitialized = true;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("K7.SeasonTv.sync");
+            }
+        }
+
         if (_focusEpisodeFragment is not null)
         {
             var elementId = _focusEpisodeFragment.TrimStart('#');
@@ -175,8 +191,6 @@ public partial class SerieSeason
         _focusedEpisode = episode;
         _previousStillUrl = _focusedStillUrl;
         _focusedStillUrl = GetEpisodeStillUrl(episode, MetadataPictureSize.Medium);
-        var baseUri = NavigationManager.Uri.Split('#')[0];
-        NavigationManager.NavigateTo($"{baseUri}#ep-{episode.EpisodeNumber}", replace: true);
 
         if (_episodeCastCache.TryGetValue(episode.Id, out var cached))
             ApplyFocusedEpisodeCast(cached);
@@ -450,5 +464,11 @@ public partial class SerieSeason
                 .ToList();
             StateHasChanged();
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_seasonTvScrollInitialized)
+            await JSRuntime.InvokeVoidAsync("K7.SeasonTv.dispose");
     }
 }

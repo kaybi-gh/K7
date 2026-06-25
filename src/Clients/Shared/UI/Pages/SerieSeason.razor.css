@@ -148,8 +148,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    --tv-carousel-gutter: 12px;
-    --carousel-margin-start: 32px;
+    --carousel-margin-start: 40px;
 }
 
 .season-tv--scrollable {
@@ -187,7 +186,6 @@
     position: relative;
     z-index: 1;
     flex-shrink: 0;
-    margin-left: var(--tv-carousel-gutter);
     padding-bottom: var(--space-6);
 }
 
@@ -210,6 +208,16 @@
 
 .tv-backdrop--next {
     animation: backdrop-fade-in 0.5s ease forwards;
+}
+
+.tv-hero-gradient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(to right, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%),
+        linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 30%, transparent 60%);
 }
 
 @keyframes backdrop-fade-in {
@@ -272,6 +280,7 @@
 .tv-episode-label {
     color: var(--color-text-muted);
     font-weight: 500;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 .tv-episode-title {
@@ -286,6 +295,7 @@
 
 .tv-episode-date {
     color: var(--color-text-muted);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 .tv-episode-info {
@@ -299,6 +309,7 @@
 
 .tv-episode-overview {
     color: var(--color-text-secondary);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
@@ -331,10 +342,14 @@
     position: relative;
     flex-shrink: 0;
     padding-bottom: 32px;
-    margin-left: var(--tv-carousel-gutter);
 }
 
 .tv-season-title {
-    margin-left: var(--carousel-margin-start);
-    margin-bottom: 4px;
+    margin: 0 0 4px;
+    padding-inline-start: var(--carousel-margin-start);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.season-tv ::deep .carousel-wrapper h6 {
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
 }

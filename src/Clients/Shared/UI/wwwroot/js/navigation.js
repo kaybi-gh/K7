@@ -713,6 +713,9 @@ var SpatialNav = (function () {
                 e.stopPropagation();
                 return;
             }
+            if ((key === 'ArrowDown' || key === 'ArrowUp') && window.K7 && window.K7.SeasonTv) {
+                window.K7.SeasonTv.handleVerticalNav(key, el);
+            }
             // When an activatable element is in editing mode, let the event through
             if (el && isActivatable(el) && isEditing(el)) {
                 if (window.SpatialNavigation) SpatialNavigation.pause();
@@ -817,6 +820,12 @@ var SpatialNav = (function () {
             }
             if (!_carouselNavHandled) {
                 scrollCarouselToElement(el);
+            }
+            if (el.closest('[data-season-tv]') && !el.closest('[data-season-tv-zone="cast"]')) {
+                if (window.K7 && window.K7.SeasonTv) {
+                    window.K7.SeasonTv.clampMainView();
+                }
+                return;
             }
             if (!el.closest('[data-carousel-item]')) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
@@ -1567,6 +1576,98 @@ K7.positionSelectDropdown = function (button, dropdown) {
     dropdown.style.width = width + 'px';
     dropdown.style.minWidth = rect.width + 'px';
 };
+
+K7.SeasonTv = (function () {
+    var _root = null;
+    var _showingCast = false;
+    var _onFocus = null;
+
+    function getZones() {
+        if (!_root) return {};
+        return {
+            main: _root.querySelector('[data-season-tv-zone="main"]'),
+            episodes: _root.querySelector('[data-season-tv-zone="episodes"]'),
+            cast: _root.querySelector('[data-season-tv-zone="cast"]')
+        };
+    }
+
+    function isInEpisodeCarousel(el) {
+        if (!el || !el.closest) return false;
+        var zones = getZones();
+        return !!(zones.episodes && zones.episodes.contains(el) && el.closest('[data-carousel]'));
+    }
+
+    function isInCastCarousel(el) {
+        if (!el || !el.closest) return false;
+        var zones = getZones();
+        return !!(zones.cast && zones.cast.contains(el) && el.closest('[data-carousel]'));
+    }
+
+    function scrollToMain(instant) {
+        if (!_root) return;
+        _showingCast = false;
+        _root.scrollTo({ top: 0, behavior: instant ? 'instant' : 'smooth' });
+    }
+
+    function scrollToCast() {
+        if (!_root) return;
+        var zones = getZones();
+        if (!zones.main || !zones.cast) return;
+        _showingCast = true;
+        _root.scrollTo({ top: zones.main.offsetHeight, behavior: 'smooth' });
+    }
+
+    function onFocusIn(e) {
+        if (!_root || !_root.contains(e.target)) return;
+        if (isInEpisodeCarousel(e.target) && !_showingCast) {
+            clampMainView();
+        }
+    }
+
+    return {
+        init: function (root) {
+            K7.SeasonTv.dispose();
+            if (!root) return;
+            _root = root;
+            _showingCast = false;
+            _root.scrollTop = 0;
+            _onFocus = onFocusIn;
+            _root.addEventListener('focusin', _onFocus, true);
+        },
+        dispose: function () {
+            if (_root && _onFocus) {
+                _root.removeEventListener('focusin', _onFocus, true);
+            }
+            _root = null;
+            _showingCast = false;
+            _onFocus = null;
+        },
+        sync: function () {
+            if (!_showingCast && _root) {
+                _root.scrollTop = 0;
+            }
+        },
+        clampMainView: function () {
+            if (!_root || _showingCast) return;
+            if (_root.scrollTop !== 0) {
+                _root.scrollTop = 0;
+            }
+        },
+        handleVerticalNav: function (key, el) {
+            if (!_root || !el) return;
+            var zones = getZones();
+            if (!zones.cast) return;
+
+            if (key === 'ArrowDown' && isInEpisodeCarousel(el)) {
+                scrollToCast();
+            } else if (key === 'ArrowUp' && isInCastCarousel(el)) {
+                scrollToMain(false);
+            }
+        },
+        scrollToMain: function () { scrollToMain(false); },
+        scrollToCast: scrollToCast
+    };
+})();
 
 K7.scrollToElement = function (id) {
     var el = document.getElementById(id);
