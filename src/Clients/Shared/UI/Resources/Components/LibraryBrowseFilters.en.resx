@@ -47,4 +47,13 @@
   <data name="SearchPlaceholderArtist" xml:space="preserve"><value>Search for an artist...</value></data>
   <data name="BooleanTrue" xml:space="preserve"><value>Yes</value></data>
   <data name="BooleanFalse" xml:space="preserve"><value>No</value></data>
+  <data name="FilterSonicSearch" xml:space="preserve"><value>Sonic search</value></data>
+  <data name="FilterLyricsSearch" xml:space="preserve"><value>Lyrics search</value></data>
+  <data name="FilterSonicSearchActive" xml:space="preserve"><value>Sound: {0}</value></data>
+  <data name="FilterLyricsSearchActive" xml:space="preserve"><value>Lyrics: {0}</value></data>
+  <data name="SonicSearchHint" xml:space="preserve"><value>English recommended (genre, instruments, mood).</value></data>
+  <data name="LyricsSearchHint" xml:space="preserve"><value>Theme or lyric snippet, any language.</value></data>
+  <data name="SonicSearchPlaceholder" xml:space="preserve"><value>calm piano, upbeat indie pop...</value></data>
+  <data name="LyricsSearchPlaceholder" xml:space="preserve"><value>lost love, dancing in the rain...</value></data>
+  <data name="ApplySearch" xml:space="preserve"><value>Search</value></data>
 </root>

@@ -4,6 +4,28 @@
     gap: 12px;
 }
 
+.library-toolbar-playback {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.library-toolbar-playback ::deep .library-toolbar-playback__btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+}
+
+.library-toolbar-playback ::deep .library-toolbar-playback__btn:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    filter: none;
+}
+
 .library-table-stars {
     display: flex;
     align-items: center;

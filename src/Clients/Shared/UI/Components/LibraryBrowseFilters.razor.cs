@@ -17,12 +17,15 @@ public partial class LibraryBrowseFilters
     [Inject] private IStringLocalizer<LibraryGroup> LibraryGroupL { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
+    [Inject] private IServerPreferencesService ServerPreferences { get; set; } = default!;
 
     [Parameter] public MediaTagsDto? Tags { get; set; }
     [Parameter] public Guid[]? LibraryIds { get; set; }
     [Parameter] public Guid[]? LibraryGroupIds { get; set; }
     [Parameter] public RuleGroupDto Filter { get; set; } = MediaBrowseFilterPresets.Empty;
     [Parameter] public EventCallback<RuleGroupDto> FilterChanged { get; set; }
+    [Parameter] public IntelligentSearchRequest? ActiveIntelligentSearch { get; set; }
+    [Parameter] public EventCallback<IntelligentSearchRequest?> IntelligentSearchChanged { get; set; }
     [Parameter] public MediaType MediaType { get; set; }
     [Parameter] public bool ShowWatchFilters { get; set; }
     [Parameter] public string Class { get; set; } = string.Empty;
@@ -30,10 +33,12 @@ public partial class LibraryBrowseFilters
     [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
 
     private bool _menuOpen;
+    private bool _musicIntelligenceAvailable;
     private QuickFilterSubmenu _submenu = QuickFilterSubmenu.None;
     private string? _actorDraft;
     private string? _studioDraft;
     private string? _artistDraft;
+    private string _intelligentSearchDraft = string.Empty;
 
     private IReadOnlySet<string> SelectedGenres => MediaBrowseFilterPresets.GetSelectedGenres(Filter);
 
@@ -45,7 +50,25 @@ public partial class LibraryBrowseFilters
 
     private string? SelectedArtist => MediaBrowseFilterPresets.GetSearchFieldValue(Filter, nameof(SmartPlaylistField.ArtistName));
 
-    private bool HasActiveFilters => !MediaBrowseFilterPresets.IsEmpty(Filter);
+    private bool HasActiveFilters =>
+        !MediaBrowseFilterPresets.IsEmpty(Filter) || ActiveIntelligentSearch is not null;
+
+    private bool ShowIntelligentSearchFilters =>
+        _musicIntelligenceAvailable
+        && MediaType is MediaType.MusicTrack or MediaType.MusicAlbum or MediaType.MusicArtist;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var status = await ServerPreferences.GetMusicIntelligenceStatusAsync();
+            _musicIntelligenceAvailable = status.IsAvailable;
+        }
+        catch
+        {
+            _musicIntelligenceAvailable = false;
+        }
+    }
 
     private bool ShowVideoMetadataQuickFilters =>
         MediaType is MediaType.Movie or MediaType.Serie or MediaType.SerieSeason or MediaType.SerieEpisode;
@@ -87,6 +110,13 @@ public partial class LibraryBrowseFilters
 
             if (Filter.Items.Count > 0)
                 return L["AdvancedFilters"];
+
+            if (ActiveIntelligentSearch is { } intelligentSearch)
+            {
+                return intelligentSearch.Kind == IntelligentSearchKind.Sonic
+                    ? string.Format(L["FilterSonicSearchActive"], intelligentSearch.Query)
+                    : string.Format(L["FilterLyricsSearchActive"], intelligentSearch.Query);
+            }
 
             return L["Filters"];
         }
@@ -153,6 +183,8 @@ public partial class LibraryBrowseFilters
             _studioDraft = SelectedStudio;
         else if (submenu == QuickFilterSubmenu.Artist)
             _artistDraft = SelectedArtist;
+        else if (submenu is QuickFilterSubmenu.SonicSearch or QuickFilterSubmenu.LyricsSearch)
+            _intelligentSearchDraft = ActiveIntelligentSearch?.Query ?? string.Empty;
     }
 
     private async Task SetPresetAsync(RuleGroupDto preset)
@@ -196,7 +228,22 @@ public partial class LibraryBrowseFilters
         if (!HasActiveFilters)
             return;
 
-        await FilterChanged.InvokeAsync(MediaBrowseFilterPresets.Empty);
+        if (ActiveIntelligentSearch is not null)
+            await IntelligentSearchChanged.InvokeAsync(null);
+
+        if (!MediaBrowseFilterPresets.IsEmpty(Filter))
+            await FilterChanged.InvokeAsync(MediaBrowseFilterPresets.Empty);
+    }
+
+    private async Task ApplyIntelligentSearchAsync(IntelligentSearchKind kind)
+    {
+        var query = _intelligentSearchDraft.Trim();
+        if (string.IsNullOrWhiteSpace(query))
+            return;
+
+        await IntelligentSearchChanged.InvokeAsync(new IntelligentSearchRequest(kind, query));
+        _menuOpen = false;
+        _submenu = QuickFilterSubmenu.None;
     }
 
     private async Task OpenAdvancedFiltersAsync()
@@ -244,6 +291,8 @@ public partial class LibraryBrowseFilters
         Artist,
         Studio,
         ContentRating,
-        Genres
+        Genres,
+        SonicSearch,
+        LyricsSearch
     }
 }

@@ -13,7 +13,7 @@
 
 <BrowseView TItem="LiteMediaDto"
             ItemsProvider="ProvideMediasAsync"
-            Loading="_loading"
+            Loading="_loading || _intelligentSearchLoading"
             @ref="_browseView"
             PersistenceKey="@($"library-{Id}")"
             DefaultItemWidth="160"
@@ -43,8 +43,25 @@
                                LibraryGroupIds="_libraryGroupIds"
                                Filter="_filter"
                                FilterChanged="OnFilterChanged"
+                               ActiveIntelligentSearch="_intelligentSearch"
+                               IntelligentSearchChanged="OnIntelligentSearchChanged"
                                MediaType="_selectedMediaType"
                                ShowWatchFilters="_showWatchFilters" />
+        @if (_showMusicPlaybackActions)
+        {
+            <div class="library-toolbar-playback">
+                <K7IconButton Icon="@Phosphor.Play"
+                              Class="library-toolbar-playback__btn"
+                              Disabled="!_canPlayMusic"
+                              OnClick="PlayAllAsync"
+                              AriaLabel="@S["PlayAll"]" />
+                <K7IconButton Icon="@Phosphor.Shuffle"
+                              Class="library-toolbar-playback__btn"
+                              Disabled="!_canPlayMusic"
+                              OnClick="ShuffleAllAsync"
+                              AriaLabel="@S["Shuffle"]" />
+            </div>
+        }
         <span class="library-toolbar-count">@string.Format(L["ItemCount"], _totalCount)</span>
     </ToolbarContent>
     <GridTemplate Context="item">
