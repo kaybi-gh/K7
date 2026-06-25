@@ -6,6 +6,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Server.Domain.Events;
+using K7.Shared.Dtos;
 using K7.Shared.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -69,39 +70,10 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
             };
             _context.MediaPlaybackSessions.Add(session);
 
-            // Persist stream decision as PlaybackSessionDetails at session creation
             var streamInfo = _activeStreamTracker.GetStreamInfo(request.SessionId);
             if (streamInfo?.StreamDecision is { } sd)
             {
-                var videoIsTranscoded = sd.SourceVideoCodec is not null
-                    && sd.StreamVideoCodec is not null
-                    && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase);
-                var audioIsTranscoded = sd.SourceAudioCodec is not null
-                    && sd.StreamAudioCodec is not null
-                    && !string.Equals(sd.SourceAudioCodec, sd.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
-                var isTransmux = sd.Mode == PlaybackMode.Transmux;
-
-                var details = new PlaybackSessionDetails
-                {
-                    MediaPlaybackSessionId = session.Id,
-                    IsTranscode = videoIsTranscoded || audioIsTranscoded,
-                    VideoDecision = videoIsTranscoded ? "Transcode" : isTransmux ? "Transmux" : "Direct",
-                    AudioDecision = audioIsTranscoded ? "Transcode" : isTransmux ? "Transmux" : "Direct",
-                    TranscodeReason = sd.Reason != TranscodeReason.None ? sd.Reason : null,
-                    Bitrate = sd.Bitrate,
-                    SourceVideoCodec = sd.SourceVideoCodec,
-                    SourceAudioCodec = sd.SourceAudioCodec,
-                    SourceVideoWidth = ParseResolutionWidth(sd.SourceResolution),
-                    SourceVideoHeight = ParseResolutionHeight(sd.SourceResolution),
-                    StreamVideoCodec = sd.StreamVideoCodec,
-                    StreamAudioCodec = sd.StreamAudioCodec,
-                    AudioTrackLanguage = sd.AudioTrackLanguage,
-                    AudioTrackTitle = sd.AudioTrackTitle,
-                    AudioChannelLayout = sd.AudioChannelLayout,
-                    SubtitleTrackLanguage = sd.SubtitleTrackLanguage,
-                    SubtitleTrackTitle = sd.SubtitleTrackTitle
-                };
-                _context.PlaybackSessionDetails.Add(details);
+                session.Details = CreateDetailsFromStreamDecision(sd);
             }
         }
         else
@@ -123,6 +95,8 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
 
             session.LastUpdateAt = timeNow;
             session.State = request.State;
+
+            await SyncSessionDetailsFromStreamDecisionAsync(session, request.SessionId, cancellationToken);
         }
 
         session.PositionSeconds = request.Position;
@@ -342,6 +316,75 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
             _logger.LogWarning("Skipped SignalR notification: identityUserId is null/empty");
         }
     }
+
+    private async Task SyncSessionDetailsFromStreamDecisionAsync(
+        MediaPlaybackSession session,
+        Guid streamSessionId,
+        CancellationToken cancellationToken)
+    {
+        var streamInfo = _activeStreamTracker.GetStreamInfo(streamSessionId);
+        if (streamInfo?.StreamDecision is not { } sd)
+            return;
+
+        var details = session.Details
+            ?? await _context.PlaybackSessionDetails
+                .FirstOrDefaultAsync(d => d.MediaPlaybackSessionId == session.Id, cancellationToken);
+
+        if (details is null)
+        {
+            details = CreateDetailsFromStreamDecision(sd);
+            details.MediaPlaybackSessionId = session.Id;
+            _context.PlaybackSessionDetails.Add(details);
+            session.Details = details;
+            return;
+        }
+
+        ApplyStreamDecisionToDetails(details, sd);
+    }
+
+    private static PlaybackSessionDetails CreateDetailsFromStreamDecision(StreamDecisionDto sd)
+    {
+        var details = new PlaybackSessionDetails();
+        ApplyStreamDecisionToDetails(details, sd);
+        return details;
+    }
+
+    private static void ApplyStreamDecisionToDetails(PlaybackSessionDetails details, StreamDecisionDto sd)
+    {
+        var videoIsTranscoded = IsVideoTranscoded(sd);
+        var audioIsTranscoded = sd.SourceAudioCodec is not null
+            && sd.StreamAudioCodec is not null
+            && !string.Equals(sd.SourceAudioCodec, sd.StreamAudioCodec, StringComparison.OrdinalIgnoreCase);
+        var isTransmux = sd.Mode == PlaybackMode.Transmux;
+
+        details.IsTranscode = videoIsTranscoded || audioIsTranscoded;
+        details.VideoDecision = videoIsTranscoded ? "Transcode" : isTransmux ? "Transmux" : "Direct";
+        details.AudioDecision = audioIsTranscoded ? "Transcode" : isTransmux ? "Transmux" : "Direct";
+        details.TranscodeReason = sd.Reason != TranscodeReason.None ? sd.Reason : null;
+        details.Bitrate = sd.Bitrate;
+        details.SourceVideoCodec = sd.SourceVideoCodec;
+        details.SourceAudioCodec = sd.SourceAudioCodec;
+        details.SourceVideoWidth = ParseResolutionWidth(sd.SourceResolution);
+        details.SourceVideoHeight = ParseResolutionHeight(sd.SourceResolution);
+        details.StreamVideoCodec = sd.StreamVideoCodec;
+        details.StreamAudioCodec = sd.StreamAudioCodec;
+        details.AudioTrackLanguage = sd.AudioTrackLanguage;
+        details.AudioTrackTitle = sd.AudioTrackTitle;
+        details.AudioChannelLayout = sd.AudioChannelLayout;
+
+        if (sd.SubtitleTrackLanguage is not null || sd.SubtitleTrackTitle is not null)
+        {
+            details.SubtitleTrackLanguage = sd.SubtitleTrackLanguage ?? details.SubtitleTrackLanguage;
+            details.SubtitleTrackTitle = sd.SubtitleTrackTitle ?? details.SubtitleTrackTitle;
+        }
+    }
+
+    private static bool IsVideoTranscoded(StreamDecisionDto sd) =>
+        sd.IsSubtitleBurnIn
+        || sd.Reason.HasFlag(TranscodeReason.SubtitlesBurnIn)
+        || (sd.SourceVideoCodec is not null
+            && sd.StreamVideoCodec is not null
+            && !string.Equals(sd.SourceVideoCodec, sd.StreamVideoCodec, StringComparison.OrdinalIgnoreCase));
 
     private static int? ParseResolutionWidth(string? resolution)
     {

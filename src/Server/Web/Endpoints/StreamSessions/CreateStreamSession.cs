@@ -1,3 +1,4 @@
+using K7.Server.Application.Features.IndexedFiles.Queries.GetIndexedFilePlaybackTracks;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetStreamUri;
 using K7.Server.Application.Features.StreamSessions.Commands.CreateStreamSession;
 using K7.Server.Domain.Constants;
@@ -30,9 +31,15 @@ public class CreateStreamSession : IEndpoint
 
             var streamUri = await sender.Send(query, cancellationToken);
 
+            var playbackTracks = await sender.Send(
+                new GetIndexedFilePlaybackTracksQuery(command.IndexedFileId),
+                cancellationToken);
+
             session.Source = streamUri;
             session.PlaybackSettings.AudioTrackIndex = query.AudioTrackIndex ?? 0;
             session.PlaybackSettings.SubtitleTrackIndex = query.SubtitleTrackIndex;
+            session.AudioTracks = playbackTracks.AudioTracks;
+            session.SubtitleTracks = playbackTracks.SubtitleTracks;
 
             return Results.Created($"/api/stream-sessions/{session.Id}", session);
         })

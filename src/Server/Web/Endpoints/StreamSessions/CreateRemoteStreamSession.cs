@@ -119,7 +119,9 @@ public class CreateRemoteStreamSession : IEndpoint
                 State = localSession.State,
                 Position = localSession.Position,
                 PlaybackSettings = remoteSession.PlaybackSettings ?? new PlaybackSettingsDto(),
-                Source = localSource
+                Source = localSource,
+                AudioTracks = remoteSession.AudioTracks,
+                SubtitleTracks = remoteSession.SubtitleTracks
             };
 
             return Results.Created($"/api/remote-stream-sessions/{localSession.Id}", result);
