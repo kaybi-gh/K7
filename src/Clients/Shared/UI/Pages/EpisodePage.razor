@@ -141,18 +141,6 @@ else if (_episode is not null)
             }
         </div>
 
-        @if ((_episode.PersonRoles?.Count ?? 0) > 0)
-        {
-            <Carousel Title="@L["CastingAndCrew"]">
-                @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_episode.PersonRoles))
-                {
-                    <CarouselItem @key="cast.Key">
-                        <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
-                    </CarouselItem>
-                }
-            </Carousel>
-        }
-
         @if (_moreEpisodes.Count > 0)
         {
             <Carousel Title="@L["MoreEpisodes"]">
@@ -181,6 +169,18 @@ else if (_episode is not null)
                                    OnExcludeForSelf="() => ExcludeCarouselEpisodeForSelfAsync(episode)"
                                    OnExcludeForOthers="() => ExcludeCarouselEpisodeForOthersAsync(episode)"
                                    OnWatchStateChanged="ReloadMoreEpisodesAsync" />
+                    </CarouselItem>
+                }
+            </Carousel>
+        }
+
+        @if ((_episode.PersonRoles?.Count ?? 0) > 0)
+        {
+            <Carousel Title="@L["CastingAndCrew"]">
+                @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_episode.PersonRoles))
+                {
+                    <CarouselItem @key="cast.Key">
+                        <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
                     </CarouselItem>
                 }
             </Carousel>
