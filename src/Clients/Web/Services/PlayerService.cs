@@ -37,6 +37,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     public event Action<bool>? IsMutedChanged;
     public event Action<AudioFileTrackDto?>? AudioTrackChanged;
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
+    public event Action? SubtitleTracksChanged;
     public event Action<VideoQualityOption?>? QualityChanged;
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
 
@@ -209,11 +210,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     {
         _currentIndexedFileId = indexedFileId;
         _audioTracks = audioTracks.ToList();
-        _subtitleTracks = subtitleTracks
-            ?.Where(t => t.IsTextBased)
-            .OrderByDescending(t => t.IsDefault)
-            .ThenBy(t => t.Index)
-            .ToList() ?? [];
+        SetSubtitleTracks(subtitleTracks);
         _selectedSubtitleTrack = null;
         _selectedAudioTrack = audioTrackIndex is int idx
             ? _audioTracks.FirstOrDefault(t => t.Index == idx)
@@ -241,6 +238,10 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         // Update selected tracks based on server's auto-selection
         _selectedAudioTrack = _audioTracks.FirstOrDefault(t => t.Index == session.PlaybackSettings.AudioTrackIndex)
             ?? _selectedAudioTrack;
+
+        if (session.SubtitleTracks is { Count: > 0 })
+            SetSubtitleTracks(session.SubtitleTracks);
+
         _selectedSubtitleTrack = session.PlaybackSettings.SubtitleTrackIndex is int subIdx
             ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
             : null;
@@ -269,11 +270,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     {
         _currentIndexedFileId = null;
         _audioTracks = audioTracks.ToList();
-        _subtitleTracks = subtitleTracks
-            ?.Where(t => t.IsTextBased)
-            .OrderByDescending(t => t.IsDefault)
-            .ThenBy(t => t.Index)
-            .ToList() ?? [];
+        SetSubtitleTracks(subtitleTracks);
         _selectedSubtitleTrack = subtitleTrackIndex is int subIdx
             ? _subtitleTracks.FirstOrDefault(t => t.Index == subIdx)
             : null;
@@ -299,6 +296,9 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
             return;
         }
 
+        if (session.SubtitleTracks is { Count: > 0 })
+            SetSubtitleTracks(session.SubtitleTracks);
+
         _baseManifestUrl = session.Source.Uri.OriginalString;
 
         Source = new PlayerSource
@@ -316,14 +316,14 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         QualityChanged?.Invoke(_selectedQuality);
     }
 
-    public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto> tracks)
+    public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto>? tracks)
     {
-        _subtitleTracks = tracks
-            .Where(t => t.IsTextBased)
+        _subtitleTracks = tracks?
             .OrderByDescending(t => t.IsDefault)
             .ThenBy(t => t.Index)
-            .ToList();
+            .ToList() ?? [];
         _selectedSubtitleTrack = null;
+        SubtitleTracksChanged?.Invoke();
     }
 
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
@@ -357,8 +357,29 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
         _selectedSubtitleTrack = track;
         SubtitleTrackChanged?.Invoke(track);
 
-        var slug = track is not null ? BuildSubtitleTrackSlug(track) : null;
-        SwitchSubtitleTrackRequested?.Invoke(slug);
+        if (!RequiresManifestReloadForSubtitleChange(track))
+        {
+            var slug = track is not null ? BuildSubtitleTrackSlug(track) : null;
+            SwitchSubtitleTrackRequested?.Invoke(slug);
+            return Task.CompletedTask;
+        }
+
+        if (_baseManifestUrl is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var seekTime = CurrentTime;
+        var newUrl = BuildManifestUrlWithSubtitleSettings(_baseManifestUrl, track);
+        newUrl = BuildManifestUrlWithQuality(newUrl, _selectedQuality);
+        _baseManifestUrl = newUrl;
+
+        Source = new PlayerSource
+        {
+            Url = newUrl,
+            MimeType = "application/vnd.apple.mpegurl",
+            PendingSeekTime = seekTime > 0 ? seekTime : null
+        };
 
         return Task.CompletedTask;
     }
@@ -382,6 +403,7 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
 
         // Rebuild the manifest URL with the Quality parameter
         var newUrl = BuildManifestUrlWithQuality(_baseManifestUrl, quality);
+        newUrl = BuildManifestUrlWithSubtitleSettings(newUrl, _selectedSubtitleTrack);
 
         Source = new PlayerSource
         {
@@ -433,6 +455,38 @@ public class PlayerService(IStreamUriService streamUriService, IDeviceStorageSer
     }
 
     private static string BuildSubtitleTrackSlug(SubtitleFileTrackDto track) => $"sub-{track.Index}";
+
+    private bool RequiresManifestReloadForSubtitleChange(SubtitleFileTrackDto? track)
+    {
+        if (IsSubtitleBurnInActive())
+            return true;
+
+        return track is { IsTextBased: false };
+    }
+
+    private bool IsSubtitleBurnInActive() =>
+        Source?.Url?.Contains("SubtitleBurnInStreamIndex=", StringComparison.OrdinalIgnoreCase) == true
+        || _baseManifestUrl?.Contains("SubtitleBurnInStreamIndex=", StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>
+    /// Appends or replaces subtitle query parameters on the manifest URL.
+    /// Text tracks use HLS sidecar subtitles; bitmap tracks (PGS) use server-side burn-in.
+    /// </summary>
+    private static string BuildManifestUrlWithSubtitleSettings(string baseUrl, SubtitleFileTrackDto? track)
+    {
+        var url = baseUrl;
+        url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]DefaultSubtitleTrackIndex=[^&]*", "");
+        url = System.Text.RegularExpressions.Regex.Replace(url, @"[&?]SubtitleBurnInStreamIndex=[^&]*", "");
+
+        if (track is null)
+            return url;
+
+        var separator = url.Contains('?') ? "&" : "?";
+        if (track.IsTextBased)
+            return $"{url}{separator}DefaultSubtitleTrackIndex={track.Index}";
+
+        return $"{url}{separator}SubtitleBurnInStreamIndex={track.Index}";
+    }
 
     /// <summary>
     /// Appends or replaces the Quality query parameter on the manifest URL.

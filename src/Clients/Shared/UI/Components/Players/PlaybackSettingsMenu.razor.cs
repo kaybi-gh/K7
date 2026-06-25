@@ -82,13 +82,17 @@ public partial class PlaybackSettingsMenu : IDisposable
         PlayerService.PlaybackRateChanged += OnPlaybackRateChanged;
         PlayerService.AudioTrackChanged += OnAudioTrackChanged;
         PlayerService.SubtitleTrackChanged += OnSubtitleTrackChanged;
+        PlayerService.SubtitleTracksChanged += OnSubtitleTracksChanged;
         PlayerService.QualityChanged += OnQualityChanged;
         PlayerService.AspectRatioModeChanged += OnAspectRatioModeChanged;
+        PlayerService.IsVisibleChanged += OnPlayerVisibilityChanged;
     }
 
     private void OnPlaybackRateChanged(double _) => InvokeAsync(StateHasChanged);
     private void OnAudioTrackChanged(AudioFileTrackDto? _) => InvokeAsync(StateHasChanged);
     private void OnSubtitleTrackChanged(SubtitleFileTrackDto? _) => InvokeAsync(StateHasChanged);
+    private void OnSubtitleTracksChanged() => InvokeAsync(StateHasChanged);
+    private void OnPlayerVisibilityChanged() => InvokeAsync(StateHasChanged);
     private void OnQualityChanged(VideoQualityOption? _) => InvokeAsync(StateHasChanged);
     private void OnAspectRatioModeChanged(AspectRatioMode _) => InvokeAsync(StateHasChanged);
 
@@ -265,7 +269,9 @@ public partial class PlaybackSettingsMenu : IDisposable
         PlayerService.PlaybackRateChanged -= OnPlaybackRateChanged;
         PlayerService.AudioTrackChanged -= OnAudioTrackChanged;
         PlayerService.SubtitleTrackChanged -= OnSubtitleTrackChanged;
+        PlayerService.SubtitleTracksChanged -= OnSubtitleTracksChanged;
         PlayerService.QualityChanged -= OnQualityChanged;
         PlayerService.AspectRatioModeChanged -= OnAspectRatioModeChanged;
+        PlayerService.IsVisibleChanged -= OnPlayerVisibilityChanged;
     }
 }

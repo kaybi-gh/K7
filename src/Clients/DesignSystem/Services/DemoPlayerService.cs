@@ -39,6 +39,7 @@ public sealed class DemoPlayerService : IPlayerService
     public event Action<bool>? IsMutedChanged;
     public event Action<AudioFileTrackDto?>? AudioTrackChanged;
     public event Action<SubtitleFileTrackDto?>? SubtitleTrackChanged;
+    public event Action? SubtitleTracksChanged;
     public event Action<VideoQualityOption?>? QualityChanged;
     public event Action<AspectRatioMode>? AspectRatioModeChanged;
     public event Action? BackPressed;
@@ -120,7 +121,7 @@ public sealed class DemoPlayerService : IPlayerService
     public Task PlayRemoteIndexedFileAsync(Guid remoteFileId, IEnumerable<AudioFileTrackDto> audioTracks, IEnumerable<SubtitleFileTrackDto>? subtitleTracks = null, int? audioTrackIndex = null, int? subtitleTrackIndex = null, VideoResolutionIdentifier? videoResolution = null, Guid? mediaId = null, string? title = null, string? coverUrl = null, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 
-    public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto> tracks) { }
+    public void SetSubtitleTracks(IEnumerable<SubtitleFileTrackDto>? tracks) { }
 
     public Task ChangeAudioTrackAsync(AudioFileTrackDto track, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
