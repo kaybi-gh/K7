@@ -1,0 +1,117 @@
+@using K7.Clients.Shared.Helpers
+@using K7.Clients.Shared.Interfaces
+@using K7.Clients.Shared.Models
+@inject IStringLocalizer<IntelligentSearchDialog> L
+@inject IMusicIntelligenceClientService MusicIntelligence
+@inject IMediaService MediaService
+@inject IAudioPlayerService Audio
+@inject IK7Snackbar Snackbar
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-4 pa-4 intelligent-search-dialog">
+        @if (FixedKind is null)
+        {
+            <K7Select TValue="IntelligentSearchKind" Value="_kind" ValueChanged="OnKindChanged" Label="@L["ModeLabel"]" Variant="outlined">
+                <K7SelectItem TValue="IntelligentSearchKind" Value="IntelligentSearchKind.Sonic" Text="@L["ModeSonic"]">@L["ModeSonic"]</K7SelectItem>
+                <K7SelectItem TValue="IntelligentSearchKind" Value="IntelligentSearchKind.Lyrics" Text="@L["ModeLyrics"]">@L["ModeLyrics"]</K7SelectItem>
+            </K7Select>
+        }
+
+        <K7TextField @bind-Value="_query"
+                     Label="@L["QueryLabel"]"
+                     Placeholder="@GetPlaceholder()"
+                     HelperText="@GetHelperText()" />
+
+        <div class="d-flex gap-2 justify-end">
+            <K7Button OnClick="Cancel" Variant="K7ButtonVariant.Text">@L["Cancel"]</K7Button>
+            <K7Button OnClick="SubmitAsync" Variant="K7ButtonVariant.Filled" Disabled="string.IsNullOrWhiteSpace(_query) || _loading">
+                @if (_loading)
+                {
+                    <K7Spinner Size="16" />
+                }
+                else
+                {
+                    @L["Play"]
+                }
+            </K7Button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
+
+    [Parameter] public IntelligentSearchKind? FixedKind { get; set; }
+    [Parameter] public Guid[]? LibraryIds { get; set; }
+    [Parameter] public Guid[]? LibraryGroupIds { get; set; }
+
+    private IntelligentSearchKind _kind = IntelligentSearchKind.Sonic;
+    private string _query = string.Empty;
+    private bool _loading;
+
+    protected override void OnParametersSet()
+    {
+        if (FixedKind is { } fixedKind)
+            _kind = fixedKind;
+    }
+
+    private void OnKindChanged(IntelligentSearchKind kind) => _kind = kind;
+
+    private string GetPlaceholder() =>
+        _kind == IntelligentSearchKind.Sonic
+            ? L["SonicPlaceholder"]
+            : L["LyricsPlaceholder"];
+
+    private string GetHelperText() =>
+        _kind == IntelligentSearchKind.Sonic
+            ? L["SonicHint"]
+            : L["LyricsHint"];
+
+    private void Cancel() => Dialog.Close(K7DialogResult.Cancel());
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_query))
+            return;
+
+        _loading = true;
+        try
+        {
+            var request = new IntelligentSearchRequest(_kind, _query.Trim());
+            var trackIds = await IntelligentSearchHelper.SearchTrackIdsAsync(MusicIntelligence, request);
+            if (trackIds.Count == 0)
+            {
+                Snackbar.Add(L["NoResults"], K7Severity.Warning);
+                return;
+            }
+
+            var tracks = await IntelligentSearchHelper.LoadScopedTracksAsync(
+                MediaService, trackIds, LibraryIds, LibraryGroupIds);
+
+            if (tracks.Count == 0)
+            {
+                Snackbar.Add(L["NoResults"], K7Severity.Warning);
+                return;
+            }
+
+            var queueItems = IntelligentSearchHelper.ToQueueItems(tracks, S["Untitled"]);
+            await Audio.PlayRadioAsync(queueItems, GetRadioTitle(request));
+            Snackbar.Add(string.Format(L["Playing"], queueItems.Count), K7Severity.Info);
+            Dialog.Close(K7DialogResult.Ok(true));
+        }
+        catch
+        {
+            Snackbar.Add(L["Error"], K7Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string GetRadioTitle(IntelligentSearchRequest request) =>
+        request.Kind == IntelligentSearchKind.Sonic
+            ? string.Format(L["RadioTitleSonic"], request.Query)
+            : string.Format(L["RadioTitleLyrics"], request.Query);
+}

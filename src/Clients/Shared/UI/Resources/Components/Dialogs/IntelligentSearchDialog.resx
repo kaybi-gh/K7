@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="ModeLabel" xml:space="preserve"><value>Type de recherche</value></data>
+  <data name="ModeSonic" xml:space="preserve"><value>Recherche sonore</value></data>
+  <data name="ModeLyrics" xml:space="preserve"><value>Recherche paroles</value></data>
+  <data name="QueryLabel" xml:space="preserve"><value>Recherche</value></data>
+  <data name="SonicPlaceholder" xml:space="preserve"><value>calm piano, upbeat indie pop...</value></data>
+  <data name="LyricsPlaceholder" xml:space="preserve"><value>amour perdu, dancing in the rain...</value></data>
+  <data name="SonicHint" xml:space="preserve"><value>D&#233;crivez le son en anglais (genre, instruments, ambiance).</value></data>
+  <data name="LyricsHint" xml:space="preserve"><value>Th&#232;me ou extrait de paroles, toutes langues.</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Play" xml:space="preserve"><value>Lire</value></data>
+  <data name="Search" xml:space="preserve"><value>Rechercher</value></data>
+  <data name="NoResults" xml:space="preserve"><value>Aucun r&#233;sultat pour cette recherche.</value></data>
+  <data name="Error" xml:space="preserve"><value>La recherche a &#233;chou&#233;. V&#233;rifiez qu'AudioMuse est configur&#233; et que l'analyse est termin&#233;e.</value></data>
+  <data name="Playing" xml:space="preserve"><value>Lecture de {0} morceaux</value></data>
+  <data name="RadioTitleSonic" xml:space="preserve"><value>Son : {0}</value></data>
+  <data name="RadioTitleLyrics" xml:space="preserve"><value>Paroles : {0}</value></data>
+</root>
