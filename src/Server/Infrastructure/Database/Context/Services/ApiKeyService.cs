@@ -30,21 +30,31 @@ public class ApiKeyService : IApiKeyService
         return Convert.ToHexStringLower(hash);
     }
 
-    public async Task<ApiKey?> ValidateKeyAsync(string fullKey, CancellationToken cancellationToken = default)
+    public async Task<ValidatedApiKey?> ValidateKeyAsync(string fullKey, CancellationToken cancellationToken = default)
     {
         var hash = HashKey(fullKey);
-        var apiKey = await _context.ApiKeys
-            .FirstOrDefaultAsync(k => k.KeyHash == hash, cancellationToken);
+        var match = await (
+            from key in _context.ApiKeys.AsNoTracking()
+            join user in _context.Users.AsNoTracking() on key.CreatedByUserId equals user.Id
+            where key.KeyHash == hash
+            select new { Key = key, user.IdentityUserId }
+        ).FirstOrDefaultAsync(cancellationToken);
 
-        if (apiKey is null)
+        if (match is null)
             return null;
 
-        if (apiKey.ExpiresAt.HasValue && apiKey.ExpiresAt.Value < DateTime.UtcNow)
+        if (match.Key.ExpiresAt.HasValue && match.Key.ExpiresAt.Value < DateTime.UtcNow)
             return null;
 
-        apiKey.LastUsedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync(cancellationToken);
+        if (string.IsNullOrEmpty(match.IdentityUserId))
+            return null;
 
-        return apiKey;
+        await _context.ApiKeys
+            .Where(k => k.Id == match.Key.Id)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(k => k.LastUsedAt, DateTime.UtcNow),
+                cancellationToken);
+
+        return new ValidatedApiKey(match.Key, match.IdentityUserId);
     }
 }

@@ -32,11 +32,11 @@ public class ApiKeyAuthenticationHandler(
         if (string.IsNullOrWhiteSpace(apiKeyValue))
             return AuthenticateResult.NoResult();
 
-        var apiKey = await apiKeyService.ValidateKeyAsync(apiKeyValue, Context.RequestAborted);
-        if (apiKey is null)
+        var validatedKey = await apiKeyService.ValidateKeyAsync(apiKeyValue, Context.RequestAborted);
+        if (validatedKey is null)
             return AuthenticateResult.Fail("Invalid or expired API key.");
 
-        var role = apiKey.Scope switch
+        var role = validatedKey.Key.Scope switch
         {
             ApiKeyScope.Admin => Roles.Administrator,
             ApiKeyScope.Write => Roles.User,
@@ -45,8 +45,8 @@ public class ApiKeyAuthenticationHandler(
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, apiKey.CreatedByUserId.ToString()),
-            new Claim(ClaimTypes.Name, $"ApiKey:{apiKey.Name}"),
+            new Claim(ClaimTypes.NameIdentifier, validatedKey.IdentityUserId),
+            new Claim(ClaimTypes.Name, $"ApiKey:{validatedKey.Key.Name}"),
             new Claim(ClaimTypes.Role, role)
         };
 
