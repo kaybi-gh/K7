@@ -330,6 +330,7 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
             .Include(s => s.ExternalIds)
             .Include(s => s.Episodes).ThenInclude(e => e.ExternalIds)
             .Include(s => s.Episodes).ThenInclude(e => e.Pictures)
+            .Include(s => s.Episodes).ThenInclude(e => e.PersonRoles)
             .LoadAsync(cancellationToken);
 
         var metadataProvider = _serviceProvider.GetRequiredKeyedService<ISerieMetadataProvider>(request.MetadataProviderName);
@@ -365,31 +366,11 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
         // Person dedup
         if (!serie.IsFieldLocked(nameof(Serie.PersonRoles)) && serieMetadata.PersonRoles?.Count > 0)
         {
+            await ResolvePersonReferencesAsync(serieMetadata.PersonRoles, cancellationToken);
+
             serie.PersonRoles.Clear();
             foreach (var role in serieMetadata.PersonRoles)
-            {
-                Person? existingPerson = null;
-                foreach (var externalId in role.Person.ExternalIds)
-                {
-                    existingPerson = await _context.Persons
-                        .Include(p => p.ExternalIds)
-                        .FirstOrDefaultAsync(p => p.ExternalIds.Any(e =>
-                            e.ProviderName == externalId.ProviderName && e.Value == externalId.Value),
-                            cancellationToken);
-                    if (existingPerson is not null)
-                        break;
-                }
-
-                // Fallback: match by name only (e.g. Person created by music metadata)
-                existingPerson ??= await _context.Persons
-                    .Include(p => p.ExternalIds)
-                    .FirstOrDefaultAsync(p => p.Name == role.Person.Name, cancellationToken);
-
-                if (existingPerson is not null)
-                    role.Person = existingPerson;
-
                 serie.PersonRoles.Add(role);
-            }
         }
 
         // Ratings
@@ -450,6 +431,15 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     request.Language, cancellationToken);
 
                 episode.ApplyMetadata(episodeMetadata);
+
+                if (!episode.IsFieldLocked(nameof(SerieEpisode.PersonRoles)) && episodeMetadata.PersonRoles.Count > 0)
+                {
+                    await ResolvePersonReferencesAsync(episodeMetadata.PersonRoles, cancellationToken);
+
+                    episode.PersonRoles.Clear();
+                    foreach (var role in episodeMetadata.PersonRoles)
+                        episode.PersonRoles.Add(role);
+                }
 
                 if (episodeMetadata.RemoteId is not null)
                     episodeRemoteIds[(season.SeasonNumber, episode.EpisodeNumber)] = episodeMetadata.RemoteId.Value;
@@ -784,6 +774,31 @@ public class RefreshMediaMetadatasCommandHandler : IRequestHandler<RefreshMediaM
                     ConcurrencyGroup = "musicbrainz"
                 }, cancellationToken);
             }
+        }
+    }
+
+    private async Task ResolvePersonReferencesAsync(IEnumerable<BasePersonRole> roles, CancellationToken cancellationToken)
+    {
+        foreach (var role in roles)
+        {
+            Person? existingPerson = null;
+            foreach (var externalId in role.Person.ExternalIds)
+            {
+                existingPerson = await _context.Persons
+                    .Include(p => p.ExternalIds)
+                    .FirstOrDefaultAsync(p => p.ExternalIds.Any(e =>
+                        e.ProviderName == externalId.ProviderName && e.Value == externalId.Value),
+                        cancellationToken);
+                if (existingPerson is not null)
+                    break;
+            }
+
+            existingPerson ??= await _context.Persons
+                .Include(p => p.ExternalIds)
+                .FirstOrDefaultAsync(p => p.Name == role.Person.Name, cancellationToken);
+
+            if (existingPerson is not null)
+                role.Person = existingPerson;
         }
     }
 }

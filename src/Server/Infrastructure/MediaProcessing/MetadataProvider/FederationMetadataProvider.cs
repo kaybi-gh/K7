@@ -217,6 +217,7 @@ public class FederationMetadataProvider(
                 ProviderName = e.Provider,
                 Value = e.Value
             }).ToList(),
+            PersonRoles = BuildPersonRoles(episode.PersonRoles, baseUrl),
         };
     }
 

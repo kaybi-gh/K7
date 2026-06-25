@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.QueryExtensions;
@@ -20,9 +21,16 @@ public record GlobalSearchQuery : IRequest<GlobalSearchResultDto>
     public int PageSize { get; init; } = 10;
 }
 
-public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser currentUser)
+public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser currentUser, LiteMediaProjectionService liteMediaProjection)
     : IRequestHandler<GlobalSearchQuery, GlobalSearchResultDto>
 {
+    private const int MovieLimit = 15;
+    private const int EpisodeLimit = 15;
+    private const int SerieSeasonLimit = 10;
+    private const int MusicLimit = 10;
+    private const int PersonLimit = 10;
+    private const int CharacterLimit = 10;
+
     public async Task<GlobalSearchResultDto> Handle(GlobalSearchQuery request, CancellationToken cancellationToken)
     {
         Guard.Against.NullOrWhiteSpace(request.Q);
@@ -31,30 +39,16 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
             return new GlobalSearchResultDto();
 
         var term = $"%{request.Q.Trim().ToLower()}%";
-        var limit = Math.Min(request.PageSize, 50);
+        var rawQuery = request.Q.Trim().ToLower();
 
-        var mediaQuery = ApplySearchMediaIncludes(context.Medias)
-            .Where(m => EF.Functions.Like(m.Title!.ToLower(), term));
-
-        if (!string.IsNullOrWhiteSpace(request.Studio))
-        {
-            var studio = request.Studio.Trim();
-            mediaQuery = mediaQuery
-                .Where(m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.DisplayName == studio))
-                .OrderBy(m => m.Title);
-        }
-        else
-        {
-            mediaQuery = mediaQuery
-                .OrderBy(m => EF.Functions.Like(m.Title!.ToLower(), request.Q.Trim().ToLower()) ? 0 : 1);
-        }
+        var mediaQuery = BuildMediaSearchQuery(term, rawQuery, request.Studio);
 
         var personQuery = context.Persons
             .Include(p => p.PortraitPicture)
                 .ThenInclude(pp => pp!.Variants)
             .Where(p => EF.Functions.Like(p.Name.ToLower(), term))
-            .OrderBy(p => EF.Functions.Like(p.Name.ToLower(), request.Q.Trim().ToLower()) ? 0 : 1)
-            .Take(limit)
+            .OrderBy(p => EF.Functions.Like(p.Name.ToLower(), rawQuery) ? 0 : 1)
+            .Take(PersonLimit)
             .AsNoTracking();
 
         var characterQuery = context.PersonRoles
@@ -64,7 +58,7 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
                     .ThenInclude(pp => pp!.Variants)
             .Include(r => r.Media)
             .Where(r => EF.Functions.Like(r.CharacterName.ToLower(), term))
-            .Take(limit)
+            .Take(CharacterLimit)
             .AsNoTracking();
 
         var voiceActorQuery = context.PersonRoles
@@ -74,7 +68,7 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
                     .ThenInclude(pp => pp!.Variants)
             .Include(r => r.Media)
             .Where(r => EF.Functions.Like(r.CharacterName.ToLower(), term))
-            .Take(limit)
+            .Take(CharacterLimit)
             .AsNoTracking();
 
         if (currentUser.Id is { } userId)
@@ -96,14 +90,37 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
             voiceActorQuery = voiceActorQuery.Where(r => accessibleMediaIdQuery.Contains(r.MediaId));
         }
 
-        mediaQuery = mediaQuery.Take(limit).AsNoTracking();
+        mediaQuery = mediaQuery.AsNoTracking();
 
-        var (medias, persons, actors, voiceActors) = (
-            await mediaQuery.ToListAsync(cancellationToken),
-            await personQuery.ToListAsync(cancellationToken),
-            await characterQuery.ToListAsync(cancellationToken),
-            await voiceActorQuery.ToListAsync(cancellationToken)
-        );
+        var movies = await mediaQuery
+            .Where(m => m.Type == MediaType.Movie)
+            .Take(MovieLimit)
+            .ToListAsync(cancellationToken);
+
+        var serieSeasons = await mediaQuery
+            .Where(m => m.Type == MediaType.Serie || m.Type == MediaType.SerieSeason)
+            .Take(SerieSeasonLimit)
+            .ToListAsync(cancellationToken);
+
+        var episodes = await mediaQuery
+            .Where(m => m.Type == MediaType.SerieEpisode)
+            .Take(EpisodeLimit)
+            .ToListAsync(cancellationToken);
+
+        var music = await mediaQuery
+            .Where(m => m.Type == MediaType.MusicArtist || m.Type == MediaType.MusicAlbum || m.Type == MediaType.MusicTrack)
+            .Take(MusicLimit)
+            .ToListAsync(cancellationToken);
+
+        var medias = movies
+            .Concat(serieSeasons)
+            .Concat(episodes)
+            .Concat(music)
+            .ToList();
+
+        var persons = await personQuery.ToListAsync(cancellationToken);
+        var actors = await characterQuery.ToListAsync(cancellationToken);
+        var voiceActors = await voiceActorQuery.ToListAsync(cancellationToken);
 
         var characterResults = actors
             .Select(r => new CharacterSearchResultDto
@@ -133,10 +150,30 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
 
         return new GlobalSearchResultDto
         {
-            MediaResults = medias.Select(m => m.ToLiteMediaDto()).ToList(),
+            MediaResults = await liteMediaProjection.ToLiteListAsync(medias, cancellationToken),
             PersonResults = persons.Select(p => p.ToLitePersonDto()).ToList(),
             CharacterResults = characterResults
         };
+    }
+
+    private IQueryable<BaseMedia> BuildMediaSearchQuery(string term, string rawQuery, string? studio)
+    {
+        var mediaQuery = ApplySearchMediaIncludes(context.Medias)
+            .Where(m => EF.Functions.Like(m.Title!.ToLower(), term));
+
+        if (!string.IsNullOrWhiteSpace(studio))
+        {
+            mediaQuery = mediaQuery
+                .Where(m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.DisplayName == studio.Trim()))
+                .OrderBy(m => m.Title);
+        }
+        else
+        {
+            mediaQuery = mediaQuery
+                .OrderBy(m => EF.Functions.Like(m.Title!.ToLower(), rawQuery) ? 0 : 1);
+        }
+
+        return mediaQuery;
     }
 
     private IQueryable<BaseMedia> ApplyUserExclusions(IQueryable<BaseMedia> query, Guid userId)
@@ -189,7 +226,5 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
                     .ThenInclude(p => p!.Variants)
             .Include(m => ((SerieEpisode)m).Serie)
                 .ThenInclude(s => s!.Pictures)
-                    .ThenInclude(p => p!.Variants)
-            .Include(m => ((SerieEpisode)m).Serie)
-                .ThenInclude(s => s!.Seasons);
+                    .ThenInclude(p => p!.Variants);
 }

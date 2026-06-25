@@ -67,6 +67,24 @@ public class GetFederationMediaMetadata : IEndpoint
                     .ThenInclude(s => s.Episodes)
                         .ThenInclude(e => e.Pictures)
                 .Include(m => ((Serie)m).Seasons)
+                    .ThenInclude(s => s.Episodes)
+                        .ThenInclude(e => e.PersonRoles)
+                            .ThenInclude(r => r.Person)
+                                .ThenInclude(p => p.ExternalIds)
+                .Include(m => ((Serie)m).Seasons)
+                    .ThenInclude(s => s.Episodes)
+                        .ThenInclude(e => e.PersonRoles)
+                            .ThenInclude(r => r.Person)
+                                .ThenInclude(p => p.PortraitPicture)
+                .Include(m => ((Serie)m).Seasons)
+                    .ThenInclude(s => s.Episodes)
+                        .ThenInclude(e => e.PersonRoles)
+                            .ThenInclude(r => r.ExternalIds)
+                .Include(m => ((Serie)m).Seasons)
+                    .ThenInclude(s => s.Episodes)
+                        .ThenInclude(e => e.PersonRoles)
+                            .ThenInclude(r => r.PortraitPicture)
+                .Include(m => ((Serie)m).Seasons)
                     .ThenInclude(s => s.ExternalIds)
                 .Include(m => ((Serie)m).Seasons)
                     .ThenInclude(s => s.Pictures)
@@ -223,7 +241,8 @@ public class GetFederationMediaMetadata : IEndpoint
                         {
                             Provider = ex.ProviderName,
                             Value = ex.Value
-                        }).ToList()
+                        }).ToList(),
+                        PersonRoles = e.PersonRoles.Select(MapPersonRole).ToList()
                     }).ToList()
                 }).ToList(),
             },

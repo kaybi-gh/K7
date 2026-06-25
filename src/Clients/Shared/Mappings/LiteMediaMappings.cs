@@ -9,7 +9,12 @@ namespace K7.Clients.Shared.Mappings;
 
 public static class LiteMediaMappings
 {
-    public static MediaCardViewModel? ToCardViewModel(this LiteMediaDto item, IK7ServerService apiClient, Func<int, string> seasonFormatter, bool useParentTitle = false)
+    public static MediaCardViewModel? ToCardViewModel(
+        this LiteMediaDto item,
+        IK7ServerService apiClient,
+        Func<int, string> seasonFormatter,
+        bool useParentTitle = false,
+        bool preferEpisodeStill = false)
     {
         var kind = item switch
         {
@@ -31,16 +36,24 @@ public static class LiteMediaMappings
         var trackDto = item as LiteMusicTrackDto;
         var seasonDto = item as LiteSerieSeasonDto;
 
-        var pictureSource = episodeDto is not null
-            ? (episodeDto.SeriePictures?.Count > 0 ? episodeDto.SeriePictures : null)
-                ?? (episodeDto.SeasonPictures?.Count > 0 ? episodeDto.SeasonPictures : null)
-                ?? item.Pictures
-            : item.Pictures;
+        MetadataPictureDto? bestPicture;
+        if (episodeDto is not null && preferEpisodeStill)
+        {
+            bestPicture = episodeDto.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still);
+        }
+        else
+        {
+            var pictureSource = episodeDto is not null
+                ? (episodeDto.SeriePictures?.Count > 0 ? episodeDto.SeriePictures : null)
+                    ?? (episodeDto.SeasonPictures?.Count > 0 ? episodeDto.SeasonPictures : null)
+                    ?? item.Pictures
+                : item.Pictures;
 
-        var bestPicture = pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-            ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-            ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
-            ?? pictureSource?.FirstOrDefault();
+            bestPicture = pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? pictureSource?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                ?? pictureSource?.FirstOrDefault();
+        }
 
         var backdropPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
 
@@ -73,7 +86,7 @@ public static class LiteMediaMappings
             MediaType = GetMediaType(item),
             UserRating = item.UserRating,
             Title = cardTitle,
-            AdditionalInformations = GetAdditionalInfo(item, seasonDto, episodeDto, seasonFormatter),
+            AdditionalInformations = GetAdditionalInfo(item, seasonDto, episodeDto, seasonFormatter, preferEpisodeStill),
             PictureUrl = apiClient.GetAbsoluteUri(bestPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
             BackdropUrl = apiClient.GetAbsoluteUri(backdropPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri,
             Watched = userState?.IsCompleted ?? false,
@@ -88,8 +101,12 @@ public static class LiteMediaMappings
         LiteMediaDto item,
         LiteSerieSeasonDto? season,
         LiteSerieEpisodeDto? episode,
-        Func<int, string> seasonFormatter)
+        Func<int, string> seasonFormatter,
+        bool preferEpisodeStill = false)
     {
+        if (episode is not null && preferEpisodeStill && !string.IsNullOrEmpty(episode.SerieTitle))
+            return episode.SerieTitle;
+
         if (episode is not null)
             return $"S{episode.SeasonNumber:D2}E{episode.EpisodeNumber:D2}";
 

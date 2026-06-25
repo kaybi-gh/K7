@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -215,7 +216,7 @@ public static class MediaMappings
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
         };
 
-        public LiteMediaDto ToLiteMediaDto() => domain switch
+        public LiteMediaDto ToLiteMediaDto(IReadOnlyDictionary<Guid, int>? serieSeasonCounts = null) => domain switch
         {
             Movie movie => new LiteMovieDto()
             {
@@ -341,7 +342,7 @@ public static class MediaMappings
                 Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
                 EpisodeNumber = episode.EpisodeNumber,
                 SeasonNumber = episode.Season?.SeasonNumber ?? 0,
-                SerieSeasonCount = episode.Serie?.Seasons?.Count ?? 1,
+                SerieSeasonCount = SerieSeasonCountHelper.ResolveCount(episode.SerieId, episode.Serie, serieSeasonCounts),
                 Duration = (domain.IndexedFiles.FirstOrDefault()?.FileMetadata as VideoFileMetadata)?.Duration.TotalSeconds
                     ?? domain.RemoteIndexedFiles.FirstOrDefault()?.Duration?.TotalSeconds,
                 Overview = episode.Overview,

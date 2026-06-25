@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Mappings;
@@ -129,7 +130,6 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
@@ -167,7 +167,6 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Seasons)
             .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
@@ -187,7 +186,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             }
         }
 
-        var aggregated = AggregateRecentItems(rawItems, request.Detailed == true);
+        var serieSeasonCounts = await SerieSeasonCountHelper.GetCountsBySerieIdsAsync(
+            context,
+            SerieSeasonCountHelper.ExtractSerieIdsFromMedias(rawItems),
+            cancellationToken);
+
+        var aggregated = AggregateRecentItems(rawItems, request.Detailed == true, serieSeasonCounts);
         var page = aggregated.Take(request.PageSize).ToList();
         var totalCount = aggregated.Count;
 
@@ -248,7 +252,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 
-    private List<HomeFeedItemDto> AggregateRecentItems(List<BaseMedia> rawItems, bool detailed)
+    private static List<HomeFeedItemDto> AggregateRecentItems(
+        List<BaseMedia> rawItems,
+        bool detailed,
+        IReadOnlyDictionary<Guid, int> serieSeasonCounts)
     {
         var result = new List<(int Order, HomeFeedItemDto Item)>();
         var serieGroups = new Dictionary<Guid, (int Order, List<SerieEpisode> Episodes)>();
@@ -289,7 +296,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         foreach (var (serieId, (order, episodes)) in serieGroups)
         {
-            result.Add((order, AggregateSerieEpisodes(serieId, episodes, detailed)));
+            var seasonCount = SerieSeasonCountHelper.ResolveCount(serieId, episodes[0].Serie, serieSeasonCounts);
+            result.Add((order, AggregateSerieEpisodes(serieId, episodes, detailed, seasonCount)));
         }
 
         foreach (var (albumId, (order, tracks)) in albumGroups)
@@ -300,7 +308,11 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         return result.OrderBy(x => x.Order).Select(x => x.Item).ToList();
     }
 
-    private static HomeFeedItemDto AggregateSerieEpisodes(Guid serieId, List<SerieEpisode> episodes, bool detailed)
+    private static HomeFeedItemDto AggregateSerieEpisodes(
+        Guid serieId,
+        List<SerieEpisode> episodes,
+        bool detailed,
+        int serieSeasonCount)
     {
         var first = episodes[0];
         var serie = first.Serie!;
@@ -309,7 +321,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         var distinctSeasons = episodes.Select(e => e.Season?.SeasonNumber ?? 0).Distinct().ToList();
         var isSingleSeason = distinctSeasons.Count == 1;
-        var serieHasMultipleSeasons = serie.Seasons?.Count > 1;
+        var serieHasMultipleSeasons = serieSeasonCount > 1;
 
         if (episodes.Count == 1)
         {

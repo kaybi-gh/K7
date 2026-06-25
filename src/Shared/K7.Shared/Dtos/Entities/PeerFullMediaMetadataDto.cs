@@ -96,6 +96,7 @@ public sealed record PeerEpisodeDto
     public int? Runtime { get; init; }
     public Guid? StillPictureId { get; init; }
     public IReadOnlyList<PeerExternalIdDto> ExternalIds { get; init; } = [];
+    public IReadOnlyList<PeerPersonRoleDto> PersonRoles { get; init; } = [];
 }
 
 public sealed record PeerMusicTrackDto

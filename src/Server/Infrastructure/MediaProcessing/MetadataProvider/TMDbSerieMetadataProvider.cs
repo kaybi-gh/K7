@@ -202,7 +202,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             seasonNumber,
             episodeNumber,
             language: language,
-            extraMethods: TvEpisodeMethods.Images | TvEpisodeMethods.ExternalIds,
+            extraMethods: TvEpisodeMethods.Images | TvEpisodeMethods.ExternalIds | TvEpisodeMethods.Credits,
             cancellationToken: cancellationToken);
 
         string? stillUrl = null;
@@ -226,7 +226,8 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             AirDate = episode.AirDate.HasValue ? DateOnly.FromDateTime(episode.AirDate.Value) : null,
             Runtime = episode.Runtime,
             StillImageUrl = stillUrl,
-            ExternalIds = externalIds
+            ExternalIds = externalIds,
+            PersonRoles = await ConvertToPersonRolesAsync(episode.Credits, language, cancellationToken)
         };
     }
 
