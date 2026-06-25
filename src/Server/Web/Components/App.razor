@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 @using K7.Server.Application.Common.Interfaces
 @using K7.Server.Domain.Settings
+@using Microsoft.Extensions.DependencyInjection
 <html lang="@System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
 <head>
     <meta charset="utf-8" />
@@ -73,7 +74,7 @@
 
 @code {
     [Inject]
-    private IServerSettingsService ServerSettings { get; set; } = default!;
+    private IServiceScopeFactory ScopeFactory { get; set; } = default!;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -82,7 +83,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _defaultTheme = await ServerSettings.GetAsync(ServerSettingKeys.DefaultTheme) ?? "default-dark";
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var serverSettings = scope.ServiceProvider.GetRequiredService<IServerSettingsService>();
+        _defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme) ?? "default-dark";
     }
 
     private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/login")
