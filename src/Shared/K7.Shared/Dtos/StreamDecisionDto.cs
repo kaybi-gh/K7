@@ -19,4 +19,7 @@ public sealed record StreamDecisionDto
     public string? AudioChannelLayout { get; init; }
     public string? SubtitleTrackLanguage { get; init; }
     public string? SubtitleTrackTitle { get; init; }
+    public string? SubtitleCodec { get; init; }
+    public int? SelectedSubtitleTrackIndex { get; init; }
+    public bool IsSubtitleBurnIn { get; init; }
 }

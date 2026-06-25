@@ -77,6 +77,7 @@ public class GetFederationStreamContent : IEndpoint
                     TranscodingVideoCodec = query["TranscodingVideoCodec"].FirstOrDefault(),
                     DefaultAudioTrackIndex = int.TryParse(query["DefaultAudioTrackIndex"], out var dai) ? dai : null,
                     DefaultSubtitleTrackIndex = int.TryParse(query["DefaultSubtitleTrackIndex"], out var dsi) ? dsi : null,
+                    SubtitleBurnInStreamIndex = int.TryParse(query["SubtitleBurnInStreamIndex"], out var sbi) ? sbi : null,
                     Quality = query["Quality"].FirstOrDefault(),
                     AudioTrackTranscodings = GetHlsStreamManifestQueryUriBuilder.DeserializeAudioTrackTranscodings(query["AudioTrackTranscodings"].FirstOrDefault())
                 };
@@ -92,7 +93,8 @@ public class GetFederationStreamContent : IEndpoint
 
                 var streamSessId = Guid.TryParse(query["streamSessionId"], out var vssId) ? vssId : sessionId;
                 var videoIndexQuery = new GetHlsVideoStreamIndexQuery(
-                    indexedFileId, quality, streamSessId, query["TranscodingVideoCodec"].FirstOrDefault());
+                    indexedFileId, quality, streamSessId, query["TranscodingVideoCodec"].FirstOrDefault(),
+                    int.TryParse(query["SubtitleBurnInStreamIndex"], out var vSubBurn) ? vSubBurn : null);
                 return await sender.Send(videoIndexQuery, cancellationToken);
             }
 
@@ -107,7 +109,8 @@ public class GetFederationStreamContent : IEndpoint
 
                 var segStreamSessId = Guid.TryParse(query["streamSessionId"], out var vSegSsId) ? vSegSsId : sessionId;
                 var segmentQuery = new GetHlsVideoStreamSegmentQuery(
-                    indexedFileId, quality, segmentIndex, segStreamSessId, query["TranscodingVideoCodec"].FirstOrDefault());
+                    indexedFileId, quality, segmentIndex, segStreamSessId, query["TranscodingVideoCodec"].FirstOrDefault(),
+                    int.TryParse(query["SubtitleBurnInStreamIndex"], out var vSegSubBurn) ? vSegSubBurn : null);
                 return await sender.Send(segmentQuery, cancellationToken);
             }
 
