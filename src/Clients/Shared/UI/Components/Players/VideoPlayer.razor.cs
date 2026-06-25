@@ -229,7 +229,9 @@ public partial class VideoPlayer : IAsyncDisposable
             }
             else
             {
-                var subtitleSlug = PlayerService.SelectedSubtitleTrack is { } sub ? $"sub-{sub.Index}" : null;
+                var subtitleSlug = PlayerService.SelectedSubtitleTrack is { IsTextBased: true } sub
+                    ? $"sub-{sub.Index}"
+                    : null;
                 await JSRuntime.InvokeVoidAsync("changeSource", _player.Id, SourceUri, SourceMimeType, subtitleSlug);
             }
         }
