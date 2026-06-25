@@ -1,14 +1,12 @@
 @page "/welcome"
 @layout K7.Server.Web.Components.Pages.Setup.SetupLayout
-@using K7.Server.Application.Common.Interfaces
 @using K7.Server.Domain.Constants
+@using K7.Server.Infrastructure.Database.Context.Data
 @using K7.Server.Infrastructure.Database.Context.Identity
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
-@inject IApplicationDbContext DbContext
-@inject ISetupService SetupService
-@inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
+@using Microsoft.Extensions.DependencyInjection
+@inject IServiceScopeFactory ScopeFactory
 @inject NavigationManager Navigation
 @inject K7.Server.Web.Components.Account.IdentityRedirectManager RedirectManager
 @inject IStringLocalizer<Welcome> L
@@ -76,20 +74,28 @@
 
     private async Task ContinueAsGuest()
     {
-        var guestUser = await UserManager.FindByNameAsync(Roles.Guest);
-        await SignInManager.SignInAsync(guestUser!, isPersistent: false);
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var signInManager = scope.ServiceProvider.GetRequiredService<SignInManager<ApplicationUser>>();
+
+        var guestUser = await userManager.FindByNameAsync(Roles.Guest);
+        await signInManager.SignInAsync(guestUser!, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl ?? "/");
     }
 
     private async Task<bool> IsGuestActiveAsync()
     {
-        var guestIdentity = await UserManager.FindByNameAsync(Roles.Guest);
-        if (guestIdentity is null) return false;
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var guestDomainUser = await DbContext.Users
+        return await dbContext.Set<ApplicationUser>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.IdentityUserId == guestIdentity.Id);
-
-        return guestDomainUser?.IsActive == true;
+            .Where(identity => identity.UserName == Roles.Guest)
+            .Join(
+                dbContext.Users.AsNoTracking(),
+                identity => identity.Id,
+                domain => domain.IdentityUserId,
+                (_, domain) => domain.IsActive)
+            .FirstOrDefaultAsync();
     }
 }
