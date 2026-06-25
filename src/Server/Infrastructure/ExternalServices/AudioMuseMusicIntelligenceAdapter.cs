@@ -215,6 +215,24 @@ public class AudioMuseMusicIntelligenceAdapter(
         return matches;
     }
 
+    public async Task<List<Guid>> SearchTracksBySonicTextAsync(string query, int count, CancellationToken cancellationToken)
+    {
+        await ConfigureClientAsync(cancellationToken);
+        var request = new { query, limit = count };
+        var response = await httpClient.PostAsJsonAsync("api/clap/search", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return ParseSearchResults(await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken));
+    }
+
+    public async Task<List<Guid>> SearchTracksByLyricsAsync(string query, int count, CancellationToken cancellationToken)
+    {
+        await ConfigureClientAsync(cancellationToken);
+        var request = new { query, limit = count };
+        var response = await httpClient.PostAsJsonAsync("api/lyrics/search/text", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return ParseSearchResults(await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken));
+    }
+
     public async Task<bool> IsConfiguredAndEnabledAsync(CancellationToken cancellationToken)
     {
         try
@@ -260,14 +278,34 @@ public class AudioMuseMusicIntelligenceAdapter(
         if (element is null || element.Value.ValueKind != JsonValueKind.Array)
             return [];
 
+        return ParseItemIdsFromArray(element.Value);
+    }
+
+    private static List<Guid> ParseItemIdsFromArray(JsonElement array)
+    {
+        if (array.ValueKind != JsonValueKind.Array)
+            return [];
+
         var ids = new List<Guid>();
-        foreach (var item in element.Value.EnumerateArray())
+        foreach (var item in array.EnumerateArray())
         {
             if (TryReadItemId(item, out var id))
                 ids.Add(id);
         }
 
         return ids;
+    }
+
+    private static List<Guid> ParseSearchResults(JsonElement? element)
+    {
+        if (element is null)
+            return [];
+
+        if (element.Value.ValueKind == JsonValueKind.Object
+            && element.Value.TryGetProperty("results", out var results))
+            return ParseItemIdsFromArray(results);
+
+        return ParseItemIds(element);
     }
 
     private static bool TryReadItemId(JsonElement item, out Guid id)

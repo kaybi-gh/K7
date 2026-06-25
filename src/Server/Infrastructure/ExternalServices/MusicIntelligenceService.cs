@@ -145,4 +145,48 @@ public class MusicIntelligenceService(
             return [];
         }
     }
+
+    public async Task<List<Guid>> SearchTracksBySonicTextAsync(string query, int count = 50, CancellationToken cancellationToken = default)
+    {
+        if (!await IsAvailableAsync(cancellationToken))
+            return [];
+
+        var cacheKey = $"mi:search-sonic:{query}:{count}";
+        if (cache.TryGetValue(cacheKey, out List<Guid>? cached) && cached is not null)
+            return cached;
+
+        try
+        {
+            var ids = await adapter.SearchTracksBySonicTextAsync(query, count, cancellationToken);
+            cache.Set(cacheKey, ids, SimilarTracksCacheDuration);
+            return ids;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to search tracks by sonic text");
+            return [];
+        }
+    }
+
+    public async Task<List<Guid>> SearchTracksByLyricsAsync(string query, int count = 50, CancellationToken cancellationToken = default)
+    {
+        if (!await IsAvailableAsync(cancellationToken))
+            return [];
+
+        var cacheKey = $"mi:search-lyrics:{query}:{count}";
+        if (cache.TryGetValue(cacheKey, out List<Guid>? cached) && cached is not null)
+            return cached;
+
+        try
+        {
+            var ids = await adapter.SearchTracksByLyricsAsync(query, count, cancellationToken);
+            cache.Set(cacheKey, ids, SimilarTracksCacheDuration);
+            return ids;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to search tracks by lyrics");
+            return [];
+        }
+    }
 }
