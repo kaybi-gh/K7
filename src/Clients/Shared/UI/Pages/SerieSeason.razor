@@ -29,11 +29,12 @@
 }
 else if (_season is not null && _isTv)
 {
-    <div class="season-tv @(HasDisplayableCast ? "season-tv--scrollable" : "")">
+    <div @ref="_seasonTvRoot" class="season-tv @(HasDisplayableCast ? "season-tv--scrollable" : "")" data-season-tv>
         <div class="tv-backdrop" style="--tv-backdrop: url('@(_previousStillUrl ?? _backdropUrl)')" />
         <div class="tv-backdrop tv-backdrop--next" style="--tv-backdrop: url('@(_focusedStillUrl ?? _backdropUrl)')" @key="_focusedStillUrl" />
+        <div class="tv-hero-gradient" aria-hidden="true" />
 
-        <div class="season-tv-main">
+        <div class="season-tv-main" data-season-tv-zone="main">
             <div class="tv-hero">
                 <div class="tv-back-button">
                     <K7Button StartIcon="@Phosphor.ArrowLeft"
@@ -75,7 +76,7 @@ else if (_season is not null && _isTv)
                 </div>
             </div>
 
-            <div class="tv-carousel-area">
+            <div class="tv-carousel-area" data-season-tv-zone="episodes">
                 <h2 class="tv-season-title">@(_season.SeasonNumber == 0 ? L["Specials"] : string.Format(L["SeasonNumber"], _season.SeasonNumber))</h2>
                 <Carousel @ref="_tvCarousel" Title="@L["EpisodeList"]">
                     @foreach (var episode in _episodes)
@@ -119,7 +120,7 @@ else if (_season is not null && _isTv)
 
         @if (HasDisplayableCast)
         {
-            <div class="season-tv-page-content">
+            <div class="season-tv-page-content" data-season-tv-zone="cast">
                 <Carousel Title="@L["CastingAndCrew"]">
                     @foreach (var cast in _focusedEpisodeDisplayableCast)
                     {
