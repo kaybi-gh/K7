@@ -1468,4 +1468,20 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<List<Guid>>(_serializerOptions, cancellationToken))!;
     }
+
+    public async Task<List<Guid>> SearchTracksBySonicTextAsync(string query, int count = 50, CancellationToken cancellationToken = default)
+    {
+        var request = new MusicIntelligenceSearchRequest { Query = query, Count = count };
+        var response = await HttpClient.PostAsJsonAsync("api/music-intelligence/search/sonic", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<List<Guid>>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<List<Guid>> SearchTracksByLyricsAsync(string query, int count = 50, CancellationToken cancellationToken = default)
+    {
+        var request = new MusicIntelligenceSearchRequest { Query = query, Count = count };
+        var response = await HttpClient.PostAsJsonAsync("api/music-intelligence/search/lyrics", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<List<Guid>>(_serializerOptions, cancellationToken))!;
+    }
 }
