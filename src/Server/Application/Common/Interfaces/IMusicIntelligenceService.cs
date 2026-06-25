@@ -19,4 +19,6 @@ public interface IMusicIntelligenceService
         string? artistName,
         int count = 12,
         CancellationToken cancellationToken = default);
+    Task<List<Guid>> SearchTracksBySonicTextAsync(string query, int count = 50, CancellationToken cancellationToken = default);
+    Task<List<Guid>> SearchTracksByLyricsAsync(string query, int count = 50, CancellationToken cancellationToken = default);
 }

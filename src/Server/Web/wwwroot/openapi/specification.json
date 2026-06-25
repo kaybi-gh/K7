@@ -2806,6 +2806,52 @@
         }
       }
     },
+    "/api/music-intelligence/search/lyrics": {
+      "post": {
+        "tags": [
+          "MusicIntelligence"
+        ],
+        "operationId": "SearchTracksByLyrics",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MusicIntelligenceSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/music-intelligence/search/sonic": {
+      "post": {
+        "tags": [
+          "MusicIntelligence"
+        ],
+        "operationId": "SearchTracksBySonicText",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MusicIntelligenceSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/metadata-providers": {
       "get": {
         "tags": [
@@ -13648,6 +13694,25 @@
       "MusicArtistType": {
         "type": "integer"
       },
+      "MusicIntelligenceSearchRequest": {
+        "required": [
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "MusicIntelligenceSettingsDto": {
         "type": "object",
         "properties": {
@@ -17049,6 +17114,9 @@
     },
     {
       "name": "Music"
+    },
+    {
+      "name": "MusicIntelligence"
     },
     {
       "name": "Metadata"
