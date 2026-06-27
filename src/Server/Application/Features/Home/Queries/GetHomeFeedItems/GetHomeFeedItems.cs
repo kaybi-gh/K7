@@ -142,34 +142,20 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
     {
         // Fetch child-level items (episodes, tracks, movies) ordered by created desc.
         // Then aggregate: group episodes by serie/season, tracks by album.
-        var query = context.Medias
-            .AsNoTracking()
-            .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any() || x is MusicAlbum || x is Serie);
-
-        query = ApplyFamilyFilter(query, request.MediaTypes);
-        query = ApplyLibraryFilter(query, request.LibraryIds);
-
-        if (userId.HasValue)
-            query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
-
-        // Fetch more than needed because aggregation reduces item count
         var fetchSize = request.PageSize * 3;
         var skip = (request.PageNumber - 1) * fetchSize;
+        var leafTypes = ResolveLeafMediaTypes(request.MediaTypes);
 
-        var rawItems = await query
-            .OrderByDescending(x => x.Id)
-            .Skip(skip)
-            .Take(fetchSize)
-            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
-            .Include(x => x.Ratings)
-            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
-            .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
-            .AsSplitQuery()
-            .ToListAsync(cancellationToken);
+        var pageIds = request.LibraryIds is { Length: > 0 }
+            ? await ResolveRecentlyAddedMediaIdsFromLibrariesAsync(
+                request.LibraryIds, leafTypes, userId, skip, fetchSize, cancellationToken)
+            : await ResolveRecentlyAddedMediaIdsFromAllMediaAsync(
+                request, leafTypes, userId, skip, fetchSize, cancellationToken);
+
+        if (pageIds.Count == 0)
+            return new PaginatedList<HomeFeedItemDto>([], 0, request.PageNumber, request.PageSize);
+
+        var rawItems = await LoadRecentlyAddedMediasAsync(pageIds, userId, cancellationToken);
 
         if (userId.HasValue)
         {
@@ -196,6 +182,152 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         var totalCount = aggregated.Count;
 
         return new PaginatedList<HomeFeedItemDto>(page, totalCount, request.PageNumber, request.PageSize);
+    }
+
+    private static HashSet<MediaType> ResolveLeafMediaTypes(HashSet<MediaType>? mediaTypes)
+    {
+        if (mediaTypes is not { Count: > 0 })
+            return [MediaType.Movie, MediaType.MusicTrack, MediaType.SerieEpisode];
+
+        var result = new HashSet<MediaType>();
+        if (mediaTypes.Contains(MediaType.Movie))
+            result.Add(MediaType.Movie);
+        if (mediaTypes.Contains(MediaType.MusicAlbum) || mediaTypes.Contains(MediaType.MusicTrack))
+            result.Add(MediaType.MusicTrack);
+        if (mediaTypes.Contains(MediaType.Serie)
+            || mediaTypes.Contains(MediaType.SerieSeason)
+            || mediaTypes.Contains(MediaType.SerieEpisode))
+            result.Add(MediaType.SerieEpisode);
+
+        return result;
+    }
+
+    private async Task<List<Guid>> ResolveRecentlyAddedMediaIdsFromLibrariesAsync(
+        Guid[] libraryIds,
+        HashSet<MediaType> leafTypes,
+        Guid? userId,
+        int skip,
+        int fetchSize,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<Guid>? excludedLibraryIds = null;
+        if (userId.HasValue)
+        {
+            excludedLibraryIds = context.UserLibraryExclusions
+                .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
+                .Select(e => e.LibraryId);
+        }
+
+        var indexedEntries = context.IndexedFiles
+            .AsNoTracking()
+            .Where(f => f.MediaId != null && libraryIds.Contains(f.LibraryId));
+
+        if (excludedLibraryIds is not null)
+            indexedEntries = indexedEntries.Where(f => !excludedLibraryIds.Contains(f.LibraryId));
+
+        var remoteEntries = context.RemoteIndexedFiles
+            .AsNoTracking()
+            .Where(f => libraryIds.Contains(f.LibraryId));
+
+        if (excludedLibraryIds is not null)
+            remoteEntries = remoteEntries.Where(f => !excludedLibraryIds.Contains(f.LibraryId));
+
+        var candidateIds = await indexedEntries
+            .Select(f => new { MediaId = f.MediaId!.Value, f.Created })
+            .Concat(remoteEntries.Select(f => new { f.MediaId, f.Created }))
+            .GroupBy(x => x.MediaId)
+            .Select(g => new { MediaId = g.Key, Created = g.Max(x => x.Created) })
+            .OrderByDescending(x => x.Created)
+            .Skip(skip)
+            .Take(fetchSize * 2)
+            .Select(x => x.MediaId)
+            .ToListAsync(cancellationToken);
+
+        return await FilterRecentlyAddedMediaIdsAsync(
+            candidateIds, leafTypes, userId, fetchSize, cancellationToken);
+    }
+
+    private async Task<List<Guid>> ResolveRecentlyAddedMediaIdsFromAllMediaAsync(
+        GetHomeFeedItemsQuery request,
+        HashSet<MediaType> leafTypes,
+        Guid? userId,
+        int skip,
+        int fetchSize,
+        CancellationToken cancellationToken)
+    {
+        var query = context.Medias
+            .AsNoTracking()
+            .Where(x => leafTypes.Contains(x.Type))
+            .Where(x => x.IndexedFiles.Any() || x.RemoteIndexedFiles.Any());
+
+        query = ApplyFamilyFilter(query, request.MediaTypes);
+
+        if (userId.HasValue)
+            query = await ApplyUserExclusionsAsync(query, userId.Value, cancellationToken);
+
+        return await query
+            .OrderByDescending(x => x.Id)
+            .Skip(skip)
+            .Take(fetchSize)
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<Guid>> FilterRecentlyAddedMediaIdsAsync(
+        List<Guid> candidateIds,
+        HashSet<MediaType> leafTypes,
+        Guid? userId,
+        int fetchSize,
+        CancellationToken cancellationToken)
+    {
+        if (candidateIds.Count == 0 || leafTypes.Count == 0)
+            return [];
+
+        var mediaQuery = context.Medias
+            .AsNoTracking()
+            .Where(m => candidateIds.Contains(m.Id) && leafTypes.Contains(m.Type));
+
+        if (userId.HasValue)
+        {
+            var excludedMediaIds = context.UserMediaExclusions
+                .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
+                .Select(e => e.MediaId);
+
+            mediaQuery = mediaQuery.WhereNotUserExcluded(excludedMediaIds);
+
+            var restrictionProfile = await context.ContentRestrictionProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId.Value), cancellationToken);
+
+            if (restrictionProfile is not null)
+                mediaQuery = ContentRestrictionEvaluator.ApplyRestriction(mediaQuery, restrictionProfile);
+        }
+
+        var filteredIds = await mediaQuery.Select(m => m.Id).ToListAsync(cancellationToken);
+        var filteredSet = filteredIds.ToHashSet();
+        return candidateIds.Where(id => filteredSet.Contains(id)).Take(fetchSize).ToList();
+    }
+
+    private async Task<List<BaseMedia>> LoadRecentlyAddedMediasAsync(
+        List<Guid> pageIds,
+        Guid? userId,
+        CancellationToken cancellationToken)
+    {
+        var items = await context.Medias
+            .Where(m => pageIds.Contains(m.Id))
+            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Ratings)
+            .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
+            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        return pageIds.Select(id => items.First(m => m.Id == id)).ToList();
     }
 
     private async Task<PaginatedList<HomeFeedItemDto>> HandleTopLevelAsync(
