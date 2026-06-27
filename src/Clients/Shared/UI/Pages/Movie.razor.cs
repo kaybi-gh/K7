@@ -1,6 +1,7 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
@@ -17,7 +18,7 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class Movie
+public partial class Movie : IAsyncDisposable
 {
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
@@ -26,6 +27,7 @@ public partial class Movie
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
     [Inject] private IFederationService FederationService { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+    [Inject] private ILibraryService LibraryService { get; set; } = default!;
 
     [Parameter] public required string Id { get; set; }
 
@@ -43,6 +45,13 @@ public partial class Movie
     private bool _canExclude;
     private bool _canSetWatchState;
     private bool _isAdmin;
+    private bool _isTv;
+    private ElementReference _tvScrollRoot;
+    private bool _tvScrollInitialized;
+    private Guid? _libraryGroupId;
+
+    private bool HasTvBelowContent =>
+        (_movie?.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0;
 
     private string? GetLogoUrl() =>
         apiClient.GetAbsoluteUri(
@@ -60,6 +69,9 @@ public partial class Movie
 
         if (_previousId == Id) return;
         _previousId = Id;
+
+        _tvScrollInitialized = false;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         isLoading = true;
         _similarMedia = [];
@@ -83,6 +95,12 @@ public partial class Movie
                 _selectedAudioFileTrack = vMeta.AudioTracks?.FirstOrDefault(x => x.IsDefault) ?? vMeta.AudioTracks?.FirstOrDefault();
                 _selectedSubtitleFileTrack = vMeta.SubtitleTracks?.FirstOrDefault(x => x.IsDefault);
             }
+
+            await ResolveLibraryGroupIdAsync();
+        }
+        else
+        {
+            _libraryGroupId = null;
         }
         isLoading = false;
 
@@ -91,6 +109,19 @@ public partial class Movie
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_isTv && !isLoading && _movie is not null && HasTvBelowContent)
+        {
+            if (!_tvScrollInitialized)
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
+                _tvScrollInitialized = true;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+            }
+        }
+
         if (firstRender)
         {
             try
@@ -402,4 +433,38 @@ public partial class Movie
 
     private Task ExcludeSimilarForOthers(MediaCardViewModel item) =>
         MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
+
+    private async Task ResolveLibraryGroupIdAsync()
+    {
+        var libraryId = _movie?.IndexedFiles?.FirstOrDefault()?.LibraryId;
+        var groups = await LibraryService.GetLibraryGroupsAsync();
+        _libraryGroupId = LibraryGroupBrowseNavigationHelper.ResolveGroupId(
+            groups,
+            libraryId,
+            LibraryMediaType.Movie);
+    }
+
+    private void NavigateToGenre(string genre)
+    {
+        if (!_libraryGroupId.HasValue)
+            return;
+
+        NavigationManager.NavigateTo(
+            LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(_libraryGroupId.Value, genre: genre));
+    }
+
+    private void NavigateToStudio(string studio)
+    {
+        if (!_libraryGroupId.HasValue)
+            return;
+
+        NavigationManager.NavigateTo(
+            LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(_libraryGroupId.Value, studio: studio));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_tvScrollInitialized)
+            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
+    }
 }
