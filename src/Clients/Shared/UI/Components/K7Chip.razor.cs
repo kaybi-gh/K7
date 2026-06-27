@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -15,4 +16,13 @@ public partial class K7Chip
     [Parameter] public string Style { get; set; } = "";
     [Parameter] public EventCallback OnClick { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (!OnClick.HasDelegate)
+            return;
+
+        if (e.Key is "Enter" or " ")
+            await OnClick.InvokeAsync();
+    }
 }
