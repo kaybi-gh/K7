@@ -194,6 +194,16 @@
 .k7-chip--warning { background: var(--color-warning); color: #000; }
 .k7-chip-close { background: none; border: none; cursor: pointer; padding: 0; display: inline-flex; color: inherit; opacity: 0.7; }
 .k7-chip-close:hover { opacity: 1; }
+.k7-chip--clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+}
+.k7-chip--clickable:hover { background: var(--color-surface-hover); }
+.k7-chip--clickable.k7-chip--outlined:hover {
+  background: color-mix(in srgb, var(--color-surface-2) 50%, transparent);
+  border-color: var(--color-text);
+}
+.k7-chip--clickable.k7-chip--primary:hover { filter: brightness(1.08); }
 button.k7-chip:hover { filter: brightness(1.1); cursor: pointer; }
 
 /* ── Avatar ──────────────────────────────────────────────────────────────────── */
