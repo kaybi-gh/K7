@@ -713,8 +713,8 @@ var SpatialNav = (function () {
                 e.stopPropagation();
                 return;
             }
-            if ((key === 'ArrowDown' || key === 'ArrowUp') && window.K7 && window.K7.SeasonTv) {
-                window.K7.SeasonTv.handleVerticalNav(key, el);
+            if ((key === 'ArrowDown' || key === 'ArrowUp') && window.K7 && window.K7.TvDetailScroll) {
+                window.K7.TvDetailScroll.handleVerticalNav(key, el);
             }
             // When an activatable element is in editing mode, let the event through
             if (el && isActivatable(el) && isEditing(el)) {
@@ -821,11 +821,15 @@ var SpatialNav = (function () {
             if (!_carouselNavHandled) {
                 scrollCarouselToElement(el);
             }
-            if (el.closest('[data-season-tv]') && !el.closest('[data-season-tv-zone="cast"]')) {
-                if (window.K7 && window.K7.SeasonTv) {
-                    window.K7.SeasonTv.clampMainView();
+            if (el.closest('[data-tv-scroll]') && !el.closest('[data-tv-scroll-zone="below"]')) {
+                if (!_carouselNavHandled) {
+                    scrollCarouselToElement(el);
                 }
-                return;
+                var tvScrollRoot = el.closest('[data-tv-scroll]');
+                if (window.K7 && window.K7.TvDetailScroll && window.K7.TvDetailScroll.hasInstance(tvScrollRoot)) {
+                    window.K7.TvDetailScroll.clampMainView(el);
+                    return;
+                }
             }
             if (!el.closest('[data-carousel-item]')) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
@@ -1577,97 +1581,117 @@ K7.positionSelectDropdown = function (button, dropdown) {
     dropdown.style.minWidth = rect.width + 'px';
 };
 
-K7.SeasonTv = (function () {
-    var _root = null;
-    var _showingCast = false;
-    var _onFocus = null;
+K7.TvDetailScroll = (function () {
+    var _instances = new WeakMap();
 
-    function getZones() {
-        if (!_root) return {};
-        return {
-            main: _root.querySelector('[data-season-tv-zone="main"]'),
-            episodes: _root.querySelector('[data-season-tv-zone="episodes"]'),
-            cast: _root.querySelector('[data-season-tv-zone="cast"]')
-        };
+    function getZone(root, name) {
+        return root.querySelector('[data-tv-scroll-zone="' + name + '"]');
     }
 
-    function isInEpisodeCarousel(el) {
-        if (!el || !el.closest) return false;
-        var zones = getZones();
-        return !!(zones.episodes && zones.episodes.contains(el) && el.closest('[data-carousel]'));
-    }
-
-    function isInCastCarousel(el) {
-        if (!el || !el.closest) return false;
-        var zones = getZones();
-        return !!(zones.cast && zones.cast.contains(el) && el.closest('[data-carousel]'));
-    }
-
-    function scrollToMain(instant) {
-        if (!_root) return;
-        _showingCast = false;
-        _root.scrollTo({ top: 0, behavior: instant ? 'instant' : 'smooth' });
-    }
-
-    function scrollToCast() {
-        if (!_root) return;
-        var zones = getZones();
-        if (!zones.main || !zones.cast) return;
-        _showingCast = true;
-        _root.scrollTo({ top: zones.main.offsetHeight, behavior: 'smooth' });
-    }
-
-    function onFocusIn(e) {
-        if (!_root || !_root.contains(e.target)) return;
-        if (isInEpisodeCarousel(e.target) && !_showingCast) {
-            clampMainView();
+    function createHandlers(inst) {
+        function scrollToMain(instant) {
+            inst.showingBelow = false;
+            inst.root.scrollTo({ top: 0, behavior: instant ? 'instant' : 'smooth' });
         }
+
+        function scrollToBelow() {
+            var main = getZone(inst.root, 'main');
+            var below = getZone(inst.root, 'below');
+            if (!main || !below) return;
+            inst.showingBelow = true;
+            inst.root.scrollTo({ top: main.offsetHeight, behavior: 'smooth' });
+        }
+
+        function clampMainView() {
+            if (!inst.showingBelow && inst.root.scrollTop !== 0) {
+                inst.root.scrollTop = 0;
+            }
+        }
+
+        function isInZone(el, zoneName) {
+            if (!el || !el.closest) return false;
+            var zone = getZone(inst.root, zoneName);
+            return !!(zone && zone.contains(el));
+        }
+
+        function isInZoneCarousel(el, zoneName) {
+            return isInZone(el, zoneName) && !!el.closest('[data-carousel]');
+        }
+
+        function onFocusIn(e) {
+            if (!inst.root.contains(e.target)) return;
+            if (isInZone(e.target, 'actions')) {
+                scrollToMain(false);
+            } else if ((isInZoneCarousel(e.target, 'episodes') || isInZoneCarousel(e.target, 'seasons')) && !inst.showingBelow) {
+                clampMainView();
+            }
+        }
+
+        inst.scrollToMain = scrollToMain;
+        inst.scrollToBelow = scrollToBelow;
+        inst.clampMainView = clampMainView;
+        inst.onFocusIn = onFocusIn;
+        inst.handleVerticalNav = function (key, el) {
+            if (!el || !inst.root.contains(el)) return;
+
+            if (key === 'ArrowUp' && (isInZoneCarousel(el, 'below') || isInZoneCarousel(el, 'seasons'))) {
+                scrollToMain(false);
+                return;
+            }
+
+            if (!getZone(inst.root, 'below')) return;
+
+            if (key === 'ArrowDown') {
+                if (isInZoneCarousel(el, 'episodes') || isInZoneCarousel(el, 'seasons')) {
+                    scrollToBelow();
+                } else if (isInZone(el, 'actions') && !getZone(inst.root, 'seasons') && !getZone(inst.root, 'episodes')) {
+                    scrollToBelow();
+                }
+            }
+        };
     }
 
     return {
         init: function (root) {
-            K7.SeasonTv.dispose();
             if (!root) return;
-            _root = root;
-            _showingCast = false;
-            _root.scrollTop = 0;
-            _onFocus = onFocusIn;
-            _root.addEventListener('focusin', _onFocus, true);
+            K7.TvDetailScroll.dispose(root);
+            var inst = { root: root, showingBelow: false, onFocusIn: null };
+            createHandlers(inst);
+            root.scrollTop = 0;
+            root.addEventListener('focusin', inst.onFocusIn, true);
+            _instances.set(root, inst);
         },
-        dispose: function () {
-            if (_root && _onFocus) {
-                _root.removeEventListener('focusin', _onFocus, true);
+        dispose: function (root) {
+            var inst = root ? _instances.get(root) : null;
+            if (!inst) return;
+            if (inst.onFocusIn) {
+                inst.root.removeEventListener('focusin', inst.onFocusIn, true);
             }
-            _root = null;
-            _showingCast = false;
-            _onFocus = null;
+            _instances.delete(root);
         },
-        sync: function () {
-            if (!_showingCast && _root) {
-                _root.scrollTop = 0;
+        sync: function (root) {
+            var inst = root ? _instances.get(root) : null;
+            if (inst && !inst.showingBelow) {
+                inst.root.scrollTop = 0;
             }
         },
-        clampMainView: function () {
-            if (!_root || _showingCast) return;
-            if (_root.scrollTop !== 0) {
-                _root.scrollTop = 0;
-            }
+        hasInstance: function (root) {
+            return !!(root && _instances.has(root));
+        },
+        clampMainView: function (el) {
+            var root = el && el.closest('[data-tv-scroll]');
+            var inst = root && _instances.get(root);
+            if (inst) inst.clampMainView();
         },
         handleVerticalNav: function (key, el) {
-            if (!_root || !el) return;
-            var zones = getZones();
-            if (!zones.cast) return;
-
-            if (key === 'ArrowDown' && isInEpisodeCarousel(el)) {
-                scrollToCast();
-            } else if (key === 'ArrowUp' && isInCastCarousel(el)) {
-                scrollToMain(false);
-            }
-        },
-        scrollToMain: function () { scrollToMain(false); },
-        scrollToCast: scrollToCast
+            var root = el && el.closest('[data-tv-scroll]');
+            var inst = root && _instances.get(root);
+            if (inst) inst.handleVerticalNav(key, el);
+        }
     };
 })();
+
+K7.SeasonTv = K7.TvDetailScroll;
 
 K7.scrollToElement = function (id) {
     var el = document.getElementById(id);

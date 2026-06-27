@@ -132,12 +132,12 @@ public partial class SerieSeason : IAsyncDisposable
         {
             if (!_seasonTvScrollInitialized)
             {
-                await JSRuntime.InvokeVoidAsync("K7.SeasonTv.init", _seasonTvRoot);
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _seasonTvRoot);
                 _seasonTvScrollInitialized = true;
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("K7.SeasonTv.sync");
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _seasonTvRoot);
             }
         }
 
@@ -469,6 +469,6 @@ public partial class SerieSeason : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         if (_seasonTvScrollInitialized)
-            await JSRuntime.InvokeVoidAsync("K7.SeasonTv.dispose");
+            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _seasonTvRoot);
     }
 }
