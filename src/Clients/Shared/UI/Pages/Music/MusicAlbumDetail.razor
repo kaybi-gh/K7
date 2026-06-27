@@ -78,7 +78,8 @@
                     <div class="album-genres">
                         @foreach (var genre in _album.Genres)
                         {
-                            <K7Chip Variant="text" Size="sm">@genre</K7Chip>
+                            var g = genre;
+                            <K7Chip Variant="text" Size="sm" OnClick="() => NavigateToGenre(g)">@genre</K7Chip>
                         }
                     </div>
                 }
@@ -89,7 +90,7 @@
                                    Color="primary"
                                    StartIcon="@Phosphor.Play"
                                    Size="lg"
-                                   OnClick="PlayAll">
+                                   OnClick="PlayAll" data-initial-focus>
                             @S["PlayAll"]
                         </K7Button>
                         <K7Button Variant="outlined"

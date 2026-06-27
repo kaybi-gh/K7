@@ -1,8 +1,10 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
@@ -24,6 +26,9 @@ public partial class MusicAlbumDetail
     [Inject]
     private NavigationManager NavigationManager { get; set; } = default!;
 
+    [Inject]
+    private ILibraryService LibraryService { get; set; } = default!;
+
     private MusicAlbumDto? _album;
     private string? _coverUrl;
     private string? _coverDominantColor;
@@ -33,6 +38,7 @@ public partial class MusicAlbumDetail
     private int _trackCount;
     private double _totalDuration;
     private bool _loading = true;
+    private Guid? _libraryGroupId;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -93,6 +99,12 @@ public partial class MusicAlbumDetail
 
             _trackCount = _tracks.Count;
             _totalDuration = _tracks.Sum(t => t.Duration);
+
+            await ResolveLibraryGroupIdAsync();
+        }
+        else
+        {
+            _libraryGroupId = null;
         }
 
         _loading = false;
@@ -238,6 +250,28 @@ public partial class MusicAlbumDetail
                 StateHasChanged();
             }
         }
+    }
+
+    private async Task ResolveLibraryGroupIdAsync()
+    {
+        var libraryId = _album?.IndexedFiles?.FirstOrDefault()?.LibraryId;
+        var groups = await LibraryService.GetLibraryGroupsAsync();
+        _libraryGroupId = LibraryGroupBrowseNavigationHelper.ResolveGroupId(
+            groups,
+            libraryId,
+            LibraryMediaType.Music);
+    }
+
+    private void NavigateToGenre(string genre)
+    {
+        if (!_libraryGroupId.HasValue)
+            return;
+
+        NavigationManager.NavigateTo(
+            LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(
+                _libraryGroupId.Value,
+                genre: genre,
+                mediaType: MediaType.MusicAlbum));
     }
 
     internal sealed record TrackViewModel
