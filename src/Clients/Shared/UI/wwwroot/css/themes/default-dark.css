@@ -4,24 +4,26 @@
     color-scheme: dark;
 
     /* Surface colors */
-    --color-bg:            #131313;
-    --color-surface:       #1A2030;
-    --color-surface-2:     #222A38;
-    --color-surface-hover: rgba(255,255,255,.06);
-    --color-drawer:        #1a1a1a;
-    --color-bg-gray:       #101620;
+    --color-bg:            #0d0907;
+    --color-surface:       #1a1410;
+    --color-surface-2:     #221a14;
+    --color-surface-hover: rgba(241, 233, 218, .06);
+    --color-drawer:        #110d0a;
+    --color-bg-gray:       #15100c;
 
     /* Accent */
-    --color-accent:        #CC7A3E;
-    --color-accent-hover:  #E0944F;
-    --color-accent-fg:     #FFFFFF;
+    --color-accent:        #d9b060;
+    --color-accent-hover:  #e8c878;
+    --color-accent-fg:     #241a0c;
+    --color-primary:       var(--color-accent);
+    --color-primary-hover: var(--color-accent-hover);
 
     /* Text */
-    --color-text:          #E8ECF0;
-    --color-text-secondary:#8B95A5;
-    --color-text-muted:    #8B95A5;
-    --color-text-disabled: #4A5568;
-    --color-text-on-accent:#FFFFFF;
+    --color-text:          #f3ecde;
+    --color-text-secondary:#a99c87;
+    --color-text-muted:    #8a7e6a;
+    --color-text-disabled: #5c5345;
+    --color-text-on-accent:#241a0c;
 
     /* Feedback */
     --color-success:       #4DB288;
@@ -30,17 +32,23 @@
     --color-info:          #5DB4D6;
 
     /* Borders */
-    --color-border:        #2A3444;
-    --color-border-subtle: rgba(255,255,255,.08);
+    --color-border:        rgba(217, 176, 96, .26);
+    --color-border-subtle: rgba(217, 176, 96, .12);
 
     /* Focus ring */
-    --color-focus:         #CC7A3E;
+    --color-focus:         #d9b060;
     --focus-ring:          0 0 0 2px var(--color-focus);
 
     /* Overlay */
-    --color-overlay:       rgba(10,14,22,.80);
+    --color-overlay:       rgba(7, 5, 4, .82);
 
     /* Scrollbar */
-    --scrollbar-thumb:     #2A3444;
+    --scrollbar-thumb:     rgba(206, 170, 102, .35);
     --scrollbar-track:     transparent;
+
+    /* Shadows */
+    --shadow-sm:  0 1px 3px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .25);
+    --shadow-md:  0 4px 20px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .30);
+    --shadow-lg:  0 12px 32px rgba(0, 0, 0, .50), 0 4px 12px rgba(0, 0, 0, .35);
+    --shadow-xl:  0 24px 48px rgba(0, 0, 0, .55), 0 8px 20px rgba(0, 0, 0, .40);
 }

@@ -2,36 +2,43 @@
 [data-theme="default-light"] {
     color-scheme: light;
 
-    --color-bg:            #F2F4F7;
-    --color-surface:       #FFFFFF;
-    --color-surface-2:     #E8ECF0;
-    --color-surface-hover: rgba(0,0,0,.04);
-    --color-drawer:        #FFFFFF;
-    --color-bg-gray:       #E2E6EC;
+    --color-bg:            #e4e3d9;
+    --color-surface:       #fcfaf7;
+    --color-surface-2:     #eae9e1;
+    --color-surface-hover: rgba(38, 36, 32, .04);
+    --color-drawer:        #f5f3eb;
+    --color-bg-gray:       #dddcd0;
 
-    --color-accent:        #B06830;
-    --color-accent-hover:  #964A1D;
-    --color-accent-fg:     #FFFFFF;
+    --color-accent:        #c49a48;
+    --color-accent-hover:  #a67c32;
+    --color-accent-fg:     #241a0c;
+    --color-primary:       var(--color-accent);
+    --color-primary-hover: var(--color-accent-hover);
 
-    --color-text:          #111827;
-    --color-text-secondary:#4B5563;
-    --color-text-muted:    #4B5563;
-    --color-text-disabled: #9CA3AF;
-    --color-text-on-accent:#FFFFFF;
+    --color-text:          #262420;
+    --color-text-secondary:#565247;
+    --color-text-muted:    #837f70;
+    --color-text-disabled: #b5b0a5;
+    --color-text-on-accent:#241a0c;
 
     --color-success:       #2E8A62;
     --color-error:         #B32121;
     --color-warning:       #C07C14;
     --color-info:          #1F7FA8;
 
-    --color-border:        #D1D5DB;
-    --color-border-subtle: rgba(0,0,0,.06);
+    --color-border:        rgba(196, 154, 72, .30);
+    --color-border-subtle: rgba(196, 154, 72, .14);
 
-    --color-focus:         #B06830;
+    --color-focus:         #c49a48;
     --focus-ring:          0 0 0 2px var(--color-focus);
 
-    --color-overlay:       rgba(0,0,0,.40);
+    --color-overlay:       rgba(38, 36, 32, .45);
 
-    --scrollbar-thumb:     #C5CAD0;
+    --scrollbar-thumb:     #c8c2b4;
     --scrollbar-track:     transparent;
+
+    --shadow-sm:  0 1px 2px rgba(64, 60, 48, .08), 0 1px 3px rgba(64, 60, 48, .06);
+    --shadow-md:  0 4px 20px rgba(64, 60, 48, .14), 0 2px 6px rgba(64, 60, 48, .08);
+    --shadow-lg:  0 12px 32px rgba(64, 60, 48, .18), 0 4px 12px rgba(64, 60, 48, .10);
+    --shadow-xl:  0 24px 48px rgba(64, 60, 48, .22), 0 8px 20px rgba(64, 60, 48, .12);
 }

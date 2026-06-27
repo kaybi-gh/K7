@@ -27,7 +27,7 @@
 /* variants */
 .k7-btn--filled { background: var(--color-surface-2); color: var(--color-text); }
 .k7-btn--filled:hover:not(:disabled) { filter: brightness(1.15); }
-.k7-btn--filled.k7-btn--primary { background: var(--color-accent); color: #000; }
+.k7-btn--filled.k7-btn--primary { background: var(--color-accent); color: var(--color-accent-fg); }
 .k7-btn--filled.k7-btn--primary:hover:not(:disabled) { filter: brightness(1.1); }
 .k7-btn--filled.k7-btn--error { background: var(--color-error); color: #fff; }
 .k7-btn--filled.k7-btn--success { background: var(--color-success); color: #fff; }
@@ -187,7 +187,7 @@
   line-height: 1.5;
 }
 .k7-chip--outlined { background: transparent; border: 1px solid var(--color-text-muted); }
-.k7-chip--primary { background: var(--color-accent); color: #000; }
+.k7-chip--primary { background: var(--color-accent); color: var(--color-accent-fg); }
 .k7-chip--primary.k7-chip--outlined { background: transparent; border-color: var(--color-accent); color: var(--color-accent); }
 .k7-chip--success { background: var(--color-success); color: #fff; }
 .k7-chip--error { background: var(--color-error); color: #fff; }
