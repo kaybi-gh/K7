@@ -40,7 +40,6 @@
     left: 0;
     right: 0;
     z-index: var(--z-drawer);
-    background: var(--color-drawer);
     border-bottom: 1px solid var(--color-border);
     height: calc(var(--nav-height) + var(--k7-safe-top));
     padding-top: var(--k7-safe-top);
@@ -51,7 +50,6 @@
 
 @media (min-width: 600px) {
     .app-nav {
-        background: color-mix(in srgb, var(--color-drawer) 70%, transparent);
         border-bottom-color: transparent;
         backdrop-filter: blur(12px);
     }
@@ -63,6 +61,9 @@
     height: 100%;
     padding: 0 var(--space-5);
     gap: var(--space-1);
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    backdrop-filter: blur(8px);
 }
 
 @media (min-width: 600px) {
@@ -597,6 +598,24 @@
     :global([data-theme="parian-dark"]) .app-nav-backdrop,
     :global([data-theme="parian-light"]) .app-nav-backdrop {
         inset: calc(var(--nav-height) + var(--k7-safe-top) + var(--space-6)) 0 0 0;
+    }
+
+    :global([data-theme="parian-dark"]) .app-nav-logo,
+    :global([data-theme="parian-light"]) .app-nav-logo {
+        position: relative;
+        z-index: 1;
+        filter: drop-shadow(0 0 6px rgba(217, 176, 96, .40)) drop-shadow(0 0 18px rgba(217, 176, 96, .14));
+    }
+
+    :global([data-theme="parian-dark"]) .app-nav-logo::after,
+    :global([data-theme="parian-light"]) .app-nav-logo::after {
+        content: '';
+        position: absolute;
+        inset: -10px;
+        border-radius: var(--radius-full);
+        pointer-events: none;
+        background: radial-gradient(circle, rgba(217, 176, 96, .22) 0%, transparent 70%);
+        z-index: -1;
     }
 }
 
