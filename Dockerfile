@@ -12,6 +12,7 @@ COPY src/Server/Infrastructure/Database/Context/*.csproj                     src
 COPY src/Server/Infrastructure/Database/Providers/Postgres/*.csproj          src/Server/Infrastructure/Database/Providers/Postgres/
 COPY src/Server/Infrastructure/Database/Providers/Sqlite/*.csproj            src/Server/Infrastructure/Database/Providers/Sqlite/
 COPY src/Server/Infrastructure/Configuration/*.csproj                        src/Server/Infrastructure/Configuration/
+COPY src/Server/Infrastructure/ExternalServices/*.csproj                     src/Server/Infrastructure/ExternalServices/
 COPY src/Server/Infrastructure/FileSystem/*.csproj                           src/Server/Infrastructure/FileSystem/
 COPY src/Server/Infrastructure/MediaProcessing/*.csproj                      src/Server/Infrastructure/MediaProcessing/
 COPY src/Shared/Aspire/ServiceDefaults/*.csproj                              src/Shared/Aspire/ServiceDefaults/
