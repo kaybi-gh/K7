@@ -854,3 +854,24 @@ public sealed class MockDownloadManager : IDownloadManager
     public Task CancelAsync(Guid downloadId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task CancelAllAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
+
+public sealed class MockMusicIntelligenceClientService : IMusicIntelligenceClientService
+{
+    public Task<List<Guid>> GetSimilarTracksAsync(Guid trackId, int count = 20, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<Guid>());
+
+    public Task<List<Guid>> GetSonicPathAsync(Guid fromId, Guid toId, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<Guid>());
+
+    public Task<List<Guid>> GetSuggestionsAsync(IEnumerable<Guid> recentTrackIds, int count = 20, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<Guid>());
+
+    public Task<List<Guid>> CreateSmartPlaylistAsync(string prompt, int count = 30, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<Guid>());
+
+    public Task<List<Guid>> SearchTracksBySonicTextAsync(string query, int count = 50, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<Guid>());
+
+    public Task<List<Guid>> SearchTracksByLyricsAsync(string query, int count = 50, CancellationToken cancellationToken = default)
+        => Task.FromResult(new List<Guid>());
+}
