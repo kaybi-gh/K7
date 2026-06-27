@@ -77,6 +77,7 @@
     display: flex;
     z-index: 2;
     pointer-events: none;
+    border-radius: var(--radius-2xl);
     border: 1px solid var(--color-border-subtle);
 }
 
