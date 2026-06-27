@@ -56,13 +56,11 @@ public partial class MediaCardContextMenu
     [Inject] private IStringLocalizer<SharedResource> SharedStrings { get; set; } = default!;
 
     private Guid _mediaId;
+    private bool _hasValidMediaId;
 
     protected override void OnParametersSet()
     {
-        if (Model?.Id is null)
-            return;
-
-        _mediaId = Guid.Parse(Model.Id);
+        _hasValidMediaId = Model?.Id is not null && Guid.TryParse(Model.Id, out _mediaId);
     }
 
     private void OnPlay()

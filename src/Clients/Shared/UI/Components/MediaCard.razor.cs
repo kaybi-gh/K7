@@ -81,7 +81,10 @@ public partial class MediaCard : IDisposable
             return;
         }
 
-        _watchStateMenuVisible = WatchStateMenuEnabled
+        var hasValidMediaId = Guid.TryParse(Model.Id, out _);
+
+        _watchStateMenuVisible = hasValidMediaId
+            && WatchStateMenuEnabled
             && WatchStateActions.SupportsWatchState(Model.Kind)
             && await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
 
@@ -89,9 +92,9 @@ public partial class MediaCard : IDisposable
         var canCreateLibrary = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         var mediaType = MediaCardMenuActions.InferMediaType(Model);
 
-        _showRating = canRate;
-        _showPlaylist = canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
-        _showCollection = canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
+        _showRating = hasValidMediaId && canRate;
+        _showPlaylist = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsPlaylist(mediaType);
+        _showCollection = hasValidMediaId && canCreateLibrary && MediaCardMenuActions.SupportsCollection(mediaType);
     }
 
     private async void OnMenuOpenChanged(bool open)

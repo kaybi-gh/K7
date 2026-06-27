@@ -1,6 +1,6 @@
 @inject IStringLocalizer<MediaCardContextMenu> L
 
-@if (ShowRating)
+@if (ShowRating && _hasValidMediaId)
 {
     <div class="track-context-rating" @onclick:stopPropagation="true">
         <RatingStars MediaId="_mediaId" Value="Model.UserRating" Size="sm" />
@@ -10,7 +10,7 @@
 {
     <K7MenuItem Icon="play" OnClick="OnPlay">@L["Play"]</K7MenuItem>
 }
-@if (ShowWatchState)
+@if (ShowWatchState && _hasValidMediaId)
 {
     <K7MenuItem Icon="check-circle" OnClick="ToggleWatchStateAsync">
         @(Model.Watched ? L["MarkAsUnwatched"] : L["MarkAsWatched"])
@@ -24,7 +24,7 @@
         <K7MenuItem Icon="circle" OnClick="OnExcludeForOthers">@L["HideForUser"]</K7MenuItem>
     }
 }
-@if (ShowPlaylist || ShowCollection)
+@if (_hasValidMediaId && (ShowPlaylist || ShowCollection))
 {
     <hr class="k7-divider" />
     @if (ShowPlaylist)
