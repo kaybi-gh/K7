@@ -28,6 +28,18 @@ public partial class LibraryGroup : IDisposable
     [Parameter]
     public required string Id { get; set; }
 
+    [SupplyParameterFromQuery(Name = "genre")]
+    public string? GenreQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "studio")]
+    public string? StudioQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "network")]
+    public string? NetworkQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mediaType")]
+    public string? MediaTypeQuery { get; set; }
+
     private BrowseView<LiteMediaDto>? _browseView;
     private K7DataTable<LiteMediaDto>? _dataTable;
     private bool _loading = true;
@@ -106,6 +118,14 @@ public partial class LibraryGroup : IDisposable
             _ => _availableMediaTypes.Count > 0 ? _availableMediaTypes[0] : default
         };
 
+        if (!string.IsNullOrWhiteSpace(MediaTypeQuery)
+            && Enum.TryParse<MediaType>(MediaTypeQuery, ignoreCase: true, out var parsedMediaType)
+            && (_availableMediaTypes.Contains(parsedMediaType)
+                || (_availableMediaTypes.Count == 0 && parsedMediaType == _selectedMediaType)))
+        {
+            _selectedMediaType = parsedMediaType;
+        }
+
         _mediaTypeOptions = _availableMediaTypes
             .Select(mt => new ButtonGroupOption<MediaType>(mt, Label: GetMediaTypeLabel(mt)))
             .ToList();
@@ -114,6 +134,13 @@ public partial class LibraryGroup : IDisposable
         _activeSortKey = "title";
         _activeSortDirection = K7SortDirection.Ascending;
         _filter = MediaBrowseFilterPresets.Empty;
+        if (!string.IsNullOrWhiteSpace(GenreQuery))
+            _filter = MediaBrowseFilterPresets.ToggleGenre(_filter, GenreQuery);
+        if (!string.IsNullOrWhiteSpace(StudioQuery))
+            _filter = MediaBrowseFilterPresets.SetSearchFieldValue(_filter, "Studio", StudioQuery);
+        if (!string.IsNullOrWhiteSpace(NetworkQuery))
+            _filter = MediaBrowseFilterPresets.SetSearchFieldValue(_filter, "Network", NetworkQuery);
+
         _intelligentSearch = null;
         _intelligentSearchResults = [];
 
