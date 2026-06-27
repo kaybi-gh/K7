@@ -7,7 +7,7 @@
     <!-- Dark background -->
     <path
         android:pathData="M0,0h320v180H0z"
-        android:fillColor="#131821" />
+        android:fillColor="#0d0907" />
     <!-- K7 full logo (centered) -->
     <group
         android:translateX="96"
@@ -17,26 +17,26 @@
         <!-- K letter -->
         <path
             android:pathData="M0,0 L0,65 C0,69.802 6.115,71.839 9,68 L10,66.666 L10,0 Z"
-            android:fillColor="#FFFFFF" />
+            android:fillColor="#f3ecde" />
         <path
             android:pathData="M11,48.667 L11,65.334 L60,0 L47.5,0 Z"
-            android:fillColor="#FFFFFF" />
+            android:fillColor="#f3ecde" />
         <path
             android:pathData="M34.367,35.851 L28.131,44.167 L47.501,70.001 L60.001,70.001 Z"
-            android:fillColor="#FFFFFF" />
+            android:fillColor="#f3ecde" />
         <!-- 7 letter -->
         <path
             android:pathData="M96.751,10 L89.251,0 L68.001,0 L60.501,10 Z"
-            android:fillColor="#FFFFFF" />
+            android:fillColor="#f3ecde" />
         <path
             android:pathData="M111.134,29.156 L104.881,20.831 L68.001,70.001 L80.501,70.001 Z"
-            android:fillColor="#FFFFFF" />
+            android:fillColor="#f3ecde" />
         <!-- 7 accent symbol -->
         <path
             android:pathData="M90.501,0 L98.001,10 L125.501,10 L126.991,8 C129.465,4.703 127.123,0 123.001,0 Z"
-            android:fillColor="#CC7A3E" />
+            android:fillColor="#d9b060" />
         <path
             android:pathData="M124.751,11 L112.251,11 L105.501,20 L111.761,28.32 Z"
-            android:fillColor="#CC7A3E" />
+            android:fillColor="#d9b060" />
     </group>
 </vector>
