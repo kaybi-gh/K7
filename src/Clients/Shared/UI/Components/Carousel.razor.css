@@ -17,6 +17,22 @@
     padding-inline-start: var(--carousel-margin-start, 16px);
 }
 
+.carousel-header h6 {
+    display: inline-block;
+    position: relative;
+}
+
+.carousel-header h6::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    top: 100%;
+    margin-top: var(--space-1);
+    height: 1px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 65%, transparent), transparent);
+}
+
 .carousel-header ::deep .carousel-skeleton-title {
     height: 1.125rem;
     border-radius: var(--radius-sm);
@@ -30,7 +46,7 @@
 .carousel-wrapper > [data-carousel] {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--space-4);
 }
 
 .carousel-container:has(.media-card--backdrop) {
