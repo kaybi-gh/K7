@@ -63,6 +63,7 @@ builder.Services.AddSingleton<IDiagnosticsService, MockDiagnosticsService>();
 builder.Services.AddSingleton<IServerInfoService, MockServerInfoService>();
 builder.Services.AddSingleton<IUserPreferencesService, MockUserPreferencesService>();
 builder.Services.AddSingleton<IServerPreferencesService, MockServerPreferencesService>();
+builder.Services.AddSingleton<IMusicIntelligenceClientService, MockMusicIntelligenceClientService>();
 
 builder.Services.AddSingleton<IConnectivityService, MockConnectivityService>();
 builder.Services.AddSingleton<IPlaybackJournal, MockPlaybackJournal>();
@@ -74,6 +75,9 @@ builder.Services.AddSingleton<IDownloadManager, MockDownloadManager>();
 // Concrete services whose dependencies are satisfied by the mocks above
 builder.Services.AddSingleton<MediaCacheStore>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
+builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
+builder.Services.AddSingleton<ISyncPlayMediaLoader, SyncPlayMediaLoader>();
+builder.Services.AddSingleton<SyncPlayPlaybackHandler>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
