@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:skia="clr-namespace:SkiaSharp.Extended.UI.Controls;assembly=SkiaSharp.Extended.UI"
              x:Class="K7.Clients.MAUI.LottieSplashPage"
-             BackgroundColor="#131821">
+             BackgroundColor="#0d0907">
 
     <Grid HorizontalOptions="Fill" VerticalOptions="Fill">
         <skia:SKLottieView Source="splash.json"
