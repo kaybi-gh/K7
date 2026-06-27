@@ -347,6 +347,7 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     position: absolute;
     bottom: 0;
     right: 0;
+    z-index: 1;
     width: 10px;
     height: 10px;
     border-radius: var(--radius-full);
