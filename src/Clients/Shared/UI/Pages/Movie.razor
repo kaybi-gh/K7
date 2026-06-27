@@ -12,6 +12,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IStringLocalizer<Movie> L
 @inject IStringLocalizer<SharedResource> S
+@inject IDeviceService DeviceService
+@inject IJSRuntime JSRuntime
 <PageTitle>@_movie?.Title</PageTitle>
 @if (isLoading)
 {
@@ -27,7 +29,6 @@
             
             <div class="d-flex align-center">
                 <K7Skeleton Width="50px" />
-                <span>|</span>
                 <K7Skeleton Width="100px" />
             </div>
             
@@ -71,9 +72,9 @@ else
     {
         var backdropPicture = _movie.Pictures?.FirstOrDefault(x => x.Type == Server.Domain.Enums.MetadataPictureType.Backdrop);
         var backdropUrl = apiClient.GetAbsoluteUri(apiClient.GetAbsoluteUri(backdropPicture?.GetUri(Server.Domain.Enums.MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri)?.AbsoluteUri;
-        <div class="movie-page">
+        <div @ref="_tvScrollRoot" class="movie-page" data-tv-scroll>
         <div class="background-image" style="--background-picture: url(@backdropUrl)" />
-        <div class="movie-main">
+        <div class="movie-main" data-tv-scroll-zone="main">
         <K7BackButton />
         <div class="hero-page-stack">
             <div class="d-flex flex-col pa-10" style="gap: 8px;">
@@ -93,12 +94,13 @@ else
                         }
                         @foreach (var genre in (_movie.Genres ?? []).Take(2))
                         {
-                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
+                            var g = genre;
+                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToGenre(g)">@genre</K7Chip>
                         }
                         @foreach (var studio in (_movie.Studios ?? []).Take(1))
                         {
                             var s = studio;
-                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@studio</K7Chip>
+                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
                         }
                     </div>
                     <div class="movie-meta-details">
@@ -130,14 +132,14 @@ else
                     </p>
                 </div>
 
-                <div class="movie-actions">
+                <div class="movie-actions" data-tv-scroll-zone="actions">
                     <K7Button Disabled="@(!HasPlayableFiles())" 
                                Variant="filled" 
                                StartIcon="@Phosphor.Play" 
                                Color="primary" 
                                Size="lg"
                                Class="movie-actions-play"
-                               OnClick="PlayAsync">@S["Play"]</K7Button>   
+                               OnClick="PlayAsync" data-initial-focus>@S["Play"]</K7Button>   
                     
                     <div class="movie-actions-secondary">
                     <K7IconButton Icon="@Phosphor.Sliders" OnClick="OpenPlaybackOptionsAsync" AriaLabel="playback-options" />
@@ -190,7 +192,9 @@ else
         }
         </div>
 
-        <div class="movie-page-content">
+        @if (HasTvBelowContent)
+        {
+        <div class="movie-page-content" data-tv-scroll-zone="below">
         @if ((_movie.PersonRoles?.Count ?? 0) > 0)
         {
             <Carousel Title="@L["CastingAndCrew"]">
@@ -225,6 +229,7 @@ else
             </Carousel>
         }
         </div>
+        }
         </div>
     }
 }

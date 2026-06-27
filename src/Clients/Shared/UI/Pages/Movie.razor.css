@@ -254,6 +254,16 @@
     -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
 }
 
+:global(html.platform-tv) .movie-page[data-tv-scroll] {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+:global(html.platform-tv) .movie-page[data-tv-scroll] .movie-main {
+    min-height: 100%;
+}
+
 @media (max-width: 599.98px) {
     .hero-page-stack {
         width: 100vw;
