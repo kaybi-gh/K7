@@ -25,5 +25,7 @@ public class RemoteIndexedFileConfiguration : IEntityTypeConfiguration<RemoteInd
             .WithMany(l => l.RemoteIndexedFiles)
             .HasForeignKey(f => f.LibraryId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(f => new { f.LibraryId, f.Created });
     }
 }

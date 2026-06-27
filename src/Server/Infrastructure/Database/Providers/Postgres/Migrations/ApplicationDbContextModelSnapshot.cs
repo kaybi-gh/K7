@@ -657,11 +657,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LibraryId");
-
                     b.HasIndex("MediaId");
 
                     b.HasIndex("PeerServerId");
+
+                    b.HasIndex("LibraryId", "Created");
 
                     b.ToTable("RemoteIndexedFiles");
                 });
@@ -746,9 +746,9 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LibraryId");
-
                     b.HasIndex("MediaId");
+
+                    b.HasIndex("LibraryId", "Created");
 
                     b.ToTable("IndexedFiles");
                 });
