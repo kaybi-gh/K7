@@ -8,6 +8,11 @@
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<Serie> L
 @inject IStringLocalizer<SharedResource> S
+@inject IDeviceService DeviceService
+@inject IJSRuntime JSRuntime
+@inject IPlayerService PlayerService
+@inject PlaybackProgressTracker PlaybackProgressTracker
+@inject IFederationService FederationService
 
 <PageTitle>@_serie?.Title</PageTitle>
 
@@ -21,13 +26,16 @@
 }
 else if (_serie is not null)
 {
-    <div class="serie-page" style="@(_dominantColor is not null ? $"--serie-dominant-color: {_dominantColor};" : "")">
+    <div @ref="_tvScrollRoot"
+         class="serie-page"
+         style="@(_dominantColor is not null ? $"--serie-dominant-color: {_dominantColor};" : "")"
+         data-tv-scroll="@(_isTv && HasTvScrollContent ? string.Empty : null)">
         @if (_backdropUrl is not null)
         {
             <div class="background-image" style="--background-picture: url('@_backdropUrl')" />
         }
 
-        <div class="serie-main">
+        <div class="serie-main" data-tv-scroll-zone="main">
             <K7BackButton />
             <div class="serie-hero">
                 <div class="d-flex flex-col pa-10" style="height: 100%; justify-content: flex-end; gap: 8px;">
@@ -55,17 +63,17 @@ else if (_serie is not null)
                     <div class="serie-genres">
                         @foreach (var genre in (_serie.Genres ?? []).Take(2))
                         {
-                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;">@genre</K7Chip>
+                            var g = genre;
+                            <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToGenre(g)">@genre</K7Chip>
                         }
                     </div>
-                    @if (_serie.Studios?.Count > 0)
+                    @if (_studioNetworkChips.Count > 0)
                     {
-                        <span class="text-caption serie-meta-separator">|</span>
                         <div class="serie-studios">
-                            @foreach (var studio in _serie.Studios.Take(3))
+                            @foreach (var chip in _studioNetworkChips)
                             {
-                                var s = studio;
-                                <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudio(s)">@studio</K7Chip>
+                                var c = chip;
+                                <K7Chip Variant="text" Size="sm" Style="opacity: 0.9; font-weight: 600;" OnClick="() => NavigateToStudioNetworkChip(c)">@chip.Label</K7Chip>
                             }
                         </div>
                     }
@@ -80,11 +88,6 @@ else if (_serie is not null)
                             <p class="text-sm" Style="opacity: 0.5;">&bull;</p>
                             <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@_serie.Status</p>
                         }
-                        @if (!string.IsNullOrEmpty(_serie.Network))
-                        {
-                            <p class="text-sm" Style="opacity: 0.5;">&bull;</p>
-                            <p class="text-sm" Style="opacity: 0.9; font-weight: 600;">@_serie.Network</p>
-                        }
                     </div>
                 </div>
 
@@ -97,7 +100,7 @@ else if (_serie is not null)
                     </div>
                 }
 
-                <div class="d-flex mt-6 serie-actions">
+                <div class="d-flex mt-6 serie-actions" data-tv-scroll-zone="actions">
                     <div class="d-flex serie-actions-primary">
                         <K7Button Disabled="@(_seasons.Count == 0)"
                                    Variant="filled"
@@ -105,7 +108,7 @@ else if (_serie is not null)
                                    Color="primary"
                                    Size="lg"
                                    Style="border-radius: 8px; font-weight: 800; padding: 10px 32px; letter-spacing: 0.5px;"
-                                   OnClick="WatchAsync">@S["Play"]</K7Button>
+                                   OnClick="WatchAsync" data-initial-focus>@S["Play"]</K7Button>
                     </div>
 
                     <div class="serie-actions-secondary">
@@ -143,15 +146,47 @@ else if (_serie is not null)
             </div>
         </div>
 
-        @if ((_serie.PersonRoles?.Count ?? 0) > 0 || _seasons.Count > 0)
+        @if (HasBelowContent)
         {
-            <div class="serie-scroll-hint">
+            <div class="serie-scroll-hint" aria-hidden="true">
                 <K7Icon Icon="@Phosphor.CaretDown" />
+            </div>
+        }
+
+        @if (_isTv && _seasons.Count > 0)
+        {
+            <div class="serie-seasons-area" data-tv-scroll-zone="seasons">
+                <Carousel Title="@L["Seasons"]">
+                    @foreach (var season in _seasons)
+                    {
+                        <CarouselItem @key="season.Id">
+                            <MediaCard Model="@(new MediaCardViewModel
+                                       {
+                                           Id = season.Id.ToString(),
+                                           Kind = MediaCardKind.Season,
+                                           Title = season.SeasonNumber == 0 ? S["Specials"] : string.Format(S["SeasonNumber"], season.SeasonNumber),
+                                           AdditionalInformations = string.Format(S["EpisodeCount"], season.EpisodeCount),
+                                           PictureUrl = GetSeasonPosterUrl(season),
+                                           Watched = season.UserState?.IsCompleted ?? false,
+                                           Progress = season.UserState?.ProgressPercentage ?? 0,
+                                       })"
+                                       Variant="MediaCardVariant.Poster"
+                                       Href="@($"/series/{Id}/seasons/{season.SeasonNumber}")"
+                                       FooterVisible="true"
+                                       OverlayEnabled="true"
+                                       ProgressEnabled="true"
+                                       WatchedStatusEnabled="true"
+                                       WatchStateMenuEnabled="true"
+                                       BulkEpisodeCount="@season.EpisodeCount"
+                                       OnWatchStateChanged="ReloadSerieAsync" />
+                        </CarouselItem>
+                    }
+                </Carousel>
             </div>
         }
         </div>
 
-        @if (_seasons.Count > 0)
+        @if (!_isTv && _seasons.Count > 0)
         {
             <Carousel Title="@L["Seasons"]">
                 @foreach (var season in _seasons)
@@ -181,38 +216,79 @@ else if (_serie is not null)
             </Carousel>
         }
 
-        @if ((_serie.PersonRoles?.Count ?? 0) > 0)
+        @if (_isTv && HasTvBelowContent)
         {
-            <Carousel Title="@L["CastingAndCrew"]">
-                @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_serie.PersonRoles))
+            <div class="serie-page-below" data-tv-scroll-zone="below">
+                @if ((_serie.PersonRoles?.Count ?? 0) > 0)
                 {
-                    <CarouselItem @key="cast.Key">
-                        <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
-                    </CarouselItem>
+                    <Carousel Title="@L["CastingAndCrew"]">
+                        @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_serie.PersonRoles))
+                        {
+                            <CarouselItem @key="cast.Key">
+                                <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
                 }
-            </Carousel>
-        }
 
-        @if (_similarMedia.Count > 0)
-        {
-            <Carousel Title="@L["SimilarMedia"]">
-                @foreach (var media in _similarMedia)
+                @if (_similarMedia.Count > 0)
                 {
-                    <CarouselItem @key="media.Id">
-                        <MediaCard Model="media"
-                                   Href="@($"/series/{media.Id}")"
-                                   OverlayEnabled="true"
-                                   ProgressEnabled="_canTrackProgress"
-                                   WatchedStatusEnabled="_canTrackProgress"
-                                   FooterVisible="true"
-                                   ExcludeMenuEnabled="_canExclude"
-                                   WatchStateMenuEnabled="_canSetWatchState"
-                                   IsAdmin="_isAdmin"
-                                   OnExcludeForSelf="() => ExcludeSimilarForSelf(media)"
-                                   OnExcludeForOthers="() => ExcludeSimilarForOthers(media)" />
-                    </CarouselItem>
+                    <Carousel Title="@L["SimilarMedia"]">
+                        @foreach (var media in _similarMedia)
+                        {
+                            <CarouselItem @key="media.Id">
+                                <MediaCard Model="media"
+                                           Href="@($"/series/{media.Id}")"
+                                           OverlayEnabled="true"
+                                           ProgressEnabled="_canTrackProgress"
+                                           WatchedStatusEnabled="_canTrackProgress"
+                                           FooterVisible="true"
+                                           ExcludeMenuEnabled="_canExclude"
+                                           WatchStateMenuEnabled="_canSetWatchState"
+                                           IsAdmin="_isAdmin"
+                                           OnExcludeForSelf="() => ExcludeSimilarForSelf(media)"
+                                           OnExcludeForOthers="() => ExcludeSimilarForOthers(media)" />
+                            </CarouselItem>
+                        }
+                    </Carousel>
                 }
-            </Carousel>
+            </div>
+        }
+        else
+        {
+            @if ((_serie.PersonRoles?.Count ?? 0) > 0)
+            {
+                <Carousel Title="@L["CastingAndCrew"]">
+                    @foreach (var cast in PersonRoleDisplayHelper.GroupForCarousel(_serie.PersonRoles))
+                    {
+                        <CarouselItem @key="cast.Key">
+                            <PersonRole LitePersonRoleDto="@cast.PrimaryRole" SubtitleOverride="@cast.MergedSubtitle" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+            }
+
+            @if (_similarMedia.Count > 0)
+            {
+                <Carousel Title="@L["SimilarMedia"]">
+                    @foreach (var media in _similarMedia)
+                    {
+                        <CarouselItem @key="media.Id">
+                            <MediaCard Model="media"
+                                       Href="@($"/series/{media.Id}")"
+                                       OverlayEnabled="true"
+                                       ProgressEnabled="_canTrackProgress"
+                                       WatchedStatusEnabled="_canTrackProgress"
+                                       FooterVisible="true"
+                                       ExcludeMenuEnabled="_canExclude"
+                                       WatchStateMenuEnabled="_canSetWatchState"
+                                       IsAdmin="_isAdmin"
+                                       OnExcludeForSelf="() => ExcludeSimilarForSelf(media)"
+                                       OnExcludeForOthers="() => ExcludeSimilarForOthers(media)" />
+                        </CarouselItem>
+                    }
+                </Carousel>
+            }
         }
     </div>
 }

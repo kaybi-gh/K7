@@ -1,24 +1,28 @@
 ﻿using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Shared.Enums;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class Serie
+public partial class Serie : IAsyncDisposable
 {
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private MediaCacheStore CacheStore { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+    [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Parameter]
     public required string Id { get; set; }
 
@@ -35,6 +39,20 @@ public partial class Serie
     private bool _canSetWatchState;
     private bool _isAdmin;
     private bool _permissionsLoaded;
+    private bool _isTv;
+    private ElementReference _tvScrollRoot;
+    private bool _tvScrollInitialized;
+    private Guid? _libraryGroupId;
+    private List<SerieStudioNetworkChip> _studioNetworkChips = [];
+
+    private bool HasTvBelowContent =>
+        (_serie?.PersonRoles?.Count ?? 0) > 0 || _similarMedia.Count > 0;
+
+    private bool HasBelowContent =>
+        _seasons.Count > 0 || HasTvBelowContent;
+
+    private bool HasTvScrollContent =>
+        HasBelowContent;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -47,6 +65,8 @@ public partial class Serie
         }
 
         _loading = true;
+        _tvScrollInitialized = false;
+        _isTv = await DeviceService.GetDeviceTypeAsync() == DeviceType.TV;
 
         var media = await k7ServerService.GetMediaAsync(Guid.Parse(Id));
         if (media is SerieDto serie)
@@ -70,11 +90,35 @@ public partial class Serie
             _seasons = (serie.Seasons ?? [])
                 .OrderBy(s => s.SeasonNumber == 0 ? int.MaxValue : s.SeasonNumber)
                 .ToList();
+
+            BuildStudioNetworkChips();
+            await ResolveLibraryGroupIdAsync();
+        }
+        else
+        {
+            _libraryGroupId = null;
+            _studioNetworkChips = [];
         }
 
         _loading = false;
 
         _ = LoadSimilarMediaAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isTv && !_loading && _serie is not null && HasTvScrollContent)
+        {
+            if (!_tvScrollInitialized)
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.init", _tvScrollRoot);
+                _tvScrollInitialized = true;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.sync", _tvScrollRoot);
+            }
+        }
     }
 
     private string? GetSeasonPosterUrl(LiteSerieSeasonDto season)
@@ -88,11 +132,24 @@ public partial class Serie
         NavigationManager.NavigateTo($"/series/{Id}/seasons/{season.SeasonNumber}");
     }
 
-    private void WatchAsync()
+    private async Task WatchAsync()
     {
-        var first = _seasons.FirstOrDefault();
-        if (first is not null)
-            NavigationManager.NavigateTo($"/series/{Id}/seasons/{first.SeasonNumber}");
+        if (_seasons.Count == 0)
+            return;
+
+        var episode = await SeriePlaybackHelper.ResolveEpisodeToPlayAsync(k7ServerService, _seasons);
+        if (episode is null)
+            return;
+
+        await SeriePlaybackHelper.PlayEpisodeAsync(
+            episode,
+            Guid.Parse(Id),
+            k7ServerService,
+            PlayerService,
+            PlaybackProgressTracker,
+            FeatureAccess,
+            FederationService,
+            apiClient);
     }
 
     private async Task OpenMediaReIdentifyDialogAsync()
@@ -185,7 +242,68 @@ public partial class Serie
 
     private void NavigateToStudio(string studio)
     {
-        NavigationManager.NavigateTo($"/search?studio={Uri.EscapeDataString(studio)}");
+        if (!_libraryGroupId.HasValue)
+            return;
+
+        NavigationManager.NavigateTo(
+            LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(_libraryGroupId.Value, studio: studio));
+    }
+
+    private void NavigateToNetwork(string network)
+    {
+        if (!_libraryGroupId.HasValue)
+            return;
+
+        NavigationManager.NavigateTo(
+            LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(_libraryGroupId.Value, network: network));
+    }
+
+    private void NavigateToStudioNetworkChip(SerieStudioNetworkChip chip)
+    {
+        if (chip.IsNetwork)
+            NavigateToNetwork(chip.Label);
+        else
+            NavigateToStudio(chip.Label);
+    }
+
+    private void BuildStudioNetworkChips()
+    {
+        _studioNetworkChips = [];
+        if (_serie is null)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(_serie.Network))
+            _studioNetworkChips.Add(new SerieStudioNetworkChip(_serie.Network, IsNetwork: true));
+
+        foreach (var studio in _serie.Studios ?? [])
+        {
+            if (_studioNetworkChips.Count(chip => !chip.IsNetwork) >= 1)
+                break;
+
+            if (_studioNetworkChips.Any(chip => string.Equals(chip.Label, studio, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            _studioNetworkChips.Add(new SerieStudioNetworkChip(studio, IsNetwork: false));
+        }
+    }
+
+    private async Task ResolveLibraryGroupIdAsync()
+    {
+        var libraryId = _serie?.IndexedFiles?.FirstOrDefault()?.LibraryId;
+        var groups = await LibraryService.GetLibraryGroupsAsync();
+        _libraryGroupId = LibraryGroupBrowseNavigationHelper.ResolveGroupId(
+            groups,
+            libraryId,
+            LibraryMediaType.Serie);
+    }
+
+    private void NavigateToGenre(string genre)
+    {
+        if (!_libraryGroupId.HasValue)
+            return;
+
+        NavigationManager.NavigateTo(
+            LibraryGroupBrowseNavigationHelper.BuildBrowseUrl(_libraryGroupId.Value, genre: genre));
     }
 
     private async Task LoadSimilarMediaAsync()
@@ -257,6 +375,7 @@ public partial class Serie
         _seasons = (serie.Seasons ?? [])
             .OrderBy(s => s.SeasonNumber == 0 ? int.MaxValue : s.SeasonNumber)
             .ToList();
+        BuildStudioNetworkChips();
         StateHasChanged();
     }
 
@@ -270,4 +389,12 @@ public partial class Serie
 
     private Task ExcludeSimilarForOthers(MediaCardViewModel item) =>
         MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_tvScrollInitialized)
+            await JSRuntime.InvokeVoidAsync("K7.TvDetailScroll.dispose", _tvScrollRoot);
+    }
+
+    private readonly record struct SerieStudioNetworkChip(string Label, bool IsNetwork);
 }
