@@ -16,5 +16,7 @@ public class IndexedFileConfiguration : IEntityTypeConfiguration<IndexedFile>
             .HasOne(x => x.FileMetadata)
             .WithOne(x => x.IndexedFile)
             .HasForeignKey<BaseFileMetadata>(x => x.IndexedFileId);
+
+        builder.HasIndex(x => new { x.LibraryId, x.Created });
     }
 }
