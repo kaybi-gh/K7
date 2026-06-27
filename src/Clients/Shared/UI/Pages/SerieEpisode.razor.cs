@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages;
 
-public partial class EpisodePage
+public partial class SerieEpisode
 {
     [Parameter] public string SerieId { get; set; } = "";
     [Parameter] public int SeasonNumber { get; set; }

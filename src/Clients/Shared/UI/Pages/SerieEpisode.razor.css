@@ -240,13 +240,11 @@
     .episode-page ::deep .carousel-wrapper {
         --carousel-margin-start: 16px;
         position: relative;
-        z-index: 1;
-        background: var(--color-bg);
+        flex-shrink: 0;
         padding-top: var(--space-3);
     }
 
     .episode-page ::deep .carousel-header h6 {
-        color: var(--color-text);
-        opacity: 1;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
     }
 }

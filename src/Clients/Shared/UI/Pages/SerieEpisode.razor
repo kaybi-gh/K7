@@ -11,7 +11,7 @@
 @inject IFeatureAccessService FeatureAccess
 @inject IK7DialogService DialogService
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<EpisodePage> L
+@inject IStringLocalizer<SerieEpisode> L
 @inject IStringLocalizer<SharedResource> S
 @inject IStringLocalizer<MediaCard> CardL
 @inject MediaCacheStore CacheStore
@@ -69,7 +69,7 @@ else if (_episode is not null)
                                    StartIcon="@Phosphor.Play"
                                    OnClick="PlayAsync"
                                    Size="lg"
-                                   Class="episode-actions-play">
+                                   Class="episode-actions-play" data-initial-focus>
                             @(_episode.UserState is { LastPlaybackPosition: > 0, IsCompleted: false } ? S["Continue"] : S["Play"])
                         </K7Button>
 
