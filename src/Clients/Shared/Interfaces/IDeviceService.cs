@@ -16,6 +16,7 @@ public interface IDeviceService
     Task<NativeDeviceDetailsDto> GetNativeDeviceDetailsAsync();
     Task<WebDeviceDetailsDto> GetWebDeviceDetailsAsync();
     Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync();
+    Task<DeviceCodecSummaryDto> GetDeviceCodecSummaryAsync();
     Task<bool> GetHdrSupportAsync();
     Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync();
     string? GetLocalFileUrl(string? localPath);

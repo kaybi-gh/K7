@@ -65,6 +65,20 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
         return Task.FromResult(MapOperatingSystem(DeviceInfo.Platform));
     }
 
+    public async Task<DeviceCodecSummaryDto> GetDeviceCodecSummaryAsync()
+    {
+        var containers = await codecHelper.GetSupportedContainersAsync();
+        var audioCodecs = await codecHelper.GetSupportedAudioCodecsAsync();
+        var videoCodecs = await codecHelper.GetSupportedVideoCodecsAsync();
+
+        return new DeviceCodecSummaryDto
+        {
+            Containers = containers ?? [],
+            AudioCodecs = audioCodecs ?? [],
+            VideoCodecs = videoCodecs ?? []
+        };
+    }
+
     public async Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
     {
         var allFormats = await mediaService.GetMediaFormatsAsync();

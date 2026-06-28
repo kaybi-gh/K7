@@ -39,4 +39,8 @@
   <data name="TmdbDisclaimer" xml:space="preserve"><value>This product uses the TMDB API but is not endorsed or certified by TMDB.</value></data>
   <data name="DeviceInfo" xml:space="preserve"><value>Device</value></data>
   <data name="LoadingCodecs" xml:space="preserve"><value>Loading...</value></data>
+  <data name="CodecContainers" xml:space="preserve"><value>Containers</value></data>
+  <data name="CodecVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="CodecAudio" xml:space="preserve"><value>Audio</value></data>
+  <data name="CodecsUnavailable" xml:space="preserve"><value>Unavailable</value></data>
 </root>

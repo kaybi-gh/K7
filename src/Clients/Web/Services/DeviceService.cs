@@ -73,6 +73,20 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
         return MapOperatingSystem(parsedUserAgent.OsName);
     }
 
+    public async Task<DeviceCodecSummaryDto> GetDeviceCodecSummaryAsync()
+    {
+        var containers = await jsRuntime.InvokeAsync<string[]>("getSupportedContainersAsync");
+        var audioCodecs = await jsRuntime.InvokeAsync<string[]>("getSupportedAudioCodecsAsync");
+        var videoCodecs = await jsRuntime.InvokeAsync<string[]>("getSupportedVideoCodecsAsync");
+
+        return new DeviceCodecSummaryDto
+        {
+            Containers = containers ?? [],
+            AudioCodecs = audioCodecs ?? [],
+            VideoCodecs = videoCodecs ?? []
+        };
+    }
+
     public async Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync()
     {
         var allFormats = await mediaService.GetMediaFormatsAsync();
