@@ -70,7 +70,9 @@ public static partial class MauiProgram
         builder.Services.AddHttpClient(nameof(K7ServerService))
             .AddHttpMessageHandler<AuthenticationDelegatingHandler>()
 #if ANDROID
-            .ConfigurePrimaryHttpMessageHandler(() => new Xamarin.Android.Net.AndroidMessageHandler())
+            // HttpURLConnection (AndroidMessageHandler) only allows standard HTTP methods.
+            // SocketsHttpHandler supports QUERY and other custom methods.
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler())
 #endif
             ;
         builder.Services.AddSingleton<K7ServerService>(sp =>
