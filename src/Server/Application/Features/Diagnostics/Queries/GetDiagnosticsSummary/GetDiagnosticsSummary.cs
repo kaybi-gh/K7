@@ -1,5 +1,6 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -27,7 +28,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
             {
                 l.Id,
                 l.Title,
-                l.MediaType
+                l.MediaType,
+                l.MetadataRefreshIntervalDays
             })
             .ToListAsync(cancellationToken);
 
@@ -64,10 +66,14 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 .Where(m => !m.IndexedFiles.Any())
                 .CountAsync(cancellationToken);
 
-            var staleMetadataCount = await _context.Medias
-                .Where(m => libraryMediaIds.Contains(m.Id))
-                .Where(m => m.LastMetadataRefreshedAt == null)
-                .CountAsync(cancellationToken);
+            var staleMetadataThreshold = MetadataStalenessHelper.GetStalenessThresholdUtc(
+                library.MetadataRefreshIntervalDays, DateTimeOffset.UtcNow);
+            var staleMetadataCount = staleMetadataThreshold is null
+                ? 0
+                : await _context.Medias
+                    .Where(m => libraryMediaIds.Contains(m.Id))
+                    .Where(m => m.LastMetadataRefreshedAt == null || m.LastMetadataRefreshedAt < staleMetadataThreshold)
+                    .CountAsync(cancellationToken);
 
             var totalIndexedFileCount = await _context.IndexedFiles
                 .Where(f => f.LibraryId == library.Id)

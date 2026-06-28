@@ -2,6 +2,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
+using K7.Server.Application.Helpers;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
@@ -195,8 +196,8 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             if (m.HasExternalIds && m.GenreCount == 0) issues.Add(DiagnosticIssue.MissingMetadata);
             if (!m.HasIndexedFiles) issues.Add(DiagnosticIssue.MissingFiles);
 
-            var isStale = m.LastMetadataRefreshedAt is null
-                || (threshold.HasValue && m.LastMetadataRefreshedAt < DateTimeOffset.UtcNow.AddDays(-threshold.Value));
+            var isStale = MetadataStalenessHelper.IsStale(
+                m.LastMetadataRefreshedAt, threshold, DateTimeOffset.UtcNow);
             if (isStale) issues.Add(DiagnosticIssue.StaleMetadata);
 
             if (m.IsMusicTrack && !m.HasAudioAnalysis) issues.Add(DiagnosticIssue.MissingAudioAnalysis);
