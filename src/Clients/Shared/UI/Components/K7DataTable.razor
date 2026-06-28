@@ -78,8 +78,8 @@
                 @if (Items is not null)
                 {
                     <Virtualize Items="Items" Context="item" ItemSize="RowHeight"
-                                OverscanCount="OverscanCount" @ref="_virtualizeRef">
-                        <tr id="@(RowId?.Invoke(item))" class="focusable @(RowClass?.Invoke(item))" tabindex="0" role="row"
+                                OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
+                        <tr id="@(RowId?.Invoke(item))" class="k7-data-table-row focusable @(RowClass?.Invoke(item))" style="@RowStyle" tabindex="0" role="row"
                             @onclick="() => OnRowClicked(item)"
                             @onkeydown="e => OnRowKeyDown(e, item)">
                             @foreach (var col in VisibleColumns)
@@ -95,9 +95,9 @@
                 else if (ServerData is not null)
                 {
                     <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="RowHeight"
-                                OverscanCount="OverscanCount" @ref="_virtualizeRef">
+                                OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
                         <ItemContent>
-                            <tr id="@(RowId?.Invoke(item))" class="focusable @(RowClass?.Invoke(item))" tabindex="0" role="row"
+                            <tr id="@(RowId?.Invoke(item))" class="k7-data-table-row focusable @(RowClass?.Invoke(item))" style="@RowStyle" tabindex="0" role="row"
                                 @onclick="() => OnRowClicked(item)"
                                 @onkeydown="e => OnRowKeyDown(e, item)">
                                 @foreach (var col in VisibleColumns)
@@ -110,7 +110,7 @@
                             </tr>
                         </ItemContent>
                         <Placeholder>
-                            <tr class="k7-data-table-placeholder">
+                            <tr class="k7-data-table-placeholder" style="@RowStyle">
                                 @foreach (var col in VisibleColumns)
                                 {
                                     <td data-mobile-hide="@(!col.VisibleOnMobile)">

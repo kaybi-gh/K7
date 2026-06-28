@@ -87,7 +87,7 @@
         }
     </div>
 
-    <K7DataTable @key="_tableKey" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync" @ref="_tableRef" Height="60vh">
+    <K7DataTable @key="_tableKey" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync" @ref="_tableRef" RowHeight="64" Height="60vh">
         <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false">
             <CellTemplate>
                 <span class="text-sm">@GetTaskTypeLabel(context.Name)</span>
