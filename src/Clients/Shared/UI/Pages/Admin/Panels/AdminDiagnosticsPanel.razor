@@ -120,7 +120,7 @@
         </div>
 
         <div aria-live="polite">
-            <K7DataTable @key="_tableKey" TItem="DiagnosticItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef" RowHeight="56" Height="60vh">
+            <K7DataTable @key="_tableKey" TItem="DiagnosticItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef" RowHeight="72" Height="60vh">
                     <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColName"]" Hideable="false">
                         <CellTemplate>
                             <div class="d-flex flex-col">
@@ -159,10 +159,20 @@
                             <div class="d-flex justify-end" style="gap: var(--space-1);">
                                 @if (context.EntityType == DiagnosticEntityType.Media)
                                 {
-                                    <K7Button Size="sm" Variant="text" Color="primary" StartIcon="@Phosphor.ArrowClockwise"
-                                               OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.RefreshMetadata))">
-                                        @L["ActionRefresh"]
-                                    </K7Button>
+                                    @if (context.Issues.Contains(DiagnosticIssue.MissingExternalId))
+                                    {
+                                        <K7Button Size="sm" Variant="text" Color="primary" StartIcon="@Phosphor.MagnifyingGlass"
+                                                   OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.AutoReidentifyMetadata))">
+                                            @L["ActionReidentify"]
+                                        </K7Button>
+                                    }
+                                    else
+                                    {
+                                        <K7Button Size="sm" Variant="text" Color="primary" StartIcon="@Phosphor.ArrowClockwise"
+                                                   OnClick="@(() => FixItemAsync(context.EntityId, DiagnosticFixAction.RefreshMetadata))">
+                                            @L["ActionRefresh"]
+                                        </K7Button>
+                                    }
                                     @if (context.MediaUrl is not null)
                                     {
                                         <K7Button Size="sm" Variant="text" Color="default" StartIcon="@Phosphor.ArrowSquareOut" Href="@context.MediaUrl">

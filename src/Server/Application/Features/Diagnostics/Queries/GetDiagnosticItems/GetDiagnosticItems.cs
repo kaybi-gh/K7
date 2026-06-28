@@ -188,7 +188,11 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
 
             var issues = new List<DiagnosticIssue>();
             if (missingPictures.Count > 0) issues.Add(DiagnosticIssue.MissingPictures);
-            if (!m.HasExternalIds && m.GenreCount == 0) issues.Add(DiagnosticIssue.MissingMetadata);
+
+            var isEnrichableMedia = m.Type is MediaType.Movie or MediaType.Serie or MediaType.MusicAlbum;
+            if (!m.HasExternalIds && isEnrichableMedia) issues.Add(DiagnosticIssue.MissingExternalId);
+            if (!m.HasExternalIds && !isEnrichableMedia && m.GenreCount == 0) issues.Add(DiagnosticIssue.MissingMetadata);
+            if (m.HasExternalIds && m.GenreCount == 0) issues.Add(DiagnosticIssue.MissingMetadata);
             if (!m.HasIndexedFiles) issues.Add(DiagnosticIssue.MissingFiles);
 
             var isStale = m.LastMetadataRefreshedAt is null
@@ -202,6 +206,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
             var severity = issues.Contains(DiagnosticIssue.MissingFiles)
                 ? DiagnosticSeverity.Error
                 : issues.Contains(DiagnosticIssue.MissingPictures) || issues.Contains(DiagnosticIssue.MissingMetadata)
+                    || issues.Contains(DiagnosticIssue.MissingExternalId)
                     ? DiagnosticSeverity.Warning
                     : DiagnosticSeverity.Info;
 

@@ -143,7 +143,7 @@ public partial class AdminDiagnosticsPanel
     private static IReadOnlyCollection<DiagnosticIssue>? GetSeverityIssues(string? severity) => severity switch
     {
         "error" => [DiagnosticIssue.OrphanFile, DiagnosticIssue.MissingFiles, DiagnosticIssue.MissingFileMetadata],
-        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.StaleMetadata, DiagnosticIssue.InaccessiblePath],
+        "warning" => [DiagnosticIssue.UnidentifiedFile, DiagnosticIssue.MissingHlsSegments, DiagnosticIssue.MissingPictures, DiagnosticIssue.MissingMetadata, DiagnosticIssue.MissingExternalId, DiagnosticIssue.StaleMetadata, DiagnosticIssue.InaccessiblePath],
         "info" => [DiagnosticIssue.MissingAudioAnalysis],
         _ => null
     };
@@ -247,6 +247,7 @@ public partial class AdminDiagnosticsPanel
         {
             return _filterIssue.Value switch
             {
+                DiagnosticIssue.MissingExternalId => DiagnosticFixAction.AutoReidentifyMetadata,
                 DiagnosticIssue.MissingPictures or DiagnosticIssue.MissingMetadata or DiagnosticIssue.StaleMetadata
                     or DiagnosticIssue.MissingAudioAnalysis
                     => DiagnosticFixAction.RefreshMetadata,
@@ -310,6 +311,7 @@ public partial class AdminDiagnosticsPanel
         DiagnosticIssue.MissingHlsSegments => L["MissingHlsSegments"],
         DiagnosticIssue.MissingPictures => L["MissingPictures"],
         DiagnosticIssue.MissingMetadata => L["MissingMetadata"],
+        DiagnosticIssue.MissingExternalId => L["MissingExternalId"],
         DiagnosticIssue.StaleMetadata => L["StaleMetadata"],
         DiagnosticIssue.MissingAudioAnalysis => L["MissingAudioAnalysis"],
         DiagnosticIssue.MissingFiles => L["MissingFiles"],

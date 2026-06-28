@@ -67,7 +67,8 @@ public partial class AdminLibrariesPanel
             _libraryIssueCountMap = summaries.ToDictionary(
                 s => s.LibraryId,
                 s => s.OrphanIndexedFileCount + s.UnidentifiedIndexedFileCount + s.MissingFileMetadataCount
-                    + s.MissingHlsSegmentsCount + s.MediaMissingPicturesCount + s.MediaMissingMetadataCount
+                    + s.MissingHlsSegmentsCount + s.MediaMissingPicturesCount + s.MediaMissingExternalIdCount
+                    + s.MediaMissingMetadataCount
                     + s.MediaWithoutFilesCount + s.StaleMetadataCount + s.MissingAudioAnalysisCount
                     + s.InaccessiblePathCount);
         }
