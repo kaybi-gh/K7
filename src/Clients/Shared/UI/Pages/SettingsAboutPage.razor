@@ -28,19 +28,65 @@
         </div>
         <div class="k7-expansion-panels mt-3">
             <K7ExpansionPanel Text="@Lg["SupportedCodecs"]">
-                <ul>
-                    @if (_supportedMediaFormats is not null)
-                    {
-                        @foreach (var format in _supportedMediaFormats)
-                        {
-                            <li>@format.Id</li>
-                        }
-                    }
-                    else
-                    {
+                @if (_codecSummary is not null)
+                {
+                    <div class="about-codec-groups">
+                        <div class="about-codec-group">
+                            <p class="about-codec-group-title">@L["CodecContainers"]</p>
+                            <ul>
+                                @if (_codecSummary.Containers.Length > 0)
+                                {
+                                    @foreach (var container in _codecSummary.Containers.Order())
+                                    {
+                                        <li>@container</li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li>@L["CodecsUnavailable"]</li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="about-codec-group">
+                            <p class="about-codec-group-title">@L["CodecVideo"]</p>
+                            <ul>
+                                @if (_codecSummary.VideoCodecs.Length > 0)
+                                {
+                                    @foreach (var codec in _codecSummary.VideoCodecs.Order())
+                                    {
+                                        <li>@codec</li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li>@L["CodecsUnavailable"]</li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="about-codec-group">
+                            <p class="about-codec-group-title">@L["CodecAudio"]</p>
+                            <ul>
+                                @if (_codecSummary.AudioCodecs.Length > 0)
+                                {
+                                    @foreach (var codec in _codecSummary.AudioCodecs.Order())
+                                    {
+                                        <li>@codec</li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li>@L["CodecsUnavailable"]</li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <ul>
                         <li>@L["LoadingCodecs"]</li>
-                    }
-                </ul>
+                    </ul>
+                }
             </K7ExpansionPanel>
         </div>
     </section>

@@ -39,4 +39,8 @@
   <data name="CreditSignalR" xml:space="preserve"><value>Communication temps reel</value></data>
   <data name="TmdbDisclaimer" xml:space="preserve"><value>Ce produit utilise l'API TMDB mais n'est ni approuve ni certifie par TMDB.</value></data>
   <data name="LoadingCodecs" xml:space="preserve"><value>Chargement...</value></data>
+  <data name="CodecContainers" xml:space="preserve"><value>Conteneurs</value></data>
+  <data name="CodecVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="CodecAudio" xml:space="preserve"><value>Audio</value></data>
+  <data name="CodecsUnavailable" xml:space="preserve"><value>Non disponible</value></data>
 </root>

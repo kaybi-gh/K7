@@ -68,6 +68,12 @@ public sealed class MockDeviceService : IDeviceService
     public Task<NativeDeviceDetailsDto> GetNativeDeviceDetailsAsync() => Task.FromResult(new NativeDeviceDetailsDto());
     public Task<WebDeviceDetailsDto> GetWebDeviceDetailsAsync() => Task.FromResult(new WebDeviceDetailsDto());
     public Task<List<MediaFormatDto>> GetSupportedMediaFormatsAsync() => Task.FromResult(new List<MediaFormatDto>());
+    public Task<DeviceCodecSummaryDto> GetDeviceCodecSummaryAsync() => Task.FromResult(new DeviceCodecSummaryDto
+    {
+        Containers = ["mp4", "webm"],
+        AudioCodecs = ["aac", "opus"],
+        VideoCodecs = ["h264", "vp9"]
+    });
     public Task<bool> GetHdrSupportAsync() => Task.FromResult(false);
     public Task<CreateDeviceRequest> GenerateCreateDeviceRequestAsync() => Task.FromResult(new CreateDeviceRequest { PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities() });
     public string? GetLocalFileUrl(string? localPath) => null;

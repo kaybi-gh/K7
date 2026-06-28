@@ -1,6 +1,6 @@
 using System.Reflection;
 using K7.Server.Domain.Enums;
-using K7.Shared.Dtos.Entities.Medias;
+using K7.Shared.Dtos.Devices;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
@@ -14,7 +14,7 @@ public partial class SettingsAboutPage
     private string? _serverVersion;
     private string _clientVersion = string.Empty;
     private DeviceType _deviceType;
-    private List<MediaFormatDto>? _supportedMediaFormats;
+    private DeviceCodecSummaryDto? _codecSummary;
     private bool? _hdrSupport;
 
     private string ServerVersionDisplay => GetVersionWithoutHash(_serverVersion) ?? "...";
@@ -26,12 +26,40 @@ public partial class SettingsAboutPage
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             ?? "unknown";
 
-        var aboutInfo = await ServerInfoService.GetAboutInfoAsync();
-        _serverVersion = aboutInfo?.ServerVersion;
+        try
+        {
+            var aboutInfo = await ServerInfoService.GetAboutInfoAsync();
+            _serverVersion = aboutInfo?.ServerVersion;
+        }
+        catch
+        {
+            // Server version unavailable (offline, outdated server, or non-JSON response)
+        }
 
         _deviceType = await DeviceService.GetDeviceTypeAsync();
-        _supportedMediaFormats = await DeviceService.GetSupportedMediaFormatsAsync();
-        _hdrSupport = await DeviceService.GetHdrSupportAsync();
+
+        try
+        {
+            _hdrSupport = await DeviceService.GetHdrSupportAsync();
+        }
+        catch
+        {
+            _hdrSupport = null;
+        }
+
+        try
+        {
+            _codecSummary = await DeviceService.GetDeviceCodecSummaryAsync();
+        }
+        catch
+        {
+            _codecSummary = new DeviceCodecSummaryDto
+            {
+                Containers = [],
+                AudioCodecs = [],
+                VideoCodecs = []
+            };
+        }
     }
 
     private static string? GetVersionWithoutHash(string? version)

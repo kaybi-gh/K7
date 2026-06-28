@@ -21,7 +21,7 @@ public class GetAboutInfo : IEndpoint
                 ServerVersion = version
             });
         })
-        .RequireAuthorization()
+        .AllowAnonymous()
         .WithName(type.Name)
         .WithTags(groupName);
     }
