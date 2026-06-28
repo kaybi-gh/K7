@@ -1169,6 +1169,12 @@ hr.k7-menu-divider { border: none; border-top: 1px solid var(--color-border); ma
 .k7-tooltip-wrap:focus-within .k7-tooltip-tip { opacity: 1; }
 
 /* ── Paper / Card ────────────────────────────────────────────────────────────── */
+.surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
 .k7-paper {
   background: var(--color-surface);
   border-radius: var(--radius-md);
