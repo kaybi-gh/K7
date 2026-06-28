@@ -84,7 +84,7 @@ public class MediaExternalIdResolver(
                 return derived;
         }
 
-        return DeriveIdentificationFromMedia(media, cancellationToken);
+        return await DeriveIdentificationFromMedia(media, cancellationToken);
     }
 
     private static MediaIdentification? DeriveIdentificationFromFile(
