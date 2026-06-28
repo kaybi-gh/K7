@@ -1,8 +1,11 @@
 using Ardalis.GuardClauses;
+using FluentValidation.Results;
+using K7.Server.Application.Common.Exceptions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.Medias.Commands.RefreshMediaMetadatas;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
@@ -17,7 +20,10 @@ public record QueueRefreshMediaMetadataCommand : IRequest
     public required Guid MediaId { get; init; }
 }
 
-public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext context, ISender sender)
+public class QueueRefreshMediaMetadataCommandHandler(
+    IApplicationDbContext context,
+    ISender sender,
+    MediaExternalIdResolver externalIdResolver)
     : IRequestHandler<QueueRefreshMediaMetadataCommand>
 {
     public async Task Handle(QueueRefreshMediaMetadataCommand request, CancellationToken cancellationToken)
@@ -29,15 +35,30 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
         Guard.Against.NotFound(request.MediaId, media);
 
         var library = await FindLibraryAsync(media, cancellationToken);
-        var providerName = library?.MetadataProviderName;
+        if (library is null)
+        {
+            throw new ValidationException(
+            [
+                new ValidationFailure(
+                    nameof(request.MediaId),
+                    $"Media {request.MediaId} is not linked to any library and cannot be refreshed.")
+            ]);
+        }
 
-        // Pick the external ID matching the library's provider, fallback to first available
-        var externalId = providerName is not null
-            ? media.ExternalIds?.FirstOrDefault(e => e.ProviderName == providerName)
-              ?? media.ExternalIds?.FirstOrDefault()
-            : media.ExternalIds?.FirstOrDefault();
+        var externalId = media.ExternalIds.FirstOrDefault(e => e.ProviderName == library.MetadataProviderName)
+            ?? media.ExternalIds.FirstOrDefault();
 
-        Guard.Against.NotFound(request.MediaId, externalId, $"Media {request.MediaId} has no external ID.");
+        externalId ??= await externalIdResolver.ResolveAsync(media, library, cancellationToken);
+
+        if (externalId is null)
+        {
+            throw new ValidationException(
+            [
+                new ValidationFailure(
+                    nameof(request.MediaId),
+                    $"Media {request.MediaId} has no external ID and could not be auto-identified from file or title metadata.")
+            ]);
+        }
 
         var concurrencyGroup = externalId.ProviderName == "federation"
             && externalId.Value.Split(':') is [var peerId, ..]
@@ -51,36 +72,39 @@ public class QueueRefreshMediaMetadataCommandHandler(IApplicationDbContext conte
                 MediaId = media.Id,
                 MetadataProviderExternalId = externalId.Value,
                 MetadataProviderName = externalId.ProviderName,
-                Language = library?.MetadataLanguage ?? "en",
-                FallbackLanguage = library?.MetadataFallbackLanguage ?? "en"
+                Language = library.MetadataLanguage,
+                FallbackLanguage = library.MetadataFallbackLanguage
             },
             Priority = BackgroundTaskPriority.High,
             TargetEntityId = media.Id,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 1,
+            MaxAttempts = 3,
             ConcurrencyGroup = concurrencyGroup
         }, cancellationToken);
     }
 
     private async Task<Library?> FindLibraryAsync(BaseMedia media, CancellationToken cancellationToken)
     {
-        // For MusicArtist, IndexedFiles are on albums, not the artist itself
+        Guid? libraryId;
+
         if (media is MusicArtist)
         {
-            var albumId = await context.Medias.OfType<MusicAlbum>()
+            libraryId = await context.Medias.OfType<MusicAlbum>()
                 .Where(a => a.ArtistId == media.Id)
-                .Select(a => a.Id)
+                .SelectMany(a => context.IndexedFiles.Where(f => f.MediaId == a.Id).Select(f => (Guid?)f.LibraryId))
                 .FirstOrDefaultAsync(cancellationToken);
-
-            if (albumId == Guid.Empty) return null;
-
-            return await context.Libraries
-                .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == albumId)
-                    || l.RemoteIndexedFiles.Any(r => r.MediaId == albumId), cancellationToken);
+        }
+        else
+        {
+            libraryId = await context.IndexedFiles
+                .Where(f => f.MediaId == media.Id)
+                .Select(f => (Guid?)f.LibraryId)
+                .FirstOrDefaultAsync(cancellationToken);
         }
 
-        return await context.Libraries
-            .FirstOrDefaultAsync(l => l.IndexedFiles.Any(f => f.MediaId == media.Id)
-                || l.RemoteIndexedFiles.Any(r => r.MediaId == media.Id), cancellationToken);
+        if (libraryId is null)
+            return null;
+
+        return await context.Libraries.FindAsync([libraryId.Value], cancellationToken);
     }
 }

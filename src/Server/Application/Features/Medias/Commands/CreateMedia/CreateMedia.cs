@@ -99,6 +99,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             _context.IndexedFiles.Attach(file);
 
         var movie = new Movie { IndexedFiles = indexedFiles };
+        movie.ExternalIds.Add(new ExternalId
+        {
+            ProviderName = library.MetadataProviderName!,
+            Value = metadataProviderExternalId
+        });
         _context.Medias.Add(movie);
         movie.AddDomainEvent(new MediaCreatedEvent(movie));
         await _context.SaveChangesAsync(cancellationToken);
@@ -116,7 +121,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             Priority = BackgroundTaskPriority.Low,
             TargetEntityId = movie.Id,
             TargetEntityTypeName = nameof(BaseMedia),
-            MaxAttempts = 1,
+            MaxAttempts = 3,
             ConcurrencyGroup = library.MetadataProviderName
         }, cancellationToken);
 

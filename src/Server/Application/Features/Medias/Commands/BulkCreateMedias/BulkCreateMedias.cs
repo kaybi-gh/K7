@@ -467,7 +467,7 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
                 Priority = BackgroundTaskPriority.Low,
                 TargetEntityId = media.Id,
                 TargetEntityTypeName = nameof(BaseMedia),
-                MaxAttempts = 1,
+                MaxAttempts = 3,
                 ConcurrencyGroup = externalId.ProviderName
             }, cancellationToken);
         }
