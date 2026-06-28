@@ -16,7 +16,7 @@ public partial class K7DataTable<TItem>
     [Parameter] public EventCallback<TItem> OnRowClick { get; set; }
     [Parameter] public string? PersistenceKey { get; set; }
     [Parameter] public float RowHeight { get; set; } = 48;
-    [Parameter] public int OverscanCount { get; set; } = 10;
+    [Parameter] public int OverscanCount { get; set; } = 5;
     [Parameter] public bool ShowToolbar { get; set; } = true;
     [Parameter] public string? Height { get; set; }
     [Parameter] public Func<TItem, string?>? RowId { get; set; }
@@ -88,15 +88,8 @@ public partial class K7DataTable<TItem>
             ActiveSortKey,
             ActiveSortDirection);
 
-        try
-        {
-            var result = await ServerData(state, request.CancellationToken);
-            return new ItemsProviderResult<TItem>(result.Items, result.TotalItemCount);
-        }
-        catch (OperationCanceledException)
-        {
-            return default;
-        }
+        var result = await ServerData(state, request.CancellationToken);
+        return new ItemsProviderResult<TItem>(result.Items, result.TotalItemCount);
     }
 
     private async Task OnHeaderClick(K7DataColumn<TItem> column)
@@ -149,4 +142,6 @@ public partial class K7DataTable<TItem>
         _columns.Where(c => c.IsVisible);
 
     private string? ScrollStyle => Height is not null ? $"height: {Height}; flex: none" : null;
+
+    private string RowStyle => FormattableString.Invariant($"height: {RowHeight}px");
 }

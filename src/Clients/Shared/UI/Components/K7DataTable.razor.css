@@ -63,6 +63,12 @@
     white-space: nowrap;
 }
 
+.k7-data-table-el tbody tr.k7-data-table-row td,
+.k7-data-table-el tbody tr.k7-data-table-placeholder td {
+    overflow: hidden;
+    vertical-align: middle;
+}
+
 .k7-data-table-el th {
     font-weight: 600;
     font-size: 0.8125rem;
@@ -93,25 +99,32 @@
     outline-offset: 2px;
 }
 
-.k7-data-table-el tbody tr {
+.k7-data-table-el tbody tr.k7-data-table-row {
     cursor: pointer;
 }
 
-.k7-data-table-el tbody tr:nth-child(even) {
-    background: color-mix(in srgb, var(--color-surface-hover) 50%, transparent);
-}
-
-.k7-data-table-el tbody tr:hover {
+.k7-data-table-el tbody tr.k7-data-table-row:hover {
     background: var(--color-surface-hover);
 }
 
-.k7-data-table-el tbody tr:focus-visible {
+.k7-data-table-el tbody tr.k7-data-table-row:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
 }
 
+.k7-data-table-el tbody > tr:not(:has(td)) {
+    pointer-events: none;
+    background: transparent !important;
+}
+
+.k7-data-table-placeholder {
+    pointer-events: none;
+    cursor: default;
+}
+
 .k7-data-table-placeholder td {
     padding: 8px 12px;
+    vertical-align: middle;
 }
 
 .k7-skeleton-line {
@@ -146,11 +159,11 @@
     }
 }
 
-:global(html.platform-tv) .k7-data-table-el tbody tr {
+:global(html.platform-tv) .k7-data-table-el tbody tr.k7-data-table-row {
     min-height: 56px;
 }
 
-:global(html.platform-tv) .k7-data-table-el tbody tr:focus-visible {
+:global(html.platform-tv) .k7-data-table-el tbody tr.k7-data-table-row:focus-visible {
     outline-width: 3px;
 }
 
