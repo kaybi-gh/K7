@@ -11,6 +11,7 @@ using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using ValidationException = K7.Server.Application.Common.Exceptions.ValidationException;
 
 namespace K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
 
