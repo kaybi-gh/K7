@@ -78,8 +78,15 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
 
     public async Task<List<MediaFormatDto>> GetMediaFormatsAsync(CancellationToken cancellationToken = default)
     {
-        var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions, cancellationToken);
-        return formats ?? [];
+        try
+        {
+            var formats = await HttpClient.GetFromJsonAsync<List<MediaFormatDto>>("api/media-formats", _serializerOptions, cancellationToken);
+            return formats ?? [];
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     public async Task<MovieDto?> GetMovieAsync(Guid id, CancellationToken cancellationToken = default)
@@ -103,7 +110,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
 
     public async Task<PaginatedListDto<LiteMediaDto>?> QueryMediasAsync(QueryMediasRequest request, CancellationToken cancellationToken = default)
     {
-        using var httpRequest = new HttpRequestMessage(new HttpMethod("QUERY"), "api/medias")
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Query, "api/medias")
         {
             Content = JsonContent.Create(request, options: _serializerOptions)
         };
@@ -632,12 +639,26 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
 
     public async Task<AboutInfoDto?> GetAboutInfoAsync(CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<AboutInfoDto>("api/about", _serializerOptions, cancellationToken);
+        try
+        {
+            return await HttpClient.GetFromJsonAsync<AboutInfoDto>("api/about", _serializerOptions, cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<ServerInfoDto>("api/server-info", _serializerOptions, cancellationToken);
+        try
+        {
+            return await HttpClient.GetFromJsonAsync<ServerInfoDto>("api/server-info", _serializerOptions, cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default)
