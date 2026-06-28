@@ -1,5 +1,5 @@
 ﻿.summary-card {
-    padding: 20px 24px;
+    padding: var(--space-4);
     transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
@@ -12,16 +12,6 @@
     border-color: var(--color-accent);
     border-width: 2px;
     background-color: rgba(229, 160, 13, 0.06);
-}
-
-.summary-number {
-    font-weight: 700;
-    line-height: 1.1;
-}
-
-.summary-icon {
-    opacity: 0.25;
-    font-size: 2.5rem !important;
 }
 
 .actions-cell {

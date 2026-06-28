@@ -62,10 +62,14 @@ public partial class AdminDiagnosticsPanel
             _summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
             ComputeAggregateCounts();
         }
-        catch
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
         {
             _summaries = null;
-            Snackbar.Add(S["LoadError"], K7Severity.Error);
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
         }
         finally
         {
@@ -267,7 +271,15 @@ public partial class AdminDiagnosticsPanel
     }
 
     private string SummaryCardClass(string? severity) =>
-        $"cursor-pointer summary-card {(_selectedSeverity == severity ? "summary-card-active" : "")}";
+        _selectedSeverity == severity ? "summary-card-active" : "";
+
+    private int GetIssueCount(DiagnosticIssue issue) =>
+        _summaries is null ? 0 : LibraryHealthSummaryCounts.SumIssue(_summaries, issue);
+
+    private int GetEntityTypeCount(DiagnosticEntityType entityType) =>
+        _summaries is null ? 0 : LibraryHealthSummaryCounts.SumEntityType(_summaries, entityType);
+
+    private static string FormatFilterLabel(string label, int count) => $"{label} ({count})";
 
     private Dictionary<string, string> GetActiveFilterChips()
     {
