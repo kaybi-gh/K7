@@ -51,22 +51,30 @@ public class CodecService : ICodecService
 
     public Task<bool> GetHdrSupportAsync()
     {
-        var displayManager = (DisplayManager?)global::Android.App.Application.Context.GetSystemService(Context.DisplayService);
-        var display = displayManager?.GetDisplay(Display.DefaultDisplay);
-
-        if (display == null)
+        try
         {
-            return Task.FromResult(false);
-        }
+            var displayManager = (DisplayManager?)global::Android.App.Application.Context.GetSystemService(Context.DisplayService);
+            var display = displayManager?.GetDisplay(Display.DefaultDisplay);
+
+            if (display == null)
+            {
+                return Task.FromResult(false);
+            }
 
 #if ANDROID33_0_OR_GREATER
-        return Task.FromResult(display.IsHdr);
+            return Task.FromResult(display.IsHdr);
 #elif ANDROID26_0_OR_GREATER
-        var hdrCapabilities = display.GetHdrCapabilities();
-        return Task.FromResult(hdrCapabilities?.GetSupportedHdrTypes()?.Length > 0);
+            var hdrCapabilities = display.GetHdrCapabilities();
+            return Task.FromResult(hdrCapabilities?.GetSupportedHdrTypes()?.Length > 0);
 #else
-    return Task.FromResult(false);
+            return Task.FromResult(false);
 #endif
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[K7-Codec] HDR detection failed: {ex}");
+            return Task.FromResult(false);
+        }
     }
 
     public Task<string[]> GetSupportedVideoCodecsAsync()
