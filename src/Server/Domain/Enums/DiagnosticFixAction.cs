@@ -4,5 +4,6 @@ public enum DiagnosticFixAction
 {
     RefreshMetadata = 1,
     ExtractFileMetadata = 2,
-    ComputeHlsSegments = 3
+    ComputeHlsSegments = 3,
+    AutoReidentifyMetadata = 4
 }

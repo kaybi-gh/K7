@@ -10,6 +10,7 @@ public sealed record LibraryHealthSummaryDto
 
     public required int TotalMediaCount { get; init; }
     public required int MediaMissingPicturesCount { get; init; }
+    public required int MediaMissingExternalIdCount { get; init; }
     public required int MediaMissingMetadataCount { get; init; }
     public required int MediaWithoutFilesCount { get; init; }
     public required int StaleMetadataCount { get; init; }

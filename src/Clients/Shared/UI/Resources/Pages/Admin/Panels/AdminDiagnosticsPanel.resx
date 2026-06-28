@@ -30,6 +30,7 @@
   <data name="TotalMedia" xml:space="preserve"><value>Total</value></data>
   <data name="MissingPictures" xml:space="preserve"><value>Images manquantes</value></data>
   <data name="MissingMetadata" xml:space="preserve"><value>Métadonnées manquantes</value></data>
+  <data name="MissingExternalId" xml:space="preserve"><value>Identifiant externe manquant</value></data>
   <data name="MissingFiles" xml:space="preserve"><value>Fichiers manquants</value></data>
   <data name="StaleMetadata" xml:space="preserve"><value>Métadonnées obsolètes</value></data>
   <data name="IndexedFilesSection" xml:space="preserve"><value>Fichiers source</value></data>
@@ -73,6 +74,7 @@
   <data name="WarningsDescription" xml:space="preserve"><value>Rafraîchissement possible</value></data>
   <data name="InfoDescription" xml:space="preserve"><value>Non critique</value></data>
   <data name="ActionRefresh" xml:space="preserve"><value>Rafraîchir</value></data>
+  <data name="ActionReidentify" xml:space="preserve"><value>Ré-identifier</value></data>
   <data name="ActionExtract" xml:space="preserve"><value>Extraire</value></data>
   <data name="ActionHls" xml:space="preserve"><value>HLS</value></data>
   <data name="InaccessiblePath" xml:space="preserve"><value>Chemin inaccessible</value></data>

@@ -8,6 +8,7 @@ public enum DiagnosticIssue
     MissingHlsSegments,
     MissingPictures,
     MissingMetadata,
+    MissingExternalId,
     StaleMetadata,
     MissingAudioAnalysis,
     MissingFiles,

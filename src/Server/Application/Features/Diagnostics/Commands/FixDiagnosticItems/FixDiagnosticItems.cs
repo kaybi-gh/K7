@@ -38,6 +38,10 @@ public class FixDiagnosticItemsCommandHandler(
                         await sender.Send(new QueueRefreshMediaMetadataCommand { MediaId = entityId }, cancellationToken);
                         break;
 
+                    case DiagnosticFixAction.AutoReidentifyMetadata:
+                        await sender.Send(new QueueRefreshMediaMetadataCommand { MediaId = entityId }, cancellationToken);
+                        break;
+
                     case DiagnosticFixAction.ExtractFileMetadata:
                         await QueueExtractFileMetadataAsync(entityId, cancellationToken);
                         break;

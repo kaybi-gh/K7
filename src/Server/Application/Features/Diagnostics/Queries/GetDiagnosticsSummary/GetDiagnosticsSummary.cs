@@ -47,9 +47,16 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 .Where(m => !m.Pictures.Any())
                 .CountAsync(cancellationToken);
 
+            var mediaMissingExternalIdCount = await _context.Medias
+                .Where(m => libraryMediaIds.Contains(m.Id))
+                .Where(m => m is Movie || m is Serie || m is MusicAlbum)
+                .Where(m => !m.ExternalIds.Any())
+                .CountAsync(cancellationToken);
+
             var mediaMissingMetadataCount = await _context.Medias
                 .Where(m => libraryMediaIds.Contains(m.Id))
-                .Where(m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre) && !m.ExternalIds.Any())
+                .Where(m => m.ExternalIds.Any())
+                .Where(m => !m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre))
                 .CountAsync(cancellationToken);
 
             var mediaWithoutFilesCount = await _context.Medias
@@ -111,6 +118,7 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 MediaType = library.MediaType,
                 TotalMediaCount = totalMediaCount,
                 MediaMissingPicturesCount = mediaMissingPicturesCount,
+                MediaMissingExternalIdCount = mediaMissingExternalIdCount,
                 MediaMissingMetadataCount = mediaMissingMetadataCount,
                 MediaWithoutFilesCount = mediaWithoutFilesCount,
                 StaleMetadataCount = staleMetadataCount,
