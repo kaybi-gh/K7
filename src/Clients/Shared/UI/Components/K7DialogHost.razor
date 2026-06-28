@@ -8,8 +8,11 @@
          @ref="entry.BackdropRef"
          data-sn-layer="dialog"
          data-sn-layer-close="self"
+         @onpointerdown="() => OnBackdropClick(entry)"
+         @onpointerdown:preventDefault="true"
          @onclick="() => OnBackdropClick(entry)">
         <div class="k7-dialog-paper @GetPaperClasses(entry)"
+             @onpointerdown:stopPropagation="true"
              @onclick:stopPropagation="true">
             @if (entry.Options?.FullScreen != true)
             {

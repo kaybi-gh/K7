@@ -9,7 +9,9 @@
     }
     @if (_open)
     {
-        <div class="k7-backdrop" @ref="_backdrop" @onclick="CloseAsync" @ontouchstart="CloseAsync" @onclick:stopPropagation="true"></div>
+        <div class="k7-backdrop" @ref="_backdrop"
+             @onpointerdown="CloseAsync" @onpointerdown:preventDefault="true" @onpointerdown:stopPropagation="true"
+             @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
     }
     <div class="k7-select-wrap @(_open ? "k7-select-wrap--open" : "")" @ref="_root">
         <button type="button"

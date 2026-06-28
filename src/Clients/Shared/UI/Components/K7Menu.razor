@@ -5,7 +5,9 @@
 
 @if (_open)
 {
-    <div class="k7-backdrop" @ref="_backdrop" @onclick="Close" @ontouchstart="Close" @onclick:stopPropagation="true"></div>
+    <div class="k7-backdrop" @ref="_backdrop"
+         @onpointerdown="Close" @onpointerdown:preventDefault="true" @onpointerdown:stopPropagation="true"
+         @onclick="Close" @onclick:stopPropagation="true"></div>
 }
 <div class="k7-menu @(_open ? "k7-menu--open" : "") @Class" @ref="_root">
     <div class="k7-menu-activator" @onclick:stopPropagation="true">

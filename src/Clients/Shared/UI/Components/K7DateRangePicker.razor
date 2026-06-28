@@ -3,7 +3,9 @@
 
 @if (_open)
 {
-    <div class="k7-backdrop" @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
+    <div class="k7-backdrop"
+         @onpointerdown="CloseAsync" @onpointerdown:preventDefault="true" @onpointerdown:stopPropagation="true"
+         @onclick="CloseAsync" @onclick:stopPropagation="true"></div>
 }
 <div class="k7-date-picker @Class" style="@Style">
     <button type="button"
