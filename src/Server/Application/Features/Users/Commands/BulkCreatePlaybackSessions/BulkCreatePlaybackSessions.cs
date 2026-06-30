@@ -24,12 +24,31 @@ public class BulkCreatePlaybackSessionsCommandHandler(IApplicationDbContext cont
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
         Guard.Against.NotFound(request.UserId, user);
 
+        if (request.Items.Count == 0)
+            return 0;
+
+        var mediaIds = request.Items.Select(i => i.MediaId).Distinct().ToList();
+        var existingSessions = await context.MediaPlaybackSessions
+            .Where(s => s.UserId == request.UserId && mediaIds.Contains(s.MediaId))
+            .Select(s => new { s.MediaId, s.StartedAt })
+            .ToListAsync(cancellationToken);
+
+        var existingKeys = existingSessions
+            .Select(s => (s.MediaId, StartedAtSeconds: ToUnixSeconds(s.StartedAt)))
+            .ToHashSet();
+
         var created = 0;
 
         foreach (var batch in request.Items.Chunk(SaveBatchSize))
         {
+            var batchCreated = 0;
+
             foreach (var item in batch)
             {
+                var startedAtSeconds = ToUnixSeconds(item.StartedAt);
+                if (existingKeys.Contains((item.MediaId, startedAtSeconds)))
+                    continue;
+
                 var sessionId = Guid.CreateVersion7();
                 var session = new MediaPlaybackSession
                 {
@@ -47,6 +66,7 @@ public class BulkCreatePlaybackSessionsCommandHandler(IApplicationDbContext cont
                     State = item.IsCompleted ? Domain.Enums.PlaybackState.Ended : Domain.Enums.PlaybackState.Unknown
                 };
                 context.MediaPlaybackSessions.Add(session);
+                existingKeys.Add((item.MediaId, startedAtSeconds));
 
                 if (item.IsTranscode is not null || item.VideoDecision is not null || item.Bitrate is not null)
                 {
@@ -66,12 +86,22 @@ public class BulkCreatePlaybackSessionsCommandHandler(IApplicationDbContext cont
                     };
                     context.PlaybackSessionDetails.Add(details);
                 }
+
+                batchCreated++;
             }
 
-            await context.SaveChangesAsync(cancellationToken);
-            created += batch.Length;
+            if (batchCreated > 0)
+            {
+                await context.SaveChangesAsync(cancellationToken);
+                created += batchCreated;
+            }
         }
 
         return created;
+    }
+
+    private static long ToUnixSeconds(DateTime startedAt)
+    {
+        return new DateTimeOffset(startedAt.ToUniversalTime()).ToUnixTimeSeconds();
     }
 }
