@@ -17,13 +17,19 @@ public class GetPlaybackHistory : IEndpoint
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 25,
             [FromQuery] MediaType? mediaType = null,
+            [FromQuery] string period = "month",
+            [FromQuery] DateTime? from = null,
+            [FromQuery] DateTime? to = null,
             CancellationToken cancellationToken = default) =>
         {
             return await sender.Send(new GetPlaybackHistoryQuery
             {
                 Page = page,
                 PageSize = pageSize,
-                MediaType = mediaType
+                MediaType = mediaType,
+                Period = period,
+                From = from,
+                To = to
             }, cancellationToken);
         })
         .RequireAuthorization(Policies.GuestOrAbove)

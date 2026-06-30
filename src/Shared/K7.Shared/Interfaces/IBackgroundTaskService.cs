@@ -12,5 +12,8 @@ public interface IBackgroundTaskService
     Task CancelBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default);
     Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default);
     Task UpdateSettingsAsync(UpdateBackgroundTaskSettingsRequest request, CancellationToken cancellationToken = default);
-    Task<BackgroundTaskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
+    Task<BackgroundTaskSummaryDto> GetSummaryAsync(
+        IReadOnlyCollection<BackgroundTaskStatus>? statusFilter = null,
+        IReadOnlyCollection<string>? namesFilter = null,
+        CancellationToken cancellationToken = default);
 }
