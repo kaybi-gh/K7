@@ -12,9 +12,12 @@ public class GetBackgroundTaskSummary : IEndpoint
         var type = GetType();
         var groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapGet("/api/background-tasks/summary", async ([FromServices] ISender sender, CancellationToken cancellationToken) =>
+        endpointRouteBuilder.MapGet("/api/background-tasks/summary", async (
+            [FromServices] ISender sender,
+            [AsParameters] GetBackgroundTaskSummaryQuery query,
+            CancellationToken cancellationToken) =>
         {
-            return await sender.Send(new GetBackgroundTaskSummaryQuery(), cancellationToken);
+            return await sender.Send(query, cancellationToken);
         })
         .RequireAuthorization(Policies.AdminOnly)
         .WithName(type.Name)

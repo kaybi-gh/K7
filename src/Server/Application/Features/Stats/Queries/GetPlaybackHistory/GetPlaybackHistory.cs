@@ -1,9 +1,11 @@
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Domain.Constants;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Users;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
+using K7.Shared.Navigation;
 
 namespace K7.Server.Application.Features.Stats.Queries.GetPlaybackHistory;
 
@@ -16,6 +18,9 @@ public record GetPlaybackHistoryQuery : IRequest<PlaybackHistoryPageDto>
     public Guid? UserId { get; init; }
     public bool IncludeStreamQuality { get; init; }
     public bool ShowAllUsers { get; init; }
+    public string Period { get; init; } = "month";
+    public DateTime? From { get; init; }
+    public DateTime? To { get; init; }
 }
 
 public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser currentUser, IIdentityService identityService)
@@ -48,6 +53,23 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 .Where(s => s.Media.Type == request.MediaType.Value);
         }
 
+        if (request.Period == "custom")
+        {
+            if (request.From is not null)
+            {
+                sessionsQuery = sessionsQuery.Where(s => s.StartedAt >= request.From.Value.ToUniversalTime());
+            }
+
+            if (request.To is not null)
+            {
+                sessionsQuery = sessionsQuery.Where(s => s.StartedAt <= request.To.Value.ToUniversalTime());
+            }
+        }
+        else if (GetPeriodStart(request.Period) is { } since)
+        {
+            sessionsQuery = sessionsQuery.Where(s => s.StartedAt >= since);
+        }
+
         var groupedQuery = sessionsQuery
             .GroupBy(s => s.ReferenceId)
             .Select(g => new
@@ -76,6 +98,16 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             .Where(m => mediaIds.Contains(m.Id))
             .Select(m => new { m.Id, m.Title, m.Type })
             .ToDictionaryAsync(m => m.Id, cancellationToken);
+
+        var episodeNavById = await context.Medias.OfType<SerieEpisode>()
+            .Where(e => mediaIds.Contains(e.Id))
+            .Select(e => new { e.Id, e.SerieId, SeasonNumber = e.Season.SeasonNumber, e.EpisodeNumber })
+            .ToDictionaryAsync(e => e.Id, cancellationToken);
+
+        var trackNavById = await context.Medias.OfType<MusicTrack>()
+            .Where(t => mediaIds.Contains(t.Id))
+            .Select(t => new { t.Id, t.AlbumId })
+            .ToDictionaryAsync(t => t.Id, cancellationToken);
 
         var libraryByMedia = await context.IndexedFiles
             .Where(f => f.MediaId != null && mediaIds.Contains(f.MediaId.Value))
@@ -129,6 +161,8 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
         var items = pagedGroups.Select(g =>
         {
             var media = medias.GetValueOrDefault(g.MediaId);
+            episodeNavById.TryGetValue(g.MediaId, out var episodeNav);
+            trackNavById.TryGetValue(g.MediaId, out var trackNav);
             StreamQualityDto? quality = null;
 
             if (detailsByRef is not null && detailsByRef.TryGetValue(g.ReferenceId, out var details) && details is not null)
@@ -164,6 +198,15 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 MediaId = g.MediaId,
                 MediaTitle = media?.Title,
                 MediaType = media?.Type.ToString(),
+                MediaUrl = media is not null
+                    ? MediaPageUrls.Build(
+                        media.Type,
+                        g.MediaId,
+                        episodeNav?.SerieId,
+                        episodeNav?.SeasonNumber,
+                        episodeNav?.EpisodeNumber,
+                        trackNav?.AlbumId)
+                    : null,
                 LibraryName = libraryByMedia.GetValueOrDefault(g.MediaId),
                 StartedAt = g.StartedAt,
                 StoppedAt = g.StoppedAt,
@@ -185,4 +228,12 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             PageSize = request.PageSize
         };
     }
+
+    private static DateTime? GetPeriodStart(string period) => period switch
+    {
+        "week" => DateTime.UtcNow.AddDays(-7),
+        "month" => DateTime.UtcNow.AddMonths(-1),
+        "year" => DateTime.UtcNow.AddYears(-1),
+        _ => null
+    };
 }

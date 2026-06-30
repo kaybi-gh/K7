@@ -6,6 +6,7 @@ public sealed record PlaybackHistoryItemDto
     public Guid MediaId { get; init; }
     public string? MediaTitle { get; init; }
     public string? MediaType { get; init; }
+    public string? MediaUrl { get; init; }
     public string? LibraryName { get; init; }
     public string? ImageUrl { get; init; }
     public DateTime StartedAt { get; init; }
