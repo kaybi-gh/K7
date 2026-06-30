@@ -5,6 +5,7 @@ using K7.Server.Domain.Settings;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Enums;
+using K7.Shared.Home;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Home.Queries.GetEffectiveHomeLayout;
@@ -15,6 +16,7 @@ public class GetEffectiveHomeLayoutQueryHandler(
     IUserSettingsService userSettingsService,
     IServerSettingsService serverSettingsService,
     IApplicationDbContext context,
+    IHomeLayoutMaintenanceService homeLayoutMaintenanceService,
     IUser currentUser)
     : IRequestHandler<GetEffectiveHomeLayoutQuery, HomeLayoutDto>
 {
@@ -24,12 +26,20 @@ public class GetEffectiveHomeLayoutQueryHandler(
         {
             var userJson = await userSettingsService.GetAsync(userId, UserSettingKeys.HomeLayout, cancellationToken);
             if (userJson is not null)
-                return JsonSerializer.Deserialize<HomeLayoutDto>(userJson) ?? await BuildDynamicDefaultAsync(userId, cancellationToken);
+            {
+                var layout = JsonSerializer.Deserialize<HomeLayoutDto>(userJson);
+                if (layout is not null)
+                    return await homeLayoutMaintenanceService.SanitizeAsync(layout, cancellationToken);
+            }
         }
 
         var serverJson = await serverSettingsService.GetAsync(ServerSettingKeys.HomeLayout, cancellationToken);
         if (serverJson is not null)
-            return JsonSerializer.Deserialize<HomeLayoutDto>(serverJson) ?? await BuildDynamicDefaultAsync(currentUser.Id, cancellationToken);
+        {
+            var layout = JsonSerializer.Deserialize<HomeLayoutDto>(serverJson);
+            if (layout is not null)
+                return await homeLayoutMaintenanceService.SanitizeAsync(layout, cancellationToken);
+        }
 
         return await BuildDynamicDefaultAsync(currentUser.Id, cancellationToken);
     }
@@ -51,7 +61,7 @@ public class GetEffectiveHomeLayoutQueryHandler(
             new()
             {
                 Id = new Guid("00000000-0000-0000-0000-000000000001"),
-                Title = "ContinueWatching",
+                Title = HomeLayoutRowTitles.ContinueWatching,
                 DisplayType = HomeRowDisplayType.Carousel,
                 ContinueWatching = true,
                 OrderBy = [MediaOrderingOption.LastInteractedDesc],
@@ -67,7 +77,7 @@ public class GetEffectiveHomeLayoutQueryHandler(
             rows.Add(new HomeRowConfigDto
             {
                 Id = group.Id,
-                Title = group.Title,
+                Title = HomeLayoutRowTitles.NewlyAddedIn(group.Title),
                 DisplayType = HomeRowDisplayType.Carousel,
                 ContinueWatching = false,
                 LibraryIds = group.LibraryIds,

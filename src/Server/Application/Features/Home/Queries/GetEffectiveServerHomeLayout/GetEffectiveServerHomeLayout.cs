@@ -7,6 +7,7 @@ using K7.Server.Domain.Settings;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Enums;
+using K7.Shared.Home;
 using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.Home.Queries.GetEffectiveServerHomeLayout;
@@ -16,7 +17,8 @@ public record GetEffectiveServerHomeLayoutQuery : IRequest<HomeLayoutDto>;
 
 public class GetEffectiveServerHomeLayoutQueryHandler(
     IServerSettingsService serverSettingsService,
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    IHomeLayoutMaintenanceService homeLayoutMaintenanceService)
     : IRequestHandler<GetEffectiveServerHomeLayoutQuery, HomeLayoutDto>
 {
     public async Task<HomeLayoutDto> Handle(GetEffectiveServerHomeLayoutQuery request, CancellationToken cancellationToken)
@@ -26,7 +28,7 @@ public class GetEffectiveServerHomeLayoutQueryHandler(
         {
             var layout = JsonSerializer.Deserialize<HomeLayoutDto>(serverJson);
             if (layout is not null)
-                return layout;
+                return await homeLayoutMaintenanceService.SanitizeAsync(layout, cancellationToken);
         }
 
         return await BuildDynamicDefaultAsync(cancellationToken);
@@ -45,7 +47,7 @@ public class GetEffectiveServerHomeLayoutQueryHandler(
             new()
             {
                 Id = new Guid("00000000-0000-0000-0000-000000000001"),
-                Title = "ContinueWatching",
+                Title = HomeLayoutRowTitles.ContinueWatching,
                 DisplayType = HomeRowDisplayType.Carousel,
                 ContinueWatching = true,
                 OrderBy = [MediaOrderingOption.LastInteractedDesc],
@@ -61,7 +63,7 @@ public class GetEffectiveServerHomeLayoutQueryHandler(
             rows.Add(new HomeRowConfigDto
             {
                 Id = group.Id,
-                Title = group.Title,
+                Title = HomeLayoutRowTitles.NewlyAddedIn(group.Title),
                 DisplayType = HomeRowDisplayType.Carousel,
                 ContinueWatching = false,
                 LibraryIds = group.LibraryIds,
