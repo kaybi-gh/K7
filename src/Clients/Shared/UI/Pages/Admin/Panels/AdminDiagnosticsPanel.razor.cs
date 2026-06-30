@@ -1,5 +1,8 @@
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Diagnostics;
@@ -9,17 +12,32 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminDiagnosticsPanel
 {
+    private const string FilterStorageKey = "admin.diagnostics";
+
     [Inject] private IDiagnosticsService DiagnosticsService { get; set; } = default!;
     [Inject] private IMediaService MediaService { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "libraryId")]
     public Guid? QueryLibraryId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "severity")]
+    public string? QuerySeverity { get; set; }
+
+    [SupplyParameterFromQuery(Name = "entityType")]
+    public string? QueryEntityType { get; set; }
+
+    [SupplyParameterFromQuery(Name = "issue")]
+    public string? QueryIssue { get; set; }
 
     private List<LibraryHealthSummaryDto>? _summaries;
     private K7DataTable<DiagnosticItemDto>? _tableRef;
     private bool _isLoadingSummary = true;
     private bool _isBulkFixing;
+    private bool _isQueueingAllFixes;
     private string? _selectedSeverity;
     private const int PageSize = 50;
     private int _tableKey;
@@ -34,19 +52,193 @@ public partial class AdminDiagnosticsPanel
     private int _errorCount;
     private int _warningCount;
     private int _infoCount;
+    private int _totalCount;
+    private bool _pendingQuerySync;
 
     private Dictionary<string, string> _activeFilterChips => GetActiveFilterChips();
 
-    private bool HasActiveFilters => _filterLibraryId.HasValue || _filterEntityType.HasValue || _filterIssue.HasValue;
+    private bool HasActiveFilters =>
+        _selectedSeverity is not null
+        || _filterLibraryId.HasValue
+        || _filterEntityType.HasValue
+        || _filterIssue.HasValue;
 
     protected override async Task OnInitializedAsync()
     {
-        if (QueryLibraryId.HasValue)
+        if (PageFilterUrlSync.HasAnyQuery(Navigation, "severity", "libraryId", "entityType", "issue"))
         {
-            _filterLibraryId = QueryLibraryId.Value;
+            ApplyFiltersFromQuery();
+            await SaveFiltersToStorageAsync();
+        }
+        else if (await LoadPersistedFiltersAsync())
+        {
+            _pendingQuerySync = true;
         }
 
         await LoadAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender) =>
+        PageFilterUrlSync.SyncAfterRender(Navigation, firstRender, ref _pendingQuerySync, BuildFilterQuery());
+
+    private void ApplyFiltersFromQuery()
+    {
+        _selectedSeverity = QuerySeverity ?? PageFilterUrlSync.GetQueryValue(Navigation, "severity");
+        _filterLibraryId = QueryLibraryId
+            ?? (Guid.TryParse(PageFilterUrlSync.GetQueryValue(Navigation, "libraryId"), out var libraryId) ? libraryId : null);
+        var entityTypeValue = QueryEntityType ?? PageFilterUrlSync.GetQueryValue(Navigation, "entityType");
+        _filterEntityType = Enum.TryParse<DiagnosticEntityType>(entityTypeValue, ignoreCase: true, out var entityType) ? entityType : null;
+        var issueValue = QueryIssue ?? PageFilterUrlSync.GetQueryValue(Navigation, "issue");
+        _filterIssue = Enum.TryParse<DiagnosticIssue>(issueValue, ignoreCase: true, out var issue) ? issue : null;
+    }
+
+    private void SyncFiltersToQuery() =>
+        PageFilterUrlSync.SetQuery(Navigation, BuildFilterQuery());
+
+    private Dictionary<string, string?> BuildFilterQuery() => new()
+    {
+        ["severity"] = _selectedSeverity,
+        ["libraryId"] = _filterLibraryId?.ToString(),
+        ["entityType"] = _filterEntityType?.ToString(),
+        ["issue"] = _filterIssue?.ToString()
+    };
+
+    private async Task<bool> LoadPersistedFiltersAsync()
+    {
+        try
+        {
+            var state = await PageFilterStorage.LoadAsync<DiagnosticsFilterState>(FilterStorageKey, CancellationToken.None);
+            if (state is null)
+            {
+                return false;
+            }
+
+            _selectedSeverity = state.Severity;
+            _filterLibraryId = state.LibraryId;
+            _filterEntityType = state.EntityType;
+            _filterIssue = state.Issue;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task SaveFiltersToStorageAsync()
+    {
+        try
+        {
+            await PageFilterStorage.SaveAsync(
+                FilterStorageKey,
+                new DiagnosticsFilterState(_selectedSeverity, _filterLibraryId, _filterEntityType, _filterIssue),
+                CancellationToken.None);
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task PersistFiltersAsync()
+    {
+        await SaveFiltersToStorageAsync();
+        SyncFiltersToQuery();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _filterLibraryId = null;
+        _filterEntityType = null;
+        _filterIssue = null;
+        _selectedSeverity = null;
+        await PageFilterStorage.ClearAsync(FilterStorageKey);
+        SyncFiltersToQuery();
+        await LoadItemsAsync();
+    }
+
+    private string GetActiveFiltersLabel()
+    {
+        var parts = new List<string>();
+        if (_selectedSeverity is not null)
+        {
+            parts.Add(_selectedSeverity switch
+            {
+                "error" => L["SeverityErrors"],
+                "warning" => L["SeverityWarnings"],
+                "info" => L["SeverityInfo"],
+                _ => _selectedSeverity
+            });
+        }
+
+        if (_filterLibraryId is { } libraryId && _summaries is not null)
+        {
+            var title = _summaries.FirstOrDefault(s => s.LibraryId == libraryId)?.LibraryTitle;
+            if (title is not null)
+            {
+                parts.Add(title);
+            }
+        }
+
+        if (_filterEntityType is { } entityType)
+        {
+            parts.Add(entityType switch
+            {
+                DiagnosticEntityType.Media => L["EntityTypeMedia"],
+                DiagnosticEntityType.IndexedFile => L["EntityTypeIndexedFile"],
+                DiagnosticEntityType.Library => L["EntityTypeLibrary"],
+                _ => entityType.ToString()
+            });
+        }
+
+        if (_filterIssue is { } issue)
+        {
+            parts.Add(GetIssueLabel(issue));
+        }
+
+        return string.Join(" · ", parts);
+    }
+
+    private string? GetSeverityFilterSummary() => _selectedSeverity switch
+    {
+        "error" => L["SeverityErrors"].Value,
+        "warning" => L["SeverityWarnings"].Value,
+        "info" => L["SeverityInfo"].Value,
+        _ => null
+    };
+
+    private string? GetLibraryFilterSummary() =>
+        _filterLibraryId is { } libraryId
+            ? _summaries?.FirstOrDefault(s => s.LibraryId == libraryId)?.LibraryTitle
+            : null;
+
+    private string? GetEntityTypeFilterSummary() => _filterEntityType switch
+    {
+        DiagnosticEntityType.Media => L["EntityTypeMedia"].Value,
+        DiagnosticEntityType.IndexedFile => L["EntityTypeIndexedFile"].Value,
+        DiagnosticEntityType.Library => L["EntityTypeLibrary"].Value,
+        _ => null
+    };
+
+    private string? GetIssueFilterSummary() =>
+        _filterIssue is { } issue ? GetIssueLabel(issue) : null;
+
+    private string GetLibraryMenuLabel()
+    {
+        var summary = GetLibraryFilterSummary();
+        return summary is null ? L["FilterLibrary"].Value : $"{L["FilterLibrary"]}: {summary}";
+    }
+
+    private string GetEntityTypeMenuLabel()
+    {
+        var summary = GetEntityTypeFilterSummary();
+        return summary is null ? L["FilterEntityType"].Value : $"{L["FilterEntityType"]}: {summary}";
+    }
+
+    private string GetIssueMenuLabel()
+    {
+        var summary = GetIssueFilterSummary();
+        return summary is null ? L["FilterIssue"].Value : $"{L["FilterIssue"]}: {summary}";
     }
 
     private async Task LoadAsync()
@@ -79,19 +271,40 @@ public partial class AdminDiagnosticsPanel
         await LoadItemsAsync();
     }
 
+    private DiagnosticsFilterContext ActiveFilters => new(
+        _filterLibraryId,
+        _filterEntityType,
+        _filterIssue,
+        GetSeverityIssues(_selectedSeverity));
+
     private void ComputeAggregateCounts()
     {
         if (_summaries is null) return;
 
-        _errorCount = LibraryHealthSummaryCounts.SumErrors(_summaries);
-        _warningCount = LibraryHealthSummaryCounts.SumWarnings(_summaries);
-        _infoCount = LibraryHealthSummaryCounts.SumInfo(_summaries);
-        _totalIssueCount = LibraryHealthSummaryCounts.SumTotal(_summaries);
+        var context = ActiveFilters;
+        var excludeSeverity = DiagnosticsFilterExclusions.Severity;
+
+        _errorCount = LibraryHealthSummaryCounts.SumSeverity(
+            _summaries, LibraryHealthSummaryCounts.ErrorIssues, context, excludeSeverity);
+        _warningCount = LibraryHealthSummaryCounts.SumSeverity(
+            _summaries, LibraryHealthSummaryCounts.WarningIssues, context, excludeSeverity);
+        _infoCount = LibraryHealthSummaryCounts.SumSeverity(
+            _summaries, LibraryHealthSummaryCounts.InfoIssues, context, excludeSeverity);
+        _totalIssueCount = _errorCount + _warningCount + _infoCount;
     }
+
+    private void RefreshFilterCounts()
+    {
+        ComputeAggregateCounts();
+    }
+
+    private void OnColumnPickerClick() => _tableRef?.ToggleColumnPicker();
 
     private async Task LoadItemsAsync()
     {
         _selectedItems.Clear();
+        _totalCount = 0;
+        RefreshFilterCounts();
         _tableKey++;
         await InvokeAsync(StateHasChanged);
     }
@@ -122,15 +335,26 @@ public partial class AdminDiagnosticsPanel
             var allItems = new List<DiagnosticItemDto>(count);
             foreach (var result in results)
             {
-                if (result?.Items is { Count: > 0 })
+                if (result is null)
                 {
-                    totalCount = result.TotalCount ?? 0;
+                    continue;
+                }
+
+                if (result.TotalCount is { } tc)
+                {
+                    totalCount = tc;
+                }
+
+                if (result.Items is { Count: > 0 })
+                {
                     allItems.AddRange(result.Items);
                 }
             }
 
             var offset = startIndex - (firstPage - 1) * PageSize;
             var items = allItems.Skip(offset).Take(count).ToList();
+            _totalCount = totalCount;
+            await InvokeAsync(StateHasChanged);
 
             return new K7DataTableResult<DiagnosticItemDto>(items, totalCount);
         }
@@ -158,16 +382,12 @@ public partial class AdminDiagnosticsPanel
         _filterEntityType = entityType;
         _filterIssue = issue;
         _selectedSeverity = null;
-        await LoadItemsAsync();
+        await PersistAndReloadAsync();
     }
 
     private async Task ClearFilters()
     {
-        _filterLibraryId = null;
-        _filterEntityType = null;
-        _filterIssue = null;
-        _selectedSeverity = null;
-        await LoadItemsAsync();
+        await ClearFiltersAsync();
     }
 
     private async Task RemoveFilter(string key)
@@ -178,33 +398,36 @@ public partial class AdminDiagnosticsPanel
             case "type": _filterEntityType = null; break;
             case "issue": _filterIssue = null; break;
         }
-        await LoadItemsAsync();
+        await PersistAndReloadAsync();
     }
 
     private async Task OnSeverityFilterChanged(string? severity)
     {
         _selectedSeverity = severity;
-        _filterIssue = null;
-        _filterEntityType = null;
-        _filterLibraryId = null;
-        await LoadItemsAsync();
+        await PersistAndReloadAsync();
     }
 
     private async Task OnLibraryFilterChanged(Guid? libraryId)
     {
         _filterLibraryId = libraryId;
-        await LoadItemsAsync();
+        await PersistAndReloadAsync();
     }
 
     private async Task OnEntityTypeFilterChanged(DiagnosticEntityType? entityType)
     {
         _filterEntityType = entityType;
-        await LoadItemsAsync();
+        await PersistAndReloadAsync();
     }
 
     private async Task OnIssueFilterChanged(DiagnosticIssue? issue)
     {
         _filterIssue = issue;
+        await PersistAndReloadAsync();
+    }
+
+    private async Task PersistAndReloadAsync()
+    {
+        await PersistFiltersAsync();
         await LoadItemsAsync();
     }
 
@@ -226,6 +449,9 @@ public partial class AdminDiagnosticsPanel
         var action = GetBulkFixAction();
         if (action is null || _selectedItems.Count == 0) return;
 
+        if (!await ConfirmBulkFixAsync(_selectedItems.Count, _filterIssue, action.Value))
+            return;
+
         _isBulkFixing = true;
         try
         {
@@ -245,6 +471,52 @@ public partial class AdminDiagnosticsPanel
         }
     }
 
+    private async Task QueueAllFixesAsync()
+    {
+        if (_filterIssue is not { } issue || GetBulkFixAction() is not { } action)
+            return;
+
+        var count = _totalCount;
+        if (count == 0)
+            return;
+
+        if (!await ConfirmBulkFixAsync(count, issue, action))
+            return;
+
+        _isQueueingAllFixes = true;
+        try
+        {
+            var result = await DiagnosticsService.QueueDiagnosticFixesAsync(issue, _filterLibraryId);
+            Snackbar.Add(string.Format(L["AllFixesQueued"], result), K7Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
+        }
+        finally
+        {
+            _isQueueingAllFixes = false;
+        }
+    }
+
+    private async Task<bool> ConfirmBulkFixAsync(int count, DiagnosticIssue? issue, DiagnosticFixAction action)
+    {
+        var issueLabel = issue.HasValue ? GetIssueLabel(issue.Value) : L["AllIssues"];
+        var actionLabel = GetFixActionLabel(action);
+        var libraryLabel = _filterLibraryId.HasValue && _summaries is not null
+            ? _summaries.FirstOrDefault(l => l.LibraryId == _filterLibraryId.Value)?.LibraryTitle ?? L["FilterLibrary"]
+            : L["AllLibraries"];
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["ConfirmBulkFixTitle"],
+            string.Format(L["ConfirmBulkFixMessage"], count, issueLabel, actionLabel, libraryLabel),
+            yesText: L["ConfirmBulkFixConfirm"],
+            cancelText: S["Cancel"]);
+
+        return confirmed is true;
+    }
+
     private DiagnosticFixAction? GetBulkFixAction()
     {
         if (_filterIssue.HasValue)
@@ -253,8 +525,8 @@ public partial class AdminDiagnosticsPanel
             {
                 DiagnosticIssue.MissingExternalId => DiagnosticFixAction.AutoReidentifyMetadata,
                 DiagnosticIssue.MissingPictures or DiagnosticIssue.MissingMetadata or DiagnosticIssue.StaleMetadata
-                    or DiagnosticIssue.MissingAudioAnalysis
-                    => DiagnosticFixAction.RefreshMetadata,
+                    or DiagnosticIssue.MissingMembers => DiagnosticFixAction.RefreshMetadata,
+                DiagnosticIssue.MissingAudioAnalysis => DiagnosticFixAction.AnalyzeMusicTrackAudio,
                 DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
                 DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
                 _ => null
@@ -270,14 +542,55 @@ public partial class AdminDiagnosticsPanel
         return null;
     }
 
+    private static DiagnosticFixAction? GetFixActionForIssue(DiagnosticIssue issue) => issue switch
+    {
+        DiagnosticIssue.MissingExternalId => DiagnosticFixAction.AutoReidentifyMetadata,
+        DiagnosticIssue.MissingPictures or DiagnosticIssue.MissingMetadata or DiagnosticIssue.StaleMetadata
+            or DiagnosticIssue.MissingMembers => DiagnosticFixAction.RefreshMetadata,
+        DiagnosticIssue.MissingAudioAnalysis => DiagnosticFixAction.AnalyzeMusicTrackAudio,
+        DiagnosticIssue.MissingFileMetadata => DiagnosticFixAction.ExtractFileMetadata,
+        DiagnosticIssue.MissingHlsSegments => DiagnosticFixAction.ComputeHlsSegments,
+        _ => null
+    };
+
+    private string GetFixActionLabel(DiagnosticFixAction action) => action switch
+    {
+        DiagnosticFixAction.AutoReidentifyMetadata => L["ActionReidentify"],
+        DiagnosticFixAction.RefreshMetadata => L["ActionRefresh"],
+        DiagnosticFixAction.AnalyzeMusicTrackAudio => L["ActionAnalyzeAudio"],
+        DiagnosticFixAction.ExtractFileMetadata => L["ActionExtract"],
+        DiagnosticFixAction.ComputeHlsSegments => L["ActionHls"],
+        _ => action.ToString()
+    };
+
+    private static string GetFixActionIcon(DiagnosticFixAction action) => action switch
+    {
+        DiagnosticFixAction.AutoReidentifyMetadata => Phosphor.MagnifyingGlass,
+        DiagnosticFixAction.RefreshMetadata => Phosphor.ArrowClockwise,
+        DiagnosticFixAction.AnalyzeMusicTrackAudio => Phosphor.Waveform,
+        DiagnosticFixAction.ExtractFileMetadata => Phosphor.Code,
+        DiagnosticFixAction.ComputeHlsSegments => Phosphor.Rows,
+        _ => Phosphor.Wrench
+    };
+
     private string SummaryCardClass(string? severity) =>
         _selectedSeverity == severity ? "summary-card-active" : "";
 
     private int GetIssueCount(DiagnosticIssue issue) =>
-        _summaries is null ? 0 : LibraryHealthSummaryCounts.SumIssue(_summaries, issue);
+        _summaries is null
+            ? 0
+            : LibraryHealthSummaryCounts.SumIssue(
+                _summaries, issue, ActiveFilters, DiagnosticsFilterExclusions.Issue);
 
     private int GetEntityTypeCount(DiagnosticEntityType entityType) =>
-        _summaries is null ? 0 : LibraryHealthSummaryCounts.SumEntityType(_summaries, entityType);
+        _summaries is null
+            ? 0
+            : LibraryHealthSummaryCounts.SumEntityType(
+                _summaries, entityType, ActiveFilters, DiagnosticsFilterExclusions.EntityType);
+
+    private int GetLibraryIssueCount(LibraryHealthSummaryDto library) =>
+        LibraryHealthSummaryCounts.SumLibraryIssues(
+            library, ActiveFilters, DiagnosticsFilterExclusions.Library);
 
     private static string FormatFilterLabel(string label, int count) => $"{label} ({count})";
 

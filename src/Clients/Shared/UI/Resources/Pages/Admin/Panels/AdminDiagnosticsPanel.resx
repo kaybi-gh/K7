@@ -47,6 +47,7 @@
   <data name="ItemsTitle" xml:space="preserve"><value>Details</value></data>
   <data name="ClearFilters" xml:space="preserve"><value>Effacer les filtres</value></data>
   <data name="FilterLibrary" xml:space="preserve"><value>Librairie</value></data>
+  <data name="FilterSeverity" xml:space="preserve"><value>Sévérité</value></data>
   <data name="FilterEntityType" xml:space="preserve"><value>Type</value></data>
   <data name="FilterIssue" xml:space="preserve"><value>Probleme</value></data>
   <data name="EntityTypeMedia" xml:space="preserve"><value>Media</value></data>
@@ -77,6 +78,13 @@
   <data name="ActionReidentify" xml:space="preserve"><value>Ré-identifier</value></data>
   <data name="ActionExtract" xml:space="preserve"><value>Extraire</value></data>
   <data name="ActionHls" xml:space="preserve"><value>HLS</value></data>
+  <data name="ActionAnalyzeAudio" xml:space="preserve"><value>Analyser</value></data>
+  <data name="QueueAllFixes" xml:space="preserve"><value>Tout corriger ({0})</value></data>
+  <data name="AllFixesQueued" xml:space="preserve"><value>{0} correction(s) lancée(s) en tâche de fond.</value></data>
+  <data name="AllLibraries" xml:space="preserve"><value>Toutes les bibliothèques</value></data>
+  <data name="ConfirmBulkFixTitle" xml:space="preserve"><value>Lancer les corrections en masse ?</value></data>
+  <data name="ConfirmBulkFixMessage" xml:space="preserve"><value>{0} élément(s) seront traités pour « {1} » ({2}) dans {3}. Cela va créer de nombreuses tâches de fond et peut solliciter fortement le serveur pendant un long moment.</value></data>
+  <data name="ConfirmBulkFixConfirm" xml:space="preserve"><value>Lancer</value></data>
   <data name="InaccessiblePath" xml:space="preserve"><value>Chemin inaccessible</value></data>
   <data name="EntityTypeLibrary" xml:space="preserve"><value>Librairie</value></data>
   <data name="FilterBy" xml:space="preserve"><value>Filtrer</value></data>

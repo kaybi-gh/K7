@@ -117,6 +117,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IMediaStreamSession, MediaSessionService>();
         builder.Services.AddSingleton<IMediaBrowseService, MediaBrowseService>();
         builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
+        builder.Services.AddSingleton<IPageFilterStorage, PageFilterStorage>();
         builder.Services.AddSingleton<ILocalUserService, LocalUserService>();
         builder.Services.AddSingleton<K7HubClient>();
         builder.Services.AddSingleton(new MediaCacheStore(maxEntries: 32));

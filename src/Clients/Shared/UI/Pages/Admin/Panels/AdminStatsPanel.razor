@@ -5,7 +5,7 @@
 @inject IStringLocalizer<AdminStatsPanel> L
 
 <div class="d-flex flex-col" style="gap: var(--space-3);">
-    <div class="d-flex align-center flex-wrap" style="gap: var(--space-3); padding: var(--space-4) var(--space-4) 0;">
+    <div class="stats-toolbar d-flex align-center flex-wrap">
         <h5>@L["Title"]</h5>
 
         <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_selectedPeriod" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
@@ -18,9 +18,10 @@
 
         <K7ButtonGroup TValue="string" Options="_mediaTypeOptions" Value="_selectedMediaType" ValueChanged="OnMediaTypeChanged" AriaLabel="@L["MediaType"]" />
 
-        <K7Select TValue="Guid?" Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
+        <K7Select TValue="Guid?" Class="stats-user-select data-toolbar-field"
+                  Value="_selectedUserId" ValueChanged="OnUserChanged" Clearable="true"
                   ToStringFunc="@(id => id is null ? L["AllUsers"] : _users.FirstOrDefault(u => u.Id == id)?.DisplayName ?? L["AllUsers"])"
-                  Style="min-width: 180px; max-width: 260px;" FullWidth="false">
+                  FullWidth="false">
             @foreach (var user in _users)
             {
                 <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.DisplayName ?? user.UserName ?? user.Email)</K7SelectItem>
@@ -43,7 +44,7 @@
     }
     else
     {
-        <div class="d-flex flex-col" style="gap: var(--space-4); padding: 0 var(--space-4) var(--space-4);">
+        <div class="d-flex flex-col" style="gap: var(--space-4);">
             <!-- KPI Cards -->
             <div class="stats-kpi-row">
                 <K7Paper Elevation="0" Class="stats-kpi-card">
@@ -337,6 +338,31 @@
 </div>
 
 <style>
+    .stats-toolbar {
+        gap: var(--space-2) var(--space-3);
+    }
+
+    .stats-toolbar > .k7-button-group {
+        height: 40px;
+        flex-shrink: 0;
+    }
+
+    .stats-toolbar > .k7-button-group .k7-button-group-item {
+        height: 100%;
+    }
+
+    .stats-toolbar .stats-user-select {
+        min-width: 180px;
+        max-width: 260px;
+        flex-shrink: 0;
+    }
+
+    .stats-toolbar .stats-user-select .k7-select-wrap,
+    .stats-toolbar .stats-user-select .k7-select {
+        height: 40px;
+        min-height: 40px;
+    }
+
     .stats-kpi-row {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

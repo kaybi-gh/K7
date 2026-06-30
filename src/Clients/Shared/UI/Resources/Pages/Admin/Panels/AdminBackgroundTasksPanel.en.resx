@@ -30,6 +30,7 @@
   <data name="TasksTitle" xml:space="preserve"><value>Background tasks</value></data>
   <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="FilterAll" xml:space="preserve"><value>All</value></data>
+  <data name="FilterStatus" xml:space="preserve"><value>Status</value></data>
   <data name="StatusPending" xml:space="preserve"><value>Pending</value></data>
   <data name="StatusInProgress" xml:space="preserve"><value>In progress</value></data>
   <data name="StatusWaitingForRetry" xml:space="preserve"><value>Waiting for retry</value></data>
@@ -80,8 +81,10 @@
   <data name="TaskCancelled" xml:space="preserve"><value>Task cancelled.</value></data>
   <data name="FilterTaskType" xml:space="preserve"><value>Task type</value></data>
   <data name="SortBy" xml:space="preserve"><value>Sort by</value></data>
-  <data name="SortDate" xml:space="preserve"><value>Date</value></data>
-  <data name="SortDuration" xml:space="preserve"><value>Duration</value></data>
-  <data name="SortName" xml:space="preserve"><value>Name</value></data>
-  <data name="ToggleSortDirection" xml:space="preserve"><value>Toggle sort direction</value></data>
+  <data name="SortDateDesc" xml:space="preserve"><value>Newest first</value></data>
+  <data name="SortDateAsc" xml:space="preserve"><value>Oldest first</value></data>
+  <data name="SortDurationDesc" xml:space="preserve"><value>Longest duration</value></data>
+  <data name="SortDurationAsc" xml:space="preserve"><value>Shortest duration</value></data>
+  <data name="SortNameAsc" xml:space="preserve"><value>Name A-Z</value></data>
+  <data name="SortNameDesc" xml:space="preserve"><value>Name Z-A</value></data>
 </root>

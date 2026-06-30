@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Services;
+using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
@@ -24,6 +25,7 @@ public partial class AdminUsersPanel : IDisposable
 
     private bool _isLoading = true;
     private List<UserDto> _users = [];
+    private K7DataTable<UserDto>? _tableRef;
     private Guid? _currentUserId;
     private Guid? _highlightedUserId;
     private bool _shouldScrollToHighlighted;
@@ -99,6 +101,8 @@ public partial class AdminUsersPanel : IDisposable
 
     private void NavigateToPlaybackHistory(UserDto user) =>
         NavigationManager.NavigateTo($"/admin/playback-history?userId={user.Id}");
+
+    private void OnColumnPickerClick() => _tableRef?.ToggleColumnPicker();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

@@ -1,130 +1,140 @@
 @page "/admin/background-tasks"
 @layout AdminLayout
+@using K7.Clients.Shared.Enums
 @using K7.Server.Domain.Enums
 @implements IDisposable
 @inject IStringLocalizer<AdminBackgroundTasksPanel> L
 @inject IStringLocalizer<SharedResource> S
 
-<div class="d-flex flex-col" style="gap: var(--space-4);">
-    <div aria-live="polite">
-        @if (_summary is not null)
-        {
-            <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-2);">
-                <div class="surface cursor-pointer summary-card focusable" tabindex="0" role="button" @onclick="@(() => OnStatusFilterChanged(null))">
-                    <h5>@_summary.TotalCount</h5>
-                    <span class="text-caption" style="color: var(--color-text-muted);">@L["FilterAll"]</span>
-                </div>
-                @foreach (var status in _allStatuses)
+<div class="full-bleed-page">
+    <div class="data-page-header">
+        <K7ExpansionPanel>
+            <TitleContent>@L["SettingsTitle"]</TitleContent>
+            <ChildContent>
+                @if (_settings is not null)
                 {
-                    var count = _summary.StatusCounts.FirstOrDefault(s => s.Status == status)?.Count ?? 0;
-                    <div class="surface cursor-pointer summary-card focusable" tabindex="0" role="button" @onclick="@(() => OnStatusFilterChanged(status))">
-                        <div class="d-flex align-center" style="gap: var(--space-2);">
-                            <K7Icon Name="@GetStatusIcon(status)" Size="sm" />
-                            <h5>@count</h5>
+                    <div class="d-flex flex-col" style="gap: var(--space-3);">
+                        <K7TextField TValue="int" Type="number" @bind-Value="_workerCount" Label="@L["WorkerCountLabel"]" />
+
+                        @if (_settings.ConcurrencyGroups.Count > 0)
+                        {
+                            <h6>@L["ConcurrencyGroupsTitle"]</h6>
+                            @foreach (var group in _settings.ConcurrencyGroups)
+                            {
+                                var name = group.Name;
+                                <div class="d-flex align-center" style="gap: var(--space-2);">
+                                    <span class="text-sm" style="min-width: 140px;">@FormatConcurrencyGroup(name)</span>
+                                    <K7TextField TValue="int" Type="number" Value="GetGroupLimit(name)"
+                                                 ValueChanged="@(v => SetGroupLimit(name, v))"
+                                                 Label="@L["GroupLimit"]" Style="max-width: 100px;" />
+                                    <span class="text-caption" style="color: var(--color-text-muted);">@L["GroupActive"]: @group.ActiveCount</span>
+                                </div>
+                            }
+                        }
+
+                        <div>
+                            <K7Button OnClick="SaveSettingsAsync" Disabled="_isSavingSettings">@L["Save"]</K7Button>
                         </div>
-                        <span class="text-caption" style="color: var(--color-text-muted);">@GetStatusLabel(status)</span>
                     </div>
                 }
-            </div>
-        }
+            </ChildContent>
+        </K7ExpansionPanel>
     </div>
 
-    <K7ExpansionPanel>
-        <TitleContent>@L["SettingsTitle"]</TitleContent>
-        <ChildContent>
-            @if (_settings is not null)
-            {
-                <div class="d-flex flex-col" style="gap: var(--space-3);">
-                    <K7TextField TValue="int" Type="number" @bind-Value="_workerCount" Label="@L["WorkerCountLabel"]" />
-
-                    @if (_settings.ConcurrencyGroups.Count > 0)
+    <div class="data-page-toolbar">
+        <K7FilterMenu HasActiveFilters="@HasActiveFilters"
+                      ActiveLabel="@GetActiveFiltersLabel()"
+                      OnClear="ClearFiltersAsync">
+            <K7FilterMenuRoot>
+                <K7FilterMenuSection>
+                    <div class="k7-filter-menu__section-label">@L["FilterStatus"]</div>
+                    <K7FilterMenuPick Label="@L["FilterAll"]" Selected="@(!_selectedStatus.HasValue)" OnClick="@(() => OnStatusFilterChanged(null))" />
+                    @foreach (var status in _allStatuses)
                     {
-                        <h6>@L["ConcurrencyGroupsTitle"]</h6>
-                        @foreach (var group in _settings.ConcurrencyGroups)
-                        {
-                            var name = group.Name;
-                            <div class="d-flex align-center" style="gap: var(--space-2);">
-                                <span class="text-sm" style="min-width: 140px;">@FormatConcurrencyGroup(name)</span>
-                                <K7TextField TValue="int" Type="number" Value="GetGroupLimit(name)"
-                                             ValueChanged="@(v => SetGroupLimit(name, v))"
-                                             Label="@L["GroupLimit"]" Style="max-width: 100px;" />
-                                <span class="text-caption" style="color: var(--color-text-muted);">@L["GroupActive"]: @group.ActiveCount</span>
-                            </div>
-                        }
+                        var current = status;
+                        <K7FilterMenuPick Label="@FormatStatusFilterLabel(current)" Selected="@(_selectedStatus == current)" OnClick="@(() => OnStatusFilterChanged(current))" />
                     }
-
-                    <div>
-                        <K7Button OnClick="SaveSettingsAsync" Disabled="_isSavingSettings">@L["Save"]</K7Button>
-                    </div>
-                </div>
-            }
-        </ChildContent>
-    </K7ExpansionPanel>
-
-    <div class="d-flex align-center flex-wrap" style="gap: var(--space-2);">
-        @if (_summary?.TaskTypeCounts is { Count: > 0 })
-        {
-            <K7Select TValue="string" Value="_selectedTaskType" ValueChanged="OnTaskTypeFilterChanged"
-                      Label="@L["FilterTaskType"]" Clearable="true" FullWidth="false" Style="min-width: 200px;">
-                @foreach (var taskType in _summary.TaskTypeCounts)
+                    @if (_summary?.TaskTypeCounts is { Count: > 0 })
+                    {
+                        <hr class="k7-menu-divider" />
+                    }
+                </K7FilterMenuSection>
+                @if (_summary?.TaskTypeCounts is { Count: > 0 })
                 {
-                    <K7SelectItem TValue="string" Value="@taskType.TaskName">@GetTaskTypeLabel(taskType.TaskName) (@taskType.Count)</K7SelectItem>
+                    <K7FilterMenuGroup SubmenuKey="taskType" Title="@L["FilterTaskType"]">
+                        <ChildContent>
+                            <K7FilterMenuNav SubmenuKey="taskType" Label="@GetTaskTypeMenuLabel()" />
+                        </ChildContent>
+                        <SubmenuContent>
+                            <K7FilterMenuPick Label="@L["FilterAll"]" Selected="@(_selectedTaskType is null)" OnClick="@(() => OnTaskTypeFilterChanged(null))" />
+                            @foreach (var taskType in _summary.TaskTypeCounts)
+                            {
+                                var name = taskType.TaskName;
+                                <K7FilterMenuPick Label="@($"{GetTaskTypeLabel(name)} ({taskType.Count})")" Selected="@(_selectedTaskType == name)" OnClick="@(() => OnTaskTypeFilterChanged(name))" />
+                            }
+                        </SubmenuContent>
+                    </K7FilterMenuGroup>
                 }
-            </K7Select>
-        }
+            </K7FilterMenuRoot>
+        </K7FilterMenu>
 
-        <K7Select TValue="string" Value="_selectedSortBy" ValueChanged="OnSortByChanged"
-                  Label="@L["SortBy"]" Clearable="true" FullWidth="false" Style="min-width: 160px;">
-            <K7SelectItem TValue="string" Value="@("date")">@L["SortDate"]</K7SelectItem>
-            <K7SelectItem TValue="string" Value="@("duration")">@L["SortDuration"]</K7SelectItem>
-            <K7SelectItem TValue="string" Value="@("name")">@L["SortName"]</K7SelectItem>
+        <K7Select TValue="BackgroundTaskOrderingOption" Class="data-toolbar-sort library-toolbar-sort"
+                  Value="_selectedSort" ValueChanged="OnSortChanged" FullWidth="false">
+            @foreach (var opt in SortOptions)
+            {
+                <K7SelectItem TValue="BackgroundTaskOrderingOption" Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
+            }
         </K7Select>
 
-        @if (_selectedSortBy is not null)
-        {
-            <K7IconButton Icon="@(_sortDescending ? Phosphor.SortDescending : Phosphor.SortAscending)"
-                          OnClick="ToggleSortDirection" AriaLabel="@L["ToggleSortDirection"]" />
-        }
+        <div class="data-page-toolbar__end">
+            <K7ResultCount Count="_totalCount" />
+            <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
+        </div>
     </div>
 
-    <K7DataTable @key="_tableKey" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync" @ref="_tableRef" RowHeight="64" Height="60vh">
-        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false">
-            <CellTemplate>
-                <span class="text-sm">@GetTaskTypeLabel(context.Name)</span>
-                @if (!string.IsNullOrEmpty(context.ErrorDetails))
-                {
-                    <p class="text-caption" style="color: var(--color-error);">@context.ErrorDetails</p>
-                }
-            </CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColStatus"]" Hideable="false">
-            <CellTemplate>
-                <div class="d-flex align-center" style="gap: var(--space-1);">
-                    <K7Icon Name="@GetStatusIcon(context.Status)" Size="sm" Style="@GetStatusIconStyle(context.Status)" />
-                    <span class="text-sm" style="@GetStatusTextStyle(context.Status)">@GetStatusLabel(context.Status)</span>
-                </div>
-            </CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColAttempts"]" Property="@(t => $"{t.AttemptCount} / {t.MaxAttempts}")" Width="100px" />
-        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColDate"]">
-            <CellTemplate><span class="text-sm">@FormatRelativeTime(context.Created)</span></CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColDuration"]" Width="100px">
-            <CellTemplate><span class="text-sm">@(context.Duration.HasValue ? FormatDuration(context.Duration.Value) : "-")</span></CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColGroup"]">
-            <CellTemplate><span class="text-sm">@FormatConcurrencyGroup(context.ConcurrencyGroup)</span></CellTemplate>
-        </K7DataColumn>
-        <K7DataColumn TItem="BackgroundTaskDto" Title="" Width="90px" Hideable="false">
-            <CellTemplate>
-                <div class="d-flex align-center" style="gap: var(--space-1);">
-                    @if (context.Status is BackgroundTaskStatus.Pending or BackgroundTaskStatus.InProgress or BackgroundTaskStatus.WaitingForRetry)
-                    {
-                        <K7IconButton Icon="@Phosphor.Stop" OnClick="@(() => CancelTaskAsync(context))" AriaLabel="@L["Cancel"]" />
-                    }
-                    <K7IconButton Icon="@Phosphor.Info" OnClick="@(() => OpenDetailDialog(context))" AriaLabel="detail" />
-                </div>
-            </CellTemplate>
-        </K7DataColumn>
-    </K7DataTable>
+    <div class="data-page-body">
+        <K7DataTable @key="_tableKey" TItem="BackgroundTaskDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
+                     RowHeight="64" ShowToolbar="false" Surface="false" Height="100%">
+            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColName"]" Hideable="false" Width="35%">
+                <CellTemplate>
+                    <div class="task-name-cell">
+                        <span class="text-sm task-name-label">@GetTaskTypeLabel(context.Name)</span>
+                        @if (!string.IsNullOrEmpty(context.ErrorDetails))
+                        {
+                            <p class="text-caption task-error-detail" style="color: var(--color-error);" title="@context.ErrorDetails">@context.ErrorDetails</p>
+                        }
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColStatus"]" Hideable="false">
+                <CellTemplate>
+                    <div class="d-flex align-center" style="gap: var(--space-1);">
+                        <K7Icon Name="@GetStatusIcon(context.Status)" Size="sm" Style="@GetStatusIconStyle(context.Status)" />
+                        <span class="text-sm" style="@GetStatusTextStyle(context.Status)">@GetStatusLabel(context.Status)</span>
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColAttempts"]" Property="@(t => $"{t.AttemptCount} / {t.MaxAttempts}")" Width="100px" VisibleOnMobile="false" />
+            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColDate"]">
+                <CellTemplate><span class="text-sm">@FormatRelativeTime(context.Created)</span></CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColDuration"]" Width="100px" VisibleOnMobile="false">
+                <CellTemplate><span class="text-sm">@(context.Duration.HasValue ? FormatDuration(context.Duration.Value) : "-")</span></CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColGroup"]" VisibleOnMobile="false">
+                <CellTemplate><span class="text-sm">@FormatConcurrencyGroup(context.ConcurrencyGroup)</span></CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="BackgroundTaskDto" Title="" Width="90px" Hideable="false">
+                <CellTemplate>
+                    <div class="d-flex align-center" style="gap: var(--space-1);">
+                        @if (context.Status is BackgroundTaskStatus.Pending or BackgroundTaskStatus.InProgress or BackgroundTaskStatus.WaitingForRetry)
+                        {
+                            <K7IconButton Icon="@Phosphor.Stop" OnClick="@(() => CancelTaskAsync(context))" AriaLabel="@L["Cancel"]" />
+                        }
+                        <K7IconButton Icon="@Phosphor.Info" OnClick="@(() => OpenDetailDialog(context))" AriaLabel="detail" />
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+        </K7DataTable>
+    </div>
 </div>

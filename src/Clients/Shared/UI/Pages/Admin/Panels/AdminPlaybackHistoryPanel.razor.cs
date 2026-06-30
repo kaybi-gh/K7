@@ -1,4 +1,8 @@
+using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Pages.Admin.Components;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Users;
@@ -8,10 +12,16 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminPlaybackHistoryPanel
 {
+    private const string FilterStorageKey = "admin.playback-history";
+
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "userId")]
     public Guid? QueryUserId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mediaType")]
+    public string? QueryMediaType { get; set; }
 
     private K7DataTable<PlaybackHistoryItemDto>? _tableRef;
     private List<UserDto> _users = [];
@@ -19,9 +29,11 @@ public partial class AdminPlaybackHistoryPanel
     private string _selectedMediaType = "";
     private const int PageSize = 50;
     private int _tableKey;
+    private int _totalCount;
     private PlaybackHistoryItemDto? _selectedItem;
 
     private List<ButtonGroupOption<string>> _mediaTypeOptions = [];
+    private bool _pendingQuerySync;
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,53 +54,120 @@ public partial class AdminPlaybackHistoryPanel
             _users = [];
         }
 
-        ApplyQueryUserFilter();
+        if (PageFilterUrlSync.HasAnyQuery(NavigationManager, "userId", "mediaType"))
+        {
+            ApplyFiltersFromQuery();
+            await SaveFiltersToStorageAsync();
+            _tableKey++;
+        }
+        else if (await LoadPersistedFiltersAsync())
+        {
+            _tableKey++;
+            _pendingQuerySync = true;
+        }
     }
+
+    protected override void OnAfterRender(bool firstRender) =>
+        PageFilterUrlSync.SyncAfterRender(NavigationManager, firstRender, ref _pendingQuerySync, BuildFilterQuery());
 
     protected override void OnParametersSet()
     {
-        if (_users.Count > 0)
-            ApplyQueryUserFilter();
-    }
-
-    private void ApplyQueryUserFilter()
-    {
-        var targetUserId = QueryUserId;
-        if (targetUserId.HasValue && _users.Count > 0 && _users.All(u => u.Id != targetUserId.Value))
-            targetUserId = null;
-
-        if (_selectedUserId == targetUserId)
-            return;
-
-        _selectedUserId = targetUserId;
-        _tableKey++;
-    }
-
-    private void OnUserChanged(Guid? userId) =>
-        SyncUserQueryParam(userId);
-
-    private void SyncUserQueryParam(Guid? userId)
-    {
-        var path = NavigationManager.ToAbsoluteUri(NavigationManager.Uri).GetLeftPart(UriPartial.Path);
-
-        if (userId is null)
+        if (_users.Count == 0)
         {
-            if (!QueryUserId.HasValue)
-                return;
-
-            NavigationManager.NavigateTo(path, replace: true);
             return;
         }
 
-        if (QueryUserId == userId)
+        if (!PageFilterUrlSync.HasAnyQuery(NavigationManager, "userId", "mediaType"))
+        {
             return;
+        }
 
-        NavigationManager.NavigateTo($"{path}?userId={userId}", replace: true);
+        var previousUserId = _selectedUserId;
+        var previousMediaType = _selectedMediaType;
+        ApplyFiltersFromQuery();
+        if (previousUserId != _selectedUserId || previousMediaType != _selectedMediaType)
+        {
+            _tableKey++;
+        }
     }
 
-    private void OnMediaTypeChanged(string mediaType)
+    private void ApplyFiltersFromQuery()
+    {
+        var targetUserId = QueryUserId
+            ?? (Guid.TryParse(PageFilterUrlSync.GetQueryValue(NavigationManager, "userId"), out var userId) ? userId : null);
+        if (targetUserId.HasValue && _users.Count > 0 && _users.All(u => u.Id != targetUserId.Value))
+        {
+            targetUserId = null;
+        }
+
+        _selectedUserId = targetUserId;
+        _selectedMediaType = QueryMediaType ?? PageFilterUrlSync.GetQueryValue(NavigationManager, "mediaType") ?? "";
+    }
+
+    private void SyncFiltersToQuery() =>
+        PageFilterUrlSync.SetQuery(NavigationManager, BuildFilterQuery());
+
+    private Dictionary<string, string?> BuildFilterQuery() => new()
+    {
+        ["userId"] = _selectedUserId?.ToString(),
+        ["mediaType"] = string.IsNullOrEmpty(_selectedMediaType) ? null : _selectedMediaType
+    };
+
+    private async Task<bool> LoadPersistedFiltersAsync()
+    {
+        try
+        {
+            var state = await PageFilterStorage.LoadAsync<AdminPlaybackHistoryFilterState>(FilterStorageKey, CancellationToken.None);
+            if (state is null)
+            {
+                return false;
+            }
+
+            _selectedUserId = state.UserId;
+            _selectedMediaType = state.MediaType ?? "";
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task SaveFiltersToStorageAsync()
+    {
+        try
+        {
+            await PageFilterStorage.SaveAsync(
+                FilterStorageKey,
+                new AdminPlaybackHistoryFilterState(_selectedUserId, _selectedMediaType),
+                CancellationToken.None);
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task PersistFiltersAsync()
+    {
+        await SaveFiltersToStorageAsync();
+        SyncFiltersToQuery();
+    }
+
+    private bool HasActiveFilters =>
+        _selectedUserId.HasValue || !string.IsNullOrEmpty(_selectedMediaType);
+
+    private async Task OnUserChanged(Guid? userId)
+    {
+        _selectedUserId = userId;
+        await PersistFiltersAsync();
+        RefreshTableAsync();
+    }
+
+    private async Task OnMediaTypeChanged(string mediaType)
     {
         _selectedMediaType = mediaType ?? "";
+        await PersistFiltersAsync();
         RefreshTableAsync();
     }
 
@@ -101,6 +180,8 @@ public partial class AdminPlaybackHistoryPanel
     {
         _selectedItem = null;
     }
+
+    private void OnColumnPickerClick() => _tableRef?.ToggleColumnPicker();
 
     private void RefreshTableAsync()
     {
@@ -131,15 +212,22 @@ public partial class AdminPlaybackHistoryPanel
             var allItems = new List<PlaybackHistoryItemDto>(count);
             foreach (var result in results)
             {
-                if (result?.Items is { Count: > 0 })
+                if (result is null)
                 {
-                    totalCount = result.TotalCount;
+                    continue;
+                }
+
+                totalCount = Math.Max(totalCount, result.TotalCount);
+                if (result.Items is { Count: > 0 })
+                {
                     allItems.AddRange(result.Items);
                 }
             }
 
             var offset = startIndex - (firstPage - 1) * PageSize;
             var items = allItems.Skip(offset).Take(count).ToList();
+            _totalCount = totalCount;
+            await InvokeAsync(StateHasChanged);
 
             return new K7DataTableResult<PlaybackHistoryItemDto>(items, totalCount);
         }
@@ -196,17 +284,17 @@ public partial class AdminPlaybackHistoryPanel
         {
             if (isTranscode)
             {
-                modeLabel = "Transcode";
+                modeLabel = L["Transcode"];
                 modeBadgeVariant = "transcode";
             }
             else if (sq!.VideoDecision == "Direct" && sq.AudioDecision == "Direct")
             {
-                modeLabel = "Direct";
+                modeLabel = L["Direct"];
                 modeBadgeVariant = "direct";
             }
             else
             {
-                modeLabel = "Transmux";
+                modeLabel = L["Transmux"];
                 modeBadgeVariant = "transmux";
             }
         }
@@ -215,6 +303,8 @@ public partial class AdminPlaybackHistoryPanel
         {
             MediaTitle = item.MediaTitle,
             MediaType = item.MediaType,
+            MediaTypeLabel = MediaTypeLabelHelper.Format(item.MediaType, S),
+            MediaUrl = item.MediaUrl,
             Status = item.IsCompleted ? L["Watched"] : L["Incomplete"],
             StatusVariant = item.IsCompleted ? "success" : "warning",
             StartedAt = item.StartedAt,

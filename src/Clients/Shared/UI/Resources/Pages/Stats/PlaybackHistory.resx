@@ -31,4 +31,13 @@
   <data name="Duration" xml:space="preserve"><value>Durée</value></data>
   <data name="Device" xml:space="preserve"><value>Appareil</value></data>
   <data name="Status" xml:space="preserve"><value>Statut</value></data>
+  <data name="Period" xml:space="preserve"><value>Période</value></data>
+  <data name="MediaType" xml:space="preserve"><value>Type de média</value></data>
+  <data name="WeekShort" xml:space="preserve"><value>Sem.</value></data>
+  <data name="MonthShort" xml:space="preserve"><value>Mois</value></data>
+  <data name="YearShort" xml:space="preserve"><value>An</value></data>
+  <data name="AllTime" xml:space="preserve"><value>Tout</value></data>
+  <data name="CustomShort" xml:space="preserve"><value>Perso.</value></data>
+  <data name="PickDates" xml:space="preserve"><value>Choisir les dates</value></data>
+  <data name="SelectEndDate" xml:space="preserve"><value>Sélectionnez la date de fin</value></data>
 </root>

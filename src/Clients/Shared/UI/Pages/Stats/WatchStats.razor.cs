@@ -1,5 +1,8 @@
 ﻿using ApexCharts;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Shared.Dtos;
 using Microsoft.AspNetCore.Components;
 
@@ -7,13 +10,28 @@ namespace K7.Clients.Shared.UI.Pages.Stats;
 
 public partial class WatchStats : IDisposable
 {
+    private const string FilterStorageKey = "my-space.stats";
+
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "period")]
+    public string? QueryPeriod { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mediaType")]
+    public string? QueryMediaType { get; set; }
 
     [SupplyParameterFromQuery(Name = "type")]
-    public string? Type { get; set; }
+    public string? QueryType { get; set; }
 
     [SupplyParameterFromQuery(Name = "tab")]
-    public string? Tab { get; set; }
+    public string? QueryTab { get; set; }
+
+    [SupplyParameterFromQuery(Name = "from")]
+    public string? QueryFrom { get; set; }
+
+    [SupplyParameterFromQuery(Name = "to")]
+    public string? QueryTo { get; set; }
 
     private WatchStatsDto? _stats;
     private bool _loading = true;
@@ -22,6 +40,7 @@ public partial class WatchStats : IDisposable
     private Timer? _debounceTimer;
     private DateOnly _fromDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-1));
     private DateOnly _toDate = DateOnly.FromDateTime(DateTime.Now);
+    private bool _pendingQuerySync;
 
     private List<ChartDataPoint> _playsOverTimeData = [];
     private List<ChartDataPoint> _hourData = [];
@@ -73,26 +92,128 @@ public partial class WatchStats : IDisposable
             new("Movie", Label: L["Movies"]),
             new("SerieEpisode", Label: L["TVShows"])
         ];
-
-        _selectedMediaType = ResolveInitialMediaType();
     }
 
     protected override async Task OnInitializedAsync()
     {
         K7HubClient.ProgressUpdated += OnProgressUpdated;
+
+        if (PageFilterUrlSync.HasAnyQuery(Navigation, "period", "mediaType", "type", "tab", "from", "to"))
+        {
+            ApplyFiltersFromQuery();
+            await SaveFiltersToStorageAsync();
+        }
+        else if (await LoadPersistedFiltersAsync())
+        {
+            _pendingQuerySync = true;
+        }
+
         await FetchStatsAsync();
     }
 
-    private string ResolveInitialMediaType()
-    {
-        if (Tab == "music")
-            return "MusicTrack";
+    protected override void OnAfterRender(bool firstRender) =>
+        PageFilterUrlSync.SyncAfterRender(Navigation, firstRender, ref _pendingQuerySync, BuildFilterQuery());
 
-        return Type switch
+    private void ApplyFiltersFromQuery()
+    {
+        _selectedPeriod = QueryPeriod ?? PageFilterUrlSync.GetQueryValue(Navigation, "period") ?? "month";
+        _selectedMediaType = ResolveMediaTypeFromQuery();
+
+        var from = QueryFrom ?? PageFilterUrlSync.GetQueryValue(Navigation, "from");
+        var to = QueryTo ?? PageFilterUrlSync.GetQueryValue(Navigation, "to");
+        if (DateOnly.TryParse(from, out var fromDate))
         {
-            "MusicTrack" or "Movie" or "SerieEpisode" => Type,
-            _ => ""
-        };
+            _fromDate = fromDate;
+        }
+
+        if (DateOnly.TryParse(to, out var toDate))
+        {
+            _toDate = toDate;
+        }
+    }
+
+    private string ResolveMediaTypeFromQuery()
+    {
+        var mediaType = QueryMediaType
+            ?? PageFilterUrlSync.GetQueryValue(Navigation, "mediaType")
+            ?? QueryType
+            ?? PageFilterUrlSync.GetQueryValue(Navigation, "type");
+
+        if (!string.IsNullOrEmpty(mediaType))
+        {
+            return mediaType;
+        }
+
+        var tab = QueryTab ?? PageFilterUrlSync.GetQueryValue(Navigation, "tab");
+        return tab == "music" ? "MusicTrack" : "";
+    }
+
+    private void SyncFiltersToQuery() =>
+        PageFilterUrlSync.SetQuery(Navigation, BuildFilterQuery());
+
+    private Dictionary<string, string?> BuildFilterQuery() => new()
+    {
+        ["period"] = _selectedPeriod is "month" ? null : _selectedPeriod,
+        ["mediaType"] = string.IsNullOrEmpty(_selectedMediaType) ? null : _selectedMediaType,
+        ["type"] = null,
+        ["tab"] = null,
+        ["from"] = _selectedPeriod == "custom" ? _fromDate.ToString("yyyy-MM-dd") : null,
+        ["to"] = _selectedPeriod == "custom" ? _toDate.ToString("yyyy-MM-dd") : null
+    };
+
+    private async Task<bool> LoadPersistedFiltersAsync()
+    {
+        try
+        {
+            var state = await PageFilterStorage.LoadAsync<UserWatchStatsFilterState>(FilterStorageKey, CancellationToken.None);
+            if (state is null)
+            {
+                return false;
+            }
+
+            _selectedMediaType = state.MediaType ?? "";
+            _selectedPeriod = string.IsNullOrWhiteSpace(state.Period) ? "month" : state.Period;
+            if (DateOnly.TryParse(state.From, out var from))
+            {
+                _fromDate = from;
+            }
+
+            if (DateOnly.TryParse(state.To, out var to))
+            {
+                _toDate = to;
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task SaveFiltersToStorageAsync()
+    {
+        try
+        {
+            await PageFilterStorage.SaveAsync(
+                FilterStorageKey,
+                new UserWatchStatsFilterState(
+                    _selectedMediaType,
+                    _selectedPeriod,
+                    _selectedPeriod == "custom" ? _fromDate.ToString("yyyy-MM-dd") : null,
+                    _selectedPeriod == "custom" ? _toDate.ToString("yyyy-MM-dd") : null),
+                CancellationToken.None);
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task PersistFiltersAsync()
+    {
+        await SaveFiltersToStorageAsync();
+        SyncFiltersToQuery();
     }
 
     private void OnProgressUpdated(Guid mediaId, double progress, bool isCompleted)
@@ -113,32 +234,25 @@ public partial class WatchStats : IDisposable
     private async Task OnPeriodChanged(string period)
     {
         _selectedPeriod = period ?? "month";
+        await PersistFiltersAsync();
         if (_selectedPeriod != "custom")
+        {
             await FetchStatsAsync();
+        }
     }
 
     private async Task OnMediaTypeChanged(string mediaType)
     {
         _selectedMediaType = mediaType ?? "";
-        UpdateMediaTypeUrl(_selectedMediaType);
+        await PersistFiltersAsync();
         await FetchStatsAsync();
-    }
-
-    private void UpdateMediaTypeUrl(string mediaType)
-    {
-        var uri = Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
-        {
-            ["type"] = string.IsNullOrEmpty(mediaType) ? null : mediaType,
-            ["tab"] = null
-        });
-
-        Navigation.NavigateTo(uri, replace: true);
     }
 
     private async Task OnDateRangeChanged((DateOnly? From, DateOnly? To) range)
     {
         if (range.From is not null) _fromDate = range.From.Value;
         if (range.To is not null) _toDate = range.To.Value;
+        await PersistFiltersAsync();
         await FetchStatsAsync();
     }
 

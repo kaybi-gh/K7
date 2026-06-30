@@ -3,8 +3,8 @@
 @inject IStringLocalizer<WatchStats> L
 @implements IDisposable
 
-<div class="d-flex align-center flex-wrap" style="gap: var(--space-3); padding: var(--space-4);">
-    <h5>@L["PageTitle"]</h5>
+<div class="d-flex align-center flex-wrap data-page-toolbar watch-stats-toolbar">
+    <h5 class="data-page-toolbar__title">@L["PageTitle"]</h5>
     <K7ButtonGroup TValue="string" Options="_periodOptions" Value="_selectedPeriod" ValueChanged="OnPeriodChanged" AriaLabel="@L["Period"]" />
 
     @if (_selectedPeriod == "custom")
@@ -31,7 +31,7 @@ else if (_stats is null)
 }
 else
 {
-    <div class="d-flex flex-col" style="gap: var(--space-4); padding: 0 var(--space-4) var(--space-4);">
+    <div class="d-flex flex-col watch-stats-content" style="gap: var(--space-4); padding: 0 var(--space-4) var(--space-4);">
         <!-- KPI Cards -->
         <div class="stats-kpi-row">
             <K7Paper Elevation="0" Class="stats-kpi-card">
@@ -312,10 +312,46 @@ else
 }
 
 <style>
+    .watch-stats-toolbar {
+        padding: var(--space-3) var(--space-4);
+    }
+
     .stats-kpi-row {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: var(--space-3);
+    }
+
+    @@media (max-width: 599.98px) {
+        .watch-stats-toolbar {
+            padding: var(--space-2) var(--space-3);
+        }
+
+        .watch-stats-content {
+            padding: 0 var(--space-3) var(--space-3) !important;
+        }
+
+        .stats-kpi-row {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-kpi-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: start;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+        }
+
+        .stats-kpi-card h4 {
+            margin: 0;
+            font-size: var(--text-lg);
+        }
+
+        .stats-chart-row--time-patterns > * {
+            min-width: 0;
+        }
     }
 
     .stats-kpi-card {
