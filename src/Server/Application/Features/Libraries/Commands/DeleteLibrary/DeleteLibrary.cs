@@ -9,7 +9,9 @@ namespace K7.Server.Application.Features.Libraries.Commands.DeleteLibrary;
 [Authorize(Roles = Roles.Administrator)]
 public record DeleteLibraryCommand(Guid Id) : IRequest;
 
-public class DeleteLibraryCommandHandler(IApplicationDbContext context) : IRequestHandler<DeleteLibraryCommand>
+public class DeleteLibraryCommandHandler(
+    IApplicationDbContext context,
+    IHomeLayoutMaintenanceService homeLayoutMaintenanceService) : IRequestHandler<DeleteLibraryCommand>
 {
     public async Task Handle(DeleteLibraryCommand request, CancellationToken cancellationToken)
     {
@@ -37,6 +39,7 @@ public class DeleteLibraryCommandHandler(IApplicationDbContext context) : IReque
             task.Status = BackgroundTaskStatus.Failed;
 
         context.Libraries.Remove(library);
+        await homeLayoutMaintenanceService.RemoveLibraryReferencesAsync(request.Id, cancellationToken);
         library.AddDomainEvent(new LibraryDeletedEvent(library));
         await context.SaveChangesAsync(cancellationToken);
     }
