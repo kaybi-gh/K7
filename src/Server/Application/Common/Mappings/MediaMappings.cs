@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Services;
+using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
@@ -216,15 +217,23 @@ public static class MediaMappings
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
         };
 
-        public LiteMediaDto ToLiteMediaDto(IReadOnlyDictionary<Guid, int>? serieSeasonCounts = null) => domain switch
+        public LiteMediaDto ToLiteMediaDto(
+            IReadOnlyDictionary<Guid, int>? serieSeasonCounts = null,
+            IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
         {
+            MetadataPictureDto MapPicture(MetadataPicture picture) => picture.ToMetadataPictureDto(pictureSizes);
+            List<MetadataPictureDto> MapPictures(IEnumerable<MetadataPicture> pictures) =>
+                pictures.Select(MapPicture).ToList();
+
+            return domain switch
+            {
             Movie movie => new LiteMovieDto()
             {
                 Id = domain.Id,
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
-                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = MapPictures(domain.Pictures),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -236,7 +245,7 @@ public static class MediaMappings
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
-                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = MapPictures(domain.Pictures),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -248,7 +257,7 @@ public static class MediaMappings
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
-                Pictures = (track.Album?.Pictures ?? domain.Pictures).Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = MapPictures(track.Album?.Pictures ?? domain.Pictures),
                 AlbumId = track.AlbumId,
                 TrackNumber = track.TrackNumber,
                 IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
@@ -282,7 +291,7 @@ public static class MediaMappings
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
-                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = MapPictures(domain.Pictures),
                 ArtistType = artist.ArtistType,
                 Country = artist.Country,
                 Albums = artist.Albums.Count > 0
@@ -307,7 +316,7 @@ public static class MediaMappings
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
-                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = MapPictures(domain.Pictures),
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
@@ -319,13 +328,13 @@ public static class MediaMappings
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
-                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = MapPictures(domain.Pictures),
                 SerieId = season.SerieId,
                 SeasonNumber = season.SeasonNumber,
                 EpisodeCount = season.Episodes.Count,
                 Poster = domain.Pictures
                     .Where(p => p.Type == MetadataPictureType.Poster)
-                    .Select(p => p.ToMetadataPictureDto())
+                    .Select(MapPicture)
                     .FirstOrDefault(),
                 UserState = SeasonWatchStateHelper.AggregateFromEpisodes(season.Episodes.ToList())
                     ?? (domain.UserMediaStates.FirstOrDefault() is { } state
@@ -339,7 +348,7 @@ public static class MediaMappings
                 Title = domain.Title,
                 ReleaseDate = domain.ReleaseDate,
                 Created = domain.Created,
-                Pictures = domain.Pictures.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = MapPictures(domain.Pictures),
                 EpisodeNumber = episode.EpisodeNumber,
                 SeasonNumber = episode.Season?.SeasonNumber ?? 0,
                 SerieSeasonCount = SerieSeasonCountHelper.ResolveCount(episode.SerieId, episode.Serie, serieSeasonCounts),
@@ -355,15 +364,16 @@ public static class MediaMappings
                     .FirstOrDefault(),
                 IndexedFileId = domain.IndexedFiles.FirstOrDefault()?.Id,
                 RemoteIndexedFileId = domain.RemoteIndexedFiles.FirstOrDefault()?.Id,
-                SeriePictures = episode.Serie?.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
-                SeasonPictures = episode.Season?.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+                SeriePictures = episode.Serie?.Pictures is { } seriePictures ? MapPictures(seriePictures) : null,
+                SeasonPictures = episode.Season?.Pictures is { } seasonPictures ? MapPictures(seasonPictures) : null,
                 UserState = domain.UserMediaStates.FirstOrDefault() is { } state
                     ? state.ToUserMediaStateDto()
                     : null,
                 UserRating = GetUserRating(domain)
             },
             _ => throw new NotSupportedException($"Unknown type: {domain.GetType().Name}")
-        };
+            };
+        }
     }
 
     extension(BaseRating domain)

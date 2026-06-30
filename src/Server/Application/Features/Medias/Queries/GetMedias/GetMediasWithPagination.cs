@@ -2,9 +2,9 @@
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Models;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.Common;
 using K7.Server.Application.Features.Medias.Services;
-using K7.Server.Application.Features.Restrictions.Services;
 using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
@@ -35,7 +35,7 @@ public record GetMediasWithPaginationQuery : IRequest<PaginatedList<BaseMedia>>
 
 public record QueryMediasQuery(QueryMediasRequest Request) : IRequest<PaginatedList<BaseMedia>>;
 
-public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator)
+public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<GetMediasWithPaginationQuery, PaginatedList<BaseMedia>>,
       IRequestHandler<QueryMediasQuery, PaginatedList<BaseMedia>>
 {
@@ -118,48 +118,7 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             filterQuery = MediaRuleEvaluator.ApplyFilter(filterQuery, filterDto.ToRuleGroup(), userId);
 
         if (userId.HasValue)
-        {
-            var excludedLibraryIds = context.UserLibraryExclusions
-                .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
-                .Select(e => e.LibraryId);
-
-            filterQuery = filterQuery.Where(x =>
-                x is MusicAlbum
-                    ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                    : x is MusicArtist
-                        ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || a.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                    : x is MusicTrack
-                        ? x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || ((MusicTrack)x).Album.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || ((MusicTrack)x).Album.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                    : x is Serie
-                        ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                            || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                        : x is SerieSeason
-                            ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                            : x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                                || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)));
-
-            var excludedMediaIds = context.UserMediaExclusions
-                .Where(e => e.UserId == userId.Value && (e.IsAdminExcluded || e.IsSelfExcluded))
-                .Select(e => e.MediaId);
-
-            filterQuery = filterQuery.WhereNotUserExcluded(excludedMediaIds);
-
-            var restrictionProfile = await context.ContentRestrictionProfiles
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId.Value), cancellationToken);
-
-            if (restrictionProfile is not null)
-                filterQuery = ContentRestrictionEvaluator.ApplyRestriction(filterQuery, restrictionProfile);
-        }
+            filterQuery = await mediaAccessFilter.ApplyAllAsync(filterQuery, userId.Value, cancellationToken);
 
         var totalCount = await filterQuery.CountAsync(cancellationToken);
 
@@ -181,7 +140,6 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             .Where(m => pageIds.Contains(m.Id))
             .IncludeMetadataTagsForMapping()
             .Include(x => x.Pictures)
-                .ThenInclude(p => p.Variants)
             .Include(x => x.Ratings)
             .Include(x => x.IndexedFiles)
             .AsNoTracking()
@@ -196,7 +154,6 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
                 .Include(x => ((MusicTrack)x).Artist)
                 .Include(x => ((MusicTrack)x).Album)
                     .ThenInclude(a => a.Pictures)
-                        .ThenInclude(p => p.Variants)
                 .Include(x => ((MusicTrack)x).AudioAnalysis);
         }
 
@@ -214,10 +171,8 @@ public class GetMediasQueryHandler(IApplicationDbContext context, IUser currentU
             dataQuery = dataQuery
                 .Include(x => ((SerieEpisode)x).Season)
                     .ThenInclude(s => s.Pictures)
-                        .ThenInclude(p => p.Variants)
                 .Include(x => ((SerieEpisode)x).Serie)
-                    .ThenInclude(s => s.Pictures)
-                        .ThenInclude(p => p.Variants);
+                    .ThenInclude(s => s.Pictures);
         }
 
         if (request.MediaTypes?.Contains(MediaType.SerieSeason) == true)

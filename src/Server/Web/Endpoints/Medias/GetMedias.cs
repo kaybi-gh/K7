@@ -1,9 +1,9 @@
 ﻿using K7.Server.Application.Common.Interfaces;
-using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Services;
 using K7.Server.Application.Features.Medias.Queries.GetMedias;
 using K7.Server.Domain.Constants;
 using K7.Server.Web.Converters;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.QueryBuilders;
 using Microsoft.AspNetCore.Mvc;
@@ -32,8 +32,14 @@ public class GetMedias : IEndpoint
                 return Results.StatusCode(StatusCodes.Status304NotModified);
 
             var mediasPage = await sender.Send(query, cancellationToken);
-            var serieSeasonCounts = await liteMediaProjection.GetSerieSeasonCountsAsync(mediasPage.Items, cancellationToken);
-            var result = mediasPage.ToDto(m => m.ToLiteMediaDto(serieSeasonCounts));
+            var liteItems = await liteMediaProjection.ToLiteListAsync(mediasPage.Items, cancellationToken);
+            var result = new PaginatedListDto<LiteMediaDto>
+            {
+                Items = liteItems,
+                PageNumber = mediasPage.PageNumber,
+                TotalPages = mediasPage.TotalPages,
+                TotalCount = mediasPage.TotalCount
+            };
 
             httpContext.Response.Headers[HeaderNames.ETag] = etag;
             httpContext.Response.Headers["Accept-Query"] = "application/json";
