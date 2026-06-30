@@ -1,0 +1,9 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-filter-menu__menu">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

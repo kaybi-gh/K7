@@ -1,0 +1,35 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<K7Menu Class="@($"k7-filter-menu {Class}".Trim())"
+        Title="@L["Filters"]"
+        Open="_menuOpen"
+        OpenChanged="OnMenuOpenChanged">
+    <ActivatorContent>
+        <div class="k7-filter-menu__activator focusable" tabindex="0" role="button" aria-label="@L["Filters"]">
+            @if (HasActiveFilters)
+            {
+                <button type="button"
+                        class="k7-filter-menu__clear focusable"
+                        aria-label="@L["ClearFilters"]"
+                        @onclick="ClearFiltersAsync"
+                        @onclick:stopPropagation="true">
+                    <K7Icon Icon="@Phosphor.XCircle" Size="sm" />
+                </button>
+            }
+            <span class="k7-filter-menu__label">@DisplayLabel</span>
+            <K7Icon Icon="@Phosphor.CaretDown" Size="sm" Class="k7-filter-menu__caret" />
+        </div>
+    </ActivatorContent>
+    <ChildContent>
+        <CascadingValue Value="_context" IsFixed="true">
+            @if (HasActiveFilters)
+            {
+                <K7MenuItem OnClick="ClearFiltersAsync">
+                    @L["ClearFilters"]
+                </K7MenuItem>
+                <hr class="k7-menu-divider" />
+            }
+            @ChildContent
+        </CascadingValue>
+    </ChildContent>
+</K7Menu>

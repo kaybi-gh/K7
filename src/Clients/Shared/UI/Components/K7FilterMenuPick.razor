@@ -1,0 +1,17 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<button type="button"
+        class="k7-filter-menu__option focusable @(Selected ? "k7-filter-menu__option--selected" : "")"
+        @onclick="OnClick">
+    <span class="k7-filter-menu__option-label">@Label</span>
+    @if (Selected)
+    {
+        <K7Icon Icon="@Phosphor.Check" Size="sm" />
+    }
+</button>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public bool Selected { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+}

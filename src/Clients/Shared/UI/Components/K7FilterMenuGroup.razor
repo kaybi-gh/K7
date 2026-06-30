@@ -1,0 +1,21 @@
+@namespace K7.Clients.Shared.UI.Components
+
+@if (MenuContext.ActiveSubmenu is null)
+{
+    @ChildContent
+}
+else if (MenuContext.ActiveSubmenu == SubmenuKey)
+{
+    <K7FilterMenuBack />
+    <div class="k7-filter-menu__section-label">@Title</div>
+    @SubmenuContent
+}
+
+@code {
+    [CascadingParameter] private K7FilterMenuContext MenuContext { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string SubmenuKey { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? SubmenuContent { get; set; }
+}
