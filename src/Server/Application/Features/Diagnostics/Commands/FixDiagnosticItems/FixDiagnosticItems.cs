@@ -3,7 +3,9 @@ using K7.Server.Application.Common.Security;
 using K7.Server.Application.Features.BackgroundTasks.Commands.CreateBackgroundTask;
 using K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
 using K7.Server.Application.Features.IndexedFiles.Commands.CreateFileMetadatas;
+using K7.Server.Application.Features.Medias.Commands.AnalyzeMusicTrackAudio;
 using K7.Server.Application.Features.Medias.Commands.QueueRefreshMediaMetadata;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Enums;
@@ -55,6 +57,18 @@ public class FixDiagnosticItemsCommandHandler(
                             TargetEntityTypeName = nameof(IndexedFile),
                             MaxAttempts = 1,
                             ConcurrencyGroup = "hls-segments"
+                        }, cancellationToken);
+                        break;
+
+                    case DiagnosticFixAction.AnalyzeMusicTrackAudio:
+                        await sender.Send(new CreateBackgroundTaskCommand
+                        {
+                            Request = new AnalyzeMusicTrackAudioCommand { TrackId = entityId },
+                            Priority = BackgroundTaskPriority.Low,
+                            TargetEntityId = entityId,
+                            TargetEntityTypeName = nameof(MusicTrack),
+                            MaxAttempts = 2,
+                            ConcurrencyGroup = "ffmpeg"
                         }, cancellationToken);
                         break;
                 }
