@@ -157,9 +157,8 @@ public partial class K7VirtualGrid<TItem> : IAsyncDisposable
 
             return new ItemsProviderResult<List<TItem>>(rows, totalRows);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
-            request.CancellationToken.ThrowIfCancellationRequested();
             return default;
         }
     }

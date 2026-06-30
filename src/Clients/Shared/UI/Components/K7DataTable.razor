@@ -5,11 +5,13 @@
     @ChildContent
 </CascadingValue>
 
-<div class="k7-data-table">
+<div class="k7-data-table @(Surface ? "k7-data-table--surface" : "")">
     @if (ShowToolbar)
     {
         <div class="k7-data-table-toolbar">
-            <K7Menu Open="_columnPickerOpen" OpenChanged="v => _columnPickerOpen = v">
+            <K7Menu Open="_columnPickerOpen"
+                    OpenChanged="v => _columnPickerOpen = v"
+                    Title="@S["ToggleColumns"]">
                 <ActivatorContent>
                     <K7IconButton AriaLabel="@S["ToggleColumns"]"
                                   Icon="@Phosphor.Columns" />
@@ -30,8 +32,26 @@
     }
     else if (_columnPickerOpen)
     {
-        <div class="k7-data-table-column-picker-backdrop" @onclick="() => _columnPickerOpen = false"></div>
-        <div class="k7-data-table-column-picker-floating">
+        <div class="k7-backdrop"
+             @onpointerdown="OnColumnPickerBackdropClick"
+             @onpointerdown:preventDefault="true"
+             @onpointerdown:stopPropagation="true"
+             @onclick="OnColumnPickerBackdropClick"
+             @onclick:stopPropagation="true"></div>
+        <div class="k7-data-table-column-picker-floating"
+             role="menu"
+             @ref="_columnPickerDropdown"
+             data-sn-layer="popover"
+             @onclick:stopPropagation="true">
+            <div class="k7-menu-header">
+                <span class="k7-menu-header-title">@S["ToggleColumns"]</span>
+                <button type="button"
+                        class="k7-menu-close focusable"
+                        aria-label="@S["Close"]"
+                        @onclick="OnColumnPickerCloseClick">
+                    <K7Icon Icon="@Phosphor.X" Size="sm" />
+                </button>
+            </div>
             <div class="k7-data-table-column-picker">
                 @foreach (var col in _columns.Where(c => c.Hideable))
                 {
@@ -75,17 +95,17 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Items is not null)
+                @if (_indexedItems is not null)
                 {
-                    <Virtualize Items="Items" Context="item" ItemSize="RowHeight"
+                    <Virtualize TItem="IndexedRow" Items="_indexedItems" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
-                        <tr id="@(RowId?.Invoke(item))" class="k7-data-table-row focusable @(RowClass?.Invoke(item))" style="@RowStyle" tabindex="0" role="row"
-                            @onclick="() => OnRowClicked(item)"
-                            @onkeydown="e => OnRowKeyDown(e, item)">
+                        <tr id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                            @onclick="() => OnRowClicked(row.Item)"
+                            @onkeydown="e => OnRowKeyDown(e, row.Item)">
                             @foreach (var col in VisibleColumns)
                             {
                                 <td data-mobile-hide="@(!col.VisibleOnMobile)">
-                                    @{ var cell = col.RenderCell(item); }
+                                    @{ var cell = col.RenderCell(row.Item); }
                                     @if (cell is not null) { @cell }
                                 </td>
                             }
@@ -94,16 +114,16 @@
                 }
                 else if (ServerData is not null)
                 {
-                    <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="RowHeight"
+                    <Virtualize TItem="IndexedRow" ItemsProvider="ProvideItemsAsync" Context="row" ItemSize="RowHeight"
                                 OverscanCount="OverscanCount" SpacerElement="tr" @ref="_virtualizeRef">
                         <ItemContent>
-                            <tr id="@(RowId?.Invoke(item))" class="k7-data-table-row focusable @(RowClass?.Invoke(item))" style="@RowStyle" tabindex="0" role="row"
-                                @onclick="() => OnRowClicked(item)"
-                                @onkeydown="e => OnRowKeyDown(e, item)">
+                            <tr id="@(RowId?.Invoke(row.Item))" class="k7-data-table-row focusable @GetRowClass(row)" style="@RowStyle" tabindex="0" role="row"
+                                @onclick="() => OnRowClicked(row.Item)"
+                                @onkeydown="e => OnRowKeyDown(e, row.Item)">
                                 @foreach (var col in VisibleColumns)
                                 {
                                     <td data-mobile-hide="@(!col.VisibleOnMobile)">
-                                        @{ var cell = col.RenderCell(item); }
+                                        @{ var cell = col.RenderCell(row.Item); }
                                         @if (cell is not null) { @cell }
                                     </td>
                                 }
