@@ -20,7 +20,8 @@ public class BulkCreateMedias : IEndpoint
             var result = await sender.Send(new BulkCreateMediasCommand
             {
                 Items = request.Items,
-                FetchMetadata = request.FetchMetadata
+                FetchMetadata = request.FetchMetadata,
+                CreateMissing = request.CreateMissing
             }, cancellationToken);
             return Results.Ok(result);
         })

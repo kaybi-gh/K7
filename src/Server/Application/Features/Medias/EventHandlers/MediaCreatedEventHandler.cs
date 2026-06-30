@@ -20,14 +20,21 @@ public class MediaCreatedEventHandler(
         if (notification.Media is not MusicTrack track)
             return;
 
-        var libraryId = await context.IndexedFiles
-            .AsNoTracking()
-            .Where(f => f.MediaId == track.Id)
-            .Select(f => f.LibraryId)
-            .FirstOrDefaultAsync(cancellationToken);
+        // Domain events fire during SaveChanges, before commit. Use in-memory navigation first.
+        var libraryId = track.IndexedFiles.FirstOrDefault()?.LibraryId
+            ?? await context.IndexedFiles
+                .AsNoTracking()
+                .Where(f => f.MediaId == track.Id)
+                .Select(f => f.LibraryId)
+                .FirstOrDefaultAsync(cancellationToken);
 
         if (libraryId == Guid.Empty)
+        {
+            logger.LogWarning(
+                "Skipping audio analysis for track '{Title}' ({TrackId}): no indexed file linked yet",
+                track.Title, track.Id);
             return;
+        }
 
         var library = await context.Libraries
             .AsNoTracking()

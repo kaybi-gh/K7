@@ -20,6 +20,7 @@ public record BulkCreateMediasCommand : IRequest<BulkCreateMediasResponse>
 {
     public required IReadOnlyList<BulkCreateMediasRequest.BulkCreateMediaItem> Items { get; init; }
     public bool FetchMetadata { get; init; }
+    public bool CreateMissing { get; init; } = true;
 }
 
 public partial class BulkCreateMediasCommandHandler(IApplicationDbContext context, ISender sender, IEnumerable<IMetadataProviderInfo> metadataProviders)
@@ -66,6 +67,57 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
                     resultMap.TryAdd(item.Key, (mediaId, false));
                 }
             }
+        }
+
+        var unmatchedMovies = request.Items
+            .Where(i => i.MediaType == "movie" && !resultMap.ContainsKey(i.Key))
+            .ToList();
+
+        if (unmatchedMovies.Count > 0)
+        {
+            var movieLookup = await LookupMoviesByTitleYearAsync(unmatchedMovies, cancellationToken);
+            foreach (var item in unmatchedMovies)
+            {
+                var titleKey = NormalizeMovieTitle(item.Title, item.Year);
+                if (movieLookup.TryGetValue(titleKey, out var mediaId))
+                {
+                    resultMap.TryAdd(item.Key, (mediaId, false));
+                }
+            }
+        }
+
+        var unmatchedEpisodes = request.Items
+            .Where(i => i.MediaType == "episode" && !resultMap.ContainsKey(i.Key))
+            .ToList();
+
+        if (unmatchedEpisodes.Count > 0)
+        {
+            var episodeLookup = await LookupEpisodesByIdentityAsync(unmatchedEpisodes, cancellationToken);
+            foreach (var item in unmatchedEpisodes)
+            {
+                var titleKey = NormalizeEpisodeKey(item.SeriesTitle, item.SeasonNumber, item.EpisodeNumber, item.Title);
+                if (episodeLookup.TryGetValue(titleKey, out var mediaId))
+                {
+                    resultMap.TryAdd(item.Key, (mediaId, false));
+                }
+            }
+        }
+
+        if (!request.CreateMissing)
+        {
+            return new BulkCreateMediasResponse
+            {
+                Results = request.Items.Select(i =>
+                {
+                    var (mediaId, wasCreated) = resultMap.GetValueOrDefault(i.Key);
+                    return new BulkCreateMediasResponse.BulkCreateMediaResult
+                    {
+                        Key = i.Key,
+                        MediaId = mediaId,
+                        WasCreated = wasCreated
+                    };
+                }).Where(r => r.MediaId != Guid.Empty).ToList()
+            };
         }
 
         // 3. Create missing media, grouped by type
@@ -598,6 +650,122 @@ public partial class BulkCreateMediasCommandHandler(IApplicationDbContext contex
         }
 
         return result;
+    }
+
+    private async Task<Dictionary<string, Guid>> LookupMoviesByTitleYearAsync(
+        List<BulkCreateMediasRequest.BulkCreateMediaItem> items,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+
+        var titles = items
+            .Select(i => i.Title)
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (titles.Count == 0) return result;
+
+        var titlesLower = titles.Select(t => t.ToLowerInvariant()).ToList();
+
+        var movies = await context.Medias
+            .OfType<Movie>()
+            .Where(m => m.Title != null && titlesLower.Contains(m.Title.ToLower()))
+            .Where(m => m.IndexedFiles.Any())
+            .Select(m => new { m.Id, m.Title, m.ReleaseDate })
+            .ToListAsync(cancellationToken);
+
+        foreach (var item in items)
+        {
+            var key = NormalizeMovieTitle(item.Title, item.Year);
+            if (result.ContainsKey(key)) continue;
+
+            var match = movies.FirstOrDefault(m =>
+            {
+                if (!string.Equals(m.Title, item.Title, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                if (item.Year is null || m.ReleaseDate is null)
+                    return true;
+
+                return m.ReleaseDate.Value.Year == item.Year.Value;
+            });
+
+            if (match is not null)
+                result.TryAdd(key, match.Id);
+        }
+
+        return result;
+    }
+
+    private async Task<Dictionary<string, Guid>> LookupEpisodesByIdentityAsync(
+        List<BulkCreateMediasRequest.BulkCreateMediaItem> items,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+
+        var seriesTitles = items
+            .Select(i => i.SeriesTitle ?? "Unknown Series")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (seriesTitles.Count == 0) return result;
+
+        var episodes = await context.Medias
+            .OfType<SerieEpisode>()
+            .Where(e => e.Serie != null && e.Serie.Title != null && seriesTitles.Contains(e.Serie.Title))
+            .Where(e => e.IndexedFiles.Any())
+            .Select(e => new
+            {
+                e.Id,
+                e.Title,
+                e.EpisodeNumber,
+                SeriesTitle = e.Serie!.Title,
+                SeasonNumber = e.Season != null ? e.Season.SeasonNumber : (int?)null
+            })
+            .ToListAsync(cancellationToken);
+
+        foreach (var item in items)
+        {
+            var key = NormalizeEpisodeKey(item.SeriesTitle, item.SeasonNumber, item.EpisodeNumber, item.Title);
+            if (result.ContainsKey(key)) continue;
+
+            var seriesTitle = item.SeriesTitle ?? "Unknown Series";
+            var seasonNumber = item.SeasonNumber;
+            var episodeNumber = item.EpisodeNumber;
+
+            var match = episodes.FirstOrDefault(e =>
+            {
+                if (!string.Equals(e.SeriesTitle, seriesTitle, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                if (seasonNumber.HasValue && e.SeasonNumber.HasValue && e.SeasonNumber != seasonNumber)
+                    return false;
+
+                if (episodeNumber.HasValue && e.EpisodeNumber != episodeNumber)
+                    return false;
+
+                if (!episodeNumber.HasValue && !string.Equals(e.Title, item.Title, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                return true;
+            });
+
+            if (match is not null)
+                result.TryAdd(key, match.Id);
+        }
+
+        return result;
+    }
+
+    private static string NormalizeMovieTitle(string title, int? year)
+    {
+        return year is null ? title : $"{title}|{year.Value}";
+    }
+
+    private static string NormalizeEpisodeKey(string? seriesTitle, int? seasonNumber, int? episodeNumber, string title)
+    {
+        return $"{seriesTitle ?? "Unknown Series"}|S{seasonNumber ?? 0}|E{episodeNumber ?? 0}|{title}";
     }
 
     private static void AddExternalIds(BaseMedia media, Dictionary<string, string> externalIds)
