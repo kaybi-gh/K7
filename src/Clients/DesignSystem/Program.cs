@@ -39,6 +39,7 @@ builder.Services.AddSingleton<IFeatureAccessService, MockFeatureAccessService>()
 builder.Services.AddSingleton<ICustomAuthenticationStateProvider, MockCustomAuthStateProvider>();
 builder.Services.AddSingleton<IDeviceService, MockDeviceService>();
 builder.Services.AddSingleton<IDeviceStorageService, MockDeviceStorageService>();
+builder.Services.AddSingleton<IPageFilterStorage, MockPageFilterStorage>();
 builder.Services.AddSingleton<IVolumeService, MockVolumeService>();
 builder.Services.AddSingleton<IBrightnessService, MockBrightnessService>();
 builder.Services.AddSingleton<IStreamUriService, MockStreamUriService>();

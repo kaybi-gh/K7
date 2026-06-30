@@ -1,0 +1,12 @@
+@namespace K7.Clients.Shared.UI.Components
+
+@if (MenuContext.ActiveSubmenu is null)
+{
+    @ChildContent
+}
+
+@code {
+    [CascadingParameter] private K7FilterMenuContext MenuContext { get; set; } = default!;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

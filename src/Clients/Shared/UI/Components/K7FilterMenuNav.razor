@@ -1,0 +1,20 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<button type="button"
+        class="k7-filter-menu__option focusable"
+        @onclick="() => MenuContext.Navigate(SubmenuKey)">
+    <span class="k7-filter-menu__option-label">@Label</span>
+    @if (!string.IsNullOrWhiteSpace(Summary))
+    {
+        <span class="k7-filter-menu__option-summary text-caption">@Summary</span>
+    }
+    <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="k7-filter-menu__option-chevron" />
+</button>
+
+@code {
+    [CascadingParameter] private K7FilterMenuContext MenuContext { get; set; } = default!;
+
+    [Parameter, EditorRequired] public string SubmenuKey { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string? Summary { get; set; }
+}

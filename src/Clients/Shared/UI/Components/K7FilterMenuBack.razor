@@ -1,0 +1,13 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<SharedResource> S
+
+<K7MenuItem PreventClose="true" OnClick="() => MenuContext.NavigateBack()">
+    <div class="d-flex align-center" style="gap: var(--space-2);">
+        <K7Icon Icon="@Phosphor.CaretLeft" Size="sm" />
+        <span>@S["Back"]</span>
+    </div>
+</K7MenuItem>
+
+@code {
+    [CascadingParameter] private K7FilterMenuContext MenuContext { get; set; } = default!;
+}
