@@ -27,7 +27,7 @@ public record GetHomeFeedItemsQuery : IRequest<PaginatedList<HomeFeedItemDto>>
     public required int PageSize { get; init; } = 20;
 }
 
-public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator)
+public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser currentUser, IMemoryCache cache, IMediaQueryCacheInvalidator cacheInvalidator, MediaAccessFilter mediaAccessFilter)
     : IRequestHandler<GetHomeFeedItemsQuery, PaginatedList<HomeFeedItemDto>>
 {
     private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromHours(24);
@@ -122,18 +122,19 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 .FirstOrDefault())
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var feedItems = items.Select(i => MapContinueWatchingItem(i, request.Detailed == true)).ToList();
+        var pictureSizes = await GetPictureSizesAsync(items, cancellationToken);
+        var feedItems = items.Select(i => MapContinueWatchingItem(i, request.Detailed == true, pictureSizes)).ToList();
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 
@@ -177,7 +178,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             SerieSeasonCountHelper.ExtractSerieIdsFromMedias(rawItems),
             cancellationToken);
 
-        var aggregated = AggregateRecentItems(rawItems, request.Detailed == true, serieSeasonCounts);
+        var pictureSizes = await GetPictureSizesAsync(rawItems, cancellationToken);
+        var aggregated = AggregateRecentItems(rawItems, request.Detailed == true, serieSeasonCounts, pictureSizes);
         var page = aggregated.Take(request.PageSize).ToList();
         var totalCount = aggregated.Count;
 
@@ -315,14 +317,14 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
     {
         var items = await context.Medias
             .Where(m => pageIds.Contains(m.Id))
-            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Pictures)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.Ratings)
             .Include(x => ((SerieEpisode)x).Serie).ThenInclude(s => s.MetadataTags).ThenInclude(mt => mt.MetadataTag)
-            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures).ThenInclude(p => p.Variants)
-            .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => ((SerieEpisode)x).Season).ThenInclude(s => s.Pictures)
+            .Include(x => ((MusicTrack)x).Album).ThenInclude(a => a.Pictures)
             .AsNoTracking()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
@@ -356,7 +358,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         var items = await context.Medias
             .Where(m => pageIds.Contains(m.Id))
-            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .AsNoTracking()
@@ -376,9 +378,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             }
         }
 
+        var pictureSizes = await GetPictureSizesAsync(items, cancellationToken);
         var feedItems = pageIds
             .Select(id => items.First(m => m.Id == id))
-            .Select(m => MapTopLevelItem(m, request.Detailed == true))
+            .Select(m => MapTopLevelItem(m, request.Detailed == true, pictureSizes))
             .ToList();
 
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
@@ -387,7 +390,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
     private static List<HomeFeedItemDto> AggregateRecentItems(
         List<BaseMedia> rawItems,
         bool detailed,
-        IReadOnlyDictionary<Guid, int> serieSeasonCounts)
+        IReadOnlyDictionary<Guid, int> serieSeasonCounts,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
     {
         var result = new List<(int Order, HomeFeedItemDto Item)>();
         var serieGroups = new Dictionary<Guid, (int Order, List<SerieEpisode> Episodes)>();
@@ -421,7 +425,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                     // Skip top-level album entries -- tracks represent them
                     break;
                 default:
-                    result.Add((insertOrder++, MapTopLevelItem(item, detailed)));
+                    result.Add((insertOrder++, MapTopLevelItem(item, detailed, pictureSizes)));
                     break;
             }
         }
@@ -429,12 +433,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         foreach (var (serieId, (order, episodes)) in serieGroups)
         {
             var seasonCount = SerieSeasonCountHelper.ResolveCount(serieId, episodes[0].Serie, serieSeasonCounts);
-            result.Add((order, AggregateSerieEpisodes(serieId, episodes, detailed, seasonCount)));
+            result.Add((order, AggregateSerieEpisodes(serieId, episodes, detailed, seasonCount, pictureSizes)));
         }
 
         foreach (var (albumId, (order, tracks)) in albumGroups)
         {
-            result.Add((order, AggregateAlbumTracks(albumId, tracks)));
+            result.Add((order, AggregateAlbumTracks(albumId, tracks, pictureSizes)));
         }
 
         return result.OrderBy(x => x.Order).Select(x => x.Item).ToList();
@@ -444,7 +448,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         Guid serieId,
         List<SerieEpisode> episodes,
         bool detailed,
-        int serieSeasonCount)
+        int serieSeasonCount,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
     {
         var first = episodes[0];
         var serie = first.Serie!;
@@ -466,7 +471,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 Title = serie.Title ?? ep.Title ?? "",
                 MediaType = MediaType.SerieEpisode,
                 NavigationTarget = $"/series/{serieId}/seasons/{ep.Season?.SeasonNumber ?? 0}#ep-{ep.EpisodeNumber}",
-                Pictures = seasonPictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = seasonPictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
                 AdditionalInfo = $"S{ep.Season?.SeasonNumber ?? 0:D2}E{ep.EpisodeNumber:D2}",
                 GroupCount = 1,
                 ReleaseDate = serie.ReleaseDate,
@@ -490,7 +495,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 Title = serie.Title ?? "",
                 MediaType = MediaType.SerieSeason,
                 NavigationTarget = $"/series/{serieId}/seasons/{seasonNumber}",
-                Pictures = (season?.Pictures ?? serie.Pictures)?.Select(p => p.ToMetadataPictureDto()).ToList(),
+                Pictures = (season?.Pictures ?? serie.Pictures)?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
                 AdditionalInfo = $"{episodes.Count} episodes",
                 GroupCount = episodes.Count,
                 ReleaseDate = serie.ReleaseDate,
@@ -509,7 +514,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             Title = serie.Title ?? "",
             MediaType = MediaType.Serie,
             NavigationTarget = $"/series/{serieId}",
-            Pictures = serie.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+            Pictures = serie.Pictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
             AdditionalInfo = $"{episodes.Count} episodes",
             GroupCount = episodes.Count,
             ReleaseDate = serie.ReleaseDate,
@@ -521,7 +526,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         };
     }
 
-    private static HomeFeedItemDto AggregateAlbumTracks(Guid albumId, List<MusicTrack> tracks)
+    private static HomeFeedItemDto AggregateAlbumTracks(
+        Guid albumId,
+        List<MusicTrack> tracks,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
     {
         var first = tracks[0];
         var album = first.Album!;
@@ -534,7 +542,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             Title = album.Title ?? first.Title ?? "",
             MediaType = MediaType.MusicAlbum,
             NavigationTarget = $"/music/albums/{albumId}",
-            Pictures = album.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+            Pictures = album.Pictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
             AdditionalInfo = tracks.Count > 1 ? $"{tracks.Count} tracks" : null,
             GroupCount = tracks.Count,
             ReleaseDate = album.ReleaseDate,
@@ -542,9 +550,12 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         };
     }
 
-    private static HomeFeedItemDto MapTopLevelItem(BaseMedia item, bool detailed = false)
+    private static HomeFeedItemDto MapTopLevelItem(
+        BaseMedia item,
+        bool detailed = false,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
     {
-        var pictures = item.Pictures?.Select(p => p.ToMetadataPictureDto()).ToList();
+        var pictures = item.Pictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList();
         var userState = item.UserMediaStates.FirstOrDefault();
 
         return new HomeFeedItemDto
@@ -572,7 +583,10 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         };
     }
 
-    private static HomeFeedItemDto MapContinueWatchingItem(BaseMedia item, bool detailed = false)
+    private static HomeFeedItemDto MapContinueWatchingItem(
+        BaseMedia item,
+        bool detailed = false,
+        IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>? pictureSizes = null)
     {
         var userState = item.UserMediaStates.FirstOrDefault();
         IList<MetadataPicture>? pictures;
@@ -607,7 +621,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             Title = title,
             MediaType = item.Type,
             NavigationTarget = navTarget,
-            Pictures = pictures?.Select(p => p.ToMetadataPictureDto()).ToList(),
+            Pictures = pictures?.Select(p => p.ToMetadataPictureDto(pictureSizes)).ToList(),
             AdditionalInfo = additionalInfo,
             ReleaseDate = item.ReleaseDate,
             Watched = userState?.IsCompleted ?? false,
@@ -669,47 +683,16 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                             || x.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId)));
     }
 
-    private async Task<IQueryable<BaseMedia>> ApplyUserExclusionsAsync(
-        IQueryable<BaseMedia> query, Guid userId, CancellationToken cancellationToken)
-    {
-        var excludedLibraryIds = context.UserLibraryExclusions
-            .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
-            .Select(e => e.LibraryId);
+    private Task<IQueryable<BaseMedia>> ApplyUserExclusionsAsync(
+        IQueryable<BaseMedia> query, Guid userId, CancellationToken cancellationToken) =>
+        mediaAccessFilter.ApplyAllAsync(query, userId, cancellationToken);
 
-        query = query.Where(x =>
-            x is MusicAlbum
-                ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                    || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                : x is MusicArtist
-                    ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || a.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                : x is Serie
-                    ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                    : x is SerieSeason
-                        ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                        : x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)));
-
-        var excludedMediaIds = context.UserMediaExclusions
-            .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
-            .Select(e => e.MediaId);
-
-        query = query.WhereNotUserExcluded(excludedMediaIds);
-
-        var restrictionProfile = await context.ContentRestrictionProfiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
-
-        if (restrictionProfile is not null)
-            query = ContentRestrictionEvaluator.ApplyRestriction(query, restrictionProfile);
-
-        return query;
-    }
+    private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<MetadataPictureSize>>> GetPictureSizesAsync(
+        IEnumerable<BaseMedia> medias, CancellationToken cancellationToken) =>
+        await MetadataPictureSizesHelper.GetAvailableSizesByPictureIdsAsync(
+            context,
+            MetadataPictureSizesHelper.ExtractPictureIdsFromMedias(medias),
+            cancellationToken);
 
     private static IOrderedQueryable<BaseMedia> ApplyOrdering(
         HashSet<MediaOrderingOption>? orderBy, IQueryable<BaseMedia> queryable, Guid? userId)
@@ -797,14 +780,15 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
 
         var items = await query
             .Take(request.PageSize)
-            .Include(x => x.Pictures).ThenInclude(p => p.Variants)
+            .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
             .Include(x => x.UserMediaStates.Where(s => s.UserId == userId.Value))
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var feedItems = items.Select(i => MapTopLevelItem(i, request.Detailed == true)).ToList();
+        var pictureSizes = await GetPictureSizesAsync(items, cancellationToken);
+        var feedItems = items.Select(i => MapTopLevelItem(i, request.Detailed == true, pictureSizes)).ToList();
         return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
     }
 

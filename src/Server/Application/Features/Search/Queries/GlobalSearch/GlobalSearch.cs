@@ -1,5 +1,5 @@
-using K7.Server.Application.Common.Services;
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Application.Common.Services;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.QueryExtensions;
 using K7.Server.Application.Common.Security;
@@ -21,7 +21,12 @@ public record GlobalSearchQuery : IRequest<GlobalSearchResultDto>
     public int PageSize { get; init; } = 10;
 }
 
-public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser currentUser, LiteMediaProjectionService liteMediaProjection)
+public class GlobalSearchQueryHandler(
+    IApplicationDbContext context,
+    IUser currentUser,
+    LiteMediaProjectionService liteMediaProjection,
+    MediaAccessFilter mediaAccessFilter,
+    IDatabaseCapabilities databaseCapabilities)
     : IRequestHandler<GlobalSearchQuery, GlobalSearchResultDto>
 {
     private const int MovieLimit = 15;
@@ -38,14 +43,13 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
         if (request.Q.Trim().Length < 2)
             return new GlobalSearchResultDto();
 
-        var term = $"%{request.Q.Trim().ToLower()}%";
+        var term = MediaTextSearchHelper.BuildTitlePattern(request.Q, databaseCapabilities.SupportsTrigramSearch);
         var rawQuery = request.Q.Trim().ToLower();
 
         var mediaQuery = BuildMediaSearchQuery(term, rawQuery, request.Studio);
 
         var personQuery = context.Persons
             .Include(p => p.PortraitPicture)
-                .ThenInclude(pp => pp!.Variants)
             .Where(p => EF.Functions.Like(p.Name.ToLower(), term))
             .OrderBy(p => EF.Functions.Like(p.Name.ToLower(), rawQuery) ? 0 : 1)
             .Take(PersonLimit)
@@ -55,7 +59,6 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
             .OfType<Actor>()
             .Include(r => r.Person)
                 .ThenInclude(p => p.PortraitPicture)
-                    .ThenInclude(pp => pp!.Variants)
             .Include(r => r.Media)
             .Where(r => EF.Functions.Like(r.CharacterName.ToLower(), term))
             .Take(CharacterLimit)
@@ -65,7 +68,6 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
             .OfType<VoiceActor>()
             .Include(r => r.Person)
                 .ThenInclude(p => p.PortraitPicture)
-                    .ThenInclude(pp => pp!.Variants)
             .Include(r => r.Media)
             .Where(r => EF.Functions.Like(r.CharacterName.ToLower(), term))
             .Take(CharacterLimit)
@@ -73,15 +75,13 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
 
         if (currentUser.Id is { } userId)
         {
-            var restrictionProfile = await context.ContentRestrictionProfiles
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Users.Any(u => u.Id == userId), cancellationToken);
+            var restrictionProfile = await mediaAccessFilter.GetRestrictionProfileAsync(userId, cancellationToken);
 
-            mediaQuery = ApplyUserExclusions(mediaQuery, userId);
+            mediaQuery = mediaAccessFilter.ApplyExclusions(mediaQuery, userId);
             if (restrictionProfile is not null)
                 mediaQuery = ContentRestrictionEvaluator.ApplyRestriction(mediaQuery, restrictionProfile);
 
-            var accessibleMediaIds = ApplyUserExclusions(context.Medias, userId);
+            var accessibleMediaIds = mediaAccessFilter.ApplyExclusions(context.Medias, userId);
             if (restrictionProfile is not null)
                 accessibleMediaIds = ContentRestrictionEvaluator.ApplyRestriction(accessibleMediaIds, restrictionProfile);
 
@@ -176,55 +176,14 @@ public class GlobalSearchQueryHandler(IApplicationDbContext context, IUser curre
         return mediaQuery;
     }
 
-    private IQueryable<BaseMedia> ApplyUserExclusions(IQueryable<BaseMedia> query, Guid userId)
-    {
-        var excludedLibraryIds = context.UserLibraryExclusions
-            .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
-            .Select(e => e.LibraryId);
-
-        query = query.Where(x =>
-            x is MusicAlbum
-                ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                    || ((MusicAlbum)x).Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                : x is MusicArtist
-                    ? ((MusicArtist)x).Albums.Any(a => a.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || a.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || t.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                : x is MusicTrack
-                    ? x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((MusicTrack)x).Album.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((MusicTrack)x).Album.Tracks.Any(t => t.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId)))
-                : x is Serie
-                    ? x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))
-                        || ((Serie)x).Seasons.Any(s => s.Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                            || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId))))
-                : x is SerieSeason
-                    ? ((SerieSeason)x).Episodes.Any(e => e.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || e.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)))
-                    : x.IndexedFiles.Any(f => !excludedLibraryIds.Contains(f.LibraryId))
-                        || x.RemoteIndexedFiles.Any(r => !excludedLibraryIds.Contains(r.LibraryId)));
-
-        var excludedMediaIds = context.UserMediaExclusions
-            .Where(e => e.UserId == userId && (e.IsAdminExcluded || e.IsSelfExcluded))
-            .Select(e => e.MediaId);
-
-        return query.WhereNotUserExcluded(excludedMediaIds);
-    }
-
     private static IQueryable<BaseMedia> ApplySearchMediaIncludes(IQueryable<BaseMedia> query) =>
         query
             .IncludeMetadataTagsForMapping()
             .Include(m => m.Pictures)
-                .ThenInclude(p => p.Variants)
             .Include(m => ((MusicTrack)m).Album)
                 .ThenInclude(a => a!.Pictures)
-                    .ThenInclude(p => p!.Variants)
             .Include(m => ((SerieEpisode)m).Season)
                 .ThenInclude(s => s!.Pictures)
-                    .ThenInclude(p => p!.Variants)
             .Include(m => ((SerieEpisode)m).Serie)
-                .ThenInclude(s => s!.Pictures)
-                    .ThenInclude(p => p!.Variants);
+                .ThenInclude(s => s!.Pictures);
 }

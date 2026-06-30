@@ -181,6 +181,7 @@ public static class DependencyInjection
         services.AddScoped<IUserSettingsService, UserSettingsService>();
         services.AddScoped<ISetupService, SetupService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
+        services.AddSingleton<IDatabaseCapabilities, DatabaseCapabilities>();
 
         // Notification providers
         services.AddKeyedSingleton<INotificationProvider, WebhookNotificationProvider>(NotificationProviderType.Webhook);
