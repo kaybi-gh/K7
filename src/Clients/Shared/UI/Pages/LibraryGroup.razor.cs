@@ -2,6 +2,7 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.Services;
 using K7.Clients.Shared.UI.Components;
 using K7.Server.Domain.Enums;
@@ -13,6 +14,7 @@ using K7.Shared.Dtos.Rules;
 using K7.Shared.Extensions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
+using System.Text.Json;
 
 namespace K7.Clients.Shared.UI.Pages;
 
@@ -24,6 +26,7 @@ public partial class LibraryGroup : IDisposable
     [Inject] private IMusicIntelligenceClientService MusicIntelligence { get; set; } = default!;
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
 
     [Parameter]
     public required string Id { get; set; }
@@ -81,6 +84,14 @@ public partial class LibraryGroup : IDisposable
     ];
 
     private float GridAspectRatio => _selectedMediaType is MediaType.MusicAlbum or MediaType.MusicTrack or MediaType.MusicArtist ? 1f : 1.5f;
+
+    private string FilterStorageKey => $"library-group.{Id}";
+
+    private bool HasQuerySeededFilters =>
+        !string.IsNullOrWhiteSpace(GenreQuery)
+        || !string.IsNullOrWhiteSpace(StudioQuery)
+        || !string.IsNullOrWhiteSpace(NetworkQuery)
+        || !string.IsNullOrWhiteSpace(MediaTypeQuery);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -144,13 +155,26 @@ public partial class LibraryGroup : IDisposable
         _intelligentSearch = null;
         _intelligentSearchResults = [];
 
+        if (!HasQuerySeededFilters)
+        {
+            await LoadPersistedFiltersAsync();
+        }
+
         K7HubClient.MediaBatchAdded += OnMediaBatchAdded;
 
         await LoadTagsAsync();
 
         // Initial load to get total count
-        var result = await k7ServerService.QueryMediasAsync(BuildQuery(1, PageSize));
-        _totalCount = result?.TotalCount ?? 0;
+        if (_intelligentSearch is not null)
+        {
+            await OnIntelligentSearchChanged(_intelligentSearch);
+        }
+        else
+        {
+            var result = await k7ServerService.QueryMediasAsync(BuildQuery(1, PageSize));
+            _totalCount = result?.TotalCount ?? 0;
+        }
+
         _loading = false;
     }
 
@@ -269,6 +293,61 @@ public partial class LibraryGroup : IDisposable
         PageSize = pageSize
     };
 
+    private async Task LoadPersistedFiltersAsync()
+    {
+        try
+        {
+            var state = await PageFilterStorage.LoadAsync<LibraryGroupFilterState>(FilterStorageKey);
+            if (state is null)
+            {
+                return;
+            }
+
+            if (Enum.IsDefined(typeof(MediaType), state.MediaType)
+                && (_availableMediaTypes.Count == 0 || _availableMediaTypes.Contains((MediaType)state.MediaType)))
+            {
+                _selectedMediaType = (MediaType)state.MediaType;
+            }
+
+            if (Enum.IsDefined(typeof(MediaOrderingOption), state.Sort))
+            {
+                _selectedSort = (MediaOrderingOption)state.Sort;
+                (_activeSortKey, _activeSortDirection) = MapOrderingToSortKey(_selectedSort);
+            }
+
+            if (!string.IsNullOrWhiteSpace(state.FilterJson))
+            {
+                _filter = JsonSerializer.Deserialize<RuleGroupDto>(state.FilterJson) ?? MediaBrowseFilterPresets.Empty;
+            }
+
+            if (!string.IsNullOrWhiteSpace(state.IntelligentSearchJson))
+            {
+                _intelligentSearch = JsonSerializer.Deserialize<IntelligentSearchRequest>(state.IntelligentSearchJson);
+            }
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task PersistFiltersAsync()
+    {
+        try
+        {
+            var state = new LibraryGroupFilterState(
+                (int)_selectedMediaType,
+                (int)_selectedSort,
+                MediaBrowseFilterPresets.IsEmpty(_filter) ? null : JsonSerializer.Serialize(_filter),
+                _intelligentSearch is null ? null : JsonSerializer.Serialize(_intelligentSearch));
+            await PageFilterStorage.SaveAsync(FilterStorageKey, state);
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
     private async Task LoadTagsAsync()
     {
         try
@@ -306,6 +385,7 @@ public partial class LibraryGroup : IDisposable
             _intelligentSearchResults = [];
         }
 
+        await PersistFiltersAsync();
         await RefreshAllAsync();
     }
 
@@ -318,6 +398,7 @@ public partial class LibraryGroup : IDisposable
         {
             _intelligentSearchResults = [];
             _totalCount = 0;
+            await PersistFiltersAsync();
             await RefreshAllAsync();
             return;
         }
@@ -357,6 +438,7 @@ public partial class LibraryGroup : IDisposable
         finally
         {
             _intelligentSearchLoading = false;
+            await PersistFiltersAsync();
             await RefreshAllAsync();
         }
     }
@@ -424,6 +506,7 @@ public partial class LibraryGroup : IDisposable
         _intelligentSearch = null;
         _intelligentSearchResults = [];
         await LoadTagsAsync();
+        await PersistFiltersAsync();
         await RefreshAllAsync();
     }
 
@@ -435,6 +518,7 @@ public partial class LibraryGroup : IDisposable
         // Sync sort key/direction from dropdown
         (_activeSortKey, _activeSortDirection) = MapOrderingToSortKey(value);
 
+        await PersistFiltersAsync();
         await RefreshAllAsync();
     }
 

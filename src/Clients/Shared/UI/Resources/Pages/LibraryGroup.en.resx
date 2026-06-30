@@ -39,6 +39,7 @@
   <data name="PlayCount" xml:space="preserve"><value>Play count</value></data>
   <data name="DateAdded" xml:space="preserve"><value>Date added</value></data>
   <data name="AllGenres" xml:space="preserve"><value>All genres</value></data>
+  <data name="MediaTypeFilter" xml:space="preserve"><value>Media type</value></data>
   <data name="GenreFilterOption" xml:space="preserve"><value>{0} ({1})</value></data>
   <data name="IntelligentSearchNoResults" xml:space="preserve"><value>No results for this search in this group.</value></data>
   <data name="IntelligentSearchError" xml:space="preserve"><value>Intelligent search failed.</value></data>

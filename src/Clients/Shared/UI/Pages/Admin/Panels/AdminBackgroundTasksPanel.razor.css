@@ -1,16 +1,19 @@
-﻿.summary-card {
-    transition: border-color 0.2s ease;
+﻿.task-name-cell {
+    min-width: 0;
+    max-width: 100%;
 }
 
-.summary-card:hover {
-    border-color: var(--color-accent);
+::deep .k7-data-table-el {
+    table-layout: fixed;
 }
 
-.summary-card-active {
-    border-color: var(--color-accent);
-    border-width: 2px;
+.task-name-label,
+.task-error-detail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.actions-cell {
-    text-align: right;
+.task-error-detail {
+    margin: 0;
 }

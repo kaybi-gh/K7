@@ -1,19 +1,20 @@
-﻿.summary-card {
-    padding: var(--space-4);
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+﻿.diagnostics-actions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
+    flex-wrap: nowrap;
 }
 
-.summary-card:hover {
-    border-color: var(--color-accent);
-    background-color: rgba(255, 255, 255, 0.03);
+.diagnostics-name-cell__title,
+.diagnostics-name-cell__meta,
+.diagnostics-issues-cell {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.summary-card-active {
-    border-color: var(--color-accent);
-    border-width: 2px;
-    background-color: rgba(229, 160, 13, 0.06);
-}
-
-.actions-cell {
-    text-align: right;
+.diagnostics-name-cell__meta {
+    margin-top: 2px;
 }

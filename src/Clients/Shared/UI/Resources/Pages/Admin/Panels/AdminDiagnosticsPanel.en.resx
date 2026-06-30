@@ -47,6 +47,7 @@
   <data name="ItemsTitle" xml:space="preserve"><value>Details</value></data>
   <data name="ClearFilters" xml:space="preserve"><value>Clear filters</value></data>
   <data name="FilterLibrary" xml:space="preserve"><value>Library</value></data>
+  <data name="FilterSeverity" xml:space="preserve"><value>Severity</value></data>
   <data name="FilterEntityType" xml:space="preserve"><value>Type</value></data>
   <data name="FilterIssue" xml:space="preserve"><value>Issue</value></data>
   <data name="EntityTypeMedia" xml:space="preserve"><value>Media</value></data>
@@ -77,6 +78,13 @@
   <data name="ActionReidentify" xml:space="preserve"><value>Re-identify</value></data>
   <data name="ActionExtract" xml:space="preserve"><value>Extract</value></data>
   <data name="ActionHls" xml:space="preserve"><value>HLS</value></data>
+  <data name="ActionAnalyzeAudio" xml:space="preserve"><value>Analyze</value></data>
+  <data name="QueueAllFixes" xml:space="preserve"><value>Fix all ({0})</value></data>
+  <data name="AllFixesQueued" xml:space="preserve"><value>{0} fix task(s) queued.</value></data>
+  <data name="AllLibraries" xml:space="preserve"><value>All libraries</value></data>
+  <data name="ConfirmBulkFixTitle" xml:space="preserve"><value>Queue bulk fixes?</value></data>
+  <data name="ConfirmBulkFixMessage" xml:space="preserve"><value>{0} item(s) will be processed for "{1}" ({2}) in {3}. This will create many background tasks and may heavily load the server for a long time.</value></data>
+  <data name="ConfirmBulkFixConfirm" xml:space="preserve"><value>Queue</value></data>
   <data name="InaccessiblePath" xml:space="preserve"><value>Inaccessible path</value></data>
   <data name="EntityTypeLibrary" xml:space="preserve"><value>Library</value></data>
   <data name="FilterBy" xml:space="preserve"><value>Filter</value></data>

@@ -1,5 +1,8 @@
 using K7.Clients.Shared.Enums;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos;
 using K7.Shared.Dtos.Entities;
@@ -10,6 +13,7 @@ namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
 public partial class AdminBackgroundTasksPanel : IDisposable
 {
+    private const string FilterStorageKey = "admin.background-tasks";
     private static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(500);
     private static readonly BackgroundTaskStatus[] _allStatuses =
     [
@@ -22,9 +26,21 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
     [Inject] private IBackgroundTaskService BackgroundTaskService { get; set; } = default!;
     [Inject] private IFederationService FederationService { get; set; } = default!;
+    [Inject] private IServerPreferencesService ServerPreferencesService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private K7.Clients.Shared.Services.K7HubClient K7HubClient { get; set; } = default!;
+    [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? QueryStatus { get; set; }
+
+    [SupplyParameterFromQuery(Name = "taskType")]
+    public string? QueryTaskType { get; set; }
+
+    [SupplyParameterFromQuery(Name = "sort")]
+    public string? QuerySort { get; set; }
 
     private BackgroundTaskSettingsDto? _settings;
     private BackgroundTaskSummaryDto? _summary;
@@ -32,8 +48,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private bool _isSavingSettings;
     private BackgroundTaskStatus? _selectedStatus;
     private string? _selectedTaskType;
-    private string? _selectedSortBy;
-    private bool _sortDescending = true;
+    private BackgroundTaskOrderingOption _selectedSort = BackgroundTaskOrderingOption.DateDesc;
+    private int _totalCount;
     private int _workerCount;
     private Dictionary<string, int> _concurrencyLimits = new();
     private Dictionary<Guid, string> _peerNames = new();
@@ -41,11 +57,147 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private Timer? _debounceTimer;
     private const int PageSize = 50;
     private int _tableKey;
+    private bool _pendingQuerySync;
+
+    private static readonly List<BackgroundTaskOrderingOption> SortOptions =
+    [
+        BackgroundTaskOrderingOption.DateDesc,
+        BackgroundTaskOrderingOption.DateAsc,
+        BackgroundTaskOrderingOption.DurationDesc,
+        BackgroundTaskOrderingOption.DurationAsc,
+        BackgroundTaskOrderingOption.NameAsc,
+        BackgroundTaskOrderingOption.NameDesc
+    ];
 
     protected override async Task OnInitializedAsync()
     {
         K7HubClient.BackgroundTaskUpdated += OnBackgroundTaskUpdated;
+
+        if (PageFilterUrlSync.HasAnyQuery(Navigation, "status", "taskType", "sort"))
+        {
+            ApplyFiltersFromQuery();
+            await SaveFiltersToStorageAsync();
+            _tableKey++;
+        }
+        else if (await LoadPersistedFiltersAsync())
+        {
+            _tableKey++;
+            _pendingQuerySync = true;
+        }
+
         await Task.WhenAll(LoadSettingsAsync(initial: true), LoadSummaryAsync(), LoadPeerNamesAsync());
+    }
+
+    protected override void OnAfterRender(bool firstRender) =>
+        PageFilterUrlSync.SyncAfterRender(Navigation, firstRender, ref _pendingQuerySync, BuildFilterQuery());
+
+    private void ApplyFiltersFromQuery()
+    {
+        var statusValue = QueryStatus ?? PageFilterUrlSync.GetQueryValue(Navigation, "status");
+        _selectedStatus = Enum.TryParse<BackgroundTaskStatus>(statusValue, ignoreCase: true, out var status) ? status : null;
+        _selectedTaskType = QueryTaskType ?? PageFilterUrlSync.GetQueryValue(Navigation, "taskType");
+
+        var sortValue = QuerySort ?? PageFilterUrlSync.GetQueryValue(Navigation, "sort");
+        if (Enum.TryParse<BackgroundTaskOrderingOption>(sortValue, ignoreCase: true, out var sort)
+            && sort is not BackgroundTaskOrderingOption.None)
+        {
+            _selectedSort = sort;
+        }
+    }
+
+    private void SyncFiltersToQuery() =>
+        PageFilterUrlSync.SetQuery(Navigation, BuildFilterQuery());
+
+    private Dictionary<string, string?> BuildFilterQuery() => new()
+    {
+        ["status"] = _selectedStatus?.ToString(),
+        ["taskType"] = _selectedTaskType,
+        ["sort"] = _selectedSort is BackgroundTaskOrderingOption.DateDesc ? null : _selectedSort.ToString()
+    };
+
+    private async Task<bool> LoadPersistedFiltersAsync()
+    {
+        try
+        {
+            var state = await PageFilterStorage.LoadAsync<BackgroundTasksFilterState>(FilterStorageKey, CancellationToken.None);
+            if (state is null)
+            {
+                return false;
+            }
+
+            _selectedStatus = state.Status;
+            _selectedTaskType = state.TaskType;
+            _selectedSort = state.Sort is not BackgroundTaskOrderingOption.None
+                ? state.Sort
+                : MapLegacySort(state.SortBy, state.SortDescending);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task SaveFiltersToStorageAsync()
+    {
+        try
+        {
+            await PageFilterStorage.SaveAsync(
+                FilterStorageKey,
+                new BackgroundTasksFilterState(_selectedStatus, _selectedTaskType, _selectedSort),
+                CancellationToken.None);
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task PersistFiltersAsync()
+    {
+        await SaveFiltersToStorageAsync();
+        SyncFiltersToQuery();
+    }
+
+    private bool HasActiveFilters =>
+        _selectedStatus.HasValue
+        || _selectedTaskType is not null;
+
+    private string? GetStatusFilterSummary() =>
+        _selectedStatus is { } status ? GetStatusLabel(status) : null;
+
+    private string? GetTaskTypeFilterSummary() =>
+        _selectedTaskType is not null ? GetTaskTypeLabel(_selectedTaskType) : null;
+
+    private string GetTaskTypeMenuLabel()
+    {
+        var summary = GetTaskTypeFilterSummary();
+        return summary is null ? L["FilterTaskType"] : $"{L["FilterTaskType"]}: {summary}";
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _selectedStatus = null;
+        _selectedTaskType = null;
+        await PageFilterStorage.ClearAsync(FilterStorageKey, CancellationToken.None);
+        SyncFiltersToQuery();
+        await Task.WhenAll(LoadSummaryAsync(), RefreshTableAsync());
+    }
+
+    private string GetActiveFiltersLabel()
+    {
+        var parts = new List<string>();
+        if (_selectedStatus is { } status)
+        {
+            parts.Add(GetStatusLabel(status));
+        }
+
+        if (_selectedTaskType is not null)
+        {
+            parts.Add(GetTaskTypeLabel(_selectedTaskType));
+        }
+
+        return string.Join(" · ", parts);
     }
 
     public void Dispose()
@@ -69,6 +221,8 @@ public partial class AdminBackgroundTasksPanel : IDisposable
         }, null, DebounceDelay, Timeout.InfiniteTimeSpan);
     }
 
+    private void OnColumnPickerClick() => _tableRef?.ToggleColumnPicker();
+
     private async Task RefreshTableAsync()
     {
         _tableKey++;
@@ -87,13 +241,12 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
         var firstPage = (startIndex / PageSize) + 1;
         var lastPage = ((startIndex + count - 1) / PageSize) + 1;
-
-        cancellationToken.ThrowIfCancellationRequested();
+        var (sortBy, sortDescending) = MapSortToApi(_selectedSort);
 
         try
         {
             var tasks = Enumerable.Range(firstPage, lastPage - firstPage + 1)
-                .Select(page => BackgroundTaskService.GetBackgroundTasksAsync(page, PageSize, statuses, names, _selectedSortBy, _sortDescending, cancellationToken));
+                .Select(page => BackgroundTaskService.GetBackgroundTasksAsync(page, PageSize, statuses, names, sortBy, sortDescending, cancellationToken));
 
             var results = await Task.WhenAll(tasks);
 
@@ -101,21 +254,28 @@ public partial class AdminBackgroundTasksPanel : IDisposable
             var allItems = new List<BackgroundTaskDto>(count);
             foreach (var result in results)
             {
-                if (result?.Items is { Count: > 0 })
+                if (result is null)
                 {
-                    totalCount = result.TotalCount ?? 0;
+                    continue;
+                }
+
+                if (result.TotalCount is { } tc)
+                {
+                    totalCount = tc;
+                }
+
+                if (result.Items is { Count: > 0 })
+                {
                     allItems.AddRange(result.Items);
                 }
             }
 
             var offset = startIndex - (firstPage - 1) * PageSize;
             var items = allItems.Skip(offset).Take(count).ToList();
+            _totalCount = totalCount;
+            await InvokeAsync(StateHasChanged);
 
             return new K7DataTableResult<BackgroundTaskDto>(items, totalCount);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
         }
         catch
         {
@@ -149,7 +309,14 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     {
         try
         {
-            _summary = await BackgroundTaskService.GetSummaryAsync(_cts.Token);
+            IReadOnlyCollection<BackgroundTaskStatus>? statusFilter = _selectedStatus.HasValue
+                ? [_selectedStatus.Value]
+                : null;
+            IReadOnlyCollection<string>? namesFilter = _selectedTaskType is not null
+                ? [_selectedTaskType]
+                : null;
+
+            _summary = await BackgroundTaskService.GetSummaryAsync(statusFilter, namesFilter, _cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -192,26 +359,62 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private async Task OnStatusFilterChanged(BackgroundTaskStatus? status)
     {
         _selectedStatus = status;
-        await RefreshTableAsync();
+        await PersistFiltersAsync();
+        await Task.WhenAll(LoadSummaryAsync(), RefreshTableAsync());
     }
 
     private async Task OnTaskTypeFilterChanged(string? taskType)
     {
         _selectedTaskType = taskType;
+        await PersistFiltersAsync();
+        await Task.WhenAll(LoadSummaryAsync(), RefreshTableAsync());
+    }
+
+    private async Task OnSortChanged(BackgroundTaskOrderingOption value)
+    {
+        if (value == _selectedSort)
+        {
+            return;
+        }
+
+        _selectedSort = value;
+        await PersistFiltersAsync();
         await RefreshTableAsync();
     }
 
-    private async Task OnSortByChanged(string? sortBy)
+    private string GetSortLabel(BackgroundTaskOrderingOption option) => option switch
     {
-        _selectedSortBy = sortBy;
-        await RefreshTableAsync();
-    }
+        BackgroundTaskOrderingOption.DateDesc => L["SortDateDesc"],
+        BackgroundTaskOrderingOption.DateAsc => L["SortDateAsc"],
+        BackgroundTaskOrderingOption.DurationDesc => L["SortDurationDesc"],
+        BackgroundTaskOrderingOption.DurationAsc => L["SortDurationAsc"],
+        BackgroundTaskOrderingOption.NameAsc => L["SortNameAsc"],
+        BackgroundTaskOrderingOption.NameDesc => L["SortNameDesc"],
+        _ => L["SortDateDesc"]
+    };
 
-    private async Task ToggleSortDirection()
+    private static (string SortBy, bool Descending) MapSortToApi(BackgroundTaskOrderingOption sort) => sort switch
     {
-        _sortDescending = !_sortDescending;
-        await RefreshTableAsync();
-    }
+        BackgroundTaskOrderingOption.DateDesc => ("date", true),
+        BackgroundTaskOrderingOption.DateAsc => ("date", false),
+        BackgroundTaskOrderingOption.DurationDesc => ("duration", true),
+        BackgroundTaskOrderingOption.DurationAsc => ("duration", false),
+        BackgroundTaskOrderingOption.NameAsc => ("name", false),
+        BackgroundTaskOrderingOption.NameDesc => ("name", true),
+        _ => ("date", true)
+    };
+
+    private static BackgroundTaskOrderingOption MapLegacySort(string? sortBy, bool descending) =>
+        (sortBy?.ToLowerInvariant(), descending) switch
+        {
+            ("date", true) => BackgroundTaskOrderingOption.DateDesc,
+            ("date", false) => BackgroundTaskOrderingOption.DateAsc,
+            ("duration", true) => BackgroundTaskOrderingOption.DurationDesc,
+            ("duration", false) => BackgroundTaskOrderingOption.DurationAsc,
+            ("name", false) => BackgroundTaskOrderingOption.NameAsc,
+            ("name", true) => BackgroundTaskOrderingOption.NameDesc,
+            _ => BackgroundTaskOrderingOption.DateDesc
+        };
 
     private async Task CancelTaskAsync(BackgroundTaskDto task)
     {
@@ -254,6 +457,10 @@ public partial class AdminBackgroundTasksPanel : IDisposable
 
     private async Task LoadPeerNamesAsync()
     {
+        var flags = await ServerPreferencesService.GetServerFeatureFlagsAsync(_cts.Token);
+        if (!flags.FederationEnabled)
+            return;
+
         try
         {
             var peers = await FederationService.GetPeerServersAsync(_cts.Token);
@@ -268,6 +475,12 @@ public partial class AdminBackgroundTasksPanel : IDisposable
     private int GetGroupLimit(string name) => _concurrencyLimits.GetValueOrDefault(name, 1);
 
     private void SetGroupLimit(string name, int value) => _concurrencyLimits[name] = value;
+
+    private int GetStatusCount(BackgroundTaskStatus status) =>
+        _summary?.StatusCounts.FirstOrDefault(s => s.Status == status)?.Count ?? 0;
+
+    private string FormatStatusFilterLabel(BackgroundTaskStatus status) =>
+        $"{GetStatusLabel(status)} ({GetStatusCount(status)})";
 
     private string GetStatusLabel(BackgroundTaskStatus status) => status switch
     {

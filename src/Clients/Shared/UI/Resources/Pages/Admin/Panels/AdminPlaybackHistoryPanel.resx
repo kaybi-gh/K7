@@ -41,6 +41,7 @@
   <data name="Direct" xml:space="preserve"><value>Direct</value></data>
   <data name="Library" xml:space="preserve"><value>Bibliothèque</value></data>
   <data name="Transcode" xml:space="preserve"><value>Transcode</value></data>
+  <data name="Transmux" xml:space="preserve"><value>Transmux</value></data>
   <data name="Subtitles" xml:space="preserve"><value>Sous-titres</value></data>
   <data name="SubtitlesOff" xml:space="preserve"><value>Désactivés</value></data>
   <data name="StoppedAt" xml:space="preserve"><value>Fin</value></data>

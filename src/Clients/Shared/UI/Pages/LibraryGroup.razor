@@ -62,7 +62,7 @@
                               AriaLabel="@S["Shuffle"]" />
             </div>
         }
-        <span class="library-toolbar-count">@string.Format(L["ItemCount"], _totalCount)</span>
+        <K7ResultCount Count="_totalCount" />
     </ToolbarContent>
     <GridTemplate Context="item">
         @{
@@ -84,6 +84,7 @@
                      OnSortChanged="OnTableSortChanged"
                      OnRowClick="NavigateToItem"
                      ShowToolbar="false"
+                     Surface="false"
                      @ref="_dataTable">
             <K7DataColumn TItem="LiteMediaDto" Title="@L["Title"]" SortKey="title" Hideable="false">
                 <CellTemplate Context="item">

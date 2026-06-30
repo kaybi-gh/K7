@@ -86,6 +86,18 @@ public sealed class MockDeviceStorageService : IDeviceStorageService
     public void Remove<T>(PreferenceKey<T> key) { }
 }
 
+public sealed class MockPageFilterStorage : IPageFilterStorage
+{
+    public Task<T?> LoadAsync<T>(string key, CancellationToken cancellationToken = default) where T : class =>
+        Task.FromResult<T?>(null);
+
+    public Task SaveAsync<T>(string key, T value, CancellationToken cancellationToken = default) where T : class =>
+        Task.CompletedTask;
+
+    public Task ClearAsync(string key, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+}
+
 public sealed class MockVolumeService : IVolumeService
 {
     public bool SupportsNativeVolume => false;
@@ -534,7 +546,10 @@ public sealed class MockBackgroundTaskService : IBackgroundTaskService
     public Task CancelBackgroundTaskAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<BackgroundTaskSettingsDto> GetSettingsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskSettingsDto { WorkerCount = 1, ConcurrencyGroups = [] });
     public Task UpdateSettingsAsync(UpdateBackgroundTaskSettingsRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<BackgroundTaskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskSummaryDto { TotalCount = 0, StatusCounts = [], TaskTypeCounts = [] });
+    public Task<BackgroundTaskSummaryDto> GetSummaryAsync(
+        IReadOnlyCollection<BackgroundTaskStatus>? statusFilter = null,
+        IReadOnlyCollection<string>? namesFilter = null,
+        CancellationToken cancellationToken = default) => Task.FromResult(new BackgroundTaskSummaryDto { TotalCount = 0, StatusCounts = [], TaskTypeCounts = [] });
 }
 
 public sealed class MockDiagnosticsService : IDiagnosticsService
@@ -542,6 +557,7 @@ public sealed class MockDiagnosticsService : IDiagnosticsService
     public Task<List<LibraryHealthSummaryDto>> GetDiagnosticsSummaryAsync(CancellationToken cancellationToken = default) => Task.FromResult(new List<LibraryHealthSummaryDto>());
     public Task<PaginatedListDto<DiagnosticItemDto>> GetDiagnosticItemsAsync(Guid? libraryId = null, DiagnosticEntityType? entityType = null, DiagnosticIssue? issue = null, IReadOnlyCollection<DiagnosticIssue>? issues = null, int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default) => Task.FromResult(new PaginatedListDto<DiagnosticItemDto>());
     public Task<int> FixDiagnosticItemsAsync(IReadOnlyList<Guid> entityIds, DiagnosticFixAction action, CancellationToken cancellationToken = default) => Task.FromResult(0);
+    public Task<int> QueueDiagnosticFixesAsync(DiagnosticIssue issue, Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.FromResult(0);
 }
 
 public sealed class MockServerInfoService : IServerInfoService
@@ -550,7 +566,7 @@ public sealed class MockServerInfoService : IServerInfoService
     public Task<ServerInfoDto?> GetServerInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<ServerInfoDto?>(null);
     public Task<AuthenticationInfoDto?> GetAuthenticationInfoAsync(CancellationToken cancellationToken = default) => Task.FromResult<AuthenticationInfoDto?>(null);
     public Task<WatchStatsDto?> GetWatchStatsAsync(string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<WatchStatsDto?>(null);
-    public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
+    public Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) => Task.FromResult<PlaybackHistoryPageDto?>(null);
     public Task<List<MediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<List<MediaDto>?>(null);
     public Task UpdateDefaultLanguageAsync(string language, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UpdateDefaultThemeAsync(string theme, CancellationToken cancellationToken = default) => Task.CompletedTask;
