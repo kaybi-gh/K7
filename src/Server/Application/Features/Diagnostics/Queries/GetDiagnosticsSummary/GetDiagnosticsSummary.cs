@@ -92,7 +92,8 @@ public class GetDiagnosticsSummaryQueryHandler : IRequestHandler<GetDiagnosticsS
                 .CountAsync(cancellationToken);
 
             var missingHlsSegmentsCount = await _context.IndexedFiles
-                .Where(f => f.LibraryId == library.Id && f.FileMetadata != null && !f.FileMetadata.HlsSegments.Any())
+                .Where(f => f.LibraryId == library.Id && f.FileMetadata != null
+                    && !_context.HlsSegments.Any(s => s.FileMetadataId == f.FileMetadata!.Id))
                 .CountAsync(cancellationToken);
 
             var missingAudioAnalysisCount = library.MediaType == LibraryMediaType.Music

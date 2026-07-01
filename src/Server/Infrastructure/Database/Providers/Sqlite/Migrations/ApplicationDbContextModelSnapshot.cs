@@ -3319,7 +3319,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 
             modelBuilder.Entity("K7.Server.Domain.Entities.HlsSegment", b =>
                 {
-                    b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", null)
+                    b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.AudioFileMetadata", null)
+                        .WithMany("HlsSegments")
+                        .HasForeignKey("FileMetadataId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", null)
                         .WithMany("HlsSegments")
                         .HasForeignKey("FileMetadataId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4050,11 +4056,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Variants");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.BaseFileMetadata", b =>
-                {
-                    b.Navigation("HlsSegments");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.MetadataTag", b =>
                 {
                     b.Navigation("MediaAssignments");
@@ -4150,11 +4151,15 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.AudioFileMetadata", b =>
                 {
                     b.Navigation("AudioTrack");
+
+                    b.Navigation("HlsSegments");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Metadatas.Files.VideoFileMetadata", b =>
                 {
                     b.Navigation("AudioTracks");
+
+                    b.Navigation("HlsSegments");
 
                     b.Navigation("SubtitleTracks");
 

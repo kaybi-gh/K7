@@ -4,6 +4,7 @@ using K7.Server.Application.Services;
 using K7.Server.Domain.Constants;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Extensions;
 using K7.Server.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -75,11 +76,6 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             .Include(x => x.FileMetadata)
             .Where(x => x.Id == query.Id);
         
-        if (query.SegmentNumber != -1)
-        {
-            query_db = query_db.Include(x => x.FileMetadata!.HlsSegments);
-        }
-        
         var entity = await query_db.FirstOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
@@ -97,6 +93,8 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             && !query.SubtitleBurnInStreamIndex.HasValue;
         List<HlsSegment> allSegments;
 
+        var hlsSegments = entity.FileMetadata.GetHlsSegments();
+
         if (isTransmuxing)
         {
             // Transmux (stream copy): use keyframe-based segments from the database
@@ -110,8 +108,8 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
             }
             else
             {
-                Guard.Against.NullOrEmpty(entity.FileMetadata.HlsSegments);
-                allSegments = entity.FileMetadata.HlsSegments.OrderBy(s => s.Number).ToList();
+                Guard.Against.NullOrEmpty(hlsSegments);
+                allSegments = hlsSegments.OrderBy(s => s.Number).ToList();
             }
         }
         else
@@ -121,8 +119,9 @@ public class GetHlsVideoStreamSegmentQueryHandler : IRequestHandler<GetHlsVideoS
                 ? await _context.HlsSegments
                     .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
                     .ToListAsync(cancellationToken)
-                : entity.FileMetadata.HlsSegments?.ToList()
-                    ?? await _context.HlsSegments
+                : hlsSegments.Count > 0
+                    ? hlsSegments.ToList()
+                    : await _context.HlsSegments
                         .Where(s => s.FileMetadataId == entity.FileMetadata.Id)
                         .ToListAsync(cancellationToken);
 

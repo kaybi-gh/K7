@@ -47,16 +47,17 @@ public class CreateFileMetadatasCommandHandler : IRequestHandler<CreateFileMetad
         // Clear existing file metadatas
         if (indexedFile.FileMetadata is AudioFileMetadata afm)
         {
-            await _context.FileMetadatas.Entry(afm).Reference(x => ((AudioFileMetadata)x).AudioTrack).LoadAsync(cancellationToken);
+            await _context.Entry(afm).Reference(x => x.AudioTrack).LoadAsync(cancellationToken);
+            await _context.Entry(afm).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
             _context.FileMetadatas.Remove(indexedFile.FileMetadata);
         }
         else if (indexedFile.FileMetadata is VideoFileMetadata vfm)
         {
-            await _context.FileMetadatas.Entry(vfm).Collection(x => ((VideoFileMetadata)x).AudioTracks).LoadAsync(cancellationToken);
-            await _context.FileMetadatas.Entry(vfm).Collection(x => ((VideoFileMetadata)x).SubtitleTracks).LoadAsync(cancellationToken);
-            await _context.FileMetadatas.Entry(vfm).Collection(x => ((VideoFileMetadata)x).VideoTracks).LoadAsync(cancellationToken);
-            await _context.FileMetadatas.Entry(vfm).Collection(x => ((VideoFileMetadata)x).HlsSegments).LoadAsync(cancellationToken);
-            await _context.FileMetadatas.Entry(vfm).Reference(x => ((VideoFileMetadata)x).Thumbnails).LoadAsync(cancellationToken);
+            await _context.Entry(vfm).Collection(x => x.AudioTracks).LoadAsync(cancellationToken);
+            await _context.Entry(vfm).Collection(x => x.SubtitleTracks).LoadAsync(cancellationToken);
+            await _context.Entry(vfm).Collection(x => x.VideoTracks).LoadAsync(cancellationToken);
+            await _context.Entry(vfm).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
+            await _context.Entry(vfm).Reference(x => x.Thumbnails).LoadAsync(cancellationToken);
             _context.FileMetadatas.Remove(indexedFile.FileMetadata);
         }
 
