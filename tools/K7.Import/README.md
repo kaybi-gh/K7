@@ -6,19 +6,19 @@ CLI tool to import media data (watch history, ratings, playlists) from external 
 
 | Source | Watch History | Ratings | Playlists | Notes |
 |---|---|---|---|---|
-| **Plex** | No | Yes (0-10 scale) | Yes | No per-play timestamps, use Tracearr for history |
+| **Plex** | No | Yes (0-10 scale) | Yes | Per-user via accountID when available |
 | **Jellyfin** | No | Yes (like=10, dislike=1) | Yes | No per-play timestamps, use Tracearr for history |
-| **Tracearr** | Yes | No | No | Per-play history with timestamps |
-| **Tautulli** | Yes (aggregated) | No | No | History only, aggregated from play logs |
+| **Tracearr** | Yes | No | No | Per-play history with timestamps and provider IDs |
+| **Tautulli** | Yes (per-play sessions + aggregated) | No | No | History with timestamps, transcode and device metadata |
 | **Spotify** | Full (via data export) or partial (last 50 via API) | Liked songs = 10 | Yes | Use `--spotify-data-dir` for full history |
 
 ### What gets imported
 
 | Data type | Description |
 |---|---|
-| **history** | Play count, last played position, completion status, last played date |
+| **history** | Play count, last played position, completion status, last played date. Per-play sessions (Tracearr, Tautulli, Spotify export) include device/platform when available. Re-importing skips duplicate playback sessions. |
 | **ratings** | User ratings (mapped to a 0-10 scale) |
-| **playlists** | Playlist titles and their items (matched by provider IDs) |
+| **playlists** | Playlist titles and their items (matched by provider IDs). Re-import merges into existing playlists by title. |
 
 You can select which data types to import with the `--include` option (see below).
 

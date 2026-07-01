@@ -58,6 +58,7 @@ public sealed class K7ApiClient
     public async Task<BulkCreateMediasResponse> BulkCreateMediasAsync(
         IReadOnlyList<BulkCreateMediasRequest.BulkCreateMediaItem> items,
         bool fetchMetadata = false,
+        bool createMissing = true,
         CancellationToken cancellationToken = default)
     {
         const int chunkSize = 200;
@@ -66,7 +67,8 @@ public sealed class K7ApiClient
         foreach (var chunk in items.Chunk(chunkSize))
         {
             var response = await _httpClient.PostAsJsonAsync("api/medias/bulk-create",
-                new BulkCreateMediasRequest { Items = chunk, FetchMetadata = fetchMetadata }, JsonOptions, cancellationToken);
+                new BulkCreateMediasRequest { Items = chunk, FetchMetadata = fetchMetadata, CreateMissing = createMissing },
+                JsonOptions, cancellationToken);
             response.EnsureSuccessStatusCode();
             var result = await response.Content.ReadFromJsonAsync<BulkCreateMediasResponse>(JsonOptions, cancellationToken);
             if (result?.Results is not null)
@@ -136,6 +138,44 @@ public sealed class K7ApiClient
         }
 
         return total;
+    }
+
+    public async Task<IReadOnlyList<BulkResolveImportDevicesResponse.DeviceMatchResult>> BulkResolveImportDevicesAsync(
+        IReadOnlyList<BulkResolveImportDevicesRequest.ImportDeviceDescriptor> items,
+        CancellationToken cancellationToken = default)
+    {
+        const int chunkSize = 200;
+        var allResults = new List<BulkResolveImportDevicesResponse.DeviceMatchResult>();
+
+        foreach (var chunk in items.Chunk(chunkSize))
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/devices/bulk-resolve-import",
+                new BulkResolveImportDevicesRequest { Items = chunk }, JsonOptions, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<BulkResolveImportDevicesResponse>(JsonOptions, cancellationToken);
+            if (result?.Results is not null)
+                allResults.AddRange(result.Results);
+        }
+
+        return allResults;
+    }
+
+    public async Task<ImportUserPlaylistResponse> ImportUserPlaylistAsync(
+        Guid userId,
+        string title,
+        MediaType mediaType,
+        IReadOnlyList<Guid> mediaIds,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"api/users/{userId}/playlists/import",
+            new ImportUserPlaylistRequest
+            {
+                Title = title,
+                MediaType = mediaType,
+                MediaIds = mediaIds
+            }, JsonOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<ImportUserPlaylistResponse>(JsonOptions, cancellationToken))!;
     }
 
     public async Task<Guid> CreatePlaylistAsync(string title, MediaType mediaType = MediaType.MusicTrack, CancellationToken cancellationToken = default)

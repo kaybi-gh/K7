@@ -106,8 +106,12 @@ public sealed partial class PlexClient : ISourceClient
 
         while (true)
         {
+            var accountQuery = !string.Equals(userId, "owner", StringComparison.OrdinalIgnoreCase)
+                ? $"&accountID={Uri.EscapeDataString(userId)}"
+                : string.Empty;
+
             var response = await _httpClient.GetAsync(
-                $"/library/sections/{libraryId}/all?X-Plex-Container-Start={offset}&X-Plex-Container-Size={pageSize}&includeGuids=1",
+                $"/library/sections/{libraryId}/all?X-Plex-Container-Start={offset}&X-Plex-Container-Size={pageSize}&includeGuids=1{accountQuery}",
                 cancellationToken);
             response.EnsureSuccessStatusCode();
             var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
@@ -134,7 +138,11 @@ public sealed partial class PlexClient : ISourceClient
     {
         var playlists = new List<SourcePlaylist>();
 
-        var response = await _httpClient.GetAsync("/playlists", cancellationToken);
+        var playlistsUrl = !string.Equals(userId, "owner", StringComparison.OrdinalIgnoreCase)
+            ? $"/playlists?accountID={Uri.EscapeDataString(userId)}"
+            : "/playlists";
+
+        var response = await _httpClient.GetAsync(playlistsUrl, cancellationToken);
         if (!response.IsSuccessStatusCode) return playlists;
 
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken);
@@ -187,13 +195,23 @@ public sealed partial class PlexClient : ISourceClient
     private static SourceMediaItem ParseMediaItem(JsonElement item)
     {
         var viewCount = item.TryGetProperty("viewCount", out var vc) ? vc.GetInt32() : 0;
-        var viewOffset = item.TryGetProperty("viewOffset", out var vo) ? vo.GetInt64() / 1000.0 : (double?)null;
+        var durationMs = item.TryGetProperty("duration", out var dur) ? dur.GetInt64() : 0L;
+        var durationSeconds = durationMs > 0 ? durationMs / 1000.0 : (double?)null;
+        var viewOffsetMs = item.TryGetProperty("viewOffset", out var vo) ? vo.GetInt64() : 0L;
+        var viewOffset = viewOffsetMs > 0 ? viewOffsetMs / 1000.0 : (double?)null;
         var lastViewedAt = item.TryGetProperty("lastViewedAt", out var lva)
             ? DateTimeOffset.FromUnixTimeSeconds(lva.GetInt64()).UtcDateTime
             : (DateTime?)null;
         var userRating = item.TryGetProperty("userRating", out var ur) ? ur.GetDouble() : (double?)null;
         var year = item.TryGetProperty("year", out var y) ? y.GetInt32() : (int?)null;
         var type = item.TryGetProperty("type", out var t) ? t.GetString() : null;
+
+        var isCompleted = false;
+        if (durationMs > 0)
+        {
+            isCompleted = viewOffsetMs >= durationMs * 0.90
+                || (viewCount > 0 && viewOffsetMs == 0 && lastViewedAt.HasValue);
+        }
 
         return new SourceMediaItem
         {
@@ -203,8 +221,9 @@ public sealed partial class PlexClient : ISourceClient
             ProviderIds = ParseGuids(item),
             PlayCount = viewCount,
             LastPlaybackPosition = viewOffset,
+            DurationSeconds = durationSeconds,
             LastPlayedAt = lastViewedAt,
-            IsCompleted = viewCount > 0,
+            IsCompleted = isCompleted,
             Rating = userRating,
             MediaType = type switch
             {
