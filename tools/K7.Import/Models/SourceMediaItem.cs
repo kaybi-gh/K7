@@ -8,6 +8,7 @@ public sealed record SourceMediaItem
     public Dictionary<string, string> ProviderIds { get; init; } = [];
     public int PlayCount { get; init; }
     public double? LastPlaybackPosition { get; init; }
+    public double? DurationSeconds { get; init; }
     public DateTime? LastPlayedAt { get; init; }
     public bool IsCompleted { get; init; }
     public double? Rating { get; init; }
@@ -26,6 +27,7 @@ public sealed record SourcePlayEntry
 {
     public required DateTime PlayedAt { get; init; }
     public double DurationSeconds { get; init; }
+    public bool IsCompleted { get; init; } = true;
     public bool? IsTranscode { get; init; }
     public string? VideoDecision { get; init; }
     public string? AudioDecision { get; init; }

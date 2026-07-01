@@ -72,15 +72,14 @@ public sealed class ImportCommand
                     ? ProgressConflictMode.AlwaysOverwrite : ProgressConflictMode.MostRecent
             };
 
-            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, createMissing, fetchMetadata, strategy);
+            await RunAsync(source, sourceUrl, sourceApiKey, k7Url, dryRun, scope, spotifyDataDir, userMapping, createMissing, fetchMetadata, strategy, cancellationToken);
         });
 
         return command;
     }
 
-    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool createMissing, bool fetchMetadata, MergeStrategy strategy)
+    private static async Task RunAsync(string source, string sourceUrl, string sourceApiKey, string k7Url, bool dryRun, ImportScope scope, string? spotifyDataDir, string[] userMappings, bool createMissing, bool fetchMetadata, MergeStrategy strategy, CancellationToken cancellationToken)
     {
-        var cancellationToken = CancellationToken.None;
 
         var sourceLower = source.ToLowerInvariant();
         if (scope.History && sourceLower is "plex" or "jellyfin")
@@ -133,6 +132,11 @@ public sealed class ImportCommand
 
         // 6. Get libraries
         var libraries = await sourceClient.GetLibrariesAsync(cancellationToken);
+        if (sourceLower == "spotify" && !string.IsNullOrEmpty(spotifyDataDir))
+        {
+            libraries = libraries.Where(l => l.Id != "recently-played").ToList();
+        }
+
         AnsiConsole.MarkupLine($"[bold]Found {libraries.Count} libraries:[/]");
         foreach (var lib in libraries)
         {
@@ -141,6 +145,7 @@ public sealed class ImportCommand
 
         // 7. Collect items with interactions and match once
         var matcher = new MediaMatcher(k7Client);
+        var deviceResolver = new ImportDeviceResolver(k7Client);
         var totalResult = new ImportResult();
 
         var userLibraryItems = new Dictionary<string, Dictionary<string, List<SourceMediaItem>>>();
@@ -187,40 +192,14 @@ public sealed class ImportCommand
 
                         var itemsToMatch = interacted.Values.ToList();
                         ctx.Status($"Matching {itemsToMatch.Count} interacted items from {library.Name}...");
-                        var matches = await matcher.MatchItemsAsync(itemsToMatch, cancellationToken);
+                        var (matches, createdCount) = await matcher.MatchItemsAsync(
+                            itemsToMatch,
+                            createMissing: createMissing && !dryRun,
+                            fetchMetadata,
+                            cancellationToken);
 
-                        var unmatched = itemsToMatch.Where(i => !matches.ContainsKey(i.Id)).ToList();
                         totalResult.MatchedItems += matches.Count;
-
-                        if (createMissing && unmatched.Count > 0 && !dryRun)
-                        {
-                            ctx.Status($"Creating {unmatched.Count} missing media entities...");
-                            var createItems = unmatched.Select(i => new BulkCreateMediasRequest.BulkCreateMediaItem
-                            {
-                                Key = i.Id,
-                                MediaType = i.MediaType ?? "music",
-                                Title = i.Title,
-                                Year = i.Year,
-                                ExternalIds = i.ProviderIds,
-                                ArtistName = i.ArtistName,
-                                AlbumName = i.AlbumName,
-                                SeriesTitle = i.SeriesTitle,
-                                SeasonNumber = i.SeasonNumber,
-                                EpisodeNumber = i.EpisodeNumber
-                            }).ToList();
-
-                            var createResult = await k7Client.BulkCreateMediasAsync(createItems, fetchMetadata, cancellationToken);
-
-                            foreach (var r in createResult.Results)
-                            {
-                                matches.TryAdd(r.Key, r.MediaId);
-                                if (r.WasCreated)
-                                    totalResult.CreatedMedias++;
-                            }
-
-                            totalResult.MatchedItems += createResult.Results.Count;
-                        }
-
+                        totalResult.CreatedMedias += createdCount;
                         totalResult.UnmatchedItems += itemsToMatch.Count(i => !matches.ContainsKey(i.Id));
                         foreach (var item in itemsToMatch.Where(i => !matches.ContainsKey(i.Id)))
                             totalResult.UnmatchedTitles.Add($"{item.Title} ({item.Year})");
@@ -259,7 +238,7 @@ public sealed class ImportCommand
                                         MediaId = matches[i.Id],
                                         PlayCount = i.PlayCount,
                                         LastPlaybackPosition = i.LastPlaybackPosition ?? 0,
-                                        ProgressPercentage = i.IsCompleted ? 100 : 0,
+                                        ProgressPercentage = CalculateProgressPercentage(i),
                                         IsCompleted = i.IsCompleted,
                                         LastInteractedAt = i.LastPlayedAt
                                     })
@@ -271,27 +250,8 @@ public sealed class ImportCommand
                                     totalResult.ImportedWatchStates += await k7Client.BulkUpsertMediaStatesAsync(k7UserId, stateItems, strategy, cancellationToken);
                                 }
 
-                                var sessionItems = items
-                                    .Where(i => matches.ContainsKey(i.Id) && i.PlayHistory.Count > 0)
-                                    .SelectMany(i => i.PlayHistory.Select(p => new BulkCreatePlaybackSessionsRequest.PlaybackSessionItem
-                                    {
-                                        MediaId = matches[i.Id],
-                                        StartedAt = p.PlayedAt.AddSeconds(-p.DurationSeconds),
-                                        DurationSeconds = p.DurationSeconds,
-                                        WatchedDurationSeconds = p.DurationSeconds,
-                                        IsCompleted = true,
-                                        IsTranscode = p.IsTranscode,
-                                        VideoDecision = p.VideoDecision,
-                                        AudioDecision = p.AudioDecision,
-                                        Bitrate = p.Bitrate,
-                                        SourceVideoCodec = p.SourceVideoCodec,
-                                        SourceAudioCodec = p.SourceAudioCodec,
-                                        SourceVideoWidth = p.SourceVideoWidth,
-                                        SourceVideoHeight = p.SourceVideoHeight,
-                                        StreamVideoCodec = p.StreamVideoCodec,
-                                        StreamAudioCodec = p.StreamAudioCodec
-                                    }))
-                                    .ToList();
+                                var sessionItems = await BuildPlaybackSessionItemsAsync(
+                                    items, matches, deviceResolver, cancellationToken);
 
                                 if (sessionItems.Count > 0)
                                 {
@@ -329,7 +289,15 @@ public sealed class ImportCommand
 
                         foreach (var playlist in playlists)
                         {
-                            var playlistMatches = await matcher.MatchPlaylistItemsAsync(playlist.Items, cancellationToken);
+                            var defaultMediaType = playlist.MediaType ?? "music";
+                            var (playlistMatches, playlistCreated) = await matcher.MatchPlaylistItemsAsync(
+                                playlist.Items,
+                                defaultMediaType,
+                                createMissing: createMissing && !dryRun,
+                                fetchMetadata,
+                                cancellationToken);
+
+                            totalResult.CreatedMedias += playlistCreated;
                             if (playlistMatches.Count == 0) continue;
 
                             var playlistMediaType = playlist.MediaType switch
@@ -351,16 +319,21 @@ public sealed class ImportCommand
                                 };
                             }
 
-                            ctx.Status($"Creating playlist '{playlist.Title}'...");
-                            var playlistId = await k7Client.CreatePlaylistAsync(playlist.Title, playlistMediaType.Value, cancellationToken);
+                            ctx.Status($"Importing playlist '{playlist.Title}'...");
+                            var mediaIds = playlist.Items
+                                .Where(i => playlistMatches.ContainsKey(i.Id))
+                                .Select(i => playlistMatches[i.Id])
+                                .ToList();
 
-                            foreach (var item in playlist.Items)
-                            {
-                                if (playlistMatches.TryGetValue(item.Id, out var mediaId))
-                                    await k7Client.AddPlaylistItemAsync(playlistId, mediaId, cancellationToken);
-                            }
+                            var importResult = await k7Client.ImportUserPlaylistAsync(
+                                k7UserId,
+                                playlist.Title,
+                                playlistMediaType.Value,
+                                mediaIds,
+                                cancellationToken);
 
-                            totalResult.ImportedPlaylists++;
+                            if (importResult.WasCreated || importResult.AddedItemCount > 0)
+                                totalResult.ImportedPlaylists++;
                         }
                     }
                 });
@@ -404,6 +377,63 @@ public sealed class ImportCommand
         {
             AnsiConsole.MarkupLine("\n[yellow bold]DRY RUN - no changes were applied.[/]");
         }
+    }
+
+    private static async Task<List<BulkCreatePlaybackSessionsRequest.PlaybackSessionItem>> BuildPlaybackSessionItemsAsync(
+        List<SourceMediaItem> items,
+        Dictionary<string, Guid> matches,
+        ImportDeviceResolver deviceResolver,
+        CancellationToken cancellationToken)
+    {
+        var playEntries = items
+            .Where(i => matches.ContainsKey(i.Id) && i.PlayHistory.Count > 0)
+            .SelectMany(i => i.PlayHistory.Select(p => (MediaId: matches[i.Id], Entry: p)))
+            .ToList();
+
+        if (playEntries.Count == 0)
+            return [];
+
+        var deviceMap = await deviceResolver.ResolveDevicesAsync(
+            playEntries.Select(x => x.Entry),
+            cancellationToken);
+
+        return playEntries.Select(x =>
+        {
+            var entry = x.Entry;
+            var deviceKey = ImportDeviceResolver.BuildDeviceKey(entry);
+            deviceMap.TryGetValue(deviceKey, out var deviceId);
+
+            return new BulkCreatePlaybackSessionsRequest.PlaybackSessionItem
+            {
+                MediaId = x.MediaId,
+                StartedAt = entry.PlayedAt,
+                DurationSeconds = entry.DurationSeconds,
+                WatchedDurationSeconds = entry.DurationSeconds,
+                IsCompleted = entry.IsCompleted,
+                DeviceId = deviceId == Guid.Empty ? null : deviceId,
+                IsTranscode = entry.IsTranscode,
+                VideoDecision = entry.VideoDecision,
+                AudioDecision = entry.AudioDecision,
+                Bitrate = entry.Bitrate,
+                SourceVideoCodec = entry.SourceVideoCodec,
+                SourceAudioCodec = entry.SourceAudioCodec,
+                SourceVideoWidth = entry.SourceVideoWidth,
+                SourceVideoHeight = entry.SourceVideoHeight,
+                StreamVideoCodec = entry.StreamVideoCodec,
+                StreamAudioCodec = entry.StreamAudioCodec
+            };
+        }).ToList();
+    }
+
+    private static double CalculateProgressPercentage(SourceMediaItem item)
+    {
+        if (item.IsCompleted)
+            return 100;
+
+        if (item.DurationSeconds is > 0 && item.LastPlaybackPosition is > 0)
+            return Math.Min(100.0, item.LastPlaybackPosition.Value / item.DurationSeconds.Value * 100.0);
+
+        return 0;
     }
 
     private static Dictionary<string, string> ParseUserMappings(string[] mappings)

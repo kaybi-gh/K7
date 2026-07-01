@@ -78,7 +78,7 @@ public sealed class TracearrClient : ISourceClient
         while (true)
         {
             var doc = await _httpClient.GetFromJsonAsync<JsonElement>(
-                $"/api/v1/public/history?page={page}&pageSize={pageSize}", cancellationToken);
+                $"/api/v1/public/history?page={page}&pageSize={pageSize}&userId={Uri.EscapeDataString(userId)}", cancellationToken);
 
             var data = doc.GetProperty("data");
             foreach (var session in data.EnumerateArray())
@@ -110,6 +110,7 @@ public sealed class TracearrClient : ISourceClient
                     {
                         PlayedAt = startedAt.Value,
                         DurationSeconds = durationSeconds,
+                        IsCompleted = watched,
                         IsTranscode = session.TryGetProperty("isTranscode", out var isTr) && isTr.ValueKind == JsonValueKind.True ? true
                             : isTr.ValueKind == JsonValueKind.False ? false : null,
                         VideoDecision = session.TryGetProperty("videoDecision", out var vd) && vd.ValueKind == JsonValueKind.String ? vd.GetString() : null,
@@ -158,7 +159,7 @@ public sealed class TracearrClient : ISourceClient
                         Id = key,
                         Title = mediaTitle,
                         Year = year,
-                        ProviderIds = [],
+                        ProviderIds = ParseProviderIds(session),
                         PlayCount = 1,
                         LastPlayedAt = startedAt,
                         IsCompleted = watched,
@@ -219,5 +220,61 @@ public sealed class TracearrClient : ISourceClient
                 mediaTitle,
                 session.TryGetProperty("year", out var y) && y.ValueKind == JsonValueKind.Number ? y.GetInt32().ToString() : "")
         };
+    }
+
+    private static Dictionary<string, string> ParseProviderIds(JsonElement session)
+    {
+        var providerIds = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        TryAddStringId(providerIds, "tmdb", session, "tmdbId");
+        TryAddStringId(providerIds, "imdb", session, "imdbId");
+        TryAddStringId(providerIds, "tvdb", session, "tvdbId");
+
+        if (session.TryGetProperty("guid", out var guid) && guid.ValueKind == JsonValueKind.String)
+            ParseGuidValue(providerIds, guid.GetString());
+
+        if (session.TryGetProperty("ratingKey", out var ratingKey) && ratingKey.ValueKind == JsonValueKind.String)
+            providerIds.TryAdd("plex", ratingKey.GetString()!);
+
+        return providerIds;
+    }
+
+    private static void TryAddStringId(
+        Dictionary<string, string> providerIds,
+        string provider,
+        JsonElement session,
+        string propertyName)
+    {
+        if (!session.TryGetProperty(propertyName, out var value))
+            return;
+
+        var id = value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Number => value.GetRawText(),
+            _ => null
+        };
+
+        if (!string.IsNullOrWhiteSpace(id))
+            providerIds.TryAdd(provider, id);
+    }
+
+    private static void ParseGuidValue(Dictionary<string, string> providerIds, string? guid)
+    {
+        if (string.IsNullOrWhiteSpace(guid))
+            return;
+
+        var separatorIndex = guid.IndexOf("://", StringComparison.Ordinal);
+        if (separatorIndex <= 0)
+            return;
+
+        var provider = guid[..separatorIndex];
+        var slashIndex = provider.LastIndexOf('/');
+        if (slashIndex >= 0)
+            provider = provider[(slashIndex + 1)..];
+
+        var value = guid[(separatorIndex + 3)..];
+        if (!string.IsNullOrWhiteSpace(provider) && !string.IsNullOrWhiteSpace(value))
+            providerIds.TryAdd(provider.ToLowerInvariant(), value);
     }
 }

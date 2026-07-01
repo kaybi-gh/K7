@@ -70,7 +70,7 @@ public sealed class JellyfinClient : ISourceClient
 
         while (true)
         {
-            var url = $"/Users/{userId}/Items?ParentId={libraryId}&Recursive=true&Fields=ProviderIds&StartIndex={startIndex}&Limit={pageSize}&IncludeItemTypes=Movie,Episode,Audio";
+            var url = $"/Users/{userId}/Items?ParentId={libraryId}&Recursive=true&Fields=ProviderIds,UserData&StartIndex={startIndex}&Limit={pageSize}&IncludeItemTypes=Movie,Episode,Audio";
             var response = await _httpClient.GetFromJsonAsync<JsonElement>(url, cancellationToken);
 
             if (!response.TryGetProperty("Items", out var itemsArr))
@@ -154,11 +154,17 @@ public sealed class JellyfinClient : ISourceClient
         double? rating = null;
         if (userData?.TryGetProperty("Rating", out var ratingVal) == true && ratingVal.ValueKind != JsonValueKind.Null)
         {
-            // Jellyfin uses boolean like/dislike
-            rating = ratingVal.ValueKind == JsonValueKind.True ? 10.0
-                   : ratingVal.ValueKind == JsonValueKind.False ? 1.0
-                   : null;
+            rating = ratingVal.ValueKind switch
+            {
+                JsonValueKind.True => 10.0,
+                JsonValueKind.False => 1.0,
+                JsonValueKind.Number => Math.Clamp(ratingVal.GetDouble(), 0, 10),
+                _ => null
+            };
         }
+
+        var runTimeTicks = item.TryGetProperty("RunTimeTicks", out var rtt) ? rtt.GetInt64() : 0L;
+        var durationSeconds = runTimeTicks > 0 ? runTimeTicks / 10_000_000.0 : (double?)null;
 
         var jellyfinType = item.TryGetProperty("Type", out var tp) ? tp.GetString() : null;
 
@@ -170,6 +176,7 @@ public sealed class JellyfinClient : ISourceClient
             ProviderIds = ParseProviderIds(item, jellyfinType),
             PlayCount = playCount,
             LastPlaybackPosition = positionTicks / 10_000_000.0,
+            DurationSeconds = durationSeconds,
             LastPlayedAt = lastPlayedDate,
             IsCompleted = played,
             Rating = rating,

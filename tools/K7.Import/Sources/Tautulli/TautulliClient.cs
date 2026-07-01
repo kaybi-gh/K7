@@ -99,9 +99,13 @@ public sealed partial class TautulliClient : ISourceClient
                     ? ws.GetInt32() : 0;
 
                 var mediaType = entry.TryGetProperty("media_type", out var mt) ? mt.GetString() : null;
+                var playEntry = ParsePlayEntry(entry, watchedStatus);
 
                 if (itemsByKey.TryGetValue(ratingKey, out var existing))
                 {
+                    if (playEntry is not null)
+                        existing.PlayHistory.Add(playEntry);
+
                     itemsByKey[ratingKey] = existing with
                     {
                         PlayCount = existing.PlayCount + 1,
@@ -118,7 +122,7 @@ public sealed partial class TautulliClient : ISourceClient
                     var mediaIndex = entry.TryGetProperty("media_index", out var mi) && mi.ValueKind == JsonValueKind.Number
                         ? mi.GetInt32() : (int?)null;
 
-                    itemsByKey[ratingKey] = new SourceMediaItem
+                    var item = new SourceMediaItem
                     {
                         Id = ratingKey,
                         Title = entry.TryGetProperty("full_title", out var ft) ? ft.GetString()! : entry.GetProperty("title").GetString()!,
@@ -141,6 +145,11 @@ public sealed partial class TautulliClient : ISourceClient
                         SeasonNumber = mediaType == "episode" ? parentMediaIndex : null,
                         EpisodeNumber = mediaType == "episode" ? mediaIndex : null
                     };
+
+                    if (playEntry is not null)
+                        item.PlayHistory.Add(playEntry);
+
+                    itemsByKey[ratingKey] = item;
                 }
             }
 
@@ -156,6 +165,106 @@ public sealed partial class TautulliClient : ISourceClient
     public Task<List<SourcePlaylist>> GetPlaylistsAsync(string userId, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new List<SourcePlaylist>());
+    }
+
+    private static SourcePlayEntry? ParsePlayEntry(JsonElement entry, int watchedStatus)
+    {
+        var startedAt = ReadUnixTimestamp(entry, "date")
+            ?? ReadDateTime(entry, "started");
+
+        if (startedAt is null)
+            return null;
+
+        var stoppedAt = ReadUnixTimestamp(entry, "stopped");
+        var watchedSeconds = ReadDouble(entry, "play_duration")
+            ?? ReadDouble(entry, "duration");
+
+        if (watchedSeconds is null or <= 0 && stoppedAt is not null)
+            watchedSeconds = Math.Max(0, (stoppedAt.Value - startedAt.Value).TotalSeconds);
+
+        var percentComplete = ReadInt(entry, "percent_complete") ?? 0;
+        var isCompleted = watchedStatus == 1 || percentComplete >= 90;
+
+        return new SourcePlayEntry
+        {
+            PlayedAt = startedAt.Value,
+            DurationSeconds = watchedSeconds ?? 0,
+            IsCompleted = isCompleted,
+            IsTranscode = ReadString(entry, "transcode_decision") is { } transcode
+                ? !string.Equals(transcode, "direct play", StringComparison.OrdinalIgnoreCase)
+                : null,
+            VideoDecision = ReadString(entry, "video_decision") ?? ReadString(entry, "stream_video_decision"),
+            AudioDecision = ReadString(entry, "audio_decision") ?? ReadString(entry, "stream_audio_decision"),
+            Bitrate = ReadInt(entry, "bitrate") ?? ReadInt(entry, "stream_bitrate"),
+            SourceVideoCodec = ReadString(entry, "video_codec"),
+            SourceAudioCodec = ReadString(entry, "audio_codec"),
+            SourceVideoWidth = ReadInt(entry, "video_width"),
+            SourceVideoHeight = ReadInt(entry, "video_height"),
+            StreamVideoCodec = ReadString(entry, "stream_video_codec"),
+            StreamAudioCodec = ReadString(entry, "stream_audio_codec"),
+            DeviceName = ReadString(entry, "machine") ?? ReadString(entry, "machine_id"),
+            Platform = ReadString(entry, "platform_name") ?? ReadString(entry, "platform"),
+            Player = ReadString(entry, "player")
+        };
+    }
+
+    private static DateTime? ReadUnixTimestamp(JsonElement entry, string propertyName)
+    {
+        if (!entry.TryGetProperty(propertyName, out var value))
+            return null;
+
+        if (value.ValueKind == JsonValueKind.Number)
+            return DateTimeOffset.FromUnixTimeSeconds(value.GetInt64()).UtcDateTime;
+
+        if (value.ValueKind == JsonValueKind.String && long.TryParse(value.GetString(), out var unix))
+            return DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime;
+
+        return null;
+    }
+
+    private static DateTime? ReadDateTime(JsonElement entry, string propertyName)
+    {
+        if (!entry.TryGetProperty(propertyName, out var value) || value.ValueKind != JsonValueKind.String)
+            return null;
+
+        return DateTime.TryParse(value.GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed)
+            ? parsed.ToUniversalTime()
+            : null;
+    }
+
+    private static string? ReadString(JsonElement entry, string propertyName)
+    {
+        if (!entry.TryGetProperty(propertyName, out var value) || value.ValueKind != JsonValueKind.String)
+            return null;
+
+        var text = value.GetString();
+        return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
+
+    private static int? ReadInt(JsonElement entry, string propertyName)
+    {
+        if (!entry.TryGetProperty(propertyName, out var value))
+            return null;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number => value.TryGetInt32(out var number) ? number : null,
+            JsonValueKind.String when int.TryParse(value.GetString(), out var parsed) => parsed,
+            _ => null
+        };
+    }
+
+    private static double? ReadDouble(JsonElement entry, string propertyName)
+    {
+        if (!entry.TryGetProperty(propertyName, out var value))
+            return null;
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number => value.GetDouble(),
+            JsonValueKind.String when double.TryParse(value.GetString(), out var parsed) => parsed,
+            _ => null
+        };
     }
 
     private static Dictionary<string, string> ParsePlexGuids(string? guid)
