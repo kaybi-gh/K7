@@ -55,12 +55,16 @@ public class OfflineMediaStore : IOfflineMediaStore
             .Select(d => new { d.FileSize, d.IsCacheItem })
             .ToListAsync(cancellationToken);
 
+        var (deviceTotalBytes, deviceAvailableBytes) = DeviceStorageCapacity.GetForAppData();
+
         return new OfflineStorageInfo
         {
             UsedBytes = items.Sum(x => x.FileSize),
             CacheBytes = items.Where(x => x.IsCacheItem).Sum(x => x.FileSize),
             TotalItems = items.Count,
-            CacheItems = items.Count(x => x.IsCacheItem)
+            CacheItems = items.Count(x => x.IsCacheItem),
+            DeviceTotalBytes = deviceTotalBytes,
+            DeviceAvailableBytes = deviceAvailableBytes
         };
     }
 

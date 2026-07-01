@@ -33,4 +33,5 @@
   <data name="LookaheadWifi" xml:space="preserve"><value>Tracks to cache ahead (Wi-Fi)</value></data>
   <data name="LookaheadMobile" xml:space="preserve"><value>Tracks to cache ahead (mobile)</value></data>
   <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="DeviceStorageCapacity" xml:space="preserve"><value>Total device storage: {0}</value></data>
 </root>

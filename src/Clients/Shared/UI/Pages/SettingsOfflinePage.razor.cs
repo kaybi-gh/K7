@@ -1,4 +1,5 @@
 using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Shared;
 using Microsoft.AspNetCore.Components;
 
@@ -16,6 +17,8 @@ public partial class SettingsOfflinePage : ComponentBase
 
     private const long DefaultMaxDownloadBytes = 2L * 1024 * 1024 * 1024;
     private const long DefaultMaxCacheBytes = 500L * 1024 * 1024;
+    private const long MinDownloadBytes = 50L * 1024 * 1024;
+    private const long MinCacheBytes = 50L * 1024 * 1024;
     private const int DefaultLookaheadWifi = 3;
     private const int DefaultLookaheadMobile = 0;
 
@@ -36,6 +39,7 @@ public partial class SettingsOfflinePage : ComponentBase
         _lookaheadMobile = DeviceStorageService.Get(PreferenceKeys.CACHE_LOOKAHEAD_MOBILE);
 
         _storageInfo = await OfflineStore.GetStorageInfoAsync();
+        ClampAndPersistStorageLimitsIfNeeded();
     }
 
     private double GetDownloadStoragePercent()
@@ -50,17 +54,26 @@ public partial class SettingsOfflinePage : ComponentBase
         return Math.Min(100, (double)_storageInfo.CacheBytes / _maxCacheBytes * 100);
     }
 
-    private void OnMaxDownloadChanged(long value)
-    {
-        _maxDownloadBytes = value;
-        DeviceStorageService.Set(PreferenceKeys.MAX_DOWNLOAD_STORAGE_BYTES, value);
-    }
+    private void OnMaxDownloadChanged(long value) => ApplyStorageLimits(value, _maxCacheBytes);
 
-    private void OnMaxCacheChanged(long value)
+    private void OnMaxCacheChanged(long value) => ApplyStorageLimits(_maxDownloadBytes, value);
+
+    private void ClampAndPersistStorageLimitsIfNeeded() => ApplyStorageLimits(_maxDownloadBytes, _maxCacheBytes);
+
+    private void ApplyStorageLimits(long downloadBytes, long cacheBytes)
     {
-        _maxCacheBytes = value;
-        DeviceStorageService.Set(PreferenceKeys.MAX_CACHE_STORAGE_BYTES, value);
-        MusicCacheService.MaxCacheSizeBytes = value;
+        _maxDownloadBytes = downloadBytes;
+        _maxCacheBytes = cacheBytes;
+        OfflineStorageLimitHelper.ClampLimits(
+            ref _maxDownloadBytes,
+            ref _maxCacheBytes,
+            _storageInfo?.DeviceTotalBytes,
+            MinDownloadBytes,
+            MinCacheBytes);
+
+        DeviceStorageService.Set(PreferenceKeys.MAX_DOWNLOAD_STORAGE_BYTES, _maxDownloadBytes);
+        DeviceStorageService.Set(PreferenceKeys.MAX_CACHE_STORAGE_BYTES, _maxCacheBytes);
+        MusicCacheService.MaxCacheSizeBytes = _maxCacheBytes;
     }
 
     private void OnAllowWifiChanged(bool value)
@@ -88,11 +101,5 @@ public partial class SettingsOfflinePage : ComponentBase
         DeviceStorageService.Set(PreferenceKeys.CACHE_LOOKAHEAD_MOBILE, value);
     }
 
-    private static string FormatBytes(long bytes) => bytes switch
-    {
-        < 1024 => $"{bytes} B",
-        < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
-        < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):F1} MB",
-        _ => $"{bytes / (1024.0 * 1024 * 1024):F2} GB"
-    };
+    private static string FormatBytes(long bytes) => ByteSizeFormatter.Format(bytes);
 }
