@@ -1,8 +1,11 @@
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Pages;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Shared.Dtos.Home;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Panels;
 
@@ -12,6 +15,7 @@ public partial class AdminHomeLayoutPanel
     [Inject] private ILibraryService LibraryService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
+    [Inject] private IStringLocalizer<Home> HomeL { get; set; } = default!;
 
     private List<HomeRowEditModel> _rows = [];
     private List<LibraryDto> _libraries = [];
@@ -148,5 +152,7 @@ public partial class AdminHomeLayoutPanel
         await _preview.RefreshAsync();
         _previewLoading = false;
     }
+
+    private string GetRowTitle(string rowTitle) => HomeLayoutRowTitleHelper.Localize(HomeL, rowTitle);
 }
 

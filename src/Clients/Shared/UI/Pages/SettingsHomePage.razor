@@ -30,7 +30,7 @@ else
                             <K7IconButton Icon="@Phosphor.ArrowDown" Disabled="@isLast"
                                     OnClick="() => MoveDown(row)" AriaLabel="@L["MoveDown"]" />
                         </div>
-                        <span class="text-sm">@row.Title</span>
+                        <span class="text-sm">@GetRowTitle(row.Title)</span>
                     </div>
                     <K7Switch Value="@row.IsVisible" ValueChanged="@(v => row.IsVisible = v)" />
                 </K7Paper>
