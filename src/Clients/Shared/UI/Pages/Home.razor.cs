@@ -1,4 +1,5 @@
 using System.Net.Http;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Services;
@@ -423,4 +424,6 @@ public partial class Home : IDisposable
         _focusedItem = item;
         StateHasChanged();
     }
+
+    private string GetRowTitle(string rowTitle) => HomeLayoutRowTitleHelper.Localize(L, rowTitle);
 }
