@@ -9,6 +9,7 @@
     line-height: 1;
 }
 
+.k7-icon--xs { font-size: 0.75rem; }
 .k7-icon--sm { font-size: 1rem; }
 .k7-icon--md { font-size: 1.5rem; }
 .k7-icon--lg { font-size: 2rem; }
@@ -16,6 +17,7 @@
 
 /* Brand SVG icons - size via width/height instead of font-size */
 svg.k7-icon { display: inline-block; vertical-align: middle; height: auto; }
+svg.k7-icon.k7-icon--xs { width: 0.75rem; }
 svg.k7-icon.k7-icon--sm { width: 1rem; }
 svg.k7-icon.k7-icon--md { width: 1.5rem; }
 svg.k7-icon.k7-icon--lg { width: 2rem; }

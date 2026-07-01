@@ -40,7 +40,7 @@ public class DeviceService(IJSRuntime jsRuntime, IMediaService mediaService, IDe
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
             {
                 SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id).ToList(),
-                SupportedSubtitlesCodecs = ["webvtt"], // TODO - For now we limit to webvtt
+                SupportedSubtitlesCodecs = ["webvtt"],
                 SupportsHDR = await GetHdrSupportAsync()
             }
         };

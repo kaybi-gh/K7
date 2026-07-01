@@ -89,7 +89,7 @@
 @if (_hudText is not null)
 {
     <div class="hud-indicator">
-        <K7Icon Name="@_hudIcon" Size="lg" />
+        <K7Icon Name="@_hudIcon"  IconSize="@K7IconSize.Lg" />
         <span>@_hudText</span>
     </div>
 }
@@ -107,7 +107,7 @@
 @if (_swipeGestureActive)
 {
     <div class="swipe-indicator @(_swipeSide == SwipeSide.Left ? "left" : "right")">
-        <K7Icon Name="@_hudIcon" Size="lg" />
+        <K7Icon Name="@_hudIcon"  IconSize="@K7IconSize.Lg" />
         <div class="swipe-bar-container">
             <div class="swipe-bar-fill" style="height: @(_swipeBarPercent.ToString(CultureInfo.InvariantCulture))%" />
         </div>

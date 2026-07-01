@@ -109,7 +109,7 @@
             <K7DataColumn TItem="BackgroundTaskDto" Title="@L["ColStatus"]" Hideable="false">
                 <CellTemplate>
                     <div class="d-flex align-center" style="gap: var(--space-1);">
-                        <K7Icon Name="@GetStatusIcon(context.Status)" Size="sm" Style="@GetStatusIconStyle(context.Status)" />
+                        <K7Icon Name="@GetStatusIcon(context.Status)"  IconSize="@K7IconSize.Sm" Style="@GetStatusIconStyle(context.Status)" />
                         <span class="text-sm" style="@GetStatusTextStyle(context.Status)">@GetStatusLabel(context.Status)</span>
                     </div>
                 </CellTemplate>

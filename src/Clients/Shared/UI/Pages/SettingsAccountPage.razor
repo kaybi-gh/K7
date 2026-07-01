@@ -143,7 +143,7 @@
                     {
                         <li class="d-flex align-center justify-space-between py-2">
                             <span>@(login.ProviderDisplayName ?? login.Provider)</span>
-                            <K7Button Variant="text" Color="error" Size="small"
+                            <K7Button Variant="text" Color="error" Size="sm"
                                       Disabled="@(!login.CanUnlink)"
                                       OnClick="@(() => UnlinkLogin(login.Provider))">
                                 @L["Unlink"]

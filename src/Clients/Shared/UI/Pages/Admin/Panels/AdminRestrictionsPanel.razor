@@ -36,7 +36,7 @@
     <GridTemplate Context="profile">
         <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
             <div class="restriction-card__header">
-                <K7Icon Icon="@Phosphor.Prohibit" Size="lg" Color="primary" />
+                <K7Icon Icon="@Phosphor.Prohibit"  IconSize="@K7IconSize.Lg" Color="primary" />
                 <div class="restriction-card__title">
                     <h6>@profile.Name</h6>
                     @if (!string.IsNullOrEmpty(profile.Description))
@@ -57,7 +57,7 @@
                 }
             </div>
             <span class="restriction-card__users">
-                <K7Icon Name="users" Size="sm" />
+                <K7Icon Name="users"  IconSize="@K7IconSize.Sm" />
                 @string.Format(L["AttachedUsers"], profile.UserCount)
             </span>
             <div class="restriction-card__actions">

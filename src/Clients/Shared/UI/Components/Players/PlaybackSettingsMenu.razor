@@ -25,7 +25,7 @@
                 <div class="playback-settings-header">
                     <span class="playback-settings-title">@L["PlaybackSettings"]</span>
                     <button type="button" class="playback-settings-close focusable" aria-label="@S["Close"]" @onclick="CloseAsync">
-                        <K7Icon Icon="@Phosphor.X" Size="sm" />
+                        <K7Icon Icon="@Phosphor.X"  IconSize="@K7IconSize.Sm" />
                     </button>
                 </div>
                 <nav class="playback-settings-nav" aria-label="@L["PlaybackSettings"]">
@@ -34,9 +34,9 @@
                         <button type="button"
                                 class="playback-settings-nav-item focusable @(section == _activeSection ? "playback-settings-nav-item--active" : "")"
                                 @onclick="() => SelectSection(section)">
-                            <K7Icon Icon="@GetSectionIcon(section)" Size="sm" />
+                            <K7Icon Icon="@GetSectionIcon(section)"  IconSize="@K7IconSize.Sm" />
                             <span class="playback-settings-nav-label">@GetSectionTitle(section)</span>
-                            <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="playback-settings-nav-chevron" />
+                            <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="playback-settings-nav-chevron" />
                         </button>
                     }
                 </nav>
@@ -49,7 +49,7 @@
                      style="--section-index: @GetSectionIndex(_activeSection)">
                     <div class="playback-settings-header">
                         <button type="button" class="playback-settings-back focusable playback-settings-back--mobile" aria-label="@S["Back"]" @onclick="BackToRoot">
-                            <K7Icon Icon="@Phosphor.CaretLeft" Size="sm" />
+                            <K7Icon Icon="@Phosphor.CaretLeft"  IconSize="@K7IconSize.Sm" />
                         </button>
                         <span class="playback-settings-title">@GetSectionTitle(_activeSection)</span>
                     </div>

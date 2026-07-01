@@ -49,7 +49,7 @@
                         class="k7-menu-close focusable"
                         aria-label="@S["Close"]"
                         @onclick="OnColumnPickerCloseClick">
-                    <K7Icon Icon="@Phosphor.X" Size="sm" />
+                    <K7Icon Icon="@Phosphor.X"  IconSize="@K7IconSize.Sm" />
                 </button>
             </div>
             <div class="k7-data-table-column-picker">
@@ -78,7 +78,7 @@
                                 <button class="k7-data-table-sort-btn focusable"
                                         @onclick="() => OnHeaderClick(c)">
                                     <span>@c.Title</span>
-                                    <K7Icon Icon="@GetSortIcon(c)" Size="sm" />
+                                    <K7Icon Icon="@GetSortIcon(c)"  IconSize="@K7IconSize.Sm" />
                                 </button>
                             }
                             else

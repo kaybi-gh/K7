@@ -26,7 +26,7 @@
                 @if (Model.Rating.HasValue)
                 {
                     <span class="home-tv-hero__meta-item home-tv-hero__rating">
-                        <K7Icon Icon="@Phosphor.Star" Size="sm" />
+                        <K7Icon Icon="@Phosphor.Star"  IconSize="@K7IconSize.Sm" />
                         @Model.Rating.Value.ToString("0.#")/10
                     </span>
                 }

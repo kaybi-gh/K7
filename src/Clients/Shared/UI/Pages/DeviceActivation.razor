@@ -9,14 +9,14 @@
     <div class="device-activation__card">
         @if (_loading)
         {
-            <K7Icon Name="television" Size="lg" Color="primary" />
+            <K7Icon Name="television"  IconSize="@K7IconSize.Lg" Color="primary" />
             <h1 class="device-activation__title">@L["Title"]</h1>
             <K7Spinner Size="lg" />
             <p class="device-activation__timer">@L["Activating"]</p>
         }
         else if (_authorized)
         {
-            <K7Icon Name="check-circle" Size="lg" Color="success" />
+            <K7Icon Name="check-circle"  IconSize="@K7IconSize.Lg" Color="success" />
         }
         else if (_deviceCode is not null)
         {
@@ -55,7 +55,7 @@
         }
         else
         {
-            <K7Icon Name="television" Size="lg" Color="primary" />
+            <K7Icon Name="television"  IconSize="@K7IconSize.Lg" Color="primary" />
             <h1 class="device-activation__title">@L["Title"]</h1>
             <K7Button Variant="filled" Color="primary" OnClick="StartDeviceCodeFlowAsync">
                 @L["Activate"]

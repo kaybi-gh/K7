@@ -21,7 +21,7 @@
     <GridTemplate Context="library">
         <K7Paper Outlined="true" Style="display:flex;flex-direction:column;gap:12px;height:100%">
             <div class="library-card__header">
-                <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)" Size="lg" Color="primary" />
+                <K7Icon Icon="@GetMediaTypeIcon(library.MediaType)"  IconSize="@K7IconSize.Lg" Color="primary" />
                 <div class="library-card__title">
                     <h6>@library.Title</h6>
                     <K7Chip Size="sm" Color="default">@GetMediaTypeLabel(library.MediaType)</K7Chip>
@@ -30,12 +30,12 @@
             <div class="library-card__path">
                 @if (library.PeerServerBaseUrl is not null)
                 {
-                    <K7Icon Icon="@Phosphor.Globe" Size="sm" />
+                    <K7Icon Icon="@Phosphor.Globe"  IconSize="@K7IconSize.Sm" />
                     <span>@library.PeerServerBaseUrl</span>
                 }
                 else
                 {
-                    <K7Icon Icon="@Phosphor.Folder" Size="sm" />
+                    <K7Icon Icon="@Phosphor.Folder"  IconSize="@K7IconSize.Sm" />
                     <span>@library.RootPath</span>
                 }
             </div>
@@ -62,7 +62,7 @@
             @if (issueCount > 0)
             {
                 <K7Chip Size="sm" Color="warning" Class="library-card__issues" OnClick="@(() => NavigateToDiagnostics(library.Id))">
-                    <K7Icon Icon="@Phosphor.Warning" Size="sm" />
+                    <K7Icon Icon="@Phosphor.Warning"  IconSize="@K7IconSize.Sm" />
                     @string.Format(L["IssueCount"], issueCount)
                 </K7Chip>
             }

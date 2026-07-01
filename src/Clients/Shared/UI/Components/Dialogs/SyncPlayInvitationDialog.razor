@@ -15,12 +15,12 @@
             @if (!string.IsNullOrEmpty(Invitation.CurrentMediaTitle))
             {
                 <span class="syncplay-invitation-media">
-                    <K7Icon Icon="@Phosphor.Play" Size="K7IconSize.Xs" />
+                    <K7Icon Icon="@Phosphor.Play"  IconSize="@K7IconSize.Xs" />
                     @Invitation.CurrentMediaTitle
                 </span>
             }
             <span class="syncplay-invitation-count">
-                <K7Icon Icon="@Phosphor.Users" Size="K7IconSize.Xs" />
+                <K7Icon Icon="@Phosphor.Users"  IconSize="@K7IconSize.Xs" />
                 @Invitation.ParticipantCount participant(s) in session
             </span>
         </div>
@@ -36,7 +36,7 @@
     @if (_failed)
     {
         <div class="syncplay-invitation-error">
-            <K7Icon Icon="@Phosphor.WarningCircle" Size="K7IconSize.Sm" />
+            <K7Icon Icon="@Phosphor.WarningCircle"  IconSize="@K7IconSize.Sm" />
             <span>Failed to join session</span>
         </div>
     }
@@ -50,12 +50,12 @@
         }
         else if (_failed)
         {
-            <K7Icon Icon="@Phosphor.ArrowClockwise" Size="K7IconSize.Sm" />
+            <K7Icon Icon="@Phosphor.ArrowClockwise"  IconSize="@K7IconSize.Sm" />
             <span>Retry</span>
         }
         else
         {
-            <K7Icon Icon="@Phosphor.Check" Size="K7IconSize.Sm" />
+            <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
             <span>Join</span>
         }
     </K7Button>

@@ -34,25 +34,25 @@
                     else if (_failedUsers.Contains(user.UserId))
                     {
                         <span class="syncplay-invite-badge error">
-                            <K7Icon Icon="@Phosphor.Warning" Size="K7IconSize.Xs" />
+                            <K7Icon Icon="@Phosphor.Warning"  IconSize="@K7IconSize.Xs" />
                             Failed
                         </span>
                         <K7Button Variant="tonal" Size="sm" OnClick="@(() => InviteUser(user.UserId))">
-                            <K7Icon Icon="@Phosphor.ArrowClockwise" Size="K7IconSize.Xs" />
+                            <K7Icon Icon="@Phosphor.ArrowClockwise"  IconSize="@K7IconSize.Xs" />
                             Retry
                         </K7Button>
                     }
                     else if (_invitedUsers.Contains(user.UserId))
                     {
                         <span class="syncplay-invite-badge sent">
-                            <K7Icon Icon="@Phosphor.Check" Size="K7IconSize.Xs" />
+                            <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Xs" />
                             Sent
                         </span>
                     }
                     else
                     {
                         <K7Button Variant="tonal" Size="sm" OnClick="@(() => InviteUser(user.UserId))">
-                            <K7Icon Icon="@Phosphor.UserPlus" Size="K7IconSize.Xs" />
+                            <K7Icon Icon="@Phosphor.UserPlus"  IconSize="@K7IconSize.Xs" />
                             Invite
                         </K7Button>
                     }
