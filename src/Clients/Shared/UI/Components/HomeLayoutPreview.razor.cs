@@ -1,8 +1,11 @@
 using K7.Clients.Shared.Mappings;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Helpers;
+using K7.Clients.Shared.UI.Pages;
 using K7.Shared.Dtos.Home;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 
 namespace K7.Clients.Shared.UI.Components;
 
@@ -10,6 +13,7 @@ public partial class HomeLayoutPreview
 {
     [Inject] private IMediaService MediaService { get; set; } = default!;
     [Inject] private IK7ServerService ApiClient { get; set; } = default!;
+    [Inject] private IStringLocalizer<Home> HomeL { get; set; } = default!;
 
     [Parameter] public IReadOnlyList<HomeRowEditModel> Rows { get; set; } = [];
 
@@ -25,7 +29,7 @@ public partial class HomeLayoutPreview
             .Select(r => r.ToDto())
             .ToList();
 
-        _loaded = _rows.Select(r => (r.Title, new List<MediaCardViewModel>())).ToList();
+        _loaded = _rows.Select(r => (HomeLayoutRowTitleHelper.Localize(HomeL, r.Title), new List<MediaCardViewModel>())).ToList();
         _loading = true;
 
         var tasks = _loaded
