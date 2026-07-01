@@ -61,6 +61,10 @@
     padding-bottom: var(--space-8);
 }
 
+.person-content ::deep .carousel-wrapper {
+    flex-shrink: 0;
+}
+
 .person-hero {
     position: relative;
     display: flex;

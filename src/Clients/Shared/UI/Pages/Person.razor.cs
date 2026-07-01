@@ -189,18 +189,19 @@ public partial class Person : IDisposable
 
     private MediaCardViewModel? ToSerieCardFromEpisode(LiteSerieEpisodeDto episode)
     {
-        var poster = episode.SeriePictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster);
-        return new MediaCardViewModel
+        if (episode.ToCardViewModel(apiClient, FormatSeasonNumber, useParentTitle: true) is not { } card)
+            return null;
+
+        return card with
         {
             Id = episode.SerieId.ToString(),
             Kind = MediaCardKind.Serie,
             MediaType = MediaType.Serie,
-            UserRating = episode.UserRating,
-            Title = episode.SerieTitle,
+            Title = episode.SerieTitle ?? card.Title,
             AdditionalInformations = episode.SerieReleaseDate?.Year.ToString(),
-            PictureUrl = apiClient.GetAbsoluteUri(poster?.GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
-            Watched = episode.UserState?.IsCompleted ?? false,
-            Progress = episode.UserState?.ProgressPercentage ?? 0
+            ParentId = null,
+            SeasonNumber = null,
+            EpisodeNumber = null
         };
     }
 
