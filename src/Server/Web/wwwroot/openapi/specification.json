@@ -4319,29 +4319,6 @@
         }
       }
     },
-    "/api/media-formats/{id}/sample": {
-      "get": {
-        "tags": [
-          "Libraries"
-        ],
-        "operationId": "GetMediaFormatSample",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/indexed-files/{id}/direct-stream": {
       "get": {
         "tags": [
@@ -6642,7 +6619,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateDeviceCommand"
+                "$ref": "#/components/schemas/UpdateDeviceRequest"
               }
             }
           },
@@ -16412,12 +16389,71 @@
           }
         }
       },
-      "UpdateDeviceCommand": {
+      "UpdateDeviceRequest": {
+        "required": [
+          "playbackCapabilities"
+        ],
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
+          "deviceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "clientType": {
+            "$ref": "#/components/schemas/ClientType"
+          },
+          "deviceType": {
+            "$ref": "#/components/schemas/DeviceType"
+          },
+          "operatingSystem": {
+            "$ref": "#/components/schemas/OperatingSystem"
+          },
+          "operatingSystemVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "displayWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "nativeDeviceDetails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NativeDeviceDetailsDto"
+              }
+            ]
+          },
+          "webDeviceDetails": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WebDeviceDetailsDto"
+              }
+            ]
+          },
+          "playbackCapabilities": {
+            "$ref": "#/components/schemas/CreateDeviceRequestPlaybackCapibilities"
           }
         }
       },
