@@ -20,6 +20,7 @@ using K7.Shared.Dtos.Users;
 using K7.Shared.Enums;
 using K7.Shared.Extensions;
 using K7.Shared.Interfaces;
+using K7.Shared.Json;
 using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
@@ -33,13 +34,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         HttpClient = httpClient;
 
-        _serializerOptions = new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            ReferenceHandler = ReferenceHandler.IgnoreCycles,
-            PropertyNameCaseInsensitive = true
-        };
-        _serializerOptions.Converters.Add(new JsonStringEnumConverter());
+        _serializerOptions = K7JsonSerializerOptions.CreateDefault();
     }
 
     public Uri? GetAbsoluteUri(string? relativePath)
