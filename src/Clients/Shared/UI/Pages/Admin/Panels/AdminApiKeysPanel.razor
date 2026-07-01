@@ -1,6 +1,8 @@
 @page "/admin/api-keys"
 @layout AdminLayout
 @inject IStringLocalizer<AdminApiKeysPanel> L
+@inject IStringLocalizer<SharedResource> S
+@inject IK7Snackbar Snackbar
 @inject IApiKeyAdminService ApiKeyAdminService
 
 <div class="d-flex pa-4 align-center justify-between" style="width: 100%">

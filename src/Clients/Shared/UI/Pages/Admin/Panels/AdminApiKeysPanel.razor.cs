@@ -1,3 +1,4 @@
+using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 using K7.Shared.Dtos;
 using K7.Shared.Interfaces;
@@ -62,9 +63,9 @@ public partial class AdminApiKeysPanel
                 await ApiKeyAdminService.RevokeApiKeyAsync(key.Id);
                 await LoadKeys();
             }
-            catch
+            catch (Exception ex)
             {
-                // TODO: show error
+                Snackbar.Add(string.Format(S["ErrorWithDetails"], ex.Message), K7Severity.Error);
             }
         }
     }
