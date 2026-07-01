@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
+﻿using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 
 namespace K7.Server.Domain.Entities.Metadatas.Files;
 public class VideoFileMetadata() : BaseFileMetadata(FileType.Video)
@@ -11,4 +12,5 @@ public class VideoFileMetadata() : BaseFileMetadata(FileType.Video)
     public ICollection<VideoFileTrack> VideoTracks { get; set; } = [];
     public ICollection<SubtitleFileTrack> SubtitleTracks { get; set; } = [];
     public MetadataPicture? Thumbnails { get; set; }
+    public IList<HlsSegment> HlsSegments { get; set; } = [];
 }

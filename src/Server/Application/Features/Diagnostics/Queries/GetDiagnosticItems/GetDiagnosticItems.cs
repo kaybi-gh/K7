@@ -1,4 +1,5 @@
 using K7.Server.Application.Common.Interfaces;
+using K7.Server.Domain.Extensions;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Application.Common.Security;
@@ -94,7 +95,6 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
     {
         var query = _context.IndexedFiles
             .Include(f => f.FileMetadata)
-                .ThenInclude(fm => fm!.HlsSegments)
             .AsNoTracking()
             .Where(f => !_context.Libraries.Any(l => l.Id == f.LibraryId && l.PeerServerId != null))
             .AsQueryable();
@@ -114,7 +114,7 @@ public class GetDiagnosticItemsQueryHandler : IRequestHandler<GetDiagnosticItems
                 IsOrphan = f.MediaId == null,
                 IsUnidentified = f.Identification == null,
                 HasNoFileMetadata = f.FileMetadata == null,
-                HasNoHlsSegments = f.FileMetadata != null && !f.FileMetadata.HlsSegments.Any()
+                HasNoHlsSegments = f.FileMetadata != null && !_context.HlsSegments.Any(s => s.FileMetadataId == f.FileMetadata!.Id)
             })
             .Where(f => f.IsOrphan || f.IsUnidentified || f.HasNoFileMetadata || f.HasNoHlsSegments)
             .ToListAsync(cancellationToken);

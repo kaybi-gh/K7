@@ -1,6 +1,7 @@
 ﻿using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Extensions;
 using K7.Server.Domain.Interfaces;
 
 namespace K7.Server.Application.Features.IndexedFiles.Commands.ComputeHlsSegments;
@@ -25,11 +26,19 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
-                .ThenInclude(x => x!.HlsSegments)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
         Guard.Against.NullOrEmpty(entity.Path);
+
+        if (entity.FileMetadata is AudioFileMetadata audioFileMetadata)
+        {
+            await _context.Entry(audioFileMetadata).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
+        }
+        else if (entity.FileMetadata is VideoFileMetadata videoFileMetadataForLoad)
+        {
+            await _context.Entry(videoFileMetadataForLoad).Collection(x => x.HlsSegments).LoadAsync(cancellationToken);
+        }
 
         if (entity.FileMetadata == null)
         {
@@ -44,13 +53,13 @@ public class ComputeHlsSegmentsCommandHandler : IRequestHandler<ComputeHlsSegmen
 
         switch (entity.FileMetadata)
         {
-            case AudioFileMetadata audioFileMetadata:
+            case AudioFileMetadata audioMetadata:
                 var audioSegments = ComputeTimeBasedHlsSegments(
-                    (long)audioFileMetadata.Duration.TotalMilliseconds,
+                    (long)audioMetadata.Duration.TotalMilliseconds,
                     entity.FileMetadata.Id,
                     entity.Id);
-                _context.HlsSegments.RemoveRange(audioFileMetadata.HlsSegments);
-                audioFileMetadata.HlsSegments = audioSegments;
+                _context.HlsSegments.RemoveRange(audioMetadata.HlsSegments);
+                audioMetadata.HlsSegments = audioSegments;
                 break;
 
             case VideoFileMetadata videoFileMetadata:

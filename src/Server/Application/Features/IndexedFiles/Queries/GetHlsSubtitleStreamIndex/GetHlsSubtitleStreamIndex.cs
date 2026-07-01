@@ -3,6 +3,7 @@ using System.Text;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamSegment;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Extensions;
 using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsSubtitleStreamIndex;
@@ -41,7 +42,6 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
-                .ThenInclude(x => x!.HlsSegments)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
@@ -54,7 +54,8 @@ public class GetHlsSubtitleStreamIndexQueryHandler : IRequestHandler<GetHlsSubti
             return Results.NotFound();
         }
 
-        var totalDurationMs = entity.FileMetadata.HlsSegments is { Count: > 0 } segments
+        var hlsSegments = entity.FileMetadata.GetHlsSegments();
+        var totalDurationMs = hlsSegments is { Count: > 0 } segments
             ? segments.Sum(s => s.Duration)
             : entity.FileMetadata switch
             {

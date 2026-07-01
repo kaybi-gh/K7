@@ -52,7 +52,7 @@ public class DiagnosticIssueEntityResolver(IApplicationDbContext context)
         var query = context.IndexedFiles
             .AsNoTracking()
             .Where(f => f.FileMetadata != null
-                && !f.FileMetadata.HlsSegments.Any()
+                && !context.HlsSegments.Any(s => s.FileMetadataId == f.FileMetadata!.Id)
                 && NonFederatedLibraryIds().Contains(f.LibraryId));
 
         if (libraryId.HasValue)

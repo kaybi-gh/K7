@@ -16,12 +16,6 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .HasDiscriminator(m => m.Type)
             .HasValue<AudioFileMetadata>(FileType.Audio)
             .HasValue<VideoFileMetadata>(FileType.Video);
-
-        builder
-            .HasMany(x => x.HlsSegments)
-            .WithOne()
-            .HasForeignKey(x => x.FileMetadataId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public void Configure(EntityTypeBuilder<AudioFileMetadata> builder)
@@ -30,6 +24,12 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .HasOne(x => x.AudioTrack)
             .WithOne()
             .HasForeignKey<AudioFileTrack>(x => x.AudioFileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(x => x.HlsSegments)
+            .WithOne()
+            .HasForeignKey(x => x.FileMetadataId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 
@@ -51,6 +51,12 @@ public class FileMetadataConfiguration : IEntityTypeConfiguration<BaseFileMetada
             .HasMany(x => x.SubtitleTracks)
             .WithOne()
             .HasForeignKey(x => x.VideoFileMetadataId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(x => x.HlsSegments)
+            .WithOne()
+            .HasForeignKey(x => x.FileMetadataId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

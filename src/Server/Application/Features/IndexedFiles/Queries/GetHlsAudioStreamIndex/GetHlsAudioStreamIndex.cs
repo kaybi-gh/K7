@@ -4,6 +4,7 @@ using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamSegment;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas.Files;
+using K7.Server.Domain.Extensions;
 using Microsoft.AspNetCore.Http;
 
 namespace K7.Server.Application.Features.IndexedFiles.Queries.GetHlsAudioStreamIndex;
@@ -43,7 +44,6 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
     {
         var entity = await _context.IndexedFiles
             .Include(x => x.FileMetadata)
-                .ThenInclude(x => x!.HlsSegments)
             .FirstOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
 
         Guard.Against.NotFound(query.Id, entity);
@@ -56,7 +56,8 @@ public class GetHlsAudioStreamIndexQueryHandler : IRequestHandler<GetHlsAudioStr
             return Results.NotFound();
         }
 
-        var totalDurationMs = entity.FileMetadata.HlsSegments is { Count: > 0 } segments
+        var hlsSegments = entity.FileMetadata.GetHlsSegments();
+        var totalDurationMs = hlsSegments is { Count: > 0 } segments
             ? segments.Sum(s => s.Duration)
             : entity.FileMetadata switch
             {
