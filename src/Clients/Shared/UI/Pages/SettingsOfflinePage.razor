@@ -1,5 +1,6 @@
 @page "/settings/offline"
 @layout SettingsLayout
+@using K7.Clients.Shared.UI.Helpers
 @inject IStringLocalizer<SettingsOfflinePage> L
 @inject IDeviceStorageService DeviceStorageService
 @inject IMusicCacheService MusicCacheService
@@ -30,26 +31,31 @@
                 <K7ProgressBar Value="@GetCacheStoragePercent()" Class="mt-1" />
             </div>
         </div>
+
+        @if (_storageInfo.DeviceTotalBytes is { } deviceTotal)
+        {
+            <p class="text-caption text-secondary mt-2">
+                @string.Format(L["DeviceStorageCapacity"], FormatBytes(deviceTotal))
+            </p>
+        }
     }
 
     <h6>@L["StorageLimits"]</h6>
 
-    <K7Select TValue="long" Label="@L["MaxDownloadStorage"]" Value="_maxDownloadBytes" ValueChanged="OnMaxDownloadChanged">
-        <K7SelectItem Value="@(1L * 1024 * 1024 * 1024)" Text="1 GB" />
-        <K7SelectItem Value="@(2L * 1024 * 1024 * 1024)" Text="2 GB" />
-        <K7SelectItem Value="@(5L * 1024 * 1024 * 1024)" Text="5 GB" />
-        <K7SelectItem Value="@(10L * 1024 * 1024 * 1024)" Text="10 GB" />
-        <K7SelectItem Value="@(20L * 1024 * 1024 * 1024)" Text="20 GB" />
-        <K7SelectItem Value="@(50L * 1024 * 1024 * 1024)" Text="50 GB" />
-    </K7Select>
+    <K7ByteSizeSelect Label="@L["MaxDownloadStorage"]"
+                      Value="_maxDownloadBytes"
+                      ValueChanged="OnMaxDownloadChanged"
+                      Presets="OfflineStoragePresets.DownloadLimits"
+                      DeviceTotalBytes="_storageInfo?.DeviceTotalBytes"
+                      SiblingBytes="_maxCacheBytes" />
 
-    <K7Select TValue="long" Label="@L["MaxCacheStorage"]" Value="_maxCacheBytes" ValueChanged="OnMaxCacheChanged">
-        <K7SelectItem Value="@(250L * 1024 * 1024)" Text="250 MB" />
-        <K7SelectItem Value="@(500L * 1024 * 1024)" Text="500 MB" />
-        <K7SelectItem Value="@(1L * 1024 * 1024 * 1024)" Text="1 GB" />
-        <K7SelectItem Value="@(2L * 1024 * 1024 * 1024)" Text="2 GB" />
-        <K7SelectItem Value="@(5L * 1024 * 1024 * 1024)" Text="5 GB" />
-    </K7Select>
+    <K7ByteSizeSelect Label="@L["MaxCacheStorage"]"
+                      Value="_maxCacheBytes"
+                      ValueChanged="OnMaxCacheChanged"
+                      Presets="OfflineStoragePresets.CacheLimits"
+                      MaxBytes="@(50L * 1024 * 1024 * 1024)"
+                      DeviceTotalBytes="_storageInfo?.DeviceTotalBytes"
+                      SiblingBytes="_maxDownloadBytes" />
 
     <hr class="k7-divider my-2" />
     <h6>@L["Network"]</h6>
@@ -60,20 +66,17 @@
     <hr class="k7-divider my-2" />
     <h6>@L["MusicCache"]</h6>
 
-    <K7Select TValue="int" Label="@L["LookaheadWifi"]" Value="_lookaheadWifi" ValueChanged="OnLookaheadWifiChanged">
-        <K7SelectItem Value="0" Text="@L["Disabled"]" />
-        <K7SelectItem Value="3" Text="3" />
-        <K7SelectItem Value="5" Text="5" />
-        <K7SelectItem Value="10" Text="10" />
-        <K7SelectItem Value="20" Text="20" />
-        <K7SelectItem Value="50" Text="50" />
-    </K7Select>
+    <K7PresetIntSelect Label="@L["LookaheadWifi"]"
+                       Value="_lookaheadWifi"
+                       ValueChanged="OnLookaheadWifiChanged"
+                       Presets="OfflineStoragePresets.LookaheadWifi"
+                       DisabledLabel="@L["Disabled"]"
+                       Max="200" />
 
-    <K7Select TValue="int" Label="@L["LookaheadMobile"]" Value="_lookaheadMobile" ValueChanged="OnLookaheadMobileChanged">
-        <K7SelectItem Value="0" Text="@L["Disabled"]" />
-        <K7SelectItem Value="1" Text="1" />
-        <K7SelectItem Value="3" Text="3" />
-        <K7SelectItem Value="5" Text="5" />
-        <K7SelectItem Value="10" Text="10" />
-    </K7Select>
+    <K7PresetIntSelect Label="@L["LookaheadMobile"]"
+                       Value="_lookaheadMobile"
+                       ValueChanged="OnLookaheadMobileChanged"
+                       Presets="OfflineStoragePresets.LookaheadMobile"
+                       DisabledLabel="@L["Disabled"]"
+                       Max="100" />
 </div>

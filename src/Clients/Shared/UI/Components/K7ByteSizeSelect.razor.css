@@ -1,0 +1,20 @@
+.k7-byte-size-select {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+}
+
+.k7-byte-size-custom {
+    display: flex;
+    gap: var(--space-3, 12px);
+    align-items: flex-start;
+}
+
+.k7-byte-size-custom > :first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.k7-byte-size-custom > :last-child {
+    flex: 0 0 7rem;
+}

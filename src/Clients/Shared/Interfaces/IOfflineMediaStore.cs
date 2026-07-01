@@ -42,4 +42,6 @@ public record OfflineStorageInfo
     public long CacheBytes { get; init; }
     public int TotalItems { get; init; }
     public int CacheItems { get; init; }
+    public long? DeviceTotalBytes { get; init; }
+    public long? DeviceAvailableBytes { get; init; }
 }

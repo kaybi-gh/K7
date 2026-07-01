@@ -1,0 +1,25 @@
+@namespace K7.Clients.Shared.UI.Components
+@inject IStringLocalizer<K7PresetIntSelect> L
+
+<div class="k7-preset-int-select @Class">
+    <K7Select TValue="int" Label="@Label" Value="_selectValue" ValueChanged="OnSelectChanged" ToStringFunc="FormatSelectDisplay">
+        @foreach (var preset in Presets)
+        {
+            var text = preset == 0 && DisabledLabel is not null ? DisabledLabel : preset.ToString();
+            <K7SelectItem Value="@preset" Text="@text" />
+        }
+        <K7SelectItem Value="@CustomMarker" Text="@L["Custom"]" />
+    </K7Select>
+
+    @if (_selectValue == CustomMarker)
+    {
+        <K7TextField TValue="int"
+                     Label="@L["CustomValue"]"
+                     Type="number"
+                     Immediate="true"
+                     Value="_customValue"
+                     ValueChanged="OnCustomValueChanged"
+                     Validation="ValidateCustomValue"
+                     HelperText="@GetHelperText()" />
+    }
+</div>

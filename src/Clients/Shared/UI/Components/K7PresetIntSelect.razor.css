@@ -1,0 +1,5 @@
+.k7-preset-int-select {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+}

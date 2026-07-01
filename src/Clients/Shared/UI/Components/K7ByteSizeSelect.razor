@@ -1,0 +1,34 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Clients.Shared.UI.Helpers
+@inject IStringLocalizer<K7ByteSizeSelect> L
+
+<div class="k7-byte-size-select @Class">
+    <K7Select TValue="long" Label="@Label" Value="_selectValue" ValueChanged="OnSelectChanged" ToStringFunc="FormatSelectDisplay">
+        @foreach (var preset in VisiblePresets)
+        {
+            <K7SelectItem Value="@preset" Text="@ByteSizeFormatter.Format(preset)" />
+        }
+        <K7SelectItem Value="@CustomMarker" Text="@L["Custom"]" />
+    </K7Select>
+
+    @if (_selectValue == CustomMarker)
+    {
+        <div class="k7-byte-size-custom">
+            <K7TextField TValue="double"
+                         Label="@L["CustomAmount"]"
+                         Type="number"
+                         Immediate="true"
+                         Value="_customAmount"
+                         ValueChanged="OnCustomAmountChanged"
+                         Validation="ValidateCustomAmount" />
+            <K7Select TValue="string" Label="@L["CustomUnit"]" Value="_customUnit" ValueChanged="OnCustomUnitChanged">
+                <K7SelectItem Value="@("MB")" Text="MB" />
+                <K7SelectItem Value="@("GB")" Text="GB" />
+            </K7Select>
+        </div>
+        @if (!string.IsNullOrEmpty(_customError))
+        {
+            <span class="k7-field-error">@_customError</span>
+        }
+    }
+</div>

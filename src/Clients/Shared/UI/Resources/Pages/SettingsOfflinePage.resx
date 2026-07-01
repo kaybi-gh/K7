@@ -33,4 +33,5 @@
   <data name="LookaheadWifi" xml:space="preserve"><value>Titres a mettre en cache (Wi-Fi)</value></data>
   <data name="LookaheadMobile" xml:space="preserve"><value>Titres a mettre en cache (mobile)</value></data>
   <data name="Disabled" xml:space="preserve"><value>Désactivé</value></data>
+  <data name="DeviceStorageCapacity" xml:space="preserve"><value>Stockage total de l'appareil : {0}</value></data>
 </root>
