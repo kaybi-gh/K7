@@ -1,4 +1,5 @@
-﻿@page "/Account/LoginWithRecoveryCode"
+﻿@page "/sign-in/recovery-code"
+@layout K7.Server.Web.Components.Pages.Auth.AuthLayout
 
 @using System.ComponentModel.DataAnnotations
 @using K7.Server.Infrastructure.Database.Context.Identity
@@ -12,23 +13,29 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<h2 class="auth-heading">@L["Title"]</h2>
-<hr class="auth-divider" />
-<StatusMessage Message="@message" />
-<p>@L["Prompt"]</p>
-
-<EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
-    <DataAnnotationsValidator />
-    <ValidationSummary class="auth-validation" role="alert" />
-    <div class="auth-form-stack">
-        <div class="auth-form-field">
-            <label>@L["RecoveryCode"]</label>
-            <InputText @bind-Value="Input!.RecoveryCode" class="auth-input focusable" autocomplete="off" placeholder="@L["RecoveryCode"]" autofocus />
-            <ValidationMessage For="() => Input!.RecoveryCode" class="auth-validation" />
-        </div>
-        <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["LogIn"]</button>
+<div class="auth-card">
+    <div class="auth-card-header">
+        <h1 class="auth-title">@L["Title"]</h1>
+        <p class="auth-subtitle">@L["Prompt"]</p>
     </div>
-</EditForm>
+    <div class="auth-card-body">
+        <StatusMessage Message="@message" />
+        <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+            <input type="hidden" name="RememberMe" value="@RememberMe" />
+            <DataAnnotationsValidator />
+            <ValidationSummary class="auth-validation" role="alert" />
+            <div class="auth-form-stack">
+                <div class="auth-form-field">
+                    <label>@L["RecoveryCode"]</label>
+                    <InputText @bind-Value="Input!.RecoveryCode" class="auth-input focusable" autocomplete="off" placeholder="@L["RecoveryCode"]" autofocus />
+                    <ValidationMessage For="() => Input!.RecoveryCode" class="auth-validation" />
+                </div>
+                <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["LogIn"]</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
 
 @code {
     private string? message;
@@ -40,9 +47,11 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    [SupplyParameterFromQuery]
+    private bool RememberMe { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
-        // Ensure the user has gone through the username & password screen first
         user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
             throw new InvalidOperationException("Unable to load two-factor authentication user.");
         Input ??= new();
@@ -58,13 +67,18 @@
 
         if (result.Succeeded)
         {
+            if (RememberMe)
+            {
+                await SignInManager.SignInAsync(user, isPersistent: true);
+            }
+
             Logger.LogInformation("User with ID '{UserId}' logged in with a recovery code.", userId);
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.IsLockedOut)
         {
             Logger.LogWarning("User account locked out.");
-            RedirectManager.RedirectTo("Account/Lockout");
+            RedirectManager.RedirectTo("/sign-in/lockout");
         }
         else
         {

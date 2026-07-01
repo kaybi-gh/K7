@@ -1,4 +1,5 @@
-﻿@page "/Account/Login"
+﻿@page "/sign-in"
+@layout K7.Server.Web.Components.Pages.Auth.AuthLayout
 
 @using System.ComponentModel.DataAnnotations
 @using K7.Server.Infrastructure.Configuration
@@ -24,7 +25,7 @@
         <p class="auth-subtitle">@L["SignInPrompt"]</p>
     </div>
     <div class="auth-card-body">
-        @if (AuthConfig.Value.Local.SignInEnabled)
+        @if (_auth.Local.SignInEnabled)
         {
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
@@ -52,25 +53,24 @@
                     <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["SignIn"]</button>
                 </div>
             </EditForm>
+        }
 
-            @if (_externalLogins.Length > 0)
-            {
-                <p class="auth-or">@L["OrContinueWith"]</p>
-                <ExternalLoginPicker />
-            }
-        }
-        else
+        @if (_auth.Local.SignInEnabled && _auth.Oidc.Enabled)
         {
-            <ExternalLoginPicker />
+            <p class="auth-or">@L["OrContinueWith"]</p>
+            <a href="@_oidcLoginUrl" style="text-decoration:none;">
+                <button type="button" class="k7-btn k7-btn--outlined focusable" style="width:100%;">
+                    @(_auth.Oidc.DisplayName ?? L["SignInOidc"])
+                </button>
+            </a>
         }
-        <hr class="auth-divider" style="margin-top:1rem;" />
     </div>
-    @if (AuthConfig.Value.Local.SignInEnabled && AuthConfig.Value.Local.RegistrationEnabled)
+    @if (_auth.Local.SignInEnabled && _auth.Local.RegistrationEnabled)
     {
         <div class="auth-card-footer">
             <span class="auth-caption">
                 @L["NoAccount"]
-                <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable">@L["SignUp"]</a>
+                <a href="@(NavigationManager.GetUriWithQueryParameters("/sign-up", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="auth-link focusable">@L["SignUp"]</a>
             </span>
         </div>
     }
@@ -96,7 +96,8 @@
 
 @code {
     private string? errorMessage;
-    private AuthenticationScheme[] _externalLogins = [];
+    private AuthenticationConfiguration _auth = new();
+    private string _oidcLoginUrl = "/api/authentication/login";
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -111,25 +112,31 @@
     {
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
-            // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
 
-        var auth = AuthConfig.Value;
-        if (!auth.Local.SignInEnabled && auth.Oidc.Enabled)
+        _auth = AuthConfig.Value;
+        var returnUrl = ReturnUrl ?? "/";
+        _oidcLoginUrl = NavigationManager.GetUriWithQueryParameters("/api/authentication/login",
+            new Dictionary<string, object?> { ["returnUrl"] = returnUrl });
+
+        if (!_auth.Local.SignInEnabled && _auth.Oidc.Enabled)
         {
-            RedirectManager.RedirectTo("Account/AutoLogin");
+            RedirectManager.RedirectTo(_oidcLoginUrl);
             return;
         }
 
-        _externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
+        if (!_auth.Local.SignInEnabled && !_auth.Oidc.Enabled)
+        {
+            RedirectManager.RedirectTo("/welcome");
+            return;
+        }
+
         Input ??= new();
     }
 
     public async Task LoginUser()
     {
-        // This doesn't count login failures towards account lockout
-        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
         var result = await SignInManager.PasswordSignInAsync(Input!.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
         if (result.Succeeded)
         {
@@ -139,13 +146,13 @@
         else if (result.RequiresTwoFactor)
         {
             RedirectManager.RedirectTo(
-                "Account/LoginWith2fa",
+                "/sign-in/two-factor",
                 new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
         }
         else if (result.IsLockedOut)
         {
             Logger.LogWarning("User account locked out.");
-            RedirectManager.RedirectTo("Account/Lockout");
+            RedirectManager.RedirectTo("/sign-in/lockout");
         }
         else
         {

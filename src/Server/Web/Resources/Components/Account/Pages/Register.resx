@@ -59,4 +59,10 @@
   <data name="RegistrationDisabled" xml:space="preserve">
     <value>L'inscription est actuellement désactivée.</value>
   </data>
+  <data name="AlreadyHaveAccount" xml:space="preserve">
+    <value>Déjà un compte ?</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Se connecter</value>
+  </data>
 </root>

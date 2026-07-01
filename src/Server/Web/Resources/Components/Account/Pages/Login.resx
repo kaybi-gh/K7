@@ -62,6 +62,15 @@
   <data name="SignUp" xml:space="preserve">
     <value>S'inscrire</value>
   </data>
+  <data name="BackToSignIn" xml:space="preserve">
+    <value>Retour a la connexion</value>
+  </data>
+  <data name="BackToWelcome" xml:space="preserve">
+    <value>Retour</value>
+  </data>
+  <data name="SignInOidc" xml:space="preserve">
+    <value>Authentik</value>
+  </data>
   <data name="ResendEmailConfirmation" xml:space="preserve">
     <value>Renvoyer l'e-mail de confirmation</value>
   </data>

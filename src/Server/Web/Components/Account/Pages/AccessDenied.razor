@@ -1,7 +1,12 @@
-﻿@page "/Account/AccessDenied"
+﻿@page "/sign-in/access-denied"
+@layout K7.Server.Web.Components.Pages.Auth.AuthLayout
 
 @inject IStringLocalizer<AccessDenied> L
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="auth-alert auth-alert--error">@L["Message"]</div>
+<div class="auth-card">
+    <div class="auth-card-body">
+        <div class="auth-alert auth-alert--error">@L["Message"]</div>
+    </div>
+</div>
