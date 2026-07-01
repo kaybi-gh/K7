@@ -142,6 +142,11 @@
   <data name="ResumeHere" xml:space="preserve"><value>Resume here</value></data>
   <data name="AudioTrack" xml:space="preserve"><value>Audio</value></data>
   <data name="Subtitles" xml:space="preserve"><value>Subtitles</value></data>
+  <data name="Joining" xml:space="preserve"><value>Joining...</value></data>
+  <data name="Join" xml:space="preserve"><value>Join</value></data>
+  <data name="MediaTypeTVShows" xml:space="preserve"><value>TV shows</value></data>
+  <data name="RoleUser" xml:space="preserve"><value>User</value></data>
+  <data name="RoleAdministrator" xml:space="preserve"><value>Administrator</value></data>
   <data name="PlaySimilar" xml:space="preserve"><value>Play similar</value></data>
   <data name="Similar" xml:space="preserve"><value>Similar</value></data>
   <data name="Suggestions" xml:space="preserve"><value>Suggestions</value></data>

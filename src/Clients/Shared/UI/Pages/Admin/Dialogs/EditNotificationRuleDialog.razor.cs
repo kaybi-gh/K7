@@ -105,6 +105,8 @@ public partial class EditNotificationRuleDialog
     }
 
     private int _maxVisitedStep;
+    private IReadOnlyList<string> _stepLabels =>
+        [L["StepCategory"].Value, L["StepEvents"].Value, L["StepMessage"].Value, L["StepProvider"].Value];
 
     private bool CanAdvance() => _activeStep switch
     {
@@ -141,8 +143,6 @@ public partial class EditNotificationRuleDialog
 
         return IsValidJsonTemplate(value) ? null : (string)L["InvalidJson"];
     }
-
-    private bool CanGoToStep(int step) => step <= _maxVisitedStep;
 
     private void GoToStep(int step)
     {

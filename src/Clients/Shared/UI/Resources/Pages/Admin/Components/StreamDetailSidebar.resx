@@ -21,6 +21,7 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="SessionDetails" xml:space="preserve"><value>Détails de la session</value></data>
   <data name="MediaTitle" xml:space="preserve"><value>Titre</value></data>
+  <data name="GoToMedia" xml:space="preserve"><value>Voir le média</value></data>
   <data name="Type" xml:space="preserve"><value>Type</value></data>
   <data name="Status" xml:space="preserve"><value>Statut</value></data>
   <data name="PlaybackInfo" xml:space="preserve"><value>Lecture</value></data>

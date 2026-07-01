@@ -140,6 +140,15 @@
   <data name="GoToArtist" xml:space="preserve"><value>Aller a l'artiste</value></data>
   <data name="GoToAlbum" xml:space="preserve"><value>Aller a l'album</value></data>
   <data name="AddToPlaylist" xml:space="preserve"><value>Ajouter a une playlist...</value></data>
+  <data name="PlayingOn" xml:space="preserve"><value>Lecture sur {0}</value></data>
+  <data name="ResumeHere" xml:space="preserve"><value>Reprendre ici</value></data>
+  <data name="AudioTrack" xml:space="preserve"><value>Audio</value></data>
+  <data name="Subtitles" xml:space="preserve"><value>Sous-titres</value></data>
+  <data name="Joining" xml:space="preserve"><value>Connexion...</value></data>
+  <data name="Join" xml:space="preserve"><value>Rejoindre</value></data>
+  <data name="MediaTypeTVShows" xml:space="preserve"><value>Séries</value></data>
+  <data name="RoleUser" xml:space="preserve"><value>Utilisateur</value></data>
+  <data name="RoleAdministrator" xml:space="preserve"><value>Administrateur</value></data>
   <data name="PlaySimilar" xml:space="preserve"><value>Jouer des similaires</value></data>
   <data name="Similar" xml:space="preserve"><value>Similaires</value></data>
   <data name="Suggestions" xml:space="preserve"><value>Suggestions</value></data>
