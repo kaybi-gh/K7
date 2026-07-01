@@ -545,7 +545,6 @@ internal static class FFMpegArgumentsExtensions
                 .EndSeek(TimeSpan.FromMilliseconds(lastSegment.StartTimestamp + 10))
             : options
                 .Seek(startTimeStamp);
-        //.EndSeek(startTimeStamp.Add(TimeSpan.FromMilliseconds(firstSegment.Duration))); // TODO - Useful or not?
     }
 
     public static FFMpegArgumentOptions ConfigureGenericHlsOptions(this FFMpegArgumentOptions options, string tempDirectory, HlsSegment firstSegment)
@@ -556,7 +555,6 @@ internal static class FFMpegArgumentsExtensions
 
     public static FFMpegArgumentOptions ConfigureVideoScalingHlsOptions(this FFMpegArgumentOptions options, int? height)
     {
-        // TODO - Do we keep this method or not?
         return height is int targetHeight ?
             options.WithVideoFilters(filterOptions => filterOptions.Arguments.Add(new AutoScaleArgument(targetHeight)))
             : options;

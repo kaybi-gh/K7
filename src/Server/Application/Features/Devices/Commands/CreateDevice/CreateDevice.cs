@@ -39,7 +39,7 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, I
                 return Results.Created(GetDeviceQueryUriBuilder.Build(existingDeviceQuery), existingDeviceQuery);
             }
         }
-        // TODO - Find existing devices with other properties (browser)
+        // Duplicate devices without DeviceUniqueId are accepted on web clients.
 
         var entity = new Device
         {
