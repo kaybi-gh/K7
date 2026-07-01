@@ -63,6 +63,7 @@ try
     app.UseForwardedHeaders();
     app.UseHealthChecks("/health");
     app.UseHttpsRedirection();
+    app.UseAuthLegacyRedirects();
 
     var supportedCultures = SupportedLanguages.Interface.Select(l => l.Code).ToArray();
     app.UseRequestLocalization(new RequestLocalizationOptions()
