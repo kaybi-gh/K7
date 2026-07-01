@@ -354,9 +354,30 @@ public class GetStreamUriQueryHandler : IRequestHandler<GetStreamUriQuery, Index
         return audioFormats.First();
     }
 
+    // Codecs that work inside fMP4 segments (HLS with ISO BMFF), ordered by transcoding preference.
+    private static readonly string[] HlsFmp4VideoCodecPriority = ["h264", "hevc", "vp9", "av1", "mpeg4", "mpeg2"];
+
     public static VideoMediaFormat GetDeviceBestSupportedVideoMediaFormat(ICollection<BaseMediaFormat> supportedVideoCodecs)
     {
-        return supportedVideoCodecs.OfType<VideoMediaFormat>().First(); // TODO - Implement prioritizing algorithm (cost vs size vs quality)
+        var videoFormats = supportedVideoCodecs.OfType<VideoMediaFormat>().ToList();
+
+        foreach (var codec in HlsFmp4VideoCodecPriority)
+        {
+            var mp4Match = videoFormats.FirstOrDefault(f =>
+                f.Container == "mp4" && string.Equals(f.VideoCodec, codec, StringComparison.OrdinalIgnoreCase));
+            if (mp4Match is not null)
+                return mp4Match;
+        }
+
+        foreach (var codec in HlsFmp4VideoCodecPriority)
+        {
+            var match = videoFormats.FirstOrDefault(f =>
+                string.Equals(f.VideoCodec, codec, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+                return match;
+        }
+
+        return videoFormats.First();
     }
 
     public static (IndexedFileStreamUri Uri, StreamDecisionDto Decision) GetAudioFileStreamUri(Device device, IndexedFile indexedFile, AudioFileMetadata audioFileMetadata, GetStreamUriQuery request)
