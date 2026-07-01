@@ -72,7 +72,7 @@ else if (_person is not null)
                             @if (_person.Birthday.HasValue)
                             {
                                 <div class="person-meta-item">
-                                    <K7Icon Name="cake" Size="sm" Class="person-meta-icon" />
+                                    <K7Icon Name="cake"  IconSize="@K7IconSize.Sm" Class="person-meta-icon" />
                                     <span>@_person.Birthday.Value.ToString("d MMMM yyyy")</span>
                                     @if (_person.Deathday is null)
                                     {
@@ -90,7 +90,7 @@ else if (_person is not null)
                             @if (!string.IsNullOrEmpty(_person.BirthPlace))
                             {
                                 <div class="person-meta-item">
-                                    <K7Icon Name="map-pin" Size="sm" Class="person-meta-icon" />
+                                    <K7Icon Name="map-pin"  IconSize="@K7IconSize.Sm" Class="person-meta-icon" />
                                     <span>@_person.BirthPlace</span>
                                 </div>
                             }
@@ -164,8 +164,8 @@ else if (_person is not null)
                         {
                             <CarouselItem @key="item.ExternalId">
                                 <MediaCard Model="@(new MediaCardViewModel { Id = item.ExternalId, Title = item.Title, PictureUrl = item.PosterUrl, AdditionalInformations = item.Year?.ToString() })"
-                                           FooterVisible="true"
-                                           Href="#" />
+                                           OverlayEnabled="true"
+                                           FooterVisible="true" />
                             </CarouselItem>
                         }
                     </Carousel>
