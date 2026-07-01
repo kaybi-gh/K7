@@ -1,4 +1,5 @@
-﻿@page "/Account/LoginWith2fa"
+﻿@page "/sign-in/two-factor"
+@layout K7.Server.Web.Components.Pages.Auth.AuthLayout
 
 @using System.ComponentModel.DataAnnotations
 @using K7.Server.Infrastructure.Database.Context.Identity
@@ -12,37 +13,44 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<h2 class="auth-heading">@L["Title"]</h2>
-<hr class="auth-divider" />
-<StatusMessage Message="@message" />
-<p>@L["Prompt"]</p>
-
-<EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
-    <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-    <input type="hidden" name="RememberMe" value="@RememberMe" />
-    <DataAnnotationsValidator />
-    <ValidationSummary class="auth-validation" role="alert" />
-    <div class="auth-form-stack">
-        <div class="auth-form-field">
-            <label>@L["AuthenticatorCode"]</label>
-            <InputText @bind-Value="Input!.TwoFactorCode" class="auth-input focusable" autocomplete="off" autofocus />
-            <ValidationMessage For="() => Input!.TwoFactorCode" class="auth-validation" />
-        </div>
-        <label class="auth-toggle">
-            <InputCheckbox @bind-Value="Input.RememberMachine" />
-            <span>@L["RememberMachine"]</span>
-        </label>
-        <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["LogIn"]</button>
+<div class="auth-card">
+    <div class="auth-card-header">
+        <h1 class="auth-title">@L["Title"]</h1>
+        <p class="auth-subtitle">@L["Prompt"]</p>
     </div>
-</EditForm>
-<p>
-    @L["NoAccess"]
-    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl" class="auth-link focusable">@L["UseRecoveryCode"]</a>.
-</p>
+    <div class="auth-card-body">
+        <StatusMessage Message="@message" />
+        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+            <input type="hidden" name="RememberMe" value="@RememberMe" />
+            <DataAnnotationsValidator />
+            <ValidationSummary class="auth-validation" role="alert" />
+            <div class="auth-form-stack">
+                <div class="auth-form-field">
+                    <label>@L["AuthenticatorCode"]</label>
+                    <InputText @bind-Value="Input!.TwoFactorCode" class="auth-input focusable" autocomplete="off" autofocus />
+                    <ValidationMessage For="() => Input!.TwoFactorCode" class="auth-validation" />
+                </div>
+                <label class="auth-toggle">
+                    <InputCheckbox @bind-Value="Input.RememberMachine" />
+                    <span>@L["RememberMachine"]</span>
+                </label>
+                <button type="submit" class="k7-btn k7-btn--filled focusable" style="width:100%;">@L["LogIn"]</button>
+            </div>
+        </EditForm>
+        <p class="auth-caption" style="margin-top:1rem;">
+            @L["NoAccess"]
+            <a href="@NavigationManager.GetUriWithQueryParameters("/sign-in/recovery-code", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl, ["rememberMe"] = RememberMe })" class="auth-link focusable">@L["UseRecoveryCode"]</a>.
+        </p>
+    </div>
+</div>
 
 @code {
     private string? message;
     private ApplicationUser user = default!;
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
 
     [SupplyParameterFromForm]
     private InputModel? Input { get; set; }
@@ -55,7 +63,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Ensure the user has gone through the username & password screen first
         user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
             throw new InvalidOperationException("Unable to load two-factor authentication user.");
         Input ??= new();
@@ -75,7 +82,7 @@
         else if (result.IsLockedOut)
         {
             Logger.LogWarning("User with ID '{UserId}' account locked out.", userId);
-            RedirectManager.RedirectTo("Account/Lockout");
+            RedirectManager.RedirectTo("/sign-in/lockout");
         }
         else
         {
