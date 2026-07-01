@@ -242,10 +242,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<WatchStatsDto>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, CancellationToken cancellationToken = default)
+    public async Task<PlaybackHistoryPageDto?> GetPlaybackHistoryAsync(int page = 1, int pageSize = 25, string? mediaType = null, string period = "month", DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
-        var queryParams = new List<string> { $"page={page}", $"pageSize={pageSize}" };
+        var queryParams = new List<string> { $"page={page}", $"pageSize={pageSize}", $"period={Uri.EscapeDataString(period)}" };
         if (mediaType is not null) queryParams.Add($"mediaType={Uri.EscapeDataString(mediaType)}");
+        if (from is not null) queryParams.Add($"from={from.Value:O}");
+        if (to is not null) queryParams.Add($"to={to.Value:O}");
         var url = $"api/stats/history?{string.Join("&", queryParams)}";
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
@@ -1008,9 +1010,21 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<BackgroundTaskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
+    public async Task<BackgroundTaskSummaryDto> GetSummaryAsync(
+        IReadOnlyCollection<BackgroundTaskStatus>? statusFilter = null,
+        IReadOnlyCollection<string>? namesFilter = null,
+        CancellationToken cancellationToken = default)
     {
-        return await HttpClient.GetFromJsonAsync<BackgroundTaskSummaryDto>("api/background-tasks/summary", _serializerOptions, cancellationToken)
+        var uri = "api/background-tasks/summary";
+        var queryParams = new List<string>();
+        if (statusFilter is { Count: > 0 })
+            queryParams.AddRange(statusFilter.Select(s => $"statusFilter={s}"));
+        if (namesFilter is { Count: > 0 })
+            queryParams.AddRange(namesFilter.Select(n => $"namesFilter={Uri.EscapeDataString(n)}"));
+        if (queryParams.Count > 0)
+            uri += "?" + string.Join("&", queryParams);
+
+        return await HttpClient.GetFromJsonAsync<BackgroundTaskSummaryDto>(uri, _serializerOptions, cancellationToken)
             ?? new BackgroundTaskSummaryDto { TotalCount = 0, StatusCounts = [], TaskTypeCounts = [] };
     }
 
@@ -1038,6 +1052,15 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     {
         var request = new FixDiagnosticItemsRequest { EntityIds = entityIds, Action = action };
         var response = await HttpClient.PostAsJsonAsync("api/diagnostics/fix", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<int>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<int> QueueDiagnosticFixesAsync(DiagnosticIssue issue, Guid? libraryId = null, CancellationToken cancellationToken = default)
+    {
+        var request = new QueueDiagnosticFixesRequest { Issue = issue, LibraryId = libraryId };
+        var response = await HttpClient.PostAsJsonAsync(
+            "api/diagnostics/queue-fixes", request, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<int>(_serializerOptions, cancellationToken);
     }
