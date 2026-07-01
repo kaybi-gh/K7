@@ -1,4 +1,4 @@
-ï»¿@using K7.Shared.Dtos.Entities.Medias
+@using K7.Shared.Dtos.Entities.Medias
 @implements IDisposable
 @page "/players"
 @inject K7.Clients.DesignSystem.Services.DemoPlayerService DemoPlayer
@@ -12,7 +12,7 @@
         <h1>Players</h1>
         <p class="ds-lead">
             Media player components. Cliquer sur une piste ci-dessous la charge dans le MiniMusicPlayer et le FullScreenMusicPlayer.
-            La progression est simulÃ©e (pas d'audio rÃ©el). Le VideoPlayer utilise un stream CDN.
+            La progression est simulée (pas d'audio réel). Le VideoPlayer utilise un stream CDN.
         </p>
     </header>
 
@@ -24,10 +24,10 @@
             {
                 var isCurrent = MockAudio.CurrentTrack?.IndexedFileId == track.IndexedFileId;
                 <div class="ds-track-row @(isCurrent ? "ds-track-row--active" : "")" @onclick="() => PlayTrack(i)">
-                    <K7Icon Name="@(isCurrent && MockAudio.PlaybackState == K7.Server.Domain.Enums.PlaybackState.Playing ? Phosphor.SpeakerHigh : Phosphor.MusicNote)" Size="sm" />
+                    <K7Icon Name="@(isCurrent && MockAudio.PlaybackState == K7.Server.Domain.Enums.PlaybackState.Playing ? Phosphor.SpeakerHigh : Phosphor.MusicNote)"  IconSize="@K7IconSize.Sm" />
                     <div class="ds-track-info">
                         <span class="ds-track-title">@track.Title</span>
-                        <span class="ds-track-artist">@track.Artist â€” @track.AlbumTitle</span>
+                        <span class="ds-track-artist">@track.Artist — @track.AlbumTitle</span>
                     </div>
                     <span class="ds-track-duration">@TimeSpan.FromSeconds(track.Duration ?? 0).ToString(@"m\:ss")</span>
                 </div>
@@ -45,7 +45,7 @@
 
     <section id="mini-music-player" class="ds-section">
         <h2>MiniMusicPlayer</h2>
-        <p class="ds-description">Barre de lecture persistante. Le composant est agnostique de sa position â€” le layout est responsable du positionnement.</p>
+        <p class="ds-description">Barre de lecture persistante. Le composant est agnostique de sa position — le layout est responsable du positionnement.</p>
 
         <h3 class="ds-subsection-title">Desktop</h3>
         <div class="ds-preview ds-preview--block">
@@ -53,7 +53,7 @@
         </div>
 
         <h3 class="ds-subsection-title">Mobile (390px)</h3>
-        <p class="ds-description">Rendu dans un conteneur de 390px â€” le card flottant se declenche via container query.</p>
+        <p class="ds-description">Rendu dans un conteneur de 390px — le card flottant se declenche via container query.</p>
         <div class="ds-preview ds-preview--block">
             <div class="ds-mobile-preview-frame">
                 <MiniMusicPlayer />
@@ -109,7 +109,7 @@
 
     <section id="next-episode" class="ds-section">
         <h2>NextEpisodeOverlay</h2>
-        <p class="ds-description">Countdown overlay affichÃ© en fin d'Ã©pisode pour lancer le suivant. Passez <code>DemoEpisode</code> pour l'afficher sans session de lecture active.</p>
+        <p class="ds-description">Countdown overlay affiché en fin d'épisode pour lancer le suivant. Passez <code>DemoEpisode</code> pour l'afficher sans session de lecture active.</p>
         <div class="ds-preview ds-preview--block" style="position:relative;min-height:320px;overflow:hidden">
             <NextEpisodeOverlay DemoEpisode="@_demoNextEpisode"
                                 DemoStillUrl="https://picsum.photos/seed/episode/800/450"

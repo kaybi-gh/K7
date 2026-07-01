@@ -18,7 +18,7 @@
                          role="button"
                          aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Movie ? "true" : "false")">
                     <div class="media-type-card">
-                        <K7Icon Icon="@Phosphor.FilmStrip" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
+                        <K7Icon Icon="@Phosphor.FilmStrip"  IconSize="@K7IconSize.Lg" Color="@GetMediaTypeColor(LibraryMediaType.Movie)" />
                         <div class="text-sm text-bold">@S["MediaTypeMovies"]</div>
                         <div class="text-xs" style="color: var(--color-text-muted);">@L["MovieDescription"]</div>
                     </div>
@@ -31,7 +31,7 @@
                          role="button"
                          aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Serie ? "true" : "false")">
                     <div class="media-type-card">
-                        <K7Icon Icon="@Phosphor.Television" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
+                        <K7Icon Icon="@Phosphor.Television"  IconSize="@K7IconSize.Lg" Color="@GetMediaTypeColor(LibraryMediaType.Serie)" />
                         <div class="text-sm text-bold">@S["MediaTypeSeries"]</div>
                         <div class="text-xs" style="color: var(--color-text-muted);">@L["SeriesDescription"]</div>
                     </div>
@@ -44,7 +44,7 @@
                          role="button"
                          aria-pressed="@(_mediaTypeSelected && _selectedMediaType == LibraryMediaType.Music ? "true" : "false")">
                     <div class="media-type-card">
-                        <K7Icon Icon="@Phosphor.MusicNote" Size="lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
+                        <K7Icon Icon="@Phosphor.MusicNote"  IconSize="@K7IconSize.Lg" Color="@GetMediaTypeColor(LibraryMediaType.Music)" />
                         <div class="text-sm text-bold">@S["MediaTypeMusic"]</div>
                         <div class="text-xs" style="color: var(--color-text-muted);">@L["MusicDescription"]</div>
                     </div>

@@ -19,7 +19,7 @@
                          tabindex="0"
                          role="button"
                          @onclick="NavigateUp">
-                        <K7Icon Icon="@Phosphor.ArrowBendUpLeft" Size="sm" />
+                        <K7Icon Icon="@Phosphor.ArrowBendUpLeft"  IconSize="@K7IconSize.Sm" />
                         <span class="folder-item__name">..</span>
                     </div>
                 }
@@ -30,9 +30,9 @@
                              tabindex="0"
                              role="button"
                              @onclick="() => NavigateInto(dir)">
-                            <K7Icon Icon="@Phosphor.Folder" Color="warning" Size="sm" />
+                            <K7Icon Icon="@Phosphor.Folder" Color="warning"  IconSize="@K7IconSize.Sm" />
                             <span class="folder-item__name">@dir.Name</span>
-                            <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="folder-item__chevron" />
+                            <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="folder-item__chevron" />
                         </div>
                     </Virtualize>
                 }

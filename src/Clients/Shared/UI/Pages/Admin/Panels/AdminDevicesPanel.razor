@@ -16,7 +16,7 @@
     </ToolbarContent>
     <EmptyContent>
         <K7Paper Class="d-flex flex-col pa-8">
-            <K7Icon Icon="@Phosphor.MonitorPlay" Size="lg" Color="secondary" />
+            <K7Icon Icon="@Phosphor.MonitorPlay"  IconSize="@K7IconSize.Lg" Color="secondary" />
             <p Color="secondary">@L["NoDevices"]</p>
         </K7Paper>
     </EmptyContent>
@@ -31,11 +31,11 @@
                 <div class="device-card-row">
                     <div class="device-card-main">
                         <div class="device-card-icons" aria-hidden="true">
-                            <K7Icon Icon="@GetDeviceIcon(device.DeviceType)" Size="lg" Color="@(isCurrent ? "primary" : "default")" AriaLabel="@GetDeviceTypeLabel(device.DeviceType)" />
-                            <K7Icon Icon="@GetClientTypeIcon(device.ClientType)" Size="sm" Color="secondary" AriaLabel="@GetClientTypeLabel(device.ClientType)" />
+                            <K7Icon Icon="@GetDeviceIcon(device.DeviceType)"  IconSize="@K7IconSize.Lg" Color="@(isCurrent ? "primary" : "default")" AriaLabel="@GetDeviceTypeLabel(device.DeviceType)" />
+                            <K7Icon Icon="@GetClientTypeIcon(device.ClientType)"  IconSize="@K7IconSize.Sm" Color="secondary" AriaLabel="@GetClientTypeLabel(device.ClientType)" />
                             @if (device.WebDeviceDetails is not null)
                             {
-                                <K7Icon Icon="@GetBrowserIcon(device.WebDeviceDetails.Browser)" Size="sm" Color="secondary" AriaLabel="@GetBrowserLabel(device.WebDeviceDetails.Browser)" />
+                                <K7Icon Icon="@GetBrowserIcon(device.WebDeviceDetails.Browser)"  IconSize="@K7IconSize.Sm" Color="secondary" AriaLabel="@GetBrowserLabel(device.WebDeviceDetails.Browser)" />
                             }
                         </div>
 
@@ -70,7 +70,7 @@
                 @if (device.Users.Count > 0)
                 {
                     <div class="device-card-users">
-                        <K7Icon Icon="@Phosphor.Users" Size="sm" Color="secondary" />
+                        <K7Icon Icon="@Phosphor.Users"  IconSize="@K7IconSize.Sm" Color="secondary" />
                         <span class="text-caption" Color="secondary">
                             @(string.Format(L["UserCount"], device.Users.Count))
                         </span>

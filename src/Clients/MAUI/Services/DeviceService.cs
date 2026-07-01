@@ -34,7 +34,7 @@ public class DeviceService(ICodecService codecHelper, IDeviceIdService deviceIdS
             PlaybackCapabilities = new CreateDeviceRequestPlaybackCapibilities()
             {
                 SupportedMediaFormatIds = supportedMediaFormats.Select(x => x.Id).ToList(),
-                SupportedSubtitlesCodecs = ["webvtt"], // TODO - For now we limit to webvtt
+                SupportedSubtitlesCodecs = ["webvtt"],
                 SupportsHDR = await GetHdrSupportAsync()
             }
         };

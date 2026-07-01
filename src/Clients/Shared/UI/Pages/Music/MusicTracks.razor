@@ -45,7 +45,7 @@ else
                 <th>@S["Title"]</th>
                 <th>@S["Artist"]</th>
                 <th>@S["Album"]</th>
-                <th style="width: 80px;"><K7Icon Icon="@Phosphor.Clock" Size="sm" /></th>
+                <th style="width: 80px;"><K7Icon Icon="@Phosphor.Clock"  IconSize="@K7IconSize.Sm" /></th>
                 <th style="width: 130px;"></th>
                 <th style="width: 50px;"></th>
             </HeaderContent>
@@ -54,7 +54,7 @@ else
                     <div class="d-flex align-center">
                         @if (context.IsPlaying)
                         {
-                            <K7Icon Icon="@Phosphor.Equalizer" Size="sm" Color="primary" />
+                            <K7Icon Icon="@Phosphor.Equalizer"  IconSize="@K7IconSize.Sm" Color="primary" />
                         }
                         <span Style="@(context.IsPlaying ? "color: var(--color-accent);" : "")">@context.Title</span>
                     </div>

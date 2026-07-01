@@ -258,7 +258,7 @@
                 @if (_pictureFile is not null)
                 {
                     <span class="text-sm text-secondary">@_pictureFile.Name</span>
-                    <K7Button Variant="filled" Size="small" OnClick="UploadPictureAsync" Disabled="@_isUploading">
+                    <K7Button Variant="filled" Size="sm" OnClick="UploadPictureAsync" Disabled="@_isUploading">
                         @L["Upload"]
                     </K7Button>
                 }
@@ -268,7 +268,7 @@
         @if (_canBrowseProviderImages)
         {
             <div class="provider-images-section">
-                <K7Button Variant="outlined" Size="small" OnClick="LoadProviderImagesAsync"
+                <K7Button Variant="outlined" Size="sm" OnClick="LoadProviderImagesAsync"
                           Disabled="@_isLoadingProviderImages">
                     <K7Icon Icon="@Phosphor.MagnifyingGlass" />
                     @L["BrowseProviderImages"]
@@ -282,7 +282,7 @@
                     <div class="provider-images-tabs">
                         @foreach (var type in _providerImages.Select(i => i.Type).Distinct())
                         {
-                            <K7Button Variant="@(_providerImageFilter == type ? "filled" : "text")" Size="small"
+                            <K7Button Variant="@(_providerImageFilter == type ? "filled" : "text")" Size="sm"
                                       OnClick="@(() => _providerImageFilter = type)">
                                 @type (@_providerImages.Count(i => i.Type == type))
                             </K7Button>
@@ -302,7 +302,7 @@
                     </div>
                     @if (_selectedProviderImage is not null)
                     {
-                        <K7Button Variant="filled" Size="small" OnClick="ImportProviderImageAsync"
+                        <K7Button Variant="filled" Size="sm" OnClick="ImportProviderImageAsync"
                                   Disabled="@_isImportingProviderImage">
                             @L["ImportSelected"]
                         </K7Button>

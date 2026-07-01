@@ -71,7 +71,7 @@
         {
             <div class="surface ma-4 pa-3">
                 <div class="d-flex">
-                    <K7Icon Name="funnel" Size="sm" Color="secondary" />
+                    <K7Icon Name="funnel"  IconSize="@K7IconSize.Sm" Color="secondary" />
                     <p class="text-sm" Color="secondary">@_rulesDescription</p>
                 </div>
             </div>
@@ -98,7 +98,7 @@
                         <th>@S["Title"]</th>
                         <th>@S["Artist"]</th>
                         <th>@S["Album"]</th>
-                        <th Style="width: 80px;"><K7Icon Name="clock" Size="sm" /></th>
+                        <th Style="width: 80px;"><K7Icon Name="clock"  IconSize="@K7IconSize.Sm" /></th>
                         <th Style="width: 130px;"></th>
                         <th Style="width: 50px;"></th>
                     </HeaderContent>
@@ -106,7 +106,7 @@
                         <td>
                             @if (context.IsPlaying)
                             {
-                                <K7Icon Name="equalizer" Size="sm" Color="primary" />
+                                <K7Icon Name="equalizer"  IconSize="@K7IconSize.Sm" Color="primary" />
                             }
                             else
                             {

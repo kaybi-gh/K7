@@ -3,7 +3,7 @@
 
 <div class="remote-control-panel @(Remote.IsAudio ? "remote-control-panel--audio" : "remote-control-panel--video")">
     <div class="remote-control-panel__header">
-        <K7Icon Icon="@Phosphor.Screencast" Size="sm" />
+        <K7Icon Icon="@Phosphor.Screencast"  IconSize="@K7IconSize.Sm" />
         <span>@string.Format(S["PlayingOn"], Remote.TargetDeviceName)</span>
     </div>
 
@@ -51,7 +51,7 @@
     </div>
 
     <div class="remote-control-panel__volume">
-        <K7Icon Icon="@(Remote.Volume < 0.01 ? Phosphor.SpeakerNone : Phosphor.SpeakerHigh)" Size="sm" />
+        <K7Icon Icon="@(Remote.Volume < 0.01 ? Phosphor.SpeakerNone : Phosphor.SpeakerHigh)"  IconSize="@K7IconSize.Sm" />
         <input type="range" min="0" max="1" step="0.01"
                value="@Remote.Volume"
                @onchange="OnVolumeChanged"
@@ -64,7 +64,7 @@
             <K7Menu>
                 <ActivatorContent>
                     <K7Button Variant="text" Size="sm">
-                        <K7Icon Icon="@Phosphor.Translate" Size="sm" /> @S["AudioTrack"]
+                        <K7Icon Icon="@Phosphor.Translate"  IconSize="@K7IconSize.Sm" /> @S["AudioTrack"]
                     </K7Button>
                 </ActivatorContent>
                 <ChildContent>
@@ -86,7 +86,7 @@
             <K7Menu>
                 <ActivatorContent>
                     <K7Button Variant="text" Size="sm">
-                        <K7Icon Icon="@Phosphor.ClosedCaptioning" Size="sm" /> @S["Subtitles"]
+                        <K7Icon Icon="@Phosphor.ClosedCaptioning"  IconSize="@K7IconSize.Sm" /> @S["Subtitles"]
                     </K7Button>
                 </ActivatorContent>
                 <ChildContent>
@@ -104,7 +104,7 @@
 
     <div class="remote-control-panel__actions">
         <K7Button Variant="outlined" Size="sm" OnClick="OnResumeHere">
-            <K7Icon Icon="@Phosphor.ArrowBendDownLeft" Size="sm" /> @S["ResumeHere"]
+            <K7Icon Icon="@Phosphor.ArrowBendDownLeft"  IconSize="@K7IconSize.Sm" /> @S["ResumeHere"]
         </K7Button>
     </div>
 </div>

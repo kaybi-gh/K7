@@ -7,7 +7,7 @@
         {
             <div class="syncplay-header">
                 <div class="syncplay-badge">
-                    <K7Icon Icon="@Phosphor.UsersThree" Size="K7IconSize.Sm" />
+                    <K7Icon Icon="@Phosphor.UsersThree"  IconSize="@K7IconSize.Sm" />
                     <span>@group.GroupName</span>
                     <span class="syncplay-count">@group.Participants.Count</span>
                 </div>
@@ -22,7 +22,7 @@
 
         <div class="syncplay-actions">
             <button class="syncplay-users-btn focusable @(_showParticipants ? "active" : "")" @onclick="@(() => _showParticipants = !_showParticipants)">
-                <K7Icon Icon="@Phosphor.Users" Size="K7IconSize.Sm" />
+                <K7Icon Icon="@Phosphor.Users"  IconSize="@K7IconSize.Sm" />
                 <span class="syncplay-users-count">@group.Participants.Count</span>
             </button>
             <SyncPlayReactionPicker />

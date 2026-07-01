@@ -13,11 +13,11 @@
                         aria-label="@L["ClearFilters"]"
                         @onclick="ClearFiltersAsync"
                         @onclick:stopPropagation="true">
-                    <K7Icon Icon="@Phosphor.XCircle" Size="sm" />
+                    <K7Icon Icon="@Phosphor.XCircle"  IconSize="@K7IconSize.Sm" />
                 </button>
             }
             <span class="k7-filter-menu__label">@DisplayLabel</span>
-            <K7Icon Icon="@Phosphor.CaretDown" Size="sm" Class="k7-filter-menu__caret" />
+            <K7Icon Icon="@Phosphor.CaretDown"  IconSize="@K7IconSize.Sm" Class="k7-filter-menu__caret" />
         </div>
     </ActivatorContent>
     <ChildContent>

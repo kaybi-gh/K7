@@ -108,7 +108,7 @@
                         @{ var stars = item.UserRating is > 0 ? (int)Math.Ceiling(item.UserRating.Value / 2.0) : 0; }
                         @for (var i = 1; i <= 5; i++)
                         {
-                            <K7Icon Icon="@(i <= stars ? Phosphor.Fill.Star : Phosphor.Star)" Size="xs" Style="@(i <= stars ? "color: var(--color-accent);" : "color: var(--color-text-muted); opacity: 0.4;")" />
+                            <K7Icon Icon="@(i <= stars ? Phosphor.Fill.Star : Phosphor.Star)"  IconSize="@K7IconSize.Xs" Style="@(i <= stars ? "color: var(--color-accent);" : "color: var(--color-text-muted); opacity: 0.4;")" />
                         }
                     </div>
                 </CellTemplate>
@@ -121,7 +121,7 @@
                     }
                     else if (item.UserState?.IsCompleted ?? false)
                     {
-                        <K7Icon Icon="@Phosphor.CheckCircle" Color="success" Size="sm" />
+                        <K7Icon Icon="@Phosphor.CheckCircle" Color="success"  IconSize="@K7IconSize.Sm" />
                     }
                     else
                     {

@@ -18,11 +18,11 @@
                         aria-label="@L["ClearFilters"]"
                         @onclick="ClearFiltersAsync"
                         @onclick:stopPropagation="true">
-                    <K7Icon Icon="@Phosphor.XCircle" Size="sm" />
+                    <K7Icon Icon="@Phosphor.XCircle"  IconSize="@K7IconSize.Sm" />
                 </button>
             }
             <span class="library-browse-filters__label">@ActiveFiltersLabel</span>
-            <K7Icon Icon="@Phosphor.CaretDown" Size="sm" Class="library-browse-filters__caret" />
+            <K7Icon Icon="@Phosphor.CaretDown"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__caret" />
         </div>
     </ActivatorContent>
     <ChildContent>
@@ -88,7 +88,7 @@
                                 <span class="library-browse-filters__option-label">@rating</span>
                                 @if (selected)
                                 {
-                                    <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                                    <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
                                 }
                             </button>
                         }
@@ -106,7 +106,7 @@
                                 <span class="library-browse-filters__option-label">@GetGenreLabel(genre)</span>
                                 @if (selected)
                                 {
-                                    <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                                    <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
                                 }
                             </button>
                         }
@@ -155,7 +155,7 @@
                         <span class="library-browse-filters__option-label">@L["WatchFilterAll"]</span>
                         @if (!MediaBrowseFilterPresets.IsUnwatched(Filter) && !MediaBrowseFilterPresets.IsInProgress(Filter))
                         {
-                            <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                            <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
                         }
                     </button>
                     <button type="button"
@@ -164,7 +164,7 @@
                         <span class="library-browse-filters__option-label">@L["WatchFilterUnwatched"]</span>
                         @if (MediaBrowseFilterPresets.IsUnwatched(Filter))
                         {
-                            <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                            <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
                         }
                     </button>
                     <button type="button"
@@ -173,7 +173,7 @@
                         <span class="library-browse-filters__option-label">@L["WatchFilterInProgress"]</span>
                         @if (MediaBrowseFilterPresets.IsInProgress(Filter))
                         {
-                            <K7Icon Icon="@Phosphor.Check" Size="sm" />
+                            <K7Icon Icon="@Phosphor.Check"  IconSize="@K7IconSize.Sm" />
                         }
                     </button>
                 </div>
@@ -189,13 +189,13 @@
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.Actor)">
                         <span class="library-browse-filters__option-label">@GetActorMenuLabel()</span>
-                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                     </button>
                     <button type="button"
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.Studio)">
                         <span class="library-browse-filters__option-label">@GetStudioMenuLabel()</span>
-                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                     </button>
                     @if (HasContentRatings)
                     {
@@ -203,7 +203,7 @@
                                 class="library-browse-filters__option focusable"
                                 @onclick="() => OpenSubmenu(QuickFilterSubmenu.ContentRating)">
                             <span class="library-browse-filters__option-label">@GetContentRatingMenuLabel()</span>
-                            <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                            <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                         </button>
                     }
                 }
@@ -213,7 +213,7 @@
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.Artist)">
                         <span class="library-browse-filters__option-label">@GetArtistMenuLabel()</span>
-                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                     </button>
                 }
                 @if (ShowGenreQuickFilter)
@@ -222,7 +222,7 @@
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.Genres)">
                         <span class="library-browse-filters__option-label">@GetGenresMenuLabel()</span>
-                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                     </button>
                 }
                 @if (ShowIntelligentSearchFilters)
@@ -231,13 +231,13 @@
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.SonicSearch)">
                         <span class="library-browse-filters__option-label">@L["FilterSonicSearch"]</span>
-                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                     </button>
                     <button type="button"
                             class="library-browse-filters__option focusable"
                             @onclick="() => OpenSubmenu(QuickFilterSubmenu.LyricsSearch)">
                         <span class="library-browse-filters__option-label">@L["FilterLyricsSearch"]</span>
-                        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" Class="library-browse-filters__option-chevron" />
+                        <K7Icon Icon="@Phosphor.CaretRight"  IconSize="@K7IconSize.Sm" Class="library-browse-filters__option-chevron" />
                     </button>
                 }
                 <button type="button"

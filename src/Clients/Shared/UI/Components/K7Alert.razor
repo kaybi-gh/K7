@@ -3,7 +3,7 @@
 <div class="k7-alert k7-alert--@Severity.ToString().ToLower() @Class" role="alert">
     @if (!string.IsNullOrEmpty(Icon))
     {
-        <K7Icon Icon="@Icon" Size="md" />
+        <K7Icon Icon="@Icon"  IconSize="@K7IconSize.Md" />
     }
     <div>@ChildContent</div>
 </div>

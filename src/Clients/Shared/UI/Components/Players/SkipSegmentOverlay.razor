@@ -12,7 +12,7 @@
 @if (_showSkippedNotification)
 {
     <div class="skip-notification">
-        <K7Icon Name="@Phosphor.SkipForward" Size="sm" />
+        <K7Icon Name="@Phosphor.SkipForward"  IconSize="@K7IconSize.Sm" />
         <span>@(_skippedSegmentType == K7.Shared.Enums.MediaSegmentType.Intro ? L["IntroSkipped"] : L["OutroSkipped"])</span>
     </div>
 }

@@ -24,7 +24,7 @@
                          role="button"
                          aria-pressed="@(_selectedCategory == category ? "true" : "false")">
                     <div style="display: flex; flex-direction: column; align-items: center; padding: var(--space-4); text-align: center;">
-                        <K7Icon Icon="@GetCategoryIcon(category)" Size="lg" Color="@GetCategoryColor(category)" />
+                        <K7Icon Icon="@GetCategoryIcon(category)"  IconSize="@K7IconSize.Lg" Color="@GetCategoryColor(category)" />
                         <div class="text-sm text-bold" style="margin-top: var(--space-3);">@GetCategoryLabel(category)</div>
                         <div class="text-xs" style="color: var(--color-text-muted); margin-top: var(--space-1);">@GetCategoryEventCount(category)</div>
                     </div>

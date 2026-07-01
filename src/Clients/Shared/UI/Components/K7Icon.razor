@@ -30,7 +30,7 @@ else
 
 @code {
     [Parameter] public string Icon { get; set; } = "";
-    [Parameter] public string Size { get; set; } = "";
+    [Parameter] public K7IconSize IconSize { get; set; } = K7IconSize.Md;
     [Parameter] public string Color { get; set; } = "";
     [Parameter] public string Class { get; set; } = "";
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
@@ -39,14 +39,7 @@ else
     {
         get
         {
-            var sizeClass = Size switch
-            {
-                "sm" or "small" => "k7-icon--sm",
-                "md" or "medium" => "k7-icon--md",
-                "lg" or "large" => "k7-icon--lg",
-                "xl" or "xlarge" => "k7-icon--xl",
-                _ => "k7-icon--md",
-            };
+            var sizeClass = IconSize.ToCssClass();
             var colorStyle = string.IsNullOrEmpty(Color) ? "" : $"color-{Color}";
             return string.Join(" ", new[] { Icon, "k7-icon", sizeClass, colorStyle, Class }.Where(s => !string.IsNullOrEmpty(s)));
         }

@@ -34,7 +34,7 @@
                 @if (IsRemoteMode)
                 {
                     <span class="fullscreen-player-header-title remote-badge">
-                        <K7Icon Icon="@Phosphor.Screencast" Size="sm" />
+                        <K7Icon Icon="@Phosphor.Screencast"  IconSize="@K7IconSize.Sm" />
                         @string.Format(S["PlayingOn"], RemoteControl.TargetDeviceName)
                     </span>
                 }
@@ -44,7 +44,7 @@
                 }
                 @if (SleepTimer.IsActive && !IsRemoteMode)
                 {
-                    <span class="sleep-timer-badge"><K7Icon Icon="@Phosphor.Timer" Size="sm" /> @FormatRemaining(SleepTimer.Remaining)</span>
+                    <span class="sleep-timer-badge"><K7Icon Icon="@Phosphor.Timer"  IconSize="@K7IconSize.Sm" /> @FormatRemaining(SleepTimer.Remaining)</span>
                 }
                 @if (!IsRemoteMode)
                 {
@@ -352,7 +352,7 @@
                                 var currentTrack = Audio.Queue[Audio.CurrentIndex];
                                 <div class="queue-item queue-item-current">
                                     <div class="queue-item-index">
-                                        <K7Icon Icon="@Phosphor.Equalizer" Size="sm" Color="primary" />
+                                        <K7Icon Icon="@Phosphor.Equalizer"  IconSize="@K7IconSize.Sm" Color="primary" />
                                     </div>
                                     @if (!string.IsNullOrEmpty(currentTrack.CoverUrl))
                                     {

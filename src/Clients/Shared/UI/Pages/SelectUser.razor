@@ -37,7 +37,7 @@
                             <span>@(user.DisplayName ?? user.UserName)</span>
                             @if (user.PinHash is not null)
                             {
-                                <K7Icon Name="lock" Size="sm" Color="secondary" />
+                                <K7Icon Name="lock"  IconSize="@K7IconSize.Sm" Color="secondary" />
                             }
                         </div>
                     </div>
@@ -50,7 +50,7 @@
                      @onclick="AddUserAsync"
                      @onkeydown="OnAddUserKeyDown">
                     <K7Avatar Class="ma-2" Size="xl" Color="default">
-                        <K7Icon Icon="@Phosphor.Plus" Size="lg" />
+                        <K7Icon Icon="@Phosphor.Plus"  IconSize="@K7IconSize.Lg" />
                     </K7Avatar>
                     <span class="select-user-name">@L["AddServer"]</span>
                 </div>
