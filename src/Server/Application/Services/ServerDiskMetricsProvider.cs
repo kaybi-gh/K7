@@ -1,8 +1,9 @@
+using K7.Server.Application.Common.Configuration;
 using K7.Server.Application.Common.Interfaces;
 using K7.Shared.Dtos;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace K7.Server.Application.Services;
 
@@ -12,10 +13,11 @@ public interface IServerDiskMetricsProvider
 }
 
 public sealed class ServerDiskMetricsProvider(
-    IConfiguration configuration,
+    IOptions<PathsConfiguration> pathsOptions,
     IServiceScopeFactory scopeFactory) : IServerDiskMetricsProvider
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(30);
+    private readonly PathsConfiguration _paths = pathsOptions.Value;
     private readonly object _lock = new();
     private IReadOnlyList<ServerDiskVolumeDto> _cached = [];
     private DateTime _cachedAt = DateTime.MinValue;
@@ -35,70 +37,81 @@ public sealed class ServerDiskMetricsProvider(
 
     private IReadOnlyList<ServerDiskVolumeDto> ComputeVolumes()
     {
-        var drives = new Dictionary<string, DriveInfo>(StringComparer.OrdinalIgnoreCase);
+        var monitoredPaths = GetMonitoredPaths();
+        if (monitoredPaths.Count == 0)
+            return [];
 
-        foreach (var path in GetMonitoredPaths())
+        var rootDriveKey = GetDriveKey(monitoredPaths[0].ResolvedPath);
+        var volumesByDrive = new Dictionary<string, (DriveInfo Drive, List<string> Sources)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (label, resolvedPath) in monitoredPaths)
         {
             try
             {
-                var drive = GetDriveForPath(path);
+                var drive = GetDriveForPath(resolvedPath);
                 if (drive is null || !drive.IsReady || drive.TotalSize <= 0)
                     continue;
 
-                drives.TryAdd(drive.Name, drive);
+                var driveKey = GetDriveKey(resolvedPath);
+                if (driveKey is null)
+                    continue;
+
+                if (!volumesByDrive.TryGetValue(driveKey, out var entry))
+                {
+                    volumesByDrive[driveKey] = (drive, [label]);
+                    continue;
+                }
+
+                if (!entry.Sources.Contains(label, StringComparer.OrdinalIgnoreCase))
+                    entry.Sources.Add(label);
             }
             catch
             {
             }
         }
 
-        return drives.Values
-            .Select(ToVolumeDto)
-            .OrderBy(v => v.Label, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
+        if (volumesByDrive.Count == 0)
+            return [];
 
-    private static ServerDiskVolumeDto ToVolumeDto(DriveInfo drive)
-    {
-        var totalGb = drive.TotalSize / (1024d * 1024 * 1024);
-        var freeGb = drive.AvailableFreeSpace / (1024d * 1024 * 1024);
-        var usedGb = totalGb - freeGb;
-        var freePercent = totalGb > 0 ? freeGb / totalGb * 100 : 0;
-        var root = drive.Name.TrimEnd('\\', '/');
-        var label = string.IsNullOrWhiteSpace(drive.VolumeLabel)
-            ? root
-            : $"{drive.VolumeLabel} ({root})";
+        var volumes = new List<ServerDiskVolumeDto>(volumesByDrive.Count);
 
-        return new ServerDiskVolumeDto
+        if (rootDriveKey is not null && volumesByDrive.TryGetValue(rootDriveKey, out var rootEntry))
+            volumes.Add(ToVolumeDto(rootEntry.Drive, rootEntry.Sources, isRoot: true));
+
+        foreach (var (driveKey, entry) in volumesByDrive.OrderBy(v => v.Key, StringComparer.OrdinalIgnoreCase))
         {
-            Label = label,
-            UsedGb = Math.Round(usedGb, 1),
-            TotalGb = Math.Round(totalGb, 1),
-            FreePercent = Math.Round(freePercent, 1)
-        };
+            if (driveKey == rootDriveKey)
+                continue;
+
+            volumes.Add(ToVolumeDto(entry.Drive, entry.Sources, isRoot: false));
+        }
+
+        return volumes;
     }
 
-    private HashSet<string> GetMonitoredPaths()
+    private List<MonitoredPath> GetMonitoredPaths()
     {
-        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var paths = new List<MonitoredPath>
+        {
+            new("Application", ResolvePath(AppContext.BaseDirectory))
+        };
 
-        AddPath(paths, AppContext.BaseDirectory);
-        AddConfigPath(paths, "Paths:Config");
-        AddConfigPath(paths, "Paths:Metadatas");
-        AddConfigPath(paths, "Paths:Logs");
-        AddConfigPath(paths, "Paths:Transcoding");
+        AddConfiguredPath(paths, "Config", _paths.Config);
+        AddConfiguredPath(paths, "Metadatas", _paths.Metadatas);
+        AddConfiguredPath(paths, "Logs", _paths.Logs);
+        AddConfiguredPath(paths, "Transcoding", _paths.Transcoding);
 
         try
         {
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-            var libraryPaths = db.Libraries.AsNoTracking()
+            var libraries = db.Libraries.AsNoTracking()
                 .Where(l => l.RootPath != null && l.RootPath != "")
-                .Select(l => l.RootPath!)
+                .Select(l => new { l.Title, l.RootPath })
                 .ToList();
 
-            foreach (var libraryPath in libraryPaths)
-                AddPath(paths, libraryPath);
+            foreach (var library in libraries)
+                AddConfiguredPath(paths, library.Title, library.RootPath!);
         }
         catch
         {
@@ -107,25 +120,62 @@ public sealed class ServerDiskMetricsProvider(
         return paths;
     }
 
-    private void AddConfigPath(HashSet<string> paths, string key)
+    private static void AddConfiguredPath(List<MonitoredPath> paths, string label, string path)
     {
-        var value = configuration[key];
-        if (!string.IsNullOrWhiteSpace(value))
-            AddPath(paths, value);
+        var resolved = ResolvePath(path);
+        if (string.IsNullOrWhiteSpace(resolved))
+            return;
+
+        if (paths.Any(p => string.Equals(p.ResolvedPath, resolved, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        paths.Add(new MonitoredPath(label, resolved));
     }
 
-    private static void AddPath(HashSet<string> paths, string path)
+    private static string ResolvePath(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
-            return;
+            return path;
 
         try
         {
-            paths.Add(Path.GetFullPath(path));
+            return Path.GetFullPath(path);
         }
         catch
         {
+            return path;
         }
+    }
+
+    private static ServerDiskVolumeDto ToVolumeDto(DriveInfo drive, IReadOnlyList<string> sources, bool isRoot)
+    {
+        var totalGb = drive.TotalSize / (1024d * 1024 * 1024);
+        var freeGb = drive.AvailableFreeSpace / (1024d * 1024 * 1024);
+        var usedGb = totalGb - freeGb;
+        var freePercent = totalGb > 0 ? freeGb / totalGb * 100 : 0;
+        var root = drive.Name.TrimEnd('\\', '/');
+
+        return new ServerDiskVolumeDto
+        {
+            Label = BuildLabel(drive, sources, root, isRoot),
+            UsedGb = Math.Round(usedGb, 1),
+            TotalGb = Math.Round(totalGb, 1),
+            FreePercent = Math.Round(freePercent, 1)
+        };
+    }
+
+    private static string BuildLabel(DriveInfo drive, IReadOnlyList<string> sources, string root, bool isRoot)
+    {
+        if (isRoot && !string.IsNullOrWhiteSpace(drive.VolumeLabel))
+            return $"{drive.VolumeLabel} ({root})";
+
+        if (sources.Count == 1)
+            return $"{sources[0]} ({root})";
+
+        if (!string.IsNullOrWhiteSpace(drive.VolumeLabel))
+            return $"{drive.VolumeLabel} ({root})";
+
+        return root;
     }
 
     private static DriveInfo? GetDriveForPath(string path)
@@ -136,4 +186,15 @@ public sealed class ServerDiskMetricsProvider(
 
         return new DriveInfo(root);
     }
+
+    private static string? GetDriveKey(string path)
+    {
+        var root = Path.GetPathRoot(path);
+        if (string.IsNullOrEmpty(root))
+            return null;
+
+        return root.TrimEnd('\\', '/');
+    }
+
+    private readonly record struct MonitoredPath(string Label, string ResolvedPath);
 }
