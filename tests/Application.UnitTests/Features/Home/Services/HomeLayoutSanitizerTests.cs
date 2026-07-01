@@ -59,7 +59,7 @@ public class HomeLayoutSanitizerTests
             ]
         };
 
-        var result = HomeLayoutSanitizer.Sanitize(layout, []);
+        var result = HomeLayoutSanitizer.Sanitize(layout, new HashSet<Guid>());
 
         result.Rows.Should().ContainSingle();
         result.Rows[0].Title.Should().Be("AllMovies");
