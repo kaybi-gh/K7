@@ -19,6 +19,8 @@ public partial class AdminDashboardPanel : IDisposable
 
     private IReadOnlyList<ServerMetricsSnapshotDto> _metricSnapshots = [];
     private int _errorCount;
+    private int _warningCount;
+    private int _infoCount;
     private int _runningTaskCount;
     private PeriodicTimer? _metricsPollTimer;
     private CancellationTokenSource? _pollCts;
@@ -58,10 +60,14 @@ public partial class AdminDashboardPanel : IDisposable
         {
             var summaries = await DiagnosticsService.GetDiagnosticsSummaryAsync();
             _errorCount = LibraryHealthSummaryCounts.SumErrors(summaries);
+            _warningCount = LibraryHealthSummaryCounts.SumWarnings(summaries);
+            _infoCount = LibraryHealthSummaryCounts.SumInfo(summaries);
         }
         catch
         {
             _errorCount = 0;
+            _warningCount = 0;
+            _infoCount = 0;
         }
 
         try

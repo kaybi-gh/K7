@@ -25,7 +25,7 @@
   <data name="DiskVolumeUsage" xml:space="preserve"><value>{0} Go utilisés / {1} Go</value></data>
   <data name="DiskVolumeFree" xml:space="preserve"><value>{0} Go libres ({1} %)</value></data>
   <data name="NoDiskVolumesYet" xml:space="preserve"><value>Aucun volume détecté</value></data>
-  <data name="DiagnosticErrorsKpi" xml:space="preserve"><value>Erreurs diagnostics</value></data>
+  <data name="DiagnosticsKpi" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="BackgroundTasksKpi" xml:space="preserve"><value>Tâches actives</value></data>
   <data name="ViewStreams" xml:space="preserve"><value>Voir les flux</value></data>
   <data name="ViewDiagnostics" xml:space="preserve"><value>Voir les diagnostics</value></data>
