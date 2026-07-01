@@ -58,8 +58,12 @@ public class ReidentifyIndexedFileCommandHandler(IApplicationDbContext context, 
             context.IndexedFiles.Attach(indexedFile);
         }
 
-        // TODO - TV/Music based on Library type
-        BaseMedia newMedia = new Movie() { IndexedFiles = [indexedFile] };
+        BaseMedia newMedia = library?.MediaType switch
+        {
+            LibraryMediaType.Serie => new Serie() { IndexedFiles = [indexedFile] },
+            LibraryMediaType.Music => new MusicAlbum() { IndexedFiles = [indexedFile] },
+            _ => new Movie() { IndexedFiles = [indexedFile] }
+        };
 
         context.Medias.Add(newMedia);
         newMedia.AddDomainEvent(new MediaCreatedEvent(newMedia));
