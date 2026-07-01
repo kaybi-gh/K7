@@ -65,7 +65,7 @@
                 {
                     @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
                     {
-                        @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
+                        @RenderCarousel(GetRowTitle(row.Title), items, _canTrackProgress, _canTrackProgress)
                     }
                 }
             </VerticalCarousel>
@@ -76,7 +76,7 @@
             {
                 @if (items.Count > 0 && (!row.ContinueWatching || _canTrackProgress))
                 {
-                    @RenderCarousel(L[row.Title], items, _canTrackProgress, _canTrackProgress)
+                    @RenderCarousel(GetRowTitle(row.Title), items, _canTrackProgress, _canTrackProgress)
                 }
             }
         }
