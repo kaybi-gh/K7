@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+﻿using K7.Shared.Json;
 using K7.Server.Domain.Constants;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
@@ -141,7 +141,6 @@ public static class DependencyInjection
         services.AddScoped<K7SnackbarService>();
         services.AddScoped<IK7Snackbar>(sp => sp.GetRequiredService<K7SnackbarService>());
         services.AddSignalR();
-        //services.AddHttpForwarderWithServiceDiscovery(); // TODO - To keep or not?
         services.AddHttpContextAccessor();
         services.AddScoped<IdentityUserAccessor>();
         services.AddScoped<IdentityRedirectManager>();
@@ -164,12 +163,7 @@ public static class DependencyInjection
 
         services.AddEndpointsApiExplorer();
 
-        services.ConfigureHttpJsonOptions(x =>
-        {
-            x.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-            x.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-            x.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        }); // TODO - Share jsonOptions between server and clients?
+        services.ConfigureHttpJsonOptions(x => K7JsonSerializerOptions.Configure(x.SerializerOptions));
 
         return services;
     }
