@@ -120,8 +120,6 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
                 .Where(s => s.UserId == userId.Value)
                 .Select(s => s.LastInteractedAt)
                 .FirstOrDefault())
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
             .Include(x => x.Pictures)
             .Include(x => x.Ratings)
             .Include(x => x.MetadataTags).ThenInclude(mt => mt.MetadataTag)
@@ -133,9 +131,16 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var pictureSizes = await GetPictureSizesAsync(items, cancellationToken);
-        var feedItems = items.Select(i => MapContinueWatchingItem(i, request.Detailed == true, pictureSizes)).ToList();
-        return new PaginatedList<HomeFeedItemDto>(feedItems, feedItems.Count, request.PageNumber, request.PageSize);
+        var deduplicated = ContinueWatchingEpisodeSelector.DeduplicateBySerie(items);
+        var totalCount = deduplicated.Count;
+        var page = deduplicated
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList();
+
+        var pictureSizes = await GetPictureSizesAsync(page, cancellationToken);
+        var feedItems = page.Select(i => MapContinueWatchingItem(i, request.Detailed == true, pictureSizes)).ToList();
+        return new PaginatedList<HomeFeedItemDto>(feedItems, totalCount, request.PageNumber, request.PageSize);
     }
 
     private async Task<PaginatedList<HomeFeedItemDto>> HandleRecentlyAddedAsync(
@@ -598,7 +603,7 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
         switch (item)
         {
             case SerieEpisode episode:
-                pictures = episode.Serie?.Pictures ?? item.Pictures;
+                pictures = EpisodePictureResolver.ResolveDisplayPictures(episode);
                 navTarget = $"/series/{episode.Serie?.Id ?? item.Id}/seasons/{episode.Season?.SeasonNumber ?? 0}#ep-{episode.EpisodeNumber}";
                 title = episode.Serie?.Title ?? episode.Title ?? "";
                 additionalInfo = $"S{episode.Season?.SeasonNumber ?? 0:D2}E{episode.EpisodeNumber:D2}";

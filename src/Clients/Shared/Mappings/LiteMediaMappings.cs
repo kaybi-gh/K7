@@ -127,10 +127,15 @@ public static class LiteMediaMappings
             _ => MediaCardKind.Poster
         };
 
-        var bestPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
-            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
-            ?? item.Pictures?.FirstOrDefault();
+        var bestPicture = item.MediaType == MediaType.SerieEpisode
+            ? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? item.Pictures?.FirstOrDefault()
+            : item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still)
+                ?? item.Pictures?.FirstOrDefault();
 
         var backdropPicture = item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Backdrop);
 
