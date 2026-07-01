@@ -1,0 +1,50 @@
+.k7-dialog-stepper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    width: 100%;
+    min-width: 0;
+    margin-bottom: var(--space-6);
+    overflow: hidden;
+}
+
+.k7-dialog-stepper__step {
+    min-width: 0;
+    flex-shrink: 1;
+}
+
+.k7-dialog-stepper__separator {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+}
+
+.k7-dialog-stepper__step ::deep .k7-dialog-stepper__chip {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 599.98px) {
+    .k7-dialog-stepper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .k7-dialog-stepper__step {
+        flex-shrink: 0;
+        width: 100%;
+    }
+
+    .k7-dialog-stepper__step ::deep .k7-dialog-stepper__chip {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .k7-dialog-stepper__separator {
+        align-self: center;
+        transform: rotate(90deg);
+    }
+}

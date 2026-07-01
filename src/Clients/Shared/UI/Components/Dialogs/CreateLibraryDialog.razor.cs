@@ -17,6 +17,7 @@ public partial class CreateLibraryDialog
 
     private int _activeStep;
     private int _maxVisitedStep;
+    private IReadOnlyList<string> _stepLabels => [L["Step1"].Value, L["Step2"].Value, L["Step3"].Value];
     private LibraryMediaType _selectedMediaType;
     private bool _mediaTypeSelected;
     private string _title = "";
@@ -88,8 +89,6 @@ public partial class CreateLibraryDialog
         1 => !string.IsNullOrWhiteSpace(_title) && !string.IsNullOrWhiteSpace(_rootPath) && !string.IsNullOrWhiteSpace(_selectedProvider),
         _ => true
     };
-
-    private bool CanGoToStep(int step) => step <= _maxVisitedStep;
 
     private void GoToStep(int step)
     {
