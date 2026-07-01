@@ -573,6 +573,40 @@
         }
       }
     },
+    "/api/users/{userId}/playlists/import": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "ImportUserPlaylist",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportUserPlaylistRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/{sourceUserId}/merge-into/{targetUserId}": {
       "post": {
         "tags": [
@@ -1331,6 +1365,30 @@
             "in": "query",
             "schema": {
               "$ref": "#/components/schemas/MediaType"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "month"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
             }
           }
         ],
@@ -6300,6 +6358,29 @@
         }
       }
     },
+    "/api/diagnostics/queue-fixes": {
+      "post": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "operationId": "QueueDiagnosticFixes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueDiagnosticFixesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/diagnostics/client-errors": {
       "post": {
         "tags": [
@@ -6340,6 +6421,29 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/devices/bulk-resolve-import": {
+      "post": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "BulkResolveImportDevices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkResolveImportDevicesRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -7127,6 +7231,25 @@
           "BackgroundTasks"
         ],
         "operationId": "GetBackgroundTaskSummary",
+        "parameters": [
+          {
+            "name": "StatusFilter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "NamesFilter",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -8539,6 +8662,9 @@
           },
           "fetchMetadata": {
             "type": "boolean"
+          },
+          "createMissing": {
+            "type": "boolean"
           }
         }
       },
@@ -8566,6 +8692,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistLinkItem"
+            }
+          }
+        }
+      },
+      "BulkResolveImportDevicesRequest": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportDeviceDescriptor"
             }
           }
         }
@@ -10030,6 +10170,35 @@
           }
         }
       },
+      "ImportDeviceDescriptor": {
+        "required": [
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "deviceName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "platform": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "player": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ImportMediaPictureFromUrlRequest": {
         "required": [
           "url",
@@ -10042,6 +10211,29 @@
           },
           "pictureType": {
             "$ref": "#/components/schemas/MetadataPictureType"
+          }
+        }
+      },
+      "ImportUserPlaylistRequest": {
+        "required": [
+          "title",
+          "mediaType",
+          "mediaIds"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "mediaType": {
+            "$ref": "#/components/schemas/MediaType"
+          },
+          "mediaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -10304,6 +10496,7 @@
           "mediaType",
           "totalMediaCount",
           "mediaMissingPicturesCount",
+          "mediaMissingExternalIdCount",
           "mediaMissingMetadataCount",
           "mediaWithoutFilesCount",
           "staleMetadataCount",
@@ -10338,6 +10531,14 @@
             "format": "int32"
           },
           "mediaMissingPicturesCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "mediaMissingExternalIdCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -14600,6 +14801,12 @@
               "string"
             ]
           },
+          "mediaUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "libraryName": {
             "type": [
               "null",
@@ -15030,6 +15237,24 @@
         "properties": {
           "providerUrl": {
             "type": "string"
+          }
+        }
+      },
+      "QueueDiagnosticFixesRequest": {
+        "required": [
+          "issue"
+        ],
+        "type": "object",
+        "properties": {
+          "issue": {
+            "$ref": "#/components/schemas/DiagnosticIssue"
+          },
+          "libraryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
