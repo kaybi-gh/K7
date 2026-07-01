@@ -16,6 +16,12 @@ public class K7ErrorBoundary : ErrorBoundary
 
     protected override Task OnErrorAsync(Exception exception)
     {
+        if (exception is OperationCanceledException)
+        {
+            _ = InvokeAsync(Recover);
+            return Task.CompletedTask;
+        }
+
         try
         {
             ErrorReporter.ReportError(exception, "ErrorBoundary");
