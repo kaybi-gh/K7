@@ -1,0 +1,21 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-dialog-stepper @Class" role="navigation">
+    @for (var i = 0; i < Steps.Count; i++)
+    {
+        var stepIndex = i;
+        if (i > 0)
+        {
+            <K7Icon Class="k7-dialog-stepper__separator" Icon="@Phosphor.CaretRight" Size="sm" aria-hidden="true" />
+        }
+        <div class="k7-dialog-stepper__step">
+            <K7Chip Color="@(ActiveStep >= stepIndex ? "primary" : "default")"
+                    Size="sm"
+                    OnClick="@(IsStepReachable(stepIndex) ? EventCallback.Factory.Create(this, () => OnStepSelected(stepIndex)) : default)"
+                    Style="@GetStepStyle(stepIndex)"
+                    Class="k7-dialog-stepper__chip">
+                @Steps[stepIndex]
+            </K7Chip>
+        </div>
+    }
+</div>
