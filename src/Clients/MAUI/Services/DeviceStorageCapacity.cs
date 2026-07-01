@@ -22,8 +22,17 @@ internal static class DeviceStorageCapacity
 #elif IOS || MACCATALYST
         using var url = Foundation.NSUrl.FromFilename(path);
         Foundation.NSError? error = null;
-        var total = url.GetResource(Foundation.NSUrl.TotalCapacityKey, out error) as Foundation.NSNumber;
-        var available = url.GetResource(Foundation.NSUrl.VolumeAvailableCapacityForImportantUsageKey, out error) as Foundation.NSNumber;
+        var keys = new Foundation.NSString[]
+        {
+            Foundation.NSUrl.VolumeTotalCapacityKey,
+            Foundation.NSUrl.VolumeAvailableCapacityForImportantUsageKey,
+        };
+        var values = url.GetResourceValues(keys, out error);
+        if (values is null)
+            return (null, null);
+
+        var total = values[Foundation.NSUrl.VolumeTotalCapacityKey] as Foundation.NSNumber;
+        var available = values[Foundation.NSUrl.VolumeAvailableCapacityForImportantUsageKey] as Foundation.NSNumber;
         if (total is null || available is null)
             return (null, null);
 
