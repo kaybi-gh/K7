@@ -502,13 +502,58 @@ svg.k7-icon.k7-icon--xl { width: 3rem; }
     overflow-y: auto;
 }
 
-.page-content:has(> .full-bleed-page) {
+.page-content:has(> .full-bleed-page),
+.page-content:has(> .admin-data-page) {
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     padding: 0;
+}
+
+.full-bleed-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.admin-data-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.admin-data-page__body,
+.data-page-body {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.data-page-header {
+    flex-shrink: 0;
+    padding: var(--space-3) var(--space-4) 0;
+}
+
+@media (max-width: 599.98px) {
+    .data-page-header {
+        padding: var(--space-2) var(--space-3) 0;
+    }
 }
 
 @media (max-width: 599.98px) {
     .page-content {
         padding: var(--space-3);
+    }
+
+    .page-content:has(> .full-bleed-page),
+    .page-content:has(> .admin-data-page) {
+        padding: 0;
     }
 }

@@ -148,10 +148,44 @@
 }
 
 .auth-toggle input[type="checkbox"] {
-    accent-color: var(--color-primary);
+    appearance: none;
+    -webkit-appearance: none;
     width: 16px;
     height: 16px;
+    margin: 0;
+    flex: 0 0 auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--color-surface);
     cursor: pointer;
+    display: inline-grid;
+    place-content: center;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.auth-toggle input[type="checkbox"]::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    transform: scale(0);
+    transform-origin: center;
+    transition: transform 0.15s ease;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    background: var(--color-accent-fg, #241a0c);
+}
+
+.auth-toggle input[type="checkbox"]:checked {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.auth-toggle input[type="checkbox"]:checked::before {
+    transform: scale(1);
+}
+
+.auth-toggle input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 /* --- Links --- */

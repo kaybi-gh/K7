@@ -12,12 +12,27 @@
             <span class="detail-sidebar__group-title">@L["MediaTitle"]</span>
             <div class="detail-sidebar__row">
                 <span class="detail-sidebar__label">@L["MediaTitle"]</span>
-                <span class="detail-sidebar__value">@(Model.MediaTitle ?? "-")</span>
+                @if (Model.MediaUrl is not null)
+                {
+                    <a class="detail-sidebar__value detail-sidebar__link" href="@Model.MediaUrl">@(Model.MediaTitle ?? "-")</a>
+                }
+                else
+                {
+                    <span class="detail-sidebar__value">@(Model.MediaTitle ?? "-")</span>
+                }
             </div>
             <div class="detail-sidebar__row">
                 <span class="detail-sidebar__label">@L["Type"]</span>
-                <span class="detail-sidebar__value">@(Model.MediaType ?? "-")</span>
+                <span class="detail-sidebar__value">@(Model.MediaTypeLabel ?? Model.MediaType ?? "-")</span>
             </div>
+            @if (Model.MediaUrl is not null)
+            {
+                <div class="detail-sidebar__row">
+                    <K7Button Size="sm" Variant="text" Color="primary" StartIcon="@Phosphor.ArrowSquareOut" Href="@Model.MediaUrl">
+                        @L["GoToMedia"]
+                    </K7Button>
+                </div>
+            }
             @if (Model.Status is not null)
             {
                 <div class="detail-sidebar__row">

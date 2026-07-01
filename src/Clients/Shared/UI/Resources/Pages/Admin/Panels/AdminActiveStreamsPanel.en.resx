@@ -23,4 +23,31 @@
   <data name="NoActiveStreams" xml:space="preserve"><value>No active streams</value></data>
   <data name="StreamCount" xml:space="preserve"><value>{0} stream(s)</value></data>
   <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="SessionDetails" xml:space="preserve"><value>Session details</value></data>
+  <data name="MediaInfo" xml:space="preserve"><value>Media</value></data>
+  <data name="MediaTitle" xml:space="preserve"><value>Title</value></data>
+  <data name="Type" xml:space="preserve"><value>Type</value></data>
+  <data name="UserDevice" xml:space="preserve"><value>User / Device</value></data>
+  <data name="User" xml:space="preserve"><value>User</value></data>
+  <data name="Device" xml:space="preserve"><value>Device</value></data>
+  <data name="DeviceType" xml:space="preserve"><value>Device type</value></data>
+  <data name="PlaybackInfo" xml:space="preserve"><value>Playback</value></data>
+  <data name="Started" xml:space="preserve"><value>Started</value></data>
+  <data name="Position" xml:space="preserve"><value>Position</value></data>
+  <data name="StreamDetails" xml:space="preserve"><value>Stream details</value></data>
+  <data name="VideoTrack" xml:space="preserve"><value>Video</value></data>
+  <data name="AudioTrack" xml:space="preserve"><value>Audio</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Subtitles</value></data>
+  <data name="Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="Bitrate" xml:space="preserve"><value>Bitrate</value></data>
+  <data name="TranscodeReason" xml:space="preserve"><value>Reason</value></data>
+  <data name="ReasonVideoCodec" xml:space="preserve"><value>Unsupported video codec</value></data>
+  <data name="ReasonAudioCodec" xml:space="preserve"><value>Unsupported audio codec</value></data>
+  <data name="ReasonContainer" xml:space="preserve"><value>Unsupported container</value></data>
+  <data name="ReasonHlsSegments" xml:space="preserve"><value>HLS segments unavailable</value></data>
+  <data name="ReasonSubtitles" xml:space="preserve"><value>Subtitle burn-in</value></data>
+  <data name="ReasonResolution" xml:space="preserve"><value>Unsupported resolution</value></data>
+  <data name="Playing" xml:space="preserve"><value>Playing</value></data>
+  <data name="Paused" xml:space="preserve"><value>Paused</value></data>
+  <data name="Buffering" xml:space="preserve"><value>Buffering</value></data>
 </root>

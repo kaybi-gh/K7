@@ -5,19 +5,8 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
-    <div class="d-flex mb-6 align-center">
-        <K7Chip Color="@(_activeStep >= 0 ? "primary" : "default")" Size="sm"
-                OnClick="@(() => GoToStep(0))" Style="cursor: pointer;">@L["StepCategory"]</K7Chip>
-        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
-        <K7Chip Color="@(_activeStep >= 1 ? "primary" : "default")" Size="sm"
-                OnClick="@(() => GoToStep(1))" Style="@(CanGoToStep(1) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["StepEvents"]</K7Chip>
-        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
-        <K7Chip Color="@(_activeStep >= 2 ? "primary" : "default")" Size="sm"
-                OnClick="@(() => GoToStep(2))" Style="@(CanGoToStep(2) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["StepMessage"]</K7Chip>
-        <K7Icon Icon="@Phosphor.CaretRight" Size="sm" />
-        <K7Chip Color="@(_activeStep >= 3 ? "primary" : "default")" Size="sm"
-                OnClick="@(() => GoToStep(3))" Style="@(CanGoToStep(3) ? "cursor: pointer;" : "opacity: 0.5; pointer-events: none;")">@L["StepProvider"]</K7Chip>
-    </div>
+    <K7DialogStepper Steps="@_stepLabels" ActiveStep="_activeStep" MaxVisitedStep="_maxVisitedStep"
+                     OnStepClick="GoToStep" />
 
     @* Step 0: Choose entity/category *@
     @if (_activeStep == 0)

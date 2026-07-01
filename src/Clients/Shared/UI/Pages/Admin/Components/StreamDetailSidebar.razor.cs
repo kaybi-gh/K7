@@ -42,6 +42,8 @@ public sealed record StreamDetailModel
 {
     public string? MediaTitle { get; init; }
     public string? MediaType { get; init; }
+    public string? MediaTypeLabel { get; init; }
+    public string? MediaUrl { get; init; }
     public string? Status { get; init; }
     public string? StatusVariant { get; init; }
 

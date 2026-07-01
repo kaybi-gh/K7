@@ -33,4 +33,5 @@
   <data name="Default" xml:space="preserve"><value>Default</value></data>
   <data name="Forced" xml:space="preserve"><value>Forced</value></data>
   <data name="Federated" xml:space="preserve"><value>Federated</value></data>
+  <data name="LoadingDetails" xml:space="preserve"><value>Loading details...</value></data>
 </root>
