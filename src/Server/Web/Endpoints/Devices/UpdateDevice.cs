@@ -1,5 +1,6 @@
 ﻿using K7.Server.Application.Features.Devices.Commands.UpdateDevice;
 using K7.Server.Domain.Constants;
+using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Mvc;
 
 namespace K7.Server.Web.Endpoints.Devices;
@@ -11,14 +12,17 @@ public class UpdateDevice : IEndpoint
         var type = GetType();
         string groupName = type.Namespace!.Split('.').Last();
 
-        endpointRouteBuilder.MapPut("/api/devices/{id}", async ([FromServices] ISender sender, Guid id, UpdateDeviceCommand command, CancellationToken cancellationToken) =>
+        endpointRouteBuilder.MapPut("/api/devices/{id}", async (
+            [FromServices] ISender sender,
+            Guid id,
+            [FromBody] UpdateDeviceRequest request,
+            CancellationToken cancellationToken) =>
         {
-            if (id != command.Id)
+            await sender.Send(new UpdateDeviceCommand
             {
-                return Results.BadRequest();
-            }
-
-            await sender.Send(command, cancellationToken);
+                Id = id,
+                UpdateDeviceRequest = request
+            }, cancellationToken);
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.GuestOrAbove)
