@@ -3,7 +3,6 @@ using K7.Shared.Extensions;
 
 namespace K7.Shared.QueryBuilders;
 
-// TODO - Move to a dedicated directory // Entity.Query.Builder?
 public static class GetMediasWithPaginationQueryUriBuilder
 {
     public const string Route = "/api/medias";

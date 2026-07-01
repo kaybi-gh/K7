@@ -9,7 +9,6 @@ public static class OidcInitializer
 {
     public static async Task InitializeOidcClientsAsync(this WebApplication app)
     {
-        // TODO - Configure BFF auth
         await using var scope = app.Services.CreateAsyncScope();
 
         await RegisterApplicationsAsync(scope.ServiceProvider);

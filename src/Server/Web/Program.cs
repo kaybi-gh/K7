@@ -43,7 +43,7 @@ try
     var app = builder.Build();
     app.InitializeMediaProcessing();
     app.UseSerilogRequestLogging();
-    app.MapDefaultEndpoints(); // TODO - Well placed?
+    app.MapDefaultEndpoints();
 
     await app.InitializeDatabaseAsync();
     await app.InitializeOidcClientsAsync();

@@ -123,7 +123,6 @@ public class Authorize : IEndpoint
         })
         .WithName(type.Name)
         .WithTags(groupName);
-        //.WithOpenApi(); // TODO - Make different name if openApi is required
     }
 }
 
