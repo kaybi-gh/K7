@@ -1,34 +1,43 @@
-@inject NavigationManager NavigationManager
-
-<details class="nav-group @CssClass" open="@IsOpen">
-    <summary class="nav-group-toggle focusable">
-        @if (Icon is not null)
-        {
-            <span class="nav-icon"><K7Icon Icon="@Icon" /></span>
-        }
-        <span class="nav-label">@Title</span>
-        <K7Icon Icon="@Phosphor.CaretDown" Class="nav-group-arrow" />
-    </summary>
-    <div class="nav-group-items">
-        @ChildContent
+@if (IsDesktopCollapsed)
+{
+    <div class="nav-group nav-group--rail @CssClass @(_flyoutOpen ? "nav-group--rail-open" : "")">
+        <div @ref="_triggerRef"
+             class="nav-group-toggle nav-rail-entry focusable"
+             tabindex="0"
+             role="button"
+             aria-label="@Title"
+             aria-expanded="@_flyoutOpen"
+             aria-haspopup="menu"
+             @onclick="OnTriggerActivateAsync">
+            @if (Icon is not null)
+            {
+                <span class="nav-icon"><K7Icon Icon="@Icon" /></span>
+            }
+            <span class="nav-rail-hint" aria-hidden="true">@Title</span>
+        </div>
+        <div @ref="_flyoutRef"
+             class="nav-group-flyout"
+             role="menu"
+             aria-label="@Title"
+             data-sn-layer="@(_flyoutOpen ? "popover" : null)"
+             @onkeydown="OnFlyoutKeyDownAsync">
+            @ChildContent
+        </div>
     </div>
-</details>
-
-@code {
-    [Parameter] public required string Title { get; set; }
-    [Parameter] public string? Icon { get; set; }
-    [Parameter] public RenderFragment? ChildContent { get; set; }
-    [Parameter] public IEnumerable<string> Routes { get; set; } = [];
-
-    private bool IsOpen => Routes.Any(IsRouteActive);
-
-    private string CssClass => IsOpen ? "nav-group--active" : string.Empty;
-
-    private bool IsRouteActive(string route)
-    {
-        var relative = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-        var path = relative.Split('?', '#')[0];
-        return path.Equals(route.TrimStart('/'), StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith(route.TrimStart('/') + "/", StringComparison.OrdinalIgnoreCase);
-    }
+}
+else
+{
+    <details class="nav-group @CssClass" open="@IsOpen">
+        <summary class="nav-group-toggle focusable">
+            @if (Icon is not null)
+            {
+                <span class="nav-icon"><K7Icon Icon="@Icon" /></span>
+            }
+            <span class="nav-label">@Title</span>
+            <K7Icon Icon="@Phosphor.CaretDown" Class="nav-group-arrow" />
+        </summary>
+        <div class="nav-group-items">
+            @ChildContent
+        </div>
+    </details>
 }

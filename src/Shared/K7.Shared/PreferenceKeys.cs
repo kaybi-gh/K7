@@ -60,4 +60,7 @@ public static class PreferenceKeys
 
     // SyncPlay
     public static readonly PreferenceKey<bool> SYNCPLAY_ENABLED = new("SyncPlayEnabled");
+
+    // Page sidebar (admin / settings)
+    public static readonly PreferenceKey<bool> PAGE_SIDEBAR_COLLAPSED = new("PageSidebarCollapsed");
 }

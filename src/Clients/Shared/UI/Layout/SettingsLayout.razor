@@ -8,15 +8,9 @@
         <nav class="page-sidebar-nav">
             @if (!_isGuest)
             {
-                <NavLink class="nav-link focusable" href="/settings/account">
-                    <span class="nav-icon"><K7Icon Icon="@Phosphor.UserCircle" /></span>
-                    <span class="nav-label">@L["Account"]</span>
-                </NavLink>
+                <SidebarNavLink Href="/settings/account" Title="@L["Account"]" Icon="@Phosphor.UserCircle" />
             }
-            <NavLink class="nav-link focusable" href="/settings/general">
-                <span class="nav-icon"><K7Icon Icon="@Phosphor.SlidersHorizontal" /></span>
-                <span class="nav-label">@L["Interface"]</span>
-            </NavLink>
+            <SidebarNavLink Href="/settings/general" Title="@L["Interface"]" Icon="@Phosphor.SlidersHorizontal" />
 
             @if (!_isGuest)
             {
@@ -48,17 +42,11 @@
 
                 @if (DeviceService.GetClientType() == ClientType.Native)
                 {
-                    <NavLink class="nav-link focusable" href="/settings/offline">
-                        <span class="nav-icon"><K7Icon Icon="@Phosphor.CloudArrowDown" /></span>
-                        <span class="nav-label">@L["Offline"]</span>
-                    </NavLink>
+                    <SidebarNavLink Href="/settings/offline" Title="@L["Offline"]" Icon="@Phosphor.CloudArrowDown" />
                 }
             }
 
-            <NavLink class="nav-link focusable" href="/settings/about">
-                <span class="nav-icon"><K7Icon Icon="@Phosphor.Info" /></span>
-                <span class="nav-label">@L["About"]</span>
-            </NavLink>
+            <SidebarNavLink Href="/settings/about" Title="@L["About"]" Icon="@Phosphor.Info" />
         </nav>
     </SidebarContent>
     <ChildContent>

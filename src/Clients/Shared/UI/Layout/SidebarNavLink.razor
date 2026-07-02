@@ -1,0 +1,12 @@
+<NavLink class="nav-link nav-rail-entry focusable" href="@Href" Match="@Match">
+    <span class="nav-icon"><K7Icon Icon="@Icon" /></span>
+    <span class="nav-label">@Title</span>
+    <span class="nav-rail-hint" aria-hidden="true">@Title</span>
+</NavLink>
+
+@code {
+    [Parameter, EditorRequired] public string Href { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+    [Parameter] public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+}
