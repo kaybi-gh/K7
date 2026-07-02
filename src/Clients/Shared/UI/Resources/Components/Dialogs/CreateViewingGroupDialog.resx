@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="GroupName" xml:space="preserve"><value>Nom du groupe</value></data>
+  <data name="Members" xml:space="preserve"><value>Membres</value></data>
+  <data name="Host" xml:space="preserve"><value>Hote</value></data>
+  <data name="GroupPinOptional" xml:space="preserve"><value>PIN du groupe (optionnel)</value></data>
+  <data name="NewPinOptional" xml:space="preserve"><value>Nouveau PIN (optionnel)</value></data>
+  <data name="ConfirmPin" xml:space="preserve"><value>Confirmer le PIN</value></data>
+  <data name="GroupPinHelper" xml:space="preserve"><value>Protege l'acces au groupe sur cet appareil.</value></data>
+  <data name="Create" xml:space="preserve"><value>Creer</value></data>
+  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="PinMismatch" xml:space="preserve"><value>Les PIN ne correspondent pas.</value></data>
+</root>

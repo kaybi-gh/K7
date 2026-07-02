@@ -1,0 +1,16 @@
+@inject IStringLocalizer<SelectLocalUserDialog> L
+
+<div class="k7-dialog-content">
+    <div class="d-flex flex-col gap-2 mt-2">
+        @foreach (var user in Users)
+        {
+            <K7Button Variant="outlined" OnClick="() => Select(user)" Class="justify-start">
+                <K7Avatar Size="sm" Image="@user.AvatarUrl" Letter="@GetInitial(user)" UserId="@user.UserId" />
+                <span>@(user.DisplayName ?? user.UserName)</span>
+            </K7Button>
+        }
+    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@L["Cancel"]</K7Button>
+</div>

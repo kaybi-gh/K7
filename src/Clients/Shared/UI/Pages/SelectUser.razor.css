@@ -44,6 +44,22 @@
     padding-inline: var(--spacing-4);
 }
 
+.select-user-page ::deep .select-user-group-avatars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+
+.select-user-page ::deep .select-user-group-avatars .k7-avatar {
+    margin-inline: calc(var(--spacing-1) * -1);
+    border: 2px solid var(--color-surface);
+}
+
+.select-user-page ::deep .select-user-card--group .select-user-group-avatars .k7-avatar:first-child {
+    margin-inline-start: 0;
+}
+
 @media (prefers-reduced-motion: no-preference) {
     .select-user-page ::deep .select-user-card .k7-avatar {
         transition: outline-color 0.15s, outline-offset 0.15s;

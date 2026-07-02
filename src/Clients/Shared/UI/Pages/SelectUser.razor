@@ -37,7 +37,35 @@
                             <span>@(user.DisplayName ?? user.UserName)</span>
                             @if (user.PinHash is not null)
                             {
-                                <K7Icon Name="lock"  IconSize="@K7IconSize.Sm" Color="secondary" />
+                                <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
+                            }
+                        </div>
+                    </div>
+                </CarouselItem>
+            }
+
+            @foreach (var group in _groups)
+            {
+                <CarouselItem @key="group.Id">
+                    <div class="select-user-card select-user-card--group focusable my-2"
+                         tabindex="0" role="button"
+                         @onclick="() => SelectGroupAsync(group)"
+                         @oncontextmenu="(e) => OnGroupContextMenu(e, group)"
+                         @oncontextmenu:preventDefault="true"
+                         @onkeydown="(e) => OnGroupKeyDown(e, group)">
+                        <div class="select-user-group-avatars">
+                            @foreach (var member in group.Members.Take(3))
+                            {
+                                <K7Avatar Size="md" Image="@member.AvatarUrl"
+                                          Letter="@GetMemberInitial(member)"
+                                          UserId="@member.UserId" />
+                            }
+                        </div>
+                        <div class="select-user-name">
+                            <span>@group.Name</span>
+                            @if (group.HasPin)
+                            {
+                                <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
                             }
                         </div>
                     </div>
@@ -47,10 +75,22 @@
             <CarouselItem>
                 <div class="select-user-card focusable my-2"
                      tabindex="0" role="button"
+                     @onclick="CreateGroupAsync"
+                     @onkeydown="OnCreateGroupKeyDown">
+                    <K7Avatar Class="ma-2" Size="xl" Color="default">
+                        <K7Icon Icon="@Phosphor.UsersThree" IconSize="@K7IconSize.Lg" />
+                    </K7Avatar>
+                    <span class="select-user-name">@L["CreateViewingGroup"]</span>
+                </div>
+            </CarouselItem>
+
+            <CarouselItem>
+                <div class="select-user-card focusable my-2"
+                     tabindex="0" role="button"
                      @onclick="AddUserAsync"
                      @onkeydown="OnAddUserKeyDown">
                     <K7Avatar Class="ma-2" Size="xl" Color="default">
-                        <K7Icon Icon="@Phosphor.Plus"  IconSize="@K7IconSize.Lg" />
+                        <K7Icon Icon="@Phosphor.Plus" IconSize="@K7IconSize.Lg" />
                     </K7Avatar>
                     <span class="select-user-name">@L["AddServer"]</span>
                 </div>
