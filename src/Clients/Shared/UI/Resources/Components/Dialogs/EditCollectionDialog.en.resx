@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -19,11 +19,12 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="NameLabel" xml:space="preserve"><value>Playlist name</value></data>
+  <data name="NameLabel" xml:space="preserve"><value>Collection name</value></data>
   <data name="NameRequired" xml:space="preserve"><value>Name is required</value></data>
   <data name="DescriptionOptional" xml:space="preserve"><value>Description (optional)</value></data>
+  <data name="PublicLabel" xml:space="preserve"><value>Public collection</value></data>
   <data name="Saving" xml:space="preserve"><value>Saving...</value></data>
-  <data name="Updated" xml:space="preserve"><value>Playlist updated</value></data>
+  <data name="Updated" xml:space="preserve"><value>Collection updated</value></data>
   <data name="Error" xml:space="preserve"><value>Error while updating</value></data>
   <data name="CoverLabel" xml:space="preserve"><value>Cover</value></data>
   <data name="CoverNone" xml:space="preserve"><value>No image</value></data>
@@ -32,4 +33,3 @@
   <data name="ResetCoverMosaic" xml:space="preserve"><value>Reset to mosaic</value></data>
   <data name="CoverMosaic" xml:space="preserve"><value>Automatic mosaic</value></data>
 </root>
-

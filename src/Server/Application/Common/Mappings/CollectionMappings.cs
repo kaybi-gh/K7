@@ -32,6 +32,7 @@ public static class CollectionMappings
             UserId = domain.UserId,
             MediaType = domain.MediaType,
             CoverPicture = domain.CoverPicture?.ToMetadataPictureDto(),
+            PreviewPictures = domain.ToPreviewPictureDtos(),
             ItemCount = domain.Items.Count,
             Created = domain.Created,
             LastModified = domain.LastModified

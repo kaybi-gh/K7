@@ -1,0 +1,36 @@
+.picker-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.picker-row__label {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    width: 100px;
+    flex-shrink: 0;
+}
+
+.picker-row__value {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 36px;
+    min-width: 0;
+}
+
+.picker-row__cover-preview {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.cover-preview-mosaic {
+    width: 120px;
+}

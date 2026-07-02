@@ -189,9 +189,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
     }
 
-    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, CancellationToken cancellationToken = default)
+    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, CancellationToken cancellationToken = default)
     {
-        var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId };
+        var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId, PlaylistId = playlistId };
         var response = await HttpClient.PostAsJsonAsync("api/medias/playback-progress", payload, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
@@ -489,11 +489,13 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<DirectoryContentDto>(requestUri, _serializerOptions, cancellationToken);
     }
 
-    public async Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, LibraryItemOrderingOption? orderBy = null, CancellationToken cancellationToken = default)
     {
         var url = $"api/playlists?pageNumber={pageNumber}&pageSize={pageSize}";
         if (mediaType.HasValue)
             url += $"&mediaType={(int)mediaType.Value}";
+        if (orderBy.HasValue)
+            url += $"&orderBy={orderBy.Value}";
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<LitePlaylistDto>>(url, _serializerOptions, cancellationToken);
     }
 
@@ -527,6 +529,28 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<Guid> UploadPlaylistCoverAsync(Guid playlistId, Stream stream, string fileName, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StreamContent(stream), "file", fileName);
+        var response = await HttpClient.PostAsync($"api/playlists/{playlistId}/cover", content, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<Guid> SetPlaylistCoverFromPictureAsync(Guid playlistId, Guid sourcePictureId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/playlists/{playlistId}/cover?sourcePictureId={sourcePictureId}", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task RemovePlaylistCoverAsync(Guid playlistId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/playlists/{playlistId}/cover", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<Guid> AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PostAsJsonAsync($"api/playlists/{playlistId}/items", new { MediaId = mediaId }, _serializerOptions, cancellationToken);
@@ -537,6 +561,12 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task RemovePlaylistItemAsync(Guid playlistId, Guid itemId, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync($"api/playlists/{playlistId}/items/{itemId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task RecordPlaylistPlaybackAsync(Guid playlistId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/playlists/{playlistId}/record-playback", null, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -576,13 +606,15 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<PaginatedListDto<LiteCollectionDto>?> GetCollectionsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, bool? isPublic = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedListDto<LiteCollectionDto>?> GetCollectionsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, bool? isPublic = null, LibraryItemOrderingOption? orderBy = null, CancellationToken cancellationToken = default)
     {
         var url = $"api/collections?pageNumber={pageNumber}&pageSize={pageSize}";
         if (mediaType.HasValue)
             url += $"&mediaType={(int)mediaType.Value}";
         if (isPublic.HasValue)
             url += $"&isPublic={isPublic.Value}";
+        if (orderBy.HasValue)
+            url += $"&orderBy={orderBy.Value}";
         return await HttpClient.GetFromJsonAsync<PaginatedListDto<LiteCollectionDto>>(url, _serializerOptions, cancellationToken);
     }
 
@@ -613,6 +645,28 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
     public async Task DeleteCollectionAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.DeleteAsync($"api/collections/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Guid> UploadCollectionCoverAsync(Guid collectionId, Stream stream, string fileName, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StreamContent(stream), "file", fileName);
+        var response = await HttpClient.PostAsync($"api/collections/{collectionId}/cover", content, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<Guid> SetCollectionCoverFromPictureAsync(Guid collectionId, Guid sourcePictureId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync($"api/collections/{collectionId}/cover?sourcePictureId={sourcePictureId}", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task RemoveCollectionCoverAsync(Guid collectionId, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/collections/{collectionId}/cover", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 

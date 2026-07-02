@@ -1,22 +1,21 @@
-using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
-public partial class EditPlaylistDialog
+public partial class EditCollectionDialog
 {
-    [Inject] private IPlaylistService K7ServerService { get; set; } = default!;
+    [Inject] private ICollectionService K7ServerService { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = default!;
 
-    [Parameter] public Guid PlaylistId { get; set; }
+    [Parameter] public Guid CollectionId { get; set; }
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string? Description { get; set; }
-    [Parameter] public MediaType MediaType { get; set; } = MediaType.MusicTrack;
+    [Parameter] public bool IsPublic { get; set; }
     [Parameter] public Guid? CoverPictureId { get; set; }
 
     private CoverPickerResult? _pendingCover;
@@ -57,12 +56,12 @@ public partial class EditPlaylistDialog
 
     private async Task LoadItemPicturesAsync()
     {
-        var page = await K7ServerService.GetPlaylistItemsAsync(PlaylistId, pageSize: 100);
+        var page = await K7ServerService.GetCollectionItemsAsync(CollectionId, pageSize: 100);
         var seen = new HashSet<Guid>();
 
         foreach (var item in page?.Items ?? [])
         {
-            foreach (var picture in item.Pictures ?? [])
+            foreach (var picture in item.Media.Pictures ?? [])
             {
                 if (seen.Add(picture.Id))
                 {
@@ -115,21 +114,21 @@ public partial class EditPlaylistDialog
         _isSubmitting = true;
         try
         {
-            await K7ServerService.UpdatePlaylistAsync(PlaylistId, new UpdatePlaylistRequest
+            await K7ServerService.UpdateCollectionAsync(CollectionId, new UpdateCollectionRequest
             {
                 Title = Title.Trim(),
                 Description = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim(),
-                MediaType = MediaType
+                IsPublic = IsPublic
             });
 
             if (_removeCover)
-                await K7ServerService.RemovePlaylistCoverAsync(PlaylistId);
+                await K7ServerService.RemoveCollectionCoverAsync(CollectionId);
             else if (_pendingCover?.SourcePictureId.HasValue == true)
-                await K7ServerService.SetPlaylistCoverFromPictureAsync(PlaylistId, _pendingCover.SourcePictureId.Value);
+                await K7ServerService.SetCollectionCoverFromPictureAsync(CollectionId, _pendingCover.SourcePictureId.Value);
             else if (_pendingCover?.File is not null)
             {
                 await using var stream = _pendingCover.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-                await K7ServerService.UploadPlaylistCoverAsync(PlaylistId, stream, _pendingCover.File.Name);
+                await K7ServerService.UploadCollectionCoverAsync(CollectionId, stream, _pendingCover.File.Name);
             }
 
             Snackbar.Add(L["Updated"], K7Severity.Success);
