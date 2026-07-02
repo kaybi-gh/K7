@@ -1,3 +1,4 @@
+using K7.Server.Application.Common.Helpers;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Security;
 using K7.Server.Application.Services;
@@ -22,7 +23,8 @@ public record UpdatePlaybackProgressCommand(
     double Position,
     double Duration,
     PlaybackState State,
-    Guid? DeviceId = null) : IRequest;
+    Guid? DeviceId = null,
+    Guid? PlaylistId = null) : IRequest;
 
 public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, IMediaAccessGuard accessGuard, IActiveStreamTracker activeStreamTracker, IIdentityService identityService, IMediaQueryCacheInvalidator cacheInvalidator, INextEpisodeEnqueueService nextEpisodeEnqueueService, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
@@ -196,6 +198,9 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
                 deviceInfo?.DeviceName,
                 deviceInfo?.DeviceType));
         }
+
+        if (request.PlaylistId is { } playlistId)
+            await UserPlaylistStateHelper.TouchLastListenedAsync(_context, userId, playlistId, cancellationToken);
 
         try
         {

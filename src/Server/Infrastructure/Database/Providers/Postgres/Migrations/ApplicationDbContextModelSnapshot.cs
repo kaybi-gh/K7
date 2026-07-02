@@ -2136,6 +2136,46 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.ToTable("UserMediaStates");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserPlaylistState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastListenedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PlaylistId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlaylistId");
+
+                    b.HasIndex("UserId", "LastListenedAt")
+                        .HasDatabaseName("IX_UserPlaylistStates_UserId_LastListenedAt");
+
+                    b.HasIndex("UserId", "PlaylistId")
+                        .IsUnique();
+
+                    b.ToTable("UserPlaylistStates");
+                });
+
             modelBuilder.Entity("K7.Server.Infrastructure.Database.Context.Identity.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -3762,6 +3802,25 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserPlaylistState", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Playlists.Playlist", "Playlist")
+                        .WithMany("UserStates")
+                        .HasForeignKey("PlaylistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Playlist");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -4026,6 +4085,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("CoverPicture");
 
                     b.Navigation("Items");
+
+                    b.Navigation("UserStates");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>

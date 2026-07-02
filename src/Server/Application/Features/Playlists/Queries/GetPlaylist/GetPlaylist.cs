@@ -11,6 +11,7 @@ public class GetPlaylistQueryHandler(IApplicationDbContext context, IUser curren
     public async Task<Playlist> Handle(GetPlaylistQuery request, CancellationToken cancellationToken)
     {
         var entity = await context.Playlists
+            .Include(p => p.UserStates.Where(s => s.UserId == currentUser.Id!.Value))
             .Include(p => p.CoverPicture)
                 .ThenInclude(c => c!.Variants)
             .Include(p => p.Items)
