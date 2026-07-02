@@ -6,7 +6,8 @@
 @inject IStringLocalizer<SharedResource> S
 
 <div class="full-bleed-page">
-    <div class="data-page-toolbar">
+    <div class="data-page-toolbar diagnostics-toolbar">
+        <div class="diagnostics-toolbar__row">
         <K7FilterMenu HasActiveFilters="@HasActiveFilters"
                       ActiveLabel="@GetActiveFiltersLabel()"
                       OnClear="ClearFiltersAsync">
@@ -62,23 +63,24 @@
             </K7FilterMenuRoot>
         </K7FilterMenu>
 
-        <div class="data-page-toolbar__end">
+        <div class="data-page-toolbar__end diagnostics-toolbar__end">
             <K7ResultCount Count="_totalCount" />
             @if (_filterIssue is not null && GetBulkFixAction() is not null && _totalCount > 0)
             {
-                <K7Button Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench"
+                <K7Button Class="diagnostics-toolbar__bulk-fix" Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench"
                           OnClick="QueueAllFixesAsync" Disabled="_isQueueingAllFixes">
                     @string.Format(L["QueueAllFixes"], _totalCount)
                 </K7Button>
             }
             @if (_selectedItems.Count > 0 && GetBulkFixAction() is not null)
             {
-                <K7Button Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench" OnClick="BulkFixAsync" Disabled="_isBulkFixing">
+                <K7Button Class="diagnostics-toolbar__bulk-fix" Size="sm" Variant="filled" Color="primary" StartIcon="@Phosphor.Wrench" OnClick="BulkFixAsync" Disabled="_isBulkFixing">
                     @string.Format(L["FixSelected"], _selectedItems.Count)
                 </K7Button>
             }
             <K7IconButton Icon="@Phosphor.ArrowClockwise" Size="sm" OnClick="LoadAsync" AriaLabel="@L["Refresh"]" />
             <K7IconButton Icon="@Phosphor.Columns" OnClick="OnColumnPickerClick" AriaLabel="@S["ToggleColumns"]" />
+        </div>
         </div>
     </div>
 

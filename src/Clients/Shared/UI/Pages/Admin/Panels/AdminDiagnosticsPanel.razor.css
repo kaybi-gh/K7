@@ -18,3 +18,52 @@
 .diagnostics-name-cell__meta {
     margin-top: 2px;
 }
+
+.diagnostics-toolbar__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+}
+
+.diagnostics-toolbar .diagnostics-toolbar__end {
+    gap: var(--space-2);
+}
+
+@media (max-width: 599.98px) {
+    .diagnostics-toolbar__row {
+        flex-wrap: nowrap;
+        gap: var(--space-2);
+    }
+
+    .diagnostics-toolbar ::deep .k7-filter-menu {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .diagnostics-toolbar ::deep .k7-filter-menu__activator {
+        max-width: 100%;
+    }
+
+    .diagnostics-toolbar ::deep .k7-filter-menu__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .diagnostics-toolbar .diagnostics-toolbar__end {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        margin-left: auto !important;
+        flex-wrap: nowrap;
+        gap: var(--space-1);
+    }
+
+    .diagnostics-toolbar ::deep .k7-result-count {
+        font-size: var(--text-xs);
+        white-space: nowrap;
+    }
+}

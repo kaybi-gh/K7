@@ -1,0 +1,17 @@
+.background-task-settings__group-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.background-task-settings__group-name {
+    min-width: 140px;
+}
+
+.background-task-settings__group-limit {
+    max-width: 100px;
+}
+
+.background-task-settings__group-active {
+    color: var(--color-text-muted);
+}
