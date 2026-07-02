@@ -121,4 +121,12 @@ public partial class AddToPlaylistDialog
     }
 
     private void Cancel() => Dialog.Cancel();
+
+    private string FormatItemCount(LitePlaylistDto playlist) => playlist.MediaType switch
+    {
+        MediaType.MusicTrack => string.Format(L["TrackCount"], playlist.ItemCount),
+        MediaType.Movie => string.Format(L["MovieCount"], playlist.ItemCount),
+        MediaType.SerieEpisode => string.Format(L["EpisodeCount"], playlist.ItemCount),
+        _ => string.Format(L["ItemCount"], playlist.ItemCount)
+    };
 }

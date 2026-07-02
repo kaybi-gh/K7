@@ -25,7 +25,7 @@
                             <K7Icon Icon="@Phosphor.Queue" Color="primary" />
                             <div class="playlist-tile-info">
                                 <span class="playlist-tile-title">@playlist.Title</span>
-                                <span class="text-caption playlist-tile-count">@string.Format(L["TrackCount"], playlist.ItemCount)</span>
+                                <span class="text-caption playlist-tile-count">@FormatItemCount(playlist)</span>
                             </div>
                         </K7Paper>
                     </div>

@@ -168,6 +168,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public event Action<RepeatMode>? RepeatModeChanged;
     public event Action<bool>? ShuffleChanged;
     public event Action? ActiveRadioChanged;
+    public event Action? ActivePlaylistChanged;
     public event Func<PlayerSource, double, Task>? CrossfadeRequested;
     public event Action? CrossfadeDurationChanged;
     public event Action? IsFullScreenVisibleChanged;
@@ -186,6 +187,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
     public RepeatMode Repeat => RepeatMode.Off;
     public bool Shuffle => false;
     public string? ActiveRadioTitle { get; private set; }
+    public Guid? ActivePlaylistId { get; private set; }
     public bool AdaptiveCrossfade => false;
     public double CrossfadeDuration => 0;
     public double CrossfadeTriggerWindow => 0;
@@ -248,7 +250,7 @@ public sealed class MockAudioPlayerService : IAudioPlayerService, IDisposable
         return Task.CompletedTask;
     }
 
-    public Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, CancellationToken cancellationToken = default)
+    public Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, Guid? playlistId = null, CancellationToken cancellationToken = default)
     {
         ActiveRadioTitle = null;
         ActiveRadioChanged?.Invoke();
@@ -462,14 +464,18 @@ public sealed class MockLibraryService : ILibraryService
 
 public sealed class MockPlaylistService : IPlaylistService
 {
-    public Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LitePlaylistDto>?>(null);
+    public Task<PaginatedListDto<LitePlaylistDto>?> GetPlaylistsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, LibraryItemOrderingOption? orderBy = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LitePlaylistDto>?>(null);
     public Task<PlaylistDto?> GetPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PlaylistDto?>(null);
     public Task<PaginatedListDto<PlaylistItemDto>?> GetPlaylistItemsAsync(Guid playlistId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<PlaylistItemDto>?>(null);
     public Task<Guid> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task UpdatePlaylistAsync(Guid id, UpdatePlaylistRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeletePlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<Guid> UploadPlaylistCoverAsync(Guid playlistId, Stream stream, string fileName, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task<Guid> SetPlaylistCoverFromPictureAsync(Guid playlistId, Guid sourcePictureId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task RemovePlaylistCoverAsync(Guid playlistId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<Guid> AddPlaylistItemAsync(Guid playlistId, Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
     public Task RemovePlaylistItemAsync(Guid playlistId, Guid itemId, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordPlaylistPlaybackAsync(Guid playlistId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<PaginatedListDto<LiteSmartPlaylistDto>?> GetSmartPlaylistsAsync(int pageNumber = 1, int pageSize = 20, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteSmartPlaylistDto>?>(null);
     public Task<SmartPlaylistDto?> GetSmartPlaylistAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<SmartPlaylistDto?>(null);
     public Task<Guid> CreateSmartPlaylistAsync(CreateSmartPlaylistRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
@@ -483,7 +489,7 @@ public sealed class MockStreamingService : IStreamingService
     public Task<IndexedFileStreamUri?> GetIndexedFileStreamUriAsync(GetIndexedFileStreamsUriQuery query, CancellationToken cancellationToken = default) => Task.FromResult<IndexedFileStreamUri?>(null);
     public Task<StreamingSessionDto?> CreateStreamSessionAsync(CreateStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
     public Task<StreamingSessionDto?> CreateRemoteStreamSessionAsync(CreateRemoteStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
-    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<string?> GenerateEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task RevokeEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
@@ -655,12 +661,15 @@ public sealed class MockServerPreferencesService : IServerPreferencesService
 
 public sealed class MockCollectionService : ICollectionService
 {
-    public Task<PaginatedListDto<LiteCollectionDto>?> GetCollectionsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, bool? isPublic = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteCollectionDto>?>(new PaginatedListDto<LiteCollectionDto>());
+    public Task<PaginatedListDto<LiteCollectionDto>?> GetCollectionsAsync(int pageNumber = 1, int pageSize = 20, MediaType? mediaType = null, bool? isPublic = null, LibraryItemOrderingOption? orderBy = null, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<LiteCollectionDto>?>(new PaginatedListDto<LiteCollectionDto>());
     public Task<CollectionDto?> GetCollectionAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<CollectionDto?>(null);
     public Task<PaginatedListDto<CollectionItemDto>?> GetCollectionItemsAsync(Guid collectionId, int pageNumber = 1, int pageSize = 50, CancellationToken cancellationToken = default) => Task.FromResult<PaginatedListDto<CollectionItemDto>?>(new PaginatedListDto<CollectionItemDto>());
     public Task<Guid> CreateCollectionAsync(CreateCollectionRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
     public Task UpdateCollectionAsync(Guid id, UpdateCollectionRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteCollectionAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<Guid> UploadCollectionCoverAsync(Guid collectionId, Stream stream, string fileName, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task<Guid> SetCollectionCoverFromPictureAsync(Guid collectionId, Guid sourcePictureId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.Empty);
+    public Task RemoveCollectionCoverAsync(Guid collectionId, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<Guid> AddCollectionItemAsync(Guid collectionId, Guid mediaId, CancellationToken cancellationToken = default) => Task.FromResult(Guid.NewGuid());
     public Task RemoveCollectionItemAsync(Guid collectionId, Guid itemId, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
