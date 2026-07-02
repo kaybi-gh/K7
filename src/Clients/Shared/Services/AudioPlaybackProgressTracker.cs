@@ -13,6 +13,7 @@ public class AudioPlaybackProgressTracker : IDisposable
     private readonly IDeviceStorageService _deviceStorage;
     private readonly IConnectivityService _connectivity;
     private readonly IPlaybackJournal _journal;
+    private readonly ISyncPlayService? _syncPlayService;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
     private Guid? _currentIndexedFileId;
@@ -31,13 +32,15 @@ public class AudioPlaybackProgressTracker : IDisposable
         IStreamingService serverService,
         IDeviceStorageService deviceStorage,
         IConnectivityService connectivity,
-        IPlaybackJournal journal)
+        IPlaybackJournal journal,
+        ISyncPlayService? syncPlayService = null)
     {
         _audio = audio;
         _serverService = serverService;
         _deviceStorage = deviceStorage;
         _connectivity = connectivity;
         _journal = journal;
+        _syncPlayService = syncPlayService;
 
         _audio.CurrentTrackChanged += OnTrackChanged;
         _audio.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -129,7 +132,16 @@ public class AudioPlaybackProgressTracker : IDisposable
         {
             var deviceIdStr = _deviceStorage.Get(PreferenceKeys.DEVICE_ID);
             Guid? deviceId = Guid.TryParse(deviceIdStr, out var parsed) ? parsed : null;
-            await _serverService.ReportPlaybackProgressAsync(mediaId, sessionId, _referenceId, position, duration, (int)state, deviceId, _audio.ActivePlaylistId);
+            await _serverService.ReportPlaybackProgressAsync(
+                mediaId,
+                sessionId,
+                _referenceId,
+                position,
+                duration,
+                (int)state,
+                deviceId,
+                _audio.ActivePlaylistId,
+                syncPlayGroupId: _syncPlayService?.IsInGroup == true ? _syncPlayService.CurrentGroup?.GroupId : null);
         }
         catch
         {

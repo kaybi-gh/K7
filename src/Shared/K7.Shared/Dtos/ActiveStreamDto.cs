@@ -19,5 +19,5 @@ public sealed record ActiveStreamDto
     public double Position { get; init; }
     public double Duration { get; init; }
     public int State { get; init; }
-    public string? ViewingGroupName { get; init; }
+    public string? SharedProfileName { get; init; }
 }

@@ -42,7 +42,7 @@ internal sealed class AdminStreamNotifier(
                         Position = s.Position,
                         Duration = s.Duration,
                         State = s.State,
-                        ViewingGroupName = s.ViewingGroupName
+                        SharedProfileName = s.SharedProfileName
                     })
                     .ToList();
 

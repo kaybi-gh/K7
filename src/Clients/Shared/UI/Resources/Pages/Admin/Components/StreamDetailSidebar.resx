@@ -31,7 +31,7 @@
   <data name="Position" xml:space="preserve"><value>Position</value></data>
   <data name="UserDevice" xml:space="preserve"><value>Utilisateur et appareil</value></data>
   <data name="User" xml:space="preserve"><value>Utilisateur</value></data>
-  <data name="ViewingGroup" xml:space="preserve"><value>Groupe</value></data>
+  <data name="SharedProfile" xml:space="preserve"><value>Groupe</value></data>
   <data name="Device" xml:space="preserve"><value>Appareil</value></data>
   <data name="Client" xml:space="preserve"><value>Client</value></data>
   <data name="StreamDetails" xml:space="preserve"><value>Détails du flux</value></data>

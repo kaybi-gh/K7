@@ -76,11 +76,11 @@
                 <span class="detail-sidebar__label">@L["User"]</span>
                 <span class="detail-sidebar__value">@(Model.UserName ?? "-")</span>
             </div>
-            @if (!string.IsNullOrEmpty(Model.ViewingGroupName))
+            @if (!string.IsNullOrEmpty(Model.SharedProfileName))
             {
                 <div class="detail-sidebar__row">
-                    <span class="detail-sidebar__label">@L["ViewingGroup"]</span>
-                    <span class="detail-sidebar__value">@Model.ViewingGroupName</span>
+                    <span class="detail-sidebar__label">@L["SharedProfile"]</span>
+                    <span class="detail-sidebar__value">@Model.SharedProfileName</span>
                 </div>
             }
             <div class="detail-sidebar__row">

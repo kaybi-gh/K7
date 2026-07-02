@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702152142_AddCoWatchingWithSnapshot")]
+    partial class AddCoWatchingWithSnapshot
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1845,13 +1848,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("SharedProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SharedProfileNameSnapshot")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1863,6 +1859,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ViewingGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ViewingGroupNameSnapshot")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<double>("WatchedDurationSeconds")
                         .HasColumnType("double precision");
@@ -1878,7 +1881,7 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.HasIndex("SessionId")
                         .IsUnique();
 
-                    b.HasIndex("SharedProfileId");
+                    b.HasIndex("ViewingGroupId");
 
                     b.HasIndex("UserId", "CompletedAt");
 
@@ -1985,69 +1988,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsUnique();
 
                     b.ToTable("PlaybackSessionDetails");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("HostUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("LastModified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("PinHash")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("HostUserId");
-
-                    b.ToTable("SharedProfiles", (string)null);
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfileMember", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SharedProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("SharedProfileId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("SharedProfileMembers", (string)null);
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
@@ -2277,6 +2217,69 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsUnique();
 
                     b.ToTable("UserPlaylistStates");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("HostUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("PinHash")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("HostUserId");
+
+                    b.ToTable("ViewingGroups");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroupMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ViewingGroupId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ViewingGroupId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ViewingGroupMembers");
                 });
 
             modelBuilder.Entity("K7.Server.Infrastructure.Database.Context.Identity.ApplicationUser", b =>
@@ -3819,24 +3822,24 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("K7.Server.Domain.Entities.Users.SharedProfile", "SharedProfile")
-                        .WithMany()
-                        .HasForeignKey("SharedProfileId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("K7.Server.Domain.Entities.Users.ViewingGroup", "ViewingGroup")
+                        .WithMany()
+                        .HasForeignKey("ViewingGroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Device");
 
                     b.Navigation("Media");
 
-                    b.Navigation("SharedProfile");
-
                     b.Navigation("User");
+
+                    b.Navigation("ViewingGroup");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSessionCoViewer", b =>
@@ -3859,44 +3862,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                         .IsRequired();
 
                     b.Navigation("MediaPlaybackSession");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfile", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Users.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Users.User", "HostUser")
-                        .WithMany()
-                        .HasForeignKey("HostUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("HostUser");
-                });
-
-            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfileMember", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Users.SharedProfile", "SharedProfile")
-                        .WithMany("Members")
-                        .HasForeignKey("SharedProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SharedProfile");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
@@ -3978,6 +3943,44 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Playlist");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroup", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "HostUser")
+                        .WithMany()
+                        .HasForeignKey("HostUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("HostUser");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroupMember", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.ViewingGroup", "ViewingGroup")
+                        .WithMany("Members")
+                        .HasForeignKey("ViewingGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("ViewingGroup");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -4258,11 +4261,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("Details");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Users.SharedProfile", b =>
-                {
-                    b.Navigation("Members");
-                });
-
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.User", b =>
                 {
                     b.Navigation("CapabilityOverrides");
@@ -4272,6 +4270,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Postgres.Migrations
                     b.Navigation("MediaExclusions");
 
                     b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroup", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication", b =>
