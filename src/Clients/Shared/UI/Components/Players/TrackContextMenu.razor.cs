@@ -17,7 +17,7 @@ public partial class TrackContextMenu
     [Parameter]
     public int? UserRating { get; set; }
 
-    [Inject] private IServerInfoService ServerInfo { get; set; } = default!;
+    [Inject] private IMusicRadioPlaybackService MusicRadio { get; set; } = default!;
 
     private bool _canCreatePlaylist;
     private bool _musicIntelligenceAvailable;
@@ -112,22 +112,17 @@ public partial class TrackContextMenu
         Guid? seedTrackId = null,
         Guid? seedArtistId = null)
     {
-        var results = await ServerInfo.GetMusicRadioAsync(
-            radioType.ToString(),
-            seedTrackId: seedTrackId,
-            seedArtistId: seedArtistId);
+        var started = await MusicRadio.StartAsync(new MusicRadioRequest
+        {
+            RadioType = radioType.ToString(),
+            Title = radioTitle,
+            SeedTrackId = seedTrackId,
+            SeedArtistId = seedArtistId
+        });
 
-        var tracks = results?
-            .OfType<MusicTrackDto>()
-            .Select(t => MusicTrackQueueMapper.ToQueueItem(t, ApiClient, S["Untitled"]))
-            .Where(t => t is not null)
-            .Cast<AudioQueueItem>()
-            .ToList();
-
-        if (tracks is not { Count: > 0 })
+        if (!started)
             return;
 
-        await Audio.PlayRadioAsync(tracks, radioTitle);
         Snackbar.Add(radioTitle, K7Severity.Info);
     }
 

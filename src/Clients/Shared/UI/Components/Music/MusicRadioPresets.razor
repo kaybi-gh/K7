@@ -14,11 +14,19 @@
                                 style="@radio.BackgroundStyle"
                                 tabindex="0"
                                 aria-label="@radio.Title"
+                                disabled="@(_loadingPresetTitle == radio.Title)"
                                 @onclick="() => OnPresetClickedAsync(radio)">
                             <span class="music-radio-presets__content">
-                                <span class="music-radio-presets__icon">
-                                    <K7Icon Icon="@radio.Icon"  IconSize="@K7IconSize.Lg" />
-                                </span>
+                                @if (_loadingPresetTitle == radio.Title)
+                                {
+                                    <K7Spinner Size="24" />
+                                }
+                                else
+                                {
+                                    <span class="music-radio-presets__icon">
+                                        <K7Icon Icon="@radio.Icon"  IconSize="@K7IconSize.Lg" />
+                                    </span>
+                                }
                                 <span class="music-radio-presets__card-title">@radio.Title</span>
                             </span>
                         </button>

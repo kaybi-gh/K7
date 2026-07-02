@@ -32,6 +32,7 @@ builder.Services.AddScoped<ISpatialNavService, SpatialNavService>();
 // Client-side mock services
 builder.Services.AddSingleton<MockAudioPlayerService>();
 builder.Services.AddSingleton<IAudioPlayerService>(sp => sp.GetRequiredService<MockAudioPlayerService>());
+builder.Services.AddSingleton<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
 builder.Services.AddSingleton<DemoPlayerService>();
 builder.Services.AddSingleton<IPlayerService>(sp => sp.GetRequiredService<DemoPlayerService>());
 builder.Services.AddSingleton<IMediaPlayerService, MockMediaPlayerService>();

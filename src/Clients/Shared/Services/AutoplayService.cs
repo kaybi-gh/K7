@@ -1,9 +1,7 @@
-using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Server.Domain.Enums;
 using K7.Shared;
-using K7.Shared.Dtos.Entities.Medias;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
@@ -11,25 +9,21 @@ namespace K7.Clients.Shared.Services;
 public class AutoplayService : IDisposable
 {
     private readonly IAudioPlayerService _audioPlayerService;
-    private readonly IServerInfoService _serverInfoService;
-    private readonly IK7ServerService _apiClient;
+    private readonly IMusicRadioPlaybackService _musicRadioPlayback;
+    private readonly IServerPreferencesService _serverPreferences;
     private readonly IDeviceStorageService _deviceStorageService;
     private bool _isLoading;
 
     public bool Enabled { get; private set; }
 
-    private readonly IServerPreferencesService _serverPreferences;
-
     public AutoplayService(
         IAudioPlayerService audioPlayerService,
-        IServerInfoService serverInfoService,
-        IK7ServerService apiClient,
+        IMusicRadioPlaybackService musicRadioPlayback,
         IDeviceStorageService deviceStorageService,
         IServerPreferencesService serverPreferences)
     {
         _audioPlayerService = audioPlayerService;
-        _serverInfoService = serverInfoService;
-        _apiClient = apiClient;
+        _musicRadioPlayback = musicRadioPlayback;
         _deviceStorageService = deviceStorageService;
         _serverPreferences = serverPreferences;
         Enabled = deviceStorageService.Get(PreferenceKeys.AUTOPLAY_ENABLED, true);
@@ -59,25 +53,15 @@ public class AutoplayService : IDisposable
             if (!status.IsAvailable)
                 return;
 
-            var radioTracks = await _serverInfoService.GetMusicRadioAsync(
-                "sonic",
-                seedTrackId: currentTrack.MediaId,
-                limit: 25);
+            var started = await _musicRadioPlayback.StartAsync(new MusicRadioRequest
+            {
+                RadioType = "Sonic",
+                Title = "Similaire",
+                SeedTrackId = currentTrack.MediaId
+            });
 
-            if (radioTracks is null or { Count: 0 })
+            if (!started)
                 return;
-
-            var queueItems = radioTracks
-                .OfType<MusicTrackDto>()
-                .Select(t => MusicTrackQueueMapper.ToQueueItem(t, _apiClient))
-                .Where(t => t is not null)
-                .Cast<AudioQueueItem>()
-                .ToList();
-
-            if (queueItems.Count == 0)
-                return;
-
-            await _audioPlayerService.PlayRadioAsync(queueItems, "Similaire");
         }
         finally
         {

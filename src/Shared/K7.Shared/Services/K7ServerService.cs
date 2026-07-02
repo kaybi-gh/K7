@@ -247,7 +247,7 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await HttpClient.GetFromJsonAsync<PlaybackHistoryPageDto>(url, _serializerOptions, cancellationToken);
     }
 
-    public async Task<List<MediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<List<LiteMediaDto>?> GetMusicRadioAsync(string radioType, Guid[]? libraryIds = null, Guid[]? libraryGroupIds = null, Guid? seedTrackId = null, Guid? seedArtistId = null, string? moodPreset = null, int? moodCentroidIndex = null, int limit = 50, Guid[]? excludeIds = null, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string> { $"radioType={Uri.EscapeDataString(radioType)}" };
         if (libraryIds is { Length: > 0 })
@@ -265,8 +265,13 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         if (!string.IsNullOrWhiteSpace(moodPreset)) queryParams.Add($"moodPreset={Uri.EscapeDataString(moodPreset)}");
         if (moodCentroidIndex.HasValue) queryParams.Add($"moodCentroidIndex={moodCentroidIndex.Value}");
         if (limit != 50) queryParams.Add($"limit={limit}");
+        if (excludeIds is { Length: > 0 })
+        {
+            foreach (var excludeId in excludeIds)
+                queryParams.Add($"excludeIds={excludeId}");
+        }
         var url = $"api/music/radio?{string.Join("&", queryParams)}";
-        return await HttpClient.GetFromJsonAsync<List<MediaDto>>(url, _serializerOptions, cancellationToken);
+        return await HttpClient.GetFromJsonAsync<List<LiteMediaDto>>(url, _serializerOptions, cancellationToken);
     }
 
     public async Task<IEnumerable<MetadataSearchResult>> SearchMetadataAsync(string query, int? year = null, string? providerId = null, K7.Server.Domain.Enums.MediaType? mediaType = null, CancellationToken cancellationToken = default)

@@ -2974,6 +2974,17 @@
               "format": "int32",
               "default": 50
             }
+          },
+          {
+            "name": "excludeIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
           }
         ],
         "responses": {

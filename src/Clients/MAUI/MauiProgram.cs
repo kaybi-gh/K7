@@ -113,6 +113,7 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
         builder.Services.AddSingleton<ISleepTimerService, SleepTimerService>();
         builder.Services.AddSingleton<AutoplayService>();
+        builder.Services.AddSingleton<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
         builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
         builder.Services.AddSingleton<IMediaStreamSession, MediaSessionService>();
         builder.Services.AddSingleton<IMediaBrowseService, MediaBrowseService>();

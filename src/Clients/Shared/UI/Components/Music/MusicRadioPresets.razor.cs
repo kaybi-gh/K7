@@ -1,21 +1,15 @@
-using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
-using K7.Shared.Dtos.Entities.Medias;
-using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Music;
 
-public partial class MusicRadioPresets
+public partial class MusicRadioPresets : IAsyncDisposable
 {
-    [Inject] private IServerInfoService ServerInfo { get; set; } = default!;
-    [Inject] private IK7ServerService ApiClient { get; set; } = default!;
-    [Inject] private IAudioPlayerService Audio { get; set; } = default!;
+    [Inject] private IMusicRadioPlaybackService MusicRadio { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
-    [Inject] private IStringLocalizer<SharedResource> S { get; set; } = default!;
     [Inject] private IServerPreferencesService ServerPreferences { get; set; } = default!;
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
@@ -25,9 +19,12 @@ public partial class MusicRadioPresets
     [Parameter] public Guid[]? LibraryGroupIds { get; set; }
 
     private IReadOnlyList<RadioPresetInfo> Presets { get; set; } = [];
+    private string? _loadingPresetTitle;
 
     protected override async Task OnInitializedAsync()
     {
+        MusicRadio.LoadingStateChanged += OnLoadingStateChanged;
+
         var musicIntelligenceAvailable = false;
         try
         {
@@ -55,6 +52,18 @@ public partial class MusicRadioPresets
         }
 
         Presets = presets;
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        MusicRadio.LoadingStateChanged -= OnLoadingStateChanged;
+        return ValueTask.CompletedTask;
+    }
+
+    private void OnLoadingStateChanged()
+    {
+        _loadingPresetTitle = MusicRadio.LoadingPresetTitle;
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task OnPresetClickedAsync(RadioPresetInfo radio)
@@ -109,27 +118,18 @@ public partial class MusicRadioPresets
         if (radio.Type is null)
             return;
 
-        var results = await ServerInfo.GetMusicRadioAsync(
-            radio.Type.Value.ToString(),
-            LibraryIds,
-            LibraryGroupIds,
-            moodPreset: radio.MoodPreset,
-            moodCentroidIndex: radio.MoodCentroidIndex);
-
-        var queueItems = results?
-            .OfType<MusicTrackDto>()
-            .Select(t => MusicTrackQueueMapper.ToQueueItem(t, ApiClient, S["Untitled"]))
-            .Where(q => q is not null)
-            .Cast<AudioQueueItem>()
-            .ToList();
-
-        if (queueItems is not { Count: > 0 })
+        var started = await MusicRadio.StartAsync(new MusicRadioRequest
         {
-            Snackbar.Add(L["EmptyRadio"], K7Severity.Info);
-            return;
-        }
+            RadioType = radio.Type.Value.ToString(),
+            Title = radio.Title,
+            LibraryIds = LibraryIds,
+            LibraryGroupIds = LibraryGroupIds,
+            MoodPreset = radio.MoodPreset,
+            MoodCentroidIndex = radio.MoodCentroidIndex
+        });
 
-        await Audio.PlayRadioAsync(queueItems, radio.Title);
+        if (!started)
+            Snackbar.Add(L["EmptyRadio"], K7Severity.Info);
     }
 
     private enum RadioPresetAction
