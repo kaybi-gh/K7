@@ -119,10 +119,11 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IMediaBrowseService, MediaBrowseService>();
         builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
         builder.Services.AddSingleton<IPageFilterStorage, PageFilterStorage>();
-        builder.Services.AddSingleton<IViewingGroupApi>(sp => sp.GetRequiredService<K7ServerService>());
-        builder.Services.AddSingleton<IViewingGroupLocalCache, ViewingGroupLocalCache>();
-        builder.Services.AddSingleton<IViewingGroupService, ViewingGroupService>();
-        builder.Services.AddSingleton<IViewingGroupSessionService, ViewingGroupSessionService>();
+        builder.Services.AddSingleton<ISharedProfileApi>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<ISharedProfileLocalCache, SharedProfileLocalCache>();
+        builder.Services.AddSingleton<ISharedProfileService, SharedProfileService>();
+        builder.Services.AddSingleton<ISharedProfileSessionService, SharedProfileSessionService>();
+builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevicePinService>();
         builder.Services.AddSingleton<ILocalUserService, LocalUserService>();
         builder.Services.AddSingleton<K7HubClient>();
         builder.Services.AddSingleton(new MediaCacheStore(maxEntries: 32));
@@ -186,7 +187,7 @@ public static partial class MauiProgram
             catch { /* Column already exists */ }
             try
             {
-                db.Database.ExecuteSqlRaw("ALTER TABLE PendingPlaybackEvents ADD COLUMN ViewingGroupId TEXT NULL");
+                db.Database.ExecuteSqlRaw("ALTER TABLE PendingPlaybackEvents ADD COLUMN SharedProfileId TEXT NULL");
             }
             catch { /* Column already exists */ }
         }

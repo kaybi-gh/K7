@@ -1,13 +1,13 @@
-using K7.Shared.Dtos.ViewingGroups;
+using K7.Shared.Dtos.SharedProfiles;
 
 namespace K7.Clients.Shared.Interfaces;
 
-public interface IViewingGroupSessionService
+public interface ISharedProfileSessionService
 {
     Guid? ActiveGroupId { get; }
-    ViewingGroupDto? ActiveGroup { get; }
+    SharedProfileDto? ActiveGroup { get; }
     event Action? ActiveGroupChanged;
-    void SetActiveGroup(ViewingGroupDto? group);
+    void SetActiveGroup(SharedProfileDto? group);
     void ClearActiveGroup();
     Task RestoreLastActiveAsync(CancellationToken cancellationToken = default);
 }

@@ -1,34 +1,34 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
-using K7.Shared.Dtos.ViewingGroups;
+using K7.Shared.Dtos.SharedProfiles;
 
 namespace K7.Clients.Shared.Services;
 
-public class ViewingGroupSessionService(
+public class SharedProfileSessionService(
     IDeviceStorageService storage,
-    IViewingGroupLocalCache cache) : IViewingGroupSessionService
+    ISharedProfileLocalCache cache) : ISharedProfileSessionService
 {
-    private ViewingGroupDto? _activeGroup;
+    private SharedProfileDto? _activeGroup;
 
     public Guid? ActiveGroupId => _activeGroup?.Id;
 
-    public ViewingGroupDto? ActiveGroup => _activeGroup;
+    public SharedProfileDto? ActiveGroup => _activeGroup;
 
     public event Action? ActiveGroupChanged;
 
-    public void SetActiveGroup(ViewingGroupDto? group)
+    public void SetActiveGroup(SharedProfileDto? group)
     {
         _activeGroup = group;
 
         if (group is null)
         {
-            storage.Remove(PreferenceKeys.ACTIVE_VIEWING_GROUP_ID);
-            storage.Remove(PreferenceKeys.LAST_ACTIVE_VIEWING_GROUP_ID);
+            storage.Remove(PreferenceKeys.ACTIVE_SHARED_PROFILE_ID);
+            storage.Remove(PreferenceKeys.LAST_ACTIVE_SHARED_PROFILE_ID);
         }
         else
         {
-            storage.Set(PreferenceKeys.ACTIVE_VIEWING_GROUP_ID, group.Id.ToString());
-            storage.Set(PreferenceKeys.LAST_ACTIVE_VIEWING_GROUP_ID, group.Id.ToString());
+            storage.Set(PreferenceKeys.ACTIVE_SHARED_PROFILE_ID, group.Id.ToString());
+            storage.Set(PreferenceKeys.LAST_ACTIVE_SHARED_PROFILE_ID, group.Id.ToString());
         }
 
         ActiveGroupChanged?.Invoke();
@@ -38,7 +38,7 @@ public class ViewingGroupSessionService(
 
     public Task RestoreLastActiveAsync(CancellationToken cancellationToken = default)
     {
-        var lastId = storage.Get(PreferenceKeys.LAST_ACTIVE_VIEWING_GROUP_ID);
+        var lastId = storage.Get(PreferenceKeys.LAST_ACTIVE_SHARED_PROFILE_ID);
         if (string.IsNullOrEmpty(lastId) || !Guid.TryParse(lastId, out var groupId))
         {
             ClearActiveGroup();
@@ -53,7 +53,7 @@ public class ViewingGroupSessionService(
         }
 
         _activeGroup = group;
-        storage.Set(PreferenceKeys.ACTIVE_VIEWING_GROUP_ID, group.Id.ToString());
+        storage.Set(PreferenceKeys.ACTIVE_SHARED_PROFILE_ID, group.Id.ToString());
         ActiveGroupChanged?.Invoke();
         return Task.CompletedTask;
     }

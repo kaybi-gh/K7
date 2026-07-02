@@ -46,6 +46,12 @@ builder.Services.AddTransient<IApiKeyAdminService>(sp => sp.GetRequiredService<K
 builder.Services.AddTransient<IMusicIntelligenceAdminService>(sp => sp.GetRequiredService<K7ServerService>());
 builder.Services.AddTransient<IMusicIntelligenceClientService>(sp => sp.GetRequiredService<K7ServerService>());
 
+builder.Services.AddSingleton<ISharedProfileApi>(sp => sp.GetRequiredService<K7ServerService>());
+builder.Services.AddSingleton<ISharedProfileLocalCache, SharedProfileLocalCache>();
+builder.Services.AddSingleton<ISharedProfileService, SharedProfileService>();
+builder.Services.AddSingleton<ISharedProfileSessionService, SharedProfileSessionService>();
+builder.Services.AddSingleton<ISharedProfileDevicePinService, SharedProfileDevicePinService>();
+
 builder.Services.AddSingleton<SidebarService>();
 builder.Services.AddSingleton<BackButtonService>();
 builder.Services.AddSingleton<ThemeService>();
