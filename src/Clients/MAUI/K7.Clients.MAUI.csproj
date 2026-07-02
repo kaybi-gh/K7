@@ -49,7 +49,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
     <AndroidCreatePackagePerAbi>True</AndroidCreatePackagePerAbi>
-    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>android-arm;android-arm64</RuntimeIdentifiers>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
   </PropertyGroup>
 
@@ -57,6 +57,7 @@
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidUseAapt2>True</AndroidUseAapt2>
     <AndroidCreatePackagePerAbi>False</AndroidCreatePackagePerAbi>
+    <RuntimeIdentifiers>android-arm;android-arm64</RuntimeIdentifiers>
     <!-- EF Core 10.0 trimmer bug: IL2037 on ExecuteUpdateAsync -->
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <NoWarn>$(NoWarn);IL2037</NoWarn>
