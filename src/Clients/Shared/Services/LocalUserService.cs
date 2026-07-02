@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
@@ -72,7 +71,7 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
         if (user is null)
             return;
 
-        user.PinHash = pin is null ? null : HashPin(pin);
+        user.PinHash = pin is null ? null : PinVerifier.Hash(pin);
         Persist(users);
     }
 
@@ -82,7 +81,7 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
         if (user?.PinHash is null)
             return true;
 
-        return VerifyPbkdf2(user.PinHash, pin);
+        return PinVerifier.Verify(user.PinHash, pin);
     }
 
     public bool IsSingleUserMode
@@ -97,27 +96,4 @@ public class LocalUserService(IDeviceStorageService storage) : ILocalUserService
         storage.Set(PreferenceKeys.LOCAL_USERS, json);
     }
 
-    private static string HashPin(string pin)
-    {
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(pin, salt, 10_000, HashAlgorithmName.SHA256, 32);
-        return $"$PBKDF2$iterations=10000${Convert.ToHexStringLower(salt)}${Convert.ToHexStringLower(hash)}";
-    }
-
-    private static bool VerifyPbkdf2(string storedHash, string pin)
-    {
-        var parts = storedHash.Split('$', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length != 4 || parts[0] != "PBKDF2")
-            return false;
-
-        var iterParts = parts[1].Split('=');
-        if (iterParts.Length != 2 || !int.TryParse(iterParts[1], out var iterations))
-            return false;
-
-        var salt = Convert.FromHexString(parts[2]);
-        var expectedHash = Convert.FromHexString(parts[3]);
-
-        var actualHash = Rfc2898DeriveBytes.Pbkdf2(pin, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
-        return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
-    }
 }
