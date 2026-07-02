@@ -40,6 +40,7 @@
 
 .k7-data-table-scroll {
     overflow-y: auto;
+    scrollbar-gutter: stable;
     flex: 1 1 0;
     min-height: 0;
     padding: 0 16px 16px;
@@ -48,6 +49,7 @@
 .k7-data-table-el {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .k7-data-table-el thead {
@@ -62,6 +64,14 @@
     padding: 8px 12px;
     text-align: left;
     white-space: nowrap;
+}
+
+.k7-data-table-el tbody tr.k7-data-table-row,
+.k7-data-table-el tbody tr.k7-data-table-placeholder {
+    box-sizing: border-box;
+    height: var(--k7-data-table-row-height, 48px);
+    max-height: var(--k7-data-table-row-height, 48px);
+    overflow: hidden;
 }
 
 .k7-data-table-el tbody tr.k7-data-table-row td,
@@ -131,19 +141,6 @@
 .k7-data-table-placeholder td {
     padding: 8px 12px;
     vertical-align: middle;
-}
-
-.k7-skeleton-line {
-    height: 14px;
-    border-radius: 4px;
-    background: var(--color-surface-hover);
-    width: 60%;
-    animation: k7-skeleton-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes k7-skeleton-pulse {
-    0%, 100% { opacity: 0.4; }
-    50% { opacity: 1; }
 }
 
 @media (max-width: 599.98px) {

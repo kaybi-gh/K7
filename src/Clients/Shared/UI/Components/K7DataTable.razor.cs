@@ -19,7 +19,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     [Parameter] public EventCallback<TItem> OnRowClick { get; set; }
     [Parameter] public string? PersistenceKey { get; set; }
     [Parameter] public float RowHeight { get; set; } = 48;
-    [Parameter] public int OverscanCount { get; set; } = 5;
+    [Parameter] public int OverscanCount { get; set; } = 10;
     [Parameter] public bool ShowToolbar { get; set; } = true;
     [Parameter] public bool Surface { get; set; } = true;
     [Parameter] public bool Striped { get; set; } = true;
@@ -39,6 +39,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private bool _needsRender = true;
     private string? _prevSortKey;
     private K7SortDirection _prevSortDirection;
+    private readonly Dictionary<string, ItemsProviderResult<IndexedRow>> _serverDataCache = new();
 
     protected override void OnParametersSet()
     {
@@ -51,6 +52,7 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
         {
             _prevSortKey = ActiveSortKey;
             _prevSortDirection = ActiveSortDirection;
+            InvalidateServerDataCache();
             _needsRender = true;
         }
 
@@ -183,6 +185,8 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
 
     public async Task RefreshAsync()
     {
+        InvalidateServerDataCache();
+
         if (_virtualizeRef is not null)
         {
             _needsRender = true;
@@ -201,13 +205,21 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
             ActiveSortKey,
             ActiveSortDirection);
 
+        var cacheKey = BuildServerDataCacheKey(state);
+        if (_serverDataCache.TryGetValue(cacheKey, out var cached))
+        {
+            return cached;
+        }
+
         try
         {
             var result = await ServerData(state, request.CancellationToken);
             var rows = result.Items
                 .Select((item, offset) => new IndexedRow(item, request.StartIndex + offset))
                 .ToList();
-            return new ItemsProviderResult<IndexedRow>(rows, result.TotalItemCount);
+            var providerResult = new ItemsProviderResult<IndexedRow>(rows, result.TotalItemCount);
+            _serverDataCache[cacheKey] = providerResult;
+            return providerResult;
         }
         catch (OperationCanceledException) when (request.CancellationToken.IsCancellationRequested)
         {
@@ -267,7 +279,29 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private IEnumerable<K7DataColumn<TItem>> VisibleColumns =>
         _columns.Where(c => c.IsVisible);
 
-    private string? ScrollStyle => Height is not null ? $"height: {Height}; flex: none" : null;
+    private string ScrollContainerStyle
+    {
+        get
+        {
+            var parts = new List<string>
+            {
+                FormattableString.Invariant($"--k7-data-table-row-height: {RowHeight}px")
+            };
 
-    private string RowStyle => FormattableString.Invariant($"height: {RowHeight}px");
+            if (Height is not null)
+            {
+                parts.Add(FormattableString.Invariant($"height: {Height}"));
+                parts.Add("flex: none");
+            }
+
+            return string.Join("; ", parts);
+        }
+    }
+
+    private string RowStyle => FormattableString.Invariant($"height: {RowHeight}px; max-height: {RowHeight}px");
+
+    private static string BuildServerDataCacheKey(K7DataTableState<TItem> state) =>
+        FormattableString.Invariant($"{state.SortKey}:{state.SortDirection}:{state.StartIndex}:{state.Count}");
+
+    private void InvalidateServerDataCache() => _serverDataCache.Clear();
 }
