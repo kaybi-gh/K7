@@ -21,7 +21,6 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Who's watching? - K7</value></data>
   <data name="Prompt" xml:space="preserve"><value>Who's watching?</value></data>
-  <data name="Subtitle" xml:space="preserve"><value>Continue as...</value></data>
   <data name="AddServer" xml:space="preserve"><value>Add user</value></data>
   <data name="SingleUserMode" xml:space="preserve"><value>I am the only user on this device</value></data>
   <data name="SessionExpired" xml:space="preserve"><value>{0}'s session has expired. Please sign in again.</value></data>
