@@ -1,3 +1,4 @@
+@page "/welcome"
 @layout EmptyLayout
 @attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @inject IStringLocalizer<Welcome> L
@@ -5,33 +6,37 @@
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
-<div class="container">
-    <div class="surface pa-8">
-        <div class="d-flex flex-col">
-            <h4>K7</h4>
-            <p Color="secondary">
-                @L["WelcomeHeading"]
-            </p>
+<div class="welcome-page">
+    <div class="welcome-card">
+        <div class="welcome-card-header">
+            <h1 class="welcome-title">K7</h1>
+            <p class="welcome-subtitle">@L["WelcomeHeading"]</p>
+        </div>
 
-            <hr class="k7-divider my-2" />
+        <div class="welcome-card-body">
+            <hr class="welcome-divider" />
 
             @if (_loading)
             {
-                <K7Spinner />
-                <p class="text-sm" Color="secondary">@L["SignInPrompt"]</p>
+                <div class="welcome-loading">
+                    <K7Spinner />
+                    <p>@L["SignInPrompt"]</p>
+                </div>
             }
             else
             {
-                <K7Button Variant="filled" Color="primary" Size="lg" OnClick="SignInAsync" data-initial-focus>
-                    @S["SignIn"]
-                </K7Button>
-
-                @if (_guestEnabled)
-                {
-                    <K7Button Variant="outlined" Color="default" Size="lg" OnClick="ContinueAsGuestAsync">
-                        @S["Guest"]
+                <div class="welcome-actions">
+                    <K7Button Variant="filled" Size="lg" OnClick="SignInAsync" data-initial-focus>
+                        @S["SignIn"]
                     </K7Button>
-                }
+
+                    @if (_guestEnabled)
+                    {
+                        <K7Button Variant="outlined" Size="lg" OnClick="ContinueAsGuestAsync">
+                            @L["ContinueAsGuest"]
+                        </K7Button>
+                    }
+                </div>
             }
         </div>
     </div>

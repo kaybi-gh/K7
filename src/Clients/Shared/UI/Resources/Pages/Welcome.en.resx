@@ -23,5 +23,6 @@
   <data name="WelcomeHeading" xml:space="preserve"><value>Choose how you want to continue</value></data>
   <data name="SignInPrompt" xml:space="preserve"><value>Signing in…</value></data>
   <data name="SignInFailed" xml:space="preserve"><value>Sign in was cancelled or failed.</value></data>
+  <data name="ContinueAsGuest" xml:space="preserve"><value>Continue as guest</value></data>
 </root>
 
