@@ -21,7 +21,6 @@
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Qui regarde ? - K7</value></data>
   <data name="Prompt" xml:space="preserve"><value>Qui regarde ?</value></data>
-  <data name="Subtitle" xml:space="preserve"><value>Continuer en tant que...</value></data>
   <data name="AddServer" xml:space="preserve"><value>Ajouter un utilisateur</value></data>
   <data name="SingleUserMode" xml:space="preserve"><value>Je suis le seul utilisateur de cet appareil</value></data>
   <data name="SessionExpired" xml:space="preserve"><value>La session de {0} a expiré. Veuillez vous reconnecter.</value></data>

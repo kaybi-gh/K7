@@ -13,7 +13,6 @@ public partial class Carousel : IAsyncDisposable
 
     [Parameter] public bool Skeleton { get; set; } = false;
     [Parameter] public string Title { get; set; } = "";
-    [Parameter] public string? Subtitle { get; set; }
     [Parameter] public string? Style { get; set; }
     [Parameter] public bool ShowLoopBack { get; set; } = true;
     [Parameter] public RenderFragment? ChildContent { get; set; }
