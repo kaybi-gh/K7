@@ -148,6 +148,7 @@ public partial class EditMetadataDialog
         _isPersonMode = false;
         _title = media.Title;
         _sortTitle = media.SortTitle;
+        _originalTitle = media.OriginalTitle;
         _releaseDateStr = media.ReleaseDate?.ToString("yyyy-MM-dd");
         _genresStr = media.Genres is not null ? string.Join(", ", media.Genres) : null;
         _lockedFields = [.. media.LockedFields ?? []];
