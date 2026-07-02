@@ -3,6 +3,9 @@ using K7.Server.Application.Common.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Text;
+using System.Text.Encodings.Web;
 
 namespace K7.Server.Infrastructure.Database.Context.Identity;
 
@@ -232,5 +235,122 @@ public class IdentityService : IIdentityService
             throw new InvalidOperationException(
                 $"Failed to add external login: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
+    }
+
+    public async Task<TwoFactorStatus> GetTwoFactorStatusAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var recoveryCodesLeft = await _userManager.CountRecoveryCodesAsync(user);
+        var key = await _userManager.GetAuthenticatorKeyAsync(user);
+
+        return new TwoFactorStatus(
+            await _userManager.GetTwoFactorEnabledAsync(user),
+            !string.IsNullOrEmpty(key),
+            recoveryCodesLeft);
+    }
+
+    public async Task<TwoFactorSetup> BeginTwoFactorSetupAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        if (await _userManager.GetTwoFactorEnabledAsync(user))
+        {
+            throw new InvalidOperationException("Two-factor authentication is already enabled.");
+        }
+
+        var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        if (string.IsNullOrEmpty(unformattedKey))
+        {
+            await _userManager.ResetAuthenticatorKeyAsync(user);
+            unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        }
+
+        var email = await _userManager.GetEmailAsync(user)
+            ?? await _userManager.GetUserNameAsync(user)
+            ?? userId;
+
+        return new TwoFactorSetup(
+            FormatAuthenticatorKey(unformattedKey!),
+            GenerateAuthenticatorUri(email, unformattedKey!));
+    }
+
+    public async Task<IReadOnlyList<string>> VerifyAndEnableTwoFactorAsync(string userId, string code)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var verificationCode = code.Replace(" ", string.Empty).Replace("-", string.Empty);
+        var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+            user,
+            _userManager.Options.Tokens.AuthenticatorTokenProvider,
+            verificationCode);
+
+        if (!isValid)
+        {
+            throw new InvalidOperationException("Invalid verification code.");
+        }
+
+        await _userManager.SetTwoFactorEnabledAsync(user, true);
+
+        if (await _userManager.CountRecoveryCodesAsync(user) > 0)
+            return [];
+
+        return (await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10))?.ToList() ?? [];
+    }
+
+    public async Task<IReadOnlyList<string>> GenerateRecoveryCodesAsync(string userId, int count = 10)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        if (!await _userManager.GetTwoFactorEnabledAsync(user))
+        {
+            throw new InvalidOperationException("Two-factor authentication is not enabled.");
+        }
+
+        return (await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, count))?.ToList() ?? [];
+    }
+
+    public async Task DisableTwoFactorAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException(userId, "Identity user");
+
+        var result = await _userManager.SetTwoFactorEnabledAsync(user, false);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to disable two-factor authentication: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
+
+    private static string FormatAuthenticatorKey(string unformattedKey)
+    {
+        var result = new StringBuilder();
+        var currentPosition = 0;
+        while (currentPosition + 4 < unformattedKey.Length)
+        {
+            result.Append(unformattedKey.AsSpan(currentPosition, 4)).Append(' ');
+            currentPosition += 4;
+        }
+
+        if (currentPosition < unformattedKey.Length)
+            result.Append(unformattedKey.AsSpan(currentPosition));
+
+        return result.ToString().ToLowerInvariant();
+    }
+
+    private static string GenerateAuthenticatorUri(string email, string unformattedKey)
+    {
+        const string authenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            authenticatorUriFormat,
+            UrlEncoder.Default.Encode("K7"),
+            UrlEncoder.Default.Encode(email),
+            unformattedKey);
     }
 }

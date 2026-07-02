@@ -529,8 +529,13 @@ public sealed class MockUserAdminService : IUserAdminService
     public Task UpdateEmailAsync(UpdateEmailRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task DeleteAccountAsync(DeleteAccountRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RestoreUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, ExternalLogins = [] });
+    public Task<LoginMethodsDto> GetLoginMethodsAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LoginMethodsDto { HasPassword = true, CanRemovePassword = false, TwoFactorEnabled = false, RecoveryCodesLeft = 0, ExternalLogins = [] });
     public Task UnlinkExternalLoginAsync(string provider, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default) => Task.FromResult(new TwoFactorStatusDto { IsEnabled = false, HasAuthenticator = false, RecoveryCodesLeft = 0 });
+    public Task<TwoFactorSetupDto> BeginTwoFactorSetupAsync(CancellationToken cancellationToken = default) => Task.FromResult(new TwoFactorSetupDto { SharedKey = "abcd efgh", AuthenticatorUri = "otpauth://totp/K7:user?secret=abcdefgh&issuer=K7&digits=6" });
+    public Task<RecoveryCodesDto> VerifyTwoFactorSetupAsync(VerifyTwoFactorRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new RecoveryCodesDto { RecoveryCodes = ["code-1", "code-2"] });
+    public Task<RecoveryCodesDto> GenerateTwoFactorRecoveryCodesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new RecoveryCodesDto { RecoveryCodes = ["code-1", "code-2"] });
+    public Task DisableTwoFactorAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockRatingService : IRatingService

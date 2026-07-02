@@ -853,6 +853,39 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await HttpClient.GetFromJsonAsync<TwoFactorStatusDto>("api/users/me/two-factor", _serializerOptions, cancellationToken);
+        return result!;
+    }
+
+    public async Task<TwoFactorSetupDto> BeginTwoFactorSetupAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync("api/users/me/two-factor/setup", null, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+        return (await response.Content.ReadFromJsonAsync<TwoFactorSetupDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<RecoveryCodesDto> VerifyTwoFactorSetupAsync(VerifyTwoFactorRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/users/me/two-factor/verify", request, _serializerOptions, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+        return (await response.Content.ReadFromJsonAsync<RecoveryCodesDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task<RecoveryCodesDto> GenerateTwoFactorRecoveryCodesAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsync("api/users/me/two-factor/recovery-codes", null, cancellationToken);
+        await response.EnsureSuccessWithDetailsAsync(cancellationToken);
+        return (await response.Content.ReadFromJsonAsync<RecoveryCodesDto>(_serializerOptions, cancellationToken))!;
+    }
+
+    public async Task DisableTwoFactorAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync("api/users/me/two-factor", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task ToggleUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default)
     {
         var response = await HttpClient.PutAsJsonAsync($"api/users/{userId}/active", new { IsActive = isActive }, _serializerOptions, cancellationToken);

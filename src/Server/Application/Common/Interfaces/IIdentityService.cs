@@ -39,7 +39,21 @@ public interface IIdentityService
     Task RemoveExternalLoginAsync(string userId, string provider, string providerKey);
 
     Task AddExternalLoginAsync(string userId, string provider, string providerKey, string displayName);
+
+    Task<TwoFactorStatus> GetTwoFactorStatusAsync(string userId);
+
+    Task<TwoFactorSetup> BeginTwoFactorSetupAsync(string userId);
+
+    Task<IReadOnlyList<string>> VerifyAndEnableTwoFactorAsync(string userId, string code);
+
+    Task<IReadOnlyList<string>> GenerateRecoveryCodesAsync(string userId, int count = 10);
+
+    Task DisableTwoFactorAsync(string userId);
 }
 
 public record ExternalLoginInfo(string LoginProvider, string ProviderKey, string? ProviderDisplayName);
+
+public record TwoFactorStatus(bool IsEnabled, bool HasAuthenticator, int RecoveryCodesLeft);
+
+public record TwoFactorSetup(string SharedKey, string AuthenticatorUri);
 
