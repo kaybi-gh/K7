@@ -1,22 +1,22 @@
+using CommunityToolkit.Maui;
 using K7.Clients.MAUI.Constants;
 using K7.Clients.MAUI.Data;
+using K7.Clients.MAUI.Interfaces;
 using K7.Clients.MAUI.Services;
 using K7.Clients.MAUI.Services.Authentication;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Services;
+using K7.Shared.Interfaces;
+using K7.Shared.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.WebView.Maui;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
-using CommunityToolkit.Maui;
-using SkiaSharp.Views.Maui.Controls.Hosting;
-using K7.Clients.MAUI.Interfaces;
-using K7.Shared.Interfaces;
-using K7.Shared.Services;
-using Microsoft.AspNetCore.Components.WebView.Maui;
 using OpenIddict.Client;
 using OpenIddict.Client.SystemIntegration;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 #if WINDOWS
@@ -42,8 +42,8 @@ public static partial class MauiProgram
         builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
-		builder.Services.AddBlazorWebViewDeveloperTools();
-		builder.Logging.AddDebug();
+        builder.Services.AddBlazorWebViewDeveloperTools();
+        builder.Logging.AddDebug();
 #endif
 
         // https://github.com/dotnet/maui/issues/14185
@@ -119,6 +119,10 @@ public static partial class MauiProgram
         builder.Services.AddSingleton<IMediaBrowseService, MediaBrowseService>();
         builder.Services.AddSingleton<IDeviceStorageService, DeviceStorageService>();
         builder.Services.AddSingleton<IPageFilterStorage, PageFilterStorage>();
+        builder.Services.AddSingleton<IViewingGroupApi>(sp => sp.GetRequiredService<K7ServerService>());
+        builder.Services.AddSingleton<IViewingGroupLocalCache, ViewingGroupLocalCache>();
+        builder.Services.AddSingleton<IViewingGroupService, ViewingGroupService>();
+        builder.Services.AddSingleton<IViewingGroupSessionService, ViewingGroupSessionService>();
         builder.Services.AddSingleton<ILocalUserService, LocalUserService>();
         builder.Services.AddSingleton<K7HubClient>();
         builder.Services.AddSingleton(new MediaCacheStore(maxEntries: 32));
@@ -178,6 +182,11 @@ public static partial class MauiProgram
             try
             {
                 db.Database.ExecuteSqlRaw("ALTER TABLE DownloadedMedia ADD COLUMN LastPlaybackPosition REAL NOT NULL DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+            try
+            {
+                db.Database.ExecuteSqlRaw("ALTER TABLE PendingPlaybackEvents ADD COLUMN ViewingGroupId TEXT NULL");
             }
             catch { /* Column already exists */ }
         }

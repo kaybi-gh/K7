@@ -18,6 +18,7 @@ public class PlaybackProgressTracker : IDisposable
     private readonly IDeviceStorageService _deviceStorage;
     private readonly IConnectivityService _connectivity;
     private readonly IPlaybackJournal _journal;
+    private readonly IViewingGroupSessionService? _viewingGroupSession;
     private readonly MediaCacheStore _cacheStore;
     private Timer? _reportTimer;
     private Guid? _currentMediaId;
@@ -44,7 +45,8 @@ public class PlaybackProgressTracker : IDisposable
         IDeviceStorageService deviceStorage,
         IConnectivityService connectivity,
         IPlaybackJournal journal,
-        MediaCacheStore cacheStore)
+        MediaCacheStore cacheStore,
+        IViewingGroupSessionService? viewingGroupSession = null)
     {
         _playerService = playerService;
         _serverService = serverService;
@@ -52,6 +54,7 @@ public class PlaybackProgressTracker : IDisposable
         _connectivity = connectivity;
         _journal = journal;
         _cacheStore = cacheStore;
+        _viewingGroupSession = viewingGroupSession;
 
         _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
         _playerService.CurrentTimeChanged += OnCurrentTimeChanged;
@@ -161,7 +164,7 @@ public class PlaybackProgressTracker : IDisposable
 
         if (!_connectivity.IsOnline && _currentIndexedFileId.HasValue)
         {
-            await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration);
+            await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration, _viewingGroupSession?.ActiveGroupId);
             return;
         }
 
@@ -176,7 +179,8 @@ public class PlaybackProgressTracker : IDisposable
                 position,
                 duration,
                 (int)_lastState,
-                deviceId);
+                deviceId,
+                viewingGroupId: _viewingGroupSession?.ActiveGroupId);
 
             if (_lastState is PlaybackState.Idle or PlaybackState.Ended)
             {
@@ -188,7 +192,7 @@ public class PlaybackProgressTracker : IDisposable
             Console.WriteLine($"Failed to report playback progress: {ex.Message}");
             if (_currentIndexedFileId.HasValue)
             {
-                await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration);
+                await _journal.RecordProgressAsync(mediaId.Value, _currentIndexedFileId.Value, position, duration, _viewingGroupSession?.ActiveGroupId);
             }
         }
     }

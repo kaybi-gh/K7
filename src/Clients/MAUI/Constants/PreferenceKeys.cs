@@ -1,4 +1,4 @@
-﻿namespace K7.Clients.MAUI.Constants;
+namespace K7.Clients.MAUI.Constants;
 
 public static class PreferenceKeys
 {

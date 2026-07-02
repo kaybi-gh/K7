@@ -1,13 +1,13 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Shared;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
 using OpenIddict.Client;
-using System.Net.Http.Headers;
-using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using static OpenIddict.Abstractions.OpenIddictExceptions;
 
@@ -21,6 +21,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly IDeviceApiService _deviceApiService;
     private readonly IDeviceStorageService _deviceStorageService;
     private readonly ILocalUserService _localUserService;
+    private readonly IViewingGroupSessionService? _viewingGroupSession;
+    private readonly IViewingGroupLocalCache? _viewingGroupCache;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private bool _initialized;
     private Task? _restoreTask;
@@ -31,7 +33,9 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         IUserAdminService userAdminService,
         IDeviceApiService deviceApiService,
         IDeviceStorageService deviceStorageService,
-        ILocalUserService localUserService)
+        ILocalUserService localUserService,
+        IViewingGroupSessionService? viewingGroupSession = null,
+        IViewingGroupLocalCache? viewingGroupCache = null)
     {
         _openIddictClientService = openIddictClientService;
         _k7ServerService = k7ServerService;
@@ -39,6 +43,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _deviceApiService = deviceApiService;
         _deviceStorageService = deviceStorageService;
         _localUserService = localUserService;
+        _viewingGroupSession = viewingGroupSession;
+        _viewingGroupCache = viewingGroupCache;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -235,6 +241,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         _k7ServerService.HttpClient.DefaultRequestHeaders.Authorization = null;
         ClearStoredTokens();
+        _viewingGroupSession?.ClearActiveGroup();
 
         if (!string.IsNullOrEmpty(identityUserId))
             _localUserService.Remove(identityUserId);
@@ -271,6 +278,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
         {
             SignInOffline(lastUser);
+            await RestoreViewingGroupAsync();
             return;
         }
 
@@ -297,6 +305,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (await TryRefreshTokenAsync(localUser.RefreshToken))
         {
             await SaveLocalUserFromCurrentUserAsync(localUser.RefreshToken);
+            await RestoreViewingGroupAsync();
             NotifyAuthenticationStateChanged(
                 Task.FromResult(new AuthenticationState(_currentUser)));
         }
@@ -450,5 +459,19 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
             }
         }
         catch { }
+    }
+
+    private async Task RestoreViewingGroupAsync()
+    {
+        if (_viewingGroupSession is null || _viewingGroupCache is null)
+            return;
+
+        try
+        {
+            await _viewingGroupCache.RefreshAsync();
+        }
+        catch { }
+
+        await _viewingGroupSession.RestoreLastActiveAsync();
     }
 }
