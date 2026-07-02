@@ -24,6 +24,7 @@ public class GetMusicRadio : IEndpoint
             [FromQuery] string? moodPreset,
             [FromQuery] int? moodCentroidIndex,
             [FromQuery] int limit = 50,
+            [FromQuery] Guid[]? excludeIds = null,
             CancellationToken cancellationToken = default) =>
         {
             var tracks = await sender.Send(new GetMusicRadioQuery
@@ -35,10 +36,11 @@ public class GetMusicRadio : IEndpoint
                 SeedArtistId = seedArtistId,
                 MoodPreset = moodPreset,
                 MoodCentroidIndex = moodCentroidIndex,
-                Limit = limit
+                Limit = limit,
+                ExcludeIds = excludeIds
             }, cancellationToken);
 
-            return Results.Ok(tracks.Select(t => t.ToMediaDto()));
+            return Results.Ok(tracks.Select(t => t.ToLiteMediaDto()).Cast<LiteMediaDto>());
         })
         .RequireAuthorization(Policies.GuestOrAbove)
         .WithName(type.Name)

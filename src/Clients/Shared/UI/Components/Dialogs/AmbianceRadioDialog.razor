@@ -1,16 +1,12 @@
-@using K7.Clients.Shared.Helpers
-@using K7.Clients.Shared.Interfaces
 @using K7.Clients.Shared.Models
+@using K7.Clients.Shared.Interfaces
 @using K7.Server.Domain.Enums
 @using K7.Shared.Dtos
 @using K7.Shared.Dtos.Entities.Medias
 @inject IStringLocalizer<AmbianceRadioDialog> L
 @inject IServerPreferencesService ServerPreferences
-@inject IServerInfoService ServerInfo
-@inject IK7ServerService ApiClient
-@inject IAudioPlayerService Audio
+@inject IMusicRadioPlaybackService MusicRadio
 @inject IK7Snackbar Snackbar
-@inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
     <div class="d-flex flex-col gap-4 pa-4">
@@ -114,27 +110,22 @@
         _playing = true;
         try
         {
-            var results = await ServerInfo.GetMusicRadioAsync(
-                MusicRadioType.Mood.ToString(),
-                LibraryIds,
-                LibraryGroupIds,
-                moodPreset: _selectedPreset.MoodKey,
-                moodCentroidIndex: _selectedPreset.CentroidIndex);
+            var started = await MusicRadio.StartAsync(new MusicRadioRequest
+            {
+                RadioType = MusicRadioType.Mood.ToString(),
+                Title = GetPresetLabel(_selectedPreset),
+                LibraryIds = LibraryIds,
+                LibraryGroupIds = LibraryGroupIds,
+                MoodPreset = _selectedPreset.MoodKey,
+                MoodCentroidIndex = _selectedPreset.CentroidIndex
+            });
 
-            var queueItems = results?
-                .OfType<MusicTrackDto>()
-                .Select(t => MusicTrackQueueMapper.ToQueueItem(t, ApiClient, S["Untitled"]))
-                .Where(q => q is not null)
-                .Cast<AudioQueueItem>()
-                .ToList();
-
-            if (queueItems is not { Count: > 0 })
+            if (!started)
             {
                 Snackbar.Add(L["EmptyRadio"], K7Severity.Info);
                 return;
             }
 
-            await Audio.PlayRadioAsync(queueItems, GetPresetLabel(_selectedPreset));
             Dialog.Close(K7DialogResult.Ok(true));
         }
         finally

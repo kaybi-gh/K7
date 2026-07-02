@@ -4,6 +4,7 @@ using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Entities.Ratings;
 using K7.Server.Domain.Enums;
 using K7.Shared;
+using Microsoft.EntityFrameworkCore;
 
 namespace K7.Server.Application.Features.MusicRadio.Queries.GetMusicRadio;
 
@@ -17,6 +18,7 @@ public record GetMusicRadioQuery : IRequest<List<BaseMedia>>
     public string? MoodPreset { get; init; }
     public int? MoodCentroidIndex { get; init; }
     public int Limit { get; init; } = 50;
+    public Guid[]? ExcludeIds { get; init; }
 }
 
 public class GetMusicRadioQueryHandler(
@@ -36,18 +38,15 @@ public class GetMusicRadioQueryHandler(
             MusicRadioType.Sonic => await GetSonicRadio(request, userId, libraryIds, cancellationToken),
             MusicRadioType.Artist => await GetArtistRadio(request, userId, libraryIds, cancellationToken),
             MusicRadioType.Mood => await GetMoodMix(request, userId, libraryIds, cancellationToken),
-            MusicRadioType.Discovery => await GetDiscoveryMix(userId, libraryIds, request.Limit, cancellationToken),
-            MusicRadioType.DiscoveryAi => await GetDiscoveryAiMix(userId, libraryIds, request.Limit, cancellationToken),
-            MusicRadioType.TimeCapsule => await GetTimeCapsule(userId, libraryIds, request.Limit, cancellationToken),
+            MusicRadioType.Discovery => await GetDiscoveryMix(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
+            MusicRadioType.DiscoveryAi => await GetDiscoveryAiMix(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
+            MusicRadioType.TimeCapsule => await GetTimeCapsule(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
             MusicRadioType.Tempo => await GetTempoMix(request, userId, libraryIds, cancellationToken),
-            MusicRadioType.RecentlyAdded => await GetRecentlyAdded(userId, libraryIds, request.Limit, cancellationToken),
+            MusicRadioType.RecentlyAdded => await GetRecentlyAdded(userId, libraryIds, request.Limit, request.ExcludeIds, cancellationToken),
             _ => []
         };
     }
 
-    /// <summary>
-    /// Sonic Radio: similar tracks via music intelligence when available.
-    /// </summary>
     private async Task<List<BaseMedia>> GetSonicRadio(
         GetMusicRadioQuery request,
         Guid? userId,
@@ -61,13 +60,12 @@ public class GetMusicRadioQueryHandler(
         if (seedId is null)
             return [];
 
-        var trackIds = await musicIntelligenceService.GetSimilarTracksAsync(seedId.Value, request.Limit, ct);
-        return await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
+        var fetchLimit = request.Limit + (request.ExcludeIds?.Length ?? 0);
+        var trackIds = await musicIntelligenceService.GetSimilarTracksAsync(seedId.Value, fetchLimit, ct);
+        var filteredIds = FilterExcluded(trackIds, request.ExcludeIds, request.Limit);
+        return await LoadTracksByIdsAsync(filteredIds, userId, libraryIds, ct);
     }
 
-    /// <summary>
-    /// Artist Radio: tracks from the seed artist + tracks from artists in the same genres.
-    /// </summary>
     private async Task<List<BaseMedia>> GetArtistRadio(
         GetMusicRadioQuery request,
         Guid? userId,
@@ -91,32 +89,31 @@ public class GetMusicRadioQueryHandler(
             .Distinct()
             .ToListAsync(ct);
 
-        var artistTracks = await BuildTrackQuery(userId, libraryIds)
+        var artistTrackIds = await ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), request.ExcludeIds)
             .Where(t => t.PersonRoles.Any(r => r.PersonId == artistId)
                      || t.Album.PersonRoles.Any(r => r.PersonId == artistId))
+            .Select(t => t.Id)
             .ToListAsync(ct);
 
-        var relatedTracks = await BuildTrackQuery(userId, libraryIds)
+        var relatedTrackIds = await ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), request.ExcludeIds)
             .Where(t => !t.PersonRoles.Any(r => r.PersonId == artistId)
                      && !t.Album.PersonRoles.Any(r => r.PersonId == artistId))
             .Where(t => t.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && artistGenres.Contains(mt.MetadataTag.DisplayName))
                      || t.Album.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Genre && artistGenres.Contains(mt.MetadataTag.DisplayName)))
+            .Select(t => t.Id)
             .ToListAsync(ct);
 
         var artistCount = (int)(request.Limit * 0.6);
         var relatedCount = request.Limit - artistCount;
 
-        var result = Shuffle(artistTracks).Take(artistCount)
-            .Concat(Shuffle(relatedTracks).Take(relatedCount))
-            .Cast<BaseMedia>()
+        var selectedIds = Shuffle(artistTrackIds).Take(artistCount)
+            .Concat(Shuffle(relatedTrackIds).Take(relatedCount))
+            .Take(request.Limit)
             .ToList();
 
-        return Shuffle(result).Take(request.Limit).ToList();
+        return await LoadTracksByIdsAsync(Shuffle(selectedIds), userId, libraryIds, ct);
     }
 
-    /// <summary>
-    /// Mood Mix: mood-based mix via music intelligence when available.
-    /// </summary>
     private async Task<List<BaseMedia>> GetMoodMix(
         GetMusicRadioQuery request,
         Guid? userId,
@@ -128,56 +125,78 @@ public class GetMusicRadioQueryHandler(
 
         var moodKey = request.MoodPreset ?? "relaxed";
         var centroidIndex = request.MoodCentroidIndex ?? 0;
-        var trackIds = await musicIntelligenceService.GetMoodTracksAsync(moodKey, centroidIndex, request.Limit, ct);
-        return await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
+        var fetchLimit = request.Limit + (request.ExcludeIds?.Length ?? 0);
+        var trackIds = await musicIntelligenceService.GetMoodTracksAsync(moodKey, centroidIndex, fetchLimit, ct);
+        var filteredIds = FilterExcluded(trackIds, request.ExcludeIds, request.Limit);
+        return await LoadTracksByIdsAsync(filteredIds, userId, libraryIds, ct);
     }
 
-    /// <summary>
-    /// Discovery: never-played tracks in random order; falls back to never-rated when everything was played.
-    /// </summary>
-    private async Task<List<BaseMedia>> GetDiscoveryMix(Guid? userId, Guid[]? libraryIds, int limit, CancellationToken ct)
+    private async Task<List<BaseMedia>> GetDiscoveryMix(
+        Guid? userId,
+        Guid[]? libraryIds,
+        int limit,
+        Guid[]? excludeIds,
+        CancellationToken ct)
     {
+        var baseQuery = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), excludeIds);
+
         if (userId is null)
         {
-            var guestTracks = await BuildTrackQuery(null, libraryIds).ToListAsync(ct);
-            return Shuffle(guestTracks).Take(limit).Cast<BaseMedia>().ToList();
+            var guestIds = await baseQuery
+                .OrderBy(_ => EF.Functions.Random())
+                .Select(t => t.Id)
+                .Take(limit)
+                .ToListAsync(ct);
+
+            return await LoadTracksByIdsAsync(guestIds, userId, libraryIds, ct);
         }
 
         var uid = userId.Value;
 
-        var neverPlayed = await BuildTrackQuery(userId, libraryIds)
+        var neverPlayedIds = await baseQuery
             .Where(t => !t.UserMediaStates.Any(s => s.UserId == uid && s.PlayCount > 0))
+            .OrderBy(_ => EF.Functions.Random())
+            .Select(t => t.Id)
+            .Take(limit)
             .ToListAsync(ct);
 
-        if (neverPlayed.Count > 0)
-            return Shuffle(neverPlayed).Take(limit).Cast<BaseMedia>().ToList();
+        if (neverPlayedIds.Count > 0)
+            return await LoadTracksByIdsAsync(neverPlayedIds, userId, libraryIds, ct);
 
-        var neverRated = await BuildTrackQuery(userId, libraryIds)
+        var neverRatedIds = await baseQuery
             .Where(t => !t.Ratings.OfType<UserRating>().Any(r => r.UserId == uid))
+            .OrderBy(_ => EF.Functions.Random())
+            .Select(t => t.Id)
+            .Take(limit)
             .ToListAsync(ct);
 
-        return Shuffle(neverRated).Take(limit).Cast<BaseMedia>().ToList();
+        return await LoadTracksByIdsAsync(neverRatedIds, userId, libraryIds, ct);
     }
 
-    /// <summary>
-    /// Discovery AI: taste-based recommendations, preferring tracks the user has not played yet,
-    /// then tracks they have not rated (same fallback as local discovery).
-    /// </summary>
-    private async Task<List<BaseMedia>> GetDiscoveryAiMix(Guid? userId, Guid[]? libraryIds, int limit, CancellationToken ct)
+    private async Task<List<BaseMedia>> GetDiscoveryAiMix(
+        Guid? userId,
+        Guid[]? libraryIds,
+        int limit,
+        Guid[]? excludeIds,
+        CancellationToken ct)
     {
         if (!await musicIntelligenceService.IsAvailableAsync(ct))
             return [];
 
-        var candidateCount = Math.Clamp(limit * 5, limit, 250);
+        var excludeCount = excludeIds?.Length ?? 0;
+        var candidateCount = Math.Clamp((limit + excludeCount) * 5, limit + excludeCount, 250);
         var trackIds = await musicIntelligenceService.GetDiscoveryTracksAsync(candidateCount, ct);
-        var tracks = await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
-        return FilterUnexploredTracks(tracks, trackIds, userId, limit);
+        var filteredIds = FilterExcluded(trackIds, excludeIds, candidateCount);
+        var tracks = await LoadTracksByIdsAsync(filteredIds, userId, libraryIds, ct);
+        return FilterUnexploredTracks(tracks, filteredIds, userId, limit);
     }
 
-    /// <summary>
-    /// Time Capsule: tracks the user listened to around the same period last year (+-2 weeks).
-    /// </summary>
-    private async Task<List<BaseMedia>> GetTimeCapsule(Guid? userId, Guid[]? libraryIds, int limit, CancellationToken ct)
+    private async Task<List<BaseMedia>> GetTimeCapsule(
+        Guid? userId,
+        Guid[]? libraryIds,
+        int limit,
+        Guid[]? excludeIds,
+        CancellationToken ct)
     {
         if (userId is null)
             return [];
@@ -185,48 +204,55 @@ public class GetMusicRadioQueryHandler(
         var now = DateTime.UtcNow;
         var windowStart = now.AddYears(-1).AddDays(-14);
         var windowEnd = now.AddYears(-1).AddDays(14);
+        var baseQuery = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), excludeIds);
 
-        var tracks = await BuildTrackQuery(userId, libraryIds)
+        var ids = await baseQuery
             .Where(t => t.UserMediaStates.Any(s =>
                 s.UserId == userId.Value
                 && s.LastInteractedAt >= windowStart
                 && s.LastInteractedAt <= windowEnd))
+            .OrderBy(_ => EF.Functions.Random())
+            .Select(t => t.Id)
+            .Take(limit)
             .ToListAsync(ct);
 
-        if (tracks.Count == 0)
+        if (ids.Count == 0)
         {
-            tracks = await BuildTrackQuery(userId, libraryIds)
+            ids = await baseQuery
                 .Where(t => t.UserMediaStates.Any(s => s.UserId == userId.Value && s.PlayCount > 0))
                 .OrderByDescending(t => t.UserMediaStates
                     .Where(s => s.UserId == userId.Value)
                     .Select(s => s.LastInteractedAt)
                     .FirstOrDefault())
+                .Select(t => t.Id)
                 .Take(limit)
                 .ToListAsync(ct);
         }
 
-        if (tracks.Count < limit / 2)
+        if (ids.Count < limit / 2)
         {
             var sixMonthStart = now.AddMonths(-6).AddDays(-14);
             var sixMonthEnd = now.AddMonths(-6).AddDays(14);
+            var existingIds = ids.ToHashSet();
 
-            var moreTracks = await BuildTrackQuery(userId, libraryIds)
+            var moreIds = await baseQuery
                 .Where(t => t.UserMediaStates.Any(s =>
                     s.UserId == userId.Value
                     && s.LastInteractedAt >= sixMonthStart
                     && s.LastInteractedAt <= sixMonthEnd))
-                .Where(t => !tracks.Select(x => x.Id).Contains(t.Id))
+                .Where(t => !existingIds.Contains(t.Id))
+                .OrderBy(_ => EF.Functions.Random())
+                .Select(t => t.Id)
+                .Take(limit - ids.Count)
                 .ToListAsync(ct);
 
-            tracks.AddRange(moreTracks);
+            ids.AddRange(moreIds);
         }
 
-        return Shuffle(tracks).Take(limit).Cast<BaseMedia>().ToList();
+        var shuffledIds = Shuffle(ids).Take(limit).ToList();
+        return await LoadTracksByIdsAsync(shuffledIds, userId, libraryIds, ct);
     }
 
-    /// <summary>
-    /// Tempo / ambiance mix mapped to danceable mood via music intelligence.
-    /// </summary>
     private async Task<List<BaseMedia>> GetTempoMix(
         GetMusicRadioQuery request,
         Guid? userId,
@@ -236,27 +262,33 @@ public class GetMusicRadioQueryHandler(
         if (!await musicIntelligenceService.IsAvailableAsync(ct))
             return [];
 
-        var trackIds = await musicIntelligenceService.GetMoodTracksAsync("danceable", 0, request.Limit, ct);
-        return await LoadTracksByIdsAsync(trackIds, userId, libraryIds, ct);
+        var fetchLimit = request.Limit + (request.ExcludeIds?.Length ?? 0);
+        var trackIds = await musicIntelligenceService.GetMoodTracksAsync("danceable", 0, fetchLimit, ct);
+        var filteredIds = FilterExcluded(trackIds, request.ExcludeIds, request.Limit);
+        return await LoadTracksByIdsAsync(filteredIds, userId, libraryIds, ct);
     }
 
-    /// <summary>
-    /// Recently Added: newest tracks the user hasn't listened to yet.
-    /// </summary>
-    private async Task<List<BaseMedia>> GetRecentlyAdded(Guid? userId, Guid[]? libraryIds, int limit, CancellationToken ct)
+    private async Task<List<BaseMedia>> GetRecentlyAdded(
+        Guid? userId,
+        Guid[]? libraryIds,
+        int limit,
+        Guid[]? excludeIds,
+        CancellationToken ct)
     {
-        var query = BuildTrackQuery(userId, libraryIds);
+        var query = ApplyExcludeIdsFilter(BuildLightTrackIdQuery(userId, libraryIds), excludeIds);
 
         if (userId.HasValue)
         {
             query = query.Where(t => !t.UserMediaStates.Any(s => s.UserId == userId.Value && s.PlayCount > 0));
         }
 
-        return await query
+        var ids = await query
             .OrderByDescending(t => t.Created)
+            .Select(t => t.Id)
             .Take(limit)
-            .Cast<BaseMedia>()
             .ToListAsync(ct);
+
+        return await LoadTracksByIdsAsync(ids, userId, libraryIds, ct);
     }
 
     private async Task<Guid?> PickAutoSeedTrackIdAsync(Guid? userId, Guid[]? libraryIds, CancellationToken ct)
@@ -310,6 +342,17 @@ public class GetMusicRadioQueryHandler(
             .ToList();
     }
 
+    private IQueryable<MusicTrack> BuildLightTrackIdQuery(Guid? userId, Guid[]? libraryIds)
+    {
+        var query = context.Medias
+            .OfType<MusicTrack>()
+            .Where(t => t.IndexedFiles.Any() || t.RemoteIndexedFiles.Any())
+            .AsNoTracking();
+
+        query = ApplyLibraryFilter(query, libraryIds);
+        return query;
+    }
+
     private IQueryable<MusicTrack> BuildTrackQuery(Guid? userId, Guid[]? libraryIds)
     {
         var query = context.Medias
@@ -352,6 +395,26 @@ public class GetMusicRadioQueryHandler(
             || t.Album.Tracks.Any(track =>
                 track.IndexedFiles.Any(f => libraryIds.Contains(f.LibraryId))
                 || track.RemoteIndexedFiles.Any(r => libraryIds.Contains(r.LibraryId))));
+    }
+
+    private static IQueryable<MusicTrack> ApplyExcludeIdsFilter(IQueryable<MusicTrack> query, Guid[]? excludeIds)
+    {
+        if (excludeIds is not { Length: > 0 })
+            return query;
+
+        return query.Where(t => !excludeIds.Contains(t.Id));
+    }
+
+    private static List<Guid> FilterExcluded(IReadOnlyList<Guid> trackIds, Guid[]? excludeIds, int limit)
+    {
+        IEnumerable<Guid> ids = trackIds;
+        if (excludeIds is { Length: > 0 })
+        {
+            var exclude = excludeIds.ToHashSet();
+            ids = ids.Where(id => !exclude.Contains(id));
+        }
+
+        return ids.Take(limit).ToList();
     }
 
     private static List<BaseMedia> FilterUnexploredTracks(

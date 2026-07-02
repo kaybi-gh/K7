@@ -59,6 +59,7 @@ builder.Services.AddSingleton<IPlayerService, PlayerService>();
 builder.Services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
 builder.Services.AddSingleton<ISleepTimerService, SleepTimerService>();
 builder.Services.AddSingleton<AutoplayService>();
+builder.Services.AddSingleton<IMusicRadioPlaybackService, MusicRadioPlaybackService>();
 builder.Services.AddSingleton<IMediaPlayerService, MediaPlayerService>();
 builder.Services.AddSingleton<PlaybackProgressTracker>();
 builder.Services.AddSingleton<AudioPlaybackProgressTracker>();
