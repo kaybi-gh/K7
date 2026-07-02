@@ -21,9 +21,10 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<string> LOCAL_USERS = new("LocalUsers");
     public static readonly PreferenceKey<bool> SINGLE_USER_MODE = new("SingleUserMode");
     public static readonly PreferenceKey<string> LAST_ACTIVE_USER_ID = new("LastActiveUserId");
-    public static readonly PreferenceKey<string> ACTIVE_VIEWING_GROUP_ID = new("ActiveViewingGroupId");
-    public static readonly PreferenceKey<string> LAST_ACTIVE_VIEWING_GROUP_ID = new("LastActiveViewingGroupId");
-    public static readonly PreferenceKey<string> VIEWING_GROUPS_CACHE = new("ViewingGroupsCache");
+    public static readonly PreferenceKey<string> ACTIVE_SHARED_PROFILE_ID = new("ActiveSharedProfileId");
+    public static readonly PreferenceKey<string> LAST_ACTIVE_SHARED_PROFILE_ID = new("LastActiveSharedProfileId");
+    public static readonly PreferenceKey<string> SHARED_PROFILES_CACHE = new("SharedProfilesCache");
+    public static readonly PreferenceKey<string> PINNED_SHARED_PROFILE_IDS = new("PinnedSharedProfileIds");
     public static readonly PreferenceKey<string> NEXT_EPISODE_BEHAVIOR = new("NextEpisodeBehavior");
     public static readonly PreferenceKey<long> MAX_DOWNLOAD_STORAGE_BYTES = new("MaxDownloadStorageBytes");
     public static readonly PreferenceKey<long> MAX_CACHE_STORAGE_BYTES = new("MaxCacheStorageBytes");

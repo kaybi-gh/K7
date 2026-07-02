@@ -19,4 +19,6 @@ public interface IUserPreferencesService
     Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default);
     Task<SyncPlayPreferencesDto> GetSyncPlayPreferencesAsync(CancellationToken cancellationToken = default);
     Task UpdateSyncPlayPreferencesAsync(SyncPlayPreferencesDto preferences, CancellationToken cancellationToken = default);
+    Task<SharedProfilePreferencesDto> GetSharedProfilePreferencesAsync(CancellationToken cancellationToken = default);
+    Task UpdateSharedProfilePreferencesAsync(SharedProfilePreferencesDto preferences, CancellationToken cancellationToken = default);
 }
