@@ -71,4 +71,24 @@
   <data name="DeleteAccount" xml:space="preserve"><value>Supprimer mon compte</value></data>
   <data name="DeleteAccountTitle" xml:space="preserve"><value>Supprimer le compte</value></data>
   <data name="DeleteAccountConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.</value></data>
+  <data name="TwoFactor" xml:space="preserve"><value>Authentification a deux facteurs</value></data>
+  <data name="TwoFactorEnabled" xml:space="preserve"><value>L'authentification a deux facteurs est activee.</value></data>
+  <data name="TwoFactorDisabled" xml:space="preserve"><value>L'authentification a deux facteurs n'est pas activee.</value></data>
+  <data name="EnableTwoFactor" xml:space="preserve"><value>Activer l'authentification a deux facteurs</value></data>
+  <data name="DisableTwoFactor" xml:space="preserve"><value>Desactiver</value></data>
+  <data name="TwoFactorSetupPrompt" xml:space="preserve"><value>Scannez le code QR avec votre application d'authentification, puis entrez le code de verification.</value></data>
+  <data name="SharedKey" xml:space="preserve"><value>Cle manuelle</value></data>
+  <data name="VerificationCode" xml:space="preserve"><value>Code de verification</value></data>
+  <data name="VerifyAndEnable" xml:space="preserve"><value>Verifier et activer</value></data>
+  <data name="VerificationCodeRequired" xml:space="preserve"><value>Le code de verification est requis.</value></data>
+  <data name="TwoFactorEnabledSuccess" xml:space="preserve"><value>Authentification a deux facteurs activee.</value></data>
+  <data name="TwoFactorDisabledSuccess" xml:space="preserve"><value>Authentification a deux facteurs desactivee.</value></data>
+  <data name="RecoveryCodesRemaining" xml:space="preserve"><value>{0} codes de recuperation restants.</value></data>
+  <data name="RegenerateRecoveryCodes" xml:space="preserve"><value>Regenerer les codes de recuperation</value></data>
+  <data name="RegenerateRecoveryCodesTitle" xml:space="preserve"><value>Regenerer les codes</value></data>
+  <data name="RegenerateRecoveryCodesConfirm" xml:space="preserve"><value>Les anciens codes de recuperation seront invalides. Continuer ?</value></data>
+  <data name="RecoveryCodesGenerated" xml:space="preserve"><value>Nouveaux codes de recuperation generes.</value></data>
+  <data name="SaveRecoveryCodes" xml:space="preserve"><value>Conservez ces codes de recuperation dans un endroit sur. Chaque code ne peut etre utilise qu'une fois.</value></data>
+  <data name="DisableTwoFactorTitle" xml:space="preserve"><value>Desactiver l'authentification a deux facteurs</value></data>
+  <data name="DisableTwoFactorConfirm" xml:space="preserve"><value>Êtes-vous sûr de vouloir desactiver l'authentification a deux facteurs ?</value></data>
 </root>

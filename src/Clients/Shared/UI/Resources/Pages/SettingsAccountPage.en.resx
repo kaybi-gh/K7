@@ -71,4 +71,24 @@
   <data name="DeleteAccount" xml:space="preserve"><value>Delete my account</value></data>
   <data name="DeleteAccountTitle" xml:space="preserve"><value>Delete account</value></data>
   <data name="DeleteAccountConfirm" xml:space="preserve"><value>Are you sure you want to delete your account? This action is irreversible.</value></data>
+  <data name="TwoFactor" xml:space="preserve"><value>Two-factor authentication</value></data>
+  <data name="TwoFactorEnabled" xml:space="preserve"><value>Two-factor authentication is enabled.</value></data>
+  <data name="TwoFactorDisabled" xml:space="preserve"><value>Two-factor authentication is not enabled.</value></data>
+  <data name="EnableTwoFactor" xml:space="preserve"><value>Enable two-factor authentication</value></data>
+  <data name="DisableTwoFactor" xml:space="preserve"><value>Disable</value></data>
+  <data name="TwoFactorSetupPrompt" xml:space="preserve"><value>Scan the QR code with your authenticator app, then enter the verification code.</value></data>
+  <data name="SharedKey" xml:space="preserve"><value>Manual key</value></data>
+  <data name="VerificationCode" xml:space="preserve"><value>Verification code</value></data>
+  <data name="VerifyAndEnable" xml:space="preserve"><value>Verify and enable</value></data>
+  <data name="VerificationCodeRequired" xml:space="preserve"><value>Verification code is required.</value></data>
+  <data name="TwoFactorEnabledSuccess" xml:space="preserve"><value>Two-factor authentication enabled.</value></data>
+  <data name="TwoFactorDisabledSuccess" xml:space="preserve"><value>Two-factor authentication disabled.</value></data>
+  <data name="RecoveryCodesRemaining" xml:space="preserve"><value>{0} recovery codes remaining.</value></data>
+  <data name="RegenerateRecoveryCodes" xml:space="preserve"><value>Regenerate recovery codes</value></data>
+  <data name="RegenerateRecoveryCodesTitle" xml:space="preserve"><value>Regenerate codes</value></data>
+  <data name="RegenerateRecoveryCodesConfirm" xml:space="preserve"><value>Old recovery codes will be invalidated. Continue?</value></data>
+  <data name="RecoveryCodesGenerated" xml:space="preserve"><value>New recovery codes generated.</value></data>
+  <data name="SaveRecoveryCodes" xml:space="preserve"><value>Save these recovery codes in a safe place. Each code can only be used once.</value></data>
+  <data name="DisableTwoFactorTitle" xml:space="preserve"><value>Disable two-factor authentication</value></data>
+  <data name="DisableTwoFactorConfirm" xml:space="preserve"><value>Are you sure you want to disable two-factor authentication?</value></data>
 </root>

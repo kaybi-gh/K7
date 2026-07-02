@@ -103,6 +103,61 @@
 
     <hr class="k7-divider my-4" />
 
+    @* Two-Factor Authentication *@
+    @if (_hasPassword)
+    {
+        <section class="settings-section mb-4">
+            <h6 class="mb-2">@L["TwoFactor"]</h6>
+            @if (_twoFactorEnabled)
+            {
+                <p class="text-sm mb-2">@L["TwoFactorEnabled"]</p>
+                <p class="text-sm text-muted mb-2">@L["RecoveryCodesRemaining", _recoveryCodesLeft]</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <K7Button Variant="outlined" OnClick="GenerateRecoveryCodesAsync">@L["RegenerateRecoveryCodes"]</K7Button>
+                    <K7Button Variant="text" Color="error" OnClick="DisableTwoFactorAsync">@L["DisableTwoFactor"]</K7Button>
+                </div>
+            }
+            else if (_twoFactorSetup is not null)
+            {
+                <p class="text-sm mb-2">@L["TwoFactorSetupPrompt"]</p>
+                <p class="text-sm text-muted mb-2">@L["SharedKey"]: <span class="recovery-code">@_twoFactorSetup.SharedKey</span></p>
+                <div id="two-factor-qr" class="mb-3"></div>
+                <K7TextField @bind-Value="_verifyCode" Label="@L["VerificationCode"]" Class="mb-2" />
+                <div class="d-flex gap-2">
+                    <K7Button Variant="filled" OnClick="VerifyTwoFactorSetupAsync">@L["VerifyAndEnable"]</K7Button>
+                    <K7Button Variant="text" OnClick="CancelTwoFactorSetup">@S["Cancel"]</K7Button>
+                </div>
+            }
+            else
+            {
+                <p class="text-sm mb-2">@L["TwoFactorDisabled"]</p>
+                <K7Button Variant="outlined" OnClick="BeginTwoFactorSetupAsync">@L["EnableTwoFactor"]</K7Button>
+            }
+
+            @if (_recoveryCodes.Count > 0)
+            {
+                <K7Alert Severity="K7Severity.Warning" Class="mt-3">@L["SaveRecoveryCodes"]</K7Alert>
+                <ul class="recovery-codes-list mt-2">
+                    @foreach (var recoveryCode in _recoveryCodes)
+                    {
+                        <li><span class="recovery-code">@recoveryCode</span></li>
+                    }
+                </ul>
+            }
+
+            @if (_twoFactorError is not null)
+            {
+                <K7Alert Severity="K7Severity.Error" Class="mt-2">@_twoFactorError</K7Alert>
+            }
+            @if (_twoFactorSuccess is not null)
+            {
+                <K7Alert Severity="K7Severity.Success" Class="mt-2">@_twoFactorSuccess</K7Alert>
+            }
+        </section>
+
+        <hr class="k7-divider my-4" />
+    }
+
     @* PIN Section *@
     <section class="settings-section mb-4">
         <h6 class="mb-2">@L["Pin"]</h6>
