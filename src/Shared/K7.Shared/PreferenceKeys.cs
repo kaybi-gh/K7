@@ -1,4 +1,4 @@
-﻿namespace K7.Shared;
+namespace K7.Shared;
 
 public sealed class PreferenceKey<T>(string name)
 {
@@ -21,6 +21,9 @@ public static class PreferenceKeys
     public static readonly PreferenceKey<string> LOCAL_USERS = new("LocalUsers");
     public static readonly PreferenceKey<bool> SINGLE_USER_MODE = new("SingleUserMode");
     public static readonly PreferenceKey<string> LAST_ACTIVE_USER_ID = new("LastActiveUserId");
+    public static readonly PreferenceKey<string> ACTIVE_VIEWING_GROUP_ID = new("ActiveViewingGroupId");
+    public static readonly PreferenceKey<string> LAST_ACTIVE_VIEWING_GROUP_ID = new("LastActiveViewingGroupId");
+    public static readonly PreferenceKey<string> VIEWING_GROUPS_CACHE = new("ViewingGroupsCache");
     public static readonly PreferenceKey<string> NEXT_EPISODE_BEHAVIOR = new("NextEpisodeBehavior");
     public static readonly PreferenceKey<long> MAX_DOWNLOAD_STORAGE_BYTES = new("MaxDownloadStorageBytes");
     public static readonly PreferenceKey<long> MAX_CACHE_STORAGE_BYTES = new("MaxCacheStorageBytes");

@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using K7.Server.Domain.Enums;
@@ -17,6 +17,7 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Search;
 using K7.Shared.Dtos.Users;
+using K7.Shared.Dtos.ViewingGroups;
 using K7.Shared.Enums;
 using K7.Shared.Extensions;
 using K7.Shared.Interfaces;
@@ -25,7 +26,7 @@ using K7.Shared.QueryBuilders;
 
 namespace K7.Shared.Services;
 
-public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService
+public class K7ServerService : IK7ServerService, IMediaService, ILibraryService, IPlaylistService, ICollectionService, ISearchService, IStreamingService, IDeviceApiService, IUserAdminService, IRatingService, IServerInfoService, IBackgroundTaskService, IDiagnosticsService, IUserPreferencesService, IServerPreferencesService, IDownloadService, INotificationAdminService, IFederationService, IApiKeyAdminService, IMusicIntelligenceAdminService, IMusicIntelligenceClientService, IViewingGroupApi
 {
     public HttpClient HttpClient { get; }
     private readonly JsonSerializerOptions _serializerOptions;
@@ -189,9 +190,9 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         return await response.Content.ReadFromJsonAsync<StreamingSessionDto>(_serializerOptions, cancellationToken);
     }
 
-    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, CancellationToken cancellationToken = default)
+    public async Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? viewingGroupId = null, CancellationToken cancellationToken = default)
     {
-        var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId, PlaylistId = playlistId };
+        var payload = new { MediaId = mediaId, SessionId = sessionId, ReferenceId = referenceId, Position = position, Duration = duration, State = state, DeviceId = deviceId, PlaylistId = playlistId, ViewingGroupId = viewingGroupId };
         var response = await HttpClient.PostAsJsonAsync("api/medias/playback-progress", payload, _serializerOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
@@ -463,6 +464,43 @@ public class K7ServerService : IK7ServerService, IMediaService, ILibraryService,
         var response = await HttpClient.PostAsync($"api/library-groups/{libraryGroupId}/cover?sourcePictureId={sourcePictureId}", null, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ViewingGroupDto>> GetViewingGroupsAsync(CancellationToken cancellationToken = default)
+    {
+        var groups = await HttpClient.GetFromJsonAsync<List<ViewingGroupDto>>("api/viewing-groups", _serializerOptions, cancellationToken);
+        return groups ?? [];
+    }
+
+    public async Task<IReadOnlyList<ViewingGroupMemberCandidateDto>> GetViewingGroupMemberCandidatesAsync(CancellationToken cancellationToken = default)
+    {
+        var candidates = await HttpClient.GetFromJsonAsync<List<ViewingGroupMemberCandidateDto>>("api/viewing-groups/member-candidates", _serializerOptions, cancellationToken);
+        return candidates ?? [];
+    }
+
+    public async Task<Guid> CreateViewingGroupAsync(CreateViewingGroupRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PostAsJsonAsync("api/viewing-groups", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Guid>(_serializerOptions, cancellationToken);
+    }
+
+    public async Task UpdateViewingGroupAsync(Guid id, UpdateViewingGroupRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/viewing-groups/{id}", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteViewingGroupAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.DeleteAsync($"api/viewing-groups/{id}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task SetViewingGroupPinAsync(Guid id, SetViewingGroupPinRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await HttpClient.PutAsJsonAsync($"api/viewing-groups/{id}/pin", request, _serializerOptions, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task<List<LibraryPictureDto>> GetLibraryPicturesAsync(Guid libraryId, CancellationToken cancellationToken = default)
