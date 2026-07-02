@@ -46,6 +46,16 @@ public partial class SettingsAccountPage
     private string? _pinError;
     private string? _pinSuccess;
 
+    // Two-Factor
+    private bool _twoFactorEnabled;
+    private int _recoveryCodesLeft;
+    private TwoFactorSetupDto? _twoFactorSetup;
+    private string? _verifyCode;
+    private List<string> _recoveryCodes = [];
+    private string? _twoFactorError;
+    private string? _twoFactorSuccess;
+    private string? _qrRenderedUri;
+
     // Login Methods
     private LoginMethodsDto? _loginMethods;
     private string? _loginMethodsError;
@@ -91,6 +101,8 @@ public partial class SettingsAccountPage
             _loginMethods = await UserService.GetLoginMethodsAsync();
             _hasPassword = _loginMethods.HasPassword;
             _canRemovePassword = _loginMethods.CanRemovePassword;
+            _twoFactorEnabled = _loginMethods.TwoFactorEnabled;
+            _recoveryCodesLeft = _loginMethods.RecoveryCodesLeft;
         }
         catch
         {
@@ -365,6 +377,118 @@ public partial class SettingsAccountPage
     {
         _pinError = null;
         _pinSuccess = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_twoFactorSetup is not null && _qrRenderedUri != _twoFactorSetup.AuthenticatorUri)
+        {
+            _qrRenderedUri = _twoFactorSetup.AuthenticatorUri;
+            await JSRuntime.InvokeVoidAsync("k7QrCode.generate", "two-factor-qr", _twoFactorSetup.AuthenticatorUri, 200);
+        }
+    }
+
+    private async Task BeginTwoFactorSetupAsync()
+    {
+        ClearTwoFactorMessages();
+        _recoveryCodes = [];
+        try
+        {
+            _twoFactorSetup = await UserService.BeginTwoFactorSetupAsync();
+            _qrRenderedUri = null;
+        }
+        catch (Exception ex)
+        {
+            _twoFactorError = S["ErrorWithDetails", ex.Message];
+        }
+    }
+
+    private void CancelTwoFactorSetup()
+    {
+        _twoFactorSetup = null;
+        _verifyCode = null;
+        _qrRenderedUri = null;
+        ClearTwoFactorMessages();
+    }
+
+    private async Task VerifyTwoFactorSetupAsync()
+    {
+        ClearTwoFactorMessages();
+        if (string.IsNullOrWhiteSpace(_verifyCode))
+        {
+            _twoFactorError = L["VerificationCodeRequired"];
+            return;
+        }
+
+        try
+        {
+            var result = await UserService.VerifyTwoFactorSetupAsync(new VerifyTwoFactorRequest { Code = _verifyCode });
+            _twoFactorSetup = null;
+            _verifyCode = null;
+            _qrRenderedUri = null;
+            _recoveryCodes = result.RecoveryCodes.ToList();
+            _twoFactorEnabled = true;
+            _twoFactorSuccess = L["TwoFactorEnabledSuccess"];
+            await LoadLoginMethodsAsync();
+        }
+        catch (Exception ex)
+        {
+            _twoFactorError = S["ErrorWithDetails", ex.Message];
+        }
+    }
+
+    private async Task GenerateRecoveryCodesAsync()
+    {
+        ClearTwoFactorMessages();
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["RegenerateRecoveryCodesTitle"],
+            L["RegenerateRecoveryCodesConfirm"],
+            yesText: S["Confirm"], cancelText: S["Cancel"]);
+
+        if (confirmed != true) return;
+
+        try
+        {
+            var result = await UserService.GenerateTwoFactorRecoveryCodesAsync();
+            _recoveryCodes = result.RecoveryCodes.ToList();
+            _twoFactorSuccess = L["RecoveryCodesGenerated"];
+            await LoadLoginMethodsAsync();
+        }
+        catch (Exception ex)
+        {
+            _twoFactorError = S["ErrorWithDetails", ex.Message];
+        }
+    }
+
+    private async Task DisableTwoFactorAsync()
+    {
+        ClearTwoFactorMessages();
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            L["DisableTwoFactorTitle"],
+            L["DisableTwoFactorConfirm"],
+            yesText: S["Confirm"], cancelText: S["Cancel"]);
+
+        if (confirmed != true) return;
+
+        try
+        {
+            await UserService.DisableTwoFactorAsync();
+            _twoFactorEnabled = false;
+            _recoveryCodesLeft = 0;
+            _recoveryCodes = [];
+            _twoFactorSuccess = L["TwoFactorDisabledSuccess"];
+            await LoadLoginMethodsAsync();
+        }
+        catch (Exception ex)
+        {
+            _twoFactorError = S["ErrorWithDetails", ex.Message];
+        }
+    }
+
+    private void ClearTwoFactorMessages()
+    {
+        _twoFactorError = null;
+        _twoFactorSuccess = null;
     }
 
     // Login Methods
