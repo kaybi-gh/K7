@@ -23,5 +23,6 @@
   <data name="WelcomeHeading" xml:space="preserve"><value>Choisissez comment continuer</value></data>
   <data name="SignInPrompt" xml:space="preserve"><value>Connexion en cours…</value></data>
   <data name="SignInFailed" xml:space="preserve"><value>La connexion a été annulée ou a échoué.</value></data>
+  <data name="ContinueAsGuest" xml:space="preserve"><value>Continuer en tant qu'invité</value></data>
 </root>
 
