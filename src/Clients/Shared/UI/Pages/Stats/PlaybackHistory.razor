@@ -21,7 +21,7 @@
 
     <div class="data-page-body">
         <K7DataTable @key="_tableKey" TItem="PlaybackHistoryItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
-                     ShowToolbar="false" Surface="false" Height="100%">
+                     RowHeight="48" ShowToolbar="false" Surface="false" Height="100%">
             <K7DataColumn TItem="PlaybackHistoryItemDto" Title="@L["Title"]" Hideable="false">
                 <CellTemplate>
                     @if (context.MediaUrl is not null)

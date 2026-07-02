@@ -73,9 +73,6 @@
             <MediaCard Model="vm" Variant="@GetVariant(item)" Href="@GetItemHref(item)" OverlayEnabled="true" ProgressEnabled="true" WatchedStatusEnabled="true" WatchStateMenuEnabled="_canSetWatchState" FooterVisible="true" />
         }
     </GridTemplate>
-    <GridPlaceholder>
-        <K7Skeleton Shape="rect" Width="100%" Height="0" Style="aspect-ratio: 2 / 3;" />
-    </GridPlaceholder>
     <TableContent>
         <K7DataTable TItem="LiteMediaDto"
                      ServerData="LoadTableDataAsync"
@@ -83,6 +80,7 @@
                      ActiveSortDirection="@_activeSortDirection"
                      OnSortChanged="OnTableSortChanged"
                      OnRowClick="NavigateToItem"
+                     RowHeight="56"
                      ShowToolbar="false"
                      Surface="false"
                      @ref="_dataTable">
@@ -144,7 +142,4 @@
     <ListTemplate Context="item">
         <LibraryListItem Item="item" Href="@GetItemHref(item)" />
     </ListTemplate>
-    <ListPlaceholder>
-        <K7Skeleton Shape="rect" Width="100%" Height="64px" />
-    </ListPlaceholder>
 </BrowseView>

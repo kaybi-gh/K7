@@ -94,7 +94,7 @@
         else
         {
             <K7DataTable @key="_tableKey" TItem="DiagnosticItemDto" ServerData="LoadServerDataAsync" @ref="_tableRef"
-                         ShowToolbar="false" Surface="false" Height="100%">
+                         RowHeight="64" ShowToolbar="false" Surface="false" Height="100%">
                 <K7DataColumn TItem="DiagnosticItemDto" Title="@L["ColName"]" Hideable="false">
                     <CellTemplate>
                         <div class="diagnostics-name-cell">
