@@ -164,7 +164,7 @@ public partial class SmartPlaylistDetail
             { x => x.InitialOrderBy, _smartPlaylist.OrderBy },
             { x => x.InitialOrderDescending, _smartPlaylist.OrderDescending }
         };
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>(L["EditDialogTitle"], parameters, options);
         var result = await dialog.Result;
         if (result is { Canceled: false })

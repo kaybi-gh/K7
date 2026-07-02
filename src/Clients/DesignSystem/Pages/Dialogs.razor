@@ -196,7 +196,9 @@
 
     private async Task ShowSmartPlaylistDialog()
     {
-        await DialogService.ShowAsync<SmartPlaylistDialog>("New smart playlist");
+        await DialogService.ShowAsync<SmartPlaylistDialog>(
+            "New smart playlist",
+            options: new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true });
     }
 
     private async Task ShowAddToPlaylistDialog()

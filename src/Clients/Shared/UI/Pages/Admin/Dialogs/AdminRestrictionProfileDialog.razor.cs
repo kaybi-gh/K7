@@ -1,113 +1,98 @@
-using K7.Server.Domain.Enums;
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.Interfaces;
+using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Pages.Admin.Dialogs;
 
 public partial class AdminRestrictionProfileDialog
 {
-    [Inject] private IUserAdminService K7ServerService { get; set; } = default!;
-    [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
-
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
     [Parameter] public bool IsNew { get; set; } = true;
     [Parameter] public Guid? ProfileId { get; set; }
-    [Parameter] public string Name { get; set; } = "";
-    [Parameter] public string? Description { get; set; }
-    [Parameter] public RestrictionMatchCondition MatchCondition { get; set; } = RestrictionMatchCondition.Any;
-    [Parameter] public List<RuleEntry> Rules { get; set; } = [];
+    [Parameter] public string? InitialName { get; set; }
+    [Parameter] public string? InitialDescription { get; set; }
+    [Parameter] public RuleGroupDto? InitialRuleFilter { get; set; }
 
+    private string _name = "";
+    private string? _description;
+    private RuleGroupDto _ruleFilter = new() { MatchCondition = RuleMatchCondition.Any, Items = [] };
+    private IReadOnlyList<RuleFieldDescriptorDto> _fieldDescriptors = [];
+    private MediaTagsDto? _tags;
     private bool _saving;
 
-    private void AddRule()
+    protected override async Task OnInitializedAsync()
     {
-        Rules.Add(new RuleEntry { Field = RestrictionField.Genre, Operator = RestrictionOperator.Equals });
+        _name = InitialName ?? "";
+        _description = InitialDescription;
+        _ruleFilter = InitialRuleFilter ?? new RuleGroupDto { MatchCondition = RuleMatchCondition.Any, Items = [] };
+
+        await LoadTagsAsync();
+        RefreshFieldDescriptors();
     }
 
-    private void OnFieldChanged(int index, RestrictionField newField)
+    private async Task LoadTagsAsync()
     {
-        Rules[index].Field = newField;
-        var validOps = GetOperatorsForField(newField);
-        if (!validOps.Contains(Rules[index].Operator))
-            Rules[index].Operator = validOps[0];
+        try
+        {
+            _tags = await MediaService.GetMediaTagsAsync(new GetMediaTagsQuery());
+        }
+        catch
+        {
+            _tags = null;
+        }
     }
 
-    private static List<RestrictionOperator> GetOperatorsForField(RestrictionField field) => field switch
+    private void RefreshFieldDescriptors()
     {
-        RestrictionField.Genre or RestrictionField.ContentRating =>
-        [
-            RestrictionOperator.Equals,
-            RestrictionOperator.NotEquals,
-            RestrictionOperator.Contains,
-            RestrictionOperator.NotContains,
-            RestrictionOperator.IsEmpty,
-            RestrictionOperator.IsNotEmpty,
-        ],
-        RestrictionField.ReleaseYear =>
-        [
-            RestrictionOperator.Equals,
-            RestrictionOperator.NotEquals,
-            RestrictionOperator.GreaterThan,
-            RestrictionOperator.LessThan,
-            RestrictionOperator.GreaterThanOrEqual,
-            RestrictionOperator.LessThanOrEqual,
-            RestrictionOperator.IsEmpty,
-            RestrictionOperator.IsNotEmpty,
-        ],
-        _ => [RestrictionOperator.Equals]
-    };
+        _fieldDescriptors = RuleFieldLocalization.Localize(
+            RuleFieldCatalog.GetAllDescriptors(),
+            SpL,
+            BrowseL,
+            _tags);
+    }
 
-    private static string FormatOperator(RestrictionOperator op) => op switch
-    {
-        RestrictionOperator.Equals => "est egal a",
-        RestrictionOperator.NotEquals => "n'est pas egal a",
-        RestrictionOperator.Contains => "contient",
-        RestrictionOperator.NotContains => "ne contient pas",
-        RestrictionOperator.GreaterThan => "superieur a",
-        RestrictionOperator.LessThan => "inferieur a",
-        RestrictionOperator.GreaterThanOrEqual => "superieur ou egal a",
-        RestrictionOperator.LessThanOrEqual => "inferieur ou egal a",
-        RestrictionOperator.IsEmpty => "est vide",
-        RestrictionOperator.IsNotEmpty => "n'est pas vide",
-        _ => op.ToString()
-    };
+    private void OnRuleFilterChanged(RuleGroupDto value) => _ruleFilter = value;
 
     private void Cancel() => Dialog.Cancel();
 
-    private async Task Submit()
+    private async Task SubmitAsync()
     {
         _saving = true;
         try
         {
-            var ruleFilter = BuildRuleGroupDto();
-
             if (IsNew)
             {
                 await K7ServerService.CreateContentRestrictionProfileAsync(new CreateContentRestrictionProfileRequest
                 {
-                    Name = Name,
-                    Description = Description,
-                    RuleFilter = ruleFilter
+                    Name = _name.Trim(),
+                    Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+                    RuleFilter = _ruleFilter
                 });
-                Snackbar.Add("Profil cree.", K7Severity.Success);
+                Snackbar.Add(L["Created"], K7Severity.Success);
             }
             else
             {
                 await K7ServerService.UpdateContentRestrictionProfileAsync(ProfileId!.Value, new UpdateContentRestrictionProfileRequest
                 {
-                    Name = Name,
-                    Description = Description,
-                    RuleFilter = ruleFilter
+                    Name = _name.Trim(),
+                    Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+                    RuleFilter = _ruleFilter
                 });
-                Snackbar.Add("Profil mis a jour.", K7Severity.Success);
+                Snackbar.Add(L["Updated"], K7Severity.Success);
             }
+
             Dialog.Close(K7DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Erreur : {ex.Message}", K7Severity.Error);
+            Snackbar.Add(string.Format(L["SaveError"], ex.Message), K7Severity.Error);
         }
         finally
         {
@@ -115,41 +100,16 @@ public partial class AdminRestrictionProfileDialog
         }
     }
 
-    public class RuleEntry
-    {
-        public RestrictionField Field { get; set; }
-        public RestrictionOperator Operator { get; set; }
-        public string? Value { get; set; }
-    }
-
-    private RuleGroupDto BuildRuleGroupDto()
-    {
-        return new RuleGroupDto
-        {
-            MatchCondition = MatchCondition == RestrictionMatchCondition.All
-                ? RuleMatchCondition.All
-                : RuleMatchCondition.Any,
-            Items = Rules.Select(r => (RuleGroupItemDto)new ConditionRuleItemDto
-            {
-                Field = r.Field.ToString(),
-                Operator = MapToRuleOperator(r.Operator),
-                Value = r.Value
-            }).ToList()
-        };
-    }
-
-    private static RuleOperator MapToRuleOperator(RestrictionOperator op) => op switch
-    {
-        RestrictionOperator.Equals => RuleOperator.Equals,
-        RestrictionOperator.NotEquals => RuleOperator.NotEquals,
-        RestrictionOperator.Contains => RuleOperator.Contains,
-        RestrictionOperator.NotContains => RuleOperator.NotContains,
-        RestrictionOperator.GreaterThan => RuleOperator.GreaterThan,
-        RestrictionOperator.LessThan => RuleOperator.LessThan,
-        RestrictionOperator.GreaterThanOrEqual => RuleOperator.GreaterThanOrEqual,
-        RestrictionOperator.LessThanOrEqual => RuleOperator.LessThanOrEqual,
-        RestrictionOperator.IsEmpty => RuleOperator.IsEmpty,
-        RestrictionOperator.IsNotEmpty => RuleOperator.IsNotEmpty,
-        _ => RuleOperator.Equals
-    };
+    private async Task<IReadOnlyList<string>> SearchSuggestionsAsync(
+        string field,
+        string searchText,
+        CancellationToken cancellationToken) =>
+        await MediaBrowseTagSearch.SearchAsync(
+            MediaService,
+            field,
+            searchText,
+            libraryIds: null,
+            libraryGroupIds: null,
+            mediaType: default,
+            cancellationToken);
 }

@@ -3,7 +3,7 @@ using K7.Shared.Dtos.Rules;
 
 namespace K7.Clients.Shared.Helpers;
 
-public static class MediaBrowseFilterFields
+public static class RuleFieldCatalog
 {
     public static IReadOnlyList<RuleFieldDescriptorDto> GetDescriptors(MediaType mediaType) =>
         mediaType switch
@@ -15,6 +15,63 @@ public static class MediaBrowseFilterFields
             MediaType.MusicArtist => MusicArtistFields,
             _ => CommonFields
         };
+
+    public static IReadOnlyList<RuleFieldDescriptorDto> GetAllDescriptors()
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var result = new List<RuleFieldDescriptorDto>();
+
+        foreach (var field in MovieFields
+                     .Concat(SerieFields)
+                     .Concat(MusicTrackFields)
+                     .Concat(MusicAlbumFields)
+                     .Concat(MusicArtistFields)
+                     .Append(NumberField(nameof(RestrictionField.ReleaseYear))))
+        {
+            if (seen.Add(field.FieldName))
+                result.Add(field);
+        }
+
+        return result;
+    }
+
+    public static RuleGroupDto Sanitize(RuleGroupDto filter, IReadOnlySet<string> allowedFields) =>
+        new()
+        {
+            MatchCondition = filter.MatchCondition,
+            Items = SanitizeItems(filter.Items, allowedFields)
+        };
+
+    private static List<RuleGroupItemDto> SanitizeItems(
+        IReadOnlyList<RuleGroupItemDto> items,
+        IReadOnlySet<string> allowedFields)
+    {
+        var result = new List<RuleGroupItemDto>();
+
+        foreach (var item in items)
+        {
+            switch (item)
+            {
+                case ConditionRuleItemDto rule when allowedFields.Contains(rule.Field):
+                    result.Add(rule);
+                    break;
+                case NestedGroupItemDto group:
+                    var sanitizedItems = SanitizeItems(group.Items, allowedFields);
+                    if (sanitizedItems.Count > 0)
+                    {
+                        result.Add(new NestedGroupItemDto
+                        {
+                            MatchCondition = group.MatchCondition,
+                            Items = sanitizedItems
+                        });
+                    }
+
+                    break;
+            }
+        }
+
+        return result;
+    }
 
     private static readonly IReadOnlyList<RuleFieldDescriptorDto> CommonFields =
     [

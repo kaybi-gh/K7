@@ -1,7 +1,11 @@
+using K7.Clients.Shared.Helpers;
+using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
-using K7.Shared.Dtos.Entities.Playlists;
+using K7.Shared.Dtos;
 using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Rules;
+using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
@@ -24,14 +28,16 @@ public partial class SmartPlaylistDialog
     private string _title = "";
     private string? _description;
     private MediaType _mediaType = MediaType.MusicTrack;
-    private SmartPlaylistMatchCondition _matchCondition = SmartPlaylistMatchCondition.All;
-    private List<RuleViewModel> _rules = [];
+    private RuleGroupDto _ruleFilter = new() { MatchCondition = RuleMatchCondition.All, Items = [] };
+    private IReadOnlyList<RuleFieldDescriptorDto> _fieldDescriptors = [];
+    private IReadOnlyList<SmartPlaylistOrderBy> _orderByOptions = [];
+    private MediaTagsDto? _tags;
     private int? _limit;
     private SmartPlaylistOrderBy _orderBy = SmartPlaylistOrderBy.DateAdded;
     private bool _orderDescending = true;
     private bool _isSubmitting;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _title = InitialTitle ?? "";
         _description = InitialDescription;
@@ -39,51 +45,60 @@ public partial class SmartPlaylistDialog
         _limit = InitialLimit;
         _orderBy = InitialOrderBy;
         _orderDescending = InitialOrderDescending;
+        _ruleFilter = InitialRuleFilter ?? new RuleGroupDto { MatchCondition = RuleMatchCondition.All, Items = [] };
 
-        if (InitialRuleFilter is not null)
+        await LoadTagsAsync();
+        RefreshFieldDescriptors();
+        _orderBy = SmartPlaylistOrderByCatalog.Normalize(_orderBy, _mediaType);
+        _orderByOptions = SmartPlaylistOrderByCatalog.GetOptions(_mediaType);
+    }
+
+    private async Task LoadTagsAsync()
+    {
+        try
         {
-            _matchCondition = InitialRuleFilter.MatchCondition == RuleMatchCondition.All
-                ? SmartPlaylistMatchCondition.All
-                : SmartPlaylistMatchCondition.Any;
-            _rules = InitialRuleFilter.Items.OfType<ConditionRuleItemDto>().Select(r => new RuleViewModel
-            {
-                Field = Enum.TryParse<SmartPlaylistField>(r.Field, out var f) ? f : SmartPlaylistField.Title,
-                Operator = MapToLegacyOperator(r.Operator),
-                Value = r.Value
-            }).ToList();
+            _tags = await MediaService.GetMediaTagsAsync(new GetMediaTagsQuery());
+        }
+        catch
+        {
+            _tags = null;
         }
     }
 
-    private void AddRule()
+    private void RefreshFieldDescriptors()
     {
-        _rules.Add(new RuleViewModel { Field = SmartPlaylistField.Title, Operator = SmartPlaylistOperator.Contains });
+        var allowedFields = RuleFieldCatalog.GetDescriptors(_mediaType)
+            .Select(d => d.FieldName)
+            .ToHashSet(StringComparer.Ordinal);
+
+        _ruleFilter = RuleFieldCatalog.Sanitize(_ruleFilter, allowedFields);
+        _fieldDescriptors = RuleFieldLocalization.Localize(
+            RuleFieldCatalog.GetDescriptors(_mediaType),
+            L,
+            BrowseL,
+            _tags);
+        _orderByOptions = SmartPlaylistOrderByCatalog.GetOptions(_mediaType);
+        _orderBy = SmartPlaylistOrderByCatalog.Normalize(_orderBy, _mediaType);
     }
 
-    private void RemoveRule(int index)
+    private void OnMediaTypeChanged(MediaType mediaType)
     {
-        if (index >= 0 && index < _rules.Count)
-            _rules.RemoveAt(index);
+        _mediaType = mediaType;
+        RefreshFieldDescriptors();
     }
 
-    private void OnFieldChanged(int index, SmartPlaylistField field)
-    {
-        _rules[index].Field = field;
-        var operators = GetAvailableOperators(field);
-        if (!operators.Contains(_rules[index].Operator))
-            _rules[index].Operator = operators.First();
-        _rules[index].Value = null;
-    }
+    private void OnRuleFilterChanged(RuleGroupDto value) => _ruleFilter = value;
 
     private void Cancel() => Dialog.Cancel();
 
     private async Task SubmitAsync()
     {
-        if (string.IsNullOrWhiteSpace(_title)) return;
+        if (string.IsNullOrWhiteSpace(_title))
+            return;
+
         _isSubmitting = true;
         try
         {
-            var ruleFilter = BuildRuleGroupDto();
-
             if (_isEdit)
             {
                 await K7ServerService.UpdateSmartPlaylistAsync(SmartPlaylistId!.Value, new UpdateSmartPlaylistRequest
@@ -91,7 +106,7 @@ public partial class SmartPlaylistDialog
                     Title = _title.Trim(),
                     Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
                     MediaType = _mediaType,
-                    RuleFilter = ruleFilter,
+                    RuleFilter = _ruleFilter,
                     Limit = _limit,
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
@@ -106,7 +121,7 @@ public partial class SmartPlaylistDialog
                     Title = _title.Trim(),
                     Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
                     MediaType = _mediaType,
-                    RuleFilter = ruleFilter,
+                    RuleFilter = _ruleFilter,
                     Limit = _limit,
                     OrderBy = _orderBy,
                     OrderDescending = _orderDescending
@@ -115,128 +130,28 @@ public partial class SmartPlaylistDialog
                 Dialog.Close(K7DialogResult.Ok(id));
             }
         }
-        catch { Snackbar.Add(L["SaveError"], K7Severity.Error); }
-        finally { _isSubmitting = false; }
+        catch
+        {
+            Snackbar.Add(L["SaveError"], K7Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
-    private static bool IsUnaryOperator(SmartPlaylistOperator op) =>
-        op is SmartPlaylistOperator.IsEmpty or SmartPlaylistOperator.IsNotEmpty;
-
-    private SmartPlaylistField[] GetAvailableFields() =>
-    [
-        SmartPlaylistField.Title,
-        SmartPlaylistField.Genre,
-        SmartPlaylistField.Year,
-        SmartPlaylistField.Rating,
-        SmartPlaylistField.PlayCount,
-        SmartPlaylistField.DateAdded,
-        SmartPlaylistField.LastPlayed,
-        SmartPlaylistField.IsCompleted,
-        SmartPlaylistField.ArtistName,
-        SmartPlaylistField.AlbumTitle,
-        SmartPlaylistField.TrackNumber,
-        SmartPlaylistField.DiscNumber,
-        SmartPlaylistField.Duration,
-        SmartPlaylistField.OriginalLanguage,
-        SmartPlaylistField.ActorName
-    ];
-
-    private static SmartPlaylistOperator[] GetAvailableOperators(SmartPlaylistField field) => field switch
-    {
-        SmartPlaylistField.Title or SmartPlaylistField.ArtistName or SmartPlaylistField.AlbumTitle
-            or SmartPlaylistField.ActorName =>
-            [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals, SmartPlaylistOperator.Contains,
-             SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
-
-        SmartPlaylistField.OriginalLanguage =>
-            [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals,
-             SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
-
-        SmartPlaylistField.Genre =>
-            [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals, SmartPlaylistOperator.Contains,
-             SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
-
-        SmartPlaylistField.Year or SmartPlaylistField.TrackNumber or SmartPlaylistField.DiscNumber
-            or SmartPlaylistField.PlayCount =>
-            [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals,
-             SmartPlaylistOperator.GreaterThan, SmartPlaylistOperator.LessThan,
-             SmartPlaylistOperator.GreaterThanOrEqual, SmartPlaylistOperator.LessThanOrEqual],
-
-        SmartPlaylistField.Rating or SmartPlaylistField.Duration =>
-            [SmartPlaylistOperator.Equals, SmartPlaylistOperator.GreaterThan, SmartPlaylistOperator.LessThan,
-             SmartPlaylistOperator.GreaterThanOrEqual, SmartPlaylistOperator.LessThanOrEqual,
-             SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
-
-        SmartPlaylistField.DateAdded or SmartPlaylistField.LastPlayed =>
-            [SmartPlaylistOperator.InLast, SmartPlaylistOperator.IsEmpty, SmartPlaylistOperator.IsNotEmpty],
-
-        SmartPlaylistField.IsCompleted =>
-            [SmartPlaylistOperator.Equals],
-
-        _ => [SmartPlaylistOperator.Equals, SmartPlaylistOperator.NotEquals, SmartPlaylistOperator.Contains]
-    };
-
-    private string GetFieldLabel(SmartPlaylistField field) => field switch
-    {
-        SmartPlaylistField.Title => L["FieldTitle"],
-        SmartPlaylistField.Genre => L["FieldGenre"],
-        SmartPlaylistField.Year => L["FieldYear"],
-        SmartPlaylistField.Rating => L["FieldRating"],
-        SmartPlaylistField.PlayCount => L["FieldPlayCount"],
-        SmartPlaylistField.DateAdded => L["FieldDateAdded"],
-        SmartPlaylistField.LastPlayed => L["FieldLastPlayed"],
-        SmartPlaylistField.IsCompleted => L["FieldIsWatched"],
-        SmartPlaylistField.ArtistName => L["FieldArtist"],
-        SmartPlaylistField.AlbumTitle => L["FieldAlbum"],
-        SmartPlaylistField.TrackNumber => L["FieldTrackNumber"],
-        SmartPlaylistField.DiscNumber => L["FieldDiscNumber"],
-        SmartPlaylistField.Duration => L["FieldDuration"],
-        SmartPlaylistField.OriginalLanguage => L["FieldOriginalLanguage"],
-        SmartPlaylistField.ActorName => L["FieldActor"],
-        _ => field.ToString()
-    };
-
-    private string GetOperatorLabel(SmartPlaylistOperator op) => op switch
-    {
-        SmartPlaylistOperator.Equals => L["OperatorIs"],
-        SmartPlaylistOperator.NotEquals => L["OperatorIsNot"],
-        SmartPlaylistOperator.Contains => L["OperatorContains"],
-        SmartPlaylistOperator.GreaterThan => ">",
-        SmartPlaylistOperator.LessThan => "<",
-        SmartPlaylistOperator.GreaterThanOrEqual => "≥",
-        SmartPlaylistOperator.LessThanOrEqual => "≤",
-        SmartPlaylistOperator.InLast => L["OperatorInLastDays"],
-        SmartPlaylistOperator.IsEmpty => L["OperatorIsEmpty"],
-        SmartPlaylistOperator.IsNotEmpty => L["OperatorIsNotEmpty"],
-        _ => op.ToString()
-    };
-
-    private string GetValuePlaceholder(SmartPlaylistField field) => field switch
-    {
-        SmartPlaylistField.Year => L["PlaceholderYear"],
-        SmartPlaylistField.Rating => L["PlaceholderRating"],
-        SmartPlaylistField.PlayCount => L["PlaceholderCount"],
-        SmartPlaylistField.DateAdded or SmartPlaylistField.LastPlayed => L["PlaceholderDays"],
-        SmartPlaylistField.IsCompleted => L["PlaceholderBoolean"],
-        SmartPlaylistField.Duration => L["PlaceholderSeconds"],
-        SmartPlaylistField.TrackNumber or SmartPlaylistField.DiscNumber => L["PlaceholderTrackDisc"],
-        _ => L["PlaceholderDefault"]
-    };
-
-    private static SmartPlaylistOrderBy[] GetAvailableOrderBy() =>
-    [
-        SmartPlaylistOrderBy.DateAdded,
-        SmartPlaylistOrderBy.Title,
-        SmartPlaylistOrderBy.Year,
-        SmartPlaylistOrderBy.PlayCount,
-        SmartPlaylistOrderBy.Rating,
-        SmartPlaylistOrderBy.LastPlayed,
-        SmartPlaylistOrderBy.Random,
-        SmartPlaylistOrderBy.ArtistName,
-        SmartPlaylistOrderBy.AlbumTitle,
-        SmartPlaylistOrderBy.TrackNumber,
-        SmartPlaylistOrderBy.Duration
-    ];
+    private async Task<IReadOnlyList<string>> SearchSuggestionsAsync(
+        string field,
+        string searchText,
+        CancellationToken cancellationToken) =>
+        await MediaBrowseTagSearch.SearchAsync(
+            MediaService,
+            field,
+            searchText,
+            libraryIds: null,
+            libraryGroupIds: null,
+            _mediaType,
+            cancellationToken);
 
     private string GetOrderByLabel(SmartPlaylistOrderBy order) => order switch
     {
@@ -252,54 +167,5 @@ public partial class SmartPlaylistDialog
         SmartPlaylistOrderBy.TrackNumber => L["OrderByTrackNumber"],
         SmartPlaylistOrderBy.Duration => L["OrderByDuration"],
         _ => order.ToString()
-    };
-
-    internal sealed class RuleViewModel
-    {
-        public SmartPlaylistField Field { get; set; }
-        public SmartPlaylistOperator Operator { get; set; }
-        public string? Value { get; set; }
-    }
-
-    private RuleGroupDto BuildRuleGroupDto() => new()
-    {
-        MatchCondition = _matchCondition == SmartPlaylistMatchCondition.All
-            ? RuleMatchCondition.All : RuleMatchCondition.Any,
-        Items = _rules.Select<RuleViewModel, RuleGroupItemDto>(r => new ConditionRuleItemDto
-        {
-            Field = r.Field.ToString(),
-            Operator = MapToRuleOperator(r.Operator),
-            Value = r.Value
-        }).ToList()
-    };
-
-    private static RuleOperator MapToRuleOperator(SmartPlaylistOperator op) => op switch
-    {
-        SmartPlaylistOperator.Equals => RuleOperator.Equals,
-        SmartPlaylistOperator.NotEquals => RuleOperator.NotEquals,
-        SmartPlaylistOperator.Contains => RuleOperator.Contains,
-        SmartPlaylistOperator.GreaterThan => RuleOperator.GreaterThan,
-        SmartPlaylistOperator.LessThan => RuleOperator.LessThan,
-        SmartPlaylistOperator.GreaterThanOrEqual => RuleOperator.GreaterThanOrEqual,
-        SmartPlaylistOperator.LessThanOrEqual => RuleOperator.LessThanOrEqual,
-        SmartPlaylistOperator.InLast => RuleOperator.InLast,
-        SmartPlaylistOperator.IsEmpty => RuleOperator.IsEmpty,
-        SmartPlaylistOperator.IsNotEmpty => RuleOperator.IsNotEmpty,
-        _ => RuleOperator.Equals
-    };
-
-    private static SmartPlaylistOperator MapToLegacyOperator(RuleOperator op) => op switch
-    {
-        RuleOperator.Equals => SmartPlaylistOperator.Equals,
-        RuleOperator.NotEquals => SmartPlaylistOperator.NotEquals,
-        RuleOperator.Contains => SmartPlaylistOperator.Contains,
-        RuleOperator.GreaterThan => SmartPlaylistOperator.GreaterThan,
-        RuleOperator.LessThan => SmartPlaylistOperator.LessThan,
-        RuleOperator.GreaterThanOrEqual => SmartPlaylistOperator.GreaterThanOrEqual,
-        RuleOperator.LessThanOrEqual => SmartPlaylistOperator.LessThanOrEqual,
-        RuleOperator.InLast => SmartPlaylistOperator.InLast,
-        RuleOperator.IsEmpty => SmartPlaylistOperator.IsEmpty,
-        RuleOperator.IsNotEmpty => SmartPlaylistOperator.IsNotEmpty,
-        _ => SmartPlaylistOperator.Equals
     };
 }
