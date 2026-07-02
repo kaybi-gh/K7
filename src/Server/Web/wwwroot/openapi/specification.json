@@ -2127,6 +2127,13 @@
             "schema": {
               "$ref": "#/components/schemas/MediaType"
             }
+          },
+          {
+            "name": "OrderBy",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/LibraryItemOrderingOption"
+            }
           }
         ],
         "responses": {
@@ -2251,6 +2258,30 @@
         }
       }
     },
+    "/api/playlists/{id}/record-playback": {
+      "post": {
+        "tags": [
+          "Playlists"
+        ],
+        "operationId": "RecordPlaylistPlayback",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/playlists/{playlistId}/items/{itemId}": {
       "delete": {
         "tags": [
@@ -2320,6 +2351,60 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/playlists/{id}/cover": {
+      "post": {
+        "tags": [
+          "Playlists"
+        ],
+        "operationId": "UploadPlaylistCover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourcePictureId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Playlists"
+        ],
+        "operationId": "UploadPlaylistCoverRemove",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -6967,6 +7052,13 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "OrderBy",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/LibraryItemOrderingOption"
+            }
           }
         ],
         "responses": {
@@ -7086,6 +7178,60 @@
           },
           {
             "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/collections/{id}/cover": {
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "operationId": "UploadCollectionCover",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourcePictureId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "operationId": "UploadCollectionCoverRemove",
+        "parameters": [
+          {
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -10694,6 +10840,9 @@
           }
         }
       },
+      "LibraryItemOrderingOption": {
+        "type": "integer"
+      },
       "LibraryMediaType": {
         "type": "integer"
       },
@@ -10800,6 +10949,12 @@
                 "$ref": "#/components/schemas/MetadataPictureDto"
               }
             ]
+          },
+          "previewPictures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
           },
           "itemCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -12060,6 +12215,12 @@
               }
             ]
           },
+          "previewPictures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetadataPictureDto"
+            }
+          },
           "itemCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
@@ -12074,6 +12235,13 @@
           },
           "lastModified": {
             "type": "string",
+            "format": "date-time"
+          },
+          "lastListenedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           }
         }
@@ -15147,6 +15315,13 @@
           "lastModified": {
             "type": "string",
             "format": "date-time"
+          },
+          "lastListenedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -15918,6 +16093,13 @@
           },
           "lastModified": {
             "type": "string",
+            "format": "date-time"
+          },
+          "lastListenedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           }
         }
@@ -17025,6 +17207,13 @@
             "$ref": "#/components/schemas/PlaybackState"
           },
           "deviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "playlistId": {
             "type": [
               "null",
               "string"

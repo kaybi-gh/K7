@@ -11,6 +11,7 @@ public class GetSmartPlaylistQueryHandler(IApplicationDbContext context, IUser c
     public async Task<SmartPlaylist> Handle(GetSmartPlaylistQuery request, CancellationToken cancellationToken)
     {
         var entity = await context.Playlists.OfType<SmartPlaylist>()
+            .Include(p => p.UserStates.Where(s => s.UserId == currentUser.Id!.Value))
             .Include(p => p.CoverPicture)
                 .ThenInclude(c => c!.Variants)
             .AsNoTracking()

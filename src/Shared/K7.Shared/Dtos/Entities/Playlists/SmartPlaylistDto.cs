@@ -20,5 +20,6 @@ public sealed record SmartPlaylistDto
     public DateTimeOffset? LastEvaluatedAt { get; init; }
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
+    public DateTimeOffset? LastListenedAt { get; init; }
 
 }

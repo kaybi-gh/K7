@@ -3,6 +3,7 @@ using System;
 using K7.Server.Infrastructure.Database.Context.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701210941_AddUserPlaylistState")]
+    partial class AddUserPlaylistState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
@@ -2196,48 +2199,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.ToTable("UserMediaStates");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserPlaylistState", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Created")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("LastListenedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LastModified")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LastModifiedBy")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("PlaylistId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PlaylistId");
-
-                    b.HasIndex("UserId", "LastListenedAt")
-                        .HasDatabaseName("IX_UserPlaylistStates_UserId_LastListenedAt");
-
-                    b.HasIndex("UserId", "PlaylistId")
-                        .IsUnique();
-
-                    b.ToTable("UserPlaylistStates");
-                });
-
             modelBuilder.Entity("K7.Server.Infrastructure.Database.Context.Identity.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -3860,25 +3821,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("K7.Server.Domain.Entities.Users.UserPlaylistState", b =>
-                {
-                    b.HasOne("K7.Server.Domain.Entities.Playlists.Playlist", "Playlist")
-                        .WithMany("UserStates")
-                        .HasForeignKey("PlaylistId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Playlist");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -4143,8 +4085,6 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("CoverPicture");
 
                     b.Navigation("Items");
-
-                    b.Navigation("UserStates");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Restrictions.ContentRestrictionProfile", b =>

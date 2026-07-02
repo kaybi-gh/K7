@@ -16,4 +16,6 @@ public class Playlist : BaseAuditableEntity
     public MetadataPicture? CoverPicture { get; set; }
 
     public IList<PlaylistItem> Items { get; set; } = [];
+
+    public IList<UserPlaylistState> UserStates { get; set; } = [];
 }

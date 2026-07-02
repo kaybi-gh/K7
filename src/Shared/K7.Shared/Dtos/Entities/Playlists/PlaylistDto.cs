@@ -15,5 +15,6 @@ public sealed record PlaylistDto
     public int ItemCount { get; init; }
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset LastModified { get; init; }
+    public DateTimeOffset? LastListenedAt { get; init; }
 
 }
