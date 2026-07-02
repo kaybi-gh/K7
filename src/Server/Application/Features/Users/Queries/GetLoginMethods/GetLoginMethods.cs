@@ -26,11 +26,14 @@ public class GetLoginMethodsQueryHandler(
             {
                 HasPassword = false,
                 CanRemovePassword = false,
+                TwoFactorEnabled = false,
+                RecoveryCodesLeft = 0,
                 ExternalLogins = []
             };
 
         var hasPassword = await identityService.HasPasswordAsync(user.IdentityUserId);
         var externalLogins = await identityService.GetExternalLoginsAsync(user.IdentityUserId);
+        var twoFactorStatus = await identityService.GetTwoFactorStatusAsync(user.IdentityUserId);
 
         var totalMethods = (hasPassword ? 1 : 0) + externalLogins.Count;
 
@@ -38,6 +41,8 @@ public class GetLoginMethodsQueryHandler(
         {
             HasPassword = hasPassword,
             CanRemovePassword = hasPassword && externalLogins.Count > 0,
+            TwoFactorEnabled = twoFactorStatus.IsEnabled,
+            RecoveryCodesLeft = twoFactorStatus.RecoveryCodesLeft,
             ExternalLogins = externalLogins.Select(l => new ExternalLoginDto
             {
                 Provider = l.LoginProvider,

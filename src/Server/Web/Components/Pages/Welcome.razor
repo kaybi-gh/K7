@@ -1,17 +1,20 @@
 @page "/welcome"
-@layout K7.Server.Web.Components.Pages.Setup.SetupLayout
+@layout K7.Server.Web.Components.Pages.Auth.AuthLayout
 @using K7.Server.Domain.Constants
+@using K7.Server.Infrastructure.Configuration
 @using K7.Server.Infrastructure.Database.Context.Data
 @using K7.Server.Infrastructure.Database.Context.Identity
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.DependencyInjection
+@using Microsoft.Extensions.Options
 @inject IServiceScopeFactory ScopeFactory
 @inject NavigationManager Navigation
 @inject K7.Server.Web.Components.Account.IdentityRedirectManager RedirectManager
+@inject IOptions<AuthenticationConfiguration> AuthConfig
 @inject IStringLocalizer<Welcome> L
 
-<PageTitle>@L["PageTitle"] - K7</PageTitle>
+<PageTitle>@L["PageTitle"]</PageTitle>
 
 <div class="auth-card">
     <div class="auth-card-header">
@@ -21,8 +24,10 @@
     <div class="auth-card-body">
         <hr class="auth-divider" />
         <div class="auth-form-stack">
-            <a href="@_loginUrl" style="text-decoration:none;">
-                <button class="k7-btn k7-btn--filled focusable" data-initial-focus style="width:100%;">@L["SignIn"]</button>
+            <a href="@_signInUrl" style="text-decoration:none;">
+                <button type="button" class="k7-btn k7-btn--filled focusable" data-initial-focus style="width:100%;">
+                    @L["SignIn"]
+                </button>
             </a>
 
             @if (_guestEnabled)
@@ -37,7 +42,8 @@
 
 @code {
     private bool _guestEnabled;
-    private string _loginUrl = "/Account/Login";
+    private AuthenticationConfiguration _auth = new();
+    private string _signInUrl = "/sign-in";
     private object _guestModel = new();
 
     [CascadingParameter]
@@ -58,17 +64,26 @@
             }
         }
 
+        _auth = AuthConfig.Value;
         _guestEnabled = await IsGuestActiveAsync();
 
-        _loginUrl = !string.IsNullOrEmpty(ReturnUrl)
-            ? Navigation.GetUriWithQueryParameters("/Account/Login",
-                new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl })
-            : "/Account/Login";
+        var returnUrl = ReturnUrl ?? "/";
+        var oidcLoginUrl = Navigation.GetUriWithQueryParameters("/api/authentication/login",
+            new Dictionary<string, object?> { ["returnUrl"] = returnUrl });
+        _signInUrl = _auth.Oidc.Enabled && !_auth.Local.SignInEnabled
+            ? oidcLoginUrl
+            : Navigation.GetUriWithQueryParameters("/sign-in",
+                new Dictionary<string, object?> { ["ReturnUrl"] = returnUrl });
 
-        if (!_guestEnabled)
+        if (!_guestEnabled && _auth.Oidc.Enabled && !_auth.Local.SignInEnabled)
         {
-            RedirectManager.RedirectTo(_loginUrl);
+            RedirectManager.RedirectTo(oidcLoginUrl);
             return;
+        }
+
+        if (!_guestEnabled && _auth.Local.SignInEnabled && !_auth.Oidc.Enabled)
+        {
+            RedirectManager.RedirectTo(_signInUrl);
         }
     }
 

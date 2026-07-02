@@ -10,12 +10,19 @@
     <title>K7</title>
     <base href="/" />
 
+    <script>window.__K7_DEFAULT_THEME__ = "@_defaultTheme";</script>
+    <script src="@Assets["_content/K7.Clients.Shared.UI/js/theme.js"]"></script>
+
     <link rel="stylesheet" href="@Assets["_content/K7.Clients.Shared.UI/app.css"]" />
     <link rel="stylesheet" href="@Assets["K7.Server.Web.styles.css"]" />
     <link rel="stylesheet" href="@Assets["css/auth.css"]" />
     <link rel="stylesheet" href="@Assets["dist/video.js/video-js.min.css"]" />
     <ImportMap />
     <link rel="icon" type="image/svg+xml" href="@Assets["_content/K7.Clients.Shared.UI/assets/favicon.svg"]" />
+    @if (IsAuthSsrPath)
+    {
+        <link rel="modulepreload" href="@Assets["_framework/blazor.web.js"]" />
+    }
     <HeadOutlet @rendermode="PageRenderMode" />
 </head>
 
@@ -30,8 +37,6 @@
     }
     <Routes @rendermode="PageRenderMode" />
 
-    <script>window.__K7_DEFAULT_THEME__ = "@_defaultTheme";</script>
-    <script src="@Assets["_content/K7.Clients.Shared.UI/js/theme.js"]"></script>
     <script src="@Assets["_content/K7.Clients.Shared.UI/dist/lottie/build/player/lottie_light.min.js"]"></script>
     <script>
         if (window.lottie) {
@@ -88,12 +93,13 @@
         _defaultTheme = await serverSettings.GetAsync(ServerSettingKeys.DefaultTheme) ?? "default-dark";
     }
 
-    private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/login")
-        || HttpContext.Request.Path.StartsWithSegments("/Account")
-        || HttpContext.Request.Path.StartsWithSegments("/setup")
-        || HttpContext.Request.Path.StartsWithSegments("/welcome")
-        || HttpContext.Request.Path.StartsWithSegments("/link")
-        || HttpContext.Request.Path.StartsWithSegments("/auth")
+    private IComponentRenderMode? PageRenderMode => IsAuthSsrPath
         ? null
         : new InteractiveWebAssemblyRenderMode(false);
+
+    private bool IsAuthSsrPath =>
+        HttpContext.Request.Path.StartsWithSegments("/welcome")
+        || HttpContext.Request.Path.StartsWithSegments("/sign-in")
+        || HttpContext.Request.Path.StartsWithSegments("/setup")
+        || HttpContext.Request.Path.StartsWithSegments("/account");
 }

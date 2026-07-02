@@ -81,7 +81,7 @@ public class LogInCallback : IEndpoint
             {
                 if (!authConfig.Value.Oidc.AutomaticAccountCreation)
                 {
-                    return Results.Redirect("/Account/Login?error=auto_provisioning_disabled");
+                    return Results.Redirect("/sign-in?error=auto_provisioning_disabled");
                 }
 
                 user = new ApplicationUser { UserName = name, Email = email };

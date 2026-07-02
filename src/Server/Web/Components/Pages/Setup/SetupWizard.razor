@@ -64,7 +64,7 @@
         @if (_externalProviders.Length > 0)
         {
             <p class="auth-or">@L["Or"]</p>
-            <form action="/Account/PerformSetupExternalLogin" method="post" style="width: 100%;">
+            <form action="/account/performsetupexternallogin" method="post" style="width: 100%;">
                 <AntiforgeryToken />
                 <div class="auth-form-stack">
                     @foreach (var provider in _externalProviders)
