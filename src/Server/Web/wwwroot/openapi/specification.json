@@ -5,6 +5,163 @@
     "version": "v1"
   },
   "paths": {
+    "/api/viewing-groups": {
+      "get": {
+        "tags": [
+          "ViewingGroups"
+        ],
+        "operationId": "GetViewingGroups",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewingGroupDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ViewingGroups"
+        ],
+        "operationId": "CreateViewingGroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateViewingGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/viewing-groups/member-candidates": {
+      "get": {
+        "tags": [
+          "ViewingGroups"
+        ],
+        "operationId": "GetViewingGroupMemberCandidates",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewingGroupMemberCandidateDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/viewing-groups/{id}": {
+      "put": {
+        "tags": [
+          "ViewingGroups"
+        ],
+        "operationId": "UpdateViewingGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateViewingGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ViewingGroups"
+        ],
+        "operationId": "DeleteViewingGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/viewing-groups/{id}/pin": {
+      "put": {
+        "tags": [
+          "ViewingGroups"
+        ],
+        "operationId": "SetViewingGroupPin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetViewingGroupPinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/users/me/two-factor/setup": {
       "post": {
         "tags": [
@@ -8297,6 +8454,12 @@
               "string"
             ],
             "format": "int32"
+          },
+          "viewingGroupName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -9692,6 +9855,36 @@
             "type": "string"
           },
           "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateViewingGroupRequest": {
+        "required": [
+          "name",
+          "hostUserId",
+          "memberUserIds"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hostUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "memberUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "pin": {
             "type": [
               "null",
               "string"
@@ -15264,6 +15457,12 @@
               "string"
             ]
           },
+          "viewingGroupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "streamQuality": {
             "oneOf": [
               {
@@ -16179,6 +16378,17 @@
         "properties": {
           "newPassword": {
             "type": "string"
+          }
+        }
+      },
+      "SetViewingGroupPinRequest": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -17404,6 +17614,13 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "viewingGroupId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -17578,6 +17795,34 @@
           }
         }
       },
+      "UpdateViewingGroupRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hostUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "memberUserIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
       "UserMediaStateDto": {
         "type": "object",
         "properties": {
@@ -17744,6 +17989,104 @@
       "VideoResolutionIdentifier": {
         "type": "integer"
       },
+      "ViewingGroupDto": {
+        "required": [
+          "id",
+          "name",
+          "hostUserId",
+          "hasPin",
+          "members"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hostUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hostIdentityUserId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hasPin": {
+            "type": "boolean"
+          },
+          "pinHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ViewingGroupMemberDto"
+            }
+          }
+        }
+      },
+      "ViewingGroupMemberCandidateDto": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ViewingGroupMemberDto": {
+        "required": [
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "identityUserId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "WatchStateScope": {
         "type": "integer",
         "default": 0
@@ -17909,6 +18252,9 @@
     }
   },
   "tags": [
+    {
+      "name": "ViewingGroups"
+    },
     {
       "name": "Users"
     },
