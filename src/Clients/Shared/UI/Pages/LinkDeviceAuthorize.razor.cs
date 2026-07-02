@@ -36,6 +36,12 @@ public partial class LinkDeviceAuthorize
                     for (var i = 0; i < segments.length; i++) {
                         segments[i].value = parts.substring(i * 4, (i + 1) * 4);
                     }
+                    syncHidden();
+                }
+
+                var form = document.getElementById('link-form');
+                if (form) {
+                    form.addEventListener('submit', syncHidden);
                 }
 
                 function syncHidden() {
