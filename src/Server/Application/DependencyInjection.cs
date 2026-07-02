@@ -79,7 +79,8 @@ public static class DependencyInjection
         services.AddScoped<IFileIndexer, FileIndexer>();
         services.AddScoped<IMediaAccessGuard, MediaAccessGuard>();
         services.AddScoped<IUserMediaStateUpdater, UserMediaStateUpdater>();
-        services.AddScoped<IViewingGroupPlaybackResolver, ViewingGroupPlaybackResolver>();
+        services.AddScoped<ISharedProfilePlaybackResolver, SharedProfilePlaybackResolver>();
+        services.AddScoped<ISyncPlayPlaybackContextResolver, SyncPlayPlaybackContextResolver>();
         services.AddScoped<IMediaMetadataTagSyncService, MediaMetadataTagSyncService>();
         services.AddScoped<MediaExternalIdResolver>();
         services.AddScoped<DiagnosticIssueEntityResolver>();

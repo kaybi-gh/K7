@@ -57,8 +57,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<UserPlaylistState> UserPlaylistStates => Set<UserPlaylistState>();
     public DbSet<MediaPlaybackSession> MediaPlaybackSessions => Set<MediaPlaybackSession>();
     public DbSet<PlaybackSessionDetails> PlaybackSessionDetails => Set<PlaybackSessionDetails>();
-    public DbSet<ViewingGroup> ViewingGroups => Set<ViewingGroup>();
-    public DbSet<ViewingGroupMember> ViewingGroupMembers => Set<ViewingGroupMember>();
+    public DbSet<SharedProfile> SharedProfiles => Set<SharedProfile>();
+    public DbSet<SharedProfileMember> SharedProfileMembers => Set<SharedProfileMember>();
     public DbSet<MediaPlaybackSessionCoViewer> MediaPlaybackSessionCoViewers => Set<MediaPlaybackSessionCoViewer>();
     public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<CollectionItem> CollectionItems => Set<CollectionItem>();

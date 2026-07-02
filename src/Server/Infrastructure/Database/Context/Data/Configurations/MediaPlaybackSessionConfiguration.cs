@@ -25,13 +25,14 @@ public class MediaPlaybackSessionConfiguration : IEntityTypeConfiguration<MediaP
             .HasForeignKey<PlaybackSessionDetails>(d => d.MediaPlaybackSessionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(e => e.ViewingGroupNameSnapshot).HasMaxLength(100);
+        builder.Property(e => e.SharedProfileNameSnapshot).HasMaxLength(100);
+        builder.Property(e => e.CoWatchingWithSnapshot).HasMaxLength(500);
 
-        builder.HasOne(e => e.ViewingGroup)
+        builder.HasOne(e => e.SharedProfile)
             .WithMany()
-            .HasForeignKey(e => e.ViewingGroupId)
+            .HasForeignKey(e => e.SharedProfileId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasIndex(e => e.ViewingGroupId);
+        builder.HasIndex(e => e.SharedProfileId);
     }
 }
