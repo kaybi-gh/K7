@@ -31,6 +31,7 @@
   <data name="Position" xml:space="preserve"><value>Position</value></data>
   <data name="UserDevice" xml:space="preserve"><value>User and device</value></data>
   <data name="User" xml:space="preserve"><value>User</value></data>
+  <data name="ViewingGroup" xml:space="preserve"><value>Group</value></data>
   <data name="Device" xml:space="preserve"><value>Device</value></data>
   <data name="Client" xml:space="preserve"><value>Client</value></data>
   <data name="StreamDetails" xml:space="preserve"><value>Stream details</value></data>

@@ -311,6 +311,7 @@ public partial class AdminPlaybackHistoryPanel
             StoppedAt = item.StoppedAt,
             DurationDisplay = FormatDuration(item.TotalWatchedSeconds),
             UserName = item.UserName,
+            ViewingGroupName = item.ViewingGroupName,
             DeviceName = item.DeviceName,
             DeviceClient = item.DeviceClient,
             HasStreamDetails = hasStream,

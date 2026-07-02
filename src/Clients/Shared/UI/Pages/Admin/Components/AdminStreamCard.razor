@@ -32,6 +32,10 @@
             {
                 <span class="stream-card__mode-badge @OverallModeBadgeClass">@OverallModeLabel</span>
             }
+            @if (!string.IsNullOrEmpty(Stream.ViewingGroupName))
+            {
+                <K7Chip Size="sm" Color="secondary" Variant="outlined">@Stream.ViewingGroupName</K7Chip>
+            }
         </div>
 
         <div class="stream-card__title-row">
