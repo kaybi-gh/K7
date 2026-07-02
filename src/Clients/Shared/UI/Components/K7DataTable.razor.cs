@@ -37,13 +37,21 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
     private ElementReference _columnPickerDropdown;
     private DotNetObjectReference<LayerCloseCallback>? _columnPickerCloseRef;
     private bool _needsRender = true;
+    private bool _pendingVirtualizeRefresh;
     private string? _prevSortKey;
     private K7SortDirection _prevSortDirection;
+    private IList<TItem>? _prevItems;
     private readonly Dictionary<string, ItemsProviderResult<IndexedRow>> _serverDataCache = new();
 
     protected override void OnParametersSet()
     {
-        _indexedItems = Items?.Select((item, index) => new IndexedRow(item, index)).ToList();
+        if (!ReferenceEquals(_prevItems, Items))
+        {
+            _prevItems = Items;
+            _indexedItems = Items?.Select((item, index) => new IndexedRow(item, index)).ToList();
+            _needsRender = true;
+            _pendingVirtualizeRefresh = true;
+        }
     }
 
     protected override bool ShouldRender()
@@ -81,6 +89,12 @@ public partial class K7DataTable<TItem> : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_pendingVirtualizeRefresh && _virtualizeRef is not null && ServerData is null)
+        {
+            _pendingVirtualizeRefresh = false;
+            await _virtualizeRef.RefreshDataAsync();
+        }
+
         if (!_columnPickerOpen || ShowToolbar || _columnPickerLayerPushed)
         {
             return;

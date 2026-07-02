@@ -1,0 +1,41 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-paper k7-paper--outlined library-item-card focusable @Class"
+     style="@Style"
+     tabindex="0"
+     role="button"
+     aria-label="@Title"
+     @onclick="HandleClick"
+     @onkeydown="HandleKeyDown"
+     @attributes="AdditionalAttributes">
+    <div class="library-item-card__inner">
+        <div class="library-item-card__cover">
+            <K7CoverMosaic CoverPicture="CoverPicture"
+                            PreviewPictures="PreviewPictures"
+                            ImageUrls="ImageUrls"
+                            PreferPreviewWhenEmpty="PreferPreviewWhenEmpty"
+                            PlaceholderIcon="@PlaceholderIcon"
+                            PictureSize="PictureSize"
+                            Alt="@Title" />
+        </div>
+        <div class="library-item-card__body">
+            <div class="library-item-card__header">
+                <span class="library-item-card__title">@Title</span>
+                @if (HeaderEndContent is not null)
+                {
+                    @HeaderEndContent
+                }
+            </div>
+            @if (Subtitle is not null)
+            {
+                <span class="library-item-card__subtitle">@Subtitle</span>
+            }
+            @if (FooterContent is not null)
+            {
+                <div class="library-item-card__footer">
+                    @FooterContent
+                </div>
+            }
+        </div>
+    </div>
+</div>

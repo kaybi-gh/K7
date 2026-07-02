@@ -1,0 +1,22 @@
+@namespace K7.Clients.Shared.UI.Components
+@using K7.Server.Domain.Enums
+@using K7.Shared.Dtos.Entities
+
+<div class="library-item-cover-thumb @Class">
+    <K7CoverMosaic CoverPicture="CoverPicture"
+                    PreviewPictures="PreviewPictures"
+                    PreferPreviewWhenEmpty="PreferPreviewWhenEmpty"
+                    PlaceholderIcon="@PlaceholderIcon"
+                    PictureSize="PictureSize"
+                    Alt="@Alt" />
+</div>
+
+@code {
+    [Parameter] public MetadataPictureDto? CoverPicture { get; set; }
+    [Parameter] public IReadOnlyList<MetadataPictureDto> PreviewPictures { get; set; } = [];
+    [Parameter] public bool PreferPreviewWhenEmpty { get; set; }
+    [Parameter] public string PlaceholderIcon { get; set; } = Phosphor.Image;
+    [Parameter] public MetadataPictureSize PictureSize { get; set; } = MetadataPictureSize.Small;
+    [Parameter] public string Alt { get; set; } = "";
+    [Parameter] public string Class { get; set; } = "";
+}

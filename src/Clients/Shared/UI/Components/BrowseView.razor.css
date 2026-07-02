@@ -202,6 +202,7 @@
 .browse-view-table-el {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .browse-view-table-el thead {
@@ -215,11 +216,30 @@
 .browse-view-table-el td {
     padding: 8px 12px;
     text-align: left;
+    vertical-align: middle;
+    overflow: hidden;
 }
 
-.browse-view-table-el tbody tr:hover,
-.browse-view-table-el tbody tr:focus-visible {
+.browse-view-table-el th:last-child,
+.browse-view-table-el td.library-browse-row-actions-cell {
+    text-align: right;
+}
+
+.browse-view-table-el tbody tr.browse-view-table-row--alt {
+    background: var(--color-surface-variant, color-mix(in srgb, var(--color-text) 3%, transparent));
+}
+
+.browse-view-table-el tbody tr.browse-view-table-row:hover,
+.browse-view-table-el tbody tr.browse-view-table-row--alt:hover,
+.browse-view-table-el tbody tr.browse-view-table-row:focus-visible,
+.browse-view-table-el tbody tr.browse-view-table-row--alt:focus-visible {
     background: var(--color-surface-hover);
+}
+
+.browse-view-table-el td.library-browse-row-actions-cell {
+    width: 88px;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .browse-view-table-el tbody > tr:not(:has(td)) {
@@ -304,12 +324,5 @@
     .browse-view-simple-grid ::deep .media-card {
         width: 100%;
         min-width: 0;
-    }
-
-    .browse-view-list {
-        padding: var(--space-3);
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3);
     }
 }

@@ -1,0 +1,34 @@
+@inject IStringLocalizer<LibraryBrowseRowActions> L
+
+<div class="library-browse-row-actions" @onclick:stopPropagation="true">
+    @if (HasMenu)
+    {
+        <K7Menu Open="_menuOpen" OpenChanged="OnMenuOpenChanged" Title="@Model.Title">
+            <ActivatorContent>
+                <K7IconButton Icon="@Phosphor.DotsThreeVertical" Size="sm" aria-label="@L["MoreActions"]" />
+            </ActivatorContent>
+            <ChildContent>
+                <MediaCardContextMenu Model="Model"
+                                      Href="Href"
+                                      ShowPlay="OverlayEnabled && !string.IsNullOrEmpty(Href)"
+                                      ShowRating="_showRating"
+                                      ShowPlaylist="_showPlaylist"
+                                      ShowCollection="_showCollection"
+                                      ShowWatchState="_watchStateMenuVisible"
+                                      ExcludeMenuEnabled="ExcludeMenuEnabled"
+                                      IsAdmin="IsAdmin"
+                                      OnExcludeForSelf="OnExcludeForSelf"
+                                      OnExcludeForOthers="OnExcludeForOthers"
+                                      OnWatchStateChanged="OnWatchStateChanged" />
+            </ChildContent>
+        </K7Menu>
+    }
+    @if (OnRemove.HasDelegate)
+    {
+        <K7IconButton Icon="@Phosphor.X"
+                       Size="sm"
+                       Color="error"
+                       OnClick="OnRemove"
+                       aria-label="@(RemoveAriaLabel ?? L["Remove"])" />
+    }
+</div>

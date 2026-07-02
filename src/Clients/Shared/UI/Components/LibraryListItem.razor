@@ -1,24 +1,39 @@
 @using K7.Shared.Dtos.Entities.Medias
 
-<a href="@Href" class="library-list-item focusable">
-    @if (ThumbnailUrl is not null)
-    {
-        <K7Image Src="@ThumbnailUrl" Alt="@Item.Title" Width="48" ObjectFit="cover" Class="library-list-item-thumb rounded" loading="lazy" />
-    }
-    else
-    {
-        <div class="library-list-item-thumb-placeholder rounded">
-            <K7Icon Icon="@Phosphor.Image"  IconSize="@K7IconSize.Sm" />
+<LibraryBrowseListRow Actions="Actions">
+    <a href="@Href" class="library-list-item focusable">
+        @ThumbnailContent
+        <div class="library-list-item-info">
+            <p class="library-list-item-title">@Item.Title</p>
+            @if (SecondaryText is not null)
+            {
+                <span class="library-list-item-secondary">@SecondaryText</span>
+            }
         </div>
-    }
-    <div class="library-list-item-info">
-        <p class="library-list-item-title">@Item.Title</p>
-        @if (SecondaryText is not null)
+        @if (Actions is null)
         {
-            <span class="library-list-item-secondary">@SecondaryText</span>
+            <div class="library-list-item-end">
+                @EndContent
+            </div>
         }
-    </div>
-    <div class="library-list-item-end">
+    </a>
+</LibraryBrowseListRow>
+
+@code {
+    private RenderFragment ThumbnailContent => @<text>
+        @if (ThumbnailUrl is not null)
+        {
+            <K7Image Src="@ThumbnailUrl" Alt="@Item.Title" Width="48" ObjectFit="cover" Class="library-list-item-thumb rounded" loading="lazy" />
+        }
+        else
+        {
+            <div class="library-list-item-thumb-placeholder rounded">
+                <K7Icon Icon="@Phosphor.Image" IconSize="@K7IconSize.Sm" />
+            </div>
+        }
+    </text>;
+
+    private RenderFragment EndContent => @<text>
         @if (Item.UserRating is > 0)
         {
             <span class="library-list-item-rating">@Item.UserRating</span>
@@ -29,7 +44,7 @@
         }
         else if (IsWatched)
         {
-            <K7Icon Icon="@Phosphor.CheckCircle" Color="success"  IconSize="@K7IconSize.Sm" />
+            <K7Icon Icon="@Phosphor.CheckCircle" Color="success" IconSize="@K7IconSize.Sm" />
         }
-    </div>
-</a>
+    </text>;
+}

@@ -39,6 +39,8 @@
   <data name="NoPermission" xml:space="preserve"><value>You don't have permission to access this page.</value></data>
   <data name="GoToHome" xml:space="preserve"><value>Go to Home</value></data>
   <data name="Title" xml:space="preserve"><value>Title</value></data>
+  <data name="Image" xml:space="preserve"><value>Image</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
   <data name="Artist" xml:space="preserve"><value>Artist</value></data>
   <data name="Album" xml:space="preserve"><value>Album</value></data>
   <data name="HideForMe" xml:space="preserve"><value>Hide for me</value></data>

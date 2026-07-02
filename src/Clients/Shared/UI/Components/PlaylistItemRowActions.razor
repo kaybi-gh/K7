@@ -1,0 +1,30 @@
+@inject IStringLocalizer<SharedResource> S
+
+<div class="library-browse-row-actions" @onclick:stopPropagation="true">
+    @if (IsMusic)
+    {
+        <TrackContextMenu Track="Track" />
+    }
+    else if (Model is not null)
+    {
+        <LibraryBrowseRowActions Model="Model"
+                                  Href="Href"
+                                  OverlayEnabled="OverlayEnabled"
+                                  ProgressEnabled="ProgressEnabled"
+                                  WatchedStatusEnabled="WatchedStatusEnabled"
+                                  ExcludeMenuEnabled="ExcludeMenuEnabled"
+                                  WatchStateMenuEnabled="WatchStateMenuEnabled"
+                                  IsAdmin="IsAdmin"
+                                  OnExcludeForSelf="OnExcludeForSelf"
+                                  OnExcludeForOthers="OnExcludeForOthers"
+                                  OnWatchStateChanged="OnWatchStateChanged" />
+    }
+    @if (OnRemove.HasDelegate)
+    {
+        <K7IconButton Icon="@Phosphor.X"
+                       Size="sm"
+                       Color="error"
+                       OnClick="OnRemove"
+                       aria-label="@S["Remove"]" />
+    }
+</div>

@@ -2,14 +2,12 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    width: 100%;
+    min-width: 0;
     padding: 8px 4px;
     text-decoration: none;
     color: inherit;
     border-radius: var(--radius-sm);
-}
-
-.library-list-item:hover {
-    background: var(--color-surface-hover);
 }
 
 .library-list-item:focus-visible {

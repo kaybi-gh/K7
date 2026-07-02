@@ -1,0 +1,6 @@
+.library-browse-row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+}

@@ -1,0 +1,61 @@
+.k7-cover-mosaic {
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+}
+
+.k7-cover-mosaic__grid {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    gap: 2px;
+    background: var(--color-border-subtle);
+}
+
+.k7-cover-mosaic__grid--1 {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+}
+
+.k7-cover-mosaic__grid--2 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+}
+
+.k7-cover-mosaic__grid--3 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.k7-cover-mosaic__grid--3 .k7-cover-mosaic__tile:first-child {
+    grid-row: span 2;
+}
+
+.k7-cover-mosaic__grid--4 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.k7-cover-mosaic__tile {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.k7-cover-mosaic__tile--single {
+    border-radius: inherit;
+}
+
+.k7-cover-mosaic__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}

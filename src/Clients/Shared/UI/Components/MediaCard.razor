@@ -37,16 +37,7 @@ else
                @onclick:preventDefault="@_preventNextClick"
                @onkeydown="OnKeyDown"
                @onkeyup="OnKeyUp">
-                @if (!string.IsNullOrEmpty(Model.PictureUrl))
-                {
-                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Fluid="true" ObjectFit="cover" loading="lazy">
-                        <FallbackContent>@CardPlaceholder</FallbackContent>
-                    </K7Image>
-                }
-                else
-                {
-                    @CardPlaceholder
-                }
+                @CoverVisual
 
                 @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
@@ -85,16 +76,7 @@ else
                  aria-label="@Model.Title"
                  @onkeydown="OnKeyDown"
                  @onkeyup="OnKeyUp">
-                @if (!string.IsNullOrEmpty(Model.PictureUrl))
-                {
-                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Fluid="true" ObjectFit="cover" loading="lazy">
-                        <FallbackContent>@CardPlaceholder</FallbackContent>
-                    </K7Image>
-                }
-                else
-                {
-                    @CardPlaceholder
-                }
+                @CoverVisual
 
                 @if (WatchedStatusEnabled && Model.Watched && Variant != MediaCardVariant.Cover)
                 {
@@ -125,16 +107,7 @@ else
             else
             {
             <div class="media-card-link">
-                @if (!string.IsNullOrEmpty(Model.PictureUrl))
-                {
-                    <K7Image Src="@Model.PictureUrl" Alt="@Model.Title" Class="rounded-lg" Fluid="true" ObjectFit="cover" loading="lazy">
-                        <FallbackContent>@CardPlaceholder</FallbackContent>
-                    </K7Image>
-                }
-                else
-                {
-                    @CardPlaceholder
-                }
+                @CoverVisual
             </div>
             }
 
@@ -179,7 +152,32 @@ else
 }
 
 @code {
+    private RenderFragment CoverVisual => __builder =>
+    {
+        if (CoverContent is not null)
+        {
+            __builder.AddContent(0, CoverContent);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Model.PictureUrl))
+        {
+            __builder.OpenComponent<K7Image>(1);
+            __builder.AddAttribute(2, "Src", Model.PictureUrl);
+            __builder.AddAttribute(3, "Alt", Model.Title);
+            __builder.AddAttribute(4, "Class", "rounded-lg");
+            __builder.AddAttribute(5, "Fluid", true);
+            __builder.AddAttribute(6, "ObjectFit", "cover");
+            __builder.AddAttribute(7, "loading", "lazy");
+            __builder.AddAttribute(8, "FallbackContent", CardPlaceholder);
+            __builder.CloseComponent();
+            return;
+        }
+
+        __builder.AddContent(9, CardPlaceholder);
+    };
+
     private RenderFragment CardPlaceholder => @<div class="media-card-placeholder rounded-lg">
-        <K7Icon Name="@PlaceholderIcon" Style="font-size: 48px; opacity: 0.3;" />
+        <K7Icon Name="@ResolvedPlaceholderIcon" Style="font-size: 48px; opacity: 0.3;" />
     </div>;
 }

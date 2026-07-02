@@ -9,24 +9,28 @@
         }
         else
         {
-            <Virtualize Items="Items" Context="item" ItemSize="ItemHeight"
+            <Virtualize TItem="IndexedListItem" Items="_indexedItems" Context="row" ItemSize="ItemHeight"
                         OverscanCount="OverscanCount" @ref="_virtualizeRef">
-                @if (ItemTemplate is not null)
-                {
-                    @ItemTemplate(item)
-                }
+                <div class="k7-virtual-list-item @(row.IsAlternate ? "k7-virtual-list-item--alt" : "")">
+                    @if (ItemTemplate is not null)
+                    {
+                        @ItemTemplate(row.Item)
+                    }
+                </div>
             </Virtualize>
         }
     }
     else if (ItemsProvider is not null)
     {
-        <Virtualize ItemsProvider="ProvideItemsAsync" Context="item" ItemSize="ItemHeight"
+        <Virtualize TItem="IndexedListItem" ItemsProvider="ProvideIndexedItemsAsync" Context="row" ItemSize="ItemHeight"
                     OverscanCount="OverscanCount" @ref="_virtualizeRef">
             <ItemContent>
-                @if (ItemTemplate is not null)
-                {
-                    @ItemTemplate(item)
-                }
+                <div class="k7-virtual-list-item @(row.IsAlternate ? "k7-virtual-list-item--alt" : "")">
+                    @if (ItemTemplate is not null)
+                    {
+                        @ItemTemplate(row.Item)
+                    }
+                </div>
             </ItemContent>
             <Placeholder>
                 <div class="k7-virtual-list-placeholder" style="@PlaceholderStyle" aria-hidden="true"></div>

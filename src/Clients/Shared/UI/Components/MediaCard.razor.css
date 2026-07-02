@@ -38,6 +38,18 @@
     aspect-ratio: 16 / 9;
 }
 
+.media-card-link ::deep .k7-image,
+.media-card-link ::deep .media-card-mosaic {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-card-link ::deep .media-card-mosaic {
+    aspect-ratio: auto;
+    border-radius: var(--radius-lg);
+}
+
 .media-card-link {
     position: absolute;
     inset: 0;
