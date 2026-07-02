@@ -22,6 +22,9 @@
   <data name="Empty" xml:space="preserve"><value>No playlists</value></data>
   <data name="CreatePlaylist" xml:space="preserve"><value>Create a playlist</value></data>
   <data name="TrackCount" xml:space="preserve"><value>{0} tracks</value></data>
+  <data name="MovieCount" xml:space="preserve"><value>{0} movies</value></data>
+  <data name="EpisodeCount" xml:space="preserve"><value>{0} episodes</value></data>
+  <data name="ItemCount" xml:space="preserve"><value>{0} items</value></data>
   <data name="NewPlaylist" xml:space="preserve"><value>New playlist</value></data>
   <data name="AddedToPlaylist" xml:space="preserve"><value>Added to '{0}'</value></data>
   <data name="AddError" xml:space="preserve"><value>Error while adding</value></data>

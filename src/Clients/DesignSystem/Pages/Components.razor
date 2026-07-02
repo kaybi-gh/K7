@@ -577,9 +577,9 @@
                     <th>Title</th>
                     <th>Type</th>
                 </TableHeaderContent>
-                <TableRowTemplate Context="item">
-                    <td>@item.Title</td>
-                    <td>@item.Kind</td>
+                <TableRowTemplate Context="row">
+                    <td>@row.Item.Title</td>
+                    <td>@row.Item.Kind</td>
                 </TableRowTemplate>
             </BrowseView>
         </div>
