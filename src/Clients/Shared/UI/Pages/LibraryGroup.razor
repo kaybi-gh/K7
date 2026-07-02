@@ -137,9 +137,52 @@
                     <span>@(item.Created?.ToString("d") ?? "-")</span>
                 </CellTemplate>
             </K7DataColumn>
+            <K7DataColumn TItem="LiteMediaDto" Title="@S["Actions"]" Width="88px" Hideable="false">
+                <CellTemplate Context="item">
+                    @{
+                        var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));
+                    }
+                    @if (vm is not null)
+                    {
+                        <div @onclick:stopPropagation="true">
+                            <LibraryBrowseRowActions Model="vm"
+                                                      Href="@GetItemHref(item)"
+                                                      OverlayEnabled="true"
+                                                      ProgressEnabled="true"
+                                                      WatchedStatusEnabled="true"
+                                                      ExcludeMenuEnabled="_canExclude"
+                                                      WatchStateMenuEnabled="_canSetWatchState"
+                                                      IsAdmin="_isAdmin"
+                                                      OnExcludeForSelf="() => ExcludeForSelf(vm)"
+                                                      OnExcludeForOthers="() => ExcludeForOthers(vm)"
+                                                      OnWatchStateChanged="StateHasChanged" />
+                        </div>
+                    }
+                </CellTemplate>
+            </K7DataColumn>
         </K7DataTable>
     </TableContent>
     <ListTemplate Context="item">
-        <LibraryListItem Item="item" Href="@GetItemHref(item)" />
+        @{
+            var vm = item.ToCardViewModel(apiClient, n => string.Format(S["SeasonNumber"], n));
+        }
+        <LibraryListItem Item="item" Href="@GetItemHref(item)">
+            <Actions>
+                @if (vm is not null)
+                {
+                    <LibraryBrowseRowActions Model="vm"
+                                              Href="@GetItemHref(item)"
+                                              OverlayEnabled="true"
+                                              ProgressEnabled="true"
+                                              WatchedStatusEnabled="true"
+                                              ExcludeMenuEnabled="_canExclude"
+                                              WatchStateMenuEnabled="_canSetWatchState"
+                                              IsAdmin="_isAdmin"
+                                              OnExcludeForSelf="() => ExcludeForSelf(vm)"
+                                              OnExcludeForOthers="() => ExcludeForOthers(vm)"
+                                              OnWatchStateChanged="StateHasChanged" />
+                }
+            </Actions>
+        </LibraryListItem>
     </ListTemplate>
 </BrowseView>

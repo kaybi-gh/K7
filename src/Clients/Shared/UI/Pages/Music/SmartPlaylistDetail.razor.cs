@@ -67,10 +67,26 @@ public partial class SmartPlaylistDetail
         IsPlaying = Audio.CurrentTrack?.MediaId == item.MediaId
     };
 
+    private async Task RecordPlaybackAsync()
+    {
+        try
+        {
+            await K7ServerService.RecordPlaylistPlaybackAsync(Guid.Parse(Id));
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
     private async Task PlayAll()
     {
         var queue = BuildQueueItems();
-        if (queue.Count > 0) await Audio.PlayTracksAsync(queue, 0);
+        if (queue.Count > 0)
+        {
+            await RecordPlaybackAsync();
+            await Audio.PlayTracksAsync(queue, 0, Guid.Parse(Id));
+        }
     }
 
     private async Task ShuffleAll()
@@ -79,7 +95,8 @@ public partial class SmartPlaylistDetail
         if (queue.Count > 0)
         {
             if (!Audio.Shuffle) Audio.ToggleShuffle();
-            await Audio.PlayTracksAsync(queue, 0);
+            await RecordPlaybackAsync();
+            await Audio.PlayTracksAsync(queue, 0, Guid.Parse(Id));
         }
     }
 
@@ -89,7 +106,8 @@ public partial class SmartPlaylistDetail
         if (track is null) return;
         var queue = BuildQueueItems();
         var index = queue.FindIndex(q => q.MediaId == track.MediaId);
-        await Audio.PlayTracksAsync(queue, index >= 0 ? index : 0);
+        await RecordPlaybackAsync();
+        await Audio.PlayTracksAsync(queue, index >= 0 ? index : 0, Guid.Parse(Id));
     }
 
     private List<AudioQueueItem> BuildQueueItems() =>

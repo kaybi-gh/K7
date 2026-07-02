@@ -25,8 +25,10 @@
   <data name="Public" xml:space="preserve"><value>Publique</value></data>
   <data name="Private" xml:space="preserve"><value>Privée</value></data>
   <data name="Items" xml:space="preserve"><value>éléments</value></data>
+  <data name="Year" xml:space="preserve"><value>Année</value></data>
   <data name="DeleteConfirmTitle" xml:space="preserve"><value>Supprimer la collection ?</value></data>
   <data name="DeleteConfirmMessage" xml:space="preserve"><value>Cette action est irréversible.</value></data>
   <data name="Deleted" xml:space="preserve"><value>Collection supprimée</value></data>
   <data name="DeleteError" xml:space="preserve"><value>Erreur lors de la suppression</value></data>
+  <data name="EditDialogTitle" xml:space="preserve"><value>Modifier la collection</value></data>
 </root>
