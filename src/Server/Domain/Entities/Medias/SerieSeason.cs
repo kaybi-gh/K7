@@ -17,6 +17,8 @@ public class SerieSeason() : BaseMedia(MediaType.SerieSeason)
     {
         if (!IsFieldLocked(nameof(Title)))
             Title = metadata.Title ?? Title;
+        if (!IsFieldLocked(nameof(SortTitle)))
+            SortTitle = metadata.SortTitle ?? SortTitle;
         if (!IsFieldLocked(nameof(Overview)))
             Overview = metadata.Overview ?? Overview;
         if (!IsFieldLocked(nameof(ReleaseDate)))

@@ -15,6 +15,8 @@ public class Serie() : BaseMedia(MediaType.Serie)
     {
         if (!IsFieldLocked(nameof(Title)))
             Title = metadata.Title ?? Title;
+        if (!IsFieldLocked(nameof(SortTitle)))
+            SortTitle = metadata.SortTitle ?? SortTitle;
         if (!IsFieldLocked(nameof(OriginalTitle)))
             OriginalTitle = metadata.OriginalTitle ?? OriginalTitle;
         if (!IsFieldLocked(nameof(ReleaseDate)))

@@ -139,6 +139,7 @@ public class GetFederationMedia : IEndpoint
                     Id = m.Id,
                     Type = m.Type,
                     Title = m.Title,
+                    SortTitle = m.SortTitle,
                     OriginalTitle = m.OriginalTitle,
                     ReleaseDate = m.ReleaseDate,
                     Overview = (m as Movie)?.Overview ?? (m as Serie)?.Overview,

@@ -13,6 +13,14 @@
             <K7IconButton Icon="@GetLockIcon("Title")" OnClick="@(() => ToggleLock("Title"))" Title="@GetLockTooltip("Title")" Class="@GetLockClass("Title")" />
         </div>
 
+        @if (!_isPersonMode)
+        {
+            <div class="field-row">
+                <K7TextField @bind-Value="_sortTitle" Label="@L["SortTitle"]" Variant="outlined" MaxLength="500" />
+                <K7IconButton Icon="@GetLockIcon("SortTitle")" OnClick="@(() => ToggleLock("SortTitle"))" Title="@GetLockTooltip("SortTitle")" Class="@GetLockClass("SortTitle")" />
+            </div>
+        }
+
         @if (_showOriginalTitle)
         {
             <div class="field-row">

@@ -191,6 +191,7 @@ public class SyncPeerMetadataCommandHandler(
         {
             localMedia = CreateMedia(media.Type);
             localMedia.Title = media.Title;
+            localMedia.SortTitle = media.SortTitle;
             localMedia.OriginalTitle = media.OriginalTitle;
             localMedia.ReleaseDate = media.ReleaseDate;
             localMedia.PeerServerId = peer.Id;

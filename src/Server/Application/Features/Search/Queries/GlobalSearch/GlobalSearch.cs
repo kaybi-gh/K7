@@ -165,7 +165,7 @@ public class GlobalSearchQueryHandler(
         {
             mediaQuery = mediaQuery
                 .Where(m => m.MetadataTags.Any(mt => mt.MetadataTag.Kind == MetadataTagKind.Studio && mt.MetadataTag.DisplayName == studio.Trim()))
-                .OrderBy(m => m.Title);
+                .OrderBy(m => m.SortTitle ?? m.Title);
         }
         else
         {

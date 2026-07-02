@@ -713,8 +713,8 @@ public class GetHomeFeedItemsQueryHandler(IApplicationDbContext context, IUser c
             {
                 MediaOrderingOption.CreatedAsc => ordered?.ThenBy(x => x.Id) ?? queryable.OrderBy(x => x.Id),
                 MediaOrderingOption.CreatedDesc => ordered?.ThenByDescending(x => x.Id) ?? queryable.OrderByDescending(x => x.Id),
-                MediaOrderingOption.TitleAsc => ordered?.ThenBy(x => x.Title) ?? queryable.OrderBy(x => x.Title),
-                MediaOrderingOption.TitleDesc => ordered?.ThenByDescending(x => x.Title) ?? queryable.OrderByDescending(x => x.Title),
+                MediaOrderingOption.TitleAsc => ordered?.ThenBy(x => x.SortTitle ?? x.Title) ?? queryable.OrderBy(x => x.SortTitle ?? x.Title),
+                MediaOrderingOption.TitleDesc => ordered?.ThenByDescending(x => x.SortTitle ?? x.Title) ?? queryable.OrderByDescending(x => x.SortTitle ?? x.Title),
                 MediaOrderingOption.ReleaseDateAsc => ordered?.ThenBy(x => x.ReleaseDate) ?? queryable.OrderBy(x => x.ReleaseDate),
                 MediaOrderingOption.ReleaseDateDesc => ordered?.ThenByDescending(x => x.ReleaseDate) ?? queryable.OrderByDescending(x => x.ReleaseDate),
                 MediaOrderingOption.LocalRatingAsc => ordered?.ThenBy(x => x.Ratings

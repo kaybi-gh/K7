@@ -157,6 +157,7 @@ public class GetFederationMediaMetadata : IEndpoint
             Id = media.Id,
             Type = media.Type,
             Title = media.Title ?? string.Empty,
+            SortTitle = media.SortTitle,
             OriginalTitle = media.OriginalTitle,
             ReleaseDate = media.ReleaseDate,
             Genres = genres,
@@ -214,6 +215,7 @@ public class GetFederationMediaMetadata : IEndpoint
                 {
                     SeasonNumber = s.SeasonNumber,
                     Title = s.Title,
+                    SortTitle = s.SortTitle,
                     Overview = s.Overview,
                     AirDate = s.ReleaseDate,
                     EpisodeCount = s.Episodes.Count,
@@ -233,6 +235,7 @@ public class GetFederationMediaMetadata : IEndpoint
                         EpisodeNumber = e.EpisodeNumber,
                         SeasonNumber = s.SeasonNumber,
                         Title = e.Title,
+                        SortTitle = e.SortTitle,
                         Overview = e.Overview,
                         AirDate = e.AirDate,
                         Runtime = e.Runtime,
@@ -253,6 +256,7 @@ public class GetFederationMediaMetadata : IEndpoint
                 {
                     Id = t.Id,
                     Title = t.Title ?? string.Empty,
+                    SortTitle = t.SortTitle,
                     TrackNumber = t.TrackNumber,
                     DiscNumber = t.DiscNumber,
                     Duration = t.IndexedFiles.FirstOrDefault()?.FileMetadata is AudioFileMetadata af ? af.Duration : null,
@@ -272,6 +276,7 @@ public class GetFederationMediaMetadata : IEndpoint
                     ? [new PeerMusicArtistDto
                     {
                         Name = album.Artist.Title ?? string.Empty,
+                        SortName = album.Artist.SortTitle,
                         MusicBrainzArtistId = album.Artist.ExternalIds
                             .FirstOrDefault(e => e.ProviderName == "musicbrainz")?.Value ?? string.Empty
                     }]

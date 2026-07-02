@@ -11,6 +11,7 @@ public sealed record BulkCreateMediasRequest
         public required string Key { get; init; }
         public required string MediaType { get; init; }
         public required string Title { get; init; }
+        public string? SortTitle { get; init; }
         public int? Year { get; init; }
         public Dictionary<string, string> ExternalIds { get; init; } = [];
         public string? ArtistName { get; init; }

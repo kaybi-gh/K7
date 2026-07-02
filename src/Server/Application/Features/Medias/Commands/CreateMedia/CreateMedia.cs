@@ -245,6 +245,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
             var track = new MusicTrack
             {
                 Title = trackTitle,
+                SortTitle = MediaSortTitleHelper.Compute(trackTitle),
                 TrackNumber = trackNumber,
                 DiscNumber = tags?.DiscNumber,
                 ReleaseDate = tags?.Year != null ? new DateOnly(tags.Year.Value, 1, 1) : identification.ReleaseYear,
@@ -350,7 +351,8 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                     SerieId = serie.Id,
                     Serie = serie,
                     SeasonNumber = seasonNumber.Value,
-                    Title = seasonNumber.Value == 0 ? "Specials" : $"Season {seasonNumber.Value}"
+                    Title = seasonNumber.Value == 0 ? "Specials" : $"Season {seasonNumber.Value}",
+                    SortTitle = MediaSortTitleHelper.Compute(seasonNumber.Value == 0 ? "Specials" : $"Season {seasonNumber.Value}")
                 };
                 serie.Seasons.Add(season);
                 _context.Medias.Add(season);
@@ -372,6 +374,7 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 EpisodeNumber = episodeNumber.Value,
                 AbsoluteNumber = identification.AbsoluteNumber,
                 Title = $"Episode {episodeNumber.Value}",
+                SortTitle = MediaSortTitleHelper.Compute($"Episode {episodeNumber.Value}"),
                 IndexedFiles = [indexedFile]
             };
             season.Episodes.Add(episode);
@@ -423,7 +426,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
         if (existingAlbum is not null)
             return (existingAlbum, false);
 
-        var album = new MusicAlbum { Title = resolvedAlbumName, ReleaseDate = releaseYear };
+        var album = new MusicAlbum
+        {
+            Title = resolvedAlbumName,
+            SortTitle = MediaSortTitleHelper.Compute(resolvedAlbumName),
+            ReleaseDate = releaseYear
+        };
         _context.Medias.Add(album);
         album.AddDomainEvent(new MediaCreatedEvent(album));
         await _context.SaveChangesAsync(cancellationToken);
@@ -452,7 +460,11 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
 
         if (existing is not null) return existing;
 
-        var artist = new Domain.Entities.Medias.MusicArtist { Title = name };
+        var artist = new Domain.Entities.Medias.MusicArtist
+        {
+            Title = name,
+            SortTitle = MediaSortTitleHelper.Compute(name)
+        };
         _context.Medias.Add(artist);
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -540,7 +552,12 @@ public class CreateMediaCommandHandler : IRequestHandler<CreateMediaCommand, Gui
                 return (existingSerieById, false, providerExternalId);
         }
 
-        var serie = new Serie { Title = seriesTitle, ReleaseDate = identification.ReleaseYear };
+        var serie = new Serie
+        {
+            Title = seriesTitle,
+            SortTitle = MediaSortTitleHelper.Compute(seriesTitle),
+            ReleaseDate = identification.ReleaseYear
+        };
         _context.Medias.Add(serie);
         serie.AddDomainEvent(new MediaCreatedEvent(serie));
 

@@ -9,6 +9,7 @@ public class UpdateMediaMetadataCommandValidator : AbstractValidator<UpdateMedia
         RuleFor(v => v.Id).NotEmpty();
         RuleFor(v => v.LockedFields).NotNull();
         RuleFor(v => v.Title).MaximumLength(500).When(v => v.Title is not null);
+        RuleFor(v => v.SortTitle).MaximumLength(500).When(v => v.SortTitle is not null);
         RuleFor(v => v.OriginalTitle).MaximumLength(500).When(v => v.OriginalTitle is not null);
         RuleFor(v => v.Tagline).MaximumLength(1000).When(v => v.Tagline is not null);
         RuleFor(v => v.Overview).MaximumLength(10000).When(v => v.Overview is not null);

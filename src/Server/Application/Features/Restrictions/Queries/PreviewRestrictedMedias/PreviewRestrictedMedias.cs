@@ -26,7 +26,7 @@ public class PreviewRestrictedMediasQueryHandler(IApplicationDbContext context)
         var restricted = ContentRestrictionEvaluator.GetRestricted(query, profile);
 
         return await restricted
-            .OrderBy(m => m.Title)
+            .OrderBy(m => m.SortTitle ?? m.Title)
             .Take(200)
             .Select(m => new RestrictedMediaPreviewDto
             {

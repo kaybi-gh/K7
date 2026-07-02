@@ -7,6 +7,7 @@ public sealed record PeerMediaDto
     public required Guid Id { get; init; }
     public required MediaType Type { get; init; }
     public string? Title { get; init; }
+    public string? SortTitle { get; init; }
     public string? OriginalTitle { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public string? Overview { get; init; }

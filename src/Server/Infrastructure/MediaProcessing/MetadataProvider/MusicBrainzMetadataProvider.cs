@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Services;
 using K7.Server.Domain.Entities;
@@ -109,9 +110,11 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             }
         }
 
+        var albumTitle = releaseGroup?.Title ?? release?.Title;
         var metadata = new ExternalMusicAlbumMetadata
         {
-            Title = releaseGroup?.Title ?? release?.Title,
+            Title = albumTitle,
+            SortTitle = releaseGroup?.SortName ?? release?.SortName ?? MediaSortTitleHelper.Compute(albumTitle),
             ReleaseDate = ParseDate(releaseGroup?.FirstReleaseDate ?? release?.Date),
             Genres = ExtractGenreTags(releaseGroup?.Genres, releaseGroup?.Tags),
             ExternalIds = externalIds,
@@ -290,9 +293,11 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
                     })
                     .ToList();
 
+                var trackTitle = track.Title ?? track.Recording?.Title ?? "Unknown";
                 tracks.Add(new ExternalMusicTrackMetadata
                 {
-                    Title = track.Title ?? track.Recording?.Title ?? "Unknown",
+                    Title = trackTitle,
+                    SortTitle = track.Recording?.SortName ?? track.SortName ?? MediaSortTitleHelper.Compute(trackTitle),
                     TrackNumber = track.Position,
                     DiscNumber = medium.Position,
                     Duration = track.Length.HasValue ? TimeSpan.FromMilliseconds(track.Length.Value) : null,
@@ -314,6 +319,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
             .Select(ac => new ExternalMusicArtistMetadata
             {
                 Name = ac.Artist!.Name ?? ac.Name ?? "Unknown",
+                SortName = ac.Artist!.SortName ?? MediaSortTitleHelper.Compute(ac.Artist!.Name ?? ac.Name),
                 MusicBrainzArtistId = ac.Artist.Id
             })
             .DistinctBy(a => a.MusicBrainzArtistId)
@@ -620,6 +626,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         public string Id { get; init; } = "";
         public string? Title { get; init; }
+        public string? SortName { get; init; }
         [JsonPropertyName("first-release-date")]
         public string? FirstReleaseDate { get; init; }
         public List<MbGenre>? Genres { get; init; }
@@ -649,6 +656,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         public string Id { get; init; } = "";
         public string? Title { get; init; }
+        public string? SortName { get; init; }
         public string? Date { get; init; }
         public List<MbMedium>? Media { get; init; }
         [JsonPropertyName("artist-credit")]
@@ -665,6 +673,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         public string Id { get; init; } = "";
         public string? Name { get; init; }
+        public string? SortName { get; init; }
         public string? Type { get; init; }
     }
 
@@ -679,6 +688,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     private record MbTrack
     {
         public string? Title { get; init; }
+        public string? SortName { get; init; }
         public int Position { get; init; }
         public long? Length { get; init; }
         public MbRecording? Recording { get; init; }
@@ -690,6 +700,7 @@ public class MusicBrainzMetadataProvider : IMetadataProvider<ExternalMusicAlbumM
     {
         public string Id { get; init; } = "";
         public string? Title { get; init; }
+        public string? SortName { get; init; }
         public List<string>? Isrcs { get; init; }
     }
 

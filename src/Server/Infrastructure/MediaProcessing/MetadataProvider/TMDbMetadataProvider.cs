@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Shared.Dtos.Entities.Metadatas;
@@ -116,6 +117,7 @@ public class TMDbMetadataProvider : IMetadataProvider<ExternalMovieMetadata>, IS
             var movie = new ExternalMovieMetadata
             {
                 Title = tmdbMovie.Title,
+                SortTitle = MediaSortTitleHelper.Compute(tmdbMovie.Title),
                 OriginalTitle = tmdbMovie.OriginalTitle,
                 ReleaseDate = tmdbMovie.ReleaseDate.HasValue ? DateOnly.FromDateTime(tmdbMovie.ReleaseDate.Value) : null,
                 Genres = [.. tmdbMovie.Genres.Select(g => g.Name)],

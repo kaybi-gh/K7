@@ -5,6 +5,7 @@ namespace K7.Server.Domain.Entities.Metadatas.External;
 public class ExternalMusicAlbumMetadata : IExternalMetadata
 {
     public string? Title { get; init; }
+    public string? SortTitle { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public string? Overview { get; init; }
 
@@ -19,6 +20,7 @@ public class ExternalMusicTrackMetadata
 {
     public Guid? RemoteId { get; init; }
     public required string Title { get; init; }
+    public string? SortTitle { get; init; }
     public int? TrackNumber { get; init; }
     public int? DiscNumber { get; init; }
     public TimeSpan? Duration { get; init; }
@@ -39,5 +41,6 @@ public class ExternalMusicTrackArtistCredit
 public class ExternalMusicArtistMetadata
 {
     public required string Name { get; init; }
+    public string? SortName { get; init; }
     public required string MusicBrainzArtistId { get; init; }
 }

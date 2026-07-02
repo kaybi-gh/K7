@@ -16,6 +16,7 @@ public record UpdateMediaMetadataCommand : IRequest
 
     // BaseMedia fields
     public string? Title { get; init; }
+    public string? SortTitle { get; init; }
     public string? OriginalTitle { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public IList<string>? Genres { get; init; }
@@ -68,6 +69,10 @@ public class UpdateMediaMetadataCommandHandler(
         // BaseMedia fields
         if (request.Title is not null)
             media.Title = request.Title;
+        if (request.SortTitle is not null)
+            media.SortTitle = request.SortTitle;
+        else if (request.Title is not null && !media.IsFieldLocked(nameof(BaseMedia.SortTitle)))
+            media.SortTitle = MediaSortTitleHelper.Compute(request.Title);
         if (request.OriginalTitle is not null)
             media.OriginalTitle = request.OriginalTitle;
         if (request.ReleaseDate is not null)

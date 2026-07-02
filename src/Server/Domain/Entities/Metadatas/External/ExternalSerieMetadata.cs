@@ -7,6 +7,7 @@ namespace K7.Server.Domain.Entities.Metadatas.External;
 public class ExternalSerieMetadata : IExternalMetadata
 {
     public string Title { get; init; } = string.Empty;
+    public string? SortTitle { get; init; }
     public string? OriginalTitle { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public string? Overview { get; init; }

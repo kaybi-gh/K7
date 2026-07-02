@@ -6,6 +6,7 @@ public sealed record UpdateMediaMetadataRequest
 {
     public IList<string> LockedFields { get; init; } = [];
     public string? Title { get; init; }
+    public string? SortTitle { get; init; }
     public string? OriginalTitle { get; init; }
     public DateOnly? ReleaseDate { get; init; }
     public IList<string>? Genres { get; init; }

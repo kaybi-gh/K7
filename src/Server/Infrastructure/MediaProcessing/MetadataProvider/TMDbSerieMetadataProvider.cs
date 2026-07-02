@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using K7.Server.Application.Features.Medias.Services;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Domain.Entities;
 using K7.Server.Domain.Entities.Metadatas;
@@ -116,6 +117,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         var metadata = new ExternalSerieMetadata
         {
             Title = show.Name,
+            SortTitle = MediaSortTitleHelper.Compute(show.Name),
             OriginalTitle = show.OriginalName,
             ReleaseDate = show.FirstAirDate.HasValue ? DateOnly.FromDateTime(show.FirstAirDate.Value) : null,
             Overview = show.Overview,
@@ -185,6 +187,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
         {
             SeasonNumber = season.SeasonNumber,
             Title = season.Name,
+            SortTitle = MediaSortTitleHelper.Compute(season.Name),
             Overview = season.Overview,
             AirDate = season.AirDate.HasValue ? DateOnly.FromDateTime(season.AirDate.Value) : null,
             EpisodeCount = season.Episodes?.Count,
@@ -222,6 +225,7 @@ public class TMDbSerieMetadataProvider : ISerieMetadataProvider, ISearchableMeta
             EpisodeNumber = episode.EpisodeNumber,
             SeasonNumber = episode.SeasonNumber,
             Title = episode.Name,
+            SortTitle = MediaSortTitleHelper.Compute(episode.Name),
             Overview = episode.Overview,
             AirDate = episode.AirDate.HasValue ? DateOnly.FromDateTime(episode.AirDate.Value) : null,
             Runtime = episode.Runtime,

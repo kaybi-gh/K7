@@ -126,7 +126,7 @@ public class GetArtistTopTracksQueryHandler(
             let resolvedArtistId = track.ArtistId ?? album!.ArtistId
             where resolvedArtistId == artistId
             where track.IndexedFiles.Any() || track.RemoteIndexedFiles.Any()
-            orderby album!.ReleaseDate descending, track.DiscNumber, track.TrackNumber, track.Title
+            orderby album!.ReleaseDate descending, track.DiscNumber, track.TrackNumber, track.SortTitle ?? track.Title
             select track.Id)
             .Take(count)
             .ToListAsync(cancellationToken);
