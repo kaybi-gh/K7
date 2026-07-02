@@ -8,6 +8,12 @@
         || 'default-dark';
     document.documentElement.setAttribute('data-theme', theme);
 
+    var themeColor = theme === 'default-light' ? '#e4e3d9' : '#0d0907';
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+        meta.setAttribute('content', themeColor);
+    }
+
     var customCss = localStorage.getItem('k7-custom-css');
     if (customCss) {
         var style = document.createElement('style');
@@ -34,6 +40,11 @@ window.K7.getSavedTheme = function () {
 window.K7.applyTheme = function (dataAttribute) {
     document.documentElement.setAttribute('data-theme', dataAttribute);
     localStorage.setItem('k7-theme', dataAttribute);
+    var themeColor = dataAttribute === 'default-light' ? '#e4e3d9' : '#0d0907';
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+        meta.setAttribute('content', themeColor);
+    }
 };
 
 window.K7.applyCustomCss = function (css) {
