@@ -35,7 +35,14 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             sessionsQuery = context.MediaPlaybackSessions.AsQueryable();
 
             if (request.UserId.HasValue)
-                sessionsQuery = sessionsQuery.Where(s => s.UserId == request.UserId.Value);
+            {
+                var coViewerReferenceIds = context.MediaPlaybackSessionCoViewers
+                    .Where(c => c.UserId == request.UserId.Value)
+                    .Select(c => c.ReferenceId);
+
+                sessionsQuery = sessionsQuery.Where(s =>
+                    s.UserId == request.UserId.Value || coViewerReferenceIds.Contains(s.ReferenceId));
+            }
         }
         else
         {
@@ -43,8 +50,12 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
             if (targetUserId is null)
                 return new PlaybackHistoryPageDto();
 
+            var coViewerReferenceIds = context.MediaPlaybackSessionCoViewers
+                .Where(c => c.UserId == targetUserId.Value)
+                .Select(c => c.ReferenceId);
+
             sessionsQuery = context.MediaPlaybackSessions
-                .Where(s => s.UserId == targetUserId.Value);
+                .Where(s => s.UserId == targetUserId.Value || coViewerReferenceIds.Contains(s.ReferenceId));
         }
 
         if (request.MediaType.HasValue)
@@ -82,7 +93,8 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 IsCompleted = g.Any(s => s.CompletedAt != null),
                 MediaId = g.First().MediaId,
                 DeviceId = g.First().DeviceId,
-                UserId = g.First().UserId
+                UserId = g.First().UserId,
+                ViewingGroupName = g.First().ViewingGroupNameSnapshot
             });
 
         var totalCount = await groupedQuery.CountAsync(cancellationToken);
@@ -216,6 +228,7 @@ public class GetPlaybackHistoryQueryHandler(IApplicationDbContext context, IUser
                 DeviceClient = g.DeviceId.HasValue && devices.TryGetValue(g.DeviceId.Value, out var devClient) ? devClient.ClientType.ToString() : null,
                 IsCompleted = g.IsCompleted,
                 UserName = userNames.GetValueOrDefault(g.UserId),
+                ViewingGroupName = g.ViewingGroupName,
                 StreamQuality = quality
             };
         }).ToList();

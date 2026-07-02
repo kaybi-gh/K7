@@ -23,6 +23,7 @@ public sealed record ActiveStreamInfo
     public double Duration { get; set; }
     public int State { get; set; }
     public DateTime LastUpdatedAt { get; set; }
+    public string? ViewingGroupName { get; set; }
 }
 
 public interface IActiveStreamTracker

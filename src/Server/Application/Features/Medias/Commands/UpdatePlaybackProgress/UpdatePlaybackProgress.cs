@@ -24,9 +24,21 @@ public record UpdatePlaybackProgressCommand(
     double Duration,
     PlaybackState State,
     Guid? DeviceId = null,
-    Guid? PlaylistId = null) : IRequest;
+    Guid? PlaylistId = null,
+    Guid? ViewingGroupId = null) : IRequest;
 
-public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context, IUser currentUserService, IPlaybackProgressNotifier progressNotifier, IMediaAccessGuard accessGuard, IActiveStreamTracker activeStreamTracker, IIdentityService identityService, IMediaQueryCacheInvalidator cacheInvalidator, INextEpisodeEnqueueService nextEpisodeEnqueueService, ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
+public class UpdatePlaybackProgressCommandHandler(
+    IApplicationDbContext context,
+    IUser currentUserService,
+    IPlaybackProgressNotifier progressNotifier,
+    IMediaAccessGuard accessGuard,
+    IActiveStreamTracker activeStreamTracker,
+    IIdentityService identityService,
+    IMediaQueryCacheInvalidator cacheInvalidator,
+    INextEpisodeEnqueueService nextEpisodeEnqueueService,
+    IUserMediaStateUpdater userMediaStateUpdater,
+    IViewingGroupPlaybackResolver viewingGroupPlaybackResolver,
+    ILogger<UpdatePlaybackProgressCommandHandler> logger) : IRequestHandler<UpdatePlaybackProgressCommand>
 {
     private readonly IApplicationDbContext _context = context;
     private readonly IUser _currentUser = currentUserService;
@@ -36,6 +48,8 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
     private readonly IIdentityService _identityService = identityService;
     private readonly IMediaQueryCacheInvalidator _cacheInvalidator = cacheInvalidator;
     private readonly INextEpisodeEnqueueService _nextEpisodeEnqueueService = nextEpisodeEnqueueService;
+    private readonly IUserMediaStateUpdater _userMediaStateUpdater = userMediaStateUpdater;
+    private readonly IViewingGroupPlaybackResolver _viewingGroupPlaybackResolver = viewingGroupPlaybackResolver;
     private readonly ILogger _logger = logger;
 
     public async Task Handle(UpdatePlaybackProgressCommand request, CancellationToken cancellationToken)
@@ -104,63 +118,49 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
         session.PositionSeconds = request.Position;
         session.DurationSeconds = request.Duration;
 
-        var state = await _context.UserMediaStates
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.MediaId == request.MediaId, cancellationToken);
-
-        if (state is null)
+        ViewingGroupPlaybackContext? viewingGroup = null;
+        if (request.ViewingGroupId is { } viewingGroupId)
         {
-            state = new UserMediaState
+            viewingGroup = await _viewingGroupPlaybackResolver.ResolveAsync(viewingGroupId, userId, cancellationToken);
+            if (viewingGroup is not null)
             {
-                UserId = userId,
-                MediaId = request.MediaId,
-                PlayCount = 0,
-                IsCompleted = false,
-                LastPlaybackPosition = 0
-            };
-            _context.UserMediaStates.Add(state);
+                session.ViewingGroupId ??= viewingGroup.ViewingGroupId;
+                session.ViewingGroupNameSnapshot ??= viewingGroup.GroupName;
+                await EnsureCoViewersAsync(request.ReferenceId, viewingGroup.CoViewerUserIds, cancellationToken);
+            }
         }
 
-        state.LastInteractedAt = timeNow;
+        var hostResult = await _userMediaStateUpdater.ApplyAsync(
+            userId, media, request.MediaId, request.Position, request.Duration, timeNow, cancellationToken);
 
-        double progress = request.Duration > 0 ? request.Position / request.Duration : 0;
-
+        var progress = request.Duration > 0 ? request.Position / request.Duration : 0;
         var isMusic = media.Type == MediaType.MusicTrack;
         var completed = isMusic
             ? progress >= 0.50 || request.Position >= 240
             : progress >= 0.80;
 
-        if (completed)
+        if (completed && session.CompletedAt is null)
         {
-            if (session.CompletedAt is null)
-            {
-                session.CompletedAt = timeNow;
-                session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
-            }
-
-            if (!state.IsCompleted)
-            {
-                state.PlayCount++;
-                state.IsCompleted = true;
-            }
-            state.LastPlaybackPosition = 0;
-            state.ProgressPercentage = 100;
-
-            if (media is SerieEpisode episode)
-            {
-                await _nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, episode.Id, timeNow, cancellationToken);
-            }
+            session.CompletedAt = timeNow;
+            session.AddDomainEvent(MediaPlaybackCompletedEvent<BaseMedia>.Create(session, media));
         }
-        else
-        {
-            if (state.IsCompleted && request.Position < (request.Duration * 0.1))
-            {
-                state.IsCompleted = false;
-            }
 
-            if (!isMusic)
+        if (hostResult.EpisodeIdForEnqueue is { } hostEpisodeId)
+            await _nextEpisodeEnqueueService.EnqueueNextEpisodeAsync(userId, hostEpisodeId, timeNow, cancellationToken);
+
+        var notifiedUsers = new List<(Guid UserId, UserMediaStateUpdateResult Result)> { (userId, hostResult) };
+
+        if (viewingGroup is not null)
+        {
+            foreach (var coViewerUserId in viewingGroup.CoViewerUserIds)
             {
-                state.LastPlaybackPosition = request.Position;
-                state.ProgressPercentage = Math.Clamp(progress * 100, 0, 100);
+                if (!await _accessGuard.CanAccessAsync(request.MediaId, coViewerUserId, cancellationToken))
+                    continue;
+
+                var coResult = await _userMediaStateUpdater.ApplyAsync(
+                    coViewerUserId, media, request.MediaId, request.Position, request.Duration, timeNow, cancellationToken);
+
+                notifiedUsers.Add((coViewerUserId, coResult));
             }
         }
 
@@ -295,7 +295,8 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
                 StartedAt = session.StartedAt,
                 Position = request.Position,
                 Duration = request.Duration,
-                State = (int)request.State
+                State = (int)request.State,
+                ViewingGroupName = session.ViewingGroupNameSnapshot
             });
         }
         else
@@ -305,20 +306,50 @@ public class UpdatePlaybackProgressCommandHandler(IApplicationDbContext context,
 
         _cacheInvalidator.InvalidateAll();
 
-        var identityUserId = _currentUser.IdentityId;
-        _logger.LogDebug("Playback progress updated: identityUserId='{IdentityUserId}', mediaId={MediaId}, progress={Progress:F1}%", identityUserId, request.MediaId, state.ProgressPercentage);
-        if (!string.IsNullOrEmpty(identityUserId))
+        var identityByUserId = await _context.Users
+            .AsNoTracking()
+            .Where(u => notifiedUsers.Select(n => n.UserId).Contains(u.Id) && u.IdentityUserId != null)
+            .Select(u => new { u.Id, u.IdentityUserId })
+            .ToDictionaryAsync(u => u.Id, u => u.IdentityUserId!, cancellationToken);
+
+        foreach (var (notifiedUserId, result) in notifiedUsers)
         {
+            _logger.LogDebug(
+                "Playback progress updated: userId={UserId}, mediaId={MediaId}, progress={Progress:F1}%",
+                notifiedUserId, request.MediaId, result.ProgressPercentage);
+
+            if (!identityByUserId.TryGetValue(notifiedUserId, out var identityUserId))
+                continue;
+
             await _progressNotifier.NotifyProgressUpdatedAsync(
                 identityUserId,
                 request.MediaId,
-                state.ProgressPercentage,
-                state.IsCompleted,
+                result.ProgressPercentage,
+                result.IsCompleted,
                 cancellationToken);
         }
-        else
+    }
+
+    private async Task EnsureCoViewersAsync(
+        Guid referenceId,
+        IReadOnlyList<Guid> coViewerUserIds,
+        CancellationToken cancellationToken)
+    {
+        if (coViewerUserIds.Count == 0)
+            return;
+
+        var existing = await _context.MediaPlaybackSessionCoViewers
+            .Where(c => c.ReferenceId == referenceId)
+            .Select(c => c.UserId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var coViewerUserId in coViewerUserIds.Where(id => !existing.Contains(id)))
         {
-            _logger.LogWarning("Skipped SignalR notification: identityUserId is null/empty");
+            _context.MediaPlaybackSessionCoViewers.Add(new MediaPlaybackSessionCoViewer
+            {
+                ReferenceId = referenceId,
+                UserId = coViewerUserId
+            });
         }
     }
 
