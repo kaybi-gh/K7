@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
@@ -20,6 +21,10 @@ public partial class MySpacePlaylistsPage
     private LibraryItemOrderingOption _selectedSort = LibraryItemOrderingOption.LastListenedDesc;
     private List<ButtonGroupOption<MediaType?>> _mediaTypeOptions = [];
     private bool _musicIntelligenceAvailable;
+    private BrowseView<LitePlaylistDto>? _browseView;
+    private K7DataTable<LitePlaylistDto>? _dataTable;
+    private string? _activeSortKey = "lastListened";
+    private K7SortDirection _activeSortDirection = K7SortDirection.Descending;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
@@ -38,6 +43,7 @@ public partial class MySpacePlaylistsPage
 
         _canCreate = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
         await LoadPersistedFiltersAsync();
+        (_activeSortKey, _activeSortDirection) = MySpaceLibraryBrowseSort.MapPlaylistOrderingToSortKey(_selectedSort);
         await LoadPlaylistsAsync();
 
         try
@@ -60,6 +66,26 @@ public partial class MySpacePlaylistsPage
             orderBy: _selectedSort);
         _playlists = result?.Items?.ToList() ?? [];
         _loading = false;
+
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
+
+        if (_browseView is not null)
+            await _browseView.RefreshAsync();
+    }
+
+    private Task<K7DataTableResult<LitePlaylistDto>> LoadTableDataAsync(
+        K7DataTableState<LitePlaylistDto> state, CancellationToken cancellationToken)
+    {
+        if (state.Count <= 0)
+            return Task.FromResult(new K7DataTableResult<LitePlaylistDto>([], 0));
+
+        var items = _playlists
+            .Skip(state.StartIndex)
+            .Take(state.Count)
+            .ToList();
+
+        return Task.FromResult(new K7DataTableResult<LitePlaylistDto>(items, _playlists.Count));
     }
 
     private async Task SetMediaTypeFilter(MediaType? mediaType)
@@ -75,9 +101,34 @@ public partial class MySpacePlaylistsPage
             return;
 
         _selectedSort = value;
+        (_activeSortKey, _activeSortDirection) = MySpaceLibraryBrowseSort.MapPlaylistOrderingToSortKey(value);
         await PersistFiltersAsync();
         await LoadPlaylistsAsync();
     }
+
+    private async Task OnTableSortChanged(SortChangedEventArgs args)
+    {
+        _activeSortKey = args.SortKey;
+        _activeSortDirection = args.Direction;
+
+        var ordering = MySpaceLibraryBrowseSort.MapSortKeyToPlaylistOrdering(args.SortKey, args.Direction);
+        if (ordering is not null && ordering != _selectedSort)
+        {
+            _selectedSort = ordering.Value;
+            await PersistFiltersAsync();
+            await LoadPlaylistsAsync();
+            return;
+        }
+
+        if (_browseView is not null)
+            await _browseView.RefreshAsync();
+    }
+
+    private void NavigateToPlaylist(LitePlaylistDto playlist) =>
+        NavigationManager.NavigateTo(GetPlaylistHref(playlist));
+
+    private void OnColumnPickerRequested() =>
+        _dataTable?.ToggleColumnPicker();
 
     private async Task LoadPersistedFiltersAsync()
     {

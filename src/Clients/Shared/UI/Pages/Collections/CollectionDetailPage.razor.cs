@@ -1,3 +1,4 @@
+using K7.Clients.Shared.Enums;
 using K7.Clients.Shared.Interfaces;
 
 using K7.Clients.Shared.Mappings;
@@ -59,6 +60,14 @@ public partial class CollectionDetailPage
     private bool _canSetWatchState;
 
     private bool _isAdmin;
+
+    private BrowseView<CollectionBrowseRow>? _browseView;
+
+    private K7DataTable<CollectionBrowseRow>? _dataTable;
+
+    private string? _activeSortKey = "order";
+
+    private K7SortDirection _activeSortDirection = K7SortDirection.Ascending;
 
 
 
@@ -160,7 +169,59 @@ public partial class CollectionDetailPage
 
         _loadingItems = false;
 
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
     }
+
+    private Task<K7DataTableResult<CollectionBrowseRow>> LoadTableDataAsync(
+        K7DataTableState<CollectionBrowseRow> state, CancellationToken cancellationToken)
+    {
+        if (state.Count <= 0)
+            return Task.FromResult(new K7DataTableResult<CollectionBrowseRow>([], 0));
+
+        var sorted = SortCollectionRows(_browseRows, state.SortKey, state.SortDirection);
+        var items = sorted
+            .Skip(state.StartIndex)
+            .Take(state.Count)
+            .ToList();
+
+        return Task.FromResult(new K7DataTableResult<CollectionBrowseRow>(items, sorted.Count));
+    }
+
+    private static List<CollectionBrowseRow> SortCollectionRows(
+        IReadOnlyList<CollectionBrowseRow> rows,
+        string? sortKey,
+        K7SortDirection direction)
+    {
+        var desc = direction is K7SortDirection.Descending;
+        IEnumerable<CollectionBrowseRow> query = rows;
+
+        query = sortKey switch
+        {
+            "title" => desc ? query.OrderByDescending(r => r.Media.Title) : query.OrderBy(r => r.Media.Title),
+            "releaseDate" => desc
+                ? query.OrderByDescending(r => r.Media.ReleaseDate)
+                : query.OrderBy(r => r.Media.ReleaseDate),
+            _ => desc ? query.OrderByDescending(r => r.Index) : query.OrderBy(r => r.Index)
+        };
+
+        return query.ToList();
+    }
+
+    private async Task OnTableSortChanged(SortChangedEventArgs args)
+    {
+        _activeSortKey = args.SortKey;
+        _activeSortDirection = args.Direction;
+
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
+    }
+
+    private void NavigateToBrowseRow(CollectionBrowseRow row) =>
+        NavigateToItem(row.Media);
+
+    private void OnColumnPickerRequested() =>
+        _dataTable?.ToggleColumnPicker();
 
 
 
@@ -185,6 +246,9 @@ public partial class CollectionDetailPage
             _collection = _collection with { ItemCount = _browseRows.Count };
 
             _headerPreviewUrls = _browseRows.SelectMany(r => GetItemPreviewUrls(r.Media)).Take(4).ToList();
+
+            if (_dataTable is not null)
+                await _dataTable.RefreshAsync();
 
         }
 
@@ -399,6 +463,9 @@ public partial class CollectionDetailPage
             ReindexBrowseRows();
 
             _headerPreviewUrls = _browseRows.SelectMany(r => GetItemPreviewUrls(r.Media)).Take(4).ToList();
+
+            if (_dataTable is not null)
+                await _dataTable.RefreshAsync();
 
         }
 

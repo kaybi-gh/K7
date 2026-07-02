@@ -18,6 +18,9 @@
               Items="_playlists"
               Loading="_loading"
               PersistenceKey="my-space-playlists"
+              Class="my-space-library-browse"
+              @ref="_browseView"
+              OnColumnPickerRequested="OnColumnPickerRequested"
               DefaultItemWidth="160"
               DefaultSpacing="24"
               GridItemAspectRatio="1f"
@@ -32,9 +35,11 @@
                 <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
             }
         </K7Select>
-        <K7Menu>
+        <K7Menu Class="my-space-toolbar-new">
             <ActivatorContent>
-                <K7Button Variant="filled" Color="primary" StartIcon="plus" Disabled="@(!_canCreate)">@L["New"]</K7Button>
+                <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" Disabled="@(!_canCreate)" AriaLabel="@L["New"]">
+                    <span class="my-space-toolbar-new__label">@L["New"]</span>
+                </K7Button>
             </ActivatorContent>
             <ChildContent>
                 <K7MenuItem Icon="queue" OnClick="OpenCreatePlaylistDialog">Playlist</K7MenuItem>
@@ -64,6 +69,8 @@
                        Href="@GetPlaylistHref(playlist)"
                        Variant="MediaCardVariant.Cover"
                        FooterVisible="true"
+                       ContextMenuEnabled="false"
+                       HoverOverlayEnabled="true"
                        PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)">
                 <CoverContent>
                     <K7CoverMosaic PreviewPictures="playlist.PreviewPictures"
@@ -80,56 +87,52 @@
                        Href="@GetPlaylistHref(playlist)"
                        Variant="MediaCardVariant.Cover"
                        FooterVisible="true"
+                       ContextMenuEnabled="false"
+                       HoverOverlayEnabled="true"
                        PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)" />
         }
     </GridTemplate>
-    <TableColgroupContent>
-        <col style="width: 56px" />
-        <col />
-        <col style="width: 120px" />
-        <col style="width: 180px" />
-    </TableColgroupContent>
-    <TableHeaderContent>
-        <th>@S["Image"]</th>
-        <th>@S["Title"]</th>
-        <th>@L["ItemsColumn"]</th>
-        <th>@LibrarySortL["SortLastListenedRecent"]</th>
-    </TableHeaderContent>
-    <TableRowTemplate Context="row">
-        @{
-            var playlist = row.Item;
-        }
-        <td>
-            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
-                <LibraryItemCoverThumb CoverPicture="playlist.CoverPicture"
-                                        PreviewPictures="playlist.PreviewPictures"
-                                        PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
-                                        PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
-                                        Alt="@playlist.Title" />
-            </a>
-        </td>
-        <td>
-            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
-                <span class="library-list-item-title">
-                    @playlist.Title
-                    @if (playlist.IsSmartPlaylist)
-                    {
-                        <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
-                    }
-                </span>
-            </a>
-        </td>
-        <td>
-            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
-                <span class="library-list-item-secondary">@GetPlaylistItemCountLabel(playlist)</span>
-            </a>
-        </td>
-        <td>
-            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
-                <span class="library-list-item-secondary">@FormatLastListenedOrDash(playlist.LastListenedAt)</span>
-            </a>
-        </td>
-    </TableRowTemplate>
+    <TableContent>
+        <K7DataTable TItem="LitePlaylistDto"
+                     ServerData="LoadTableDataAsync"
+                     ActiveSortKey="@_activeSortKey"
+                     ActiveSortDirection="@_activeSortDirection"
+                     OnSortChanged="OnTableSortChanged"
+                     OnRowClick="NavigateToPlaylist"
+                     RowHeight="56"
+                     ShowToolbar="false"
+                     Surface="false"
+                     @ref="_dataTable">
+            <K7DataColumn TItem="LitePlaylistDto" Title="@S["Title"]" SortKey="title" Hideable="false">
+                <CellTemplate Context="playlist">
+                    <div class="library-table-title">
+                        <LibraryItemCoverThumb CoverPicture="playlist.CoverPicture"
+                                                PreviewPictures="playlist.PreviewPictures"
+                                                PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
+                                                PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
+                                                Alt="@playlist.Title" />
+                        <p class="text-sm">
+                            @playlist.Title
+                            @if (playlist.IsSmartPlaylist)
+                            {
+                                <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
+                            }
+                        </p>
+                    </div>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LitePlaylistDto" Title="@L["ItemsColumn"]" Width="120px" VisibleOnMobile="false">
+                <CellTemplate Context="playlist">
+                    <span>@GetPlaylistItemCountLabel(playlist)</span>
+                </CellTemplate>
+            </K7DataColumn>
+            <K7DataColumn TItem="LitePlaylistDto" Title="@LibrarySortL["SortLastListenedRecent"]" SortKey="lastListened" Width="180px">
+                <CellTemplate Context="playlist">
+                    <span>@FormatLastListenedOrDash(playlist.LastListenedAt)</span>
+                </CellTemplate>
+            </K7DataColumn>
+        </K7DataTable>
+    </TableContent>
     <ListTemplate Context="playlist">
         <LibraryBrowseListRow>
             <a href="@GetPlaylistHref(playlist)" class="library-list-item focusable">

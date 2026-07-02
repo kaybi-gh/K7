@@ -66,6 +66,10 @@ else
                         <K7FabButton AriaLabel="Play" Icon="@Phosphor.Fill.Play" Focusable="false" />
                     </div>
                 }
+                else if (HoverOverlayEnabled)
+                {
+                    <div class="media-card-overlay media-card-overlay--nav" aria-hidden="true"></div>
+                }
             </a>
             }
             else if (OverlayEnabled)
