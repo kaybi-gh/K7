@@ -271,17 +271,17 @@
         <h2>K7Select</h2>
         <div class="ds-preview ds-preview--column ds-preview--narrow">
             <K7Select TValue="string" Label="Genre" @bind-Value="_genre">
-                <K7SelectItem Value="@("action")">Action</K7SelectItem>
-                <K7SelectItem Value="@("drama")">Drama</K7SelectItem>
-                <K7SelectItem Value="@("comedy")">Comedy</K7SelectItem>
-                <K7SelectItem Value="@("thriller")">Thriller</K7SelectItem>
+                <K7SelectItem Value="@("action")" Text="Action">Action</K7SelectItem>
+                <K7SelectItem Value="@("drama")" Text="Drama">Drama</K7SelectItem>
+                <K7SelectItem Value="@("comedy")" Text="Comedy">Comedy</K7SelectItem>
+                <K7SelectItem Value="@("thriller")" Text="Thriller">Thriller</K7SelectItem>
             </K7Select>
             <K7Select TValue="string" Label="Clearable" Clearable="true" @bind-Value="_genre2">
-                <K7SelectItem Value="@("a")">Option A</K7SelectItem>
-                <K7SelectItem Value="@("b")">Option B</K7SelectItem>
+                <K7SelectItem Value="@("a")" Text="Option A">Option A</K7SelectItem>
+                <K7SelectItem Value="@("b")" Text="Option B">Option B</K7SelectItem>
             </K7Select>
             <K7Select TValue="string" Label="Disabled" Disabled="true">
-                <K7SelectItem Value="@("x")">Disabled option</K7SelectItem>
+                <K7SelectItem Value="@("x")" Text="Disabled option">Disabled option</K7SelectItem>
             </K7Select>
         </div>
     </section>

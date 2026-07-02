@@ -8,8 +8,8 @@
             <K7TextField @bind-Value="_password" Label="@L["Password"]" Variant="outlined"
                           Type="password" HelperText="@L["PasswordHelper"]" />
             <K7Select TValue="string" @bind-Value="_role" Label="@L["Role"]" Variant="outlined">
-                <K7SelectItem Value="@("User")">@S["RoleUser"]</K7SelectItem>
-                <K7SelectItem Value="@("Administrator")">@S["RoleAdministrator"]</K7SelectItem>
+                <K7SelectItem Value="@("User")" Text="@S["RoleUser"]">@S["RoleUser"]</K7SelectItem>
+                <K7SelectItem Value="@("Administrator")" Text="@S["RoleAdministrator"]">@S["RoleAdministrator"]</K7SelectItem>
             </K7Select>
         </div>
     </div>

@@ -111,7 +111,7 @@
                 <K7Select TValue="string" @bind-Value="_selectedProvider" Label="@L["ProviderLabel"]" Variant="outlined">
                     @foreach (var provider in _availableProviders)
                     {
-                        <K7SelectItem TValue="string" Value="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
+                        <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
                     }
                 </K7Select>
 

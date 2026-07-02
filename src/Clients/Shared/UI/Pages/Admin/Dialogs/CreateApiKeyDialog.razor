@@ -10,7 +10,7 @@
             <K7Select TValue="ApiKeyScope" @bind-Value="_scope" Label="@L["Scope"]" Variant="outlined">
                 @foreach (var scope in Enum.GetValues<ApiKeyScope>())
                 {
-                    <K7SelectItem Value="scope">@scope.ToString()</K7SelectItem>
+                    <K7SelectItem Value="scope" Text="@scope.ToString()">@scope.ToString()</K7SelectItem>
                 }
             </K7Select>
         </div>

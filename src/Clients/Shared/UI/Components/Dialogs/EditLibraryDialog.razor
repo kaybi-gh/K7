@@ -10,7 +10,7 @@
                 <K7Select TValue="Guid" @bind-Value="SelectedGroupId" Label="@L["GroupLabel"]" Variant="outlined">
                     @foreach (var group in AvailableGroups)
                     {
-                        <K7SelectItem TValue="Guid" Value="@group.Id">@group.Title</K7SelectItem>
+                        <K7SelectItem TValue="Guid" Value="@group.Id" Text="@group.Title">@group.Title</K7SelectItem>
                     }
                 </K7Select>
             }
@@ -19,7 +19,7 @@
                       Disabled="IsFederated">
                 @foreach (var provider in AvailableProviders)
                 {
-                    <K7SelectItem TValue="string" Value="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
+                    <K7SelectItem TValue="string" Value="@provider.ProviderName" Text="@provider.ProviderName">@provider.ProviderName</K7SelectItem>
                 }
             </K7Select>
 

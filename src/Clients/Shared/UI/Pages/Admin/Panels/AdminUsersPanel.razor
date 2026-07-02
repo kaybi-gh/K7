@@ -73,8 +73,8 @@
                             {
                                 <K7Select TValue="string" Value="@context.Role" ValueChanged="@(role => OnRoleChanged(context, role))"
                                           Variant="outlined">
-                                    <K7SelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</K7SelectItem>
-                                    <K7SelectItem Value="@Roles.User">@L["RoleUser"]</K7SelectItem>
+                                    <K7SelectItem Value="@Roles.Administrator" Text="@L["RoleAdministrator"]">@L["RoleAdministrator"]</K7SelectItem>
+                                    <K7SelectItem Value="@Roles.User" Text="@L["RoleUser"]">@L["RoleUser"]</K7SelectItem>
                                 </K7Select>
                             }
                         </CellTemplate>
@@ -165,8 +165,8 @@
                                 {
                                     <K7Select TValue="string" Value="@user.Role" ValueChanged="@(role => OnRoleChanged(user, role))"
                                               Variant="outlined">
-                                        <K7SelectItem Value="@Roles.Administrator">@L["RoleAdministrator"]</K7SelectItem>
-                                        <K7SelectItem Value="@Roles.User">@L["RoleUser"]</K7SelectItem>
+                                        <K7SelectItem Value="@Roles.Administrator" Text="@L["RoleAdministrator"]">@L["RoleAdministrator"]</K7SelectItem>
+                                        <K7SelectItem Value="@Roles.User" Text="@L["RoleUser"]">@L["RoleUser"]</K7SelectItem>
                                     </K7Select>
                                 }
                             </div>

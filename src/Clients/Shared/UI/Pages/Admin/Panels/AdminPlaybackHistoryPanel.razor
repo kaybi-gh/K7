@@ -16,7 +16,8 @@
                   FullWidth="false">
             @foreach (var user in _users)
             {
-                <K7SelectItem TValue="Guid?" Value="@user.Id">@(user.DisplayName ?? user.UserName ?? user.Email)</K7SelectItem>
+                var userLabel = user.DisplayName ?? user.UserName ?? user.Email;
+                <K7SelectItem TValue="Guid?" Value="@user.Id" Text="@userLabel">@userLabel</K7SelectItem>
             }
         </K7Select>
 

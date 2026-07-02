@@ -6,8 +6,8 @@
 
             <K7Select TValue="RestrictionMatchCondition" @bind-Value="MatchCondition" Label="Condition"
                        Variant="outlined">
-                <K7SelectItem Value="RestrictionMatchCondition.Any">Au moins une règle (OU)</K7SelectItem>
-                <K7SelectItem Value="RestrictionMatchCondition.All">Toutes les règles (ET)</K7SelectItem>
+                <K7SelectItem Value="RestrictionMatchCondition.Any" Text="Au moins une règle (OU)">Au moins une règle (OU)</K7SelectItem>
+                <K7SelectItem Value="RestrictionMatchCondition.All" Text="Toutes les règles (ET)">Toutes les règles (ET)</K7SelectItem>
             </K7Select>
 
             <p class="text-subtitle2 mt-2">Règles (contenu correspondant sera masqué)</p>
@@ -19,16 +19,16 @@
                     <K7Select TValue="RestrictionField" Value="Rules[index].Field"
                                ValueChanged="@(v => OnFieldChanged(index, v))"
                                Label="Champ" Variant="outlined" Style="min-width: 140px;">
-                        <K7SelectItem Value="RestrictionField.Genre">Genre</K7SelectItem>
-                        <K7SelectItem Value="RestrictionField.ContentRating">Classification</K7SelectItem>
-                        <K7SelectItem Value="RestrictionField.ReleaseYear">Année de sortie</K7SelectItem>
+                        <K7SelectItem Value="RestrictionField.Genre" Text="Genre">Genre</K7SelectItem>
+                        <K7SelectItem Value="RestrictionField.ContentRating" Text="Classification">Classification</K7SelectItem>
+                        <K7SelectItem Value="RestrictionField.ReleaseYear" Text="Année de sortie">Année de sortie</K7SelectItem>
                     </K7Select>
 
                     <K7Select TValue="RestrictionOperator" @bind-Value="Rules[index].Operator"
                                Label="Opérateur" Variant="outlined" Style="min-width: 160px;">
                         @foreach (var op in GetOperatorsForField(Rules[index].Field))
                         {
-                            <K7SelectItem Value="op">@FormatOperator(op)</K7SelectItem>
+                            <K7SelectItem Value="op" Text="@FormatOperator(op)">@FormatOperator(op)</K7SelectItem>
                         }
                     </K7Select>
 

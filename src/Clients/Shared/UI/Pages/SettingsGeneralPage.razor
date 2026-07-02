@@ -20,7 +20,7 @@
     <K7Select TValue="ThemeDefinition" Label="@L["Theme"]" @bind-Value="@ThemeService.Theme" ToStringFunc="@(t => t?.Name)">
         @foreach (var theme in Themes.Collection)
         {
-            <K7SelectItem Value="@theme">@theme?.Name</K7SelectItem>
+            <K7SelectItem Value="@theme" Text="@theme?.Name">@theme?.Name</K7SelectItem>
         }
     </K7Select>
 
