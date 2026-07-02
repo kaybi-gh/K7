@@ -15,7 +15,7 @@ public class PlaybackJournal : IPlaybackJournal
         _dbContextFactory = dbContextFactory;
     }
 
-    public async Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, CancellationToken cancellationToken = default)
+    public async Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? viewingGroupId = null, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         if (now - _lastRecordedAt < ThrottleInterval) return;
@@ -23,7 +23,6 @@ public class PlaybackJournal : IPlaybackJournal
 
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        // Save position to downloaded media for resume support
         var downloaded = await db.DownloadedMedia.FirstOrDefaultAsync(d => d.MediaId == mediaId, cancellationToken);
         if (downloaded is not null)
         {
@@ -39,6 +38,7 @@ public class PlaybackJournal : IPlaybackJournal
             EventType = PlaybackEventType.Progress,
             Position = position,
             Duration = duration,
+            ViewingGroupId = viewingGroupId,
             Timestamp = now,
             IsSynced = false
         });
@@ -46,19 +46,15 @@ public class PlaybackJournal : IPlaybackJournal
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, CancellationToken cancellationToken = default)
-    {
-        await AddEventAsync(mediaId, indexedFileId, PlaybackEventType.Completed, duration, duration, cancellationToken: cancellationToken);
-    }
+    public Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, Guid? viewingGroupId = null, CancellationToken cancellationToken = default) =>
+        AddEventAsync(mediaId, indexedFileId, PlaybackEventType.Completed, duration, duration, viewingGroupId, cancellationToken: cancellationToken);
 
-    public async Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, CancellationToken cancellationToken = default)
-    {
-        await AddEventAsync(mediaId, indexedFileId, PlaybackEventType.Skipped, position, duration, cancellationToken: cancellationToken);
-    }
+    public Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? viewingGroupId = null, CancellationToken cancellationToken = default) =>
+        AddEventAsync(mediaId, indexedFileId, PlaybackEventType.Skipped, position, duration, viewingGroupId, cancellationToken: cancellationToken);
 
     public async Task RecordRatingAsync(Guid mediaId, int value, CancellationToken cancellationToken = default)
     {
-        await AddEventAsync(mediaId, Guid.Empty, PlaybackEventType.Rated, 0, 0, ratingValue: value, cancellationToken: cancellationToken);
+        await AddEventAsync(mediaId, Guid.Empty, PlaybackEventType.Rated, 0, 0, null, ratingValue: value, cancellationToken: cancellationToken);
     }
 
     public async Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(CancellationToken cancellationToken = default)
@@ -79,6 +75,7 @@ public class PlaybackJournal : IPlaybackJournal
             Duration = e.Duration,
             Timestamp = e.Timestamp,
             RatingValue = e.RatingValue,
+            ViewingGroupId = e.ViewingGroupId,
             IsSynced = e.IsSynced
         }).ToList();
     }
@@ -92,13 +89,10 @@ public class PlaybackJournal : IPlaybackJournal
             .ToListAsync(cancellationToken);
 
         foreach (var entity in entities)
-        {
             entity.IsSynced = true;
-        }
 
         await db.SaveChangesAsync(cancellationToken);
 
-        // Purge old synced events (keep last 24h for safety)
         var cutoff = DateTimeOffset.UtcNow.AddHours(-24);
         var old = await db.PendingPlaybackEvents
             .Where(e => e.IsSynced && e.Timestamp < cutoff)
@@ -111,7 +105,15 @@ public class PlaybackJournal : IPlaybackJournal
         }
     }
 
-    private async Task AddEventAsync(Guid mediaId, Guid indexedFileId, PlaybackEventType eventType, double position, double duration, int? ratingValue = null, CancellationToken cancellationToken = default)
+    private async Task AddEventAsync(
+        Guid mediaId,
+        Guid indexedFileId,
+        PlaybackEventType eventType,
+        double position,
+        double duration,
+        Guid? viewingGroupId,
+        int? ratingValue = null,
+        CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
         db.PendingPlaybackEvents.Add(new PendingPlaybackEventEntity
@@ -123,6 +125,7 @@ public class PlaybackJournal : IPlaybackJournal
             Position = position,
             Duration = duration,
             RatingValue = ratingValue,
+            ViewingGroupId = viewingGroupId,
             Timestamp = DateTimeOffset.UtcNow,
             IsSynced = false
         });

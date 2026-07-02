@@ -85,6 +85,7 @@ public class PendingPlaybackEventEntity
     public double Position { get; set; }
     public double Duration { get; set; }
     public int? RatingValue { get; set; }
+    public Guid? ViewingGroupId { get; set; }
     public DateTimeOffset Timestamp { get; set; }
     public bool IsSynced { get; set; }
 }

@@ -68,11 +68,12 @@ public class PlaybackSyncService
 
                         await _streamingService.ReportPlaybackProgressAsync(
                             evt.MediaId,
-                            Guid.Empty, // No session for offline playback
+                            Guid.Empty,
                             evt.IndexedFileId,
                             evt.Position,
                             evt.Duration,
                             state,
+                            viewingGroupId: evt.ViewingGroupId,
                             cancellationToken: cancellationToken);
                     }
 
