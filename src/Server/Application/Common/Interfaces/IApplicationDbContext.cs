@@ -1,4 +1,5 @@
-﻿using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities;
+using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Devices;
 using K7.Server.Domain.Entities.Federation;
 using K7.Server.Domain.Entities.Medias;
@@ -6,7 +7,6 @@ using K7.Server.Domain.Entities.Metadatas;
 using K7.Server.Domain.Entities.Metadatas.Files;
 using K7.Server.Domain.Entities.Metadatas.Files.Tracks;
 using K7.Server.Domain.Entities.Metadatas.PersonRoles;
-using K7.Server.Domain.Entities.Collections;
 using K7.Server.Domain.Entities.Notifications;
 using K7.Server.Domain.Entities.Playlists;
 using K7.Server.Domain.Entities.Ratings;
@@ -40,6 +40,9 @@ public interface IApplicationDbContext // How to put this into domain?
     DbSet<UserPlaylistState> UserPlaylistStates { get; }
     DbSet<MediaPlaybackSession> MediaPlaybackSessions { get; }
     DbSet<PlaybackSessionDetails> PlaybackSessionDetails { get; }
+    DbSet<ViewingGroup> ViewingGroups { get; }
+    DbSet<ViewingGroupMember> ViewingGroupMembers { get; }
+    DbSet<MediaPlaybackSessionCoViewer> MediaPlaybackSessionCoViewers { get; }
     DbSet<Collection> Collections { get; }
     DbSet<CollectionItem> CollectionItems { get; }
     DbSet<Playlist> Playlists { get; }
