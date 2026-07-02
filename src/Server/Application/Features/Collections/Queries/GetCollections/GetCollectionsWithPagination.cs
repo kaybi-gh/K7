@@ -1,8 +1,11 @@
+using K7.Server.Application.Common.Extensions;
 using K7.Server.Application.Common.Interfaces;
 using K7.Server.Application.Common.Mappings;
 using K7.Server.Application.Common.Models;
 using K7.Server.Domain.Entities.Collections;
+using K7.Server.Domain.Entities.Medias;
 using K7.Server.Domain.Enums;
+using K7.Shared.Dtos.Requests;
 
 namespace K7.Server.Application.Features.Collections.Queries.GetCollections;
 
@@ -12,6 +15,7 @@ public record GetCollectionsWithPaginationQuery : IRequest<PaginatedList<Collect
     public required int PageSize { get; init; } = 20;
     public MediaType? MediaType { get; init; }
     public bool? IsPublic { get; init; }
+    public LibraryItemOrderingOption? OrderBy { get; init; }
 }
 
 public class GetCollectionsWithPaginationQueryHandler(IApplicationDbContext context, IUser currentUser)
@@ -25,6 +29,13 @@ public class GetCollectionsWithPaginationQueryHandler(IApplicationDbContext cont
             .Include(c => c.CoverPicture)
                 .ThenInclude(cp => cp!.Variants)
             .Include(c => c.Items)
+                .ThenInclude(i => i.Media)
+                    .ThenInclude(m => m.Pictures)
+                        .ThenInclude(p => p.Variants)
+            .Include(c => c.Items)
+                .ThenInclude(i => (i.Media as MusicTrack)!.Album)
+                    .ThenInclude(a => a!.Pictures)
+                        .ThenInclude(p => p.Variants)
             .Where(c => c.IsPublic || c.UserId == userId)
             .AsQueryable();
 
@@ -35,7 +46,7 @@ public class GetCollectionsWithPaginationQueryHandler(IApplicationDbContext cont
             query = query.Where(c => c.IsPublic == request.IsPublic.Value);
 
         query = query
-            .OrderByDescending(c => c.LastModified)
+            .ApplyOrdering(request.OrderBy)
             .AsNoTracking();
 
         return await query.PaginatedListAsync(request.PageNumber, request.PageSize);
