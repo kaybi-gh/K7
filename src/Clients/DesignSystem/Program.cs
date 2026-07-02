@@ -68,9 +68,10 @@ builder.Services.AddSingleton<IServerPreferencesService, MockServerPreferencesSe
 builder.Services.AddSingleton<IMusicIntelligenceClientService, MockMusicIntelligenceClientService>();
 
 builder.Services.AddSingleton<IConnectivityService, MockConnectivityService>();
-builder.Services.AddSingleton<IViewingGroupService, MockViewingGroupService>();
-builder.Services.AddSingleton<IViewingGroupSessionService, MockViewingGroupSessionService>();
-builder.Services.AddSingleton<IViewingGroupLocalCache, MockViewingGroupLocalCache>();
+builder.Services.AddSingleton<ISharedProfileService, MockSharedProfileService>();
+builder.Services.AddSingleton<ISharedProfileSessionService, MockSharedProfileSessionService>();
+builder.Services.AddSingleton<ISharedProfileLocalCache, MockSharedProfileLocalCache>();
+builder.Services.AddSingleton<ISharedProfileDevicePinService, MockSharedProfileDevicePinService>();
 builder.Services.AddSingleton<IPlaybackJournal, MockPlaybackJournal>();
 builder.Services.AddSingleton<ICastService, MockCastService>();
 builder.Services.AddSingleton<ICastOrchestrationService, MockCastOrchestrationService>();

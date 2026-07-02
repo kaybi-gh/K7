@@ -21,8 +21,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
     private readonly IDeviceApiService _deviceApiService;
     private readonly IDeviceStorageService _deviceStorageService;
     private readonly ILocalUserService _localUserService;
-    private readonly IViewingGroupSessionService? _viewingGroupSession;
-    private readonly IViewingGroupLocalCache? _viewingGroupCache;
+    private readonly ISharedProfileSessionService? _viewingGroupSession;
+    private readonly ISharedProfileLocalCache? _viewingGroupCache;
     private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private bool _initialized;
     private Task? _restoreTask;
@@ -34,8 +34,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         IDeviceApiService deviceApiService,
         IDeviceStorageService deviceStorageService,
         ILocalUserService localUserService,
-        IViewingGroupSessionService? viewingGroupSession = null,
-        IViewingGroupLocalCache? viewingGroupCache = null)
+        ISharedProfileSessionService? viewingGroupSession = null,
+        ISharedProfileLocalCache? viewingGroupCache = null)
     {
         _openIddictClientService = openIddictClientService;
         _k7ServerService = k7ServerService;
@@ -278,7 +278,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
         {
             SignInOffline(lastUser);
-            await RestoreViewingGroupAsync();
+            await RestoreSharedProfileAsync();
             return;
         }
 
@@ -305,7 +305,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         if (await TryRefreshTokenAsync(localUser.RefreshToken))
         {
             await SaveLocalUserFromCurrentUserAsync(localUser.RefreshToken);
-            await RestoreViewingGroupAsync();
+            await RestoreSharedProfileAsync();
             NotifyAuthenticationStateChanged(
                 Task.FromResult(new AuthenticationState(_currentUser)));
         }
@@ -461,7 +461,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider, IC
         catch { }
     }
 
-    private async Task RestoreViewingGroupAsync()
+    private async Task RestoreSharedProfileAsync()
     {
         if (_viewingGroupSession is null || _viewingGroupCache is null)
             return;

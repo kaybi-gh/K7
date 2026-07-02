@@ -20,7 +20,7 @@ using K7.Shared.Dtos.Requests;
 using K7.Shared.Dtos.Restrictions;
 using K7.Shared.Dtos.Search;
 using K7.Shared.Dtos.Users;
-using K7.Shared.Dtos.ViewingGroups;
+using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Enums;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -490,7 +490,7 @@ public sealed class MockStreamingService : IStreamingService
     public Task<IndexedFileStreamUri?> GetIndexedFileStreamUriAsync(GetIndexedFileStreamsUriQuery query, CancellationToken cancellationToken = default) => Task.FromResult<IndexedFileStreamUri?>(null);
     public Task<StreamingSessionDto?> CreateStreamSessionAsync(CreateStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
     public Task<StreamingSessionDto?> CreateRemoteStreamSessionAsync(CreateRemoteStreamSessionRequest request, CancellationToken cancellationToken = default) => Task.FromResult<StreamingSessionDto?>(null);
-    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? viewingGroupId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ReportPlaybackProgressAsync(Guid mediaId, Guid sessionId, Guid referenceId, double position, double duration, int state, Guid? deviceId = null, Guid? playlistId = null, Guid? sharedProfileId = null, Guid? syncPlayGroupId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<string?> GenerateEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task RevokeEphemeralTokenAsync(Guid streamSessionId, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
@@ -640,6 +640,8 @@ public sealed class MockUserPreferencesService : IUserPreferencesService
     public Task ResetUserTrackSelectionPreferencesAsync(Guid? libraryId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<K7.Shared.Dtos.SyncPlayPreferencesDto> GetSyncPlayPreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.SyncPlayPreferencesDto());
     public Task UpdateSyncPlayPreferencesAsync(K7.Shared.Dtos.SyncPlayPreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task<K7.Shared.Dtos.SharedProfilePreferencesDto> GetSharedProfilePreferencesAsync(CancellationToken cancellationToken = default) => Task.FromResult(new K7.Shared.Dtos.SharedProfilePreferencesDto());
+    public Task UpdateSharedProfilePreferencesAsync(K7.Shared.Dtos.SharedProfilePreferencesDto preferences, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
 public sealed class MockServerPreferencesService : IServerPreferencesService
@@ -690,18 +692,18 @@ public sealed class MockConnectivityService : IConnectivityService
 #pragma warning restore CS0067
 }
 
-public sealed class MockViewingGroupService : IViewingGroupService
+public sealed class MockSharedProfileService : ISharedProfileService
 {
-    public Task<IReadOnlyList<ViewingGroupDto>> GetViewingGroupsAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<ViewingGroupDto>>([]);
+    public Task<IReadOnlyList<SharedProfileDto>> GetSharedProfilesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SharedProfileDto>>([]);
 
-    public Task<IReadOnlyList<ViewingGroupMemberCandidateDto>> GetMemberCandidatesAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<ViewingGroupMemberCandidateDto>>([]);
+    public Task<IReadOnlyList<SharedProfileMemberCandidateDto>> GetMemberCandidatesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SharedProfileMemberCandidateDto>>([]);
 
-    public Task<Guid> CreateAsync(CreateViewingGroupRequest request, CancellationToken cancellationToken = default) =>
+    public Task<Guid> CreateAsync(CreateSharedProfileRequest request, CancellationToken cancellationToken = default) =>
         Task.FromResult(Guid.NewGuid());
 
-    public Task UpdateAsync(Guid id, UpdateViewingGroupRequest request, CancellationToken cancellationToken = default) =>
+    public Task UpdateAsync(Guid id, UpdateSharedProfileRequest request, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -710,34 +712,46 @@ public sealed class MockViewingGroupService : IViewingGroupService
     public Task SetPinAsync(Guid id, string? pin, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
-    public bool VerifyGroupPin(ViewingGroupDto group, string pin) => true;
+    public Task LeaveAsync(Guid id, Guid? newHostUserId = null, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public bool VerifyGroupPin(SharedProfileDto group, string pin) => true;
 }
 
-public sealed class MockViewingGroupSessionService : IViewingGroupSessionService
+public sealed class MockSharedProfileSessionService : ISharedProfileSessionService
 {
     public Guid? ActiveGroupId => null;
-    public ViewingGroupDto? ActiveGroup => null;
+    public SharedProfileDto? ActiveGroup => null;
 #pragma warning disable CS0067
     public event Action? ActiveGroupChanged;
 #pragma warning restore CS0067
-    public void SetActiveGroup(ViewingGroupDto? group) { }
+    public void SetActiveGroup(SharedProfileDto? group) { }
     public void ClearActiveGroup() { }
     public Task RestoreLastActiveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
 
-public sealed class MockViewingGroupLocalCache : IViewingGroupLocalCache
+public sealed class MockSharedProfileLocalCache : ISharedProfileLocalCache
 {
-    public IReadOnlyList<ViewingGroupDto> GetCached() => [];
-    public ViewingGroupDto? FindById(Guid id) => null;
+    public IReadOnlyList<SharedProfileDto> GetCached() => [];
+    public SharedProfileDto? FindById(Guid id) => null;
     public Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public void UpdateCache(IReadOnlyList<ViewingGroupDto> groups) { }
+    public void UpdateCache(IReadOnlyList<SharedProfileDto> groups) { }
+}
+
+public sealed class MockSharedProfileDevicePinService : ISharedProfileDevicePinService
+{
+    public IReadOnlySet<Guid> GetPinnedGroupIds() => new HashSet<Guid>();
+
+    public bool IsPinned(Guid groupId) => false;
+
+    public void SetPinned(Guid groupId, bool pinned) { }
 }
 
 public sealed class MockPlaybackJournal : IPlaybackJournal
 {
-    public Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? viewingGroupId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, Guid? viewingGroupId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? viewingGroupId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordProgressAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordCompletedAsync(Guid mediaId, Guid indexedFileId, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task RecordSkippedAsync(Guid mediaId, Guid indexedFileId, double position, double duration, Guid? sharedProfileId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task RecordRatingAsync(Guid mediaId, int value, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task<IReadOnlyList<PendingPlaybackEvent>> GetPendingEventsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PendingPlaybackEvent>>([]);
     public Task MarkSyncedAsync(IEnumerable<Guid> eventIds, CancellationToken cancellationToken = default) => Task.CompletedTask;

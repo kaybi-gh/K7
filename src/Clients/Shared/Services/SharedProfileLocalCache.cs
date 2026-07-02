@@ -1,25 +1,25 @@
 using System.Text.Json;
 using K7.Clients.Shared.Interfaces;
 using K7.Shared;
-using K7.Shared.Dtos.ViewingGroups;
+using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Interfaces;
 
 namespace K7.Clients.Shared.Services;
 
-public class ViewingGroupLocalCache(
+public class SharedProfileLocalCache(
     IDeviceStorageService storage,
-    IViewingGroupApi api,
-    IConnectivityService connectivity) : IViewingGroupLocalCache
+    ISharedProfileApi api,
+    IConnectivityService connectivity) : ISharedProfileLocalCache
 {
-    public IReadOnlyList<ViewingGroupDto> GetCached()
+    public IReadOnlyList<SharedProfileDto> GetCached()
     {
-        var json = storage.Get(PreferenceKeys.VIEWING_GROUPS_CACHE);
+        var json = storage.Get(PreferenceKeys.SHARED_PROFILES_CACHE);
         if (string.IsNullOrEmpty(json))
             return [];
 
         try
         {
-            return JsonSerializer.Deserialize<List<ViewingGroupDto>>(json) ?? [];
+            return JsonSerializer.Deserialize<List<SharedProfileDto>>(json) ?? [];
         }
         catch
         {
@@ -27,7 +27,7 @@ public class ViewingGroupLocalCache(
         }
     }
 
-    public ViewingGroupDto? FindById(Guid id) =>
+    public SharedProfileDto? FindById(Guid id) =>
         GetCached().FirstOrDefault(g => g.Id == id);
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
@@ -37,7 +37,7 @@ public class ViewingGroupLocalCache(
 
         try
         {
-            var groups = await api.GetViewingGroupsAsync(cancellationToken);
+            var groups = await api.GetSharedProfilesAsync(cancellationToken);
             UpdateCache(groups);
         }
         catch
@@ -46,9 +46,9 @@ public class ViewingGroupLocalCache(
         }
     }
 
-    public void UpdateCache(IReadOnlyList<ViewingGroupDto> groups)
+    public void UpdateCache(IReadOnlyList<SharedProfileDto> groups)
     {
         var json = JsonSerializer.Serialize(groups);
-        storage.Set(PreferenceKeys.VIEWING_GROUPS_CACHE, json);
+        storage.Set(PreferenceKeys.SHARED_PROFILES_CACHE, json);
     }
 }
