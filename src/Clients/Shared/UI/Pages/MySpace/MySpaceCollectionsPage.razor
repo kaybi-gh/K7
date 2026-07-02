@@ -1,10 +1,14 @@
 @page "/my-space/collections"
 @layout MySpaceLayout
+@using K7.Clients.Shared.Mappings
 @using K7.Shared.Dtos.Entities.Collections
+@using K7.Shared.Dtos.Requests
 @inject ICollectionService K7ServerService
 @inject IK7ServerService ApiClient
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<MySpaceCollectionsPage> L
+@inject IStringLocalizer<LibraryGroup> LibrarySortL
+@inject IStringLocalizer<SharedResource> S
 
 <PageTitle>@L["PageTitle"]</PageTitle>
 
@@ -12,12 +16,19 @@
               Items="_collections"
               Loading="_loading"
               PersistenceKey="my-space-collections"
-              DefaultItemWidth="200"
-              DefaultSpacing="8"
-              GridItemAspectRatio="1.3f">
+              DefaultItemWidth="160"
+              DefaultSpacing="24"
+              GridItemAspectRatio="1f"
+              ListItemHeight="64">
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
         <div class="flex-1"></div>
+        <K7Select TValue="LibraryItemOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
+            @foreach (var opt in MySpaceLibraryBrowseSort.CollectionOptions)
+            {
+                <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
+            }
+        </K7Select>
         <K7Button Variant="filled" Color="primary" StartIcon="@Phosphor.Plus" OnClick="OpenCreateCollectionDialog" Disabled="@(!_canCreate)">
             @L["New"]
         </K7Button>
@@ -30,39 +41,89 @@
         </div>
     </EmptyContent>
     <GridTemplate Context="collection">
-        <div class="k7-card k7-card--outlined collection-card" tabindex="0"
-             @onclick="() => GoToCollection(collection)"
-             @onkeydown="(e) => OnCollectionKeyDown(e, collection)"
-             Style="cursor: pointer;">
-            <div class="k7-card-content">
-                <div class="d-flex flex-col">
-                    @if (collection.CoverPicture is not null)
-                    {
-                        <K7Image Src="@GetCoverUrl(collection)"
-                                  Width="120"
-                                  ObjectFit="cover"
-                                  Class="rounded"
-                                  loading="lazy" />
-                    }
-                    else
-                    {
-                        <div class="playlist-cover-placeholder">
-                            <K7Icon Icon="@Phosphor.BookmarkSimple"
-                                     Style="font-size: 48px; opacity: 0.3;" />
-                        </div>
-                    }
-                    <p class="text-subtitle1 playlist-title text-center">@collection.Title</p>
-                    <div class="d-flex align-center">
-                        <span class="text-caption" Color="secondary">
-                            @collection.ItemCount @L["Items"]
-                        </span>
-                        @if (collection.IsPublic)
-                        {
-                            <K7Chip Size="xs" Color="primary" Variant="outlined" Class="ml-1">@L["Public"]</K7Chip>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
+        @{
+            var vm = collection.ToCardViewModel(ApiClient, GetCollectionSubtitle(collection));
+            var useMosaic = LibraryItemBrowseMappings.UseMosaicCover(collection.CoverPicture, collection.PreviewPictures);
+        }
+        @if (useMosaic)
+        {
+            <MediaCard Model="vm"
+                       Href="@GetCollectionHref(collection)"
+                       Variant="MediaCardVariant.Cover"
+                       FooterVisible="true"
+                       PlaceholderIcon="@Phosphor.BookmarkSimple">
+                <CoverContent>
+                    <K7CoverMosaic PreviewPictures="collection.PreviewPictures"
+                                     PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                     PictureSize="MetadataPictureSize.Medium"
+                                     Alt="@collection.Title"
+                                     Class="media-card-mosaic" />
+                </CoverContent>
+            </MediaCard>
+        }
+        else
+        {
+            <MediaCard Model="vm"
+                       Href="@GetCollectionHref(collection)"
+                       Variant="MediaCardVariant.Cover"
+                       FooterVisible="true"
+                       PlaceholderIcon="@Phosphor.BookmarkSimple" />
+        }
     </GridTemplate>
+    <TableColgroupContent>
+        <col style="width: 56px" />
+        <col />
+        <col style="width: 120px" />
+        <col style="width: 120px" />
+    </TableColgroupContent>
+    <TableHeaderContent>
+        <th>@S["Image"]</th>
+        <th>@S["Title"]</th>
+        <th>@L["ItemsColumn"]</th>
+        <th>@L["Visibility"]</th>
+    </TableHeaderContent>
+    <TableRowTemplate Context="row">
+        @{
+            var collection = row.Item;
+        }
+        <td>
+            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
+                <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
+                                        PreviewPictures="collection.PreviewPictures"
+                                        PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
+                                        PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                        Alt="@collection.Title" />
+            </a>
+        </td>
+        <td>
+            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
+                <span class="library-list-item-title">@collection.Title</span>
+            </a>
+        </td>
+        <td>
+            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
+                <span class="library-list-item-secondary">@GetCollectionItemCountLabel(collection)</span>
+            </a>
+        </td>
+        <td>
+            <a href="@GetCollectionHref(collection)" class="my-space-library-item-link">
+                <span class="library-list-item-secondary">@(collection.IsPublic ? L["Public"] : L["Private"])</span>
+            </a>
+        </td>
+    </TableRowTemplate>
+    <ListTemplate Context="collection">
+        <LibraryBrowseListRow>
+            <a href="@GetCollectionHref(collection)" class="library-list-item focusable">
+                <LibraryItemCoverThumb CoverPicture="collection.CoverPicture"
+                                        PreviewPictures="collection.PreviewPictures"
+                                        PreferPreviewWhenEmpty="@(collection.ItemCount == 0)"
+                                        PlaceholderIcon="@Phosphor.BookmarkSimple"
+                                        Alt="@collection.Title" />
+                <div class="library-list-item-info">
+                    <p class="library-list-item-title">@collection.Title</p>
+                    <span class="library-list-item-secondary">@GetCollectionSubtitle(collection)</span>
+                </div>
+            </a>
+        </LibraryBrowseListRow>
+    </ListTemplate>
 </BrowseView>

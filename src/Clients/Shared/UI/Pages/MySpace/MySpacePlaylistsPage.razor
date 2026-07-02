@@ -1,11 +1,15 @@
 @page "/my-space/playlists"
 @layout MySpaceLayout
+@using K7.Clients.Shared.Mappings
 @using K7.Shared.Dtos.Entities.Playlists
+@using K7.Shared.Dtos.Requests
 @using K7.Server.Domain.Enums
 @inject IPlaylistService K7ServerService
 @inject IK7ServerService ApiClient
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<MySpacePlaylistsPage> L
+@inject IStringLocalizer<LibraryGroup> LibrarySortL
+@inject IStringLocalizer<SharedResource> S
 @inject IServerPreferencesService ServerPreferences
 
 <PageTitle>@L["PageTitle"]</PageTitle>
@@ -14,13 +18,20 @@
               Items="_playlists"
               Loading="_loading"
               PersistenceKey="my-space-playlists"
-              DefaultItemWidth="200"
-              DefaultSpacing="8"
-              GridItemAspectRatio="1.3f">
+              DefaultItemWidth="160"
+              DefaultSpacing="24"
+              GridItemAspectRatio="1f"
+              ListItemHeight="64">
     <ToolbarContent>
         <h5>@L["PageTitle"]</h5>
         <div class="flex-1"></div>
         <K7ButtonGroup TValue="MediaType?" Options="_mediaTypeOptions" Value="_mediaTypeFilter" ValueChanged="SetMediaTypeFilter" AriaLabel="@L["PageTitle"]" />
+        <K7Select TValue="LibraryItemOrderingOption" Class="library-toolbar-sort" Value="_selectedSort" ValueChanged="OnSortChanged">
+            @foreach (var opt in MySpaceLibraryBrowseSort.PlaylistOptions)
+            {
+                <K7SelectItem Value="@opt" Text="@GetSortLabel(opt)">@GetSortLabel(opt)</K7SelectItem>
+            }
+        </K7Select>
         <K7Menu>
             <ActivatorContent>
                 <K7Button Variant="filled" Color="primary" StartIcon="plus" Disabled="@(!_canCreate)">@L["New"]</K7Button>
@@ -43,37 +54,101 @@
         </div>
     </EmptyContent>
     <GridTemplate Context="playlist">
-        <K7Paper Outlined="true" Class="playlist-card" tabindex="0" role="button"
-                 @onclick="() => GoToPlaylist(playlist)"
-                 @onkeydown="(e) => OnPlaylistKeyDown(e, playlist)"
-                 Style="cursor: pointer;">
-            <div class="d-flex flex-col">
-                @if (playlist.CoverPicture is not null)
-                {
-                    <K7Image Src="@GetCoverUrl(playlist)"
-                              Width="120"
-                              ObjectFit="cover"
-                              Class="rounded"
-                              loading="lazy" />
-                }
-                else
-                {
-                    <div class="playlist-cover-placeholder">
-                        <K7Icon Name="@(playlist.IsSmartPlaylist ? "sparkle" : "queue")"
-                                 Style="font-size: 48px; opacity: 0.3;" />
-                    </div>
-                }
-                <div class="d-flex align-center">
-                    <p class="text-subtitle1 playlist-title text-center">@playlist.Title</p>
+        @{
+            var vm = playlist.ToCardViewModel(ApiClient, GetPlaylistSubtitle(playlist));
+            var useMosaic = LibraryItemBrowseMappings.UseMosaicCover(playlist.CoverPicture, playlist.PreviewPictures);
+        }
+        @if (useMosaic)
+        {
+            <MediaCard Model="vm"
+                       Href="@GetPlaylistHref(playlist)"
+                       Variant="MediaCardVariant.Cover"
+                       FooterVisible="true"
+                       PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)">
+                <CoverContent>
+                    <K7CoverMosaic PreviewPictures="playlist.PreviewPictures"
+                                     PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
+                                     PictureSize="MetadataPictureSize.Medium"
+                                     Alt="@playlist.Title"
+                                     Class="media-card-mosaic" />
+                </CoverContent>
+            </MediaCard>
+        }
+        else
+        {
+            <MediaCard Model="vm"
+                       Href="@GetPlaylistHref(playlist)"
+                       Variant="MediaCardVariant.Cover"
+                       FooterVisible="true"
+                       PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)" />
+        }
+    </GridTemplate>
+    <TableColgroupContent>
+        <col style="width: 56px" />
+        <col />
+        <col style="width: 120px" />
+        <col style="width: 180px" />
+    </TableColgroupContent>
+    <TableHeaderContent>
+        <th>@S["Image"]</th>
+        <th>@S["Title"]</th>
+        <th>@L["ItemsColumn"]</th>
+        <th>@LibrarySortL["SortLastListenedRecent"]</th>
+    </TableHeaderContent>
+    <TableRowTemplate Context="row">
+        @{
+            var playlist = row.Item;
+        }
+        <td>
+            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
+                <LibraryItemCoverThumb CoverPicture="playlist.CoverPicture"
+                                        PreviewPictures="playlist.PreviewPictures"
+                                        PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
+                                        PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
+                                        Alt="@playlist.Title" />
+            </a>
+        </td>
+        <td>
+            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
+                <span class="library-list-item-title">
+                    @playlist.Title
                     @if (playlist.IsSmartPlaylist)
                     {
-                        <K7Icon Name="sparkle"  IconSize="@K7IconSize.Sm" Color="secondary" />
+                        <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
                     }
-                </div>
-                <span class="text-caption" Color="secondary">
-                    @playlist.ItemCount @GetItemLabel(playlist.MediaType)
                 </span>
-            </div>
-        </K7Paper>
-    </GridTemplate>
+            </a>
+        </td>
+        <td>
+            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
+                <span class="library-list-item-secondary">@GetPlaylistItemCountLabel(playlist)</span>
+            </a>
+        </td>
+        <td>
+            <a href="@GetPlaylistHref(playlist)" class="my-space-library-item-link">
+                <span class="library-list-item-secondary">@FormatLastListenedOrDash(playlist.LastListenedAt)</span>
+            </a>
+        </td>
+    </TableRowTemplate>
+    <ListTemplate Context="playlist">
+        <LibraryBrowseListRow>
+            <a href="@GetPlaylistHref(playlist)" class="library-list-item focusable">
+                <LibraryItemCoverThumb CoverPicture="playlist.CoverPicture"
+                                        PreviewPictures="playlist.PreviewPictures"
+                                        PreferPreviewWhenEmpty="@(playlist.ItemCount == 0)"
+                                        PlaceholderIcon="@(playlist.IsSmartPlaylist ? Phosphor.Sparkle : Phosphor.Queue)"
+                                        Alt="@playlist.Title" />
+                <div class="library-list-item-info">
+                    <p class="library-list-item-title">
+                        @playlist.Title
+                        @if (playlist.IsSmartPlaylist)
+                        {
+                            <K7Icon Name="sparkle" IconSize="@K7IconSize.Sm" Color="secondary" Class="ml-1" />
+                        }
+                    </p>
+                    <span class="library-list-item-secondary">@GetPlaylistSubtitle(playlist)</span>
+                </div>
+            </a>
+        </LibraryBrowseListRow>
+    </ListTemplate>
 </BrowseView>

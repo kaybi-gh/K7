@@ -31,6 +31,11 @@
   <data name="Tracks" xml:space="preserve"><value>morceaux</value></data>
   <data name="Movies" xml:space="preserve"><value>films</value></data>
   <data name="Episodes" xml:space="preserve"><value>épisodes</value></data>
-  <data name="Items" xml:space="preserve"><value>elements</value></data>
+  <data name="Items" xml:space="preserve"><value>éléments</value></data>
+  <data name="ItemsColumn" xml:space="preserve"><value>Éléments</value></data>
   <data name="AiPlaylist" xml:space="preserve"><value>AI Playlist</value></data>
+  <data name="LastListenedJustNow" xml:space="preserve"><value>Écoutée à l'instant</value></data>
+  <data name="LastListenedMinutes" xml:space="preserve"><value>Écoutée il y a {0} min</value></data>
+  <data name="LastListenedHours" xml:space="preserve"><value>Écoutée il y a {0} h</value></data>
+  <data name="LastListenedDays" xml:space="preserve"><value>Écoutée il y a {0} j</value></data>
 </root>

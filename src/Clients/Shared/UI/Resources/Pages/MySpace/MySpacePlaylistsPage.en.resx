@@ -32,5 +32,10 @@
   <data name="Movies" xml:space="preserve"><value>movies</value></data>
   <data name="Episodes" xml:space="preserve"><value>episodes</value></data>
   <data name="Items" xml:space="preserve"><value>items</value></data>
+  <data name="ItemsColumn" xml:space="preserve"><value>Items</value></data>
   <data name="AiPlaylist" xml:space="preserve"><value>AI Playlist</value></data>
+  <data name="LastListenedJustNow" xml:space="preserve"><value>Played just now</value></data>
+  <data name="LastListenedMinutes" xml:space="preserve"><value>Played {0} min ago</value></data>
+  <data name="LastListenedHours" xml:space="preserve"><value>Played {0} h ago</value></data>
+  <data name="LastListenedDays" xml:space="preserve"><value>Played {0} d ago</value></data>
 </root>
