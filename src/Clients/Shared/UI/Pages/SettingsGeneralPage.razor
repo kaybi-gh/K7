@@ -7,7 +7,6 @@
 @inject IStringLocalizer<SharedResource> S
 @inject IK7DialogService DialogService
 @inject IServerConnectionService ServerConnectionService
-@inject ISyncPlayService SyncPlay
 @inject IUserAdminService UserService
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
@@ -34,11 +33,4 @@
     {
         <K7TextField @bind-Value="@_backendUrl" Label="@L["ServerUrl"]" ReadOnly="true" Variant="text" Adornment="end" AdornmentIcon="@Phosphor.Trash" OnAdornmentClick="ChangeBackendUrl" />
     }
-
-    <AuthorizeView Roles="User,Administrator">
-        <section class="d-flex flex-col gap-3 mt-6">
-            <h6>SyncPlay</h6>
-            <K7Switch Label="@L["SyncPlayEnabled"]" @bind-Value="SyncPlay.IsEnabled" />
-        </section>
-    </AuthorizeView>
 </div>

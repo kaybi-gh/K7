@@ -1,0 +1,97 @@
+@page "/select-profile"
+@page "/select-user"
+@layout EmptyLayout
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@inject IStringLocalizer<SelectProfile> L
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<div class="select-profile-page">
+    @if (_loading)
+    {
+        <div class="d-flex flex-col align-center gap-4">
+            <K7Spinner />
+            @if (_showOfflineButton)
+            {
+                <K7Button Variant="text" Color="secondary" OnClick="ContinueOfflineAsync">
+                    <K7Icon Icon="@Phosphor.WifiSlash" Class="mr-2" />
+                    @L["ContinueOffline"]
+                </K7Button>
+            }
+        </div>
+    }
+    else
+    {
+        <section class="select-profile-section">
+            <Carousel Title="@L["Prompt"]" Subtitle="@L["Subtitle"]">
+                @foreach (var user in _users)
+                {
+                    <CarouselItem @key="@($"user-{user.IdentityUserId}")">
+                        <div class="select-profile-card focusable my-2"
+                             tabindex="0" role="button"
+                             @onclick="() => SelectUserAsync(user)"
+                             @onkeydown="(e) => OnUserKeyDown(e, user)">
+                            <K7Avatar Class="ma-2" Size="xl" Color="primary"
+                                      Image="@user.AvatarUrl"
+                                      Letter="@GetInitial(user)"
+                                      UserId="@user.UserId" />
+                            <div class="select-profile-name">
+                                <span>@(user.DisplayName ?? user.UserName)</span>
+                                @if (user.PinHash is not null)
+                                {
+                                    <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
+                                }
+                            </div>
+                        </div>
+                    </CarouselItem>
+                }
+
+                @foreach (var group in _pinnedGroups)
+                {
+                    <CarouselItem @key="@($"group-{group.Id}")">
+                        <div class="select-profile-card select-profile-card--group focusable my-2"
+                             tabindex="0" role="button"
+                             @onclick="() => SelectGroupAsync(group)"
+                             @onkeydown="(e) => OnGroupKeyDown(e, group)">
+                            <div class="select-profile-group-avatars">
+                                @foreach (var member in group.Members.Take(3))
+                                {
+                                    <K7Avatar Size="md" Image="@member.AvatarUrl"
+                                              Letter="@GetMemberInitial(member)"
+                                              UserId="@member.UserId" />
+                                }
+                            </div>
+                            <div class="select-profile-name">
+                                <span>@group.Name</span>
+                                @if (group.HasPin)
+                                {
+                                    <K7Icon Name="lock" IconSize="@K7IconSize.Sm" Color="secondary" />
+                                }
+                            </div>
+                        </div>
+                    </CarouselItem>
+                }
+
+                <CarouselItem>
+                    <div class="select-profile-card focusable my-2"
+                         tabindex="0" role="button"
+                         @onclick="AddUserAsync"
+                         @onkeydown="OnAddUserKeyDown">
+                        <K7Avatar Class="ma-2" Size="xl" Color="default">
+                            <K7Icon Icon="@Phosphor.Plus" IconSize="@K7IconSize.Lg" />
+                        </K7Avatar>
+                        <span class="select-profile-name">@L["AddServer"]</span>
+                    </div>
+                </CarouselItem>
+            </Carousel>
+        </section>
+
+        @if (_users.Count > 0)
+        {
+            <div class="select-profile-switch">
+                <K7Switch Class="ma-4" Value="_singleUserMode" ValueChanged="OnSingleUserModeChanged"
+                           Label="@L["SingleUserMode"]" />
+            </div>
+        }
+    }
+</div>

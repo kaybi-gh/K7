@@ -61,7 +61,7 @@
     --carousel-slide-width: 200px;
 }
 
-.carousel-container:has(.select-user-card) {
+.carousel-container:has(.select-profile-card) {
     --carousel-slide-width: 140px;
 }
 
@@ -164,7 +164,7 @@
     overflow: visible;
 }
 
-.carousel-container:has(.select-user-card) .carousel-loop-back__visual {
+.carousel-container:has(.select-profile-card) .carousel-loop-back__visual {
     aspect-ratio: 1 / 1;
     border-radius: 50%;
     border: none;

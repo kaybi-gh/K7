@@ -1,4 +1,4 @@
-.select-user-page {
+.select-profile-page {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -8,9 +8,14 @@
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
+    gap: var(--spacing-6);
 }
 
-.select-user-page ::deep .select-user-card {
+.select-profile-section {
+    width: 100%;
+}
+
+.select-profile-page ::deep .select-profile-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -23,13 +28,13 @@
     box-shadow: none !important;
 }
 
-.select-user-page ::deep .select-user-card:hover .k7-avatar,
-.select-user-page ::deep .select-user-card:focus-visible .k7-avatar {
+.select-profile-page ::deep .select-profile-card:hover .k7-avatar,
+.select-profile-page ::deep .select-profile-card:focus-visible .k7-avatar {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
 
-.select-user-page ::deep .select-user-name {
+.select-profile-page ::deep .select-profile-name {
     display: flex;
     align-items: center;
     gap: var(--spacing-1);
@@ -37,31 +42,31 @@
     color: var(--color-text-primary);
 }
 
-.select-user-switch {
+.select-profile-switch {
     display: flex;
     align-items: center;
     margin-top: var(--spacing-6);
     padding-inline: var(--spacing-4);
 }
 
-.select-user-page ::deep .select-user-group-avatars {
+.select-profile-page ::deep .select-profile-group-avatars {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 80px;
 }
 
-.select-user-page ::deep .select-user-group-avatars .k7-avatar {
+.select-profile-page ::deep .select-profile-group-avatars .k7-avatar {
     margin-inline: calc(var(--spacing-1) * -1);
     border: 2px solid var(--color-surface);
 }
 
-.select-user-page ::deep .select-user-card--group .select-user-group-avatars .k7-avatar:first-child {
+.select-profile-page ::deep .select-profile-card--group .select-profile-group-avatars .k7-avatar:first-child {
     margin-inline-start: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .select-user-page ::deep .select-user-card .k7-avatar {
+    .select-profile-page ::deep .select-profile-card .k7-avatar {
         transition: outline-color 0.15s, outline-offset 0.15s;
     }
 }

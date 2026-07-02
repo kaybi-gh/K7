@@ -37,7 +37,7 @@ public partial class AppNav : IDisposable
     [Inject] private K7HubClient HubClient { get; set; } = default!;
     [Inject] private IUserAdminService UserService { get; set; } = default!;
     [Inject] private ISyncPlayService SyncPlay { get; set; } = default!;
-    [Inject] private IViewingGroupSessionService? ViewingGroupSession { get; set; }
+    [Inject] private ISharedProfileSessionService? SharedProfileSession { get; set; }
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
@@ -51,9 +51,9 @@ public partial class AppNav : IDisposable
         SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
         SyncPlay.ChatMessageReceived += OnChatMessageReceived;
         SyncPlay.ErrorReceived += OnSyncPlayErrorReceived;
-        ViewingGroupSession?.ActiveGroupChanged += OnViewingGroupChanged;
+        SharedProfileSession?.ActiveGroupChanged += OnSharedProfileChanged;
         UpdateBadge(HubClient.State);
-        UpdateViewingGroupLabel();
+        UpdateSharedProfileLabel();
         UpdateActiveNav();
         await LoadAvatarAsync();
     }
@@ -181,7 +181,7 @@ public partial class AppNav : IDisposable
     private void SwitchUser()
     {
         CloseAll();
-        NavigationManager.NavigateTo("/select-user");
+        NavigationManager.NavigateTo("/select-profile");
     }
 
     private async Task Login()
@@ -216,8 +216,8 @@ public partial class AppNav : IDisposable
         SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
         SyncPlay.ChatMessageReceived -= OnChatMessageReceived;
         SyncPlay.ErrorReceived -= OnSyncPlayErrorReceived;
-        if (ViewingGroupSession is not null)
-            ViewingGroupSession.ActiveGroupChanged -= OnViewingGroupChanged;
+        if (SharedProfileSession is not null)
+            SharedProfileSession.ActiveGroupChanged -= OnSharedProfileChanged;
         if (_profileMenuOpen)
         {
             try { _ = SpatialNav.PopLayerAsync(_profilePopoverRef); }
@@ -293,13 +293,13 @@ public partial class AppNav : IDisposable
         _chatOpen = false;
     }
 
-    private void OnViewingGroupChanged() => InvokeAsync(() =>
+    private void OnSharedProfileChanged() => InvokeAsync(() =>
     {
-        UpdateViewingGroupLabel();
+        UpdateSharedProfileLabel();
         StateHasChanged();
     });
 
-    private void UpdateViewingGroupLabel()
+    private void UpdateSharedProfileLabel()
     {
         if (DeviceService.GetClientType() == K7.Server.Domain.Enums.ClientType.Web)
         {
@@ -307,6 +307,6 @@ public partial class AppNav : IDisposable
             return;
         }
 
-        _viewingGroupLabel = ViewingGroupSession?.ActiveGroup?.Name;
+        _viewingGroupLabel = SharedProfileSession?.ActiveGroup?.Name;
     }
 }

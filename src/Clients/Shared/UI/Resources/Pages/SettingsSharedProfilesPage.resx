@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Profils partagés</value></data>
+  <data name="SyncPlayTitle" xml:space="preserve"><value>SyncPlay</value></data>
+  <data name="SyncPlayDeviceEnabled" xml:space="preserve"><value>Recevoir les invitations sur cet appareil</value></data>
+  <data name="SyncPlayDeviceDescription" xml:space="preserve"><value>Affiche votre disponibilité SyncPlay et permet aux autres de vous inviter depuis cet appareil.</value></data>
+  <data name="SyncPlayInvitationsEnabled" xml:space="preserve"><value>Autoriser les invitations SyncPlay</value></data>
+  <data name="SyncPlayInvitationsDescription" xml:space="preserve"><value>Permet aux autres utilisateurs de vous inviter dans une session SyncPlay.</value></data>
+  <data name="SharedProfilesTitle" xml:space="preserve"><value>Profils partagés</value></data>
+  <data name="PrivacyTitle" xml:space="preserve"><value>Confidentialité</value></data>
+  <data name="PrivacyDescription" xml:space="preserve"><value>Par défaut, les autres utilisateurs ne peuvent pas vous ajouter à un nouveau profil partagé. Désactivez cette option pour autoriser les ajouts.</value></data>
+  <data name="BlockNewMembership" xml:space="preserve"><value>Bloquer les ajouts à de nouveaux profils partagés</value></data>
+  <data name="GroupsTitle" xml:space="preserve"><value>Mes profils partagés</value></data>
+  <data name="GroupsDescription" xml:space="preserve"><value>Les profils partagés regroupent les membres qui regardent ensemble sur un appareil partagé. Épinglez ceux à afficher sur cet appareil.</value></data>
+  <data name="ShowOnDevice" xml:space="preserve"><value>Afficher sur cet appareil</value></data>
+  <data name="CreateGroup" xml:space="preserve"><value>Créer un profil partagé</value></data>
+  <data name="EditGroup" xml:space="preserve"><value>Modifier</value></data>
+  <data name="GroupCreated" xml:space="preserve"><value>Profil partagé créé.</value></data>
+  <data name="GroupUpdated" xml:space="preserve"><value>Profil partagé mis à jour.</value></data>
+  <data name="Empty" xml:space="preserve"><value>Vous ne faites partie d'aucun profil partagé.</value></data>
+  <data name="MemberCount" xml:space="preserve"><value>{0} membres</value></data>
+  <data name="HostBadge" xml:space="preserve"><value>Hôte</value></data>
+  <data name="PinBadge" xml:space="preserve"><value>PIN</value></data>
+  <data name="Leave" xml:space="preserve"><value>Quitter</value></data>
+  <data name="LeaveTitle" xml:space="preserve"><value>Quitter le profil partagé</value></data>
+  <data name="LeaveConfirm" xml:space="preserve"><value>Quitter le profil partagé « {0} » ?</value></data>
+  <data name="LeaveDeletesGroup" xml:space="preserve"><value>Quitter ce profil partagé le supprimera, car il ne resterait qu'un seul membre.</value></data>
+  <data name="TransferHostTitle" xml:space="preserve"><value>Transférer l'hôte</value></data>
+  <data name="LeftGroup" xml:space="preserve"><value>Profil partagé quitté.</value></data>
+</root>
