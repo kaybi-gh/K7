@@ -19,14 +19,8 @@
   </xsd:schema>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
-  <data name="GroupName" xml:space="preserve"><value>Nom du groupe</value></data>
-  <data name="Members" xml:space="preserve"><value>Membres</value></data>
-  <data name="Host" xml:space="preserve"><value>Hote</value></data>
-  <data name="GroupPinOptional" xml:space="preserve"><value>PIN du groupe (optionnel)</value></data>
-  <data name="NewPinOptional" xml:space="preserve"><value>Nouveau PIN (optionnel)</value></data>
-  <data name="ConfirmPin" xml:space="preserve"><value>Confirmer le PIN</value></data>
-  <data name="GroupPinHelper" xml:space="preserve"><value>Protege l'acces au groupe sur cet appareil.</value></data>
-  <data name="Create" xml:space="preserve"><value>Creer</value></data>
-  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
-  <data name="PinMismatch" xml:space="preserve"><value>Les PIN ne correspondent pas.</value></data>
+  <data name="Prompt" xml:space="preserve"><value>Choisissez le nouvel hôte avant de quitter le groupe.</value></data>
+  <data name="NewHost" xml:space="preserve"><value>Nouvel hôte</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Leave" xml:space="preserve"><value>Quitter</value></data>
 </root>

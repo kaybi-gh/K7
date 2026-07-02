@@ -23,6 +23,7 @@
   <data name="GroupMyContent" xml:space="preserve"><value>Mon contenu</value></data>
   <data name="GroupPlayback" xml:space="preserve"><value>Lecture</value></data>
   <data name="Account" xml:space="preserve"><value>Mon compte</value></data>
+  <data name="SharedProfiles" xml:space="preserve"><value>Profils partagés</value></data>
   <data name="Interface" xml:space="preserve"><value>Interface</value></data>
   <data name="Stats" xml:space="preserve"><value>Statistiques</value></data>
   <data name="History" xml:space="preserve"><value>Historique</value></data>

@@ -1,0 +1,92 @@
+@page "/settings/shared-profiles"
+@page "/settings/viewing-groups"
+@layout SettingsLayout
+@inject IStringLocalizer<SettingsSharedProfilesPage> L
+@inject IStringLocalizer<SharedResource> S
+@inject ISyncPlayService SyncPlay
+
+<PageTitle>@L["PageTitle"]</PageTitle>
+
+<h4 class="mb-4">@L["PageTitle"]</h4>
+
+<div class="pa-4">
+    <section class="settings-section mb-4">
+        <h6 class="mb-2">@L["SyncPlayTitle"]</h6>
+        <p class="text-secondary mb-3">@L["SyncPlayDeviceDescription"]</p>
+        <K7Switch Label="@L["SyncPlayDeviceEnabled"]" @bind-Value="SyncPlay.IsEnabled" />
+        <p class="text-secondary mb-3 mt-4">@L["SyncPlayInvitationsDescription"]</p>
+        <K7Switch Label="@L["SyncPlayInvitationsEnabled"]" Value="_syncPlayPreferences.InvitationsEnabled" ValueChanged="OnSyncPlayInvitationsChanged" Disabled="_savingSyncPlayPreference" />
+    </section>
+
+    <hr class="k7-divider my-4" />
+
+    <section class="settings-section mb-4">
+        <h6 class="mb-2">@L["SharedProfilesTitle"]</h6>
+        <p class="text-secondary mb-2">@L["PrivacyTitle"]</p>
+        <p class="text-secondary mb-3">@L["PrivacyDescription"]</p>
+        <K7Switch Label="@L["BlockNewMembership"]" Value="_preferences.BlockNewMembership" ValueChanged="OnBlockNewMembershipChanged" Disabled="_savingPreference" />
+    </section>
+
+    <hr class="k7-divider my-4" />
+
+    <section class="settings-section">
+        <div class="shared-profiles-section-header mb-3">
+            <h6 class="mb-0">@L["GroupsTitle"]</h6>
+            <K7Button Variant="outlined" StartIcon="@Phosphor.Plus" OnClick="CreateGroupAsync" Disabled="_loading || _dialogOpen">
+                @L["CreateGroup"]
+            </K7Button>
+        </div>
+        <p class="text-secondary mb-3">@L["GroupsDescription"]</p>
+
+        @if (_loading)
+        {
+            <K7Spinner />
+        }
+        else if (_groups.Count == 0)
+        {
+            <p class="text-secondary mb-3">@L["Empty"]</p>
+            <K7Button Variant="outlined" StartIcon="@Phosphor.Plus" OnClick="CreateGroupAsync" Disabled="_dialogOpen">
+                @L["CreateGroup"]
+            </K7Button>
+        }
+        else
+        {
+            <div class="shared-profiles-list">
+                @foreach (var group in _groups)
+                {
+                    var isHost = group.HostUserId == _currentUserId;
+                    var isPinned = SharedProfileDevicePin.IsPinned(group.Id);
+                    <div class="shared-profiles-list__item shared-profiles-list__item--stacked">
+                        <div class="shared-profiles-list__row">
+                            <div class="shared-profiles-list__info">
+                                <span class="shared-profiles-list__name">@group.Name</span>
+                                <span class="shared-profiles-list__meta">
+                                    @string.Format(L["MemberCount"], group.Members.Count)
+                                    @if (isHost)
+                                    {
+                                        <span class="shared-profiles-list__badge">@L["HostBadge"]</span>
+                                    }
+                                    @if (group.HasPin)
+                                    {
+                                        <span class="shared-profiles-list__badge">@L["PinBadge"]</span>
+                                    }
+                                </span>
+                            </div>
+                            <div class="shared-profiles-list__actions">
+                                <K7Button Variant="text" StartIcon="@Phosphor.PencilSimple"
+                                          OnClick="() => EditGroupAsync(group)" Disabled="_processing.Contains(group.Id) || _dialogOpen">
+                                    @L["EditGroup"]
+                                </K7Button>
+                                <K7Button Variant="text" Color="error" StartIcon="@Phosphor.SignOut"
+                                          OnClick="() => LeaveAsync(group)" Disabled="_processing.Contains(group.Id)">
+                                    @L["Leave"]
+                                </K7Button>
+                            </div>
+                        </div>
+                        <K7Switch Label="@L["ShowOnDevice"]" Value="isPinned" ValueChanged="(v) => OnShowOnDeviceChanged(group, v)" />
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>

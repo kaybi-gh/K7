@@ -1,22 +1,22 @@
 using K7.Clients.Shared.Interfaces;
 using K7.Shared.Dtos.Requests;
-using K7.Shared.Dtos.ViewingGroups;
+using K7.Shared.Dtos.SharedProfiles;
 using K7.Shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace K7.Clients.Shared.UI.Components.Dialogs;
 
-public partial class CreateViewingGroupDialog
+public partial class CreateSharedProfileDialog
 {
-    [Inject] private IViewingGroupService ViewingGroupService { get; set; } = default!;
+    [Inject] private ISharedProfileService SharedProfileService { get; set; } = default!;
     [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
     [CascadingParameter] private IK7DialogInstance Dialog { get; set; } = null!;
 
-    [Parameter] public ViewingGroupDto? EditGroup { get; set; }
+    [Parameter] public SharedProfileDto? EditGroup { get; set; }
 
-    private List<ViewingGroupMemberCandidateDto> _candidates = [];
+    private List<SharedProfileMemberCandidateDto> _candidates = [];
     private HashSet<Guid> _selectedMemberIds = [];
     private Guid _hostUserId;
     private string _name = "";
@@ -29,7 +29,7 @@ public partial class CreateViewingGroupDialog
     {
         try
         {
-            _candidates = (await ViewingGroupService.GetMemberCandidatesAsync()).ToList();
+            _candidates = (await SharedProfileService.GetMemberCandidatesAsync()).ToList();
             var me = await UserAdminService.GetCurrentUserAsync();
             if (me is not null)
             {
@@ -90,7 +90,7 @@ public partial class CreateViewingGroupDialog
         };
     }
 
-    private static string GetInitial(ViewingGroupMemberCandidateDto candidate)
+    private static string GetInitial(SharedProfileMemberCandidateDto candidate)
     {
         var name = candidate.DisplayName;
         return string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
@@ -114,7 +114,7 @@ public partial class CreateViewingGroupDialog
         {
             if (EditGroup is null)
             {
-                await ViewingGroupService.CreateAsync(new CreateViewingGroupRequest
+                await SharedProfileService.CreateAsync(new CreateSharedProfileRequest
                 {
                     Name = _name.Trim(),
                     HostUserId = _hostUserId,
@@ -124,7 +124,7 @@ public partial class CreateViewingGroupDialog
             }
             else
             {
-                await ViewingGroupService.UpdateAsync(EditGroup.Id, new UpdateViewingGroupRequest
+                await SharedProfileService.UpdateAsync(EditGroup.Id, new UpdateSharedProfileRequest
                 {
                     Name = _name.Trim(),
                     HostUserId = _hostUserId,
@@ -138,7 +138,7 @@ public partial class CreateViewingGroupDialog
                 }
 
                 if (!string.IsNullOrWhiteSpace(_pin) || EditGroup.HasPin)
-                    await ViewingGroupService.SetPinAsync(EditGroup.Id, string.IsNullOrWhiteSpace(_pin) ? null : _pin);
+                    await SharedProfileService.SetPinAsync(EditGroup.Id, string.IsNullOrWhiteSpace(_pin) ? null : _pin);
             }
 
             Dialog.Close(K7DialogResult.Ok(true));

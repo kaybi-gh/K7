@@ -596,7 +596,7 @@ var SpatialNav = (function () {
         }
 
         // Block back navigation on auth pages (no navbar flicker)
-        if (/^\/(sign-in|linkdevice|select-user)(\/|$)/.test(path)) {
+        if (/^\/(sign-in|linkdevice|select-profile|select-user)(\/|$)/.test(path)) {
             return;
         }
 

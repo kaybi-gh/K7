@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="PageTitle" xml:space="preserve"><value>Shared profiles</value></data>
+  <data name="SyncPlayTitle" xml:space="preserve"><value>SyncPlay</value></data>
+  <data name="SyncPlayDeviceEnabled" xml:space="preserve"><value>Receive invitations on this device</value></data>
+  <data name="SyncPlayDeviceDescription" xml:space="preserve"><value>Shows your SyncPlay availability and lets others invite you from this device.</value></data>
+  <data name="SyncPlayInvitationsEnabled" xml:space="preserve"><value>Allow SyncPlay invitations</value></data>
+  <data name="SyncPlayInvitationsDescription" xml:space="preserve"><value>Lets other users invite you to a SyncPlay session.</value></data>
+  <data name="SharedProfilesTitle" xml:space="preserve"><value>Shared profiles</value></data>
+  <data name="PrivacyTitle" xml:space="preserve"><value>Privacy</value></data>
+  <data name="PrivacyDescription" xml:space="preserve"><value>By default, other users cannot add you to a new shared profile. Turn this off to allow invitations.</value></data>
+  <data name="BlockNewMembership" xml:space="preserve"><value>Block new shared profile invitations</value></data>
+  <data name="GroupsTitle" xml:space="preserve"><value>My shared profiles</value></data>
+  <data name="GroupsDescription" xml:space="preserve"><value>Shared profiles group members who watch together on a shared device. Pin the ones to show on this device.</value></data>
+  <data name="ShowOnDevice" xml:space="preserve"><value>Show on this device</value></data>
+  <data name="CreateGroup" xml:space="preserve"><value>Create shared profile</value></data>
+  <data name="EditGroup" xml:space="preserve"><value>Edit</value></data>
+  <data name="GroupCreated" xml:space="preserve"><value>Shared profile created.</value></data>
+  <data name="GroupUpdated" xml:space="preserve"><value>Shared profile updated.</value></data>
+  <data name="Empty" xml:space="preserve"><value>You are not a member of any shared profile.</value></data>
+  <data name="MemberCount" xml:space="preserve"><value>{0} members</value></data>
+  <data name="HostBadge" xml:space="preserve"><value>Host</value></data>
+  <data name="PinBadge" xml:space="preserve"><value>PIN</value></data>
+  <data name="Leave" xml:space="preserve"><value>Leave</value></data>
+  <data name="LeaveTitle" xml:space="preserve"><value>Leave shared profile</value></data>
+  <data name="LeaveConfirm" xml:space="preserve"><value>Leave shared profile "{0}"?</value></data>
+  <data name="LeaveDeletesGroup" xml:space="preserve"><value>Leaving will delete this shared profile because only one member would remain.</value></data>
+  <data name="TransferHostTitle" xml:space="preserve"><value>Transfer host</value></data>
+  <data name="LeftGroup" xml:space="preserve"><value>Left shared profile.</value></data>
+</root>

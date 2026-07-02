@@ -1,5 +1,5 @@
-@using K7.Shared.Dtos.ViewingGroups
-@inject IStringLocalizer<CreateViewingGroupDialog> L
+@using K7.Shared.Dtos.SharedProfiles
+@inject IStringLocalizer<CreateSharedProfileDialog> L
 @inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
@@ -14,7 +14,7 @@
 
             <div>
                 <span class="text-sm text-muted">@L["Members"]</span>
-                <K7CheckboxList TItem="ViewingGroupMemberCandidateDto"
+                <K7CheckboxList TItem="SharedProfileMemberCandidateDto"
                                 Items="_candidates"
                                 IsChecked="@(c => _selectedMemberIds.Contains(c.Id))"
                                 CheckedChanged="@(e => ToggleMember(e.Item.Id, e.Checked))">

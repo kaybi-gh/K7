@@ -20,7 +20,8 @@
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
   <data name="PageTitle" xml:space="preserve"><value>Qui regarde ? - K7</value></data>
-  <data name="Header" xml:space="preserve"><value>Qui regarde ?</value></data>
+  <data name="Prompt" xml:space="preserve"><value>Qui regarde ?</value></data>
+  <data name="Subtitle" xml:space="preserve"><value>Continuer en tant que...</value></data>
   <data name="AddServer" xml:space="preserve"><value>Ajouter un utilisateur</value></data>
   <data name="SingleUserMode" xml:space="preserve"><value>Je suis le seul utilisateur de cet appareil</value></data>
   <data name="SessionExpired" xml:space="preserve"><value>La session de {0} a expiré. Veuillez vous reconnecter.</value></data>
@@ -28,18 +29,6 @@
   <data name="EnterPin" xml:space="preserve"><value>Entrer le PIN</value></data>
   <data name="IncorrectPin" xml:space="preserve"><value>PIN incorrect.</value></data>
   <data name="ContinueOffline" xml:space="preserve"><value>Continuer hors ligne</value></data>
-  <data name="CreateViewingGroup" xml:space="preserve"><value>Creer un groupe</value></data>
-  <data name="EnterGroupPin" xml:space="preserve"><value>PIN du groupe</value></data>
-  <data name="HostNotOnDevice" xml:space="preserve"><value>Ajoutez le compte hote sur cet appareil.</value></data>
-  <data name="MemberNotOnDevice" xml:space="preserve"><value>Ajoutez un compte membre sur cet appareil.</value></data>
-  <data name="AddUserFirst" xml:space="preserve"><value>Ajoutez d'abord un utilisateur.</value></data>
-  <data name="SelectCreator" xml:space="preserve"><value>Qui cree le groupe ?</value></data>
-  <data name="GroupCreated" xml:space="preserve"><value>Groupe cree.</value></data>
-  <data name="GroupDeleted" xml:space="preserve"><value>Groupe supprime.</value></data>
-  <data name="EditGroup" xml:space="preserve"><value>Modifier</value></data>
-  <data name="DeleteGroup" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="CancelAction" xml:space="preserve"><value>Annuler</value></data>
-  <data name="GroupManagePrompt" xml:space="preserve"><value>Que souhaitez-vous faire ?</value></data>
-  <data name="DeleteGroupConfirm" xml:space="preserve"><value>Supprimer le groupe {0} ?</value></data>
+  <data name="EnterGroupPin" xml:space="preserve"><value>PIN du profil partagé</value></data>
+  <data name="HostNotOnDevice" xml:space="preserve"><value>Ajoutez le compte hôte de ce profil partagé sur cet appareil.</value></data>
 </root>
-
