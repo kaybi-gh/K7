@@ -1909,6 +1909,13 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ViewingGroupId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ViewingGroupNameSnapshot")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<double>("WatchedDurationSeconds")
                         .HasColumnType("REAL");
 
@@ -1923,6 +1930,8 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasIndex("SessionId")
                         .IsUnique();
 
+                    b.HasIndex("ViewingGroupId");
+
                     b.HasIndex("UserId", "CompletedAt");
 
                     b.HasIndex("UserId", "StartedAt");
@@ -1930,6 +1939,28 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.HasIndex("UserId", "MediaId", "CompletedAt");
 
                     b.ToTable("MediaPlaybackSessions");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSessionCoViewer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ReferenceId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("MediaPlaybackSessionCoViewers");
                 });
 
             modelBuilder.Entity("K7.Server.Domain.Entities.Users.PlaybackSessionDetails", b =>
@@ -2241,6 +2272,71 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .IsUnique();
 
                     b.ToTable("UserPlaylistStates");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Created")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("HostUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModified")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PinHash")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("HostUserId");
+
+                    b.ToTable("ViewingGroups");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroupMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ViewingGroupId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ViewingGroupId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ViewingGroupMembers");
                 });
 
             modelBuilder.Entity("K7.Server.Infrastructure.Database.Context.Identity.ApplicationUser", b =>
@@ -3785,9 +3881,27 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("K7.Server.Domain.Entities.Users.ViewingGroup", "ViewingGroup")
+                        .WithMany()
+                        .HasForeignKey("ViewingGroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Device");
 
                     b.Navigation("Media");
+
+                    b.Navigation("User");
+
+                    b.Navigation("ViewingGroup");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.MediaPlaybackSessionCoViewer", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -3882,6 +3996,44 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("Playlist");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroup", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "HostUser")
+                        .WithMany()
+                        .HasForeignKey("HostUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("HostUser");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroupMember", b =>
+                {
+                    b.HasOne("K7.Server.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("K7.Server.Domain.Entities.Users.ViewingGroup", "ViewingGroup")
+                        .WithMany("Members")
+                        .HasForeignKey("ViewingGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("ViewingGroup");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -4171,6 +4323,11 @@ namespace K7.Server.Infrastructure.Database.Providers.Sqlite.Migrations
                     b.Navigation("MediaExclusions");
 
                     b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("K7.Server.Domain.Entities.Users.ViewingGroup", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication", b =>
