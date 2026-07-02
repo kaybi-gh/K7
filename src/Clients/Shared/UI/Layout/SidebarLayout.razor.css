@@ -15,11 +15,54 @@
     flex-shrink: 0;
     background: var(--color-drawer);
     border-right: 1px solid var(--color-border);
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
+    transition: width var(--transition-normal);
+}
+
+.page-sidebar-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: none;
+}
+
+.page-sidebar-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.page-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-2) var(--space-1);
+    flex-shrink: 0;
+}
+
+.page-sidebar-collapse-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    margin-inline-start: auto;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.page-sidebar-collapse-toggle:hover,
+.page-sidebar-collapse-toggle:focus-visible {
+    color: var(--color-text);
+    background: var(--color-surface-hover);
 }
 
 /* Always show labels in the page sidebar (overrides global .nav-label max-width:0) */
@@ -96,11 +139,12 @@
 }
 
 .page-sidebar .page-sidebar-title {
-    padding: var(--space-4) var(--space-3) var(--space-2);
+    padding: var(--space-1) var(--space-2) 0;
     font-size: var(--text-lg);
     font-weight: 700;
     color: var(--color-text-primary);
     letter-spacing: -0.01em;
+    min-width: 0;
 }
 
 .page-sidebar ::deep .nav-group[open] .nav-group-arrow {
@@ -117,10 +161,6 @@
 
 .page-sidebar ::deep .nav-group-items .nav-link {
     padding-inline-start: calc(var(--space-3) + 1.25rem + var(--space-2));
-}
-
-.page-sidebar::-webkit-scrollbar {
-    display: none;
 }
 
 .page-sidebar-body {
@@ -177,7 +217,7 @@
         width: 100%;
         border-right: none;
         flex: 1;
-        overflow-y: auto;
+        overflow: hidden;
     }
 
     .page-sidebar.sidebar-open {
@@ -196,5 +236,51 @@
 
     .page-sidebar-body.sidebar-body-hidden {
         display: none;
+    }
+}
+
+/* ── Desktop collapsed rail (nav rules live in layout.css) ── */
+
+@media (min-width: 600px) {
+    .page-sidebar-collapse-toggle {
+        display: inline-flex;
+        position: relative;
+        z-index: 1;
+    }
+
+    .page-sidebar.page-sidebar--collapsed {
+        width: var(--page-sidebar-width-collapsed, 56px);
+        overflow: visible;
+        position: relative;
+        z-index: var(--z-above);
+    }
+
+    .page-sidebar.page-sidebar--collapsed .page-sidebar-scroll {
+        overflow: visible;
+    }
+
+    .page-sidebar--collapsed ::deep .page-sidebar-nav {
+        align-items: center;
+        padding-inline: var(--space-1);
+    }
+
+    .page-sidebar--collapsed ::deep .nav-link,
+    .page-sidebar--collapsed ::deep .nav-group-toggle {
+        justify-content: center;
+        width: 2.75rem;
+        min-width: 2.75rem;
+        max-width: 2.75rem;
+        margin-inline: auto;
+        padding: 0;
+        overflow: visible;
+    }
+
+    .page-sidebar--collapsed .page-sidebar-header {
+        justify-content: center;
+        padding-inline: var(--space-1);
+    }
+
+    .page-sidebar--collapsed .page-sidebar-collapse-toggle {
+        margin-inline-start: 0;
     }
 }

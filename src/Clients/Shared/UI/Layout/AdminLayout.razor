@@ -5,10 +5,7 @@
 <SidebarLayout Title="@L["Title"]">
     <SidebarContent>
         <nav class="page-sidebar-nav">
-            <NavLink class="nav-link focusable" href="/admin/dashboard">
-                <span class="nav-icon"><K7Icon Icon="@Phosphor.Gauge" /></span>
-                <span class="nav-label">@L["Dashboard"]</span>
-            </NavLink>
+            <SidebarNavLink Href="/admin/dashboard" Title="@L["Dashboard"]" Icon="@Phosphor.Gauge" />
 
             <SidebarNavGroup Title="@L["GroupContent"]" Icon="@Phosphor.FolderOpen" Routes="@ContentRoutes">
                 <NavLink class="nav-link focusable" href="/admin/libraries">
