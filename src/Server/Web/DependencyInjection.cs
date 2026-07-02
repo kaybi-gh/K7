@@ -59,13 +59,7 @@ public static class DependencyInjection
             ApiKeyAuthenticationDefaults.AuthenticationScheme, null);
 
         services.ConfigureApplicationCookie(options =>
-        {
-            options.LoginPath = "/welcome";
-            options.LogoutPath = "/Account/Logout";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = cookieSecurePolicy;
-            options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-        });
+            ApplicationCookieOptions.Configure(options, cookieSecurePolicy));
 
         services.AddAuthorization(options =>
         {
