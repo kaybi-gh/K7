@@ -45,26 +45,23 @@
                     </div>
                 </ItemContent>
                 <Placeholder>
-                    <div class="k7-virtual-grid-row @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
-                         style="@GetRowGridStyle()">
+                    <div class="k7-virtual-grid-row k7-virtual-grid-row--placeholder @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
+                         style="@GetRowGridStyle()" aria-hidden="true">
                         @for (var i = 0; i < CalculateColumnCount(); i++)
                         {
-                            @if (Placeholder is not null)
-                            {
-                                @Placeholder
-                            }
+                            <div class="k7-virtual-grid-placeholder-cell"></div>
                         }
                     </div>
                 </Placeholder>
             </Virtualize>
         }
-        else if (Placeholder is not null)
+        else
         {
-            <div class="k7-virtual-grid-row @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
-                 style="@GetRowGridStyle()">
+            <div class="k7-virtual-grid-row k7-virtual-grid-row--placeholder @(IsCompactGrid ? "k7-virtual-grid-row--compact" : "")"
+                 style="@GetRowGridStyle()" aria-hidden="true">
                 @for (var i = 0; i < 12; i++)
                 {
-                    @Placeholder
+                    <div class="k7-virtual-grid-placeholder-cell"></div>
                 }
             </div>
         }
