@@ -164,6 +164,8 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public bool Shuffle => _shuffle;
 
     public string? ActiveRadioTitle { get; private set; }
+    public Guid? ActivePlaylistId { get; private set; }
+    public event Action? ActivePlaylistChanged;
     public event Action? ActiveRadioChanged;
 
     private static readonly Random Rng = new();
@@ -250,17 +252,20 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
     public async Task PlayTrackAsync(AudioQueueItem track, CancellationToken cancellationToken = default)
     {
         ClearRadioContext();
+        ClearPlaylistContext();
         await LoadQueueAsync([track], 0, cancellationToken);
     }
 
-    public async Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, CancellationToken cancellationToken = default)
+    public async Task PlayTracksAsync(IEnumerable<AudioQueueItem> tracks, int startIndex = 0, Guid? playlistId = null, CancellationToken cancellationToken = default)
     {
         ClearRadioContext();
+        SetPlaylistContext(playlistId);
         await LoadQueueAsync(tracks, startIndex, cancellationToken);
     }
 
     public async Task PlayRadioAsync(IEnumerable<AudioQueueItem> tracks, string radioTitle, int startIndex = 0, CancellationToken cancellationToken = default)
     {
+        ClearPlaylistContext();
         ActiveRadioTitle = radioTitle;
         ActiveRadioChanged?.Invoke();
         await LoadQueueAsync(tracks, startIndex, cancellationToken);
@@ -284,6 +289,24 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
         ActiveRadioTitle = null;
         ActiveRadioChanged?.Invoke();
+    }
+
+    private void SetPlaylistContext(Guid? playlistId)
+    {
+        if (ActivePlaylistId == playlistId)
+            return;
+
+        ActivePlaylistId = playlistId;
+        ActivePlaylistChanged?.Invoke();
+    }
+
+    private void ClearPlaylistContext()
+    {
+        if (ActivePlaylistId is null)
+            return;
+
+        ActivePlaylistId = null;
+        ActivePlaylistChanged?.Invoke();
     }
 
     public void AddToQueue(AudioQueueItem track)
@@ -343,6 +366,7 @@ public class AudioPlayerService(IStreamUriService streamUriService, IDeviceStora
 
     public void ClearQueue()
     {
+        ClearPlaylistContext();
         _queue.Clear();
         _shuffleOrder.Clear();
         _currentIndex = -1;

@@ -129,7 +129,7 @@ public class AudioPlaybackProgressTracker : IDisposable
         {
             var deviceIdStr = _deviceStorage.Get(PreferenceKeys.DEVICE_ID);
             Guid? deviceId = Guid.TryParse(deviceIdStr, out var parsed) ? parsed : null;
-            await _serverService.ReportPlaybackProgressAsync(mediaId, sessionId, _referenceId, position, duration, (int)state, deviceId);
+            await _serverService.ReportPlaybackProgressAsync(mediaId, sessionId, _referenceId, position, duration, (int)state, deviceId, _audio.ActivePlaylistId);
         }
         catch
         {
