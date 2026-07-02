@@ -27,6 +27,8 @@ public partial class LibraryGroup : IDisposable
     [Inject] private IAudioPlayerService Audio { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
+    [Inject] private IUserAdminService UserAdminService { get; set; } = default!;
+    [Inject] private IK7DialogService DialogService { get; set; } = default!;
 
     [Parameter]
     public required string Id { get; set; }
@@ -47,6 +49,8 @@ public partial class LibraryGroup : IDisposable
     private K7DataTable<LiteMediaDto>? _dataTable;
     private bool _loading = true;
     private bool _canSetWatchState;
+    private bool _canExclude;
+    private bool _isAdmin;
     private int _totalCount;
     private const int PageSize = 50;
     private LibraryMediaType? _libraryMediaType;
@@ -98,6 +102,7 @@ public partial class LibraryGroup : IDisposable
         _loading = true;
         _selectedMediaType = default;
         _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+        (_canExclude, _isAdmin) = await MediaCardExcludeActions.LoadPermissionsAsync(FeatureAccess);
 
         var groupId = Guid.TryParse(Id, out var parsed) ? parsed : (Guid?)null;
 
@@ -588,6 +593,26 @@ public partial class LibraryGroup : IDisposable
         LiteMusicAlbumDto or LiteMusicTrackDto or LiteMusicArtistDto => MediaCardVariant.Cover,
         _ => MediaCardVariant.Poster
     };
+
+    private async Task ExcludeForSelf(MediaCardViewModel item)
+    {
+        if (await MediaCardExcludeActions.ExcludeForSelfAsync(item, UserAdminService, Snackbar, S))
+            await RefreshBrowseAsync();
+    }
+
+    private async Task ExcludeForOthers(MediaCardViewModel item)
+    {
+        await MediaCardExcludeActions.ExcludeForOthersAsync(item, DialogService, Snackbar, S);
+        await RefreshBrowseAsync();
+    }
+
+    private async Task RefreshBrowseAsync()
+    {
+        if (_dataTable is not null)
+            await _dataTable.RefreshAsync();
+        if (_browseView is not null)
+            await _browseView.RefreshAsync();
+    }
 
     private static MediaOrderingOption? MapSortKeyToOrdering(string? sortKey, K7SortDirection direction) =>
         (sortKey, direction) switch

@@ -34,6 +34,10 @@
   <data name="SortOldest" xml:space="preserve"><value>Plus anciens</value></data>
   <data name="SortReleaseDateDesc" xml:space="preserve"><value>Date de sortie (recents)</value></data>
   <data name="SortReleaseDateAsc" xml:space="preserve"><value>Date de sortie (anciens)</value></data>
+  <data name="SortRecentActivity" xml:space="preserve"><value>Activité récente</value></data>
+  <data name="SortOldestActivity" xml:space="preserve"><value>Activité ancienne</value></data>
+  <data name="SortLastListenedRecent" xml:space="preserve"><value>Dernière écoute</value></data>
+  <data name="SortLastListenedOldest" xml:space="preserve"><value>Écoute la plus ancienne</value></data>
   <data name="Year" xml:space="preserve"><value>Annee</value></data>
   <data name="Rating" xml:space="preserve"><value>Note</value></data>
   <data name="PlayCount" xml:space="preserve"><value>Lectures</value></data>

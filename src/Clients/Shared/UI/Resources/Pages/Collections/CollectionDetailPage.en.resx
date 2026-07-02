@@ -25,8 +25,10 @@
   <data name="Public" xml:space="preserve"><value>Public</value></data>
   <data name="Private" xml:space="preserve"><value>Private</value></data>
   <data name="Items" xml:space="preserve"><value>items</value></data>
+  <data name="Year" xml:space="preserve"><value>Year</value></data>
   <data name="DeleteConfirmTitle" xml:space="preserve"><value>Delete collection?</value></data>
   <data name="DeleteConfirmMessage" xml:space="preserve"><value>This action cannot be undone.</value></data>
   <data name="Deleted" xml:space="preserve"><value>Collection deleted</value></data>
   <data name="DeleteError" xml:space="preserve"><value>Error deleting collection</value></data>
+  <data name="EditDialogTitle" xml:space="preserve"><value>Edit collection</value></data>
 </root>

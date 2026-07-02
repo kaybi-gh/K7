@@ -1,11 +1,13 @@
-using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
+using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities;
 using K7.Shared.Dtos.Entities.Playlists;
 using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.Music;
 
@@ -24,23 +26,36 @@ public partial class PlaylistDetail
     [Inject]
     private NavigationManager NavigationManager { get; set; } = default!;
 
+    [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+
     private PlaylistDto? _playlist;
     private List<PlaylistItemViewModel> _items = [];
-    private string? _coverUrl;
+    private List<PlaylistBrowseRow> _browseRows = [];
+    private IReadOnlyList<string> _headerPreviewUrls = [];
     private double _totalDuration;
     private bool _loading = true;
     private bool _loadingItems = true;
+    private bool _canTrackProgress;
+    private bool _canSetWatchState;
+
+    private bool _isMusicPlaylist => _playlist?.MediaType is MediaType.MusicTrack;
+    private bool _showHeaderPlaceholder => _items.Count == 0;
+
+    internal sealed record PlaylistBrowseRow(PlaylistItemViewModel Item, int Index)
+    {
+        public bool IsAlternate => Index % 2 == 1;
+    }
 
     protected override async Task OnParametersSetAsync()
     {
+        _canTrackProgress = await FeatureAccess.HasCapabilityAsync(Capability.CanResumePlayback);
+        _canSetWatchState = await WatchStateActions.CanSetWatchStateAsync(FeatureAccess);
+
         _loading = true;
         _playlist = await K7ServerService.GetPlaylistAsync(Guid.Parse(Id));
 
         if (_playlist is not null)
         {
-            _coverUrl = ApiClient.GetAbsoluteUri(
-                _playlist.CoverPicture?.GetUri(MetadataPictureSize.Medium)?.OriginalString)?.AbsoluteUri;
-
             await LoadItemsAsync();
         }
 
@@ -56,8 +71,22 @@ public partial class PlaylistDetail
             .Select(ToViewModel)
             .ToList() ?? [];
 
+        RebuildBrowseRows();
         _totalDuration = _items.Sum(i => i.Duration);
+        _headerPreviewUrls = _items
+            .Select(i => i.CoverUrl)
+            .Where(url => !string.IsNullOrEmpty(url))
+            .Cast<string>()
+            .Take(4)
+            .ToList();
         _loadingItems = false;
+    }
+
+    private void RebuildBrowseRows()
+    {
+        _browseRows = _items
+            .Select((item, index) => new PlaylistBrowseRow(item, index))
+            .ToList();
     }
 
     private PlaylistItemViewModel ToViewModel(PlaylistItemDto item) => new()
@@ -73,21 +102,70 @@ public partial class PlaylistDetail
         IndexedFileId = item.IndexedFileId,
         CoverUrl = ApiClient.GetAbsoluteUri(
             (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?
-                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri
-            ?? _coverUrl,
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+                ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still))?
+                .GetUri(MetadataPictureSize.Small)?.OriginalString)?.AbsoluteUri,
         CoverDominantColor = (item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Cover)
-            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster))?.DominantColor,
+            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Poster)
+            ?? item.Pictures?.FirstOrDefault(p => p.Type == MetadataPictureType.Still))?.DominantColor,
         Duration = item.Duration ?? 0,
         UserRating = item.UserRating,
         IsPlaying = Audio.CurrentTrack?.MediaId == item.MediaId
     };
 
+    private MediaCardViewModel? GetCardViewModel(PlaylistItemViewModel item) =>
+        _playlist?.MediaType switch
+        {
+            MediaType.Movie => new MediaCardViewModel
+            {
+                Id = item.MediaId.ToString(),
+                Kind = MediaCardKind.Poster,
+                MediaType = MediaType.Movie,
+                Title = item.Title,
+                PictureUrl = item.CoverUrl,
+                UserRating = item.UserRating
+            },
+            MediaType.SerieEpisode => new MediaCardViewModel
+            {
+                Id = item.MediaId.ToString(),
+                Kind = MediaCardKind.Episode,
+                MediaType = MediaType.SerieEpisode,
+                Title = item.Title,
+                PictureUrl = item.CoverUrl,
+                UserRating = item.UserRating
+            },
+            _ => null
+        };
+
+    private string? GetItemHref(PlaylistItemViewModel item) =>
+        _playlist?.MediaType switch
+        {
+            MediaType.Movie => $"/movies/{item.MediaId}",
+            _ => null
+        };
+
+    private Guid PlaylistId => Guid.Parse(Id);
+
+    private async Task RecordPlaybackAsync()
+    {
+        try
+        {
+            await K7ServerService.RecordPlaylistPlaybackAsync(PlaylistId);
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
     private async Task PlayAll()
     {
         var queue = BuildQueueItems();
         if (queue.Count > 0)
-            await Audio.PlayTracksAsync(queue, 0);
+        {
+            await RecordPlaybackAsync();
+            await Audio.PlayTracksAsync(queue, 0, PlaylistId);
+        }
     }
 
     private async Task ShuffleAll()
@@ -96,18 +174,32 @@ public partial class PlaylistDetail
         if (queue.Count > 0)
         {
             if (!Audio.Shuffle) Audio.ToggleShuffle();
-            await Audio.PlayTracksAsync(queue, 0);
+            await RecordPlaybackAsync();
+            await Audio.PlayTracksAsync(queue, 0, PlaylistId);
         }
     }
 
-    private async Task OnTrackClick(K7.Clients.Shared.UI.Components.TableRowClickEventArgs<PlaylistItemViewModel> args)
+    private async Task OnItemActivated(PlaylistItemViewModel item)
     {
-        var track = args.Item;
-        if (track is null) return;
+        if (_isMusicPlaylist)
+        {
+            var queue = BuildQueueItems();
+            var index = queue.FindIndex(q => q.MediaId == item.MediaId);
+            await RecordPlaybackAsync();
+            await Audio.PlayTracksAsync(queue, index >= 0 ? index : 0, PlaylistId);
+            return;
+        }
 
-        var queue = BuildQueueItems();
-        var index = queue.FindIndex(q => q.MediaId == track.MediaId);
-        await Audio.PlayTracksAsync(queue, index >= 0 ? index : 0);
+        await RecordPlaybackAsync();
+        var href = GetItemHref(item);
+        if (href is not null)
+            NavigationManager.NavigateTo(href);
+    }
+
+    private async Task OnListKeyDown(KeyboardEventArgs e, PlaylistItemViewModel item)
+    {
+        if (e.Key is "Enter" or " ")
+            await OnItemActivated(item);
     }
 
     private List<AudioQueueItem> BuildQueueItems()
@@ -142,9 +234,16 @@ public partial class PlaylistDetail
         {
             await K7ServerService.RemovePlaylistItemAsync(Guid.Parse(Id), item.Id);
             _items.Remove(item);
+            RebuildBrowseRows();
             _totalDuration = _items.Sum(i => i.Duration);
             if (_playlist is not null)
                 _playlist = _playlist with { ItemCount = _items.Count };
+            _headerPreviewUrls = _items
+                .Select(i => i.CoverUrl)
+                .Where(url => !string.IsNullOrEmpty(url))
+                .Cast<string>()
+                .Take(4)
+                .ToList();
             StateHasChanged();
         }
         catch
@@ -161,16 +260,19 @@ public partial class PlaylistDetail
         {
             { x => x.PlaylistId, _playlist.Id },
             { x => x.Title, _playlist.Title },
-            { x => x.Description, _playlist.Description }
+            { x => x.Description, _playlist.Description },
+            { x => x.MediaType, _playlist.MediaType },
+            { x => x.CoverPictureId, _playlist.CoverPicture?.Id }
         };
 
         var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<K7.Clients.Shared.UI.Components.Dialogs.EditPlaylistDialog>(L["EditDialogTitle"], parameters, options);
+        var dialog = await DialogService.ShowAsync<EditPlaylistDialog>(L["EditDialogTitle"], parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false })
         {
             _playlist = await K7ServerService.GetPlaylistAsync(Guid.Parse(Id));
+            await LoadItemsAsync();
             StateHasChanged();
         }
     }
@@ -214,6 +316,14 @@ public partial class PlaylistDetail
         return $"{ts.Minutes} min";
     }
 
+    private string GetItemLabel(MediaType mediaType) => mediaType switch
+    {
+        MediaType.MusicTrack => S["Tracks"],
+        MediaType.Movie => L["Movies"],
+        MediaType.SerieEpisode => L["Episodes"],
+        _ => L["Items"]
+    };
+
     private IReadOnlyList<DownloadRequest> GetDownloadRequests()
     {
         return _items
@@ -226,7 +336,7 @@ public partial class PlaylistDetail
                 Artist = i.ArtistName,
                 AlbumTitle = i.AlbumTitle,
                 CoverUrl = i.CoverUrl,
-                MediaType = MediaType.MusicTrack,
+                MediaType = _playlist?.MediaType ?? MediaType.MusicTrack,
                 IsCacheItem = false
             })
             .ToList();

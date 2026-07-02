@@ -1,108 +1,346 @@
 @page "/collections/{Id}"
+
+@using K7.Clients.Shared.Mappings
+
 @using K7.Clients.Shared.Models
+
 @using K7.Shared.Dtos.Entities.Collections
+
+@using K7.Shared.Dtos.Entities.Medias
+
 @using K7.Server.Domain.Enums
+
 @inject ICollectionService K7ServerService
+
 @inject IK7ServerService ApiClient
+
 @inject IStringLocalizer<CollectionDetailPage> L
+
 @inject IStringLocalizer<SharedResource> S
+
+
 
 <PageTitle>@(_collection?.Title ?? L["Header"])</PageTitle>
 
+
+
 @if (_loading)
+
 {
+
     <div class="d-flex flex-col pa-16 align-center">
+
         <K7Spinner />
+
     </div>
+
 }
+
 else if (_collection is null)
+
 {
+
     <div class="d-flex flex-col pa-16 align-center">
+
         <K7Icon Icon="@Phosphor.BookmarkSimple" Style="font-size: 64px; opacity: 0.3;" />
+
         <h6 Color="default" Style="opacity: 0.5;">@L["NotFound"]</h6>
+
     </div>
+
 }
+
 else
+
 {
+
     <div class="playlist-detail-page page-scrollable">
+
         <div class="playlist-header">
+
             <div class="playlist-header-cover">
-                @if (_coverUrl is not null)
-                {
-                    <K7Image Src="@_coverUrl"
-                              Alt="@_collection.Title"
-                              Width="180"
-                              ObjectFit="cover"
-                              Class="rounded" />
-                }
-                else
-                {
-                    <div class="playlist-cover-placeholder-large">
-                        <K7Icon Icon="@Phosphor.BookmarkSimple" Style="font-size: 64px; opacity: 0.3;" />
-                    </div>
-                }
+
+                <K7CoverMosaic CoverPicture="@(_showHeaderPlaceholder ? null : _collection.CoverPicture)"
+
+                                ImageUrls="_headerPreviewUrls"
+
+                                PreferPreviewWhenEmpty="@_showHeaderPlaceholder"
+
+                                PlaceholderIcon="@Phosphor.BookmarkSimple"
+
+                                PictureSize="MetadataPictureSize.Medium"
+
+                                Alt="@_collection.Title" />
+
             </div>
+
+
 
             <div class="playlist-header-info">
+
                 <p class="text-overline">@L["Header"]</p>
+
                 <h4>@_collection.Title</h4>
 
+
+
                 @if (!string.IsNullOrEmpty(_collection.Description))
+
                 {
+
                     <p class="text-sm mt-1" Color="secondary">@_collection.Description</p>
+
                 }
 
+
+
                 <p class="text-sm mt-1" Color="secondary">
+
                     @_collection.ItemCount @L["Items"]
+
                     <span class="ml-2">
+
                         <K7Chip Size="xs" Variant="outlined">
+
                             @(_collection.IsPublic ? L["Public"] : L["Private"])
+
                         </K7Chip>
+
                     </span>
+
                 </p>
 
-                <div class="d-flex mt-3">
+
+
+                <div class="playlist-header-actions">
+
+                    <K7IconButton Icon="@Phosphor.Pencil" OnClick="OpenEditDialog" />
+
                     <K7IconButton Icon="@Phosphor.Trash" Color="error" OnClick="ConfirmDelete" />
+
                 </div>
+
             </div>
+
         </div>
 
-        <BrowseView TItem="MediaCardViewModel"
-                      Items="_items"
+
+
+        <BrowseView TItem="CollectionBrowseRow"
+
+                      Items="_browseRows"
+
                       Loading="_loadingItems"
+
                       PersistenceKey="@($"collection-{Id}")"
+
+                      Class="collection-detail-browse"
+
                       DefaultItemWidth="160"
+
                       DefaultSpacing="6"
-                      GridItemAspectRatio="1.8f">
+
+                      GridItemAspectRatio="1.8f"
+
+                      ListItemHeight="64">
+
             <EmptyContent>
+
                 <div class="d-flex flex-col pa-16 align-center">
+
                     <K7Icon Icon="@Phosphor.BookmarkSimple" Style="font-size: 48px; opacity: 0.3;" />
+
                     <p Color="secondary">@L["Empty"]</p>
+
                 </div>
+
             </EmptyContent>
-            <GridTemplate Context="item">
-                <MediaCard Model="item"
-                            Variant="@GetVariant(item)"
-                            Href="@GetItemHref(item)"
-                            FooterVisible="true"
-                            OverlayEnabled="true"
-                            ProgressEnabled="_canTrackProgress"
-                            WatchedStatusEnabled="_canTrackProgress"
-                            ExcludeMenuEnabled="_canExclude"
-                            WatchStateMenuEnabled="_canSetWatchState"
-                            IsAdmin="_isAdmin"
-                            OnExcludeForSelf="() => ExcludeForSelf(item)"
-                            OnExcludeForOthers="() => ExcludeForOthers(item)" />
+
+            <GridTemplate Context="row">
+
+                @{
+
+                    var vm = row.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+
+                }
+
+                @if (vm is not null)
+
+                {
+
+                    <MediaCard Model="vm"
+
+                                Variant="@GetVariant(vm)"
+
+                                Href="@GetItemHref(vm)"
+
+                                FooterVisible="true"
+
+                                OverlayEnabled="true"
+
+                                ProgressEnabled="_canTrackProgress"
+
+                                WatchedStatusEnabled="_canTrackProgress"
+
+                                ExcludeMenuEnabled="_canExclude"
+
+                                WatchStateMenuEnabled="_canSetWatchState"
+
+                                IsAdmin="_isAdmin"
+
+                                OnExcludeForSelf="() => ExcludeForSelf(vm)"
+
+                                OnExcludeForOthers="() => ExcludeForOthers(vm)" />
+
+                }
+
             </GridTemplate>
-            <ListTemplate Context="item">
-                <a href="@GetItemHref(item)" class="library-list-item">
-                    @if (!string.IsNullOrEmpty(item.PictureUrl))
+
+            <TableColgroupContent>
+                <col style="width: 56px" />
+                <col />
+                <col style="width: 100px" />
+                <col style="width: 88px" />
+            </TableColgroupContent>
+            <TableHeaderContent>
+
+                <th style="width: 56px;">@S["Image"]</th>
+
+                <th>@S["Title"]</th>
+
+                <th style="width: 100px;">@L["Year"]</th>
+
+                <th style="width: 88px;">@S["Actions"]</th>
+
+            </TableHeaderContent>
+
+            <TableRowTemplate Context="row">
+
+                @{
+
+                    var browseRow = row.Item;
+
+                    var vm = browseRow.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+
+                }
+
+                <td @onclick="() => NavigateToItem(browseRow.Media)">
+
+                    <K7CoverMosaic ImageUrls="@GetItemPreviewUrls(browseRow.Media)"
+
+                                    PlaceholderIcon="@Phosphor.Image"
+
+                                    PictureSize="MetadataPictureSize.Small"
+
+                                    Alt="@browseRow.Media.Title"
+
+                                    Class="collection-table-cover" />
+
+                </td>
+
+                <td @onclick="() => NavigateToItem(browseRow.Media)">
+
+                    <span class="library-list-item-title">@browseRow.Media.Title</span>
+
+                </td>
+
+                <td @onclick="() => NavigateToItem(browseRow.Media)">
+
+                    <span class="library-list-item-secondary">@browseRow.Media.ReleaseDate?.Year</span>
+
+                </td>
+
+                <td class="library-browse-row-actions-cell">
+
+                    @if (vm is not null)
+
                     {
-                        <K7Image Src="@item.PictureUrl" Alt="@item.Title" Width="40" ObjectFit="cover" Class="rounded" loading="lazy" />
+
+                        <LibraryBrowseRowActions Model="vm"
+
+                                                  Href="@GetItemHref(vm)"
+
+                                                  OverlayEnabled="true"
+
+                                                  ProgressEnabled="_canTrackProgress"
+
+                                                  WatchedStatusEnabled="_canTrackProgress"
+
+                                                  ExcludeMenuEnabled="_canExclude"
+
+                                                  WatchStateMenuEnabled="_canSetWatchState"
+
+                                                  IsAdmin="_isAdmin"
+
+                                                  OnRemove="() => RemoveItemAsync(browseRow)"
+
+                                                  RemoveAriaLabel="@S["Remove"]"
+
+                                                  OnExcludeForSelf="() => ExcludeForSelf(vm)"
+
+                                                  OnExcludeForOthers="() => ExcludeForOthers(vm)"
+
+                                                  OnWatchStateChanged="StateHasChanged" />
+
                     }
-                    <span class="library-list-item__title">@item.Title</span>
-                </a>
+
+                </td>
+
+            </TableRowTemplate>
+
+            <ListTemplate Context="row">
+
+                @{
+
+                    var vm = row.Media.ToCardViewModel(ApiClient, n => string.Format(S["SeasonNumber"], n));
+
+                }
+
+                <LibraryListItem Item="row.Media" Href="@GetLiteItemHref(row.Media)">
+
+                    <Actions>
+
+                        @if (vm is not null)
+
+                        {
+
+                            <LibraryBrowseRowActions Model="vm"
+
+                                                      Href="@GetItemHref(vm)"
+
+                                                      OverlayEnabled="true"
+
+                                                      ProgressEnabled="_canTrackProgress"
+
+                                                      WatchedStatusEnabled="_canTrackProgress"
+
+                                                      ExcludeMenuEnabled="_canExclude"
+
+                                                      WatchStateMenuEnabled="_canSetWatchState"
+
+                                                      IsAdmin="_isAdmin"
+
+                                                      OnRemove="() => RemoveItemAsync(row)"
+
+                                                      RemoveAriaLabel="@S["Remove"]"
+
+                                                      OnExcludeForSelf="() => ExcludeForSelf(vm)"
+
+                                                      OnExcludeForOthers="() => ExcludeForOthers(vm)"
+
+                                                      OnWatchStateChanged="StateHasChanged" />
+
+                        }
+
+                    </Actions>
+
+                </LibraryListItem>
+
             </ListTemplate>
+
         </BrowseView>
+
     </div>
+
 }
+
