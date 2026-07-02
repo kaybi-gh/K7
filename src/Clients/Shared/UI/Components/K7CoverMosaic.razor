@@ -1,0 +1,29 @@
+@namespace K7.Clients.Shared.UI.Components
+
+<div class="k7-cover-mosaic @Class" style="@Style">
+    @if (_displayMode is DisplayMode.CustomCover && _customCoverUrl is not null)
+    {
+        <div class="k7-cover-mosaic__tile k7-cover-mosaic__tile--single"
+             style="@GetTileStyle(_customCoverUrl)"
+             role="img"
+             aria-label="@Alt"></div>
+    }
+    else if (_displayMode is DisplayMode.Mosaic && _mosaicUrls.Count > 0)
+    {
+        <div class="k7-cover-mosaic__grid k7-cover-mosaic__grid--@GetGridVariant(_mosaicUrls.Count)">
+            @foreach (var url in _mosaicUrls.Take(4))
+            {
+                <div class="k7-cover-mosaic__tile"
+                     style="@GetTileStyle(url)"
+                     role="img"
+                     aria-label="@Alt"></div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="k7-cover-mosaic__placeholder rounded">
+            <K7Icon Icon="@PlaceholderIcon" Style="font-size: 48px; opacity: 0.3;" />
+        </div>
+    }
+</div>

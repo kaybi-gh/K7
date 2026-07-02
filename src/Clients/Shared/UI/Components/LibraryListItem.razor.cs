@@ -9,6 +9,7 @@ public partial class LibraryListItem
 
     [Parameter, EditorRequired] public LiteMediaDto Item { get; set; } = default!;
     [Parameter] public string? Href { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
 
     private string? ThumbnailUrl => GetThumbnailUrl();
     private string? SecondaryText => GetSecondaryText();

@@ -18,7 +18,8 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     [Parameter] public RenderFragment<TItem>? GridTemplate { get; set; }
     [Parameter] public RenderFragment<TItem>? ListTemplate { get; set; }
     [Parameter] public RenderFragment? TableHeaderContent { get; set; }
-    [Parameter] public RenderFragment<TItem>? TableRowTemplate { get; set; }
+    [Parameter] public RenderFragment? TableColgroupContent { get; set; }
+    [Parameter] public RenderFragment<BrowseViewTableRowContext<TItem>>? TableRowTemplate { get; set; }
     [Parameter] public RenderFragment? TableContent { get; set; }
     [Parameter] public RenderFragment? ToolbarContent { get; set; }
     [Parameter] public RenderFragment? ToolbarSecondaryContent { get; set; }
@@ -59,6 +60,7 @@ public partial class BrowseView<TItem> : IAsyncDisposable
     private bool _sentinelObserving;
     private bool _loadingMore;
     private int? _totalItemCount;
+    private List<BrowseViewTableRowContext<TItem>>? _tableRows;
 
     protected override void OnInitialized()
     {
@@ -102,6 +104,12 @@ public partial class BrowseView<TItem> : IAsyncDisposable
 
     protected override void OnParametersSet()
     {
+        _tableRows = Items?.Select((item, index) => new BrowseViewTableRowContext<TItem>
+        {
+            Item = item,
+            Index = index
+        }).ToList();
+
         ApplyMobileModeRestrictions();
         _hasColumnPicker = OnColumnPickerRequested.HasDelegate;
 

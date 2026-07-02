@@ -1,0 +1,11 @@
+<div class="library-browse-list-row">
+    <div class="library-browse-list-row__main">
+        @ChildContent
+    </div>
+    @if (Actions is not null)
+    {
+        <div class="library-browse-list-row__actions" @onclick:stopPropagation="true">
+            @Actions
+        </div>
+    }
+</div>

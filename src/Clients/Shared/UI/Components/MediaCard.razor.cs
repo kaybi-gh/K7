@@ -28,6 +28,8 @@ public partial class MediaCard : IDisposable
     [Parameter] public EventCallback OnExcludeForOthers { get; set; }
     [Parameter] public EventCallback OnWatchStateChanged { get; set; }
     [Parameter] public EventCallback OnFocused { get; set; }
+    [Parameter] public RenderFragment? CoverContent { get; set; }
+    [Parameter] public string? PlaceholderIcon { get; set; }
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -264,7 +266,7 @@ public partial class MediaCard : IDisposable
         _shortPressCts?.Dispose();
     }
 
-    private string PlaceholderIcon => Variant switch
+    private string ResolvedPlaceholderIcon => PlaceholderIcon ?? Variant switch
     {
         MediaCardVariant.Cover => Phosphor.VinylRecord,
         _ => Phosphor.FilmSlate

@@ -107,15 +107,23 @@
                 {
                     <div class="browse-view-table">
                         <table class="browse-view-table-el">
+                            @if (TableColgroupContent is not null)
+                            {
+                                <colgroup>
+                                    @TableColgroupContent
+                                </colgroup>
+                            }
                             <thead>
                                 <tr>
                                     @TableHeaderContent
                                 </tr>
                             </thead>
                             <tbody>
-                                <Virtualize Items="Items" Context="item" ItemSize="48" OverscanCount="OverscanCount"
+                                <Virtualize TItem="BrowseViewTableRowContext<TItem>" Items="_tableRows" Context="row" ItemSize="48" OverscanCount="OverscanCount"
                                             SpacerElement="tr">
-                                    @TableRowTemplate(item)
+                                    <tr class="browse-view-table-row focusable @(row.IsAlternate ? "browse-view-table-row--alt" : "")">
+                                        @TableRowTemplate(row)
+                                    </tr>
                                 </Virtualize>
                             </tbody>
                         </table>
