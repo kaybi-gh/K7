@@ -1,59 +1,31 @@
+@using K7.Shared.Dtos.Rules
+@using K7.Clients.Shared.UI.Components.Dialogs
+@inject IUserAdminService K7ServerService
+@inject IMediaService MediaService
+@inject IK7Snackbar Snackbar
+@inject IStringLocalizer<AdminRestrictionProfileDialog> L
+@inject IStringLocalizer<SmartPlaylistDialog> SpL
+@inject IStringLocalizer<LibraryBrowseFilters> BrowseL
+@inject IStringLocalizer<SharedResource> S
 
 <div class="k7-dialog-content">
-        <div class="d-flex flex-col">
-            <K7TextField @bind-Value="Name" Label="Nom" Required="true" Variant="outlined" />
-            <K7TextField @bind-Value="Description" Label="Description" Variant="outlined" Lines="2" />
+    <div class="d-flex flex-col">
+        <K7TextField @bind-Value="_name" Label="@L["NameLabel"]" Required="true" Variant="outlined" />
+        <K7TextField @bind-Value="_description" Label="@L["DescriptionLabel"]" Variant="outlined" Lines="2" />
 
-            <K7Select TValue="RestrictionMatchCondition" @bind-Value="MatchCondition" Label="Condition"
-                       Variant="outlined">
-                <K7SelectItem Value="RestrictionMatchCondition.Any" Text="Au moins une règle (OU)">Au moins une règle (OU)</K7SelectItem>
-                <K7SelectItem Value="RestrictionMatchCondition.All" Text="Toutes les règles (ET)">Toutes les règles (ET)</K7SelectItem>
-            </K7Select>
+        <p class="text-subtitle2 mt-2">@L["RulesHelper"]</p>
 
-            <p class="text-subtitle2 mt-2">Règles (contenu correspondant sera masqué)</p>
-
-            @for (var i = 0; i < Rules.Count; i++)
-            {
-                var index = i;
-                <div class="d-flex align-center">
-                    <K7Select TValue="RestrictionField" Value="Rules[index].Field"
-                               ValueChanged="@(v => OnFieldChanged(index, v))"
-                               Label="Champ" Variant="outlined" Style="min-width: 140px;">
-                        <K7SelectItem Value="RestrictionField.Genre" Text="Genre">Genre</K7SelectItem>
-                        <K7SelectItem Value="RestrictionField.ContentRating" Text="Classification">Classification</K7SelectItem>
-                        <K7SelectItem Value="RestrictionField.ReleaseYear" Text="Année de sortie">Année de sortie</K7SelectItem>
-                    </K7Select>
-
-                    <K7Select TValue="RestrictionOperator" @bind-Value="Rules[index].Operator"
-                               Label="Opérateur" Variant="outlined" Style="min-width: 160px;">
-                        @foreach (var op in GetOperatorsForField(Rules[index].Field))
-                        {
-                            <K7SelectItem Value="op" Text="@FormatOperator(op)">@FormatOperator(op)</K7SelectItem>
-                        }
-                    </K7Select>
-
-                    @if (Rules[index].Operator is not RestrictionOperator.IsEmpty and not RestrictionOperator.IsNotEmpty)
-                    {
-                        <K7TextField @bind-Value="Rules[index].Value" Label="Valeur"
-                                      Variant="outlined" />
-                    }
-
-                    <K7IconButton Icon="@Phosphor.X" Size="sm" Color="error"
-                                   OnClick="@(() => Rules.RemoveAt(index))" />
-                </div>
-            }
-
-            <K7Button StartIcon="@Phosphor.Plus" Variant="text" Color="primary"
-                       OnClick="AddRule" Class="align-self-start">
-                Ajouter une règle
-            </K7Button>
-        </div>
+        <K7RuleEditor Value="_ruleFilter"
+                      ValueChanged="OnRuleFilterChanged"
+                      FieldDescriptors="_fieldDescriptors"
+                      SearchSuggestionsAsync="SearchSuggestionsAsync" />
     </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">Annuler</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="Submit"
-                   Disabled="@(string.IsNullOrWhiteSpace(Name) || Rules.Count == 0 || _saving)">
-            @if (_saving) { <K7Spinner Size="sm" /> }
-            Enregistrer
-        </K7Button>
-    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync"
+               Disabled="@(string.IsNullOrWhiteSpace(_name) || _ruleFilter.Items.Count == 0 || _saving)">
+        @if (_saving) { <K7Spinner Size="sm" /> }
+        @S["Save"]
+    </K7Button>
+</div>

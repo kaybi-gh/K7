@@ -1,124 +1,63 @@
 @using K7.Server.Domain.Enums
-@using K7.Shared.Dtos.Entities.Playlists
-@using K7.Shared.Dtos.Requests
+@using K7.Shared.Dtos.Rules
 @inject IPlaylistService K7ServerService
+@inject IMediaService MediaService
 @inject IK7Snackbar Snackbar
 @inject IStringLocalizer<SmartPlaylistDialog> L
+@inject IStringLocalizer<LibraryBrowseFilters> BrowseL
 @inject IStringLocalizer<SharedResource> S
 
-<div class="k7-dialog-content">
-        <div class="d-flex flex-col mt-2">
-            <K7TextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="outlined"
-                          Required="true" RequiredError="@L["NameRequired"]" MaxLength="200" />
-            <K7TextField @bind-Value="_description" Label="@L["DescriptionOptional"]"
-                          Variant="outlined" Lines="2" MaxLength="2000" />
+<div class="k7-dialog-content smart-playlist-dialog">
+    <div class="d-flex flex-col mt-2">
+        <K7TextField @bind-Value="_title" Label="@L["NameLabel"]" Variant="outlined"
+                      Required="true" RequiredError="@L["NameRequired"]" MaxLength="200" />
+        <K7TextField @bind-Value="_description" Label="@L["DescriptionOptional"]"
+                      Variant="outlined" Lines="2" MaxLength="2000" />
 
-            <hr class="k7-divider" />
+        <hr class="k7-divider" />
 
-            <div class="d-flex align-center justify-between">
-                <div class="d-flex align-center">
-                    <p class="text-subtitle2">@L["MatchLabel"]</p>
-                    <K7Select TValue="SmartPlaylistMatchCondition" @bind-Value="_matchCondition"
-                               Variant="outlined" Style="width: 120px;">
-                        <K7SelectItem Value="SmartPlaylistMatchCondition.All" Text="@L["MatchAll"]">@L["MatchAll"]</K7SelectItem>
-                        <K7SelectItem Value="SmartPlaylistMatchCondition.Any" Text="@L["MatchAny"]">@L["MatchAny"]</K7SelectItem>
-                    </K7Select>
-                    <p class="text-subtitle2">@L["RulesSuffix"]</p>
-                </div>
-                <K7Select TValue="MediaType" @bind-Value="_mediaType" Label="@L["MediaType"]"
-                           Variant="outlined"
-                           Style="width: 180px;">
-                    <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusic"]">@S["MediaTypeMusic"]</K7SelectItem>
-                    <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
-                    <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeTVShows"]">@S["MediaTypeTVShows"]</K7SelectItem>
-                </K7Select>
-            </div>
+        <div class="smart-playlist-dialog__media-type">
+            <K7Select TValue="MediaType" Value="_mediaType" ValueChanged="OnMediaTypeChanged"
+                       Label="@L["MediaType"]" Variant="outlined">
+                <K7SelectItem TValue="MediaType" Value="MediaType.MusicTrack" Text="@S["MediaTypeMusic"]">@S["MediaTypeMusic"]</K7SelectItem>
+                <K7SelectItem TValue="MediaType" Value="MediaType.Movie" Text="@S["MediaTypeMovies"]">@S["MediaTypeMovies"]</K7SelectItem>
+                <K7SelectItem TValue="MediaType" Value="MediaType.SerieEpisode" Text="@S["MediaTypeTVShows"]">@S["MediaTypeTVShows"]</K7SelectItem>
+            </K7Select>
+        </div>
 
-            <div class="d-flex flex-col">
-                @for (var i = 0; i < _rules.Count; i++)
+        <K7RuleEditor Value="_ruleFilter"
+                      ValueChanged="OnRuleFilterChanged"
+                      FieldDescriptors="_fieldDescriptors"
+                      SearchSuggestionsAsync="SearchSuggestionsAsync" />
+
+        <hr class="k7-divider" />
+
+        <div class="smart-playlist-sort-row">
+            <K7Select TValue="SmartPlaylistOrderBy" @bind-Value="_orderBy" Label="@L["SortBy"]"
+                       Variant="outlined" Class="smart-playlist-sort-row__order">
+                @foreach (var order in _orderByOptions)
                 {
-                    var index = i;
-                    <div class="surface pa-3">
-                        <div class="d-flex align-center">
-                            <K7Select TValue="SmartPlaylistField" Value="_rules[index].Field"
-                                       ValueChanged="(val) => OnFieldChanged(index, val)"
-                                       Variant="outlined"
-                                       Style="min-width: 160px;">
-                                @foreach (var field in GetAvailableFields())
-                                {
-                                    <K7SelectItem Value="@field" Text="@GetFieldLabel(field)">@GetFieldLabel(field)</K7SelectItem>
-                                }
-                            </K7Select>
-                            <K7Select TValue="SmartPlaylistOperator" @bind-Value="_rules[index].Operator"
-                                       Variant="outlined"
-                                       Style="min-width: 140px;">
-                                @foreach (var op in GetAvailableOperators(_rules[index].Field))
-                                {
-                                    <K7SelectItem Value="@op" Text="@GetOperatorLabel(op)">@GetOperatorLabel(op)</K7SelectItem>
-                                }
-                            </K7Select>
-                            @if (!IsUnaryOperator(_rules[index].Operator))
-                            {
-                                @if (_rules[index].Field == SmartPlaylistField.IsCompleted)
-                                {
-                                    <K7Select TValue="string" @bind-Value="_rules[index].Value"
-                                               Variant="outlined" Style="min-width: 140px;">
-                                        <K7SelectItem Value="@("true")" Text="@L["BooleanTrue"]">@L["BooleanTrue"]</K7SelectItem>
-                                        <K7SelectItem Value="@("false")" Text="@L["BooleanFalse"]">@L["BooleanFalse"]</K7SelectItem>
-                                    </K7Select>
-                                }
-                                else if (_rules[index].Field == SmartPlaylistField.OriginalLanguage)
-                                {
-                                    <K7LanguageSelect @bind-Value="_rules[index].Value"
-                                                      Variant="outlined" Style="min-width: 200px;" />
-                                }
-                                else
-                                {
-                                    <K7TextField TValue="string" @bind-Value="_rules[index].Value"
-                                                  Variant="outlined"
-                                                  Placeholder="@GetValuePlaceholder(_rules[index].Field)"
-                                                  Style="min-width: 140px;" />
-                                }
-                            }
-                            <button type="button" class="k7-icon-btn" Name="x" Size="sm"
-                                           Color="error" OnClick="() => RemoveRule(index)" ></button>
-                        </div>
-                    </div>
+                    <K7SelectItem Value="@order" Text="@GetOrderByLabel(order)">@GetOrderByLabel(order)</K7SelectItem>
                 }
-                <K7Button Variant="text" Color="primary"
-                      StartIcon="@Phosphor.Plus" OnClick="AddRule">
-                    @L["AddRule"]
-                </K7Button>
+            </K7Select>
+            <div class="smart-playlist-sort-row__direction">
+                <K7Switch @bind-Value="_orderDescending" />
+                <label class="text-sm">@L["Descending"]</label>
             </div>
-
-            <hr class="k7-divider" />
-
-            <div class="d-flex">
-                <K7Select TValue="SmartPlaylistOrderBy" @bind-Value="_orderBy" Label="@L["SortBy"]"
-                           Variant="outlined" Style="flex: 1;">
-                    @foreach (var order in GetAvailableOrderBy())
-                    {
-                        <K7SelectItem Value="@order" Text="@GetOrderByLabel(order)">@GetOrderByLabel(order)</K7SelectItem>
-                    }
-                </K7Select>
-                <div class="d-flex align-center mt-2">
-                    <K7Switch @bind-Value="_orderDescending" />
-                    <label class="text-sm ml-2">@L["Descending"]</label>
-                </div>
-                <K7TextField TValue="int?" Type="number" @bind-Value="_limit" Label="@L["Limit"]"
-                                 Variant="outlined" Style="width: 120px;" Clearable="true" />
-            </div>
+            <K7TextField TValue="int?" Type="number" @bind-Value="_limit" Label="@L["Limit"]"
+                         Variant="outlined" Class="smart-playlist-sort-row__limit" Clearable="true" />
         </div>
     </div>
-    <div class="k7-dialog-actions">
-        <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
-        <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync"
-                   Disabled="@(string.IsNullOrWhiteSpace(_title) || _isSubmitting)">
-            @if (_isSubmitting)
-            {
-                <K7Spinner Size="sm" />
-                <span class="ms-2">@(_isEdit ? L["Saving"] : L["Creating"])</span>
-            }
-            else { <span>@(_isEdit ? S["Save"] : S["Create"])</span> }
-        </K7Button>
-    </div>
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync"
+               Disabled="@(string.IsNullOrWhiteSpace(_title) || _isSubmitting)">
+        @if (_isSubmitting)
+        {
+            <K7Spinner Size="sm" />
+            <span class="ms-2">@(_isEdit ? L["Saving"] : L["Creating"])</span>
+        }
+        else { <span>@(_isEdit ? S["Save"] : S["Create"])</span> }
+    </K7Button>
+</div>

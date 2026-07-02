@@ -2,10 +2,8 @@ using K7.Clients.Shared.Helpers;
 using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.Models;
 using K7.Clients.Shared.UI.Components;
+using K7.Clients.Shared.UI.Helpers;
 using K7.Server.Domain.Enums;
-using K7.Shared.Dtos;
-using K7.Shared.Dtos.Requests;
-using K7.Shared.Extensions;
 using K7.Shared.Dtos.Rules;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -32,7 +30,11 @@ public partial class LibraryBrowseAdvancedFiltersDialog
     protected override void OnParametersSet()
     {
         _filter = InitialFilter;
-        _fieldDescriptors = LocalizeDescriptors(MediaBrowseFilterFields.GetDescriptors(MediaType));
+        _fieldDescriptors = RuleFieldLocalization.Localize(
+            RuleFieldCatalog.GetDescriptors(MediaType),
+            SpL,
+            L,
+            Tags);
     }
 
     private void OnFilterChanged(RuleGroupDto value) => _filter = value;
@@ -53,108 +55,4 @@ public partial class LibraryBrowseAdvancedFiltersDialog
             LibraryGroupIds,
             MediaType,
             cancellationToken);
-
-    private IReadOnlyList<RuleFieldDescriptorDto> LocalizeDescriptors(IReadOnlyList<RuleFieldDescriptorDto> descriptors) =>
-        descriptors.Select(LocalizeDescriptor).ToList();
-
-    private RuleFieldDescriptorDto LocalizeDescriptor(RuleFieldDescriptorDto descriptor)
-    {
-        var localized = descriptor with
-        {
-            DisplayName = GetFieldLabel(descriptor.FieldName),
-            ValuePlaceholder = GetValuePlaceholder(descriptor.FieldName)
-        };
-
-        if (descriptor.ValueType == RuleFieldValueType.Boolean && descriptor.Options is not null)
-        {
-            return localized with
-            {
-                Options =
-                [
-                    new RuleFieldOptionDto { Value = "true", Label = L["BooleanTrue"] },
-                    new RuleFieldOptionDto { Value = "false", Label = L["BooleanFalse"] }
-                ]
-            };
-        }
-
-        if (TryGetSelectOptions(descriptor.FieldName, out var options))
-        {
-            return localized with
-            {
-                ValueType = RuleFieldValueType.Select,
-                Operators = SelectOperators,
-                Options = options
-            };
-        }
-
-        return localized;
-    }
-
-    private static readonly IReadOnlyList<RuleOperator> SelectOperators =
-    [
-        RuleOperator.Equals,
-        RuleOperator.NotEquals
-    ];
-
-    private bool TryGetSelectOptions(string fieldName, out IReadOnlyList<RuleFieldOptionDto> options)
-    {
-        options = [];
-
-        if (fieldName is nameof(SmartPlaylistField.Genre) or nameof(RestrictionField.Genre))
-        {
-            var genres = Tags.GetTagValues(MetadataTagKind.Genre);
-            if (genres.Count == 0)
-                return false;
-
-            options = genres
-                .Select(g => new RuleFieldOptionDto { Value = g.DisplayName, Label = g.DisplayName })
-                .ToList();
-            return true;
-        }
-
-        if (fieldName == nameof(RestrictionField.ContentRating))
-        {
-            var contentRatings = Tags.GetValues(MetadataTagKind.ContentRating);
-            if (contentRatings.Count == 0)
-                return false;
-
-            options = contentRatings
-                .Select(r => new RuleFieldOptionDto { Value = r, Label = r })
-                .ToList();
-            return true;
-        }
-
-        return false;
-    }
-
-    private string? GetValuePlaceholder(string fieldName) => fieldName switch
-    {
-        "Studio" => L["SearchPlaceholderStudio"].Value,
-        "Network" => L["SearchPlaceholderNetwork"].Value,
-        nameof(SmartPlaylistField.ActorName) => L["SearchPlaceholderActor"].Value,
-        _ => null
-    };
-
-    private string GetFieldLabel(string fieldName) => fieldName switch
-    {
-        nameof(SmartPlaylistField.Title) => SpL["FieldTitle"],
-        nameof(SmartPlaylistField.Genre) => SpL["FieldGenre"],
-        nameof(SmartPlaylistField.Year) => SpL["FieldYear"],
-        nameof(SmartPlaylistField.Rating) => SpL["FieldRating"],
-        nameof(SmartPlaylistField.PlayCount) => SpL["FieldPlayCount"],
-        nameof(SmartPlaylistField.DateAdded) => SpL["FieldDateAdded"],
-        nameof(SmartPlaylistField.LastPlayed) => SpL["FieldLastPlayed"],
-        nameof(SmartPlaylistField.IsCompleted) => SpL["FieldIsWatched"],
-        nameof(SmartPlaylistField.ArtistName) => SpL["FieldArtist"],
-        nameof(SmartPlaylistField.AlbumTitle) => SpL["FieldAlbum"],
-        nameof(SmartPlaylistField.TrackNumber) => SpL["FieldTrackNumber"],
-        nameof(SmartPlaylistField.DiscNumber) => SpL["FieldDiscNumber"],
-        nameof(SmartPlaylistField.Duration) => SpL["FieldDuration"],
-        nameof(SmartPlaylistField.OriginalLanguage) => SpL["FieldOriginalLanguage"],
-        nameof(SmartPlaylistField.ActorName) => SpL["FieldActor"],
-        nameof(RestrictionField.ContentRating) => L["FieldContentRating"],
-        "Network" => L["FieldNetwork"],
-        "Studio" => L["FieldStudio"],
-        _ => fieldName
-    };
 }

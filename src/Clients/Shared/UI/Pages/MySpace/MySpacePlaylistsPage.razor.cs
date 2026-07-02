@@ -179,7 +179,7 @@ public partial class MySpacePlaylistsPage
 
     private async Task OpenCreateSmartPlaylistDialog()
     {
-        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true };
+        var options = new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Large, FullWidth = true, CloseOnEscapeKey = true };
         var dialog = await DialogService.ShowAsync<SmartPlaylistDialog>("Nouvelle smart playlist", null, options);
         var result = await dialog.Result;
 
