@@ -24,8 +24,9 @@ public partial class AppNav : IDisposable
     private string _badgeTitle = string.Empty;
     private string? _avatarUrl;
     private string _avatarInitial = "?";
+    private string? _viewingGroupLabel;
     private bool _chatOpen;
-    private Dictionary<Guid, string> _knownParticipants = [];
+    private readonly Dictionary<Guid, string> _knownParticipants = [];
 
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     [Inject] private ISpatialNavService SpatialNav { get; set; } = default!;
@@ -36,6 +37,7 @@ public partial class AppNav : IDisposable
     [Inject] private K7HubClient HubClient { get; set; } = default!;
     [Inject] private IUserAdminService UserService { get; set; } = default!;
     [Inject] private ISyncPlayService SyncPlay { get; set; } = default!;
+    [Inject] private IViewingGroupSessionService? ViewingGroupSession { get; set; }
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
 
@@ -49,7 +51,9 @@ public partial class AppNav : IDisposable
         SyncPlay.GroupUpdated += OnSyncPlayGroupUpdated;
         SyncPlay.ChatMessageReceived += OnChatMessageReceived;
         SyncPlay.ErrorReceived += OnSyncPlayErrorReceived;
+        ViewingGroupSession?.ActiveGroupChanged += OnViewingGroupChanged;
         UpdateBadge(HubClient.State);
+        UpdateViewingGroupLabel();
         UpdateActiveNav();
         await LoadAvatarAsync();
     }
@@ -212,6 +216,8 @@ public partial class AppNav : IDisposable
         SyncPlay.GroupUpdated -= OnSyncPlayGroupUpdated;
         SyncPlay.ChatMessageReceived -= OnChatMessageReceived;
         SyncPlay.ErrorReceived -= OnSyncPlayErrorReceived;
+        if (ViewingGroupSession is not null)
+            ViewingGroupSession.ActiveGroupChanged -= OnViewingGroupChanged;
         if (_profileMenuOpen)
         {
             try { _ = SpatialNav.PopLayerAsync(_profilePopoverRef); }
@@ -285,5 +291,22 @@ public partial class AppNav : IDisposable
         _chatOpen = true;
         await DialogService.ShowAsync<SyncPlayDialog>(L["SyncPlay"], options: new K7DialogOptions { MaxWidth = K7DialogMaxWidth.Small, FullWidth = true });
         _chatOpen = false;
+    }
+
+    private void OnViewingGroupChanged() => InvokeAsync(() =>
+    {
+        UpdateViewingGroupLabel();
+        StateHasChanged();
+    });
+
+    private void UpdateViewingGroupLabel()
+    {
+        if (DeviceService.GetClientType() == K7.Server.Domain.Enums.ClientType.Web)
+        {
+            _viewingGroupLabel = null;
+            return;
+        }
+
+        _viewingGroupLabel = ViewingGroupSession?.ActiveGroup?.Name;
     }
 }

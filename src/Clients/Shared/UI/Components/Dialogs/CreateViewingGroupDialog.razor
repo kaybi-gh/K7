@@ -1,0 +1,71 @@
+@using K7.Shared.Dtos.ViewingGroups
+@inject IStringLocalizer<CreateViewingGroupDialog> L
+@inject IStringLocalizer<SharedResource> S
+
+<div class="k7-dialog-content">
+    @if (_loading)
+    {
+        <K7ProgressBar Indeterminate="true" />
+    }
+    else
+    {
+        <div class="d-flex flex-col mt-2 gap-3">
+            <K7TextField @bind-Value="_name" Label="@L["GroupName"]" Variant="outlined" Required="true" />
+
+            <div>
+                <span class="text-sm text-muted">@L["Members"]</span>
+                <K7CheckboxList TItem="ViewingGroupMemberCandidateDto"
+                                Items="_candidates"
+                                IsChecked="@(c => _selectedMemberIds.Contains(c.Id))"
+                                CheckedChanged="@(e => ToggleMember(e.Item.Id, e.Checked))">
+                    <ItemTemplate Context="candidate">
+                        <K7Avatar Size="sm" Image="@candidate.AvatarUrl" Letter="@GetInitial(candidate)" />
+                        <span class="text-sm">@(candidate.DisplayName ?? "-")</span>
+                    </ItemTemplate>
+                </K7CheckboxList>
+            </div>
+
+            @if (_selectedMemberIds.Count >= 2)
+            {
+                <K7Select TValue="Guid" @bind-Value="_hostUserId" Label="@L["Host"]" Variant="outlined"
+                          ToStringFunc="@(id => _candidates.FirstOrDefault(c => c.Id == id)?.DisplayName ?? L["Host"])"
+                          FullWidth="true">
+                    @foreach (var memberId in _selectedMemberIds)
+                    {
+                        var candidate = _candidates.FirstOrDefault(c => c.Id == memberId);
+                        if (candidate is not null)
+                        {
+                            <K7SelectItem TValue="Guid" Value="@memberId" Text="@(candidate.DisplayName ?? "-")">
+                                @(candidate.DisplayName ?? "-")
+                            </K7SelectItem>
+                        }
+                    }
+                </K7Select>
+            }
+
+            @if (EditGroup is null)
+            {
+                <K7TextField @bind-Value="_pin" Label="@L["GroupPinOptional"]" Variant="outlined" Type="password"
+                              HelperText="@L["GroupPinHelper"]" />
+                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password" />
+            }
+            else
+            {
+                <K7TextField @bind-Value="_pin" Label="@L["NewPinOptional"]" Variant="outlined" Type="password"
+                              HelperText="@L["GroupPinHelper"]" />
+                <K7TextField @bind-Value="_pinConfirm" Label="@L["ConfirmPin"]" Variant="outlined" Type="password" />
+            }
+        </div>
+    }
+</div>
+<div class="k7-dialog-actions">
+    <K7Button OnClick="Cancel">@S["Cancel"]</K7Button>
+    <K7Button Color="primary" Variant="filled" OnClick="SubmitAsync"
+               Disabled="@(_isSubmitting || _loading || string.IsNullOrWhiteSpace(_name) || _selectedMemberIds.Count < 2)">
+        @if (_isSubmitting)
+        {
+            <K7Spinner Size="sm" />
+        }
+        @(EditGroup is null ? L["Create"] : L["Save"])
+    </K7Button>
+</div>

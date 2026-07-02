@@ -28,5 +28,18 @@
   <data name="EnterPin" xml:space="preserve"><value>Enter PIN</value></data>
   <data name="IncorrectPin" xml:space="preserve"><value>Incorrect PIN.</value></data>
   <data name="ContinueOffline" xml:space="preserve"><value>Continue offline</value></data>
+  <data name="CreateViewingGroup" xml:space="preserve"><value>Create a group</value></data>
+  <data name="EnterGroupPin" xml:space="preserve"><value>Group PIN</value></data>
+  <data name="HostNotOnDevice" xml:space="preserve"><value>Add the host account on this device.</value></data>
+  <data name="MemberNotOnDevice" xml:space="preserve"><value>Add a member account on this device.</value></data>
+  <data name="AddUserFirst" xml:space="preserve"><value>Add a user first.</value></data>
+  <data name="SelectCreator" xml:space="preserve"><value>Who is creating the group?</value></data>
+  <data name="GroupCreated" xml:space="preserve"><value>Group created.</value></data>
+  <data name="GroupDeleted" xml:space="preserve"><value>Group deleted.</value></data>
+  <data name="EditGroup" xml:space="preserve"><value>Edit</value></data>
+  <data name="DeleteGroup" xml:space="preserve"><value>Delete</value></data>
+  <data name="CancelAction" xml:space="preserve"><value>Cancel</value></data>
+  <data name="GroupManagePrompt" xml:space="preserve"><value>What would you like to do?</value></data>
+  <data name="DeleteGroupConfirm" xml:space="preserve"><value>Delete group {0}?</value></data>
 </root>
 

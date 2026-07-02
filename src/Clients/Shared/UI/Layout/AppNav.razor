@@ -77,6 +77,10 @@
                     </K7Avatar>
                     <div class="app-nav-popover-user-info">
                         <span class="app-nav-popover-username">@context.User.Identity?.Name</span>
+                        @if (!string.IsNullOrEmpty(_viewingGroupLabel))
+                        {
+                            <span class="app-nav-popover-viewing-group text-muted text-sm">@string.Format(L["ViewingAsGroup"], _viewingGroupLabel)</span>
+                        }
                         <span class="app-nav-popover-status">@_badgeTitle</span>
                     </div>
                 </div>

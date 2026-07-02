@@ -46,6 +46,7 @@
   <data name="InviteUsers" xml:space="preserve"><value>Inviter des utilisateurs</value></data>
   <data name="CopyInviteLink" xml:space="preserve"><value>Copier le lien d'invitation</value></data>
   <data name="LeaveGroup" xml:space="preserve"><value>Quitter le groupe</value></data>
+  <data name="ViewingAsGroup" xml:space="preserve"><value>Groupe : {0}</value></data>
   <data name="RejoinPlayback" xml:space="preserve"><value>Rejoindre la lecture</value></data>
   <data name="SyncPlayGroupCreated" xml:space="preserve"><value>Groupe SyncPlay cree</value></data>
   <data name="Chat" xml:space="preserve"><value>Chat</value></data>
