@@ -25,6 +25,8 @@
   <data name="None" xml:space="preserve"><value>Aucune collection</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Créez votre première collection pour regrouper des films, séries ou albums.</value></data>
   <data name="Items" xml:space="preserve"><value>éléments</value></data>
+  <data name="ItemsColumn" xml:space="preserve"><value>Éléments</value></data>
   <data name="Public" xml:space="preserve"><value>Public</value></data>
   <data name="Private" xml:space="preserve"><value>Privé</value></data>
+  <data name="Visibility" xml:space="preserve"><value>Visibilité</value></data>
 </root>

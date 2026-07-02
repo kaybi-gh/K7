@@ -1,25 +1,30 @@
+using K7.Clients.Shared.Interfaces;
 using K7.Clients.Shared.UI.Components;
 using K7.Clients.Shared.UI.Components.Dialogs;
 using K7.Server.Domain.Enums;
 using K7.Shared.Dtos.Entities.Playlists;
-using K7.Shared.Dtos.Entities;
+using K7.Shared.Dtos.Requests;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace K7.Clients.Shared.UI.Pages.MySpace;
 
 public partial class MySpacePlaylistsPage
 {
+    private const string FilterStorageKey = "my-space-playlists";
+    private const int PageSize = 500;
+
     private List<LitePlaylistDto> _playlists = [];
     private bool _loading = true;
     private bool _canCreate;
     private MediaType? _mediaTypeFilter;
+    private LibraryItemOrderingOption _selectedSort = LibraryItemOrderingOption.LastListenedDesc;
     private List<ButtonGroupOption<MediaType?>> _mediaTypeOptions = [];
     private bool _musicIntelligenceAvailable;
 
     [Inject] private IK7DialogService DialogService { get; set; } = default!;
     [Inject] private IK7Snackbar Snackbar { get; set; } = default!;
     [Inject] private IFeatureAccessService FeatureAccess { get; set; } = default!;
+    [Inject] private IPageFilterStorage PageFilterStorage { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -32,6 +37,7 @@ public partial class MySpacePlaylistsPage
         ];
 
         _canCreate = await FeatureAccess.HasCapabilityAsync(Capability.CanCreatePlaylist);
+        await LoadPersistedFiltersAsync();
         await LoadPlaylistsAsync();
 
         try
@@ -48,7 +54,10 @@ public partial class MySpacePlaylistsPage
     private async Task LoadPlaylistsAsync()
     {
         _loading = true;
-        var result = await K7ServerService.GetPlaylistsAsync(mediaType: _mediaTypeFilter);
+        var result = await K7ServerService.GetPlaylistsAsync(
+            pageSize: PageSize,
+            mediaType: _mediaTypeFilter,
+            orderBy: _selectedSort);
         _playlists = result?.Items?.ToList() ?? [];
         _loading = false;
     }
@@ -56,8 +65,56 @@ public partial class MySpacePlaylistsPage
     private async Task SetMediaTypeFilter(MediaType? mediaType)
     {
         _mediaTypeFilter = mediaType;
+        await PersistFiltersAsync();
         await LoadPlaylistsAsync();
     }
+
+    private async Task OnSortChanged(LibraryItemOrderingOption value)
+    {
+        if (value == _selectedSort)
+            return;
+
+        _selectedSort = value;
+        await PersistFiltersAsync();
+        await LoadPlaylistsAsync();
+    }
+
+    private async Task LoadPersistedFiltersAsync()
+    {
+        try
+        {
+            var state = await PageFilterStorage.LoadAsync<MySpacePlaylistsFilterState>(FilterStorageKey);
+            if (state is null)
+                return;
+
+            if (state.MediaType is int mediaTypeValue && Enum.IsDefined(typeof(MediaType), mediaTypeValue))
+                _mediaTypeFilter = (MediaType)mediaTypeValue;
+
+            if (Enum.IsDefined(typeof(LibraryItemOrderingOption), state.Sort))
+                _selectedSort = (LibraryItemOrderingOption)state.Sort;
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task PersistFiltersAsync()
+    {
+        try
+        {
+            await PageFilterStorage.SaveAsync(
+                FilterStorageKey,
+                new MySpacePlaylistsFilterState((int?)_mediaTypeFilter, (int)_selectedSort));
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private string GetSortLabel(LibraryItemOrderingOption option) =>
+        MySpaceLibraryBrowseSort.GetLabel(option, LibrarySortL);
 
     private async Task OpenCreatePlaylistDialog()
     {
@@ -89,25 +146,24 @@ public partial class MySpacePlaylistsPage
         await dialog.Result;
     }
 
-    private void GoToPlaylist(LitePlaylistDto playlist)
-    {
-        var url = playlist.IsSmartPlaylist
+    private string GetPlaylistHref(LitePlaylistDto playlist) =>
+        playlist.IsSmartPlaylist
             ? $"/smart-playlists/{playlist.Id}"
             : $"/playlists/{playlist.Id}";
-        NavigationManager.NavigateTo(url);
+
+    private string GetPlaylistSubtitle(LitePlaylistDto playlist)
+    {
+        var parts = new List<string> { $"{playlist.ItemCount} {GetItemLabel(playlist.MediaType)}" };
+        if (playlist.LastListenedAt is { } lastListened)
+            parts.Add(FormatLastListened(lastListened));
+        return string.Join(" · ", parts);
     }
 
-    private void OnPlaylistKeyDown(KeyboardEventArgs e, LitePlaylistDto playlist)
-    {
-        if (e.Code is "Enter" or "Space")
-            GoToPlaylist(playlist);
-    }
+    private string GetPlaylistItemCountLabel(LitePlaylistDto playlist) =>
+        $"{playlist.ItemCount} {GetItemLabel(playlist.MediaType)}";
 
-    private string? GetCoverUrl(LitePlaylistDto playlist)
-    {
-        var uri = playlist.CoverPicture?.GetUri(MetadataPictureSize.Small)?.OriginalString;
-        return ApiClient.GetAbsoluteUri(uri)?.AbsoluteUri;
-    }
+    private string FormatLastListenedOrDash(DateTimeOffset? lastListenedAt) =>
+        lastListenedAt is { } lastListened ? FormatLastListened(lastListened) : "-";
 
     private string GetItemLabel(MediaType mediaType) => mediaType switch
     {
@@ -116,4 +172,18 @@ public partial class MySpacePlaylistsPage
         MediaType.SerieEpisode => L["Episodes"],
         _ => L["Items"]
     };
+
+    private string FormatLastListened(DateTimeOffset dateTime)
+    {
+        var diff = DateTimeOffset.UtcNow - dateTime.ToUniversalTime();
+        if (diff.TotalMinutes < 1)
+            return L["LastListenedJustNow"];
+        if (diff.TotalMinutes < 60)
+            return L["LastListenedMinutes", (int)diff.TotalMinutes];
+        if (diff.TotalHours < 24)
+            return L["LastListenedHours", (int)diff.TotalHours];
+        return L["LastListenedDays", (int)diff.TotalDays];
+    }
+
+    private sealed record MySpacePlaylistsFilterState(int? MediaType, int Sort);
 }
