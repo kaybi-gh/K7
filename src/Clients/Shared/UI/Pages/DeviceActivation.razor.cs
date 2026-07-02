@@ -49,7 +49,7 @@ public partial class DeviceActivation : IDisposable
             await AuthService.LoginWithDeviceCodeAsync(async info =>
             {
                 _deviceCode = info;
-                _displayUri = info.VerificationUri.Replace("/connect/verify", "/link");
+                _displayUri = info.VerificationUri.Replace("/connect/verify", "/link-device/authorize");
                 _loading = false;
 
                 _totalSeconds = Math.Max(1, (int)(info.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds);

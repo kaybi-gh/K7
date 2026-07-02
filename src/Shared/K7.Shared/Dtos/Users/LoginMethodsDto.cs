@@ -4,6 +4,8 @@ public sealed record LoginMethodsDto
 {
     public required bool HasPassword { get; init; }
     public required bool CanRemovePassword { get; init; }
+    public required bool TwoFactorEnabled { get; init; }
+    public required int RecoveryCodesLeft { get; init; }
     public required IReadOnlyList<ExternalLoginDto> ExternalLogins { get; init; }
 }
 

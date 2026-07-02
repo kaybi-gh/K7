@@ -12,7 +12,8 @@ public partial class RedirectToLogin
     protected override void OnInitialized()
     {
         var users = LocalUserService.GetAll();
-        var target = users.Count > 0 && DeviceService.GetClientType() != ClientType.Web ? "select-user" : "sign-in";
-        Navigation.NavigateTo($"{target}?returnUrl={Uri.EscapeDataString(Navigation.Uri)}");
+        var target = users.Count > 0 && DeviceService.GetClientType() != ClientType.Web ? "select-user" : "welcome";
+        var forceLoad = target == "welcome" && DeviceService.GetClientType() == ClientType.Web;
+        Navigation.NavigateTo($"{target}?returnUrl={Uri.EscapeDataString(Navigation.Uri)}", forceLoad);
     }
 }

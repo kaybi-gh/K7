@@ -30,8 +30,8 @@ public class Verify : IEndpoint
             if (HttpMethods.IsGet(context.Request.Method))
             {
                 return string.IsNullOrEmpty(request.UserCode)
-                    ? Results.Redirect("/link")
-                    : Results.Redirect($"/link?user_code={Uri.EscapeDataString(request.UserCode)}");
+                    ? Results.Redirect("/link-device/authorize")
+                    : Results.Redirect($"/link-device/authorize?user_code={Uri.EscapeDataString(request.UserCode)}");
             }
 
             // On POST: approve the device authorization.
@@ -41,8 +41,8 @@ public class Verify : IEndpoint
                 return Results.Challenge(new AuthenticationProperties
                 {
                     RedirectUri = !string.IsNullOrEmpty(request.UserCode)
-                        ? $"/link?user_code={Uri.EscapeDataString(request.UserCode)}"
-                        : "/link"
+                        ? $"/link-device/authorize?user_code={Uri.EscapeDataString(request.UserCode)}"
+                        : "/link-device/authorize"
                 });
             }
 
@@ -51,7 +51,7 @@ public class Verify : IEndpoint
             if (oidcResult is not { Succeeded: true }
                 || string.IsNullOrEmpty(oidcResult.Principal?.GetClaim(Claims.ClientId)))
             {
-                return Results.Redirect("/link?error=invalid_code");
+                return Results.Redirect("/link-device/authorize?error=invalid_code");
             }
 
             var user = await userManager.GetUserAsync(cookieResult.Principal) ??
@@ -59,7 +59,7 @@ public class Verify : IEndpoint
 
             if (!await signInManager.CanSignInAsync(user))
             {
-                return Results.Redirect("/link?error=access_denied");
+                return Results.Redirect("/link-device/authorize?error=access_denied");
             }
 
             var identity = new ClaimsIdentity(
@@ -78,7 +78,7 @@ public class Verify : IEndpoint
             identity.SetDestinations(GetDestinations);
 
             return Results.SignIn(new ClaimsPrincipal(identity),
-                new AuthenticationProperties { RedirectUri = "/link?approved=true" },
+                new AuthenticationProperties { RedirectUri = "/link-device/authorize?approved=true" },
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         })
         .DisableAntiforgery()

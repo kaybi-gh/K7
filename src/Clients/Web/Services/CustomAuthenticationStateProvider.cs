@@ -32,7 +32,7 @@ public class CustomAuthenticationStateProvider : ICustomAuthenticationStateProvi
     public Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         var redirectUri = Uri.EscapeDataString(_navigationManager.ToBaseRelativePath(_navigationManager.Uri));
-        _navigationManager.NavigateTo($"{_navigationManager.BaseUri}Account/Logout?returnUrl={redirectUri}", forceLoad: true);
+        _navigationManager.NavigateTo($"{_navigationManager.BaseUri}account/logout?returnUrl={redirectUri}", forceLoad: true);
         return Task.CompletedTask;
     }
 
